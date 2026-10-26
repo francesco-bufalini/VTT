@@ -1,6 +1,7 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
+import {featureCompanionRule,eligibleCompanionFeatureRules,spellCompanionRule,companionSources} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
@@ -15,7 +16,7 @@ import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_COND
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import {openSendDialog,pollIncomingShares} from './share_transfer.js';
-import { listCreatures, listSubcreatures, createSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
+import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -81,25 +82,65 @@ const setItemEquipped=inventoryModule.setItemEquipped||((inventory,index,enabled
   return rows;
 });
 
-// Spell-to-bestiary choices live in a portable rules file rather than prose
-// parsing or a list of hard-coded spell branches in the PWA.
-let companionSpellRulesPromise=null;
-async function companionSpellChoices(spell, creature){
-  companionSpellRulesPromise??=fetch('/catalog/companion_spells.json')
+// Game rules are explicit data, not patterns guessed from feature prose.
+let companionRulesPromise=null;
+async function companionRules(){
+  companionRulesPromise??=fetch('/catalog/companion_spells.json')
     .then(response=>{if(!response.ok)throw Error('Regole famigli non disponibili.');return response.json();})
-    .catch(error=>{companionSpellRulesPromise=null;throw error;});
-  const rules=await companionSpellRulesPromise;
-  const normalize=value=>String(value||'').toLowerCase().normalize('NFD')
-    .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
-  const spellNames=[spell?.name,spell?.id].map(normalize);
-  const rule=rules.spells?.find(rule=>rule.names?.some(name=>
-    spellNames.some(value=>value===normalize(name)||value.endsWith(' '+normalize(name)))));
-  if(!rule || rule.editions?.length && !rule.editions.includes(String(creature.rules_version||'2014')))
-    return null;
+    .catch(error=>{companionRulesPromise=null;throw error;});
+  return companionRulesPromise;
+}
+async function companionSpellChoices(spell,creature){
+  const data=await companionRules();
+  const rule=spellCompanionRule(data,spell,creature);
+  if(!rule)return null;
   const sources=await variantSources([],await (await import('./storage.js')).listRecords('global','homebrew'));
-  const names=new Set(rule.monsters.map(normalize));
-  const choices=sources.filter(source=>names.has(normalize(source.name)));
-  return {rule,choices};
+  return {rule,choices:companionSources(rule,data,sources,creature)};
+}
+async function companionFeatureChoices(creature,calculated,originId){
+  const data=await companionRules(),rule=featureCompanionRule(creature,calculated,data,originId);
+  if(!rule)return null;
+  const sources=rule.template?[]:await variantSources([],
+    await (await import('./storage.js')).listRecords('global','homebrew'));
+  return {rule,choices:companionSources(rule,data,sources,creature),originId};
+}
+function featureCompanionFields(context){
+  if(!context)return '';
+  const entries=context.choices||[],rule=context.rule;
+  return '<section class="feature-companion-options"><h3>Sottocreatura</h3>'+
+    '<label>Creatura da generare<select data-feature-companion>'+
+      (entries.length?entries.map(entry=>'<option value="'+esc(entry.key)+'">'+esc(entry.name)+
+      (entry.source?' · '+esc(entry.source):'')+'</option>').join(''):'<option value="">Nessuna creatura compatibile nel bestiario</option>')+
+    '</select></label>'+
+    (rule.allowed_sizes?.length?'<label>Taglia<select data-feature-companion-size>'+
+      rule.allowed_sizes.map(size=>'<option value="'+esc(size)+'"'+(size==='Medium'?' selected':'')+'>'+esc(size)+'</option>').join('')+'</select></label>':'')+
+    '<label>Nome della sottocreatura (facoltativo)<input data-feature-companion-name maxlength="120" placeholder="'+
+      esc(entries[0]?.name||'Nome')+'"></label>'+
+    (rule.duration?'<p class="hint">Durata: '+esc(rule.duration)+'.</p>':'')+
+    '</section>';
+}
+async function createFeatureCompanion(parent,context,dialog){
+  if(!context)return null;
+  const {rule,choices,originId}=context;
+  const key=dialog.querySelector('[data-feature-companion]')?.value;
+  const choice=choices.find(entry=>entry.key===key);
+  if(!choice)throw Error('Seleziona un mostro compatibile per il privilegio.');
+  const size=dialog.querySelector('[data-feature-companion-size]')?.value||'';
+  if(size&&!(rule.allowed_sizes||[]).includes(size))throw Error('Taglia non consentita.');
+  const requested=String(dialog.querySelector('[data-feature-companion-name]')?.value||'').trim();
+  if(requested.length>120)throw Error('Nome troppo lungo.');
+  let loaded=await choice.load({size,name:requested});
+  if(!loaded||typeof loaded!=='object')throw Error('Voce del bestiario non valida.');
+  if(requested)loaded={...loaded,name:requested};
+  return summonSubcreature(parent.id,loaded,{
+    ...choice,name:requested||loaded.name||choice.name,
+    feature_id:originId,rule_id:rule.id,
+    duration:rule.duration||'',limit_per_owner_rule:rule.limit_per_owner_rule??1
+  });
+}
+async function manualCompanionRules(owner,calculated){
+  const data=await companionRules();
+  return eligibleCompanionFeatureRules(owner,calculated,data,{manualOnly:true});
 }
 
 const app = document.querySelector("#app");
@@ -3787,8 +3828,8 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
   if(desktopHooks?.cast){
     await flushPendingFields();
     const result=await desktopHooks.cast({casterId,selection,requestedLevel,payment});
-    if(companionSource&&!(await listSubcreatures(casterId)).some(row=>row.creature.companion_origin_spell_id===selection.id))
-      await createSubcreature(casterId,await companionSource.load(),companionSource);
+    if(companionSource)
+      await summonSubcreature(casterId,await companionSource.load(),companionSource);
     return result;
   }
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
@@ -3816,10 +3857,9 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
     const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
     if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
     charged=true;
-    if(companionSource&&!(await listSubcreatures(casterId)).some(row=>
-      row.creature.companion_origin_spell_id===selection.id)){
+    if(companionSource){
       try{
-        await createSubcreature(casterId,await companionSource.load(),companionSource);
+        await summonSubcreature(casterId,await companionSource.load(),companionSource);
         message('Famiglio aggiunto alle sottocreature.');
       }catch(error){message('Evocazione registrata, ma scheda famiglio non creata: '+errorMessage(error),true);}
     }
@@ -5304,18 +5344,16 @@ async function handleAction(target){
     if(desktopHooks?.cast||(state.paired&&state.online)){
       app.querySelector('#action-cast-dialog')?.close();
       await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
-        companionSource?{...companionSource,spell_id:selection.id}:null);return;
+        companionSource?{...companionSource,spell_id:selection.id,
+          rule_id:companion.rule.id,limit_per_owner_rule:companion.rule.limit_per_owner_spell??1}:null);return;
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
     app.querySelector('#action-cast-dialog')?.close();
     if(Object.keys(plan.patch).length)await patch(plan.patch);
-    if(companionSource){
-      const loaded=await companionSource.load();
-      const existing=(await listSubcreatures(record.id)).some(row=>
-        row.creature.companion_origin_spell_id===selection.id);
-      if(!existing)await createSubcreature(record.id,loaded,
-        {...companionSource,spell_id:selection.id});
-    }
+    if(companionSource)
+      await summonSubcreature(record.id,await companionSource.load(),
+        {...companionSource,spell_id:selection.id,
+          rule_id:companion.rule.id,limit_per_owner_rule:companion.rule.limit_per_owner_spell??1});
     await render();
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
