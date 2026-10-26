@@ -180,6 +180,39 @@ export async function exportHomebrewPackage(id) {
   return {format:"vtt_homebrew_share_v1",version:1,definitions};
 }
 
+// Character-owned custom catalog rows may not be in the global homebrew
+// archive. Turn such definitions into the same portable format, preserving all
+// structured fields and only excluding local instance state. Never mutate the
+// original record or silently send a reference without its dependencies.
+export async function exportCatalogHomebrewEntry(entry) {
+  if(!entry?._homebrew||typeof entry.name!=="string"||!entry.name.trim())
+    throw new Error("Seleziona un contenuto homebrew valido.");
+  if(typeof entry.id==="string" && await getRecord(HOMEBREW_SCOPE,HOMEBREW_TYPE,entry.id))
+    return exportHomebrewPackage(entry.id);
+  const type=String(entry._category||entry.category||"");
+  const category=["weapons","armor","tools","magic_items","mundane_items"].includes(type)?"items":type;
+  const fields={...entry};
+  for(const key of ["id","name","source","category","_category","_homebrew","data",
+    "_description_warning","instance_id","quantity","equipped","equipped_slots",
+    "attuned","attuned_count","instance_overrides","container_id",
+    "uses_spent","charges_spent"]) delete fields[key];
+  const value={
+    id:String(entry.id||""), category, name:entry.name,
+    source:String(entry.source||"Personalizzato"),
+    data:{...(entry.data&&typeof entry.data==="object"&&!Array.isArray(entry.data)?entry.data:{}),...fields}
+  };
+  if(!validDefinition(value)){
+    const id=Array.from(crypto.getRandomValues(new Uint8Array(12)),
+      x=>x.toString(16).padStart(2,"0")).join("");
+    value.id="homebrew:shared:"+category+":entry_"+id;
+  }
+  if(!validDefinition(value))throw new Error("Questo contenuto non è esportabile come homebrew portabile.");
+  const byId=new Map((await listRecords(HOMEBREW_SCOPE,HOMEBREW_TYPE))
+    .map(row=>[row.id,row.data]));
+  const other=referencedDefinitions(value,byId);
+  return {format:"vtt_homebrew_share_v1",version:1,definitions:[value,...other]};
+}
+
 export async function importHomebrewPackage(raw) {
   const payload=typeof raw==="string"?JSON.parse(raw):raw;
   if(payload?.format!=="vtt_homebrew_share_v1"||payload.version!==1||
