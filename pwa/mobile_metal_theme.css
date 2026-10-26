@@ -5352,3 +5352,21 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
  #sheet-play-view .play-magic-source-resources{justify-content:flex-start;margin-left:0}
  #sheet-play-view .play-magic-source-resource{padding:3px 5px;gap:4px}
 }
+
+/* Slot maxima are score values: a tap opens their existing formula/bonus popup. */
+.magic-slot-manager .magic-slot-maximum{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:28px;min-height:30px;padding:2px 4px;margin:-4px -4px -4px 0;
+  border:0;border-bottom:1px dashed #cfa76b8a;border-radius:4px;
+  background:transparent;color:#f2d2a0;font:inherit;font-weight:750;
+  font-variant-numeric:tabular-nums;cursor:pointer;
+}
+.magic-slot-manager .magic-slot-maximum:hover,
+.magic-slot-manager .magic-slot-maximum:focus-visible{
+  color:#ffe3b9;background:#8e6d423d;outline:1px solid #e3b87d;
+}
+.magic-overview-empty,.play-slots-empty{
+  margin:0;grid-column:1/-1;color:#b6a590;font-size:12px;
+  line-height:1.45;padding:10px 3px;
+}
+#sheet-play-view .play-slots:has(.play-slots-empty){display:block}
