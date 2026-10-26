@@ -166,7 +166,7 @@ export function classFeatureDamage(record,calculated,attack,ability){
 // disadvantage cancel, regardless of how many sources exist on each side.
 // Retain each applicable source separately so the roll dialog can explain and
 // open every contributing trait instead of guessing one from the roll type.
-export function classFeatureRollSources(record,calculated,target){
+export function classFeatureRollSources(record,calculated,target,context=''){
  const result=[],features=rows(calculated?.features),nameToLabel={
    rage:'Ira',reckless_attack:'Attacco irruento',
    patient_defense:'Difesa paziente',innate_sorcery:'Stregoneria innata'};
@@ -215,6 +215,13 @@ export function classFeatureRollSources(record,calculated,target){
    for(const rule of rows(feature.roll_modes)){
      if(applies(rule))add(rule.mode,feature.origin_id,'Tratto · '+feature.name);
    }
+ }
+ // Context-limited feat advantages apply only to the matching kind of save.
+ // A concentration save is still save:con and inherits all Constitution bonuses.
+ for(const rule of rows(calculated?.feat_roll_modes)){
+   if(rule?.context&&rule.context!==context)continue;
+   if(!applies(rule))continue;
+   add(rule.mode,rule.origin_id,rule.origin_name||'Talento');
  }
  // User-authored effects remain attached to a concrete trait and respect
  // both the trait toggle and its owning catalog source.
