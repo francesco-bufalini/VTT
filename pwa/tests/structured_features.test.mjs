@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {calculateSheet} from "../sheet_rules.js";
-import {collectStructuredFeatures,structuredFeatureGrants} from "../structured_effects.js";
+import {collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies} from "../structured_effects.js";
 import {actionEntries} from "../action_economy.js";
 
 const classFeatures={
@@ -145,4 +145,22 @@ test("PHB 2014 supplemental feat grants are generated from native data",async()=
  const suppressed=observant.automatic_bonuses.find(b=>b.target==="passive_perception");
  assert.equal(calculateSheet({...base,feats_catalog:[{name:"Observant",source:"PHB"}],formula_bonuses:[{id:suppressed.id,automatic:true,disabled:true}]},catalogs).stats.passive_perception,12);
  assert.equal(calculateSheet({...base,feats_catalog:[{name:"Observant",source:"PHB"}],trait_benefit_removed:{test:["bonus:"+suppressed.id]}},catalogs).stats.passive_perception,12);
+});
+
+test("2014 Tavern Brawler grants improvised weapon training using typed proficiency catalog",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const native=JSON.parse(readFileSync(new URL("../../vtt/data/feat_proficiency_bonuses_2014.json",import.meta.url)));
+ const packaged=JSON.parse(readFileSync(new URL("../catalog/proficiency_grants.json",import.meta.url)));
+ const rule=packaged.feat.find(f=>f.name==="Tavern Brawler"&&f.source==="PHB");
+ assert.deepEqual(rule,native.feats[0]);
+ const base={...fighter(5),hand_main_special:"improvised"};
+ const trained={...base,feats_catalog:[{name:"Tavern Brawler",source:"PHB"}]};
+ const catalogs={...catalog,proficiencyGrants:packaged};
+ assert(fixedProficiencies(trained,packaged).has("weapon:improvised"));
+ const weaponHit=record=>calculateSheet(record,catalogs).attacks.find(a=>a.id==="improvised")?.hit;
+ assert.equal(weaponHit(trained),3);
+ assert.equal(weaponHit(base),0);
+ assert.equal(weaponHit({...trained,feats_catalog:[{name:"Tavern Brawler",source:"PHB",disabled:true}]}),0);
+ assert.equal(weaponHit({...trained,feats_catalog:[{name:"Tavern Brawler",source:"XPHB"}]}),0);
+ assert.equal(weaponHit({...trained,origin_enabled:{"feat|phb|tavern brawler":false}}),0);
 });

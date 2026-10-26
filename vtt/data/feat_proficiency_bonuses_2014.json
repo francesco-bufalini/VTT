@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "source": "PHB (2014)",
+  "purpose": "Unconditional proficiency grants present in feat rules but not in 5etools typed feat proficiency fields.",
+  "feats": [
+    {
+      "name": "Tavern Brawler",
+      "source": "PHB",
+      "weaponProficiencies": [
+        "improvised"
+      ]
+    }
+  ]
+}

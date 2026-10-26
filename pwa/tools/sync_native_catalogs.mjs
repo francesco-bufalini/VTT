@@ -223,6 +223,16 @@ mechanics.races=references.races.map(({id,name,source,speed,size,creatureTypes})
 const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
 const browserProficiencies=await read('../catalog/proficiency_grants.json');
 browserProficiencies.subrace=proficiencies.subrace;
+// Source-qualified, unconditional feat proficiencies missing from typed 5etools
+// fields use the existing proficiency evaluator (no runtime feat exceptions).
+const featProficiencies=await read('../../vtt/data/feat_proficiency_bonuses_2014.json');
+for(const row of featProficiencies.feats){
+ const existing=browserProficiencies.feat.find(feat=>feat.name.toLowerCase()===row.name.toLowerCase()&&feat.source.toLowerCase()===row.source.toLowerCase());
+ if(existing){
+  for(const [key,items] of Object.entries(row))if(Array.isArray(items))
+   existing[key]=[...(existing[key]||[]),...items];
+ }else browserProficiencies.feat.push(row);
+}
 await writeFile(new URL('../catalog/proficiency_grants.json',import.meta.url),JSON.stringify(browserProficiencies)+'\n');
 const featureCatalog=await read('../../vtt/data/subclass_features_5etools.json');
 mechanics.resource_features=[...references.class_features,...featureCatalog.subclass_features].map(row=>Object.fromEntries(['id','name','class_name','class_source','subclass_name','subclass_short_name','subclass_source','level'].filter(k=>row[k]!==undefined).map(k=>[k,row[k]])));
