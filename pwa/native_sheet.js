@@ -289,6 +289,12 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
    (!automatic?'<button class="btn small danger" data-act="native-remove" data-list="'+key+'" data-index="'+i+'">Rimuovi</button>':'<span class="tag">Da origine</span>')+'</div><div class="columns">'+ROW_FIELDS[key].map(([field,label,type,min,max])=>{
     const category=key==='classes'?(field==='name'?'classes':field==='subclass'?'subclasses':''):key==='feats_catalog'&&field==='name'?'feats':key==='backgrounds_catalog'&&field==='name'?'backgrounds':'';
     const candidates=contentForRules(list(catalogs[category]),c.rules_version).filter(ref=>key!=='classes'||field==='name'||ref.class_name===row.name&&(!row.source||ref.class_source===row.source));
+    if(key==='backgrounds_catalog'&&field==='name'){
+      return '<label>Background'+
+        '<button type="button" class="background-reference-button" data-act="background-picker-open" data-background-index="'+i+'"'+
+        ' aria-label="Cerca un background aggiuntivo"><span class="background-reference-value">'+esc(row.name||'Scegli un background')+'</span>'+
+        '<span class="background-reference-search" aria-hidden="true">⌕</span></button></label>';
+    }
     if(category&&candidates.length){
       const chosen=candidates.find(ref=>ref.name===row[field]&&(!row[field==='name'?'source':'subclass_source']||ref.source===row[field==='name'?'source':'subclass_source']));
       const selected=chosen?String(chosen.id||chosen.name+'|'+chosen.source):row[field]?'__current__':'';
@@ -474,6 +480,14 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
  const reference=(label,key,category)=>{
+   if(key==='background'){
+     const current=c.background||'Nessuno',source=c.background_source||'';
+     return '<label>'+esc(label)+
+       '<button type="button" class="background-reference-button" data-act="background-picker-open" data-background-index="primary"'+
+       ' aria-label="Cerca e seleziona il background principale">'+
+       '<span class="background-reference-value">'+esc(current)+(source?' <small>· '+esc(source)+'</small>':'')+'</span>'+
+       '<span class="background-reference-search" aria-hidden="true">⌕</span></button></label>';
+   }
    const rows=availableReferenceRows(c,key,category,catalogs);
    const current=c[key]||'', source=c[key+'_source']||'';
    const active=rows.find(r=>r.name===current&&(!source||r.source===source)) ||
