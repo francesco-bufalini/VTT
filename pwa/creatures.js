@@ -169,6 +169,36 @@ export async function exportCreatureBatch(ids, scope = "default") {
   return new Blob([data],{type:"application/json"});
 }
 
+// Share a homebrew definition together with any referenced homebrew entries.
+// The receiving device imports definitions into its catalog, not into a
+// character. Existing identical IDs are reused; conflicting IDs are rejected.
+export async function exportHomebrewPackage(id) {
+  const byId=new Map((await listRecords(HOMEBREW_SCOPE,HOMEBREW_TYPE))
+    .map(row=>[row.id,row.data]));
+  if(!byId.has(id))throw new Error("Contenuto homebrew non trovato.");
+  const definitions=referencedDefinitions({homebrew_id:id},byId);
+  return {format:"vtt_homebrew_share_v1",version:1,definitions};
+}
+
+export async function importHomebrewPackage(raw) {
+  const payload=typeof raw==="string"?JSON.parse(raw):raw;
+  if(payload?.format!=="vtt_homebrew_share_v1"||payload.version!==1||
+    !Array.isArray(payload.definitions)||!payload.definitions.length||
+    payload.definitions.length>250||!payload.definitions.every(validDefinition)||
+    new TextEncoder().encode(JSON.stringify(payload)).length>12*1024*1024)
+    throw new Error("Pacchetto homebrew non valido.");
+  const seen=new Set();
+  for(const definition of payload.definitions){
+    if(seen.has(definition.id))throw new Error("ID homebrew duplicato nel pacchetto.");
+    seen.add(definition.id);
+  }
+  await insertRecords(payload.definitions.map(definition=>({
+    scope:HOMEBREW_SCOPE,type:HOMEBREW_TYPE,id:definition.id,
+    data:definition,ifAbsent:true
+  })));
+  return payload.definitions.length;
+}
+
 export async function saveHomebrewDefinition(definition) {
   if (!validDefinition(definition)) throw new Error("Invalid portable definition");
   const old = await getRecord(HOMEBREW_SCOPE, HOMEBREW_TYPE, definition.id);
