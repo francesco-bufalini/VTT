@@ -3,6 +3,7 @@
 import {CLASS_FEATURE_RULES,classFeatureRollSources} from './feature_mechanics.js';
 import {resolveOwnedItem} from './item_controls.js';
 import {attackCountBenefits} from './attack_count_benefits.js';
+import {effectExtensionLabel} from './effect_extensions.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const ABILITIES={str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
@@ -335,6 +336,13 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  for(const spell of rows(trait.granted_spells))
   add('spells','Incantesimi concessi',spell.name,spell.level===0?'Trucchetto':
     Number.isInteger(spell.level)?'Livello '+spell.level:'','spell:'+String(spell.origin_id||'')+':'+String(spell.id||''));
+ for(const extension of rows(calculated.effect_extensions)){
+  if(!belongs(extension))continue;
+  const target=(extension.target_kind==='spell'?'Incantesimo':'Capacità')+' · '+(extension.target_name||extension.target_id);
+  add('effect_extensions','Estensioni degli effetti',target,
+   effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}),
+   'effect_extension:'+String(extension.id||''));
+ }
  for(const action of rows(record.action_grants)){
   if(action.disabled||!belongs(action))continue;
   add('actions','Azioni concesse',action.name||action.label||action.id,
