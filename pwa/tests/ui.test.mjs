@@ -1499,7 +1499,9 @@ test('clicking an owned feat opens its original benefit-bearing trait, not a sec
  button.click();
  const trait=await until(()=>[...document.querySelectorAll('.play-info-traits .trait-card')]
   .find(card=>card.dataset.traitOrigin==='feat|owned_click_alert'&&card.open));
- assert.ok(trait.closest('.play-traits-disclosure')?.open);
+ const disclosure=trait.closest('.play-traits-disclosure');
+ if(disclosure)assert.ok(disclosure.open,'An optional Tratti disclosure opens with the feat');
+ assert.ok(trait.open,'The actual owned feat trait must be expanded');
  assert.match(trait.textContent,/Alert/);
  click('[data-nav="library"]');
  await until(()=>document.querySelector('[data-act="create"]'));
