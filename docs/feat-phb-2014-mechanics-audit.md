@@ -51,7 +51,7 @@ e non si applicano alle versioni `XPHB`.
 | Skilled | Tre competenze abilità/strumenti modellate come scelta | Verificare applicazione della selezione in tutte le schede |
 | Skulker | — | Nascondersi con oscuramento leggero, colpo a distanza mancato senza rivelarsi, visione con luce fioca |
 | Spell Sniper | — | Raddoppio gittata incantesimi con attacco, copertura ignorata, scelta trucchetto |
-| Tavern Brawler | Scelta +1 già presente | Competenza armi improvvisate, danno senz'armi 1d4, afferrare dopo un colpo |
+| Tavern Brawler | Scelta +1 già presente, **competenza nelle armi improvvisate aggiunta** | Danno senz'armi 1d4, afferrare dopo un colpo |
 | Tough | **+2 PF massimi per livello aggiunti** | Nessun altro effetto; formula dinamica `2*level` |
 | War Caster | — | Vantaggio TS Costituzione **solo** per concentrazione su danno, componenti somatiche con mani occupate, incantesimo come reazione |
 | Weapon Master | Scelta +1 e indicazione competenze nell'indice | Verificare scelta di esattamente quattro armi semplici/marziali |
