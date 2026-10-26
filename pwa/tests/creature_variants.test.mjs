@@ -148,3 +148,22 @@ test('variant filters tolerate unknown CR without accepting it as zero',()=>{
  }
  assert.equal(creatureMatchesFilter({cr:{cr:'2'}},{max_cr:1}),false);
 });
+
+
+test('structured bestiary walking speeds survive conversion and movement-only variants',()=>{
+ for(const walk of [{number:40,condition:'while transformed'},{number:0,condition:'immobile'},{value:25}]){
+  const source={name:'Walker',speed:{walk,swim:{number:15,condition:'in water'}}};
+  const sheet=bestiarySheet(source);
+  const expected=walk.number??walk.value;
+  assert.equal(sheet.speed_base,expected);
+  assert.equal(calculateSheet(sheet).values.speed,expected);
+  assert.deepEqual(sheet.species_speed,source.speed);
+  const c={...base(),species_speed:30},variant=createVariant(c,{id:'movement',sections:['movement']});
+  const imported=importVariantSections(c,variant,sheet,['movement']);
+  const resolved=resolveVariant({...c,variants:[imported],current_form_id:'movement'});
+  assert.equal(calculateSheet(resolved).values.speed,expected);
+  assert.equal(calculateSheet(resolved).values['speed:swim'],15);
+  assert.equal(calculateSheet(c).values.speed,30);
+  assert.deepEqual(resolved.stat_block.speed,source.speed);
+ }
+});
