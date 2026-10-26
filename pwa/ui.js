@@ -391,6 +391,8 @@ function syncNav(){
   const dock=document.querySelector('#mobile-tabs');
   const sessionTab=document.querySelector('#dock-session');
   back.hidden=!hasCreature;
+  back.setAttribute('aria-label',creature?.parent_creature_id?'Torna al proprietario':'Torna alle creature');
+  back.title=creature?.parent_creature_id?'Torna al proprietario':'Torna alle creature';
   const forms=document.querySelector('#creature-forms');
   if(forms){
     forms.hidden=!hasCreature||!state.editor;
@@ -6062,7 +6064,13 @@ async function handleAction(target){
     }
     if(!await confirmCreatureDeletion(rows))return;
     let deleted=0;
+    const selectedIds=new Set(rows.map(row=>row.creature.id));
     for(const row of rows){
+      // An owner deletion already removes its selected descendants atomically.
+      if(row.creature.parent_creature_id&&selectedIds.has(row.creature.parent_creature_id)){
+        state.librarySelectedIds.delete(row.creature.id);
+        continue;
+      }
       if(await removeCreature(row.creature.id,"default",row.revision)){
         state.librarySelectedIds.delete(row.creature.id);deleted++;
       }
