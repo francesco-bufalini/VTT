@@ -12916,7 +12916,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "minor illusion": "Cantrip"
+      }
     },
     {
       "kind": "feat",
@@ -12937,7 +12940,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "vicious mockery": "Cantrip"
+      }
     },
     {
       "kind": "feat",
@@ -12958,7 +12964,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "friends": "Cantrip"
+      }
     },
     {
       "kind": "feat",
@@ -12979,7 +12988,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "guidance": "Cantrip"
+      }
     },
     {
       "kind": "feat",
@@ -13000,7 +13012,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "fire bolt": "Cantrip"
+      }
     },
     {
       "kind": "feat",
@@ -13021,7 +13036,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "resistance": "Cantrip"
+      }
     },
     {
       "kind": "feat",
@@ -13292,7 +13310,10 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "gaseous form": "Gaseous Form"
+      }
     },
     {
       "kind": "feat",
@@ -13562,7 +13583,21 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "animal shapes": "Aberrant Magic",
+        "control weather": "Aberrant Magic",
+        "demiplane": "Aberrant Magic",
+        "heroes' feast": "Aberrant Magic",
+        "maze": "Aberrant Magic",
+        "mind blank": "Aberrant Magic",
+        "plane shift": "Aberrant Magic",
+        "project image": "Aberrant Magic",
+        "regenerate": "Aberrant Magic",
+        "symbol": "Aberrant Magic",
+        "teleport": "Aberrant Magic",
+        "true seeing": "Aberrant Magic"
+      }
     },
     {
       "kind": "feat",
@@ -13601,7 +13636,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "faerie fire": "Faerie Fire"
+      }
     },
     {
       "kind": "feat",
@@ -13652,7 +13690,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "ray of frost": "Cantrip"
+      }
     },
     {
       "kind": "feat",
@@ -13863,7 +13904,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "speak with animals": "Speak with Animals"
+      }
     },
     {
       "kind": "feat",
@@ -13914,7 +13958,10 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "beast sense": "Two Hearts, One Mind"
+      }
     },
     {
       "kind": "feat",
@@ -14028,7 +14075,10 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "misty step": "Fey Magic"
+      }
     },
     {
       "kind": "feat",
@@ -14058,7 +14108,11 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "message": "Spirit Whispers",
+        "augury": "Spirit Whispers"
+      }
     },
     {
       "kind": "feat",
@@ -14271,7 +14325,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "mage hand": "Grasping Shadow"
+      }
     },
     {
       "kind": "feat",
@@ -14624,7 +14681,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "see invisibility": "Magical Detection",
+        "detect magic": "Magical Detection"
+      }
     },
     {
       "kind": "feat",
@@ -14677,7 +14738,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "locate object": "Finder's Magic",
+        "hunter's mark": "Finder's Magic"
+      }
     },
     {
       "kind": "feat",
@@ -14777,7 +14842,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "lesser restoration": "Healing Touch",
+        "cure wounds": "Healing Touch"
+      }
     },
     {
       "kind": "feat",
@@ -14831,7 +14900,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "calm emotions": "Innkeeper's Magic",
+        "purify food and drink": "Innkeeper's Magic",
+        "unseen servant": "Innkeeper's Magic"
+      }
     },
     {
       "kind": "feat",
@@ -14882,7 +14956,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "mending": "Spellsmith",
+        "magic weapon": "Spellsmith"
+      }
     },
     {
       "kind": "feat",
@@ -14928,7 +15006,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "misty step": "Magical Passage"
+      }
     },
     {
       "kind": "feat",
@@ -14986,7 +15067,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "message": "Scribe's Insight",
+        "magic mouth": "Scribe's Insight",
+        "comprehend languages": "Scribe's Insight"
+      }
     },
     {
       "kind": "feat",
@@ -15032,7 +15118,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "shield": "Guardian's Shield"
+      }
     },
     {
       "kind": "feat",
@@ -15083,7 +15172,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "minor illusion": "Shape Shadows",
+        "invisibility": "Shape Shadows"
+      }
     },
     {
       "kind": "feat",
@@ -15134,7 +15227,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "thunderclap": "Storm Magic",
+        "gust of wind": "Storm Magic"
+      }
     },
     {
       "kind": "feat",
@@ -15188,7 +15285,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "arcane lock": "Wards and Seals",
+        "alarm": "Wards and Seals",
+        "mage armor": "Wards and Seals"
+      }
     },
     {
       "kind": "feat",
@@ -15597,7 +15699,10 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "invisibility": "Shadow Magic"
+      }
     },
     {
       "kind": "feat",
@@ -15722,7 +15827,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "sacred flame": "Spellfire Flame"
+      }
     },
     {
       "kind": "feat",
@@ -16204,7 +16312,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "mage hand": "Minor Telekinesis"
+      }
     },
     {
       "kind": "feat",
@@ -16242,7 +16353,10 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "detect thoughts": "Detect Thoughts"
+      }
     },
     {
       "kind": "feat",
@@ -16263,7 +16377,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "chill touch": "Death Touch"
+      }
     },
     {
       "kind": "feat",
@@ -16303,7 +16420,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "charm person": "Enchanting Presence"
+      }
     },
     {
       "kind": "feat",
@@ -16320,7 +16440,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "spider climb": "Vampire Magic"
+      }
     },
     {
       "kind": "feat",
@@ -16339,7 +16462,10 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "battle familiar": "Battle Familiar"
+      }
     },
     {
       "kind": "feat",
@@ -16365,7 +16491,11 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "beast sense": "Borrowed Eyes",
+        "speak with animals": "Borrowed Eyes"
+      }
     },
     {
       "kind": "feat",
@@ -16401,9 +16531,13 @@
       "blocks": [
         {
           "innate": {
-            "3": [
-              "gust of wind"
-            ]
+            "3": {
+              "daily": {
+                "1": [
+                  "gust of wind"
+                ]
+              }
+            }
           },
           "ability": {
             "choose": [
@@ -16413,7 +16547,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "gust of wind": "Wind Caller"
+      }
     },
     {
       "kind": "race",
@@ -16444,7 +16581,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "lesser restoration": "Celestial Legacy",
+        "daylight": "Celestial Legacy",
+        "light": "Celestial Legacy"
+      }
     },
     {
       "kind": "race",
@@ -16465,7 +16607,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "light": "Light Bearer"
+      }
     },
     {
       "kind": "race",
@@ -16480,7 +16625,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "light": "Light Bearer"
+      }
     },
     {
       "kind": "race",
@@ -16495,7 +16643,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "light": "Light Bearer"
+      }
     },
     {
       "kind": "race",
@@ -16544,7 +16695,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "dancing lights": "Astral Fire",
+        "light": "Astral Fire",
+        "sacred flame": "Astral Fire"
+      }
     },
     {
       "kind": "race",
@@ -16576,7 +16732,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "disguise self": "Gift of the Svirfneblin",
+        "nondetection": "Gift of the Svirfneblin"
+      }
     },
     {
       "kind": "race",
@@ -16608,7 +16768,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "enlarge/reduce": "Duergar Magic",
+        "invisibility": "Duergar Magic"
+      }
     },
     {
       "kind": "race",
@@ -16785,7 +16949,17 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "faerie fire": "Elven Lineage",
+        "darkness": "Elven Lineage",
+        "dancing lights": "Elven Lineage",
+        "detect magic": "Elven Lineage",
+        "misty step": "Elven Lineage",
+        "longstrider": "Elven Lineage",
+        "pass without trace": "Elven Lineage",
+        "druidcraft": "Elven Lineage"
+      }
     },
     {
       "kind": "race",
@@ -16822,7 +16996,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "faerie fire": "Fairy Magic",
+        "enlarge/reduce": "Fairy Magic",
+        "druidcraft": "Fairy Magic"
+      }
     },
     {
       "kind": "race",
@@ -16859,7 +17038,12 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "faerie fire": "Fairy Magic",
+        "enlarge/reduce": "Fairy Magic",
+        "druidcraft": "Fairy Magic"
+      }
     },
     {
       "kind": "race",
@@ -16881,7 +17065,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "detect magic": "Firbolg Magic",
+        "disguise self": "Firbolg Magic"
+      }
     },
     {
       "kind": "race",
@@ -16901,7 +17089,11 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "detect magic": "Firbolg Magic",
+        "disguise self": "Firbolg Magic"
+      }
     },
     {
       "kind": "race",
@@ -16975,7 +17167,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "jump": "Githyanki Psionics",
+        "misty step": "Githyanki Psionics",
+        "mage hand": "Githyanki Psionics"
+      }
     },
     {
       "kind": "race",
@@ -17012,7 +17209,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "shield": "Githzerai Psionics",
+        "detect thoughts": "Githzerai Psionics",
+        "mage hand": "Githzerai Psionics"
+      }
     },
     {
       "kind": "race",
@@ -17030,7 +17232,13 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "nondetection": "Innate Spellcasting",
+        "blindness/deafness": "Innate Spellcasting",
+        "blur": "Innate Spellcasting",
+        "disguise self": "Innate Spellcasting"
+      }
     },
     {
       "kind": "race",
@@ -17056,7 +17264,11 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "disguise self": "Eerie Token",
+        "hex": "Eerie Token"
+      }
     },
     {
       "kind": "race",
@@ -17078,7 +17290,11 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "disguise self": "Hex Magic",
+        "hex": "Hex Magic"
+      }
     },
     {
       "kind": "race",
@@ -17164,7 +17380,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "ice knife": "Cold Fire Magic",
+        "flame blade": "Cold Fire Magic",
+        "ray of frost": "Cold Fire Magic"
+      }
     },
     {
       "kind": "race",
@@ -17178,7 +17399,10 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "friends": "Siren's Song"
+      }
     },
     {
       "kind": "race",
@@ -17209,7 +17433,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "hellish rebuke": "Infernal Legacy",
+        "darkness": "Infernal Legacy",
+        "thaumaturgy": "Infernal Legacy"
+      }
     },
     {
       "kind": "race",
@@ -17312,7 +17541,19 @@
             }
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "ray of sickness": "Fiendish Legacy",
+        "hold person": "Fiendish Legacy",
+        "thaumaturgy": "Otherworldly Presence",
+        "poison spray": "Fiendish Legacy",
+        "false life": "Fiendish Legacy",
+        "ray of enfeeblement": "Fiendish Legacy",
+        "chill touch": "Fiendish Legacy",
+        "hellish rebuke": "Fiendish Legacy",
+        "darkness": "Fiendish Legacy",
+        "fire bolt": "Fiendish Legacy"
+      }
     },
     {
       "kind": "race",
@@ -17351,7 +17592,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "fog cloud": "Control Air and Water",
+        "gust of wind": "Control Air and Water",
+        "water walk": "Control Air and Water"
+      }
     },
     {
       "kind": "race",
@@ -17384,7 +17630,12 @@
           },
           "ability": "cha"
         }
-      ]
+      ],
+      "spell_traits": {
+        "fog cloud": "Control Air and Water",
+        "gust of wind": "Control Air and Water",
+        "wall of water": "Control Air and Water"
+      }
     },
     {
       "kind": "race",
@@ -17417,7 +17668,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "animal friendship": "Serpentine Spellcasting",
+        "suggestion": "Serpentine Spellcasting",
+        "poison spray": "Serpentine Spellcasting"
+      }
     },
     {
       "kind": "race",
@@ -17444,7 +17700,12 @@
             ]
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "animal friendship": "Innate Spellcasting",
+        "suggestion": "Innate Spellcasting",
+        "poison spray": "Innate Spellcasting"
+      }
     },
     {
       "kind": "subrace",

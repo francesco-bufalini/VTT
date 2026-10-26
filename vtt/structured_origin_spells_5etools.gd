@@ -118,9 +118,12 @@ static func _add_spell(output: Dictionary, origin: Dictionary, token: String, tr
 		if old is Dictionary and String(old.get("origin_id", "")) == origin_id and String(old.get("spell_id", "")) == id and String(old.get("tracker_id", "")) == tracker_id:
 			return
 	grants.append({
-		"id": "5etools:" + origin_id + "|" + id + "|" + mode + "|" + stage,
+		"id": "5etools:" + String(origin.get("parent_id", origin_id)) + "|" + id + "|" + mode + "|" + stage,
 		"origin_id": origin_id,
 		"origin_name": String(origin.get("name", origin_id)),
+		"origin_parent_id": String(origin.get("parent_id", origin_id)),
+		"origin_parent_name": String(origin.get("parent_name", origin.get("name", ""))),
+		"granting_trait": String(origin.get("granting_trait", "")),
 		"spell_id": id, "tracker_id": tracker_id,
 		"mode": mode, "stage": stage,
 		"spellcasting_ability": String(origin.get("casting_ability", "")),
@@ -128,10 +131,44 @@ static func _add_spell(output: Dictionary, origin: Dictionary, token: String, tr
 	})
 
 
+# The catalog declares a concrete owner for each spell. The tracker ID keeps
+# its original root identity to preserve saved usage, but benefits belong to
+# the trait when it is level-eligible and actually owned.
+static func _spell_origin(origin: Dictionary, raw: Variant) -> Dictionary:
+	if not raw is String:
+		return origin
+	var spell_key: String = String(raw).split("#")[0].split("|")[0].strip_edges().to_lower()
+	var names: Dictionary = origin.get("spell_traits", {})
+	var trait_name: String = String(names.get(spell_key, ""))
+	if trait_name.is_empty():
+		return origin
+	var resolved: Dictionary = origin.duplicate(true)
+	resolved["granting_trait"] = trait_name
+	var traits: Dictionary = origin.get("trait_origins", {})
+	var owner: Dictionary = traits.get(trait_name.to_lower(), {})
+	if not owner.is_empty():
+		resolved["parent_id"] = String(origin.get("id", ""))
+		resolved["parent_name"] = String(origin.get("name", ""))
+		resolved["id"] = String(owner.get("id", ""))
+		resolved["name"] = String(owner.get("name", trait_name))
+	return resolved
+
+
 static func _add_group(output: Dictionary, origin: Dictionary, spec: Variant, mode: String, stage: String, category: String, count_key: String, block_index: int, edition: String) -> void:
 	if not spec is Array:
 		return
 	var tracker_id := ""
+	var group_owner: Dictionary = origin
+	if not (spec as Array).is_empty():
+		var first_owner: Dictionary = _spell_origin(origin, (spec as Array)[0])
+		var same_owner := true
+		for spell_raw: Variant in spec:
+			if (String(_spell_origin(origin, spell_raw).get("id", "")) != String(first_owner.get("id", ""))
+				or String(_spell_origin(origin, spell_raw).get("granting_trait", "")) != String(first_owner.get("granting_trait", ""))):
+				same_owner = false
+				break
+		if same_owner:
+			group_owner = first_owner
 	if category in ["daily", "rest"]:
 		var amount: String = count_key.trim_suffix("e")
 		if not amount.is_valid_int() or int(amount) <= 0:
@@ -144,14 +181,18 @@ static func _add_group(output: Dictionary, origin: Dictionary, spec: Variant, mo
 		tracker_id = "5espell:" + String(origin.get("id", "")) + "|" + str(block_index) + "|" + stage + "|" + category + "|" + count_key
 		if not each:
 			tracker_list.append({
-				"id": tracker_id, "name": String(origin.get("name", "")) + " · incantesimi",
+				"id": tracker_id, "name": String(group_owner.get("name", "")) + " · incantesimi",
 				"max": int(amount), "recharge": recover,
-				"origin_id": String(origin.get("id", "")),
-				"origin_name": String(origin.get("name", "")),
-				"origin": String(origin.get("name", "")),
+				"origin_id": String(group_owner.get("id", "")),
+				"origin_name": String(group_owner.get("name", "")),
+				"origin_parent_id": String(origin.get("id", "")),
+				"origin_parent_name": String(origin.get("name", "")),
+				"granting_trait": String(group_owner.get("granting_trait", "")),
+				"origin": String(group_owner.get("name", "")),
 				"automatic": true, "disabled": false
 			})
 	for raw: Variant in spec:
+		var owner: Dictionary = _spell_origin(origin, raw)
 		var specific_tracker: String = tracker_id
 		if category in ["daily", "rest"] and count_key.ends_with("e"):
 			var key: String = String(raw) if raw is String else str(spec.find(raw))
@@ -160,12 +201,14 @@ static func _add_group(output: Dictionary, origin: Dictionary, spec: Variant, mo
 			var tracker_list: Array = output["trackers"]
 			tracker_list.append({
 				"id": specific_tracker,
-				"name": String(origin.get("name", "")) + " · " + (String(raw) if raw is String else "scelta"),
+				"name": String(owner.get("name", "")) + " · " + (String(raw) if raw is String else "scelta"),
 				"max": int(amount),
 				"recharge": "long_rest" if category == "daily" else "short_rest",
-				"origin_id": String(origin.get("id", "")),
-				"origin_name": String(origin.get("name", "")),
-				"origin": String(origin.get("name", "")),
+				"origin_id": String(owner.get("id", "")),
+				"origin_name": String(owner.get("name", "")),
+				"origin_parent_id": String(origin.get("id", "")),
+				"granting_trait": String(owner.get("granting_trait", "")),
+				"origin": String(owner.get("name", "")),
 				"automatic": true, "disabled": false
 			})
 		if raw is Dictionary:
@@ -180,7 +223,7 @@ static func _add_group(output: Dictionary, origin: Dictionary, spec: Variant, mo
 				continue
 			if mode == "known" and category == "will" and "#c" not in String(raw):
 				continue
-			_add_spell(output, origin, String(raw), specific_tracker, mode, stage, edition)
+			_add_spell(output, owner, String(raw), specific_tracker, mode, stage, edition)
 
 
 static func _walk_usage(output: Dictionary, origin: Dictionary, values: Variant, mode: String, stage: String, block_index: int, edition: String) -> void:
@@ -222,6 +265,7 @@ static func _append_block(output: Dictionary, origin: Dictionary, raw: Variant, 
 		return
 	var block: Dictionary = raw
 	var source: Dictionary = origin.duplicate(true)
+	source["spell_traits"] = block.get("spell_traits", origin.get("spell_traits", {}))
 	var declared: Variant = block.get("ability", "")
 	if declared is String and String(declared) in ["str", "dex", "con", "int", "wis", "cha"]:
 		source["casting_ability"] = String(declared)
@@ -256,6 +300,28 @@ static func for_creature(record: Dictionary) -> Dictionary:
 		if origins.is_empty():
 			continue
 		for origin: Dictionary in origins:
+			var kind: String = String(entry.get("kind", ""))
+			var owner_key: String = ""
+			if kind == "race":
+				var species_id: String = String(record.get("species_id", ""))
+				owner_key = "species|" + (species_id if not species_id.is_empty() else String(record.get("species", "")).to_lower()) + "|" + String(record.get("species_source", "")).to_lower()
+			elif kind == "subrace":
+				owner_key = "subrace|" + String(record.get("subrace_source", "")).to_lower() + "|" + String(record.get("subrace", "")).to_lower()
+			elif kind == "feat":
+				for feat_raw: Variant in record.get("feats_catalog", []):
+					if feat_raw is Dictionary and String(feat_raw.get("name", "")).nocasecmp_to(String(entry.get("name", ""))) == 0 and String(feat_raw.get("source", "")) == String(entry.get("source", "")):
+						owner_key = "feat|" + String(feat_raw.get("id", String(entry.get("name", "")).to_lower() + "|" + String(entry.get("source", "")).to_lower()))
+						break
+			elif kind == "optionalfeature":
+				owner_key = String(origin.get("id", "")).trim_prefix("feature:")
+			var trait_origins: Dictionary = {}
+			for feature: Dictionary in features:
+				if String(feature.get("origin_key", "")) != owner_key:
+					continue
+				trait_origins[String(feature.get("name", "")).to_lower()] = {
+					"id": "feature:" + String(feature.get("key", "")), "name": String(feature.get("name", ""))}
+			origin["trait_origins"] = trait_origins
+			origin["spell_traits"] = entry.get("spell_traits", {})
 			var blocks: Array = entry.get("blocks", [])
 			# Multi-block feats usually represent *alternative* spell lists,
 			# not several grants. Match their usage signatures and union the

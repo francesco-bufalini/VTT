@@ -432,16 +432,22 @@ export function withGrantedSpellPreviews(rows=[],grants=[],spells=[]){
   if(!grant?.spell_id||grant.disabled)continue;
   const originId=String(grant.origin_id||'');
   const originName=norm(grant.origin_name);
+  const explicitTrait=norm(grant.granting_trait);
+  const parentName=norm(grant.origin_parent_name);
   const candidates=result.map((row,index)=>({row,index})).filter(({row})=>{
    const ownedId=String(row.origin_key||'');
    const display=norm(String(row.origin||'').split(' · ').pop());
+   if(explicitTrait&&norm(row.name)===explicitTrait&&
+     (!parentName||display===parentName))return true;
    return (originId&&
        (String(row.feature_origin||'')===originId||ownedId===originId||
          originId==='feature:trait:'+row.key))||
      (originName&&display===originName);
   });
   if(!candidates.length)continue;
-  const selected=candidates.find(({row})=>originId&&String(row.feature_origin||'')===originId)||
+  const selected=candidates.find(({row})=>explicitTrait&&norm(row.name)===explicitTrait&&
+    (!parentName||norm(String(row.origin||'').split(' · ').pop())===parentName))||
+   candidates.find(({row})=>originId&&String(row.feature_origin||'')===originId)||
    candidates.find(({row})=>originName&&norm(row.name)===originName)||
    candidates.find(({row})=>/spellcasting|incantesim|magic|magia|legacy|eredità/i.test(row.name)&&
      !/^Descrizione ·/.test(row.name))||

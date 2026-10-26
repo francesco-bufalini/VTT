@@ -779,7 +779,14 @@ function calculateSheetValues(record={},catalogs={}){
     for(const [ordinal,raw] of arr(rule?.overrides).entries()){
       if(!raw?.target||!raw?.expression)continue;
       const id=automaticId(origin_id,'base_value',raw.target,String(ordinal));
-      baseRows.push({...raw,id,origin_id,origin_name,automatic:true});
+      const trait=String(rule.granting_trait||'');
+      const owner=trait?features.find(f=>same(f.name,trait)&&
+        (f.origin_key===origin_id||origin_id.startsWith('race|')&&
+          f.origin_key==='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source))):null;
+      baseRows.push({...raw,id,origin_id:owner?.origin_id||origin_id,
+        origin_name:owner?'Tratto · '+owner.name:origin_name,
+        origin_parent_id:origin_id,origin_parent_name:rule.name||'',
+        granting_trait:trait,automatic:true});
     }
   };
   for(const feat of arr(record.feats_catalog)){
@@ -973,6 +980,9 @@ function calculateSheetValues(record={},catalogs={}){
   }
   function sourceEnabled(row){
     const sid=String(row?.origin_id||"");
+    const parent=String(row?.origin_parent_id||"");
+    if(parent&&parent!==sid&&(record.origin_enabled?.[parent]===false||
+      arr(record.proficiency_origins).some(origin=>origin?.id===parent&&origin.disabled)))return false;
     if(sid.startsWith('item:')||sid.startsWith('feature:trait:item:')){
       const owner=itemSourceOf(sid);
       if(!owner)return false;

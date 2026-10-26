@@ -112,8 +112,16 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  const ids=traitBenefitSources(trait,record),groups=new Map();
  const stateRule=rows(calculated.trait_state_catalog).find(rule=>
   trait.state_id&&rule.id===trait.state_id);
- const belongs=row=>row&&([row.origin_id,row.parent_origin].some(id=>id&&ids.has(id))||
-  stateRule&&String(row.id||'').startsWith('trait_state:'+stateRule.id+':'));
+ // Typed owner bindings take precedence over their broad race/feat origin.
+ // Never duplicate an explicitly owned resource on the overview card.
+ const belongs=row=>{
+  if(!row)return false;
+  if(row.granting_trait)return norm(trait.name)===norm(row.granting_trait)&&
+   (!row.origin_parent_name||
+    norm(String(trait.origin||'').split(' · ').pop())===norm(row.origin_parent_name));
+  return [row.origin_id,row.parent_origin].some(id=>id&&ids.has(id))||
+   Boolean(stateRule&&String(row.id||'').startsWith('trait_state:'+stateRule.id+':'));
+ };
  const add=(type,title,label,value='',id='',extra={})=>{
   label=String(label??'').trim();value=String(value??'').trim();
   if(!label)return;
