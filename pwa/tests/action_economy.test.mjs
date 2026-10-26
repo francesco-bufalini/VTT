@@ -771,7 +771,11 @@ test('College of Creation activation supplements are trait-owned, with distinct 
  assert.equal(own({...selected,classes:[{...selected.classes[0],level:3}],level:3}).length,1);
  assert.equal(own({...selected,classes:[{...selected.classes[0],subclass:'College of Lore'}]}).length,0,
   'a stale trait from another subclass must not grant College of Creation actions');
- assert.equal(own({...selected,classes:[{...selected.classes[0],source:'XPHB'}],rules_version:'2024'}).length,3);
+ const revised={...selected,rules_version:'2024',classes:[{...selected.classes[0],source:'XPHB'}]};
+ const revisedFeatures=features.map(feature=>({...feature,
+  origin_key:feature.origin_key.replace('class|phb|','class|xphb|')}));
+ assert.equal(actionEntries(revised,{features:revisedFeatures,trackers},[],overrides,[])
+  .filter(a=>a.id?.startsWith('class_override:')).length,3);
  assert.equal(actionEntries(selected,{features:[],trackers},[],overrides,[])
   .filter(a=>a.id?.startsWith('class_override:')).length,0);
 });
