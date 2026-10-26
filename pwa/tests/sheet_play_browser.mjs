@@ -59,6 +59,12 @@ try{
     const classSource=page.locator('#sheet-play-view .play-magic-class-card:not(.play-magic-granted-card)').first();
     assert.match(await classSource.locator('.play-card-head .play-magic-source-resources').textContent(),/Slot[^\n]*\d+\s*\/\s*\d+/,
       'The visible mobile class heading includes the slot pool, not only the hidden editor');
+    const grantedCard=page.locator('#sheet-play-view .play-magic-granted-card[data-magic-origin-tracker="focus"]');
+    assert.equal(await grantedCard.count(),1,'Granted spells have their own visible source card');
+    const trackerHeader=grantedCard.locator('.play-card-head [data-play-magic-tracker="focus"]');
+    assert(await trackerHeader.isVisible(),'Linked tracker is visible beside the granting origin title');
+    assert.match(await trackerHeader.textContent(),/Focus arcano\s*\d+\s*\/\s*\d+/,
+      'The granting origin header displays the real shared tracker name and usage');
     const castingRows=page.locator('#sheet-play-view .play-magic-inline-casting .casting-statistics');
     assert.ok(await castingRows.count()>=1,
       'Spellcasting editors remain available for classes and visible granting origins');
