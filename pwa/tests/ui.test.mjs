@@ -714,8 +714,10 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
   assert.ok(groups.every(g=>g.querySelectorAll('.magic-level').length>0),
     'Granted spells keep the same level-group layout as class spells');
   const second=groups.find(g=>g.querySelector('.magic-source-title h3')?.textContent==='Seconda origine');
-  assert.match(second?.querySelector('.magic-source-resources')?.textContent||'',/Slot 1°\s*2\s*\/\s*3/,
-    'Slot-funded spells show the remaining level-specific slot pool next to their origin');
+  assert.equal(second?.querySelector('.magic-source-resources .magic-source-resource-label')?.textContent,'Slot',
+    'Origins using slots show one Slot label rather than separate level counts');
+  assert.equal(second?.querySelectorAll('.magic-source-resources .magic-source-resource:not([data-magic-tracker-id])').length,1,
+    'Multiple levels never create multiple header badges');
   assert.match(second?.querySelector('.magic-source-resources')?.textContent||'',/Cariche condivise\s*3\s*\/\s*3/,
     'Mixed source payments show both slot and tracker usage in the header');
   assert.ok(groups.every(g=>g.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent==='3'),
