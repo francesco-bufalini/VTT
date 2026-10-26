@@ -1,4 +1,4 @@
-import {hitDicePools} from './character_core.js';
+import {hitDicePools,spendTrackerUses} from './character_core.js';
 import {isPortraitDataUrl} from './character_portrait.js';
 import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
@@ -539,15 +539,25 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
  return rows;
 }
 
-// An untyped 2014 subclass feature may own a resource without specifying how
-// many charges an activation consumes. Show its real trait under the tracker,
-// but never invent a fixed "Use 1" action (e.g. Battle Master dice or Balm).
+// A subclass trait that owns a tracker is usable even if its effects are not
+// automated. Its payment is user-confirmed, allowing pooled/variable costs.
+// No tracker and no modeled action means no Resources entry.
 export function resourceLinkedSubclassTrait(tracker={},features=[],powers=[]){
  const id=String(tracker.origin_id||'');
  if(tracker.disabled||!id.startsWith('feature:class|phb|')||!id.includes('|subclass|'))return null;
  if(powers.some(row=>row.kind==='ability'&&row.tracker_id===tracker.id))return null;
  const feature=features.find(row=>row.origin_id===id&&!row.disabled&&!row.inactive);
- return feature?{origin_id:id,name:feature.name}:null;
+ return feature?{origin_id:id,name:feature.name,tracker_id:tracker.id}:null;
+}
+
+// Validate the source again when the confirmation is submitted, never trust
+// the DOM's tracker ID or its previously rendered available uses.
+export function subclassTrackerUsePatch(record={},calculated={},trackerId='',originId='',amount=1){
+ const tracker=(calculated.trackers||[]).find(t=>String(t.id)===String(trackerId));
+ const linked=tracker&&resourceLinkedSubclassTrait(tracker,calculated.features||[]);
+ if(!linked||linked.origin_id!==originId||record.rules_version==='2024')
+  throw Error('Capacità della sottoclasse non disponibile.');
+ return spendTrackerUses(record,tracker.id,amount,calculated.trackers);
 }
 
 // Play presentation reuses the existing editors and delegated actions. Only
@@ -752,10 +762,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    bind('resource:'+t.id,source);
    const context=powerGroups.has(key)?'power-resource:'+key:'resource:'+t.id;
    const linked=resourceLinkedSubclassTrait(t,d.features||[],powerRows);
-   const reference=linked?'<div class="play-resource-power-row play-resource-readonly" data-linked-subclass-resource="'+esc(t.id)+'">'+
+   const reference=linked?'<div class="play-resource-power-row" data-linked-subclass-resource="'+esc(t.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(linked.origin_id)+'"'+
     ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon('proficiency')+
-    '<span><strong>'+esc(linked.name)+'</strong><small>Dettagli della capacità · gestisci gli utilizzi dal tracker</small></span></button></div>':'';
+    '<span><strong>'+esc(linked.name)+'</strong><small>Capacità di sottoclasse · '+esc(trackerRecoveryText(t))+'</small></span></button>'+
+    '<button type="button" class="play-resource-use" data-act="tracker-trait-use" data-tracker-id="'+esc(t.id)+'"'+
+    ' data-origin-id="'+esc(linked.origin_id)+'"'+(left<1?' disabled':'')+
+    ' aria-label="Usa '+esc(linked.name)+'">Usa</button></div>':'';
    return '<div class="play-resource-group" data-resource-tracker="'+esc(t.id)+'"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'">'+
     '<span class="play-resource-copy"><strong class="play-resource-name">'+esc(t.name)+'</strong><small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
     '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
@@ -863,32 +876,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      (names[action.original_time]||'Azione')+' → '+(names[action.time]||action.time))).join(''),
     trait?.origin_id||id,'Modifica il tipo di azione');
   });
-  // Every acquired 2014 subclass trait remains discoverable in Resources.
-  // Traits without a declared activation/cost are read-only: never invent
-  // an "Usa" button, a payment, or an action type from descriptive prose.
-  const actionableOrigins=new Set(powerRows.flatMap(row=>[
-   row.power?.feature_id,row.power?.origin_id,row.classAction?.origin_id,
-   row.classAction?.feature_id,row.grant?.origin_id].filter(Boolean)));
-  const ownedTrackerOrigins=new Set((d.trackers||[]).filter(t=>!t.disabled)
-   .map(t=>t.origin_id).filter(Boolean));
-  const remainingSubclassTraits=new Map();
-  if(c.rules_version!=='2024')for(const feature of d.features||[]){
-   if(!feature?.origin_id||feature.inactive||feature.disabled||
-      !String(feature.origin_key||'').startsWith('class|phb|')||
-      !String(feature.origin_key||'').includes('|subclass|'))continue;
-   if(actionableOrigins.has(feature.origin_id)||ownedTrackerOrigins.has(feature.origin_id))continue;
-   if(!remainingSubclassTraits.has(feature.origin_id))
-    remainingSubclassTraits.set(feature.origin_id,feature);
-  }
-  const subclassReferences=remainingSubclassTraits.size?[
-   privilegeGroup('subclass-traits','Altri privilegi delle sottoclassi',
-    [...remainingSubclassTraits.values()].map(feature=>
-     '<div class="play-resource-power-row play-resource-readonly" data-subclass-feature="'+esc(feature.origin_id)+'">'+
-     '<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(feature.origin_id)+'"'+
-     ' aria-label="Apri il tratto '+esc(feature.name)+'">'+icon('proficiency')+
-     '<span><strong>'+esc(feature.name)+'</strong><small>Descrizione del privilegio · nessun uso automatico</small></span></button></div>'
-    ).join(''),'','Solo consultazione')
-  ]:[];
   // Missing trackers are exceptional and must remain visible, not be
   // misrepresented as cost-free privileges.
   const missingPowers=abilityButtons('missing');
@@ -896,7 +883,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<div class="play-resource"><span class="play-resource-heading">Tracker non disponibile</span></div>'+
     missingPowers+'</div>':'')+
    freePrivileges.join('')+featPrivileges.join('')+
-   overriddenPrivileges.join('')+subclassReferences.join('')+basicRules;
+   overriddenPrivileges.join('')+basicRules;
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
    '<details class="play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
