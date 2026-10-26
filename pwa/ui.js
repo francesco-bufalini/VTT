@@ -219,6 +219,16 @@ function loadFullSpellCatalog(){
   }).finally(()=>{fullSpellCatalogRequest=null;});
   return fullSpellCatalogRequest;
 }
+// Refresh local shared-homebrew options without refetching the entire catalog.
+async function refreshCharacterHomebrewOptions(){
+  state.referenceCatalogs={};
+  state.spellDemandKey='';
+  state.inventorySearchCatalogError='';
+  if(state.spellCatalogComplete){
+    try{state.spellCatalog=await catalogEntries('spells');refreshSpellPickers();}
+    catch(error){console.warn('Impossibile aggiornare gli incantesimi homebrew locali',error);}
+  }else state.spellCatalog=[];
+}
 function spellLearningClassNames(castingClasses=state.calculated?.casting_classes||[]){
   // The full catalogue loads lazily. Offer the ordinary class lists immediately
   // and add any other class names discovered when the catalogue finishes loading.
@@ -467,6 +477,7 @@ async function restoreBrowserScreen(screen){
       screen.inventorySubtab==='all'?['all']:[state.inventorySubtab];
     state.catalogSelected=Number.isInteger(screen.catalogSelected)?screen.catalogSelected:-1;
     if(oldCreatureId!==state.creatureId||state.page!=='library'||state.libraryMode)state.editor=null;
+    if(oldCreatureId!==state.creatureId)await refreshCharacterHomebrewOptions();
     state.sheetPopup='';state.magicPopup='';state.traitPopupKey='';
     await render();
     window.scrollTo(0,0);
@@ -3227,6 +3238,7 @@ async function fetchChat() {
 }
 async function refreshSharedCatalog(kind){
   state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
+  await refreshCharacterHomebrewOptions();
   if(state.page==='catalog'){
     state.catalogSelected=-1;
     await render();
@@ -5853,6 +5865,7 @@ async function handleAction(target){
       value:Number(app.querySelector('#quick-value')?.value)
     }:{};
     const created=await createQuickHomebrew(state.catalogCategory,name,description,grants,details);
+    await refreshCharacterHomebrewOptions();
     const owner=state.pendingItemOwner;
     if(owner&&state.catalogCategory==="items"){
       const editor=await openCreatureEditor(owner);
@@ -5875,6 +5888,7 @@ async function handleAction(target){
   if(act==='quick-delete'){
     if(!window.confirm('Eliminare questo contenuto personalizzato?'))return;
     await deleteQuickHomebrew(target.dataset.id);
+    await refreshCharacterHomebrewOptions();
     state.catalogSelected=-1;state.catalogQuery='';await render();message('Contenuto eliminato.');return;
   }
   if(act==="catalog-open"){
@@ -6014,6 +6028,7 @@ async function handleAction(target){
     const row=await createCreature("character",name,"default",miniature);
     closeDialog(dialog);
     state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";
+    await refreshCharacterHomebrewOptions();
     state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
     await render();return;
   }
@@ -6037,6 +6052,7 @@ async function handleAction(target){
       syncLibrarySelectionUI();return;
     }
     state.magicPopup="";state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;
+    await refreshCharacterHomebrewOptions();
     state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
     await render();return;
   }
@@ -6940,6 +6956,7 @@ function listen(){
       state.page="library";state.creatureId=imported.length===1?imported[0].creature.id:null;
       state.libraryMode=imported.length!==1;state.editor=null;state.sheet="info";
       state.librarySelectedIds.clear();
+      await refreshCharacterHomebrewOptions();
       await render();
       message(imported.length===1 ? "Scheda importata e salvata offline." :
         "Importate "+imported.length+" creature e relativi contenuti homebrew.");
@@ -6948,7 +6965,7 @@ function listen(){
   });
   backupInput.addEventListener("change",async()=>{
     const file=backupInput.files?.[0];if(!file)return;
-    try{await importBackup(file);await render();message("Backup ripristinato senza sovrascrivere le schede esistenti.");}
+    try{await importBackup(file);await refreshCharacterHomebrewOptions();await render();message("Backup ripristinato senza sovrascrivere le schede esistenti.");}
     catch(error){message(errorMessage(error),true);}finally{backupInput.value="";}
   });
   document.addEventListener("visibilitychange",()=>{
@@ -6999,7 +7016,7 @@ export const desktopSheetSession={
   notify:message,
   showLibrary:()=>navigate('library'),
   async exportArchive(){await flushPendingFields();return exportCreatureBatch((await listCreatures()).map(row=>row.creature.id));},
-  async open(id){await flushPendingFields();state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();}
+  async open(id){await flushPendingFields();state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await refreshCharacterHomebrewOptions();await render();}
 };
 export async function mount(){
   realtimeStopped=false;
