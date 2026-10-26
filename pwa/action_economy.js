@@ -217,7 +217,19 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const resource=arr(calculated.trackers).find(t=>String(t.name).toLowerCase()===String(rule.resource_name||'').toLowerCase()&&
     (!t.origin_class||String(t.origin_class).toLowerCase()===String(rule.class_name||'').toLowerCase()));
   // Do not grant missing or disabled features solely from class/level.
-  const collected=arr(calculated.features).filter(f=>String(f.origin_key||'').startsWith(classOrigin));
+  const subclassId=value=>String(value||'').trim().toLowerCase()
+    .replace(/^(?:college of |school of |circle of |oath of |domain of |the )/,'');
+  const collected=arr(calculated.features).filter(f=>{
+   const origin=String(f.origin_key||'');
+   if(!origin.startsWith(classOrigin))return false;
+   if(!origin.includes('|subclass|'))return true;
+   // A stale or foreign subclass trait must not grant actions, even if its
+   // name matches a real class feature. Resolve the exact selected subclass.
+   const [originSubclass,originSource]=origin.split('|subclass|')[1].split('|');
+   if(subclassId(originSubclass)!==subclassId(classMember.subclass||record.subclass))return false;
+   const selectedSource=String(classMember.subclass_source||record.subclass_source||'').toLowerCase();
+   return !selectedSource||originSource===selectedSource;
+  });
   const grantingFeature=collected.find(f=>String(f.name||'').toLowerCase()===
       String(rule.feature_name||'').toLowerCase()&&!f.inactive&&!f.disabled);
   if(!grantingFeature)continue;
