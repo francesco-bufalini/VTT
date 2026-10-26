@@ -1339,7 +1339,7 @@ async function editorView() {
             spellList(c,'prepared_spells',member.id,calculated.casting_classes,{includeSlots:false})+'</section>';
         }).join('')+
         originPowersView(c,calculated)+
-        manualMagicSources(c,calculated)+
+        manualMagicSources(c,calculated),
         'magic-panel')+
       infusionPanel(c,calculated)+
       magicToolsDialog(c,calculated);
