@@ -1,3 +1,4 @@
+import {expandedSpellFeatOptions} from './feat_picker.js';
 // Structured, still-unresolved character choices. Mirrors the native
 // creature_pending_choices.gd and creature_proficiency_rules.gd contracts.
 // Never infer a choice from prose or assign a privilege automatically.
@@ -201,19 +202,21 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
   if(mode==='ability')result.push(...allocationChoiceRows(record,sid,feature.name,
     allocationVariants(rule.ability_choices)));
   if(mode==='feat'){
-   const available=Object.entries(catalogs.originDetails?.feats||{}).map(([key])=>{
+   const baseAvailable=Object.entries(catalogs.originDetails?.feats||{}).map(([key])=>{
     const cut=key.lastIndexOf('|');return cut<0?null:
       {value:key.slice(cut+1)+'|'+key.slice(0,cut),name:key.slice(0,cut),source:key.slice(cut+1)};
    }).filter(Boolean).filter(f=>String(record.rules_version||'2014')==='2024'?
       f.source==='xphb'||f.source==='efa':contentForRules([f],record.rules_version).length>0)
      .sort((a,b)=>a.name.localeCompare(b.name));
+   const available=expandedSpellFeatOptions(baseAvailable,catalogs.classMechanics?.additional_spells||[])
+     .map(f=>({...f,value:f.value+(f.spell_variant?'|'+norm(f.spell_variant):'')}));
    const ownedFeat=arr(record.feats_catalog).find(f=>f?.granted_by===sid);
-   const value=ownedFeat?norm(ownedFeat.source)+'|'+norm(ownedFeat.name):'';
+   const value=ownedFeat?norm(ownedFeat.source)+'|'+norm(ownedFeat.name)+(ownedFeat.spell_variant?'|'+norm(ownedFeat.spell_variant):''):'';
    result.push({id:'advancement-feat:'+sid,kind:'advancement_feat',origin_id:sid,
     name:feature.name+' · livello '+feature.level,label:'Talento concesso',
     count:1,selected:value?[value]:[],
     options:available.map(f=>f.value),option_labels:Object.fromEntries(available.map(f=>
-      [f.value,f.name+' ('+f.source.toUpperCase()+')'])),
+      [f.value,(f.display_name||f.name)+' ('+f.source.toUpperCase()+')'])),
     remaining:value?0:1});
   }
  }
@@ -274,11 +277,13 @@ export function savePendingChoice(record,choice,values=[]){
      origin_ability_choices:arr(record.origin_ability_choices).filter(row=>row.origin_id!==choice.origin_id)};
   }
   if(selected.length){
-   const [source,...nameParts]=selected[0].split('|'),name=nameParts.join('|');
+   const [source,...parts]=selected[0].split('|');
+   const variant=parts.length>1?parts.pop():'';
+   const name=parts.join('|');
    if(!name||!source)throw Error('Talento non disponibile.');
    advancements.push({origin_id:choice.origin_id,mode:'feat'});
    otherFeats.push({id:'advancement:'+choice.origin_id,name,source:source.toUpperCase(),
-     granted_by:choice.origin_id});
+     ...(variant?{spell_variant:variant}:{}),granted_by:choice.origin_id});
   }else advancements.push({origin_id:choice.origin_id,mode:'feat'});
   return {advancement_choices:advancements,feats_catalog:otherFeats};
  }
