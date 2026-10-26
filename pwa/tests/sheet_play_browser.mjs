@@ -57,8 +57,11 @@ try{
    }
    if(key==='magic'){
     const classSource=page.locator('#sheet-play-view .play-magic-class-card:not(.play-magic-granted-card)').first();
-    assert.match(await classSource.locator('.play-card-head .play-magic-source-resources').textContent(),/Slot[^\n]*\d+\s*\/\s*\d+/,
-      'The visible mobile class heading includes the slot pool, not only the hidden editor');
+    const slotLabel=classSource.locator('.play-card-head .play-magic-source-resources');
+    assert.equal((await slotLabel.textContent()).trim(),'Slot',
+      'The visible mobile class heading contains only Slot, without per-level counters');
+    assert.equal(await slotLabel.locator('.play-magic-source-resource').count(),1,
+      'All spell slot levels share one header label');
     const grantedCard=page.locator('#sheet-play-view .play-magic-granted-card[data-magic-origin-tracker="focus"]');
     assert.equal(await grantedCard.count(),1,'Granted spells have their own visible source card');
     const trackerHeader=grantedCard.locator('.play-card-head [data-play-magic-tracker="focus"]');
