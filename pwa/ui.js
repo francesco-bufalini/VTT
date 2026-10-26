@@ -25,6 +25,7 @@ import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./tr
 import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
+import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
@@ -1793,7 +1794,15 @@ function mountTraitBenefitDialog(){
      .map(row=>[row.id,row.name+' · '+(row.source||'')]))+
      formSelect('Consumo','payment_mode',[['free','Gratuito'],['slot','Slot']])],
   ['actions',formInput('Azione concessa','name')+
-     formSelect('Tipo di azione','action_type',[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Nessun costo']])]
+     formSelect('Tipo di azione','action_type',[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Nessun costo']])],
+  ['effect_extensions',formSelect('Effetto modificato','target_kind',EXTENSION_TARGETS)+
+     formInput('Nome incantesimo o capacità','target_name','Es. Eldritch Blast, Bardic Inspiration')+
+     '<label>ID del bersaglio (facoltativo)<input name="target_id" placeholder="ID del catalogo"></label>'+
+     formSelect('Estensione','operation',EXTENSION_OPERATIONS)+
+     '<label>Valore / formula (dove richiesto)<input name="value" placeholder="Es. 300, 10, cha_mod, 1d6"></label>'+
+     formSelect('Momento di applicazione','trigger',EXTENSION_TRIGGERS)+
+     formSelect('Frequenza','frequency',EXTENSION_FREQUENCIES)+
+     '<label>Dettagli (facoltativi)<input name="description" placeholder="Effetti e condizioni specifiche"></label>']
  ];
  const benefits=groups.map(group=>'<section class="trait-benefit-group trait-benefit-group--'+esc(group.type)+'">'+
    '<span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
@@ -2730,12 +2739,17 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
      '<div class="magic-ability-list">'+
      group.abilities.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'it')).map(ability=>{
        const activation=({action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento',passive:'Passivo',contextual:'Secondo il privilegio'})[ability.action_type||ability.activation_mode]||ability.action_type||ability.activation_mode||'Secondo il privilegio';
+       const extensions=effectExtensionsFor(calculated.effect_extensions,{kind:'ability',id:ability.id,name:ability.name});
        const cost=Math.max(0,Number(ability.resource_cost)||0),resource=ability.tracker_name||ability.resource_name||group.tracker?.name||'';
        return '<details class="magic-ability-entry power-privilege" data-ability-id="'+esc(ability.id)+'"'+(group.abilities.length===1?' open':'')+'><summary><span class="power-privilege-title"><span class="magic-ability-name">'+esc(ability.name)+'</span><span class="power-privilege-meta">'+esc(activation)+(cost?' · '+cost+' per uso':'')+'</span></span><span class="power-privilege-chevron" aria-hidden="true">⌄</span></summary>'+
          '<div class="magic-ability-detail"><dl class="power-privilege-facts"><div><dt>Origine</dt><dd>'+esc(ability.origin_name||ability.origin||'Origine non specificata')+'</dd></div>'+
          (ability.source?'<div><dt>Fonte</dt><dd>'+esc(ability.source)+'</dd></div>':'')+
          '<div><dt>Consumo</dt><dd>'+esc(cost?cost+' utilizzi'+(resource?' · '+resource:' · Risorsa non collegata'):'Nessun consumo di utilizzi')+'</dd></div></dl>'+
          '<div class="power-privilege-description"><h3>Descrizione</h3><p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></div>'+
+         (extensions.length?'<div class="magic-effect-extensions"><h3>Estensioni attive</h3><ul>'+
+           extensions.map(extension=>'<li><strong>'+esc(extension.origin_name||'Privilegio')+'</strong> · '+
+             esc(effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}))+'</li>').join('')+
+           '</ul></div>':'')+
          '<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(ability.feature_id||ability.origin_id||'')+'">'+actionGlyph('proficiency')+'<span>Apri il tratto di origine</span></button></div></details>';
        }).join('')+'</div>':'';
    const popup=panel(group.name,header+[...stats.entries()].map(([origin,meta])=>
@@ -5190,6 +5204,10 @@ async function handleAction(target){
     const spell=entry||catalogSpell||stored;
     const detailed=await detailedEntry('spells',{...catalogSpell,...spell,_category:'spells'});
     const description=flattenDescription(detailed)||'Descrizione non disponibile nel catalogo locale.';
+    const extendedSpell=applyEffectExtensions(detailed,calculated.effect_extensions,
+      {kind:'spell',id,name:spell.name||detailed.name},
+      {cha_mod:calculated.abilities?.cha?.modifier});
+    const spellExtensions=extendedSpell.effect_extensions||[];
     // Object-targeted spells and infusions reuse typed eligibility, never prose
     // guessing. Catalogue/homebrew spells can declare item_target_selector.
     const targetSelector=detailed.item_target_selector||spell.item_target_selector||
@@ -5217,10 +5235,14 @@ async function handleAction(target){
       message("Famigli: "+errorMessage(error),true);return null;
     });
     const metaChoices=metamagicOptions(record).filter(o=>!['Empowered Spell','Seeking Spell'].includes(o.name));
-    dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts(detailed),description,
+    dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts({...detailed,range:extendedSpell.range||detailed.range}),description,
       (level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
       (detailed.school?' · '+detailed.school:'')+(detailed.source?' · '+detailed.source:''),'action-cast-cancel')+
       (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
+      (spellExtensions.length?'<section class="magic-effect-extensions"><h3>Estensioni attive</h3><ul>'+
+        spellExtensions.map(extension=>'<li><strong>'+esc(extension.origin_name||'Privilegio')+'</strong> · '+
+          esc(effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}))+'</li>').join('')+
+        '</ul></section>':'')+
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'"'+(value===clickedSlot?' selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>':
         '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo dal libro, ma non lanciarlo.')+'</p>')+
