@@ -2097,6 +2097,9 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  color:#c0ad95;font:500 11px/1.35 system-ui,sans-serif;
  overflow-wrap:anywhere;
 }
+.info-owned-feat-details .info-feat-level{
+ color:#a58f76;font:500 10px/1.25 system-ui,sans-serif;
+}
 .info-feat-book{
  color:#b99e77;white-space:nowrap;border-radius:6px;
  padding:3px 6px;background:#a07a4222;font-size:10px;font-weight:600;
