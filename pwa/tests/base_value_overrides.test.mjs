@@ -16,7 +16,7 @@ const gauntlets={id:'gauntlet-1',name:'Gauntlets of Ogre Power',source:'DMG',typ
 
 test('native base-value supplement stays exactly synced with packaged PWA rules',()=>{
  assert.deepEqual(packaged.base_value_overrides,
-  {feats:native.feats,features:native.features,items:native.items});
+  {feats:native.feats,features:native.features,items:native.items,species:native.species});
 });
 
 test('Tavern Brawler PHB replaces unarmed damage die, not the Strength modifier or all attacks',()=>{
@@ -79,6 +79,14 @@ test('alternate natural armor competes only without armor and preserves shield b
  assert.equal(calc({...c,inventory:[armor]}).stats.armor_class,13);
 });
 
+test('natural armor from a source-qualified race is an alternative, not a permanent armor bonus',()=>{
+ const c=base({species:'Lizardfolk',species_source:'VGM'});
+ assert.equal(sheet(c).stats.armor_class,15);
+ assert.equal(sheet({...c,origin_enabled:{'race|vgm|lizardfolk':false}}).stats.armor_class,12);
+ assert.equal(sheet({...c,species_source:'XPHB'}).stats.armor_class,12);
+ const armor={id:'armor',name:'Leather Armor',source:'PHB',type:'LA',ac:11,quantity:1,equipped_slots:['body']};
+ assert.equal(sheet({...c,inventory:[armor]}).stats.armor_class,13);
+});
 test('manual replacement can be added, inspected, disabled, removed and restored by trait',()=>{
  const trait={key:'trait:custom-base',origin:'Test trait',name:'Test'};
  const c=base({origin_enabled:{'feature:trait:trait:custom-base':true}});
