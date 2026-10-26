@@ -80,6 +80,7 @@ export function traitBenefitTargetLabel(value=''){
  const key=String(value);
  if(TARGETS[key])return TARGETS[key];
  const [type,...rest]=key.split(':'),name=rest.join(':');
+ if(type==='passive_skill')return (SKILLS[name]||name)+' passiva';
  if(type==='skill')return 'Abilità · '+(SKILLS[name]||name);
  if(type==='ability_check')return 'Prova · '+(ABILITIES[name]||name);
  if(type==='casting_hit')return 'Attacco magico · '+(ABILITIES[name]||name);
