@@ -30,6 +30,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
+import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
@@ -3737,6 +3738,21 @@ function decorateSheetHeadings(){
   heading.classList.add('sheet-heading');
  }
 }
+async function saveInfoPortrait(input){
+ const file=input.files?.[0];
+ input.value='';
+ if(!file)return;
+ const editor=state.editor,creatureId=state.creatureId;
+ if(!editor||state.sheet!=='info')return;
+ try{
+  const image=await preparePortraitImage(file);
+  if(state.editor!==editor||state.creatureId!==creatureId||state.sheet!=='info')
+   throw Error('La scheda è cambiata. Seleziona di nuovo la foto.');
+  await patch({sheet_portrait_data:image});
+  await render();
+  message('Foto salvata nella scheda, disponibile anche offline.');
+ }catch(error){message(errorMessage(error),true);}
+}
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
   state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventoryHighlightedIndices:state.inventoryHighlightedIndices,inventorySubtab:state.inventorySubtab,inventorySelectedTabs:inventoryVisibleSections(state.editor.read()),search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
@@ -3760,7 +3776,12 @@ function organizeSheetPanels(){
           '<span>'+esc(choice.name)+' <small>· '+esc(choice.label)+'</small></span>'+
           '<span>'+esc(choice.selected.length)+'/'+esc(choice.count)+' <span aria-hidden="true">›</span></span></button>').join('')+
         '</div>';
-      root.prepend(notice);
+      // The order is identity, portrait/photo button, pending choices, then details.
+      const portrait=root.querySelector(':scope > .play-character-portrait');
+      const identity=root.querySelector(':scope > .play-identity');
+      if(portrait)portrait.after(notice);
+      else if(identity)identity.after(notice);
+      else root.prepend(notice);
     }
     // Align the privilege-choice shortcut to the right of the Info title,
     // using the same page-header button treatment as the other sheets.
@@ -4371,6 +4392,13 @@ function openRemoveFeatDialog(originKey){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='info-portrait-remove'){
+    if(!state.editor||state.sheet!=='info')throw Error('Apri prima la scheda Info.');
+    await patch({sheet_portrait_data:''});
+    await render();
+    message('Foto rimossa dalla scheda.');
+    return;
+  }
   if(act==='inventory-search-more'){
     state.inventorySearchLimit+=75;
     paintInventorySearchResults();return;
@@ -6596,6 +6624,12 @@ function listen(){
     // Modal dismissal is UI-only. Do it before any asynchronous field flush:
     // a dirty input, slow IndexedDB transaction or rerender cannot block X.
     const closeAction=button.dataset.act;
+    // A mobile file picker must open synchronously from the user's click,
+    // never after an awaited IndexedDB write or rerender.
+    if(closeAction==='info-portrait-pick'){
+      button.closest('.play-character-portrait')?.querySelector('[data-info-portrait-file]')?.click();
+      return;
+    }
     if(closeAction==='trait-benefits-close'){
       dismissTraitBenefitDialog();return;
     }
@@ -6698,6 +6732,10 @@ function listen(){
   });
   app.addEventListener("change",e=>{
     const target=e.target;
+    if(target?.matches?.('[data-info-portrait-file]')){
+      void saveInfoPortrait(target);
+      return;
+    }
     if(target?.matches?.('[data-library-select-all]')){
       for(const box of app.querySelectorAll('input[data-library-select]')){
         if(box.closest('.library-creature-entry')?.hidden)continue;
