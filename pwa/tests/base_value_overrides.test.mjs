@@ -66,7 +66,7 @@ test('alternate natural armor competes only without armor and preserves shield b
  const types={...catalogs,classFeatures:{class_features:[draconic],subclass_features:[]}};
  const c=base({class:'Sorcerer',class_source:'PHB',classes:[{name:'Sorcerer',source:'PHB',level:3}]});
  const calc=x=>calculateSheet(x,types);
- assert.equal(calc(c).stats.armor_class,12);
+ assert.equal(sheet(c).stats.armor_class,12);
  assert.equal(calc({...c,origin_enabled:{'class|phb|sorcerer':false}}).stats.armor_class,12);
  assert.equal(calc({...c,features:[draconic]}).stats.armor_class,15);
  const derived=calc({...c,classes:[{name:'Sorcerer',source:'PHB',level:3}]});
