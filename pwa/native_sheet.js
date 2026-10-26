@@ -464,6 +464,9 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const feats=list(c.feats_catalog).map((feat,i)=>{
   const entry=typeof feat==='string'?{name:feat}:feat||{};
   const owner=featOriginLabel(entry,calculated);
+  const level=Number(entry.level??entry.acquired_level??entry.origin_level);
+  const levelText=Number.isInteger(level)&&level>=1&&level<=20?
+    'Livello del privilegio: '+level:'';
   const originKey=featTraitOriginKey(entry);
   const book=String(entry.source||'').trim();
   const title=String(entry.name||'Talento');
@@ -472,7 +475,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     ' data-feat-index="'+i+'" data-feat-origin="'+esc(originKey)+'"'+
     ' aria-label="Apri il tratto di '+esc(title)+'">'+
     '<span class="info-owned-feat-details"><strong>'+esc(title)+'</strong>'+
-    '<span class="info-feat-origin">Origine · '+esc(owner)+'</span></span>'+
+    '<span class="info-feat-origin">Origine · '+esc(owner)+'</span>'+
+    (levelText?'<span class="info-feat-level">'+esc(levelText)+'</span>':'')+'</span>'+
     (book?'<span class="info-feat-book">'+esc(book)+'</span>':'')+
     '<span class="info-feat-chevron" aria-hidden="true">›</span></button>'+
    (entry.name?'<button type="button" class="info-owned-feat-remove" data-act="feat-remove"'+
