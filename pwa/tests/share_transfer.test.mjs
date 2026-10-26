@@ -9,7 +9,7 @@ import {encodeShareChunk,decodeShareChunk} from '../share_transfer.js';
 Object.defineProperty(globalThis,'crypto',{value:webcrypto,configurable:true});
 
 test('chunk encoding survives arbitrary binary content, including UTF-8 and chunk limits',()=>{
- const bytes=webcrypto.getRandomValues(new Uint8Array(128*1024));
+ const bytes=Uint8Array.from({length:128*1024},(_,index)=>index%256);
  const original=new TextEncoder().encode(JSON.stringify({text:'⚔️ È un drago'}));
  assert.deepEqual(decodeShareChunk(encodeShareChunk(original)),original);
  assert.deepEqual(decodeShareChunk(encodeShareChunk(bytes)),bytes);
