@@ -34,7 +34,7 @@ import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
-import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,featTraitOriginKey} from './feat_picker.js';
+import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
 import {isContentAvailableForRules} from './source_edition.js';
@@ -4037,7 +4037,7 @@ async function openFeatPickerDialog(){
  const originNote=dialog.querySelector('[data-feat-origin-note]');
  const owned=()=>new Set((editor.read().feats_catalog||[]).map(x=>
   String(x?.name||x).toLowerCase()+'|'+String(x?.source||'').toLowerCase()));
- const visible=()=>candidates.filter(row=>matchesSearch(query,row.name,row.source));
+ const visible=()=>candidates.filter(row=>matchesSearch(query,row.display_name||row.name,row.source));
  const paint=()=>{
   if(!dialog.isConnected)return;
   const filtered=visible(),known=owned(),shown=filtered.slice(0,limit);
@@ -4052,7 +4052,7 @@ async function openFeatPickerDialog(){
     return '<div class="feat-picker-row'+(active?' is-selected':'')+'" role="listitem">'+
       '<button type="button" class="feat-picker-row-name" data-feat-detail-index="'+i+
       '" aria-expanded="'+active+'" aria-label="Dettagli di '+esc(row.name)+'">'+
-      '<strong>'+esc(row.name)+'</strong><small>'+esc(row.source||'Senza fonte')+'</small></button>'+
+      '<strong>'+esc(row.display_name||row.name)+'</strong><small>'+esc(row.source||'Senza fonte')+'</small></button>'+
       '<button type="button" class="feat-picker-add'+(has?' is-selected':'')+
       '" data-feat-add-index="'+i+'"'+(has||saving?' disabled':'')+' aria-label="'+
       (has?'Talento già posseduto: ':'Aggiungi ')+esc(row.name)+'">'+
@@ -4069,7 +4069,7 @@ async function openFeatPickerDialog(){
    const full=await detailedEntry('feats',entry);
    if(!dialog.isConnected||selected!==i)return;
    const description=flattenDescription(full)||'Descrizione non disponibile nel catalogo locale.';
-   detail.innerHTML='<header><strong>'+esc(full.name||entry.name)+'</strong><small>'+esc(entry.source||'')+'</small>'+
+   detail.innerHTML='<header><strong>'+esc(entry.display_name||full.name||entry.name)+'</strong><small>'+esc(entry.source||'')+'</small>'+
     '<button type="button" data-feat-detail-close aria-label="Chiudi dettagli">×</button></header>'+
     '<div class="feat-picker-description">'+esc(description)+'</div>';
   }catch(error){if(dialog.isConnected&&selected===i)
@@ -4132,8 +4132,8 @@ async function openFeatPickerDialog(){
  try{
   const all=await catalogEntries('feats');
   if(!dialog.isConnected)return;
-  candidates=all.filter(row=>row?.name&&row?.source&&isContentAvailableForRules(row,record.rules_version))
-    .sort((a,b)=>String(a.name).localeCompare(String(b.name),'it',{sensitivity:'base'}));
+  candidates=expandedSpellFeatOptions(all.filter(row=>row?.name&&row?.source&&isContentAvailableForRules(row,record.rules_version)),catalogs.classMechanics?.additional_spells||[])
+    .sort((a,b)=>String(a.display_name||a.name).localeCompare(String(b.display_name||b.name),'it',{sensitivity:'base'}));
  }catch(error){failed='Impossibile caricare i talenti: '+errorMessage(error);}
  finally{loading=false;paint();}
 }
