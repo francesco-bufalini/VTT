@@ -1,7 +1,7 @@
-import {resolveVariant, applyVariantEdit, migrateSecondForm} from './creature_variants.js';
+import {resolveVariant, applyVariantEdit, migrateSecondForm, bestiarySheet} from './creature_variants.js';
 // Local character/monster archive using the *same* portable JSON schema as
 // Godot's CreatureArchive, without copying Godot gameplay calculations.
-import { getRecord, listRecords, putRecord, deleteRecordIfRevision, insertRecords,
+import { getRecord, listRecords, putRecord, deleteRecordIfRevision, deleteCreatureFamily, insertRecords,
   localOwnerId } from "./storage.js";
 import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
   referencedDefinitions, makeCreatureExport, MAX_CREATURE_BYTES } from "./creature_format.js";
@@ -26,8 +26,9 @@ export async function ownerId() {
   return localOwnerId();
 }
 
-export async function listCreatures(scope = "default") {
+export async function listCreatures(scope = "default", {includeSubcreatures = false} = {}) {
   return (await listRecords(requiredScope(scope), CREATURE_TYPE))
+    .filter(row => includeSubcreatures || !row.data.parent_creature_id)
     .map(row => ({ creature: row.data, revision: row.revision }))
     .sort((a,b) => a.creature.name.localeCompare(b.creature.name));
 }
@@ -42,7 +43,16 @@ export async function saveCreature(creature, scope = "default", expectedRevision
     throw new Error("Cannot edit a creature owned by another installation");
   }
   const existing = await loadCreature(record.id, scope);
+  if (record.parent_creature_id) {
+    const parent = await loadCreature(record.parent_creature_id, scope);
+    if (!parent || parent.data.parent_creature_id ||
+        parent.data.owner_id !== record.owner_id)
+      throw new Error("Proprietario della sottocreatura non disponibile.");
+  }
   if (existing) {
+    if ((existing.data.parent_creature_id || "") !== (record.parent_creature_id || ""))
+      throw new Error("Cannot change subcreature parent");
+
     if (existing.data.owner_id !== record.owner_id ||
         Number(existing.data.transfer_revision ?? 0) !==
           Number(record.transfer_revision ?? 0)) {
@@ -77,6 +87,41 @@ export async function createCreature(kind = "character", name = "Nuova creatura"
   return saved;
 }
 
+export async function listSubcreatures(parentId, scope = "default") {
+  return (await listRecords(requiredScope(scope), CREATURE_TYPE))
+    .filter(row => row.data.parent_creature_id === parentId)
+    .map(row => ({creature: row.data, revision: row.revision}))
+    .sort((a,b) => a.creature.name.localeCompare(b.creature.name));
+}
+
+// A familiar is a complete monster sheet, never another form of its owner.
+export async function createSubcreature(parentId, source, reference = {}, scope = "default") {
+  const parent = await loadCreature(parentId, scope);
+  if (!parent || parent.data.parent_creature_id || parent.data.owner_id !== await ownerId())
+    throw new Error("Apri una creatura proprietaria valida.");
+  if ((await listSubcreatures(parentId, scope)).length >= 50)
+    throw new Error("Limite di 50 sottocreature per proprietario.");
+  const raw = source?.stat_block || source;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw))
+    throw new Error("Voce del bestiario non valida.");
+  const creature = source?.kind === "monster" ? structuredClone(source) :
+    bestiarySheet(raw, reference.miniature);
+  creature.id = "creature_" + localId();
+  creature.owner_id = parent.data.owner_id;
+  creature.kind = "monster";
+  creature.parent_creature_id = parentId;
+  creature.transfer_revision = 0;
+  creature.linked_token_sync_id = "";
+  creature.linked_token_name = "";
+  creature.current_form_id = "";
+  creature.bestiary_ref = {
+    name: String(reference.name || raw.name || creature.name).slice(0,160),
+    source: String(reference.source || raw.source || "").slice(0,80)
+  };
+  if (reference.spell_id) creature.companion_origin_spell_id = String(reference.spell_id).slice(0,256);
+  return saveCreature(creature, scope, 0);
+}
+
 export async function removeCreature(id, scope = "default", expectedRevision) {
   const existing = await loadCreature(id, scope);
   if (!existing) return false;
@@ -86,6 +131,10 @@ export async function removeCreature(id, scope = "default", expectedRevision) {
   }
   // For deletion the revision must be checked IN the write transaction.
   // Do not use deleteRecord (unconditional) for owned creature sheets.
+  const children = await listSubcreatures(id, scope);
+  if (children.length)
+    return deleteCreatureFamily(requiredScope(scope),
+      [{id,revision:expectedRevision},...children.map(row=>({id:row.creature.id,revision:row.revision}))]);
   return deleteRecordIfRevision(requiredScope(scope), CREATURE_TYPE, id, expectedRevision);
 }
 
@@ -108,21 +157,25 @@ export async function importCreatureFile(file, scope = "default") {
     const owner=await ownerId();
     const definitions=new Map();
     const imported=[];
-    for(const {creature,homebrew} of parsed){
+    const family=[];
+    for(const {creature,homebrew,subcreatures} of parsed){
       for(const definition of homebrew){
         const prior=definitions.get(definition.id);
         if(prior && JSON.stringify(prior)!==JSON.stringify(definition))
           throw new Error("Definizioni homebrew in conflitto nel pacchetto: "+definition.id);
         definitions.set(definition.id,definition);
       }
-      imported.push(makeOwnedCopy(creature,owner,"import_"+localId()));
+      const local = makeOwnedCopy(creature,owner,"import_"+localId());
+      imported.push(local);
+      for (const child of subcreatures)
+        family.push({...makeOwnedCopy(child,owner,"import_"+localId()), parent_creature_id:local.id});
     }
     const batch=[
       ...[...definitions.values()].map(definition=>({
         scope:HOMEBREW_SCOPE,type:HOMEBREW_TYPE,id:definition.id,
         data:definition,ifAbsent:true
       })),
-      ...imported.map(creature=>({
+      ...[...imported,...family].map(creature=>({
         scope:requiredScope(scope),type:CREATURE_TYPE,id:creature.id,data:creature
       }))
     ];
@@ -135,14 +188,19 @@ export async function importCreatureFile(file, scope = "default") {
 // Porting a creature always creates a fresh locally owned copy; it never
 // transfers the authority or live token link of its source installation.
 export async function importCreatureExport(raw, scope = "default") {
-  const { creature, homebrew } = parseCreatureExport(raw);
-  const local = makeOwnedCopy(creature, await ownerId(), "import_" + localId());
+  const { creature, homebrew, subcreatures } = parseCreatureExport(raw);
+  const owner = await ownerId();
+  const local = makeOwnedCopy(creature, owner, "import_" + localId());
+  const family = subcreatures.map(child=>({
+    ...makeOwnedCopy(child, owner, "import_" + localId()),parent_creature_id:local.id
+  }));
   const entries = homebrew.map(definition => ({
     scope: HOMEBREW_SCOPE, type: HOMEBREW_TYPE, id: definition.id,
     data: definition, ifAbsent: true
   }));
-  entries.push({ scope: requiredScope(scope), type: CREATURE_TYPE,
-    id: local.id, data: local });
+  for (const member of [local,...family])
+    entries.push({ scope: requiredScope(scope), type: CREATURE_TYPE,
+      id: member.id, data: member });
   // If any entry fails, neither the creature nor its homebrew is installed.
   await insertRecords(entries);
   return { creature: local, revision: 1 };
@@ -153,8 +211,11 @@ export async function exportCreature(id, scope = "default") {
   if (!row) throw new Error("Creature not found");
   const byId = new Map((await listRecords(HOMEBREW_SCOPE, HOMEBREW_TYPE))
     .map(item => [item.id, item.data]));
-  const dependencies = referencedDefinitions(row.data, byId);
-  const payload = makeCreatureExport(row.data, dependencies);
+  if (row.data.parent_creature_id)
+    throw new Error("Esporta la sottocreatura insieme al suo proprietario.");
+  const children = (await listSubcreatures(id, scope)).map(row => row.creature);
+  const dependencies = referencedDefinitions([row.data,...children], byId);
+  const payload = makeCreatureExport(row.data, dependencies, children);
   return new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
 }
 
@@ -162,7 +223,13 @@ export async function exportCreatureBatch(ids, scope = "default") {
   if (!Array.isArray(ids) || !ids.length || ids.length > 200)
     throw new Error("Seleziona da 1 a 200 creature per l'esportazione.");
   const entries=[];
-  for(const id of ids) entries.push(JSON.parse(await (await exportCreature(id,scope)).text()));
+  const roots = new Set();
+  for (const id of ids) {
+    const row = await loadCreature(id,scope);
+    if (!row) throw new Error("Creature not found");
+    roots.add(row.data.parent_creature_id || id);
+  }
+  for (const id of roots) entries.push(JSON.parse(await (await exportCreature(id,scope)).text()));
   const data=JSON.stringify({format:"vtt_creature_batch_export_v1",version:1,entries},null,2);
   if(new TextEncoder().encode(data).length>MAX_CREATURE_BYTES)
     throw new Error("Esportazione troppo grande per il formato portatile.");
@@ -295,6 +362,7 @@ export async function openCreatureEditor(id, scope = "default") {
       if (proposed.id !== stored.data.id ||
           proposed.owner_id !== stored.data.owner_id ||
           proposed.kind !== stored.data.kind ||
+          (proposed.parent_creature_id || "") !== (stored.data.parent_creature_id || "") ||
           Number(proposed.transfer_revision ?? 0) !==
             Number(stored.data.transfer_revision ?? 0)) {
         return Promise.reject(new Error("Cannot change creature identity through an edit"));

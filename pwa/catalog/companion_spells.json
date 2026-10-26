@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "spells": [
+    {
+      "id": "find_familiar_2014",
+      "names": [
+        "Find Familiar",
+        "find familiar",
+        "Trova Famiglio"
+      ],
+      "editions": [
+        "2014"
+      ],
+      "monsters": [
+        "Bat",
+        "Cat",
+        "Crab",
+        "Frog",
+        "Hawk",
+        "Lizard",
+        "Octopus",
+        "Owl",
+        "Poisonous Snake",
+        "Quipper",
+        "Rat",
+        "Raven",
+        "Sea Horse",
+        "Spider",
+        "Weasel"
+      ],
+      "limit_per_owner_spell": 1
+    },
+    {
+      "id": "find_steed_2014",
+      "names": [
+        "Find Steed",
+        "Trova Cavalcatura"
+      ],
+      "editions": [
+        "2014"
+      ],
+      "monsters": [
+        "Warhorse",
+        "Pony",
+        "Camel",
+        "Elk",
+        "Mastiff"
+      ],
+      "limit_per_owner_spell": 1
+    },
+    {
+      "id": "find_greater_steed_2014",
+      "names": [
+        "Find Greater Steed",
+        "Trova Cavalcatura Superiore"
+      ],
+      "editions": [
+        "2014"
+      ],
+      "monsters": [
+        "Griffon",
+        "Pegasus",
+        "Peryton",
+        "Dire Wolf",
+        "Rhinoceros",
+        "Saber-Toothed Tiger"
+      ],
+      "limit_per_owner_spell": 1
+    }
+  ]
+}
