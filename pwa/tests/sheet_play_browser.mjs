@@ -56,6 +56,15 @@ try{
       'Only inventory coin amounts are editable outside spellcasting: '+key);
    }
    if(key==='magic'){
+    const classSource=page.locator('#sheet-play-view .play-magic-class-card:not(.play-magic-granted-card)').first();
+    assert.match(await classSource.locator('.play-card-head .play-magic-source-resources').textContent(),/Slot[^\n]*\d+\s*\/\s*\d+/,
+      'The visible mobile class heading includes the slot pool, not only the hidden editor');
+    const grantedCard=page.locator('#sheet-play-view .play-magic-granted-card[data-magic-origin-tracker="focus"]');
+    assert.equal(await grantedCard.count(),1,'Granted spells have their own visible source card');
+    const trackerHeader=grantedCard.locator('.play-card-head [data-play-magic-tracker="focus"]');
+    assert(await trackerHeader.isVisible(),'Linked tracker is visible beside the granting origin title');
+    assert.match(await trackerHeader.textContent(),/Focus arcano\s*\d+\s*\/\s*\d+/,
+      'The granting origin header displays the real shared tracker name and usage');
     const castingRows=page.locator('#sheet-play-view .play-magic-inline-casting .casting-statistics');
     assert.ok(await castingRows.count()>=1,
       'Spellcasting editors remain available for classes and visible granting origins');
@@ -824,7 +833,10 @@ try{
  assert.equal(await page.locator('.magic-ability-entry').count(),0,'Additional nonspell abilities no longer belong in Poteri');
  const magicFocus=page.locator('#sheet-play-view [data-magic-origin-tracker="focus"]');
  assert.equal(await magicFocus.count(),1,'The original tracker is still listed in Magic');
- assert.match(await magicFocus.locator('.play-list-row').textContent(),/Focus arcano/);
+ const resource=magicFocus.locator('.play-card-head [data-play-magic-tracker="focus"]');
+ assert.match(await resource.textContent(),/Focus arcano\s*\d+\s*\/\s*\d+/,
+   'The actual mobile origin heading shows the linked tracker name and available uses');
+ assert(await resource.isVisible(),'The tracker must be visible rather than kept in the hidden editor bank');
  const inlineGrantedSpell=magicFocus.locator('.play-magic-origin-spell [data-act="sheet-proxy"]');
  assert.equal(await inlineGrantedSpell.count(),1,'Privilege-granted spells appear immediately below their tracker');
  assert.match(await inlineGrantedSpell.textContent(),/Light/);
@@ -834,9 +846,23 @@ try{
  await inlineGrantedSpell.click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
  await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').first().click();
- await magicFocus.locator('.play-list-row').click();
- assert.equal(await page.locator('#sheet-context-dialog [data-magic-tracker-id="focus"]').count(),1,'Tracker editing remains available');
- await dismiss();
+ const trackerActions=magicFocus.locator('[data-play-magic-tracker="focus"]>.play-button');
+ assert.equal(await trackerActions.count(),2,'Recover/spend actions stay available beside the tracker in its header');
+ const spentBefore=Number((await record()).resource_tracker_spent?.focus||0);
+ if(await trackerActions.last().isEnabled()){
+  await trackerActions.last().click();
+  await page.waitForFunction(async before=>{
+   const {listCreatures}=await import('/creatures.js');
+   return Number((await listCreatures())[0].creature.resource_tracker_spent?.focus||0)===before+1;
+  },spentBefore);
+  assert.match(await magicFocus.locator('[data-play-magic-tracker="focus"]').textContent(),/Focus arcano/,
+    'The shared tracker remains visible following consumption');
+  await trackerActions.first().click();
+  await page.waitForFunction(async before=>{
+   const {listCreatures}=await import('/creatures.js');
+   return Number((await listCreatures())[0].creature.resource_tracker_spent?.focus||0)===before;
+  },spentBefore);
+ }
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  const traitSection=page.locator('.play-info-traits');
