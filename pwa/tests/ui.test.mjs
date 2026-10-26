@@ -128,12 +128,11 @@ test("mobile navigation and local creature editing persist through tabs",async()
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector('[data-act="magic-tool-open"][data-magic-tool="slots"]'));
   click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
-  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-slot="1"]'));
-  change('#magic-tools-dialog [data-slot="1"]',"2");
-  await until(async()=>{
-    const rows=await listCreatures();
-    return rows.some(r=>r.creature.spell_slots_spent?.[1]===2);
-  });
+  await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-manager'));
+  assert.ok(document.querySelector('#magic-tools-dialog [data-act="slot-use"][data-level="1"]').disabled,
+    'A new character without slots cannot consume one');
+  click('#magic-tools-dialog [data-act="magic-tool-close"]');
+  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-sheet="battle"][aria-pressed="true"]'));
   assert.equal(document.querySelector('#tracker-name'),null);
@@ -583,13 +582,30 @@ test("spell preparation caps are advisory and selecting/removing updates legacy 
  assert.deepEqual(classSelectionWarnings(member,classSelectionCount(c,member,classes,catalog)),[]);
 });
 
-test("inline spell catalog adds available and spellbook choices without diverging legacy fields",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+async function useCastingCatalog(t){
+ const {clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
+ const previous=globalThis.fetch;clearLocalRuleCatalogCache();
+ globalThis.fetch=async(url,options)=>{
+  const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics',
+    '/catalog/proficiency_grants.json':'proficiency_grants','/catalog/classes.json':'classes'})[url];
+  return file?new Response(readFileSync(new URL('../catalog/'+file+'.json',import.meta.url),'utf8'),{status:200}):previous(url,options);
+ };
+ t.after(()=>{globalThis.fetch=previous;clearLocalRuleCatalogCache();});
+}
+
+test("inline spell catalog adds available and spellbook choices without diverging legacy fields",async t=>{
+  await useCastingCatalog(t);
+  const {createCreature}=await import('../creatures.js');
+  const saved=await createCreature('character','Incantatore PWA');
+  await saveCreature({...saved.data,class:'Wizard',class_source:'PHB',level:5,
+    classes:[{name:'Wizard',source:'PHB',level:5}],spellbook_spells:[{...fixtureSpells[0]}]},'default',saved.revision);
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+  click('[data-act="open"][data-id="'+saved.data.id+'"]');
   await until(()=>document.querySelector('[data-field="name"]'));
-  change('[data-field="name"]',"Incantatore PWA");
   click('[data-sheet="magic"]');
-  await until(()=>document.querySelector('[data-act="magic-tool-open"][data-magic-tool="catalog"]'));
-  click('[data-act="magic-tool-open"][data-magic-tool="catalog"]');
+  await until(()=>document.querySelector('[data-act="magic-select-spells"]'));
+  click('[data-act="magic-select-spells"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const search=document.querySelector('#spell-search');
   search.value="Shield";
@@ -628,11 +644,13 @@ test("inline spell catalog adds available and spellbook choices without divergin
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("slot popup casts inline while compact search opens the existing spell detail",async()=>{
+test("slot popup casts inline while compact search opens the existing spell detail",async t=>{
+  await useCastingCatalog(t);
   const {createCreature}=await import('../creatures.js');
   const saved=await createCreature('character','Incantatore con slot');
   const spell={...fixtureSpells[0]};
-  await saveCreature({...saved.data,prepared_spells:[spell],spells:[spell],
+  await saveCreature({...saved.data,class:'Wizard',class_source:'PHB',level:5,
+    classes:[{name:'Wizard',source:'PHB',level:5}],spellbook_spells:[spell],prepared_spells:[spell],spells:[spell],
     spell_slots_manual:true,spell_slots_automatic:false,
     spell_slots_total:[0,3,0,0,0,0,0,0,0,0]},'default',saved.revision);
   click('[data-nav="library"]');
@@ -652,7 +670,7 @@ test("slot popup casts inline while compact search opens the existing spell deta
   assert.equal((await loadCreature(saved.data.id)).data.spell_slots_spent?.[1]||0,0);
   click('[data-act="action-cast-cancel"]');
   await until(()=>!document.querySelector('#action-cast-dialog'));
-  click('[data-act="magic-tool-open"][data-magic-tool="catalog"]');
+  click('[data-act="magic-select-spells"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   assert.equal(document.querySelector('#spell-target'),null);
   assert.equal(document.querySelector('[data-act="magic-known-filter"]'),null);
@@ -672,9 +690,11 @@ test("slot popup casts inline while compact search opens the existing spell deta
 });
 
 test("PWA granted spells group by origin while keeping shared tracker controls",async()=>{
-  // Keep this fixture independent of the preceding popup/navigation tests.
+  // Await completion, not just DOM replacement: the previous navigation may still be finishing.
+  await until(()=>!document.querySelector('[data-nav="library"]').disabled);
   click('[data-nav="library"]');
-  await until(()=>document.querySelector('[data-act="library-add"]'));
+  await until(()=>document.querySelector('#app .library-index')&&
+    !document.querySelector('[data-nav="library"]').disabled);
   click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Poteri tracker condivisi");
@@ -1080,7 +1100,7 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
       stored?.data?.data?.description==="Un testo lungo e modificabile.";
   });
   assert.match(document.querySelector(".document-paper").textContent,/Messaggio segreto/);
-  assert.match(document.querySelector(".document-paper").textContent,/Un testo lungo e modificabile/);
+  await until(()=>document.querySelector(".document-paper")?.textContent.includes('Un testo lungo e modificabile'));
   change('[data-document-part="style"]',"lettera");
   await until(()=>document.querySelector(".document-paper.letter"));
   await until(async()=> {
@@ -1245,7 +1265,9 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-sheet="magic"]');
  await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
  assert.match(document.querySelector('.magic-source-header .magic-source-resources')?.textContent||'',
-   /Slot 1°\s*\d+\s*\/\s*\d+/, 'Class spell sections expose slot usage beside their title');
+   /^Slot$/, 'Class spell sections identify their payment resource');
+ assert.ok(document.querySelector('.magic-overview .magic-level-slot[data-level="1"]'),
+   'Slot usage is exposed in the shared overview');
  const spentBefore=(await loadCreature(saved.data.id)).data.spell_slots_spent[1];
  click('.magic-level-slot[data-level="1"][data-pact="false"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-spells'));
@@ -1298,19 +1320,15 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  assert.doesNotMatch(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/mancano|eccesso/i);
  click('[data-act="magic-tool-close"]');
  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
- await until(()=>document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot'));
- assert.match(document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot').textContent,/3\s*\/\s*4/);
- assert.deepEqual([...document.querySelectorAll('.magic-panel .magic-source:first-of-type .magic-level[data-magic-level]')].map(x=>x.dataset.magicLevel),['1','2','3'],
-  'slot levels render even without any prepared spells');
- assert.equal(document.querySelectorAll('.magic-level-slot + .slot-counter .btn').length,0);
+ await until(()=>document.querySelector('.magic-overview .magic-level-slot[data-level="1"]'));
+ assert.match(document.querySelector('.magic-overview .magic-level-slot[data-level="1"]').textContent,/3\s*\/\s*4/);
+ assert.deepEqual([...document.querySelectorAll('.magic-overview .magic-level-slot')].map(x=>x.dataset.level),['1','2','3'],
+  'The shared slot overview retains all levels even without prepared spells');
  click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
- await until(()=>document.querySelector('#magic-tools-dialog[open] [data-slot-total="1"]'));
- change('[data-slot-total="1"]','7');
- await until(()=>document.querySelector('.magic-level-slot')?.textContent?.includes('/ 7'));
- assert.equal((await loadCreature(saved.data.id)).data.spell_slots_manual,true);
- click('[data-act="slots-automatic"]');
- await until(()=>document.querySelector('.magic-level-slot')?.textContent?.includes('/ 4'));
- click('[data-act="magic-tool-close"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-manager'));
+ assert.equal(document.querySelector('#magic-tools-dialog [data-act="sheet-score-formula"][data-target="slot:1"]').textContent,'4',
+   'The slot manager exposes the maximum through the score formula control');
+ click('#magic-tools-dialog [data-act="magic-tool-close"]');
  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  click('.magic-level-slot[data-level="1"][data-pact="false"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-use"][data-level="1"]'));
@@ -1499,7 +1517,7 @@ test('rapid use of two spell slot levels preserves both spent counters',async()=
  click('.magic-level-slot[data-level="2"][data-pact="false"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-use"][data-level="2"]'));
  click('#magic-tools-dialog [data-act="slot-use"][data-level="2"]');
- await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+2);
+ await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent?.[2]===1);
  assert.deepEqual((await loadCreature(saved.data.id)).data.spell_slots_spent.slice(1,3),[1,1]);
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });

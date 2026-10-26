@@ -80,6 +80,9 @@ try{
  assert.equal(await page.locator('#magic-tools-dialog[open]').count(),1,
    'Slot editor remains open after consumption');
  await page.locator('#magic-tools-dialog .magic-slot-manager-row').first().locator('[data-act="slot-recover"]').click();
+ const recoveryDeadline=Date.now()+15000;
+ while(Number((await record()).spell_slots_spent?.[1]||0)!==before&&Date.now()<recoveryDeadline)
+   await page.waitForTimeout(20);
  assert.equal(Number((await record()).spell_slots_spent?.[1]||0),before);
  await page.locator('#magic-tools-dialog [data-act="magic-tool-close"]').click();
 
