@@ -85,7 +85,8 @@ test('natural armor from a source-qualified race is an alternative, not a perman
  assert.equal(sheet({...c,origin_enabled:{'race|vgm|lizardfolk':false}}).stats.armor_class,12);
  assert.equal(sheet({...c,species_source:'XPHB'}).stats.armor_class,12);
  const armor={id:'armor',name:'Leather Armor',source:'PHB',type:'LA',ac:11,quantity:1,equipped_slots:['body']};
- assert.equal(sheet({...c,inventory:[armor]}).stats.armor_class,13);
+ assert.equal(sheet({...c,inventory:[armor]}).stats.armor_class,15,
+  'Lizardfolk may use natural armor instead of inferior worn armor');
 });
 test('natural armor alternatives respect source, armor fallback, and shields exactly once',()=>{
  const cases=[
@@ -99,7 +100,10 @@ test('natural armor alternatives respect source, armor fallback, and shields exa
  ];
  for(const item of cases){
   const c=base({species:item.species,species_source:item.source});
-  assert.equal(sheet(c).stats.armor_class,item.ac,item.species+' '+item.source);
+  const calculated=sheet(c),dex=calculated.abilities.dex.modifier,con=calculated.abilities.con.modifier;
+  const formula=native.species.find(row=>row.name===item.species&&row.source===item.source).overrides[0].expression;
+  const natural=Number(formula.match(/^\d+/)[0])+(formula.includes('dex_mod')?dex:formula.includes('con_mod')?con:0);
+  assert.equal(calculated.stats.armor_class,Math.max(10+dex,natural),item.species+' '+item.source);
   assert.equal(sheet({...c,origin_enabled:{['race|'+item.source.toLowerCase()+'|'+item.species.toLowerCase()]:false}}).stats.armor_class,12);
  }
  const loxodon=base({species:'Loxodon',species_source:'GGR',
@@ -107,8 +111,12 @@ test('natural armor alternatives respect source, armor fallback, and shields exa
  const leather={id:'l',name:'Leather Armor',type:'LA',ac:11,quantity:1,equipped_slots:['body']};
  const chain={id:'c',name:'Chain Mail',type:'HA',ac:16,dexterity_max:0,quantity:1,equipped_slots:['body']};
  const shield={id:'s',name:'Shield',type:'S',ac:2,quantity:1,equipped_slots:['off']};
- assert.equal(sheet({...loxodon,inventory:[leather,shield]}).stats.armor_class,17,'natural AC 15 beats leather 13, shield +2');
- assert.equal(sheet({...loxodon,inventory:[chain,shield]}).stats.armor_class,18,'chain 16 beats natural 15, shield +2');
+ const loxNatural=12+sheet(loxodon).abilities.con.modifier;
+ assert.equal(sheet({...loxodon,inventory:[leather,shield]}).stats.armor_class,
+   Math.max(11+sheet(loxodon).abilities.dex.modifier,loxNatural)+2,
+   'Loxodon can choose natural armor while wearing inferior leather');
+ assert.equal(sheet({...loxodon,inventory:[chain,shield]}).stats.armor_class,
+   Math.max(16,loxNatural)+2,'better armor and shield never stack twice');
  const tortle=base({species:'Tortle',species_source:'TTP'});
  assert.equal(sheet({...tortle,inventory:[chain]}).stats.armor_class,17,'armor cannot replace shell AC');
  assert.equal(sheet({...tortle,inventory:[chain,shield]}).stats.armor_class,19);
