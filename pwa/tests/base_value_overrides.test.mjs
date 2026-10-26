@@ -16,7 +16,7 @@ const gauntlets={id:'gauntlet-1',name:'Gauntlets of Ogre Power',source:'DMG',typ
 
 test('native base-value supplement stays exactly synced with packaged PWA rules',()=>{
  assert.deepEqual(packaged.base_value_overrides,
-  {feats:native.feats,features:native.features,items:native.items,species:native.species});
+  {feats:native.feats,features:native.features,items:native.items,species:native.species,optional_features:native.optional_features});
 });
 
 test('Tavern Brawler PHB replaces unarmed damage die, not the Strength modifier or all attacks',()=>{
@@ -85,8 +85,97 @@ test('natural armor from a source-qualified race is an alternative, not a perman
  assert.equal(sheet({...c,origin_enabled:{'race|vgm|lizardfolk':false}}).stats.armor_class,12);
  assert.equal(sheet({...c,species_source:'XPHB'}).stats.armor_class,12);
  const armor={id:'armor',name:'Leather Armor',source:'PHB',type:'LA',ac:11,quantity:1,equipped_slots:['body']};
+ assert.equal(sheet({...c,inventory:[armor]}).stats.armor_class,15,
+  'Lizardfolk may use natural armor instead of inferior worn armor');
+});
+test('natural armor alternatives respect source, armor fallback, and shields exactly once',()=>{
+ const cases=[
+  {species:'Autognome',source:'AAG',ac:15},
+  {species:'Thri-kreen',source:'AAG',ac:15},
+  {species:'Goblin',source:'PSZ',ac:13},
+  {species:'Loxodon',source:'GGR',ac:13},
+  {species:'Locathah',source:'LR',ac:14},
+  {species:'Tortle',source:'TTP',ac:17},
+  {species:'Tortle',source:'MPMM',ac:17}
+ ];
+ for(const item of cases){
+  const c=base({species:item.species,species_source:item.source});
+  const calculated=sheet(c),dex=calculated.abilities.dex.modifier,con=calculated.abilities.con.modifier;
+  const formula=native.species.find(row=>row.name===item.species&&row.source===item.source).overrides[0].expression;
+  const natural=Number(formula.match(/^\d+/)[0])+(formula.includes('dex_mod')?dex:formula.includes('con_mod')?con:0);
+  assert.equal(calculated.stats.armor_class,Math.max(10+dex,natural),item.species+' '+item.source);
+  assert.equal(sheet({...c,origin_enabled:{['race|'+item.source.toLowerCase()+'|'+item.species.toLowerCase()]:false}}).stats.armor_class,12);
+ }
+ const loxodon=base({species:'Loxodon',species_source:'GGR',
+  abilities:{str:12,dex:14,con:16,int:10,wis:10,cha:10}});
+ const leather={id:'l',name:'Leather Armor',type:'LA',ac:11,quantity:1,equipped_slots:['body']};
+ const chain={id:'c',name:'Chain Mail',type:'HA',ac:16,dexterity_max:0,quantity:1,equipped_slots:['body']};
+ const shield={id:'s',name:'Shield',type:'S',ac:2,quantity:1,equipped_slots:['off']};
+ const loxNatural=12+sheet(loxodon).abilities.con.modifier;
+ assert.equal(sheet({...loxodon,inventory:[leather,shield]}).stats.armor_class,
+   Math.max(11+sheet(loxodon).abilities.dex.modifier,loxNatural)+2,
+   'Loxodon can choose natural armor while wearing inferior leather');
+ assert.equal(sheet({...loxodon,inventory:[chain,shield]}).stats.armor_class,
+   Math.max(16,loxNatural)+2,'better armor and shield never stack twice');
+ const tortle=base({species:'Tortle',species_source:'TTP'});
+ assert.equal(sheet({...tortle,inventory:[chain]}).stats.armor_class,17,'armor cannot replace shell AC');
+ assert.equal(sheet({...tortle,inventory:[chain,shield]}).stats.armor_class,19);
+});
+
+test('Dragon Hide feat grants source-qualified AC without treating it as an additive bonus',()=>{
+ const c=base({feats_catalog:[{name:'Dragon Hide',source:'XGE'}]});
+ assert.equal(sheet(c).stats.armor_class,15);
+ assert.equal(sheet({...c,origin_enabled:{'feat|xge|dragon hide':false}}).stats.armor_class,12);
+ const armor={id:'a',name:'Leather',type:'LA',ac:11,quantity:1,equipped_slots:['body']};
  assert.equal(sheet({...c,inventory:[armor]}).stats.armor_class,13);
 });
+
+test('class Unarmored Defense and Martial Arts are driven by owned feature and class level',()=>{
+ const classFeatures={class_features:[
+  ...['PHB','XPHB'].flatMap(source=>[
+   {name:'Unarmored Defense',class_name:'Monk',class_source:source,level:1},
+   {name:'Martial Arts',class_name:'Monk',class_source:source,level:1},
+   {name:'Unarmored Defense',class_name:'Barbarian',class_source:source,level:1}
+  ])],
+  subclass_features:[{name:'Dazzling Footwork',class_name:'Bard',class_source:'XPHB',
+   subclass_name:'Dance',subclass_source:'XPHB',level:3}]
+ };
+ const build=(klass,source,level,extra={})=>base({rules_version:source==='XPHB'?'2024':'2014',level,
+   class:klass,class_source:source,classes:[{name:klass,source,level,
+    ...(klass==='Bard'?{subclass:'Dance',subclass_source:'XPHB'}:{})}],...extra});
+ const calc=c=>calculateSheet(c,{...catalogs,classFeatures});
+ const monk=build('Monk','PHB',5,{abilities:{str:12,dex:14,con:12,int:10,wis:16,cha:10}});
+ assert.equal(calc(monk).stats.armor_class,15);
+ assert.equal(calc(monk).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d6');
+ assert.equal(calc({...monk,classes:[{name:'Monk',source:'PHB',level:11}],level:11}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d8');
+ assert.equal(calc({...monk,classes:[{name:'Monk',source:'PHB',level:17}],level:17}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d10');
+ assert.equal(calc({...monk,origin_enabled:{'class|phb|monk':false}}).stats.armor_class,12);
+ const shield={id:'s',name:'Shield',type:'S',ac:2,quantity:1,equipped_slots:['off']};
+ assert.equal(calc({...monk,inventory:[shield]}).stats.armor_class,14,'monk defense ends if wielding shield');
+ assert.equal(calc({...monk,inventory:[shield]}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1');
+ const barbarian=build('Barbarian','PHB',3,{abilities:{str:12,dex:14,con:16,int:10,wis:10,cha:10}});
+ assert.equal(calc({...barbarian,inventory:[shield]}).stats.armor_class,17);
+ const xmonk=build('Monk','XPHB',17);
+ assert.equal(calc(xmonk).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d12');
+ assert.equal(calc(build('Monk','XPHB',5)).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d8');
+ assert.equal(calc(build('Monk','XPHB',1)).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d6');
+ const bard=build('Bard','XPHB',3,{abilities:{str:12,dex:14,con:12,int:10,wis:10,cha:16}});
+ assert.equal(calc(bard).stats.armor_class,15,'Dazzling Footwork grants dance AC');
+ assert.equal(calc({...bard,inventory:[shield]}).stats.armor_class,14);
+ assert.equal(calc({...bard,classes:[{name:'Bard',source:'XPHB',level:3}]}).stats.armor_class,12);
+});
+
+test('Unarmed Fighting style selects 1d8 only with neither weapons nor shields in hand',()=>{
+ const c=base({optional_features_catalog:[{name:'Unarmed Fighting',source:'TCE'}]});
+ assert.equal(sheet(c).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d8');
+ const sword={id:'s',name:'Longsword',type:'M',damage:'1d8',quantity:1,equipped_slots:['main']};
+ assert.equal(sheet({...c,inventory:[sword]}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d6');
+ const shield={id:'h',name:'Shield',type:'S',quantity:1,equipped_slots:['off'],ac:2};
+ assert.equal(sheet({...c,inventory:[shield]}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d6');
+ assert.equal(sheet({...c,optional_features_catalog:[]}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1');
+ assert.equal(sheet({...c,origin_enabled:{'optional|tce|unarmed fighting':false}}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1');
+});
+
 test('manual replacement can be added, inspected, disabled, removed and restored by trait',()=>{
  const trait={key:'trait:custom-base',origin:'Test trait',name:'Test'};
  const c=base({origin_enabled:{'feature:trait:trait:custom-base':true}});

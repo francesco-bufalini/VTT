@@ -1148,7 +1148,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
  await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
- assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Aspetto','Background','Classi e progressione','Talenti','Caratteristiche','Riepilogo','Abilità','Altre competenze','Tratti']);
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Aspetto','Background','Classi','Talenti','Caratteristiche','Riepilogo','Abilità','Altre competenze','Tratti']);
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('.battle-hp-controls [data-act="hp-damage"]'));
  assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),
@@ -1388,7 +1388,7 @@ test("Info contains scores, skills, tools, languages, weapons and armor without 
   catalogs:{featDetails:[{description:"Il talento permette di agire rapidamente."}]}};
  const info=nativeSection(sample,"info",opts),stats=nativeSection(sample,"stats",opts);
  const order=[...info.matchAll(/data-panel="([^"]+)"/g)].map(m=>m[1]);
- assert.deepEqual(order,["Identità","Aspetto","Background","Classi e progressione","Talenti","Caratteristiche","Riepilogo","Abilità","Altre competenze"]);
+ assert.deepEqual(order,["Identità","Aspetto","Background","Classi","Talenti","Caratteristiche","Riepilogo","Abilità","Altre competenze"]);
  assert.match(info,/Livello del privilegio: 4/);
  // The Talenti panel is a navigable index; description and benefits are
  // shown by the unique owned feat trait in Tratti, not duplicated in Info.
