@@ -11,6 +11,13 @@ const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
+# Temporary in-memory deliveries for paired PWAs; no player data is persisted
+# to the desktop or exposed through unauthenticated URLs.
+const SHARE_CHUNK_BYTES := 128 * 1024
+const SHARE_MAX_BYTES := 16 * 1024 * 1024
+const SHARE_MAX_QUEUED_BYTES := 32 * 1024 * 1024
+const SHARE_PEER_TTL_MS := 25000
+const SHARE_TRANSFER_TTL_MS := 15 * 60 * 1000
 # Module imports, multiple phones and an existing Service Worker can issue
 # several independent requests at once. Never drop accepted connections merely
 # because a transient burst has filled the active slots.
@@ -129,6 +136,10 @@ var _short_code_expiry := 0
 var _short_code_attempts := 0
 var _public_spells_payload := PackedByteArray()
 var _public_spell_entries: Array[Dictionary] = []
+var _share_session_key := ""
+var _share_peers: Dictionary = {}
+var _share_deliveries: Dictionary = {}
+var _share_queued_bytes := 0
 
 # PWA HTTP runs only while the native 3D board is open. A permanently
 # installed autoload tracks the scene, but does not keep a listening socket
@@ -617,11 +628,11 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			"desktop_online": _web_board_controller(board) != null,
 			"pairing_required": true})
 		return
-	if path not in ["/api/session", "/api/map", "/api/action", "/api/conditions"]:
+	if path not in ["/api/session", "/api/map", "/api/action", "/api/conditions"] and not path.begins_with("/api/share/"):
 		_answer(client, 404, {"error": "not_found"})
 		return
-	if (path == "/api/action" and method != "POST") or (
-		path != "/api/action" and method != "GET"
+	if ((path == "/api/action" or path.begins_with("/api/share/")) and method != "POST") or (
+		path != "/api/action" and not path.begins_with("/api/share/") and method != "GET"
 	):
 		_answer(client, 405, {"error": "method_not_allowed"})
 		return
@@ -632,6 +643,15 @@ func _handle_http(client: Dictionary, method: String, path: String,
 	var controller := _web_board_controller(board)
 	if controller == null:
 		_answer(client, 503, {"error": "no_active_desktop_session"})
+		return
+	if path.begins_with("/api/share/"):
+		var game_key := String(board.get("session_key"))
+		if _share_session_key != game_key:
+			_share_session_key = game_key
+			_share_peers.clear()
+			_share_deliveries.clear()
+			_share_queued_bytes = 0
+		_handle_share(client, path, body)
 		return
 	if path == "/api/session":
 		_answer(client, 200, {"protocol": 1, "session": board.get("session_key"),
@@ -651,6 +671,147 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		var result: Dictionary = await controller.execute_web_action(
 			String(request.action), request.payload)
 		_answer(client, 200, result)
+
+
+# Paired devices share through the existing session HTTP bridge. The
+# sender uploads bounded chunks and the recipient explicitly imports or
+# rejects a complete delivery. Only the intended device can pull its chunks.
+func _share_valid_id(value: Variant) -> bool:
+	return value is String and (value as String).length() == 32 and (value as String).is_valid_hex_number()
+
+
+func _share_forget(transfer_id: String) -> void:
+	if not _share_deliveries.has(transfer_id):
+		return
+	_share_queued_bytes = maxi(0, _share_queued_bytes - int(_share_deliveries[transfer_id].get("received_bytes", 0)))
+	_share_deliveries.erase(transfer_id)
+
+
+func _share_expire() -> void:
+	var now := Time.get_ticks_msec()
+	for peer_id: Variant in _share_peers.keys():
+		if now - int(_share_peers[peer_id].get("seen", 0)) > SHARE_PEER_TTL_MS:
+			_share_peers.erase(peer_id)
+	for delivery_id: Variant in _share_deliveries.keys():
+		if now - int(_share_deliveries[delivery_id].get("created", 0)) > SHARE_TRANSFER_TTL_MS:
+			_share_forget(String(delivery_id))
+
+
+func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> void:
+	if body.is_empty() or String(body.get_string_from_utf8()).length() > BODY_LIMIT:
+		_answer(client, 413, {"error": "invalid_share_body"})
+		return
+	var value: Variant = JSON.parse_string(body.get_string_from_utf8())
+	if not value is Dictionary:
+		_answer(client, 400, {"error": "invalid_share_json"})
+		return
+	var request: Dictionary = value
+	var device_id: Variant = request.get("device_id", null)
+	if not _share_valid_id(device_id):
+		_answer(client, 400, {"error": "invalid_device_id"})
+		return
+	_share_expire()
+	var now := Time.get_ticks_msec()
+	if path == "/api/share/peers":
+		var nickname: String = String(request.get("device_name", "")).strip_edges()
+		if nickname.is_empty() or nickname.length() > 60:
+			_answer(client, 400, {"error": "invalid_device_name"})
+			return
+		_share_peers[device_id] = {"name": nickname, "seen": now}
+		var others: Array[Dictionary] = []
+		for peer_id: Variant in _share_peers.keys():
+			if peer_id != device_id:
+				others.append({"id": peer_id, "name": _share_peers[peer_id].name})
+		var inbox: Array[Dictionary] = []
+		for transfer_id: Variant in _share_deliveries.keys():
+			var entry: Dictionary = _share_deliveries[transfer_id]
+			if entry.recipient == device_id and entry.received_parts == entry.parts:
+				inbox.append({"id": transfer_id, "kind": entry.kind, "title": entry.title,
+					"size": entry.size, "parts": entry.parts, "sender_name": entry.sender_name})
+		_answer(client, 200, {"devices": others, "inbox": inbox})
+		return
+	if not _share_peers.has(device_id):
+		_answer(client, 400, {"error": "device_not_registered"})
+		return
+	if path == "/api/share/chunk":
+		var recipient: Variant = request.get("recipient_id", null)
+		var transfer_id: Variant = request.get("transfer_id", null)
+		var kind: Variant = request.get("kind", null)
+		var title: Variant = request.get("title", null)
+		var index := int(request.get("index", -1))
+		var count := int(request.get("parts", 0))
+		var byte_size := int(request.get("size", 0))
+		var encoded: Variant = request.get("data", null)
+		if not _share_valid_id(recipient) or recipient == device_id or not _share_valid_id(transfer_id) or \
+			kind not in ["creature", "homebrew"] or not title is String or (title as String).length() > 160 or \
+			count < 1 or count > 128 or byte_size < 1 or byte_size > SHARE_MAX_BYTES or \
+			count != int(ceil(float(byte_size) / SHARE_CHUNK_BYTES)) or index < 0 or index >= count or \
+			not encoded is String or (encoded as String).length() > 180000:
+			_answer(client, 400, {"error": "invalid_transfer_chunk"})
+			return
+		var decoded: PackedByteArray = Marshalls.base64_to_raw(encoded)
+		var expected := mini(SHARE_CHUNK_BYTES, byte_size - index * SHARE_CHUNK_BYTES)
+		if decoded.size() != expected or Marshalls.raw_to_base64(decoded) != encoded:
+			_answer(client, 400, {"error": "invalid_chunk_encoding"})
+			return
+		if not _share_deliveries.has(transfer_id):
+			if index != 0 or not _share_peers.has(recipient) or _share_deliveries.size() >= 24:
+				_answer(client, 400, {"error": "recipient_offline_or_queue_full"})
+				return
+			var chunks: Array = []
+			chunks.resize(count)
+			_share_deliveries[transfer_id] = {
+				"sender": device_id, "sender_name": _share_peers[device_id].name,
+				"recipient": recipient, "kind": kind, "title": title,
+				"size": byte_size, "parts": count, "received_parts": 0,
+				"received_bytes": 0, "created": now, "chunks": chunks
+			}
+		var entry: Dictionary = _share_deliveries[transfer_id]
+		if entry.sender != device_id or entry.recipient != recipient or entry.kind != kind or \
+			entry.title != title or entry.parts != count or entry.size != byte_size:
+			_answer(client, 400, {"error": "transfer_id_collision"})
+			return
+		var chunks: Array = entry.chunks
+		if chunks[index] != null:
+			if chunks[index] != encoded:
+				_answer(client, 400, {"error": "chunk_conflict"})
+				return
+		else:
+			if _share_queued_bytes + decoded.size() > SHARE_MAX_QUEUED_BYTES:
+				_answer(client, 413, {"error": "share_queue_full"})
+				return
+			chunks[index] = encoded
+			entry.chunks = chunks
+			entry.received_parts = int(entry.received_parts) + 1
+			entry.received_bytes = int(entry.received_bytes) + decoded.size()
+			_share_queued_bytes += decoded.size()
+			_share_deliveries[transfer_id] = entry
+		_answer(client, 200, {"ok": true, "uploaded": entry.received_parts, "parts": count})
+		return
+	if path == "/api/share/pull":
+		var transfer_id: Variant = request.get("transfer_id", null)
+		var index := int(request.get("index", -1))
+		if not _share_valid_id(transfer_id) or not _share_deliveries.has(transfer_id):
+			_answer(client, 404, {"error": "transfer_not_found"})
+			return
+		var entry: Dictionary = _share_deliveries[transfer_id]
+		if entry.recipient != device_id or entry.received_parts != entry.parts or index < 0 or index >= int(entry.parts):
+			_answer(client, 400, {"error": "transfer_not_available"})
+			return
+		_answer(client, 200, {"data": entry.chunks[index], "index": index})
+		return
+	if path == "/api/share/ack":
+		var transfer_id: Variant = request.get("transfer_id", null)
+		if not _share_valid_id(transfer_id) or not _share_deliveries.has(transfer_id):
+			_answer(client, 404, {"error": "transfer_not_found"})
+			return
+		if _share_deliveries[transfer_id].recipient != device_id:
+			_answer(client, 400, {"error": "not_recipient"})
+			return
+		_share_forget(transfer_id)
+		_answer(client, 200, {"ok": true})
+		return
+	_answer(client, 404, {"error": "unknown_share_route"})
 
 
 # Serve exactly the selection available in the native sheet/token dialogs,
