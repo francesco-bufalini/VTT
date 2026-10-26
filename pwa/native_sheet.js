@@ -3,6 +3,7 @@ import {hitDicePools} from './character_core.js';
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
+import {contentForRules} from './source_edition.js';
 import {itemKind,resolveOwnedItem} from './item_controls.js';
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 export const SHEET_SECTIONS = [["info","Info"],
@@ -286,7 +287,7 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
   return '<article class="native-entry"><div class="row between"><strong>'+esc(row.name||row.origin_name||row.key||'Voce '+(i+1))+'</strong>'+
    (!automatic?'<button class="btn small danger" data-act="native-remove" data-list="'+key+'" data-index="'+i+'">Rimuovi</button>':'<span class="tag">Da origine</span>')+'</div><div class="columns">'+ROW_FIELDS[key].map(([field,label,type,min,max])=>{
     const category=key==='classes'?(field==='name'?'classes':field==='subclass'?'subclasses':''):key==='feats_catalog'&&field==='name'?'feats':key==='backgrounds_catalog'&&field==='name'?'backgrounds':'';
-    const candidates=list(catalogs[category]).filter(ref=>key!=='classes'||field==='name'||ref.class_name===row.name&&(!row.source||ref.class_source===row.source));
+    const candidates=contentForRules(list(catalogs[category]),c.rules_version).filter(ref=>key!=='classes'||field==='name'||ref.class_name===row.name&&(!row.source||ref.class_source===row.source));
     if(category&&candidates.length){
       const chosen=candidates.find(ref=>ref.name===row[field]&&(!row[field==='name'?'source':'subclass_source']||ref.source===row[field==='name'?'source':'subclass_source']));
       const selected=chosen?String(chosen.id||chosen.name+'|'+chosen.source):row[field]?'__current__':'';
@@ -440,11 +441,10 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
  const reference=(label,key,category)=>{
-   const rows=list(catalogs[category]).filter(r=>r?.name &&
+   const rows=contentForRules(list(catalogs[category]),c.rules_version).filter(r=>r?.name &&
      (key!=='species'||!r.raceName) &&
      (key!=='subrace'||!!r.raceName&&r.raceName===c.species&&(!c.species_source||r.raceSource===c.species_source)) &&
      (key!=='subclass'||!!c.class&&(!r.class_name||r.class_name===c.class)&&(!c.class_source||!r.class_source||r.class_source===c.class_source)) &&
-     (key!=='class'||c.rules_version!=='2014'||r.source!=='XPHB') &&
      (key!=='class'||c.rules_version!=='2024'||r.source!=='PHB'));
    const current=c[key]||'', source=c[key+'_source']||'';
    const active=rows.find(r=>r.name===current&&(!source||r.source===source));
