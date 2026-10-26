@@ -1,4 +1,5 @@
 // Godot SpellcastingTab mirrors legacy 'spells' with available 'prepared_spells'.
+import {isContentAvailableForRules,contentForRules} from './source_edition.js';
 const arr=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??'').trim().toLowerCase();
 export const spellId=row=>String(typeof row==="string"?row:row?.id||"").trim();
@@ -56,7 +57,7 @@ export function spellEligible(entry,member){
 export function spellsForEdition(catalog,edition='2014'){
  if(edition==='2024')return arr(catalog).filter(s=>!String(s.id).startsWith('phb2014_'));
  const legacy=arr(catalog).some(s=>String(s.id).startsWith('phb2014_'));
- return arr(catalog).filter(s=>!['XPHB','EFA'].includes(String(s.source).toUpperCase())&&
+ return contentForRules(catalog,edition).filter(s=>
   !(legacy&&String(s.source).toUpperCase()==='PHB'&&!String(s.id).startsWith('phb2014_')));
 }
 export function castingSources(entry,classes,catalog=[]){
@@ -153,6 +154,8 @@ export function classSelectionWarnings(member,count){
 }
 export function addSelectedSpell(creature,entry,target="prepared_spells",{member,classes=[],catalog=[],grantedSpells=[],allowNonClass=false}={}){
   if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");
+  if(!isContentAvailableForRules(entry,creature?.rules_version))
+    throw Error('Questa fonte non è disponibile per le regole 2014.');
   const spell=spellRecord(entry),rows=target==="prepared_spells"?
     availableSpells(creature):arr(creature.spellbook_spells).slice();
   if(target==='prepared_spells'&&member&&arr(grantedSpells).some(grant=>
@@ -444,6 +447,7 @@ export function originChoiceMatches(choice,spell,{otherLists=false}={}){
  return {matches:false,supported:anySupported};
 }
 export function applyOriginSpellChoice(record,choice,spell,{ability='',otherLists=false}={}){
+ if(!isContentAvailableForRules(spell,record?.rules_version))throw Error('Questa fonte non è disponibile per le regole 2014.');
  if(!originChoiceMatches(choice,spell,{otherLists}).matches)throw Error('Incantesimo non ammesso da questa concessione.');
  const rows=structuredClone(arr(record.origin_spell_grants)),selected=rows.filter(g=>g.source_choice_id===choice.id&&!g.disabled);
  if(selected.length>=choice.count)throw Error('Scelta già completa.');

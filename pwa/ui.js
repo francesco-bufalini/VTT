@@ -36,6 +36,7 @@ import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
+import {isContentAvailableForRules} from './source_edition.js';
 
 // A service worker can briefly serve an older item_controls.js alongside a
 // newer ui.js on a slow connection. A named import added in a later release
@@ -88,7 +89,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, sessionPane:"", disclosureState:new Map(),
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -490,7 +491,8 @@ function stopSubscriptions() {
 }
 async function navigate(page){
   if(!sections.has(page))return;
-  if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';}
+  if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';state.catalogAssignCreatureId='';}
+  else if(state.editor)state.catalogAssignCreatureId=state.creatureId||'';
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
@@ -767,8 +769,20 @@ async function libraryView(){
      '<button type="button" class="btn primary" data-act="create">Crea creatura</button></div>'+
    '</div></dialog>';
 }
+function catalogTargetCreature(){
+  const id=state.pendingItemOwner||state.catalogAssignCreatureId||state.featAssignReturnId||state.creatureId||
+    state.cachedCreatures?.[0]?.id;
+  if(!id)return null;
+  const opened=state.editor?.read();
+  return opened?.id===id?opened:(state.cachedCreatures||[]).find(row=>row.id===id)||null;
+}
+function catalogRowsForTarget(){
+  const target=catalogTargetCreature();
+  return state.catalogRows.map((row,i)=>({row,i})).filter(({row})=>
+    !target||isContentAvailableForRules(row,target.rules_version));
+}
 function renderCatalogRows() {
-  const matches=state.catalogRows.map((row,i)=>({row,i}))
+  const matches=catalogRowsForTarget()
     .filter(({row})=>matchesSearch(state.catalogQuery,row.name,row.source));
   const {items,shown,total}=pageResults(matches,state.catalogResultLimit);
   return (items.length?items.map(({row,i})=>
@@ -779,7 +793,11 @@ function renderCatalogRows() {
 }
 async function catalogView() {
   state.catalogRows=await catalogEntries(state.catalogCategory);
-  const chosen=state.catalogRows[state.catalogSelected];
+  let chosen=state.catalogRows[state.catalogSelected];
+  const target=catalogTargetCreature();
+  if(chosen&&target&&!isContentAvailableForRules(chosen,target.rules_version)){
+    state.catalogSelected=-1;chosen=null;
+  }
   let detail="";
   if(chosen){
     const full=await detailedEntry(state.catalogCategory,chosen);
@@ -792,7 +810,7 @@ async function catalogView() {
       (full._description_warning?'<p class="warning">'+esc(full._description_warning)+'</p>':"")+
       (assignable && (state.cachedCreatures||[]).length?
       '<div class="separator"></div>'+(state.pendingItemOwner&&state.catalogCategory==='items'?'':'<label>Aggiungi alla scheda<select id="catalog-creature">')+
-      (state.pendingItemOwner&&state.catalogCategory==='items'?'':state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+((state.pendingItemOwner||state.featAssignReturnId)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join(""))+
+      (state.pendingItemOwner&&state.catalogCategory==='items'?'':state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+((state.pendingItemOwner||state.catalogAssignCreatureId||state.featAssignReturnId||state.creatureId||state.cachedCreatures?.[0]?.id)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join(""))+
       (state.pendingItemOwner&&state.catalogCategory==='items'?'':'</select></label>')+'<div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
       '':"")+
       (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
@@ -814,7 +832,7 @@ async function catalogView() {
       '<option value="'+id+'" '+(state.catalogCategory===id?'selected':'')+'>'+label+'</option>').join("")+
       '</select></label><label class="vtt-list-search">Ricerca<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
       '" placeholder="Nome o fonte"></label></div><p class="hint">'+
-      state.catalogRows.length+' voci nel catalogo · risultati caricati progressivamente</p>'+
+      catalogRowsForTarget().length+' voci nel catalogo · risultati caricati progressivamente</p>'+
       '<div id="catalog-results" class="catalog-results vtt-selection-list">'+renderCatalogRows()+'</div>')+
     (quickPanel?'<details class="archive-tools catalog-create"><summary>Crea contenuto personalizzato</summary>'+quickPanel+'</details>':''));
 }
@@ -1028,8 +1046,12 @@ function paintInventorySearchResults(){
     state.inventorySearchMatches=[];
     return;
   }
-  const results=inventorySearchResults(state.editor.read().inventory||[],
-    state.referenceCatalogs.items||[],query,state.inventorySearchLimit);
+  const c=state.editor.read();
+  // Keep catalog indexes stable so tapping a result still opens that entry.
+  const options=(state.referenceCatalogs.items||[]).map(row=>
+    isContentAvailableForRules(row,c.rules_version)?row:null);
+  const results=inventorySearchResults(c.inventory||[],
+    options,query,state.inventorySearchLimit);
   state.inventorySearchMatches=results;
   area.hidden=false;
   area.innerHTML=(results.length?results.map((row,i)=>
@@ -1052,7 +1074,7 @@ function paintInventorySearchResults(){
 }
 function openInventorySearchAddDialog(catalogIndex){
   const entry=state.referenceCatalogs.items?.[catalogIndex],creature=state.editor?.read();
-  if(!entry||!creature||!entry.name)throw Error('Oggetto del catalogo non disponibile.');
+  if(!entry||!creature||!entry.name||!isContentAvailableForRules(entry,creature.rules_version))throw Error('Oggetto del catalogo non disponibile per queste regole.');
   app.querySelector('#inventory-search-add-dialog')?.remove();
   const options=inventoryContainers(creature).map(row=>
     '<option value="'+esc(row.id)+'">'+esc(row.name)+'</option>').join('');
@@ -2453,7 +2475,7 @@ function originChoicesView(calculated){
    .sort((a,b)=>Number(b.id===state.pendingSpellChoiceId)-Number(a.id===state.pendingSpellChoiceId));
  if(!choices.length)return '';
  return panel('Scelte da origini',choices.map(choice=>{
-  const eligible=choice.spell_options?.length?state.spellCatalog||[]:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version||'2014');
+  const eligible=spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version||'2014');
   const offered=eligible.filter(spell=>originChoiceMatches(choice,spell).matches&&!choice.selected.some(selected=>selected.spell_id===spell.id));
   const supported=(state.spellCatalog||[]).some(spell=>originChoiceMatches(choice,spell).supported);
   return '<article class="native-entry pending-spell-choice'+(choice.id===state.pendingSpellChoiceId?' is-target':'')+
@@ -3247,7 +3269,7 @@ async function handleField(target) {
     if(target.value==='__current__')return;
     const rows=state.referenceCatalogs[category]||[];
     const selection=rows.find(r=>String(r.id||r.name+'|'+(r.source||''))===target.value);
-    if(target.value&&!selection)throw Error('Riferimento non presente nel catalogo');
+    if(target.value&&(!selection||!isContentAvailableForRules(selection,creature.rules_version)))throw Error('Riferimento non disponibile per queste regole');
     const selected=selection||{};
     const changes={...referencePatch(creature,key,selected),...(key==="background"?quickGrantPatch(creature,selected):{})};
     await patch(changes);
@@ -3313,7 +3335,7 @@ async function handleField(target) {
     if(target.value==='__current__')return;
     const rows=state.referenceCatalogs[target.dataset.category]||[];
     const selected=rows.find(row=>String(row.id||row.name+'|'+row.source)===target.value);
-    if(target.value&&!selected)throw Error('Riferimento non valido');
+    if(target.value&&(!selected||!isContentAvailableForRules(selected,creature.rules_version)))throw Error('Riferimento non disponibile per queste regole');
     await patch(rowReferencePatch(creature,target.dataset.nativePick,Number(target.dataset.index),target.dataset.key,selected));
     await render();return;
   }
@@ -4018,7 +4040,7 @@ async function handleAction(target){
     const catalogIndex=Number(dialog?.dataset.catalogIndex);
     const entry=state.referenceCatalogs.items?.[catalogIndex];
     const record=state.editor?.read();
-    if(!dialog||!entry||!record)throw Error('Oggetto del catalogo non più disponibile.');
+    if(!dialog||!entry||!record||!isContentAvailableForRules(entry,record.rules_version))throw Error('Oggetto del catalogo non disponibile per queste regole.');
     const quantity=Number(dialog.querySelector('#inventory-search-add-quantity')?.value);
     if(!Number.isSafeInteger(quantity)||quantity<1||quantity>99999)
       throw Error('La quantità deve essere compresa tra 1 e 99999.');
@@ -5121,7 +5143,7 @@ async function handleAction(target){
     return;
   }
   if(act==='feat-catalog'){
-    state.featAssignReturnId=state.creatureId;
+    state.featAssignReturnId=state.creatureId;state.catalogAssignCreatureId=state.creatureId;
     state.catalogCategory='feats';state.catalogSelected=-1;state.catalogQuery='';
     await navigate('catalog');return;
   }
@@ -5323,6 +5345,7 @@ async function handleAction(target){
     const stored=await loadCreature(cId);
     if(!stored||!entry)throw new Error("Seleziona contenuto e creatura.");
     const editor=await openCreatureEditor(cId),sheet=editor.read();
+    if(!isContentAvailableForRules(entry,sheet.rules_version))throw Error('Questo materiale non è disponibile per le regole 2014.');
     const category=entry._category;
     if(category==="spells"){
       await editor.update(addSelectedSpell(sheet,entry,"prepared_spells"));
@@ -5840,7 +5863,7 @@ async function handleAction(target){
     state.inventorySelectedIndex=created.index;state.sheetPopup='';state.scrollSpellQuery='';
     await patch({inventory:created.inventory});await render();message("Pergamena aggiunta all'inventario.");return;
   }
-  if(act==="item-catalog"){const owner=state.creatureId;state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;await render();return;}
+  if(act==="item-catalog"){const owner=state.creatureId;state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;await navigate("catalog");return;}
   if(act==="document-add"){
     if(!state.editor)throw Error("Apri una creatura prima di creare un documento.");
     const localId="doc_"+crypto.randomUUID().replace(/-/g,"");
@@ -6294,6 +6317,10 @@ function listen(){
       if(!DETAILS.some(([key])=>key===target.value))return;
       flushPendingFields().then(()=>{state.detail=target.value;return render();})
         .catch(error=>message(errorMessage(error),true));return;
+    }
+    if(target?.id==='catalog-creature'){
+      state.catalogAssignCreatureId=target.value;state.catalogSelected=-1;state.catalogResultLimit=90;
+      render().catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==="catalog-category"){
       state.catalogCategory=target.value;state.catalogSelected=-1;state.catalogResultLimit=90;
