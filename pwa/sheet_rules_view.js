@@ -539,6 +539,17 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
  return rows;
 }
 
+// An untyped 2014 subclass feature may own a resource without specifying how
+// many charges an activation consumes. Show its real trait under the tracker,
+// but never invent a fixed "Use 1" action (e.g. Battle Master dice or Balm).
+export function resourceLinkedSubclassTrait(tracker={},features=[],powers=[]){
+ const id=String(tracker.origin_id||'');
+ if(tracker.disabled||!id.startsWith('feature:class|phb|')||!id.includes('|subclass|'))return null;
+ if(powers.some(row=>row.kind==='ability'&&row.tracker_id===tracker.id))return null;
+ const feature=features.find(row=>row.origin_id===id&&!row.disabled&&!row.inactive);
+ return feature?{origin_id:id,name:feature.name}:null;
+}
+
 // Play presentation reuses the existing editors and delegated actions. Only
 // transient layout state lives here; rules, storage and payment stay unchanged.
 export function isPersistentSpell(spell){
@@ -740,10 +751,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);
    bind('resource:'+t.id,source);
    const context=powerGroups.has(key)?'power-resource:'+key:'resource:'+t.id;
+   const linked=resourceLinkedSubclassTrait(t,d.features||[],powerRows);
+   const reference=linked?'<div class="play-resource-power-row play-resource-readonly" data-linked-subclass-resource="'+esc(t.id)+'">'+
+    '<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(linked.origin_id)+'"'+
+    ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon('proficiency')+
+    '<span><strong>'+esc(linked.name)+'</strong><small>Dettagli della capacità · gestisci gli utilizzi dal tracker</small></span></button></div>':'';
    return '<div class="play-resource-group" data-resource-tracker="'+esc(t.id)+'"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'">'+
     '<span class="play-resource-copy"><strong class="play-resource-name">'+esc(t.name)+'</strong><small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
     '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
-    '</div>'+bonusRows(t.id)+abilityButtons(key)+'</div>';
+    '</div>'+bonusRows(t.id)+abilityButtons(key)+reference+'</div>';
   }).join('');
   // Unlimited abilities belong to their granting trait rather than to a
   // fictitious free-use tracker. Keep paid powers under their real trackers.
