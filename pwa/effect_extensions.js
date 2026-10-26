@@ -114,7 +114,11 @@ export function applyEffectExtensions(effect={},extensions=[],target={},variable
   if(row.operation==='set_range'&&numeric!==null)range=numeric;
   else additions.push({...row,resolved_value:numeric});
  }
- return {...effect,...(Number.isFinite(range)?{range_feet:range}:{}),
+ const nativeRange=Number.isFinite(range)&&matches.some(row=>row.operation==='set_range')?
+  (effect.range&&typeof effect.range==='object'&&effect.range.distance?
+    {...effect.range,distance:{...effect.range.distance,amount:range,type:'feet'}}:
+    typeof effect.range==='string'?range+' ft':effect.range):effect.range;
+ return {...effect,...(Number.isFinite(range)?{range_feet:range}:{}),range:nativeRange,
   effect_extensions:matches,
   extended_effects:additions};
 }
