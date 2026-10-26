@@ -1325,8 +1325,10 @@ async function editorView() {
     body=magicOverview(c,calculated)+
       panel("Incantesimi disponibili",
         calculated.casting_classes.map(member=>{
-          return '<section class="magic-source"><header class="magic-source-header"><h3>'+esc(member.name)+'</h3>'+
-            '<span class="hint">'+esc(member.source||'')+'</span></header>'+
+          return '<section class="magic-source"><header class="magic-source-header">'+
+            '<div class="magic-source-title"><h3>'+esc(member.name)+'</h3>'+
+            (member.source?'<span class="hint">'+esc(member.source)+'</span>':'')+'</div>'+
+            '<div class="magic-source-resources" aria-label="Risorse di lancio">'+magicSlotUsageChips(calculated)+'</div></header>'+
             castingStatistics(c,member.id,member.ability)+
             '<div class="magic-source-controls">'+
             (member.mode==='Preparati'?
@@ -1336,9 +1338,9 @@ async function editorView() {
             '</div>'+
             spellList(c,'prepared_spells',member.id,calculated.casting_classes,{includeSlots:false})+'</section>';
         }).join('')+
+        originPowersView(c,calculated)+
         manualMagicSources(c,calculated)+
         'magic-panel')+
-      originPowersView(c,calculated)+
       infusionPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
@@ -2215,6 +2217,76 @@ function magicSlotSummary(calculated=state.calculated){
  }
  return levels;
 }
+// The header is a readout of the same slot pools represented by the
+// interactive per-level buttons below. Never aggregate unrelated slot levels.
+function magicSlotUsageChips(calculated){
+ const entries=[];
+ for(const [level,pools] of magicSlotSummary(calculated)){
+   for(const [name,slot] of [['Slot',pools.classSlot],['Patto',pools.pact]]){
+     if(!slot)continue;
+     const remaining=Math.max(0,Number(slot.total||0)-Number(slot.spent||0));
+     entries.push('<span class="magic-source-resource" title="'+name+' livello '+level+'">'+
+       '<span class="magic-source-resource-label">'+name+' '+level+'°</span>'+
+       '<strong>'+remaining+' / '+Math.max(0,Number(slot.total)||0)+'</strong></span>');
+   }
+ }
+ return entries.join('')||'<span class="magic-source-resource">'+
+   '<span class="magic-source-resource-label">Slot</span><strong>0 / 0</strong></span>';
+}
+function magicTrackerUsageChip(tracker){
+ const id=esc(tracker.id),name=esc(tracker.name||'Tracker');
+ const max=Math.max(0,Number(tracker.max)||0);
+ const spent=Math.max(0,Number(tracker.spent)||0);
+ return '<span class="magic-source-resource magic-source-tracker" data-magic-tracker-id="'+id+'">'+
+   '<span class="magic-source-resource-label">'+name+'</span>'+
+   '<span class="magic-source-resource-counter"><strong data-tracker-remaining="'+id+'">'+
+     Math.max(0,max-spent)+'</strong> / '+max+'</span>'+
+   '<button type="button" data-act="tracker-less" data-tracker-id="'+id+'" '+
+     'aria-label="Recupera un utilizzo di '+name+'" title="Recupera"'+
+     (spent<=0?' disabled':'')+'>+</button>'+
+   '<button type="button" data-act="tracker-more" data-tracker-id="'+id+'" '+
+     'aria-label="Consuma un utilizzo di '+name+'" title="Consuma"'+
+     (spent>=max?' disabled':'')+'>−</button></span>';
+}
+function originSpellSections(c,calculated,renderRow){
+ // Preserve grouping by granting origin even when grants use different
+ // payment methods or share a tracker with a different origin.
+ const origins=new Map();
+ for(const grant of calculated.origin_spells||[]){
+   const origin=String(grant.origin_id||'other');
+   if(!origins.has(origin))origins.set(origin,{
+     name:grant.origin_name||'Origine non specificata',
+     ability:grant.spellcasting_ability||'int',items:[],trackers:new Map(),
+     usesSlots:false,missingTracker:false,hasFree:false
+   });
+   const group=origins.get(origin);
+   const info=magicSpellInfo((state.spellCatalog||[]).find(s=>s.id===grant.spell_id)||
+     {id:grant.spell_id,name:grant.spell_id});
+   group.items.push({grant,info});
+   const mode=grant.payment_mode||(grant.tracker_id?'tracker':
+     ['known','prepared'].includes(grant.mode)?'slot':'free');
+   if(mode==='slot')group.usesSlots=true;
+   else if(mode==='tracker'){
+     const tracker=(calculated.trackers||[]).find(t=>t.id===grant.tracker_id&&!t.disabled);
+     if(tracker)group.trackers.set(tracker.id,tracker);
+     else group.missingTracker=true;
+   }else group.hasFree=true;
+ }
+ return [...origins.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
+   .map(([origin,group])=>{
+     const badges=(group.usesSlots?magicSlotUsageChips(calculated):'')+
+       [...group.trackers.values()].map(magicTrackerUsageChip).join('')+
+       (group.missingTracker?'<span class="magic-source-resource magic-source-resource--warning">Tracker non disponibile</span>':'')+
+       (group.hasFree&&!group.usesSlots&&!group.trackers.size&&!group.missingTracker?
+         '<span class="magic-source-resource magic-source-resource--free">Senza costo</span>':'');
+     return '<section class="magic-source magic-origin-panel" data-magic-origin="'+esc(origin)+'">'+
+       '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(group.name)+'</h3></div>'+
+       '<div class="magic-source-resources" aria-label="Risorse di lancio">'+badges+'</div></header>'+
+       castingStatistics(c,'origin:'+origin,group.ability)+
+       groupedMagicSpells(group.items,({grant,info})=>renderRow(grant,info))+
+       '</section>';
+   }).join('');
+}
 function magicLevelSlotChip(level,slot,pact=false){
  const total=Math.max(0,Number(slot.total)||0),spent=Math.max(0,Number(slot.spent)||0);
  const remaining=Math.max(0,total-spent);
@@ -2452,6 +2524,7 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
      (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(grant.id)+'">Cambia scelta</button>':'')+
      '</details></div>';
  };
+ if(!forBattle)return originSpellSections(c,calculated,configured);
  const sortGroups=(a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'});
  // A tracker must have a popup even when it has no spells or activated abilities.
  if(forBattle)for(const tracker of calculated.trackers||[]){
@@ -2516,38 +2589,6 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
      spellRows+abilityRows,'magic-panel magic-tracker-panel');
    return forBattle?'<div data-battle-power-group="'+esc(key)+'">'+popup+'</div>':popup;
  }).join('');
- if(!forBattle){
-   // An origin is the identity of a spell section; its payment method is not.
-   // Keep slot-, tracker- and at-will spells together under the granting trait.
-   const origins=new Map();
-   for(const grant of calculated.origin_spells||[]){
-     const origin=String(grant.origin_id||'other');
-     if(!origins.has(origin))origins.set(origin,{name:grant.origin_name||'Origine non specificata',
-       ability:grant.spellcasting_ability||'int',items:[],trackers:new Map()});
-     const group=origins.get(origin);
-     const info=magicSpellInfo((state.spellCatalog||[]).find(s=>s.id===grant.spell_id)||
-       {id:grant.spell_id,name:grant.spell_id});
-     group.items.push({grant,info});
-     if(grant.tracker_id){
-       const tracker=(calculated.trackers||[]).find(t=>t.id===grant.tracker_id);
-       if(tracker)group.trackers.set(tracker.id,tracker);
-     }
-   }
-   return [...origins.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
-     .map(([origin,group])=>panel(group.name,
-       castingStatistics(c,'origin:'+origin,group.ability)+
-       [...group.trackers.values()].map(tracker=>
-         '<div class="magic-origin-tracker"><span>'+esc(tracker.name)+'</span>'+
-         '<div class="magic-tracker-controls" data-magic-tracker-id="'+esc(tracker.id)+'">'+
-         '<strong data-tracker-remaining="'+esc(tracker.id)+'">'+
-         Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0))+'</strong> / '+esc(tracker.max||0)+
-         '<button type="button" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+
-         (Number(tracker.spent||0)<=0?' disabled':'')+'>+1</button>'+
-         '<button type="button" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+
-         (Number(tracker.spent||0)>=Number(tracker.max||0)?' disabled':'')+'>−1</button></div></div>').join('')+
-       groupedMagicSpells(group.items,({grant,info})=>configured(grant,info)),
-       'magic-panel magic-origin-panel')).join('');
- }
  return resourcePanels;
 }
 function originChoicesView(calculated){
@@ -2580,7 +2621,8 @@ function manualMagicSources(c,calculated){
     }
   }
   return [...groups.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
-    .map(([id,meta])=>'<section class="magic-source"><h3>'+esc(meta.name)+'</h3>'+
+    .map(([id,meta])=>'<section class="magic-source magic-manual-source">'+
+      '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(meta.name)+'</h3></div></header>'+
       castingStatistics(c,id==='manual'?'manual':'origin:'+id,meta.ability)+
       spellList(c,'prepared_spells','manual',classes,{originId:id,includeSlots:false})+'</section>').join('');
 }
