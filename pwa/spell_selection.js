@@ -402,7 +402,8 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     }
     if(raw&&typeof raw==='object'){
      if(!raw.choose||!(mode==='innate'||category!=='will'||mode==='known'&&String(raw.choose).includes('level=0')))return;
-     out.choices.push({id:origin.id+'|'+stage+'|'+mode+'|'+raw.choose+'|'+tid,origin_id:origin.id,origin_name:origin.name,spellcasting_ability:ability,spellcasting_ability_options:tid?abilityOptions:[],filter:String(raw.choose),count:Math.max(1,Number(raw.count)||1),mode,stage,usage:tid?'limited':'at_will',tracker_id:tid});return;
+     out.choices.push({id:origin.id+'|'+stage+'|'+mode+'|'+raw.choose+'|'+tid,origin_id:origin.id,origin_name:origin.name,spellcasting_ability:ability,spellcasting_ability_options:tid?abilityOptions:[],filter:String(raw.choose),count:Math.max(1,Number(raw.count)||1),mode,stage,usage:tid?'limited':'at_will',tracker_id:tid,
+      slot_alternative:!!tid&&block.slot_alternative===true});return;
     }
     if(typeof raw!=='string'||category==='will'&&mode==='prepared'||mode==='known'&&category==='will'&&!raw.includes('#c'))return;
     const id=originSpellId(raw,edition,spells);
