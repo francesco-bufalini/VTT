@@ -158,3 +158,18 @@ test('roll-mode benefits are editable, target-scoped, origin-bound and removable
  assert.deepEqual(removeBenefitPatch({roll_mode_grants:[grant]},trait,{type:'roll_modes',id:'roll_mode:'+grant.id}).roll_mode_grants,[]);
  assert.throws(()=>addBenefitPatch({},trait,'roll_mode',{target:'hp',mode:'advantage'},'trait:roll1005'),/solo ai tiri d20/);
 });
+
+test('custom spell benefits can declare tracker and alternative slots with constrained casting stats',()=>{
+ const grant=addBenefitPatch({},trait,'spells',{
+   spell_id:'phb2014_gust_of_wind',payment_mode:'tracker',tracker_id:'wind_uses',
+   slot_alternative:'true',spellcasting_ability:'',spellcasting_ability_options:'int,wis,cha'
+ },'trait:windcast').origin_spell_grants[0];
+ assert.equal(grant.payment_mode,'tracker');
+ assert.equal(grant.tracker_id,'wind_uses');
+ assert.equal(grant.slot_alternative,true);
+ assert.deepEqual(grant.spellcasting_ability_options,['int','wis','cha']);
+ assert.throws(()=>addBenefitPatch({},trait,'spells',
+   {spell_id:'gust',payment_mode:'tracker',slot_alternative:'true'},'trait:invalid'),/tracker/i);
+ assert.throws(()=>addBenefitPatch({},trait,'spells',
+   {spell_id:'gust',payment_mode:'slot',slot_alternative:'true'},'trait:invalid2'),/alternativi/i);
+});
