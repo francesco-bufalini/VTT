@@ -1164,6 +1164,46 @@
       "choice": {
         "language": "Languages"
       }
+    },
+    {
+      "kind": "subrace",
+      "name": "Duergar",
+      "source": "MTF",
+      "fixed": {
+        "language:undercommon": "Languages"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "High",
+      "source": "PHB",
+      "choice": {
+        "language": "Extra Language"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "Sea",
+      "source": "MTF",
+      "fixed": {
+        "language:aquan": "Languages"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "Deep",
+      "source": "MTF",
+      "fixed": {
+        "language:undercommon": "Languages"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "Deep/Svirfneblin",
+      "source": "SCAG",
+      "fixed": {
+        "language:undercommon": "Languages"
+      }
     }
   ]
 }
