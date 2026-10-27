@@ -497,6 +497,9 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
    timing:power.action_type||power.activation_mode||'contextual',power});
  }
  for(const action of classAbilities){
+  // Armor Model choices now belong to their dedicated Powers panel, not the
+  // generic combat-action resources. Their mechanics remain native/data-driven.
+  if(action.mode==='trait_state'&&String(action.state_id||'').startsWith('armor_model:'))continue;
   const id=String(action.id||action.ability_id||action.name||'');
   // The native action projector can describe a granted class action twice
   // (once as an action grant and once as its structured feature).
@@ -1046,6 +1049,28 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
   originPanels.forEach((node,i)=>{
+   if(heading(node).startsWith('Modelli di armatura')){
+     bind('armor-models',node);
+     const counters=[...node.querySelector('.infusion-overview')?.children||[]]
+       .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
+     const rows=[...node.querySelectorAll('.armor-model-entry')].map(row=>{
+       const id=row.dataset.armorModelId||'';
+       const active=row.dataset.armorModelActive==='true';
+       const available=row.dataset.armorModelAvailable==='true';
+       const name=row.querySelector('.magic-spell-open')?.firstChild?.textContent?.trim()||'Modello';
+       const status=active?'Attivo':available?'Non attivo':'Armatura richiesta';
+       return '<div class="play-spell play-infusion-row play-armor-model-row">'+
+        '<button type="button" class="play-button" data-act="armor-model-open" data-armor-model-id="'+esc(id)+
+         '" aria-label="Apri modello '+esc(name)+' · '+status+'">'+
+        icon('shield')+'<span class="play-infusion-name">'+esc(name)+'</span>'+
+        '<span class="play-infusion-state'+(active?' is-active':'')+'" title="'+status+'" aria-label="'+status+'">'+
+         '<span aria-hidden="true">'+(active?'✓':'○')+'</span></span></button></div>';
+     }).join('');
+     html+=card('Modelli di armatura',rows||'<p class="play-empty">Nessun modello disponibile.</p>',
+       counters?'<div class="play-magic-source-resources" aria-label="Stato modelli di armatura">'+counters+'</div>':'',
+       'play-magic-class-card play-infusion-card play-armor-model-card');
+     return;
+   }
    if(heading(node).startsWith('Infusioni')){
      bind('infusions',node);
      const counters=[...node.querySelector('.infusion-overview')?.children||[]]
