@@ -28,6 +28,19 @@ try{
       fetch('/__test/rpc',{method:'POST',body:raw}).then(r=>r.json()).then(reply=>globalThis.vttDesktopReceive(reply));
     }};
   });
+  // Static Godot host and embedded WebView must expose every transitive
+  // module and catalog used by desktop/main.js -> ui.js -> sheet_rules.js.
+  for(const path of ['/desktop/main.js','/ui.js','/sense_rules.js','/species_powers.js',
+    '/catalog/sense_grants.json','/catalog/species_powers.json','/catalog/spell_grant_rules.json']){
+    const response=await fetch(origin+path);
+    assert.equal(response.status,200,'Desktop host must serve '+path);
+    const type=response.headers.get('content-type')||'';
+    assert.match(type,/javascript|json/,'Desktop host content type '+path);
+    if(path.endsWith('.json')){
+      const json=await response.text();
+      assert.doesNotThrow(()=>JSON.parse(json),'Valid catalog '+path);
+    }
+  }
   await page.goto(origin);
   await page.waitForFunction(()=>document.querySelector('#app')?.dataset.renderedSheet==='info');
   await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Lyria desktop');
@@ -53,7 +66,14 @@ try{
   await broken.getByText('Le creature salvate sul computer non sono state cancellate.').waitFor();
   assert(await broken.getByRole('button',{name:'Riprova',exact:true}).isVisible());
   await broken.close();
-  console.log('PASS: desktop startup, native archive read/write, responsive layout and recoverable module-link failure');
+  // Missing transitive dependency must be reported without touching native data.
+  const missingDependency=await browser.newPage();
+  await missingDependency.route('**/sense_rules.js',route=>route.fulfill({status:404,contentType:'text/plain',body:'Not Found'}));
+  await missingDependency.goto(origin);
+  await missingDependency.getByText('Le creature salvate sul computer non sono state cancellate.').waitFor();
+  assert(await missingDependency.getByRole('button',{name:'Riprova',exact:true}).isVisible());
+  await missingDependency.close();
+  console.log('PASS: desktop startup, transitive asset serving, native archive read/write, responsive layout and recoverable module-link failure');
 }finally{
   await browser?.close();
   await fetch(origin+'/__test/stop').catch(()=>{});
