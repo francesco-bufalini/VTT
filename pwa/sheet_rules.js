@@ -10,7 +10,7 @@ import {collectEffectExtensions} from './effect_extensions.js';
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,activeInfusions,armorDexterityBonus,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
-import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants} from './spell_selection.js';
+import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
@@ -775,6 +775,7 @@ function calculateSheetValues(record={},catalogs={}){
   const celestialForm=racialPowers.active_forms.find(form=>
     record.active_class_features?.[form.active_key]?.spell_id===form.spell_id);
   features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
+  features.push(...supplementalSpeciesSpellFeatures(record,catalogs.spellGrantRules,features));
   const damage_defense_entries=[...arr(record.damage_defense_entries),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed)];
   const grantingCastingTrait=member=>{
