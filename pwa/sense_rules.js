@@ -55,11 +55,9 @@ export function calculateSenses(record={},features=[],catalog={},sourceEnabled=(
   if(sid.startsWith('feature:trait:')){
    const key=sid.slice('feature:trait:'.length);
    if(record.trait_enabled?.[key]===false)return;
-   if(key.startsWith('item:')){
-    const itemId=key.slice(5).split('|')[0];
-    if(!arr(record.inventory).some(item=>String(item.id||'')===itemId&&
-     itemBenefitCopies(resolveOwnedItem(item))>0))return;
-   }
+   if(key.startsWith('item:')&&!arr(record.inventory).some(item=>
+    key.startsWith('item:'+String(item.id||'')+'|')&&
+    itemBenefitCopies(resolveOwnedItem(item))>0))return;
   }
   grants.push({...row,range_feet:feet});
  };
