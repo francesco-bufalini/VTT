@@ -2203,18 +2203,19 @@ async function openInfusionActionDialog(index){
  const calculated=await computeLocalData(creature),definitions=calculated.infusion_catalog||[];
  const entry=learnedInfusions(creature,definitions)[index];
  if(!entry)throw Error('Infusione non più disponibile.');
- const prepared=isInfusionPrepared(creature,entry,definitions);
  const applied=(creature.inventory||[]).map((item,itemIndex)=>({item,index:itemIndex}))
   .filter(({item})=>Number(item.quantity??1)>0&&item.infusion?.creator_id===creature.id&&
    item.infusion.id===entry.id&&(!entry.plan_item_id||item.infusion.plan_item_id===entry.plan_item_id));
- const targets=prepared?compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]):[];
+ const targets=compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]);
  const facts=[
-  {label:'Stato',value:applied.length?'Attiva su '+applied.length+(applied.length===1?' oggetto':' oggetti'):prepared?'Preparata':'Non preparata'},
+  {label:'Stato',value:applied.length?'Attiva su '+applied.length+(applied.length===1?' oggetto':' oggetti'):'Conosciuta'},
   ...(entry.item_prerequisite?[{label:'Oggetto richiesto',value:entry.item_prerequisite}]:[]),
   {label:'Sintonia',value:entry.requires_attunement?'Richiesta per beneficiare degli effetti':'Non richiesta'}
  ];
- const description=flattenDescription(entry)||String(entry.description||'').trim()||
-  'L’infusione modifica magicamente un oggetto. Consulta il tratto per i dettagli.';
+ const detail=await detailedEntry('optional_features',{
+   name:entry.description_source_name||entry.name,
+   source:entry.description_source||entry.source||'TCE',_category:'optional_features'});
+ const description=flattenDescription(detail)||'Descrizione 5etools non disponibile nel catalogo offline.';
  app.querySelector('#infusion-action-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='infusion-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
@@ -2227,16 +2228,13 @@ async function openInfusionActionDialog(index){
      applied.map(({item,index:itemIndex})=>'<div class="infusion-dialog-item"><span>'+esc(item.name||item.id)+
        '<small>Infusione applicata</small></span><button type="button" class="btn" data-act="infusion-dialog-remove" data-index="'+itemIndex+'">Disattiva</button></div>').join('')+
      '</section>':'')+
-   (prepared?'<label class="vtt-list-search inventory-global-search infusion-target-search">Cerca oggetto compatibile'+
-     '<input type="search" data-infusion-object-search placeholder="Cerca nell’inventario e nel catalogo" autocomplete="off"></label>'+
-     '<div class="inventory-search-results vtt-selection-list infusion-target-results" role="list" aria-label="Oggetti compatibili"></div>':
-     prepared?'<p class="hint">Nessun oggetto compatibile disponibile.</p>':
-     '<p class="hint">Prepara l’infusione prima di usarla.</p>')+
-   (prepared&&options.length?
+   '<label class="vtt-list-search inventory-global-search infusion-target-search">'+
+     '<input type="search" data-infusion-object-search aria-label="Cerca oggetto compatibile" placeholder="Cerca oggetto compatibile" autocomplete="off"></label>'+
+   '<div class="inventory-search-results vtt-selection-list infusion-target-results" role="list" aria-label="Oggetti compatibili"></div>'+
+   (options.length?
      '<label>'+esc(entry.effect_choice.label||'Scelta effetto')+'<select data-infusion-dialog-effect>'+
      options.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
    '<div class="actions magic-dialog-actions">'+
-    (!prepared?'<button type="button" class="btn" data-act="infusion-dialog-prepare">Prepara</button>':'')+
     '<button type="button" class="btn primary" data-act="infusion-dialog-activate" disabled>Usa</button>'+
     '<button type="button" class="btn" data-act="infusion-dialog-close">Chiudi</button></div>';
  const results=dialog.querySelector('.infusion-target-results'),search=dialog.querySelector('[data-infusion-object-search]');
@@ -2275,7 +2273,7 @@ async function openInfusionActionDialog(index){
  }
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
- if(prepared)ensureInventorySearchCatalog();
+ ensureInventorySearchCatalog();
 }
 
 const INVENTORY_PROPERTY_LABELS={
