@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "description": "Source-qualified structured spell-grant supplements. slot_alternative permits spending an ordinary spell slot or Pact Magic slot instead of the limited-use tracker. Never infer this from prose.",
+  "rules": [
+    {
+      "kind": "race",
+      "name": "Aarakocra",
+      "source": "MPMM",
+      "spell": "gust of wind",
+      "slot_alternative": true
+    }
+  ]
+}
