@@ -2935,11 +2935,13 @@ function originSpellSections(c,calculated,renderRow){
    const mode=grant.payment_mode||(grant.tracker_id?'tracker':
      ['known','prepared'].includes(grant.mode)?'slot':'free');
    if(mode==='slot'||grant.slot_alternative===true)group.usesSlots=true;
-   else if(mode==='tracker'){
+   // Tracker and slot alternatives are independent resources. Never hide
+   // the tracker badge when the same privilege permits ordinary slots.
+   if(mode==='tracker'){
      const tracker=(calculated.trackers||[]).find(t=>t.id===grant.tracker_id&&!t.disabled);
      if(tracker)group.trackers.set(tracker.id,tracker);
      else group.missingTracker=true;
-   }else group.hasFree=true;
+   }else if(mode==='free')group.hasFree=true;
  }
  return [...origins.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
    .map(([origin,group])=>{
