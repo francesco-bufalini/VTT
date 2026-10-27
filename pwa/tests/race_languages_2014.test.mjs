@@ -153,6 +153,19 @@ test('Mark of Finding changes ancestry languages, while ordinary High Elf adds o
  const high=char('Elf','PHB','High','PHB');
  assert(has(high,'elvish'));assert(has(high,'common'));
  assert.equal(picks(high).filter(x=>x.origin_id==='subrace|phb|high').length,1);
+ for(const key of ['common','elvish'])
+  assert.equal(proficiencyGrantOrigins(high,catalog,'language',key).length,1,
+    'High Elf must inherit '+key+' solely from Elf');
+ for(const [parent,book,variant,variantBook,granted] of [
+  ['Dwarf','PHB','Duergar','MTF','undercommon'],
+  ['Elf','PHB','Sea','MTF','aquan'],
+  ['Gnome','PHB','Deep','MTF','undercommon'],
+  ['Gnome','PHB','Deep/Svirfneblin','SCAG','undercommon']]){
+  const character=char(parent,book,variant,variantBook);
+  assert(has(character,granted));
+  assert.equal(proficiencyGrantOrigins(character,catalog,'language','common').length,1,
+    variant+' should inherit Common only from parent');
+ }
  const merfolk=char('Merfolk','PSZ','Ixalan; Blue','PSX');
  assert.equal(picks(merfolk).length,1,'Ixalan Merfolk must not duplicate parent language choice');
 });
