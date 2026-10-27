@@ -1273,6 +1273,10 @@ function calculateSheetValues(record={},catalogs={}){
     casting_classes:spellClasses,trackers,attacks,
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
     effect_extensions,
+    item_damage_resistances:effect_extensions.filter(row=>row.operation==='resistance'&&row.target_kind==='item')
+      .map(row=>({damage_type:row.value,origin_id:row.origin_id,origin_name:row.origin_name,
+        target_id:row.target_id,target_instance_id:row.target_instance_id,
+        target_inventory_index:row.target_inventory_index})),
     feature_rules:catalogs.featureRules||{},
     base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
