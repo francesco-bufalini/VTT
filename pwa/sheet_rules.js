@@ -1168,7 +1168,7 @@ function calculateSheetValues(record={},catalogs={}){
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));
   }
   const featMechanics=featMechanicGrants(record,index);
-  const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],features);
+  const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],features,catalogs.spellGrantRules||[]);
   // Permanently prepared subclass spells are attached to their actual feature,
   // not to the class itself; the same source identity powers UI and calculations.
   const classCasting=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
@@ -1239,7 +1239,13 @@ function calculateSheetValues(record={},catalogs={}){
     const key=row.origin_id+'|'+row.spell_id;
     if(!originSpellMap.has(key)){
       const id=row.id||key,config=record.origin_spell_configs?.[id]||{},resolved={...row,id};
-      for(const field of ['payment_mode','tracker_id','spellcasting_ability','tracker_cost'])if(Object.hasOwn(config,field))resolved[field]=config[field];
+      for(const field of ['payment_mode','tracker_id','spellcasting_ability','tracker_cost','slot_alternative'])
+        if(Object.hasOwn(config,field))resolved[field]=config[field];
+      // The owner-level casting choice is shared by all spells granted by
+      // this trait and is validated against its structured eligibility list.
+      const chosen=record.spellcasting_section_abilities?.['origin:'+row.origin_id];
+      if(arr(resolved.spellcasting_ability_options).includes(chosen))
+        resolved.spellcasting_ability=chosen;
       if(!['tracker','slot','free'].includes(resolved.payment_mode))
         resolved.payment_mode=resolved.tracker_id?'tracker':
           ['known','prepared'].includes(resolved.mode)?'slot':'free';
@@ -1330,11 +1336,14 @@ export function loadRuleCatalogs(){
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       })),
     fetch('/catalog/effect_extensions.json').then(r=>{if(!r.ok)throw Error('Estensioni effetti non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.extensions)?data.extensions:[])
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions])=>({
+      .then(data=>data?.version===1&&Array.isArray(data.extensions)?data.extensions:[]),
+    fetch('/catalog/spell_grant_rules.json').then(r=>r.ok?r.json():{})
+      .then(data=>data?.version===1&&Array.isArray(data.rules)?data.rules:[])
+      .catch(()=>[])
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,spellGrantRules])=>({
     abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
-    featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,
+    featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;
