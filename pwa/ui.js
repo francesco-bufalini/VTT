@@ -1905,8 +1905,10 @@ function mountTraitBenefitDialog(){
  const groups=traitBenefitGroups(trait,record,benefitProjection);
  const isOwnedItem=trait.category==='oggetti'&&trait.rank===0&&
    String(trait.origin_key||'').startsWith('item:');
- const ownedCopies=isOwnedItem?(record.inventory||[]).filter(item=>
-   String(item.id||'')===String(trait.origin_key).slice(5)):[];
+ const ownedCopies=isOwnedItem?(Array.isArray(trait.item_inventory_indices)&&
+   trait.item_inventory_indices.length?trait.item_inventory_indices.map(index=>record.inventory?.[index]).filter(Boolean):
+   (record.inventory||[]).filter(item=>String(item.id||'')===
+     String(trait.item_id||String(trait.origin_key).slice(5)))):[];
  const passiveItem=isOwnedItem&&ownedCopies.length>0&&ownedCopies.every(item=>
    !['weapon','shield','armor'].includes(itemKind(item)));
  const attunedItem=isOwnedItem&&trait.item_requires_attunement;
@@ -6233,15 +6235,18 @@ async function handleAction(target){
     if(!trait)throw Error('Tratto non disponibile');
     const record=state.editor.read();
     if(trait.category==='oggetti'&&trait.rank===0&&String(trait.origin_key||'').startsWith('item:')){
-      const id=String(trait.origin_key).slice(5);
-      if((record.inventory||[]).filter(item=>String(item.id||'')===id)
-        .every(item=>!['weapon','shield','armor'].includes(itemKind(item))))
+      const id=String(trait.item_id||String(trait.origin_key).slice(5));
+      const inventory=record.inventory||[];
+      const indices=Array.isArray(trait.item_inventory_indices)&&trait.item_inventory_indices.length?
+        trait.item_inventory_indices.filter(index=>String(inventory[index]?.id||'')===id):
+        inventory.flatMap((item,index)=>String(item.id||'')===id?[index]:[]);
+      if(indices.every(index=>!['weapon','shield','armor'].includes(itemKind(inventory[index]))))
         throw Error('I benefici degli oggetti comuni sono automatici.');
-      const active=(record.inventory||[]).some(item=>String(item.id||'')===id&&
-        (item.equipped===true||(item.equipped_slots||[]).length>0));
-      const index=(record.inventory||[]).findIndex(item=>String(item.id||'')===id&&
-        (active?(item.equipped===true||(item.equipped_slots||[]).length>0):true));
-      if(index<0)throw Error('Oggetto non presente nell’inventario.');
+      const active=indices.some(index=>inventory[index].equipped===true||
+        (inventory[index].equipped_slots||[]).length>0);
+      const index=indices.find(index=>active?
+        inventory[index].equipped===true||(inventory[index].equipped_slots||[]).length>0:true);
+      if(index===undefined)throw Error('Oggetto non presente nell’inventario.');
       const inventory=setItemEquipped(record.inventory,index,!active);
       // The equipment state is authoritative; clear stale manual overrides.
       const enabledPatch=traitActivationPatch(record,trait,true);
