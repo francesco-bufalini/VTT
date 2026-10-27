@@ -314,10 +314,13 @@ def main() -> None:
                 # Source-qualified subrace traits can exist under two different
                 # parent species (e.g. the Human and Half-Orc Mark of Finding).
                 # Apply shared ownership to every such instance, not only first.
+    languages_path, languages_count = generate_language_catalog(root, release)
+    # The PWA uses the *same* typed language vocabulary for racial pickers,
+    # bundled in the already-required proficiency index (no extra fetch).
+    out["languages"] = read_json(languages_path)["languages"]
     destination = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_grants_5etools.json"
     destination.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {destination}: " + ", ".join(f"{k}: {len(out[k])}" for k in sources))
-    languages_path, languages_count = generate_language_catalog(root, release)
     print(f"Wrote {languages_path}: {languages_count} typed languages from {release}")
 
 
