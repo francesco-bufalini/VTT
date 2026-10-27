@@ -138,6 +138,21 @@ try{
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
    'No legacy ± navigation remains anywhere in the rendered sheet');
+ const competenceButton=page.locator('#sheet-play-view .play-quickstat[data-sheet-context="tools"]');
+ assert.equal(await competenceButton.count(),1,'Competenza opens the existing Other Competences section');
+ await competenceButton.click();
+ const competenceDialog=page.locator('#sheet-context-dialog');
+ assert(await competenceDialog.isVisible());
+ assert.match(await competenceDialog.textContent(),/Altre competenze/);
+ await competenceDialog.locator('[data-act="sheet-context-close"]').click();
+ await competenceDialog.waitFor({state:'detached'});
+ const defenseButton=page.locator('#sheet-play-view .play-quickstat[data-act="sheet-defenses-open"]');
+ assert.equal(await defenseButton.count(),1);
+ await defenseButton.click();
+ const defensesDialog=page.locator('#sheet-defenses-dialog');
+ assert(await defensesDialog.isVisible());
+ assert.match(await defensesDialog.textContent(),/Classe armatura/);
+ await defensesDialog.locator('[data-act="sheet-defenses-close"]').click();
  const senses=page.locator('#sheet-play-view [data-act="sheet-senses-open"]');
  assert.equal(await senses.count(),1);
  await senses.click();
