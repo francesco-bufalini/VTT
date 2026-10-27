@@ -172,9 +172,13 @@ export function applyItemAttackExtensions(record={},attacks=[],extensions=[]){
     instance_id:item.instance_id,inventory_index:attack.inventory_index})
     .filter(effect=>['passive','on_hit','attack_roll'].includes(effect.trigger));
   let hit=0,damageBonus=0;
-  const extra=[];
+  const hitSources=[],extra=[];
   for(const effect of active){
-   if(effect.operation==='attack_bonus')hit+=Number(effect.value)||0;
+   if(effect.operation==='attack_bonus'){
+    hit+=Number(effect.value)||0;
+    hitSources.push({id:effect.id,value:Number(effect.value)||0,
+      cast_id:effect.cast_id||'',origin_name:effect.origin_name});
+   }
    if(effect.operation==='damage_bonus')damageBonus+=Number(effect.value)||0;
    if(effect.operation==='bonus_damage'&&/^([1-9]\d{0,1})d(4|6|8|10|12|20|100)([+-]\d+)?$/i.test(effect.value))
     extra.push({dice:effect.value,damage_type:effect.damage_type||'',
@@ -185,7 +189,7 @@ export function applyItemAttackExtensions(record={},attacks=[],extensions=[]){
   const damage=String(attack.damage||'')+sign(damageBonus);
   return {...attack,hit:Number(attack.hit)+hit,damage,
    damage_extra_modifier:Number(attack.damage_extra_modifier||0)+damageBonus,
-   damage_extras:extra,
+   damage_extras:extra,enchantment_hit_bonuses:hitSources,
    damage_roll_formula:damage+extra.map(row=>' + '+row.dice).join(''),
    damage_explanation:[attack.damage_explanation||'',
     ...(hit?['Incantesimo: colpire '+sign(hit).trim()]:[]),
