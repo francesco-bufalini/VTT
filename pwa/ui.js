@@ -4217,7 +4217,9 @@ function rollCategory(target,calculated){
 }
 function damageRollTerms(formula,damageType='',attack=null){
  const validated=rollBattleDamage(formula,()=>1); // Preview never consumes randomness.
- const segments=damageRollSegments(validated,damageType,attack).map(row=>({
+ const types=attack?.damage_extras?.length?
+  [damageType,...attack.damage_extras.map(row=>row.damage_type||'')]:damageType;
+ const segments=damageRollSegments(validated,types,attack).map(row=>({
    ...row,damageType:rollDamageName(row.damageType)
  }));
  return {modifier:validated.modifier,segments};
@@ -5655,7 +5657,7 @@ async function handleAction(target){
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
     const attack=(calculated.attacks||[]).find(row=>
       String(row.id)===attackId&&
-      String(row.damage||'').replace(/\s+/g,'')===formula.replace(/\s+/g,''));
+      String(row.damage_roll_formula||row.damage||'').replace(/\s+/g,'')===formula.replace(/\s+/g,''));
     const attackOrigin=attackGrantOrigin(calculated,attackId);
     const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
