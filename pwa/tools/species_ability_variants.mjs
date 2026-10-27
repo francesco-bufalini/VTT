@@ -6,7 +6,7 @@ const sum=o=>Object.values(o||{}).reduce((n,v)=>n+Math.max(0,Number(v)||0),0);
 export function projectFlattenedSpeciesAbilities(index={},nativeRaces=[],additional=[]){
  const result=[],known=new Set((index.race||[]).map(x=>norm(x.name)+'|'+norm(x.source)));
  for(const race of nativeRaces){
-  if(!race?.name||!race.source||['xphb','eFA','lfl','rhw'].includes(norm(race.source)))continue;
+  if(!race?.name||!race.source||['xphb','efa','lfl','rhw'].includes(norm(race.source)))continue;
   const match=race.name.match(/^(.+) \((.+)\)$/);
   if(!match||known.has(norm(race.name)+'|'+norm(race.source)))continue;
   const [_,parentName,subName]=match;
