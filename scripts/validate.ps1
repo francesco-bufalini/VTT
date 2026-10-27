@@ -142,6 +142,7 @@ $fastTests = @(
     "test_spellcasting_initial_resources.gd",
     "test_spell_catalog_edition_geometry.gd",
     "test_spell_targeting_lifecycle.gd",
+    "test_pwa_backup_store.gd",
     "test_area_dimensions.gd",
     "test_token_context_conditions.gd",
     "test_token_catalog_merge.gd",

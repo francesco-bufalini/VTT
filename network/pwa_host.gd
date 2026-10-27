@@ -8,11 +8,12 @@ const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const BestiaryClient = preload("res://vtt/bestiary_5etools_client.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const BackupStore = preload("res://network/pwa_backup_store.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
-# Temporary in-memory deliveries for paired PWAs; no player data is persisted
-# to the desktop or exposed through unauthenticated URLs.
+# Peer-to-peer deliveries stay in memory. Durable recovery copies are kept
+# separately by BackupStore; neither is exposed through unauthenticated URLs.
 const SHARE_CHUNK_BYTES := 128 * 1024
 const SHARE_MAX_BYTES := 16 * 1024 * 1024
 const SHARE_MAX_QUEUED_BYTES := 32 * 1024 * 1024
@@ -106,6 +107,9 @@ const FILES := {
 	"/catalog/miniatures.json": ["res://vtt/data/token_catalog_offline.json", "application/json; charset=utf-8"],
 	"/mobile_metal_theme.css": ["res://pwa/mobile_metal_theme.css", "text/css; charset=utf-8"],
 	"/styles.css": ["res://pwa/styles.css", "text/css; charset=utf-8"],
+	"/server_backup_core.js": ["res://pwa/server_backup_core.js", "text/javascript; charset=utf-8"],
+	"/server_backup_worker.js": ["res://pwa/server_backup_worker.js", "text/javascript; charset=utf-8"],
+	"/server_backups.js": ["res://pwa/server_backups.js", "text/javascript; charset=utf-8"],
 	"/storage.js": ["res://pwa/storage.js", "text/javascript; charset=utf-8"],
 	"/creatures.js": ["res://pwa/creatures.js", "text/javascript; charset=utf-8"],
 	"/creature_format.js": ["res://pwa/creature_format.js", "text/javascript; charset=utf-8"],
@@ -148,6 +152,8 @@ var _share_session_key := ""
 var _share_peers: Dictionary = {}
 var _share_deliveries: Dictionary = {}
 var _share_queued_bytes := 0
+var _backup_store = BackupStore.new()
+var _backup_jobs := 0
 
 # PWA HTTP runs only while the native 3D board is open. A permanently
 # installed autoload tracks the scene, but does not keep a listening socket
@@ -349,6 +355,14 @@ func _show_pairing_dialog() -> void:
 	)
 	var copy_url := Button.new()
 	copy_url.text = "Copia link"
+	var backup_folder := Button.new()
+	backup_folder.text = "Apri copie PWA"
+	controls.add_child(backup_folder)
+	backup_folder.pressed.connect(func() -> void:
+		var folder := ProjectSettings.globalize_path(BackupStore.ROOT)
+		DirAccess.make_dir_recursive_absolute(folder)
+		OS.shell_open(folder)
+	)
 	controls.add_child(copy_url)
 	var update_qr := func() -> void:
 		var link := _pair_url(url_edit.text, code)
@@ -637,6 +651,24 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			"desktop_online": _web_board_controller(board) != null,
 			"pairing_required": true})
 		return
+	if path.begins_with("/api/backup/"):
+		if method != "POST":
+			_answer(client, 405, {"error": "method_not_allowed"})
+		elif String(headers.get("authorization", "")) != "Bearer " + _token:
+			_answer(client, 401, {"error": "pairing_required"})
+		elif String(headers.get("content-type", "")).split(";")[0].strip_edges() != "application/json":
+			_answer(client, 415, {"error": "expected_json"})
+		elif _backup_jobs >= 4 or body.size() > 100000:
+			_answer(client, 429, {"error": "backup_busy_or_chunk_too_large"})
+		else:
+			# Disk I/O, hashing and archive serialization never run on the game thread.
+			_backup_jobs += 1
+			var store: RefCounted = _backup_store
+			WorkerThreadPool.add_task(func() -> void:
+				var result: Dictionary = store.handle(path.trim_prefix("/api/backup/"), body)
+				_finish_backup.call_deferred(client, result)
+			)
+		return
 	if path not in ["/api/session", "/api/map", "/api/action", "/api/conditions"] and not path.begins_with("/api/share/"):
 		_answer(client, 404, {"error": "not_found"})
 		return
@@ -680,6 +712,12 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		var result: Dictionary = await controller.execute_web_action(
 			String(request.action), request.payload)
 		_answer(client, 200, result)
+
+
+func _finish_backup(client: Dictionary, result: Dictionary) -> void:
+	_backup_jobs = maxi(0, _backup_jobs - 1)
+	if _clients.has(client):
+		_answer(client, int(result.get("status", 500)), result.get("data", {"error": "backup_failed"}))
 
 
 # Paired devices share through the existing session HTTP bridge. The

@@ -42,6 +42,9 @@ export function status() {
 
 // A remembered bearer remains useful while the native board is temporarily
 // offline. This checks local possession only; /api/session validates authority.
+// Passed only to the backup worker in memory; never included in a backup file.
+export function backupCredential() { return currentToken(); }
+
 export async function hasPairingCredential() {
   return /^[0-9a-fA-F]{64}$/.test(await currentToken());
 }

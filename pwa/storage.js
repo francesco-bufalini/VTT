@@ -4,7 +4,7 @@ export const DATABASE_NAME = "vtt-mobile-local";
 export const DATABASE_VERSION = 1;
 const BACKUP_VERSION = 1;
 const LOCAL_OWNER_SETTING = "local-creature-owner-id";
-const MAX_IMPORT_BYTES = 128 * 1024 * 1024;
+export const MAX_IMPORT_BYTES = 128 * 1024 * 1024;
 
 export function openStorage() {
   return new Promise((resolve, reject) => {
@@ -30,9 +30,25 @@ export function openStorage() {
   });
 }
 
+// Observe committed archive changes only. Settings (credentials and backup status),
+// reads and aborted transactions must never trigger a backup.
+const archiveObservers = new Set();
+export function observeArchiveChanges(listener) {
+  archiveObservers.add(listener);
+  return () => archiveObservers.delete(listener);
+}
+
 function completed(tx, getResult = () => undefined) {
   return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve(getResult());
+    tx.oncomplete = () => {
+      resolve(getResult());
+      if (tx.mode === "readwrite" &&
+          [...tx.objectStoreNames].some(name => ["records", "blobs", "outbox"].includes(name))) {
+        for (const listener of archiveObservers) {
+          try { listener(); } catch (error) { console.warn("VTT backup observer", error); }
+        }
+      }
+    };
     tx.onerror = () => reject(tx.error || new Error("IndexedDB transaction failed"));
     tx.onabort = () => reject(tx.error || new Error("IndexedDB transaction aborted"));
   });
@@ -351,6 +367,21 @@ function fromBase64(text) {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
+}
+
+// Worker-friendly view: Blob handles are cloned, their bytes are read only for
+// attachments that the server does not already have.
+export async function readBackupState() {
+  const owner = await localOwnerId();
+  const db = await openStorage();
+  try {
+    const tx = db.transaction(["records", "blobs", "outbox"], "readonly");
+    const records = tx.objectStore("records").getAll();
+    const blobs = tx.objectStore("blobs").getAll();
+    const outbox = tx.objectStore("outbox").getAll();
+    await completed(tx);
+    return {owner, records: records.result, blobs: blobs.result, outbox: outbox.result};
+  } finally { db.close(); }
 }
 
 // Export user records and binary attachments. Pairing credentials are deliberately excluded.

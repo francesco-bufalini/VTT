@@ -137,6 +137,35 @@ Never interpret an outbox item as permission to execute an action repeatedly:
 commands such as item transfer require unique event IDs and deduplication
 before automatic retries are enabled.
 
+## Automatic recovery copies on the desktop server
+
+Paired PWAs automatically back up their local archive through `/api/backup/`
+while the PWA is open and its Godot host is reachable. IndexedDB remains the
+working archive: editing never waits for the server. A dedicated module worker
+reads and hashes the archive, sends only changed/deleted records and uploads
+new binary attachments once by SHA-256. Committed writes are coalesced to at
+most one automatic sync per minute; unchanged archives produce no upload.
+Requests are sequential 64 KiB blocks with 250 ms between blocks. Failures
+leave local data intact and retry with increasing delays (up to 15 minutes).
+Backups use their own HTTP routes, not chat, map polling or gameplay actions.
+
+The desktop validates and persists copies on a worker thread under
+`user://pwa_backups/<installation-owner>/`. It verifies each immutable JSON
+before atomically publishing its index and keeps ten committed versions.
+Incomplete uploads, stale generations, incorrect device credentials, corrupted
+attachments and empty archives cannot replace a valid snapshot. Payloads and
+restorable archives are bounded to 128 MiB. Existing backup JSON remains
+compatible with **Ripristina backup**, including ownership rebinding.
+
+Each installation has an independent random backup key, distinct from the
+shared pairing bearer. Existing archives reject a different key. There is no
+HTTP route to list or download other devices' backups. On the desktop use
+**Ctrl+Shift+P → Apri copie PWA** to access the JSON files, copy the wanted file
+to the phone, then use **Ripristina backup**. Clearing browser data creates a
+new installation identity and does not touch the old server files. A new
+pairing resumes backups under that new identity. The feature cannot recover
+data deleted before a server copy existed, and closed-app backup is not promised.
+
 ## Local data model
 
 `pwa/storage.js` creates `vtt-mobile-local` IndexedDB version 1:

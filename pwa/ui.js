@@ -28,6 +28,7 @@ import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedI
 import { spellFacts } from "./spell_metadata.js";
 import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
+import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
@@ -950,7 +951,7 @@ async function libraryView(){
    '<span class="library-backup-copy"><strong>Backup e ripristino</strong></span>'+
    '<span class="library-backup-chevron" aria-hidden="true">⌄</span></summary>'+
    '<div class="library-backup-content"><div class="library-backup-actions">'+
-    btn('backup','Esporta backup')+btn('restore-backup','Ripristina backup')+'</div></div></details>'+
+    btn('backup','Esporta backup')+btn('restore-backup','Ripristina backup')+'</div>'+serverBackupMarkup()+'</div></details>'+
   '<dialog id="library-create-dialog" class="library-create-dialog" aria-labelledby="library-create-title">'+
    '<div class="library-create-body">'+dialogCloseButton('library-create-close','Chiudi','library-create-close')+
     '<h2 id="library-create-title">Nuova creatura</h2>'+
@@ -4843,6 +4844,8 @@ function openRemoveFeatDialog(originKey){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='server-backup-now'){serverBackups.schedule(true);return;}
+
   if(act==='info-portrait-remove'){
     if(!state.editor||state.sheet!=='info')throw Error('Apri prima la scheda Info.');
     await patch({sheet_portrait_data:''});
@@ -7178,6 +7181,7 @@ async function handleSubmit(form){
     const token=document.querySelector("#pair-secret")?.value.trim()||"";
     const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
     acceptSession(pairedSession);
+    serverBackups.schedule();
     realtimeStopped=false;
     state.paired=true;state.online=true;state.sessionPane='table';
     state.messages=[];state.after="";state.tokenId="";
@@ -7488,6 +7492,7 @@ function listen(){
     }
   });
   window.addEventListener("online",()=>{
+    serverBackups.schedule(true);
     // The archive remains fully editable; refresh only connection indicators.
     refreshConnection(true).catch(error=>message(errorMessage(error),true));
   });
@@ -7544,6 +7549,8 @@ export async function mount(){
   if(qrCode){state.page="session";state.sessionPane="connection";}
   state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
   await render();
+  if(typeof globalThis.vttDesktopSaveFile!=='function')
+    void serverBackups.start();
   void loadBundledConditionCatalog();
   // Idle-only background prefetch: never gate the library, sheet or pairing.
   // The service worker also caches the complete catalog for later offline use.

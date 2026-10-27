@@ -2,6 +2,7 @@
 import {request} from './bridge.js';
 export const DATABASE_NAME = 'vtt-desktop-native';
 export const DATABASE_VERSION = 1;
+export const observeArchiveChanges = () => () => {};
 export const openStorage = async () => { await request('owner'); return {close(){}}; };
 export const localOwnerId = () => request('owner');
 export const getRecord = (scope,type,id) => request('get',{scope,type,id});
