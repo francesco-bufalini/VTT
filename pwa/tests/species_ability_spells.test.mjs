@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {pendingCharacterChoices} from '../pending_choices.js';
 import {projectSpeciesSpellBindings} from '../tools/species_spell_bindings.mjs';
+import {projectFlattenedSpeciesAbilities} from '../tools/species_ability_variants.mjs';
 import {structuredSpellGrants,supplementalSpeciesSpellFeatures,originSpellId} from '../spell_selection.js';
 
 const json=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
@@ -178,4 +179,13 @@ test('flat subrace selections retain their real spell-granting traits',()=>{
    race+' '+book);
  }
  assert.deepEqual(spellResult(character('Tiefling (Variant; Winged)','SCAG')).grants,[]);
+});
+
+test('flattened ASI rows are reproducible from verified 2014 native sources',()=>{
+ const projected=ability.race.filter(row=>row.projected_flattened_species);
+ const base={...ability,race:ability.race.filter(row=>!row.projected_flattened_species)};
+ const regenerated=projectFlattenedSpeciesAbilities(base,source.races,sourceSpells.entries);
+ assert.deepEqual(projected,regenerated);
+ assert.ok(projected.length>=80);
+ assert.ok(!projected.some(row=>['XPHB','EFA','LFL','RHW'].includes(row.source)));
 });
