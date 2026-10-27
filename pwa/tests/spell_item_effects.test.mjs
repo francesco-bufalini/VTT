@@ -89,6 +89,8 @@ test('stacked targets split into independent inventory instances; unequipping do
  assert.equal(sheet({...before,...applied}).effect_extensions.length,2);
  const removed={...before,...applied,...endItemSpellPatch({...before,...applied},'cast_1')};
  assert.equal(sheet(removed).effect_extensions.length,0);
+ assert.equal(removed.concentrating_spell_id,'');
+ assert.ok(!removed.conditions.includes('concentrating'));
 });
 
 test('homebrew spells may declare inline typed enchantments and explicit item selector',()=>{
