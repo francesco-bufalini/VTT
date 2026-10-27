@@ -525,7 +525,9 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
  const seen=new Set(result.map(row=>String(row.name||'').trim().toLocaleLowerCase('it')));
  for(const ability of activated){
   if(!String(ability.origin||'').startsWith('Classe ·')&&
-     !String(ability.feature_id||'').startsWith('feature:class|'))continue;
+     !String(ability.origin||'').startsWith('Specie ·')&&
+     !String(ability.feature_id||'').startsWith('feature:class|')&&
+     !String(ability.feature_id||'').startsWith('feature:species|'))continue;
   const raw=String(ability.action_type||ability.activation_mode||'').trim().toLowerCase();
   if(!raw||raw==='passive')continue;
   if(ability.id==='vtt_wild_shape'&&result.some(row=>row.rule_action_id==='wild_shape'||row.id==='wild_shape'))continue;
