@@ -165,6 +165,8 @@ test('calculated PWA sheets expose racial modes and real uses without custom rol
   originDetails:{races:{'kenku|mpmm':find('Kenku','MPMM')}}});
  const roll=second.racial_roll_modes.find(row=>row.granting_trait==='Kenku Recall');
  assert.ok(roll?.tracker_id);
+ const computedProficiency=Number(second.values.proficiency);
  assert.ok(second.trackers.some(tracker=>tracker.id===roll.tracker_id&&
-  tracker.max===3&&tracker.recharge==='long_rest'));
+  tracker.max===computedProficiency&&tracker.recharge==='long_rest'),
+  'Kenku Recall recovers PB uses, using the PWA computed proficiency bonus');
 });
