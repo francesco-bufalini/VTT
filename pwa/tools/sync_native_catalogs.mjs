@@ -4,6 +4,7 @@ import {syncProficiencyCatalog} from './sync_proficiency_catalog.mjs';
 import {readFile,writeFile} from 'node:fs/promises';
 import {projectSpeciesAttacks} from './species_mechanics.mjs';
 import {projectSpeciesDefenses} from './species_defenses.mjs';
+import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
 // Project typed TCE infusion data to a URL already served by PwaHost.
 // Older native snapshots lack selectors: use source-qualified structured
@@ -226,6 +227,14 @@ const legacyText=await readFile(new URL('../../vtt/spells/spell_catalog_phb_2014
 const legacyStart=legacyText.indexOf('{',legacyText.indexOf('const SPELLS:'));
 mechanics.legacy_spells=Object.values(JSON.parse(legacyText.slice(legacyStart)));
 const references=await read('../../vtt/data/creature_references_5etools.json');
+const existingSpellRules=await read('../catalog/spell_grant_rules.json');
+const speciesSpellBindings=projectSpeciesSpellBindings(references.races,additional.entries);
+await writeFile(new URL('../catalog/spell_grant_rules.json',import.meta.url),
+ JSON.stringify({...existingSpellRules,rules:[
+  ...existingSpellRules.rules.filter(rule=>rule.kind!=='subrace'),
+  ...speciesSpellBindings.rules
+ ]},null,2)+'\n');
+
  // Mirror the native CreatureRules.species_creature_type lookup. 5etools puts
  // many non-Humanoid types inside the named "Creature Type" trait, not in
  // creatureTypes. Keep source-qualified entries so 2014/2024 books do not mix.
