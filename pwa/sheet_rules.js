@@ -1249,8 +1249,14 @@ function calculateSheetValues(record={},catalogs={}){
       const chosen=record.spellcasting_section_abilities?.['origin:'+row.origin_id];
       if(arr(resolved.spellcasting_ability_options).includes(chosen))
         resolved.spellcasting_ability=chosen;
+      // An origin-granted cantrip is at-will by default, regardless of the
+      // "known" storage group. Explicit limited-use cantrip trackers remain
+      // chargeable; a cantrip never consumes a spell slot.
+      if(resolved.cantrip===true&&resolved.payment_mode!=='tracker')
+        resolved.payment_mode='free';
       if(!['tracker','slot','free'].includes(resolved.payment_mode))
         resolved.payment_mode=resolved.tracker_id?'tracker':
+          resolved.cantrip===true?'free':
           ['known','prepared'].includes(resolved.mode)?'slot':'free';
       // The alternate slot path is meaningful only for an active tracker.
       if(resolved.payment_mode!=='tracker'||!resolved.tracker_id)
