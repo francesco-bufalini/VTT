@@ -221,7 +221,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  for(const row of [...rows(record.dice_bonuses),...rows(calculated.racial_roll_bonuses)]){
   if(row.disabled||!belongs(row))continue;
   const copies=trait.category==='oggetti'&&trait.rank===0?trait.item_active_quantity:1;
-  add('bonus','Bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice)+(copies>1?' ×'+copies:''),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
+  add('bonus','Bonus',rows(row.targets).length?rows(row.targets).map(traitBenefitTargetLabel).join(' · '):traitBenefitTargetLabel(row.target),
+   signedTraitFormula(row.dice)+(copies>1?' ×'+copies:''),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
  }
  // An attack is a benefit in its own right; bonuses to an attack are
  // separate numeric benefits and must not be confused with the granted attack.

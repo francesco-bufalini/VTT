@@ -6409,10 +6409,9 @@ async function handleAction(target){
       // The just-finished roll owns its chosen charges. Keep the granted
       // terms visible in the formula, but never auto-charge or auto-apply them
       // to a later d20 roll. Available bonuses remain visible below the result.
-      dialog.postRollBonuses=[...chosen,...(dialog.postRollBonuses||[])];
+      dialog.postRollBonuses=[...chosen];
       dialog.appliedBonusIds=new Set(chosen.map(row=>row.selectionId));
       dialog.usedRollBonuses=[];
-        dialog.renderRollFormula?.();
         // Usage was spent by the explicit Usa action. Rerolling in this dialog
         // must not silently consume the same tracker again.
         dialog.renderRollFormula?.();
@@ -6463,7 +6462,7 @@ async function handleAction(target){
       // The just-finished roll owns its chosen charges. Keep the granted
       // terms visible in the formula, but never auto-charge or auto-apply them
       // to a later d20 roll. Available bonuses remain visible below the result.
-      dialog.postRollBonuses=[...chosen,...(dialog.postRollBonuses||[])];
+      dialog.postRollBonuses=[...chosen];
       dialog.appliedBonusIds=new Set(chosen.map(row=>row.selectionId));
       dialog.usedRollBonuses=[];
         // Keep the next-roll formula in sync with the controls even after a
