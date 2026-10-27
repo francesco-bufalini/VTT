@@ -1,7 +1,7 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
-import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources} from './companion_rules.js';
+import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
@@ -91,6 +91,47 @@ async function companionRules(){
     .catch(error=>{companionRulesPromise=null;throw error;});
   return companionRulesPromise;
 }
+// Reusing a stored creature never automatically restores any of its resources.
+async function askCompanionRest(row){
+ if(!row?.reused)return;
+ const stored=await loadCreature(row.id);
+ if(!stored)return;
+ const longRest=await new Promise(resolve=>{
+  const dialog=document.createElement('dialog');
+  dialog.id='companion-rest-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
+  dialog.innerHTML=actionDialogIntro('Sottocreatura già esistente',[
+   {label:'Scheda conservata',value:stored.data.name},
+   {label:'Punti ferita',value:String(stored.data.current_hp??0)+' / '+String(stored.data.max_hp??0)}
+  ],'La scheda e le sue modifiche sono state conservate. Vuoi effettuare un riposo lungo?',
+  '', 'companion-rest-close')+
+  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-companion-rest-yes>Riposo lungo</button>'+
+  '<button type="button" class="btn" data-companion-rest-no>Mantieni lo stato</button></div>';
+  let done=false;const finish=value=>{if(done)return;done=true;resolve(value);closeDialog(dialog,{remove:true});};
+  dialog.querySelector('[data-companion-rest-yes]').onclick=()=>finish(true);
+  dialog.querySelector('[data-companion-rest-no]').onclick=()=>finish(false);
+  dialog.querySelector('[data-act="companion-rest-close"]').onclick=()=>finish(false);
+  dialog.addEventListener('close',()=>finish(false),{once:true});
+  document.body.append(dialog);openDialog(dialog);
+ });
+ if(!longRest)return;
+ const editor=await openCreatureEditor(row.id),record=editor.read(),calculated=await computeLocalData(record);
+ await editor.update(completeRest(record,'long_rest',calculated).patch);await editor.flush();
+}
+async function createInfusionCompanion(owner,infusion,calculated){
+ const data=await companionRules(),rule=infusionCompanionRule(data,calculated.infusion_catalog,infusion.id,owner);
+ if(!rule)return null;
+ const choice=companionSources(rule,data,[],owner)[0];
+ if(!choice)throw Error('Profilo della sottocreatura non disponibile.');
+ const row=await summonSubcreature(owner.id,await choice.load(),{
+  name:choice.name,source:choice.source,template_id:choice.template_id,rule_id:rule.id,
+  limit_per_owner_rule:rule.limit_per_owner_rule??1,grant:{kind:'inventory_infusion',id:infusion.id}
+ });
+ await askCompanionRest(row);return row;
+}
+async function summonSpellCompanion(ownerId,source,reference){
+ const row=await summonSubcreature(ownerId,await source.load(),reference);
+ await askCompanionRest(row);return row;
+}
 async function companionSpellChoices(spell,creature){
   const data=await companionRules();
   const rule=spellCompanionRule(data,spell,creature);
@@ -133,11 +174,14 @@ async function createFeatureCompanion(parent,context,dialog){
   let loaded=await choice.load({size,name:requested});
   if(!loaded||typeof loaded!=='object')throw Error('Voce del bestiario non valida.');
   if(requested)loaded={...loaded,name:requested};
-  return summonSubcreature(parent.id,loaded,{
-    ...choice,name:requested||loaded.name||choice.name,
+  const row=await summonSubcreature(parent.id,loaded,{
+    ...choice,name:choice.name,
     feature_id:originId,rule_id:rule.id,
+    grant:{kind:'feature',id:originId},
     duration:rule.duration||'',limit_per_owner_rule:rule.limit_per_owner_rule??1
   });
+  await askCompanionRest(row);
+  return row;
 }
 async function manualCompanionRules(owner,calculated){
   const data=await companionRules();
@@ -909,7 +953,8 @@ async function libraryView(){
   const monster=c.kind==='monster';
   const species=c.species||c.race||(typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||c.type||'Razza non specificata';
   const classes=localClasses(c).map(m=>String(m.name)+' '+Math.max(1,Number(m.level)||1)).join(' · ');
-  const subline=c.parent_creature_id?'Famiglio di '+(byId.get(c.parent_creature_id)?.name||'creatura sconosciuta'):
+  const subline=c.parent_creature_id?'Famiglio di '+(byId.get(c.parent_creature_id)?.name||'creatura sconosciuta')+
+    (companionGrantActive(byId.get(c.parent_creature_id)||{},c)?'':' · Non disponibile'):
     (classes||(c.level?'Liv. '+c.level:''));
   return '<div class="library-creature-entry" data-library-id="'+esc(c.id)+'" data-library-subcreature="'+Boolean(c.parent_creature_id)+'" data-library-kind="'+(monster?'monster':'character')+'">'+
    '<label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
@@ -4203,8 +4248,12 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
   if(desktopHooks?.cast){
     await flushPendingFields();
     const result=await desktopHooks.cast({casterId,selection,requestedLevel,payment});
+    if(companionSource?.rule?.grant_kind==='spell_effect'){
+      const editor=state.editor&&state.creatureId===casterId?state.editor:await openCreatureEditor(casterId);
+      await editor.update(companionSpellEffectPatch(editor.read(),companionSource.rule,selection.id));
+    }
     if(companionSource)
-      await summonSubcreature(casterId,await companionSource.load(),companionSource);
+      await summonSpellCompanion(casterId,companionSource,companionSource);
     return result;
   }
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
@@ -4230,11 +4279,13 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
       state.editor:await openCreatureEditor(casterId);
     const current=editor.read();
     const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
-    if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
+    const effect=companionSource?.rule?.grant_kind==='spell_effect'?
+      companionSpellEffectPatch(current,companionSource.rule,selection.id):{};
+    if(Object.keys({...accepted.patch,...effect}).length)await editor.update({...accepted.patch,...effect});
     charged=true;
     if(companionSource){
       try{
-        await summonSubcreature(casterId,await companionSource.load(),companionSource);
+        await summonSpellCompanion(casterId,companionSource,companionSource);
         message('Famiglio aggiunto alle sottocreature.');
       }catch(error){message('Evocazione registrata, ma scheda famiglio non creata: '+errorMessage(error),true);}
     }
@@ -5401,7 +5452,7 @@ async function handleAction(target){
     const subcreatures=await listSubcreatures(creatureId);
     const manualCompanions=editor.readBase().parent_creature_id?[]:
       await manualCompanionRules(editor.read(),await computeLocalData(editor.read()));
-    openVariantsDialog({read:check,notify:message,icon:actionGlyph,subcreatures:subcreatures.map(row=>row.creature),
+    openVariantsDialog({read:check,notify:message,icon:actionGlyph,subcreatures:subcreatures.map(row=>({...row.creature,is_available:companionGrantActive(editor.readBase(),row.creature)})),
       manualCompanions,onCompanionFeature:async id=>{
         const descriptor=manualCompanions.find(row=>row.id===id);
         if(!descriptor)throw Error('Privilegio non disponibile.');
@@ -5740,16 +5791,18 @@ async function handleAction(target){
     if(desktopHooks?.cast||(state.paired&&state.online)){
       app.querySelector('#action-cast-dialog')?.close();
       await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
-        companionSource?{...companionSource,spell_id:selection.id,
+        companionSource?{...companionSource,spell_id:selection.id,rule:companion.rule,
+          grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
           rule_id:companion.rule.id,limit_per_owner_rule:companion.rule.limit_per_owner_spell??1}:null);return;
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
     app.querySelector('#action-cast-dialog')?.close();
-    if(Object.keys(plan.patch).length)await patch(plan.patch);
-    if(companionSource)
-      await summonSubcreature(record.id,await companionSource.load(),
-        {...companionSource,spell_id:selection.id,
-          rule_id:companion.rule.id,limit_per_owner_rule:companion.rule.limit_per_owner_spell??1});
+    const effect=companion?companionSpellEffectPatch(record,companion.rule,selection.id):{};
+    if(Object.keys({...plan.patch,...effect}).length)await patch({...plan.patch,...effect});
+    if(companionSource)await summonSpellCompanion(record.id,companionSource,{
+      ...companionSource,spell_id:selection.id,rule_id:companion.rule.id,
+      grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
+      limit_per_owner_rule:companion.rule.limit_per_owner_spell??1});
     await render();
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
@@ -7094,7 +7147,11 @@ async function handleAction(target){
       changes=clearInfusionPatch(creature,itemIndex);
     }
     await patch(changes);
+    if(state.saveError)throw Error(state.saveError);
+    await state.editor.flush();
     closeDialog(dialog,{remove:true});
+    if(act==='infusion-dialog-activate')
+      await createInfusionCompanion(state.editor.read(),entry,await computeLocalData(state.editor.read()));
     await render();return;
   }
   if(act==='infusion-clear'){

@@ -123,38 +123,39 @@ export async function createSubcreature(parentId, source, reference = {}, scope 
   if (reference.rule_id) creature.companion_rule_id = String(reference.rule_id).slice(0,160);
   if (reference.duration) creature.companion_duration = String(reference.duration).slice(0,80);
   if (reference.template_id) creature.companion_template_id = String(reference.template_id).slice(0,160);
+  if (reference.grant?.kind && reference.grant?.id)
+    creature.companion_grant={kind:String(reference.grant.kind).slice(0,60),id:String(reference.grant.id).slice(0,256)};
+  if (reference.limit_per_owner_rule===1) creature.companion_selected=true;
   return saveCreature(creature, scope, 0);
 }
 
-// Re-summoning an exclusive companion refreshes the existing sheet instead
-// of creating duplicates. Nonexclusive invocations use limit=0.
-export async function summonSubcreature(parentId, source, reference = {}, scope = "default") {
-  const max=Number(reference.limit_per_owner_rule??1);
-  if(!Number.isInteger(max)||max<0||max>50)throw Error("Limite evocazione non valido.");
-  const children=await listSubcreatures(parentId,scope);
-  const matches=children.filter(row=>
-    (reference.rule_id&&row.creature.companion_rule_id===reference.rule_id)||
-    (!reference.rule_id&&reference.spell_id&&row.creature.companion_origin_spell_id===reference.spell_id));
-  if(max===1&&matches.length){
-    const previous=matches[0],fresh=source?.kind==="monster"?structuredClone(source):
-      bestiarySheet(source?.stat_block||source,reference.miniature);
-    if(!fresh || fresh.kind!=="monster")throw Error("Profilo evocazione non valido.");
-    const replacement={...fresh,id:previous.creature.id,owner_id:previous.creature.owner_id,
-      kind:"monster",parent_creature_id:parentId,
-      transfer_revision:previous.creature.transfer_revision,
-      linked_token_sync_id:previous.creature.linked_token_sync_id||"",
-      linked_token_name:previous.creature.linked_token_name||"",
-      companion_rule_id:String(reference.rule_id||previous.creature.companion_rule_id||""),
-      ...(reference.spell_id?{companion_origin_spell_id:String(reference.spell_id)}:{}),
-      ...(reference.feature_id?{companion_origin_feature_id:String(reference.feature_id)}:{}),
-      ...(reference.duration?{companion_duration:String(reference.duration)}:{}),
-      ...(reference.template_id?{companion_template_id:String(reference.template_id)}:{}),
-      bestiary_ref:{name:String(reference.name||fresh.name).slice(0,160),
-        source:String(reference.source||fresh.stat_block?.source||"").slice(0,80)}};
-    return saveCreature(replacement,scope,previous.revision);
-  }
-  if(max>1&&matches.length>=max)throw Error("Limite di creature evocate raggiunto.");
-  return createSubcreature(parentId,source,reference,scope);
+// One complete, editable saved sheet per owner + bestiary source/name.
+// Other selected types may be hidden, but are never reset or deleted.
+export async function summonSubcreature(parentId,source,reference={},scope="default"){
+ const max=Number(reference.limit_per_owner_rule??1);
+ if(!Number.isInteger(max)||max<0||max>50)throw Error("Limite evocazione non valido.");
+ const children=await listSubcreatures(parentId,scope),stat=source?.stat_block||source;
+ const name=String(reference.name||stat?.name||"").trim().toLowerCase();
+ const book=String(reference.source||stat?.source||"").trim().toLowerCase();
+ const existing=max===1?children.find(row=>
+  String(row.creature.bestiary_ref?.name||"").trim().toLowerCase()===name&&
+  String(row.creature.bestiary_ref?.source||"").trim().toLowerCase()===book):null;
+ const fromRule=children.filter(row=>reference.rule_id&&row.creature.companion_rule_id===reference.rule_id);
+ if(max>1&&fromRule.length>=max)throw Error("Limite di creature evocate raggiunto.");
+ if(max===1)for(const other of fromRule){
+  if(other.creature.id===existing?.creature.id||other.creature.companion_selected===false)continue;
+  await saveCreature({...other.creature,companion_selected:false},scope,other.revision);
+ }
+ if(existing){
+  const updated={...existing.creature,companion_selected:true,
+   ...(reference.rule_id?{companion_rule_id:String(reference.rule_id)}:{}),
+   ...(reference.spell_id?{companion_origin_spell_id:String(reference.spell_id)}:{}),
+   ...(reference.feature_id?{companion_origin_feature_id:String(reference.feature_id)}:{}),
+   ...(reference.grant?.kind&&reference.grant?.id?{companion_grant:{
+    kind:String(reference.grant.kind),id:String(reference.grant.id)}}:{})};
+  return {...await saveCreature(updated,scope,existing.revision),reused:true};
+ }
+ return {...await createSubcreature(parentId,source,reference,scope),reused:false};
 }
 
 

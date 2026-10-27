@@ -35,6 +35,34 @@ export function eligibleCompanionFeatureRules(owner,projection,data,{manualOnly=
  return rows(data?.features).filter(rule=>(!manualOnly||rule.activation==='manual')&&
   rows(projection?.features).some(feature=>matchesCompanionFeature(owner,projection,rule,feature)));
 }
+// The companion sheet persists; its availability follows the benefit's typed source.
+export function companionGrantActive(owner={},child={}){
+ if(child.companion_selected===false)return false;
+ const grant=child.companion_grant;
+ if(!grant?.kind)return true;
+ if(grant.kind==='inventory_infusion')return rows(owner.inventory).some(item=>
+  Number(item?.quantity??1)>0&&item?.infusion?.id===grant.id&&!item.disabled);
+ if(grant.kind==='spell_effect')return rows(owner.proficiency_origins).some(row=>
+  row.id===grant.id&&row.group==='spell'&&!row.disabled&&owner.origin_enabled?.[grant.id]!==false);
+ if(grant.kind==='feature')return owner.origin_enabled?.[grant.id]!==false&&
+  !rows(owner.proficiency_origins).some(row=>row.id===grant.id&&row.disabled);
+ return false;
+}
+export function infusionCompanionRule(data,definitions=[],id='',owner={}){
+ const definition=rows(definitions).find(row=>row.id===id);
+ const ruleId=definition?.companion?.rule_id;
+ return ruleId?rows(data?.features).find(rule=>rule.id===ruleId&&
+  rows(rule.editions).includes(String(owner.rules_version||'2014')))||null:null;
+}
+export function companionSpellEffectPatch(owner={},rule={},spellId=''){
+ if(rule.grant_kind!=='spell_effect')return {};
+ const id='spell:'+String(spellId),origins=structuredClone(rows(owner.proficiency_origins));
+ const row=origins.find(entry=>entry.id===id&&entry.group==='spell');
+ if(row)Object.assign(row,{applied:true,disabled:false});
+ else origins.push({id,group:'spell',name:'Incantesimo · '+String(rule.names?.[0]||spellId),
+  applied:true,disabled:false,automatic:false});
+ return {proficiency_origins:origins,origin_enabled:{...(owner.origin_enabled||{}),[id]:true}};
+}
 export function spellCompanionRule(data,spell,owner){
  const candidates=[normal(spell?.name),normal(spell?.id)];
  return rows(data?.spells).find(rule=>rows(rule.editions).includes(String(owner.rules_version||'2014'))&&

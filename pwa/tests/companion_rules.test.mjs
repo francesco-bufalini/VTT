@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,
- spellCompanionRule,companionTemplateStat,companionSources} from '../companion_rules.js';
+ spellCompanionRule,companionTemplateStat,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from '../companion_rules.js';
 
 const rules=JSON.parse(readFileSync(new URL('../catalog/companion_spells.json',import.meta.url),'utf8'));
 const owner=(className,subclass,level)=>({
@@ -64,4 +64,21 @@ test('unrelated passive traits do not produce free summons',()=>{
  const p=features('Bard','Performance of Creation','different');
  assert.deepEqual(eligibleCompanionFeatureRules(bard,p,rules),[]);
  assert.equal(featureCompanionRule(bard,p,rules,'different'),null);
+});
+
+test('infused-object and spell-effect grants toggle availability, not saved sheets',()=>{
+ const artificer=owner('Artificer','Alchemist',7);
+ const infusion={id:'infusion|tce|homunculus servant',companion:{rule_id:'homunculus_servant_2014'}};
+ assert.equal(infusionCompanionRule(rules,[infusion],infusion.id,artificer)?.activation,'item');
+ assert.equal(infusionCompanionRule(rules,[],infusion.id,artificer),null);
+ const child={companion_grant:{kind:'inventory_infusion',id:infusion.id},companion_selected:true};
+ assert.equal(companionGrantActive({...artificer,inventory:[]},child),false);
+ assert.equal(companionGrantActive({...artificer,inventory:[{quantity:1,infusion:{id:infusion.id}}]},child),true);
+ assert.equal(companionGrantActive({...artificer,inventory:[{quantity:1,infusion:{id:infusion.id}}]},{...child,companion_selected:false}),false);
+ const effect=companionSpellEffectPatch(artificer,{grant_kind:'spell_effect',names:['Find Familiar']},'find-familiar');
+ const familiar={companion_grant:{kind:'spell_effect',id:'spell:find-familiar'}};
+ assert.equal(companionGrantActive(artificer,familiar),false);
+ assert.equal(companionGrantActive({...artificer,...effect},familiar),true);
+ assert.equal(companionGrantActive({...artificer,...effect,proficiency_origins:[]},familiar),false);
+ assert.deepEqual(companionSpellEffectPatch(artificer,{},'find-familiar'),{});
 });

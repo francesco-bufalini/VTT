@@ -4134,6 +4134,7 @@
       "id": "infusion|tce|homunculus servant",
       "name": "Homunculus Servant",
       "source": "TCE",
+      "companion": {"rule_id": "homunculus_servant_2014"},
       "min_level": 2,
       "item_prerequisite": "A gem or crystal worth at least 100 gp",
       "requires_attunement": false,
