@@ -31,6 +31,7 @@ test('Centaur MPMM Charge is a no-cost bonus action with an existing natural att
  const actions=battleAbilityEntries(character(),projected(powers.abilities),[],activated);
  assert.equal(actions.length,1);
  assert.equal(actions[0].time,'bonus');
+ assert.deepEqual(actions[0].roll_attack,{kind:'attack',trait:'Hooves',slot:'natural'});
  assert.deepEqual(abilityAttackRoll(activated[0],projected(powers.abilities)),{
    target:'attack_hit:'+hooves.id,label:'Charge · Hooves'
  });

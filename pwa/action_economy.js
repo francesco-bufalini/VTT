@@ -554,7 +554,8 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
    tracker_id:String(ability.tracker_id||''),tracker:ability.tracker_name||ability.resource_name||'',
    cost:Math.max(0,Number(ability.resource_cost??(ability.tracker_id?1:0))||0),
    target_mode:ability.target_mode||'',target_range_feet:ability.target_range_feet||0,
-   exclude_self:ability.exclude_self===true});
+   exclude_self:ability.exclude_self===true,
+   ...(ability.roll_attack?{roll_attack:ability.roll_attack}:{})});
   seen.add(name);
  }
  return result;
