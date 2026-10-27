@@ -128,5 +128,10 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
       grant.origin_name||"Origine",grant.origin_id);
     }
   }
+  // Explicit typed species grants use the same activation and tracker path
+  // as class features, without guessing action timing from descriptions.
+  for(const power of rows(projection.racial_abilities))
+    add(power,'Specie · '+(creature.species||'')+' · '+(creature.species_source||''),
+      power.origin_id||'');
   return result.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||"")));
 }
