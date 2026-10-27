@@ -49,7 +49,7 @@ const TARGETS={ability_check:'Tutte le prove di caratteristica (incl. iniziativa
  initiative:'Iniziativa',hp:'PF massimi',second_max:'PF seconda forma',
  speed:'Camminata',proficiency:'Competenza',passive_perception:'Percezione passiva',
  pact_slot:'Slot del Patto',spell_dc:'CD incantesimi',spell_attack:'Attacco incantesimi',
- attunement_max:'Oggetti in sintonia'};
+ attunement_max:'Sintonie massime'};
 export function signedTraitFormula(expression){
  const raw=String(expression??'').trim();
  return raw&&!/^[+\-−]/.test(raw)?'+'+raw:raw;
