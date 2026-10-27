@@ -6118,19 +6118,46 @@ async function handleAction(target){
     if((act==='slot-use'||act==='slot-recover')&&state.magicPopup==='slot-menu')state.magicPopup='';
     await render();return;
   }
-  if(['hp-adjust-open','hp-damage','hp-heal'].includes(act)){
+  if(act==='hp-adjust-open'){
     const dialog=app.querySelector('#hp-adjust-dialog');
     if(!dialog)throw Error('Pannello punti ferita non disponibile.');
-    configureHpAdjustDialog(dialog,act==='hp-damage'?'damage':act==='hp-heal'?'heal':'set');
+    configureHpAdjustDialog(dialog);
     openSessionDialog(dialog);
-    dialog.querySelector('#hp-adjust-amount')?.focus();
+    dialog.querySelector('#hp-adjust-current')?.focus();
     return;
   }
-  if(act==='hp-adjust-mode'){
-    const dialog=target.closest('#hp-adjust-dialog');
-    if(!dialog)throw Error('Pannello punti ferita non disponibile.');
-    configureHpAdjustDialog(dialog,target.dataset.hpMode);
-    dialog.querySelector('#hp-adjust-amount')?.focus();
+  if(act==='hp-adjust-max'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Apri prima una creatura.');
+    openSheetBaseEditor(creature,await computeLocalData(creature),'hp');
+    return;
+  }
+  if(act==='hp-adjust-apply'){
+    const dialog=target.closest('#hp-adjust-dialog'),mode=target.dataset.hpMode;
+    if(!dialog||!['damage','heal'].includes(mode))throw Error('Operazione sui PF non valida.');
+    const raw=dialog.querySelector('#hp-adjust-amount')?.value.trim();
+    const amount=Number(raw);
+    if(!raw||!Number.isSafeInteger(amount)||amount<1||amount>99999)
+      throw Error('Inserisci una quantità valida tra 1 e 99999.');
+    if(!state.editor)throw Error('Apri prima una scheda.');
+    let creature=state.editor.read(),calculated=await computeLocalData(creature);
+    const draft=hpAdjustDraft(dialog,calculated);
+    if(draft.current_hp!==Number(creature.current_hp||0)||draft.temporary_hp!==Number(creature.temporary_hp||0)){
+      await patch(draft);
+      creature=state.editor.read();
+      calculated=await computeLocalData(creature);
+    }
+    const damage=mode==='damage'?variantDamage(state.editor.readBase(),amount):null;
+    const concentrationCheck=mode==='damage'?concentrationDamageCheck(creature,amount):null;
+    await patch(damage?.patch||hitPointPatch(creature,amount,calculated));
+    closeSessionDialog(dialog);
+    await render();
+    if(concentrationCheck){
+      const current=state.editor?.read();
+      const popup=current&&current.id===creature.id?openConcentrationDamageDialog(concentrationCheck,current,state.calculated):null;
+      if(popup&&damage?.overflow>0)popup.addEventListener('close',()=>promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow),{once:true});
+      else if(damage?.overflow>0)promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow);
+    }else if(damage?.overflow>0)promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow);
     return;
   }
   if(act==='hp-adjust-cancel'){
@@ -7305,41 +7332,34 @@ async function handleAction(target){
   }
   if(act==="roll"){await roll(state.diceSides);return;}
 }
-function configureHpAdjustDialog(dialog,mode){
-  if(!['damage','heal','set'].includes(mode))throw Error('Operazione sui PF non valida.');
-  dialog.dataset.hpMode=mode;
-  const amount=dialog.querySelector('#hp-adjust-amount');
-  amount.min=mode==='set'?'0':'1';
-  amount.value='';
-  dialog.querySelector('#hp-adjust-amount-label').textContent=mode==='damage'?'Danni subiti':mode==='heal'?'PF recuperati':'PF attuali';
-  dialog.querySelector('#hp-adjust-confirm').textContent=mode==='damage'?'Applica danni':mode==='heal'?'Applica cura':'Salva PF';
-  for(const choice of dialog.querySelectorAll('[data-act="hp-adjust-mode"]'))
-    choice.setAttribute('aria-pressed',String(choice.dataset.hpMode===mode));
+function configureHpAdjustDialog(dialog){
+  const creature=state.editor?.read()||{};
+  dialog.querySelector('#hp-adjust-current').value=String(creature.current_hp??0);
+  dialog.querySelector('#hp-adjust-temporary').value=String(creature.temporary_hp??0);
+  dialog.querySelector('#hp-adjust-amount').value='';
+}
+function hpAdjustDraft(dialog,calculated){
+  const max=Math.max(0,Number(calculated.stats?.max_hp)||0);
+  const get=(selector,upper,label)=>{
+    const raw=dialog.querySelector(selector)?.value.trim();
+    const value=Number(raw);
+    if(!raw||!Number.isSafeInteger(value)||value<0||value>upper)
+      throw Error(label+': inserisci un numero intero tra 0 e '+upper+'.');
+    return value;
+  };
+  return {
+    current_hp:get('#hp-adjust-current',Math.max(max,Number(state.editor?.read()?.current_hp)||0),'PF attuali'),
+    temporary_hp:get('#hp-adjust-temporary',99999,'PF temporanei')
+  };
 }
 async function handleSubmit(form){
   if(form.id==='hp-adjust-form'){
     const dialog=form.closest('#hp-adjust-dialog');
-    const mode=dialog?.dataset.hpMode;
-    if(!['damage','heal','set'].includes(mode))throw Error('Operazione sui PF non valida.');
-    const raw=form.querySelector('#hp-adjust-amount')?.value;
-    const amount=Number(raw);
-    if(raw===''||!Number.isSafeInteger(amount)||amount<(mode==='set'?0:1)||amount>99999)
-      throw Error('Inserisci un valore di PF valido tra '+(mode==='set'?'0':'1')+' e 99999.');
-    if(!state.editor)throw Error('Apri prima una scheda.');
+    if(!dialog||!state.editor)throw Error('Apri prima una scheda.');
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
-    const damage=mode==='damage'?variantDamage(state.editor.readBase(),amount):null;
-    const changes=mode==='set'?{current_hp:Math.min(amount,Math.max(0,Number(calculated.stats?.max_hp)||0))}:
-      damage?.patch||hitPointPatch(creature,amount,calculated);
-    const concentrationCheck=mode==='damage'?concentrationDamageCheck(creature,amount):null;
-    await patch(changes);
+    await patch(hpAdjustDraft(dialog,calculated));
     closeSessionDialog(dialog);
     await render();
-    if(concentrationCheck){
-      const current=state.editor?.read();
-      const popup=current&&current.id===creature.id?openConcentrationDamageDialog(concentrationCheck,current,state.calculated):null;
-      if(popup&&damage?.overflow>0)popup.addEventListener('close',()=>promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow),{once:true});
-      else if(damage?.overflow>0)promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow);
-    }else if(damage?.overflow>0)promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow);
     return;
   }
   if(form.id==="pair-form"){
@@ -7438,7 +7458,7 @@ function listen(){
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button){
       // An HP card is a single click target, except for its own controls.
-      const card=e.target.closest('#sheet-play-view .play-health[data-act="sheet-context"]');
+      const card=e.target.closest('#sheet-play-view .play-health[data-act="hp-adjust-open"]');
       if(card&&!e.target.closest('button,input,select,textarea,a,[role="button"]:not(.play-health)')){
         try{await flushPendingFields();await handleAction(card);}
         catch(error){message(errorMessage(error),true);}

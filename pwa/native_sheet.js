@@ -614,32 +614,25 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '</div>';
   return '<div class="battle-root">'+
    panel('Punti ferita',
-    '<div class="battle-hp-grid" aria-label="Punti ferita">'+
-      '<label class="battle-stat battle-current-hp">PF attuali<input data-field="current_hp" type="number" min="-999" max="99999" value="'+esc(c.current_hp??1)+'"></label>'+
-      '<div class="battle-stat battle-derived-hp"><span>PF massimi</span>'+read('hp','PF massimi')+'</div>'+
-      '<label class="battle-stat battle-temp-hp">PF temporanei<input data-field="temporary_hp" type="number" min="0" max="99999" value="'+esc(c.temporary_hp??0)+'"></label>'+
-    '</div>'+
-    '<div class="battle-hp-controls">'+
-      '<button type="button" class="btn danger" data-act="hp-damage">− Danni</button>'+
-      '<button type="button" class="btn primary" data-act="hp-heal">＋ Cura</button>'+
-      '<button type="button" class="btn" data-act="hp-restore" aria-label="Ripristina tutti i punti ferita" title="PF pieni">↺ PF pieni</button>'+
-    '</div>'+
     '<dialog id="hp-adjust-dialog" class="sheet-roll-dialog hp-adjust-dialog" aria-labelledby="hp-adjust-title">'+
-     '<header class="hp-adjust-heading"><h2 id="hp-adjust-title">Modifica PF attuali</h2>'+
+     '<header class="hp-adjust-heading"><h2 id="hp-adjust-title">Punti ferita</h2>'+
      '<button type="button" class="hp-adjust-close" data-act="hp-adjust-cancel" aria-label="Chiudi" title="Chiudi">×</button></header>'+
-     '<p class="hp-adjust-current">Attuali <strong>'+esc(c.current_hp??0)+'</strong> / '+esc(Math.max(0,Number(calculated.stats?.max_hp??0)))+' PF</p>'+
-     '<div class="hp-adjust-modes" role="group" aria-label="Tipo di modifica">'+
-      '<button type="button" data-act="hp-adjust-mode" data-hp-mode="set" aria-pressed="true">Imposta</button>'+
-      '<button type="button" data-act="hp-adjust-mode" data-hp-mode="damage" aria-pressed="false">Danni</button>'+
-      '<button type="button" data-act="hp-adjust-mode" data-hp-mode="heal" aria-pressed="false">Cura</button></div>'+
      '<form id="hp-adjust-form">'+
-      '<label for="hp-adjust-amount"><span id="hp-adjust-amount-label">PF attuali</span><input id="hp-adjust-amount" type="number" inputmode="numeric" min="0" max="99999" value="'+esc(c.current_hp??0)+'" required></label>'+
-      '<div class="hp-adjust-actions">'+
-       '<button type="button" class="btn" data-act="hp-adjust-cancel">Annulla</button>'+
-       '<button type="submit" class="btn primary" id="hp-adjust-confirm">Salva PF</button>'+
+      '<div class="hp-adjust-stats">'+
+       '<label class="hp-adjust-stat" for="hp-adjust-current"><span>Attuali</span><input id="hp-adjust-current" type="number" inputmode="numeric" step="1" min="0" max="'+esc(Math.max(0,Number(calculated.stats?.max_hp??0),Number(c.current_hp)||0))+'" value="'+esc(c.current_hp??0)+'" required></label>'+
+       '<div class="hp-adjust-stat hp-adjust-max"><span>Massimi</span>'+
+        '<button type="button" data-act="hp-adjust-max" aria-label="Modifica PF massimi" title="Modifica PF massimi">'+esc(Math.max(0,Number(calculated.stats?.max_hp??0)))+' <span aria-hidden="true">✎</span></button></div>'+
+       '<label class="hp-adjust-stat" for="hp-adjust-temporary"><span>Temporanei</span><input id="hp-adjust-temporary" type="number" inputmode="numeric" step="1" min="0" max="99999" value="'+esc(c.temporary_hp??0)+'" required></label>'+
       '</div>'+
+      '<div class="hp-adjust-actions"><button type="button" class="btn" data-act="hp-adjust-cancel">Annulla</button>'+
+       '<button type="submit" class="btn primary" id="hp-adjust-confirm">Salva PF</button></div>'+
      '</form>'+
-     '<button type="button" class="hp-adjust-full" data-act="hp-restore">Ripristina PF massimi</button>'+
+     '<div class="hp-adjust-quick"><label for="hp-adjust-amount">Applica danni o cura</label>'+
+      '<div class="hp-adjust-quick-row">'+
+       '<input id="hp-adjust-amount" type="number" inputmode="numeric" step="1" min="1" max="99999" placeholder="Quantità" aria-label="Quantità di PF" value="">'+
+       '<button type="button" class="btn danger" data-act="hp-adjust-apply" data-hp-mode="damage">− Danni</button>'+
+       '<button type="button" class="btn primary" data-act="hp-adjust-apply" data-hp-mode="heal">＋ Cura</button>'+
+      '</div></div>'+
     '</dialog>',
     'battle-hp-panel')+
    panel('Classe armatura',

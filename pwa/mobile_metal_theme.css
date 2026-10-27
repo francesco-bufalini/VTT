@@ -5484,53 +5484,59 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
 .sheet-play-view[data-sheet="info"] .play-character-portrait:not(.has-portrait){gap:9px;padding-top:0}
 .play-character-portrait:not(.has-portrait) .play-identity{width:100%;box-sizing:border-box}
 
-/* One thumb-sized HP editor replaces the damage/healing button row. */
-.play-health .play-hp-number{display:flex;align-items:center;gap:12px;min-width:0}
-.play-health .play-hp-reading{display:inline-flex;align-items:baseline;gap:4px;min-width:0}
-.play-health .play-hp-reading>small{display:inline-flex;align-items:baseline}
-.play-health .play-hp-edit{
- flex:0 0 44px;width:44px;height:44px;min-height:44px;min-width:44px;
- padding:10px;border:1px solid #d2a46e74;border-radius:12px;
- background:linear-gradient(145deg,#765034a3,#362926a8);color:#f7d6a3;
- box-shadow:inset 0 1px #ffe6b53a,0 3px 10px #0004;
+/* One click target for the full HP card. Riposi stays an independent button. */
+#sheet-play-view .play-health[role="button"]{cursor:pointer}
+#sheet-play-view .play-health[role="button"]:focus-visible{
+ outline:2px solid #e7bc7b;outline-offset:3px;
 }
-.play-health .play-hp-edit .vtt-action-glyph{width:21px;height:21px;flex:0 0 21px}
-.play-health .play-hp-edit:hover,.play-health .play-hp-edit:focus-visible{
- background:#966d4a9a;border-color:#f1c485;outline:2px solid #f1c48566;outline-offset:2px;
-}
-.hp-adjust-dialog{width:min(360px,calc(100vw - 24px))}
-.hp-adjust-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
-.hp-adjust-heading h2{margin:0}
+#sheet-play-view .play-health .play-hp-number{display:flex;align-items:baseline;min-width:0}
+#sheet-play-view .play-health .play-hp-reading{display:inline-flex;align-items:baseline;gap:4px;min-width:0}
+#sheet-play-view .play-health .play-hp-reading>small{display:inline-flex;align-items:baseline}
+
+/* Reuse the shared sheet dialog, with compact fields and no nested cards. */
+.hp-adjust-dialog{width:min(400px,calc(100vw - 28px));box-sizing:border-box;padding:16px 18px 18px}
+.hp-adjust-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 16px}
+.hp-adjust-heading h2{margin:0;font-size:19px}
 .hp-adjust-close{
- display:grid;place-items:center;min-height:42px;min-width:42px;padding:0;
+ display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;padding:0;
  border:0;background:transparent;color:#ddc4a4;font:30px/1 system-ui;cursor:pointer;
 }
 .hp-adjust-close:hover,.hp-adjust-close:focus-visible{color:#ffe0ad;outline:2px solid #e1b478;outline-offset:1px;border-radius:7px}
-.hp-adjust-current{margin:0 0 15px;color:#c7b69d;font-size:12px}
-.hp-adjust-current strong{color:#f6d6a4;font-variant-numeric:tabular-nums}
-.hp-adjust-modes{
- display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
- padding:4px;margin:0 0 14px;border:1px solid #a27b4a55;border-radius:12px;background:#181414b8;
+.hp-adjust-dialog #hp-adjust-form{display:block;margin:0}
+.hp-adjust-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end}
+.hp-adjust-stat{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;margin:0}
+.hp-adjust-stat>span{color:#cbb899;font-size:11px;font-weight:650;white-space:nowrap}
+.hp-adjust-dialog .hp-adjust-stat input,
+.hp-adjust-dialog .hp-adjust-max button{
+ width:100%;min-width:0;max-width:100%;height:43px;min-height:43px;
+ box-sizing:border-box;border:1px solid #9f7d565e;border-radius:9px;
+ background:#211b1c;color:#f9e1ba;text-align:center;
+ font:650 18px/1 system-ui;font-variant-numeric:tabular-nums;
+ padding:7px 4px;margin:0;box-shadow:inset 0 1px #0004;
 }
-.hp-adjust-modes button{
- min-width:0;min-height:42px;padding:7px 5px;border:1px solid transparent;
- border-radius:9px;background:transparent;color:#c4b6a1;font:650 12px/1.2 system-ui;cursor:pointer;
+.hp-adjust-dialog .hp-adjust-stat input:focus-visible,
+.hp-adjust-dialog .hp-adjust-max button:focus-visible{outline:2px solid #e9ba79;outline-offset:2px}
+.hp-adjust-dialog .hp-adjust-max button{display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+.hp-adjust-dialog .hp-adjust-max button:hover{border-color:#dfb37b;background:#4c362b}
+.hp-adjust-dialog .hp-adjust-max button span{color:#d6ad72;font-size:13px}
+.hp-adjust-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}
+.hp-adjust-actions .btn{min-height:40px;padding:8px 13px}
+.hp-adjust-quick{border-top:1px solid #b48b5c40;margin-top:17px;padding-top:14px}
+.hp-adjust-quick>label{display:block;color:#dec49c;font-size:12px;font-weight:650;margin:0 0 9px}
+.hp-adjust-quick-row{display:grid;grid-template-columns:minmax(68px,.92fr) repeat(2,minmax(0,1fr));gap:8px;align-items:center}
+.hp-adjust-dialog .hp-adjust-quick-row input{
+ width:100%;min-width:0;max-width:100%;box-sizing:border-box;height:42px;
+ border:1px solid #a4845d75;border-radius:9px;background:#211b1c;color:#f9e1ba;
+ font:600 15px system-ui;text-align:center;padding:6px 3px;margin:0;
 }
-.hp-adjust-modes button[aria-pressed="true"]{
- border-color:#ddb0789c;background:linear-gradient(145deg,#785339,#463125);
- color:#ffe2b7;box-shadow:inset 0 1px #ffe6b52d;
+.hp-adjust-dialog .hp-adjust-quick-row input::placeholder{color:#a99981;font-size:11px}
+.hp-adjust-dialog .hp-adjust-quick-row .btn{
+ min-width:0;width:100%;min-height:42px;padding:7px 4px;font-size:12px;white-space:nowrap;
 }
-.hp-adjust-modes button:focus-visible{outline:2px solid #efc180;outline-offset:1px}
-.hp-adjust-full{
- display:block;width:100%;min-height:42px;margin-top:9px;padding:8px 12px;
- border:1px solid #a6865a69;border-radius:9px;background:transparent;
- color:#e5c796;font:600 12px/1.3 system-ui;cursor:pointer;
-}
-.hp-adjust-full:hover,.hp-adjust-full:focus-visible{background:#7150394a;border-color:#e2b579;outline-offset:2px}
 @media(max-width:360px){
- .play-health .play-hp-number{gap:7px}
- .play-health .play-hp-edit{flex-basis:42px;width:42px;height:42px;min-width:42px}
- .play-character-portrait.has-portrait .play-identity{padding-left:14px;padding-right:45px}
+ .hp-adjust-dialog{padding:14px 13px 16px}
+ .hp-adjust-stats{gap:8px}
+ .hp-adjust-quick-row{gap:5px}
 }
 
 /* Infusions use the spell-card structure, with an activation state instead
