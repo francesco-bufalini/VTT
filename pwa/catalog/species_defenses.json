@@ -18,7 +18,15 @@
           "trait": "Celestial Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Celestial Resistance",
+          "entries": [
+            "You have resistance to necrotic and radiant damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:aasimar",
@@ -36,7 +44,15 @@
           "trait": "Celestial Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Celestial Resistance",
+          "entries": [
+            "You have resistance to necrotic damage and radiant damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:vgm:aasimar",
@@ -54,7 +70,15 @@
           "trait": "Celestial Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Celestial Resistance",
+          "entries": [
+            "You have resistance to necrotic damage and radiant damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psk:aetherborn",
@@ -67,7 +91,15 @@
           "trait": "Born of Aether"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Born of Aether",
+          "entries": [
+            "You have resistance to necrotic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:aag:autognome",
@@ -85,7 +117,15 @@
           "trait": "Mechanical Nature"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Mechanical Nature",
+          "entries": [
+            "You have resistance to poison damage and immunity to disease, and you have advantage on saving throws against being {@condition paralyzed} or {@condition poisoned}. You don't need to eat, drink, or breathe."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:rhw:dhampir",
@@ -98,7 +138,15 @@
           "trait": "Trace of Undeath"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Trace of Undeath",
+          "entries": [
+            "You have {@variantrule Resistance|XPHB} to Necrotic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:phb:dragonborn",
@@ -115,6 +163,14 @@
             "fire",
             "lightning",
             "poison"
+          ]
+        }
+      ],
+      "trait_details": [
+        {
+          "name": "Damage Resistance",
+          "entries": [
+            "You have resistance to the damage type associated with your draconic ancestry."
           ]
         }
       ]
@@ -136,6 +192,14 @@
             "cold"
           ]
         }
+      ],
+      "trait_details": [
+        {
+          "name": "Draconic Resistance",
+          "entries": [
+            "You have resistance to the damage type associated with your Chromatic Ancestry."
+          ]
+        }
       ]
     },
     {
@@ -153,6 +217,14 @@
             "psychic",
             "thunder",
             "necrotic"
+          ]
+        }
+      ],
+      "trait_details": [
+        {
+          "name": "Draconic Resistance",
+          "entries": [
+            "You have resistance to the damage type associated with your Gem Ancestry."
           ]
         }
       ]
@@ -173,6 +245,14 @@
             "cold"
           ]
         }
+      ],
+      "trait_details": [
+        {
+          "name": "Draconic Resistance",
+          "entries": [
+            "You have resistance to the damage type associated with your Metallic Ancestry."
+          ]
+        }
       ]
     },
     {
@@ -186,7 +266,15 @@
           "trait": "Dwarven Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Dwarven Resilience",
+          "entries": [
+            "You have advantage on saving throws you make to avoid or end the {@condition poisoned} condition on yourself. You also have resistance to poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:phb:dwarf",
@@ -199,7 +287,15 @@
           "trait": "Dwarven Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Dwarven Resilience",
+          "entries": [
+            "You have advantage on saving throws against poison, and you have resistance against poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psk:dwarf%20%28kaladesh%29",
@@ -212,7 +308,15 @@
           "trait": "Dwarven Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Dwarven Resilience",
+          "entries": [
+            "You have advantage on saving throws against poison, and you have resistance against poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:githyanki",
@@ -225,7 +329,15 @@
           "trait": "Psychic Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Psychic Resilience",
+          "entries": [
+            "You have resistance to psychic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:githzerai",
@@ -238,7 +350,15 @@
           "trait": "Psychic Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Psychic Resilience",
+          "entries": [
+            "You have resistance to psychic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psz:goblin",
@@ -256,7 +376,15 @@
           "trait": "Grit"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Grit",
+          "entries": [
+            "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:goliath",
@@ -269,7 +397,15 @@
           "trait": "Mountain Born"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Mountain Born",
+          "entries": [
+            "You have resistance to cold damage. You also naturally acclimate to high altitudes, even if you've never been to one. This includes elevations above 20,000 feet."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:vgm:goliath",
@@ -282,7 +418,15 @@
           "trait": "Mountain Born"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Mountain Born",
+          "entries": [
+            "You have resistance to cold damage. You're also acclimated to high altitude, including elevations above 20,000 feet."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:oga:grung",
@@ -300,7 +444,15 @@
           "trait": "Poison Immunity"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Poison Immunity",
+          "entries": [
+            "You're immune to poison damage and the {@condition poisoned} condition."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:efa:kalashtar",
@@ -313,7 +465,15 @@
           "trait": "Mental Discipline"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Mental Discipline",
+          "entries": [
+            "You have {@variantrule Resistance|XPHB} to Psychic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:erlw:kalashtar",
@@ -326,7 +486,15 @@
           "trait": "Mental Discipline"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Mental Discipline",
+          "entries": [
+            "You have resistance to psychic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psa:naga",
@@ -344,7 +512,15 @@
           "trait": "Poison Immunity"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Poison Immunity",
+          "entries": [
+            "You are immune to poison damage and can't be {@condition poisoned}."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:aag:plasmoid",
@@ -362,7 +538,15 @@
           "trait": "Natural Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Natural Resilience",
+          "entries": [
+            "You have resistance to acid and poison damage, and you have advantage on saving throws against being {@condition poisoned}."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:rhw:reborn",
@@ -379,6 +563,14 @@
             "poison"
           ]
         }
+      ],
+      "trait_details": [
+        {
+          "name": "Strange Endurance",
+          "entries": [
+            "You have {@variantrule Resistance|XPHB} to one of the following damage types of your choice: Cold, Necrotic, or Poison."
+          ]
+        }
       ]
     },
     {
@@ -392,7 +584,24 @@
           "trait": "Deathless Nature"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Deathless Nature",
+          "entries": [
+            "You have escaped death, a fact represented by the following benefits:",
+            {
+              "type": "list",
+              "items": [
+                "You have advantage on saving throws against disease and being {@condition poisoned}, and you have resistance to poison damage.",
+                "You have advantage on death saving throws.",
+                "You don't need to eat, drink, or breathe.",
+                "You don't need to sleep, and magic can't put you to sleep. You can finish a long rest in 4 hours if you spend those hours in an inactive, motionless state, during which you retain consciousness."
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:lfl:rimekin",
@@ -405,7 +614,15 @@
           "trait": "Cold Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Cold Resistance",
+          "entries": [
+            "You have {@variantrule Resistance|XPHB} to Cold damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:sea%20elf",
@@ -418,7 +635,15 @@
           "trait": "Child of the Sea"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Child of the Sea",
+          "entries": [
+            "You can breathe air and water, and you have resistance to cold damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:shadar-kai",
@@ -431,7 +656,15 @@
           "trait": "Necrotic Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Necrotic Resistance",
+          "entries": [
+            "You have resistance to necrotic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:dmg:skeleton",
@@ -459,7 +692,21 @@
           "trait": "Brittle Bones"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Brittle Bones",
+          "entries": [
+            "You are vulnerable to bludgeoning damage."
+          ]
+        },
+        {
+          "name": "Undead Nature",
+          "entries": [
+            "You are immune to poison damage and {@condition exhaustion}, and you can't be {@condition poisoned}. You don't require air, food, drink, or sleep."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:phb:tiefling",
@@ -472,7 +719,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:triton",
@@ -485,7 +740,15 @@
           "trait": "Guardian of the Depths"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Guardian of the Depths",
+          "entries": [
+            "Adapted to the frigid ocean depths, you have resistance to cold damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:vgm:triton",
@@ -498,7 +761,15 @@
           "trait": "Guardians of the Depths"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Guardians of the Depths",
+          "entries": [
+            "Adapted to even the most extreme ocean depths, you have resistance to cold damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psz:vampire",
@@ -511,7 +782,15 @@
           "trait": "Vampiric Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Vampiric Resistance",
+          "entries": [
+            "You have resistance to necrotic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:efa:warforged",
@@ -524,7 +803,15 @@
           "trait": "Construct Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Construct Resilience",
+          "entries": [
+            "You have {@variantrule Resistance|XPHB} to Poison damage. You also have {@variantrule Advantage|XPHB} on saving throws to avoid or end the {@condition Poisoned|XPHB} condition."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:erlw:warforged",
@@ -542,7 +829,24 @@
           "trait": "Constructed Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Constructed Resilience",
+          "entries": [
+            "You were created to have remarkable fortitude, represented by the following benefits:",
+            {
+              "type": "list",
+              "items": [
+                "You have advantage on saving throws against being {@condition poisoned}, and you have resistance to poison damage.",
+                "You don't need to eat, drink, or breathe.",
+                "You are immune to disease.",
+                "You don't need to sleep, and magic can't put you to sleep."
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:yuan-ti",
@@ -555,7 +859,15 @@
           "trait": "Poison Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Poison Resilience",
+          "entries": [
+            "You have advantage on saving throws you make to avoid or end the {@condition poisoned} condition on yourself. You also have resistance to poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:vgm:yuan-ti%20pureblood",
@@ -573,7 +885,15 @@
           "trait": "Poison Immunity"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Poison Immunity",
+          "entries": [
+            "You are immune to poison damage and the {@condition poisoned} condition."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:dmg:zombie",
@@ -591,7 +911,15 @@
           "trait": "Undead Nature"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Undead Nature",
+          "entries": [
+            "You are immune to poison damage, and you can't be {@condition poisoned}. You don't require air, food, drink, or sleep."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:elf%20%28shadar-kai%29",
@@ -604,7 +932,15 @@
           "trait": "Necrotic Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Necrotic Resistance",
+          "entries": [
+            "You have resistance to necrotic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:eepc:genasi%20%28fire%29",
@@ -617,7 +953,15 @@
           "trait": "Fire Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Fire Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:eepc:genasi%20%28water%29",
@@ -630,7 +974,15 @@
           "trait": "Acid Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Acid Resistance",
+          "entries": [
+            "You have resistance to acid damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:genasi%20%28air%29",
@@ -643,7 +995,15 @@
           "trait": "Lightning Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Lightning Resistance",
+          "entries": [
+            "You have resistance to lightning damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:genasi%20%28fire%29",
@@ -656,7 +1016,15 @@
           "trait": "Fire Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Fire Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mpmm:genasi%20%28water%29",
@@ -669,7 +1037,15 @@
           "trait": "Acid Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Acid Resistance",
+          "entries": [
+            "You have resistance to acid damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29",
@@ -682,7 +1058,15 @@
           "trait": "Storm's Boon"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Storm's Boon",
+          "entries": [
+            "You have resistance to lightning damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:phb:halfling%20%28stout%29",
@@ -695,7 +1079,15 @@
           "trait": "Stout Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Stout Resilience",
+          "entries": [
+            "You have advantage on saving throws against poison, and you have resistance against poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:vgm:aasimar%20%28fallen%29",
@@ -713,7 +1105,15 @@
           "trait": "Celestial Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Celestial Resistance",
+          "entries": [
+            "You have resistance to necrotic damage and radiant damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:vgm:aasimar%20%28protector%29",
@@ -731,7 +1131,15 @@
           "trait": "Celestial Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Celestial Resistance",
+          "entries": [
+            "You have resistance to necrotic damage and radiant damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:vgm:aasimar%20%28scourge%29",
@@ -749,7 +1157,15 @@
           "trait": "Celestial Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Celestial Resistance",
+          "entries": [
+            "You have resistance to necrotic damage and radiant damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:egw:dragonborn%20%28draconblood%29",
@@ -766,6 +1182,14 @@
             "fire",
             "lightning",
             "poison"
+          ]
+        }
+      ],
+      "trait_details": [
+        {
+          "name": "Damage Resistance",
+          "entries": [
+            "You have resistance to the damage type associated with your draconic ancestry."
           ]
         }
       ]
@@ -787,6 +1211,14 @@
             "poison"
           ]
         }
+      ],
+      "trait_details": [
+        {
+          "name": "Damage Resistance",
+          "entries": [
+            "You have resistance to the damage type associated with your draconic ancestry."
+          ]
+        }
       ]
     },
     {
@@ -800,7 +1232,15 @@
           "trait": "Dwarven Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Dwarven Resilience",
+          "entries": [
+            "You have advantage on saving throws against poison, and you have resistance against poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:phb:dwarf%20%28hill%29",
@@ -813,7 +1253,15 @@
           "trait": "Dwarven Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Dwarven Resilience",
+          "entries": [
+            "You have advantage on saving throws against poison, and you have resistance against poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29",
@@ -826,7 +1274,15 @@
           "trait": "Dwarven Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Dwarven Resilience",
+          "entries": [
+            "You have advantage on saving throws against poison, and you have resistance against poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:phb:dwarf%20%28mountain%29",
@@ -839,7 +1295,15 @@
           "trait": "Dwarven Resilience"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Dwarven Resilience",
+          "entries": [
+            "You have advantage on saving throws against poison, and you have resistance against poison damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psx:goblin%20%28ixalan%29",
@@ -857,7 +1321,15 @@
           "trait": "Grit"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Grit",
+          "entries": [
+            "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psz:goblin%20%28zendikar%3B%20grotag%20tribe%29",
@@ -875,7 +1347,15 @@
           "trait": "Grit"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Grit",
+          "entries": [
+            "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29",
@@ -893,7 +1373,15 @@
           "trait": "Grit"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Grit",
+          "entries": [
+            "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psz:goblin%20%28zendikar%3B%20tuktuk%20tribe%29",
@@ -911,7 +1399,15 @@
           "trait": "Grit"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Grit",
+          "entries": [
+            "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28asmodeus%29",
@@ -924,7 +1420,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28baalzebul%29",
@@ -937,7 +1441,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28dispater%29",
@@ -950,7 +1462,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28fierna%29",
@@ -963,7 +1483,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28glasya%29",
@@ -976,7 +1504,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28levistus%29",
@@ -989,7 +1525,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28mammon%29",
@@ -1002,7 +1546,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28mephistopheles%29",
@@ -1015,7 +1567,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:scag:tiefling%20%28variant%3B%20devil%27s%20tongue%29",
@@ -1028,7 +1588,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:scag:tiefling%20%28variant%3B%20hellfire%29",
@@ -1041,7 +1609,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:scag:tiefling%20%28variant%3B%20infernal%20legacy%29",
@@ -1054,7 +1630,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:scag:tiefling%20%28variant%3B%20winged%29",
@@ -1067,7 +1651,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28zariel%29",
@@ -1080,7 +1672,15 @@
           "trait": "Hellish Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Hellish Resistance",
+          "entries": [
+            "You have resistance to fire damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psx:vampire%20%28ixalan%29",
@@ -1093,7 +1693,15 @@
           "trait": "Vampiric Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Vampiric Resistance",
+          "entries": [
+            "You have resistance to necrotic damage."
+          ]
+        }
+      ]
     },
     {
       "id": "5etools:races:psz:vampire%20%28zendikar%29",
@@ -1106,7 +1714,15 @@
           "trait": "Vampiric Resistance"
         }
       ],
-      "choices": []
+      "choices": [],
+      "trait_details": [
+        {
+          "name": "Vampiric Resistance",
+          "entries": [
+            "You have resistance to necrotic damage."
+          ]
+        }
+      ]
     }
   ]
 }
