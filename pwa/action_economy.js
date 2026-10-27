@@ -176,7 +176,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const time=String(attack.id).startsWith('monster:')?(section==='bonus'||section==='reaction'?section:'action'):attack.offhand_bonus?'bonus':'action';
   const hit=attack.hit!==null&&attack.hit!==undefined&&attack.hit!==''&&Number.isFinite(Number(attack.hit))?
    'Colpire: '+(Number(attack.hit)>=0?'+':'')+attack.hit+'. ':'';
-  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+(attack.damage_explanation?attack.damage_explanation+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.','',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
+  const extra=arr(attack.damage_extras).map(effect=>effect.dice+(effect.damage_type?' '+effect.damage_type:'')).join(' + ');
+  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+(extra?' + '+extra:'')+'. ':'')+(attack.damage_explanation?attack.damage_explanation+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.','',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
  }
  // Fallback for older schemas without the local computed attack projection.
  for(const attack of arr(record.attacks))if(attack?.name&&!already.has(String(attack.id))){
@@ -416,7 +417,7 @@ const DAMAGE_GLYPHS={
 const supportedDamage=formula=>/^\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+)(?:\s*[+-]\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+))*\s*$/i.test(String(formula||''));
 function battleEffectMarkup(item,attack){
  const effect=attack?.damage?
-  {kind:'damage',label:String(attack.damage).trim(),type:String(attack.damage_type||'').trim(),
+  {kind:'damage',label:String(attack.damage_roll_formula||attack.damage).trim(),type:String(attack.damage_type||'').trim(),
    glyph:DAMAGE_GLYPHS[String(attack.damage_type||'').toLowerCase()]||'weapon'}:null;
  const fallbacks=BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
  const resolved=effect||(fallbacks?{kind:fallbacks[0],label:fallbacks[1],glyph:fallbacks[2]}:
@@ -424,7 +425,11 @@ function battleEffectMarkup(item,attack){
  if(!resolved)return '';
  // Only actual attack damage formulas get dice controls; never infer a damage roll.
  const label=resolved.kind==='damage'?'Danni':resolved.kind==='condition'?'Condizione':'Effetto';
- const detail=resolved.label+(resolved.type?' · '+resolved.type:'');
+ const extras=arr(attack?.damage_extras);
+ const detail=resolved.kind==='damage'&&attack?
+  String(attack.damage).trim()+(resolved.type?' · '+resolved.type:'')+
+   extras.map(row=>' + '+row.dice+(row.damage_type?' · '+row.damage_type:'')).join(''):
+  resolved.label+(resolved.type?' · '+resolved.type:'');
  const glyph=actionGlyph(resolved.glyph);
  const canRoll=resolved.kind==='damage'&&supportedDamage(resolved.label)&&/\d+d\d+/i.test(resolved.label);
  return '<div class="play-battle-effect" data-effect-kind="'+esc(resolved.kind)+'">'+
