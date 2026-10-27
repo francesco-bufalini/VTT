@@ -57,7 +57,9 @@ export function signedTraitFormula(expression){
 export function traitBenefitSources(trait={},record={}){
  const ids=new Set([trait.feature_origin,trait.proficiency_origin,
   ...(trait.key?['feature:trait:'+trait.key]:[]),
-  ...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean));
+  ...(trait.rank===0?[trait.origin_key]:[]),
+  ...(trait.category==='oggetti'&&trait.rank===0?
+    [trait.item_base_origin,trait.infusion_origin_id]:[])].filter(Boolean));
  // Catalog summary cards and rule grants sometimes use different IDs for
  // the same *owned* species or feat. Only the summary card gets these aliases.
  if(trait.rank===0&&trait.category==='razza'){
@@ -202,7 +204,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  // separate numeric benefits and must not be confused with the granted attack.
  const stateAttackIds=new Set(rows(stateRule?.attacks).map(attack=>String(attack.id)));
  for(const attack of rows(calculated.attacks)){
-  const itemId=String(trait.origin_key||'').replace(/^item:/,'');
+  const itemId=String(trait.item_id||trait.origin_key||'').replace(/^item:/,'');
   const fromItem=trait.category==='oggetti'&&trait.rank===0&&
    String(trait.origin_key||'').startsWith('item:')&&
    (String(attack.id||'').startsWith('item:'+itemId)||
@@ -220,7 +222,10 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  if(trait.category==='oggetti'&&trait.rank===0){
   for(const saved of rows(record.inventory)){
    const item=resolveOwnedItem(saved);
-   if(trait.origin_key!=='item:'+String(item.id||saved.id||''))continue;
+   if(trait.item_id?trait.item_id!==String(item.id||saved.id||'')||
+      rows(trait.item_inventory_indices).length&&
+      !rows(trait.item_inventory_indices).includes(rows(record.inventory).indexOf(saved)):
+      trait.origin_key!=='item:'+String(item.id||saved.id||''))continue;
    const slots=rows(item.equipped_slots);
    const kind=String(item.type||'').split('|')[0].toUpperCase();
    const amount=Number(item.ac);
@@ -337,13 +342,17 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   add('spells','Incantesimi concessi',spell.name,spell.level===0?'Trucchetto':
     Number.isInteger(spell.level)?'Livello '+spell.level:'','spell:'+String(spell.origin_id||'')+':'+String(spell.id||''));
  for(const extension of rows(calculated.effect_extensions)){
-  // An infusion belongs to its granting optional trait, but the affected
-  // object's card may show it read-only too (one inventory copy at a time).
+  // Item-targeted effects belong only to the physical copy represented by
+  // this card. A separate Rod with the same catalog ID cannot inherit them.
+  const indices=rows(trait.item_inventory_indices).length?
+    trait.item_inventory_indices:rows(record.inventory).map((_,index)=>index);
   const onItem=trait.category==='oggetti'&&trait.rank===0&&
-   extension.target_kind==='item'&&rows(record.inventory).some((item,index)=>
-    trait.origin_key==='item:'+String(item.id||'')&&
-    effectExtensionsFor([extension],{kind:'item',id:item.id,name:item.name,
-     instance_id:item.instance_id,inventory_index:index}).length>0);
+   extension.target_kind==='item'&&indices.some(index=>{
+    const item=rows(record.inventory)[index];
+    return item&&String(trait.item_id||'')===String(item.id||'')&&
+     effectExtensionsFor([extension],{kind:'item',id:item.id,name:item.name,
+      instance_id:item.instance_id,inventory_index:index}).length>0;
+   });
   if(!belongs(extension)&&!onItem)continue;
   const target=(extension.target_kind==='spell'?'Incantesimo':
    extension.target_kind==='item'?'Oggetto':'Capacità')+' · '+(extension.target_name||extension.target_id);
