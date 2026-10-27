@@ -16,8 +16,11 @@ export function selectedSpeciesDefenseRules(record={},catalog={}){
  const parent=available.find(row=>same(row.name,record.species)&&
   same(row.source,record.species_source));
  const subName=record.subrace?record.species+' ('+record.subrace+')':'';
- const sub=record.subrace&&record.subrace_source?
-  available.find(row=>same(row.name,subName)&&same(row.source,record.subrace_source)):null;
+ // Old imported characters sometimes omitted the subrace source. Prefer
+ // their parent book; never guess when several other versions exist.
+ const compatible=record.subrace?available.filter(row=>same(row.name,subName)):[];
+ const sub=compatible.find(row=>same(row.source,record.subrace_source||record.species_source))||
+  (!record.subrace_source&&compatible.length===1?compatible[0]:null);
  const results=[];
  if(parent)results.push({
   row:parent,source_id:'race|'+norm(parent.source)+'|'+norm(parent.name),
