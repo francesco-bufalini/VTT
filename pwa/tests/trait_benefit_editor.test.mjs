@@ -169,7 +169,7 @@ test('custom spell benefits can declare tracker and alternative slots with const
  assert.equal(grant.slot_alternative,true);
  assert.deepEqual(grant.spellcasting_ability_options,['int','wis','cha']);
  assert.throws(()=>addBenefitPatch({},trait,'spells',
-   {spell_id:'gust',payment_mode:'tracker',slot_alternative:'true'},'trait:invalid'),/tracker/i);
+   {spell_id:'gust',payment_mode:'tracker',slot_alternative:'true'},'trait:abcd1235'),/tracker/i);
  assert.throws(()=>addBenefitPatch({},trait,'spells',
    {spell_id:'gust',payment_mode:'slot',slot_alternative:'true'},'trait:invalid2'),/alternativi/i);
 });
