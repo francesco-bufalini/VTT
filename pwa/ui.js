@@ -24,6 +24,7 @@ import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
+import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
@@ -2010,6 +2011,7 @@ function mountTraitBenefitDialog(){
       ...targets.filter(([id])=>/^(ability_check:|skill:|save:|attack_hit:|casting_hit:)/.test(id))
      ]).replace('name="target"','name="target" data-trait-target')],
   ['proficiency',formSelect('Categoria','proficiency_kind',PROFICIENCY_KINDS)+formInput('Competenza','key','Es. perception, firearms, elvish')],
+   ['senses',formSelect('Senso','sense_type',SENSE_OPTIONS)+formInput('Portata (ft)','range_feet','Es. 60','number')],
   ['defenses',formSelect('Difesa','rank',DEFENSE_RANKS)+formSelect('Danno o condizione','key',
     [...DAMAGE_TYPES.map(key=>[key,key]),...['blinded','charmed','deafened','frightened','grappled','paralyzed','petrified','poisoned','prone','restrained','stunned','unconscious'].map(key=>[key,key])])],
   ['resources',formInput('Nome risorsa','name')+formInput('Utilizzi massimi','max','Es. 3','number')+
@@ -4692,6 +4694,35 @@ function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
  dialog.querySelector('input')?.select();
  return dialog;
 }
+function openSheetSensesDialog(calculated={}){
+ document.querySelector('#sheet-senses-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='sheet-senses-dialog';
+ dialog.className='sheet-context-dialog sheet-senses-dialog';
+ const data=calculated.senses||{},passive=calculated.values?.passive_perception??'—';
+ const origins=(data.grants||[]).map(row=>
+  '<li><strong>'+esc(row.origin_name||'Tratto')+'</strong><span>'+
+  esc(SENSE_OPTIONS.find(([id])=>id===row.type)?.[1]||row.type)+
+  ' · '+esc(senseRange(row.range_feet))+'</span></li>').join('');
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Sensi</h2>'+
+  dialogCloseButton('sheet-senses-close','Chiudi','play-button')+'</header>'+
+  '<div class="sheet-senses-body">'+
+  '<button type="button" class="sheet-senses-passive" data-act="sheet-score-formula" data-target="passive_perception" data-label="Percezione passiva" aria-label="Mostra formula della percezione passiva">'+
+  '<span>Percezione passiva</span><strong>'+esc(passive)+'</strong></button>'+
+  '<div class="sheet-senses-table-wrap"><table class="sheet-senses-table"><thead><tr>'+
+  ['Senso','Luce intensa','Luce fioca','Oscurità','Oscurità magica'].map(label=>'<th scope="col">'+label+'</th>').join('')+
+  '</tr></thead><tbody>'+(data.rows||[]).map(row=>'<tr><th scope="row">'+esc(row.name)+'</th>'+
+  [row.bright,row.dim,row.dark,row.magical].map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join('')+
+  '</tbody></table></div>'+
+  '<p class="sheet-senses-note">In luce fioca le prove di Percezione basate sulla vista subiscono svantaggio (−5 alla percezione passiva pertinente). La scurovisione tratta la luce fioca come intensa e l’oscurità non magica come fioca entro la sua portata; al buio non distingue i colori.</p>'+
+  '<p class="sheet-senses-note">La percezione tellurica rileva vibrazioni tramite una superficie condivisa: non equivale a vedere. La vista cieca e la vista pura non dipendono dall’illuminazione entro la loro portata. Fuori portata valgono le condizioni della visione normale.</p>'+
+  (origins?'<section class="sheet-senses-sources"><h3>Privilegi e origini</h3><ul>'+origins+'</ul></section>':'')+
+  '</div>';
+ app.append(dialog);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close?.();});
+ openDialog(dialog);
+}
 function openSheetScoreFormula(record,calculated,target,label){
  const value=Number(calculated?.values?.[target]);
  if(!Number.isFinite(value))throw Error('Valore calcolato non disponibile');
@@ -5958,6 +5989,10 @@ async function handleAction(target){
     state.traitPopupKey=key;state.traitPopupConfirm='';
     state.traitPopupDraftKind=kind;state.traitPopupDraftTarget=targetKey;
     mountTraitBenefitDialog();return;
+  }
+  if(act==='sheet-senses-open'){
+   if(!state.editor)throw Error('Apri prima una creatura');
+   openSheetSensesDialog(await computeLocalData(state.editor.read()));return;
   }
   if(act==='sheet-score-formula'){
     const creature=state.editor?.read();
@@ -7659,6 +7694,9 @@ function listen(){
       const dialog=document.querySelector('#roll-trait-picker');
       closeDialog(dialog,{remove:true});
       return;
+    }
+    if(closeAction==='sheet-senses-close'){
+     closeDialog(document.querySelector('#sheet-senses-dialog'),{remove:true});return;
     }
     if(closeAction==='close-score-formula'){
       const dialog=document.querySelector('#sheet-score-formula-dialog');
