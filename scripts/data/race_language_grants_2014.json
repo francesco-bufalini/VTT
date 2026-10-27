@@ -547,6 +547,66 @@
           "anyStandard": 1
         }
       ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Duergar",
+      "source": "MTF",
+      "raceName": "Dwarf",
+      "raceSource": "PHB",
+      "languageProficiencies": [
+        {
+          "undercommon": true
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "High",
+      "source": "PHB",
+      "raceName": "Elf",
+      "raceSource": "PHB",
+      "languageProficiencies": [
+        {
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Sea",
+      "source": "MTF",
+      "raceName": "Elf",
+      "raceSource": "PHB",
+      "languageProficiencies": [
+        {
+          "aquan": true
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Deep",
+      "source": "MTF",
+      "raceName": "Gnome",
+      "raceSource": "PHB",
+      "languageProficiencies": [
+        {
+          "undercommon": true
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Deep/Svirfneblin",
+      "source": "SCAG",
+      "raceName": "Gnome",
+      "raceSource": "PHB",
+      "languageProficiencies": [
+        {
+          "undercommon": true
+        }
+      ]
     }
   ]
 }
