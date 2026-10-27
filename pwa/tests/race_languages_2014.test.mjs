@@ -98,6 +98,19 @@ test('PHB and later 2014 races use the same typed language picker, persistence a
  }
 });
 
+test('previously stored 5etools other placeholders never grant or fulfill a language choice',()=>{
+ const record={...char('Kalashtar','ERLW'),proficiency_choices:[
+  {kind:'language',key:'other',origin_id:'race|erlw|kalashtar',origin_name:'Languages'}]};
+ assert(!has(record,'other'));
+ assert(has(record,'quori'));
+ const [choice]=picks(record);
+ assert.equal(choice.remaining,1);
+ assert(!choice.options.includes('other'));
+ const selected={...record,...savePendingChoice(record,choice,['sylvan'])};
+ assert(has(selected,'sylvan'));
+ assert(!has(selected,'other'));
+});
+
 test('Simic Hybrid offers exactly Elvish or Vedalken; both are source-qualified',()=>{
  const r=char('Simic Hybrid','GGR'),[choice]=picks(r);
  assert(choice);
