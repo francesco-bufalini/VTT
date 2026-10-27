@@ -619,7 +619,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
      '<button type="button" class="hp-adjust-close" data-act="hp-adjust-cancel" aria-label="Chiudi" title="Chiudi">×</button></header>'+
      '<form id="hp-adjust-form">'+
       '<div class="hp-adjust-stats">'+
-       '<label class="hp-adjust-stat" for="hp-adjust-current"><span>Attuali</span><input id="hp-adjust-current" type="number" inputmode="numeric" step="1" min="0" max="'+esc(Math.max(0,Number(calculated.stats?.max_hp??0)))+'" value="'+esc(c.current_hp??0)+'" required></label>'+
+       '<label class="hp-adjust-stat" for="hp-adjust-current"><span>Attuali</span><input id="hp-adjust-current" type="number" inputmode="numeric" step="1" min="0" max="'+esc(Math.max(0,Number(calculated.stats?.max_hp??0),Number(c.current_hp)||0))+'" value="'+esc(c.current_hp??0)+'" required></label>'+
        '<div class="hp-adjust-stat hp-adjust-max"><span>Massimi</span>'+
         '<button type="button" data-act="hp-adjust-max" aria-label="Modifica PF massimi" title="Modifica PF massimi">'+esc(Math.max(0,Number(calculated.stats?.max_hp??0)))+' <span aria-hidden="true">✎</span></button></div>'+
        '<label class="hp-adjust-stat" for="hp-adjust-temporary"><span>Temporanei</span><input id="hp-adjust-temporary" type="number" inputmode="numeric" step="1" min="0" max="99999" value="'+esc(c.temporary_hp??0)+'" required></label>'+
