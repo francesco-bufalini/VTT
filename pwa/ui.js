@@ -6249,6 +6249,14 @@ async function handleAction(target){
     const dialog=document.querySelector('#sheet-roll-dialog');
     if(!dialog||dialog.dataset.rolling==='true')return;
     const index=Number(target.dataset.rollUse),row=dialog.rollBonuses[index];
+    // Cost-free conditional modes may be unchecked before the d20 is rolled.
+    // A paid resource remains consumed when explicitly activated.
+    if(row?.roll_mode&&!row.tracker_id&&target.dataset.rollUsed==='true'&&!dialog.rollOutcome){
+      dialog.usedRollBonuses=chosenRollBonuses(dialog).filter(item=>item.selectionId!==row.selectionId);
+      target.dataset.rollUsed='false';target.textContent='Usa';
+      dialog.renderRollFormula?.();
+      return;
+    }
     if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
       chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
     // A situational d20 mode must be chosen before the first d20 result.
@@ -6307,7 +6315,8 @@ async function handleAction(target){
       if(!current.racial_roll_modes?.some(rule=>rule.benefit_id===row.benefit_id))
         throw Error('Il tratto razziale non è più disponibile.');
       dialog.usedRollBonuses.push(row);
-      target.textContent='Attivo';target.dataset.rollUsed='true';target.disabled=true;
+      target.textContent=row.tracker_id?'Attivo':'Rimuovi';
+      target.dataset.rollUsed='true';target.disabled=!!row.tracker_id;
       dialog.renderRollFormula?.();
       return;
     }
@@ -6498,6 +6507,12 @@ async function handleAction(target){
       dialog.postRollBonuses=[...numeric];
       dialog.appliedBonusIds=new Set(numeric.map(row=>row.selectionId));
       dialog.usedRollBonuses=chosen.filter(row=>row.roll_mode);
+      for(const button of dialog.querySelectorAll('[data-roll-use]')){
+        const selected=dialog.rollBonuses[Number(button.dataset.rollUse)];
+        if(selected?.roll_mode&&button.dataset.rollUsed==='true'){
+          button.disabled=true;button.textContent='Attivo';
+        }
+      }
         // Keep the next-roll formula in sync with the controls even after a
         // once-only bonus is consumed. Each click produces a new history entry.
         // Keep the per-dialog selection until the popup closes.
