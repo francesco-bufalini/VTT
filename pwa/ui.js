@@ -36,7 +36,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {healingHandsPatch,restTrainingPatch} from "./species_powers.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
@@ -3974,10 +3974,10 @@ async function roll(sides) {
     if(state.roll===currentRoll&&feedback)feedback.innerHTML=diceResult();
   }
 }
-async function shareRoll({quiet=false}={}) {
-  if(!state.roll) return;
+async function shareRoll({quiet=false,roll=null}={}) {
+  if(!roll&&!state.roll) return;
   if(!state.paired||!state.online) throw new Error("Collega prima una partita.");
-  const r=state.roll;
+  const r=roll||state.roll;
   const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:(document.querySelector("#chat-author")?.value||state.chatAuthor||"Giocatore").slice(0,80),
     timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,
     ...sheetRollChatFields(r)};
@@ -4644,6 +4644,29 @@ function rollDieResultMarkup(outcome){
 function chosenRollBonuses(dialog){
  return [...(dialog.usedRollBonuses||[])];
 }
+function applyPostRollBonus(dialog,bonus){
+ const previous=dialog.rollOutcome;
+ if(!previous||!dialog.isConnected||dialog.appliedBonusIds?.has(bonus.selectionId))return null;
+ const next={...appendRollBonus(previous,bonus,randomDie),label:previous.label,author:previous.author};
+ dialog.rollOutcome=next;
+ dialog.postRollBonuses=[...(dialog.postRollBonuses||[]),bonus];
+ dialog.appliedBonusIds.add(bonus.selectionId);
+ if(state.roll===previous)state.roll=next;
+ const index=state.rollHistory.indexOf(dialog.rollHistoryEntry);
+ if(index>=0)state.rollHistory[index]=next;
+ dialog.rollHistoryEntry=next;
+ const result=dialog.querySelector('[data-roll-result]');
+ if(result){result.hidden=false;result.innerHTML=rollDieResultMarkup(next);}
+ dialog.renderRollFormula?.();
+ return next;
+}
+async function announcePostRollBonus(updated){
+ if(!updated||!state.paired||!state.online)return;
+ try{
+  // The earlier chat event remains immutable: publish an explicit revision.
+  await shareRoll({quiet:true,roll:{...updated,label:'Tiro aggiornato · '+updated.label}});
+ }catch(error){message('Risultato aggiornato localmente; invio chat fallito: '+errorMessage(error),true);}
+}
 function rollBonusTerm(row){
  const flat=Object.hasOwn(row,'flat_bonus');
  return {key:'roll-extra:'+String(row.selectionId||row.id),kind:flat?'bonus':'dice',
@@ -4720,6 +4743,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
  dialog.id='sheet-roll-dialog';dialog.className='sheet-roll-dialog sheet-roll-preview';
  dialog.dataset.rollKind=kind;dialog.dataset.creatureId=creatureId;
  dialog.rollBonuses=bonuses;dialog.usedRollBonuses=[];
+ dialog.rollOutcome=null;dialog.rollHistoryEntry=null;dialog.postRollBonuses=[];dialog.appliedBonusIds=new Set();
  if(kind==='damage'){
    dialog.dataset.damageFormula=damageFormula;dialog.dataset.damageType=damageType;
    dialog.dataset.damageLabel=damageLabel;
@@ -4747,7 +4771,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
            (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
            '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
          '<div class="sheet-roll-bonus-controls">'+
-           '<button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'">Usa</button>'+
+           '<button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'"'+(row.strict_tracker&&Number(row.remaining)<Number(row.tracker_cost)?' disabled title="Utilizzi esauriti"':'')+'>Usa</button>'+
            '<button type="button" class="sheet-roll-tracker-open" data-act="sheet-roll-open-tracker" data-roll-tracker-button="'+i+'" aria-label="Apri tracker '+esc(trackerLabel)+'" title="'+esc(trackerLabel)+'"'+(row.tracker_id?'':' disabled')+'>'+
              actionGlyph('target')+'</button>'+
          '</div></div>';
@@ -4759,7 +4783,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
    '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span>'+
      '<div class="sheet-roll-formula-line"><div data-roll-formula>'+formula+'</div>'+
      '<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-bonus" aria-label="Aggiungi bonus alla formula" title="Aggiungi bonus alla formula">+</button></div></div>'+
-   bonusList+'<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+
+   '<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+bonusList+
    '<div class="actions sheet-roll-actions">'+select+
      btn('roll-sheet-confirm',kind==='damage'?'Tira danni':'Tira 1d20','primary')+'</div>';
  document.body.append(dialog);
@@ -6129,7 +6153,7 @@ async function handleAction(target){
     dialog.dataset.damageAttackId=attackId;
     dialog.rollAttack=sourceAttack;
     dialog.renderRollFormula=()=>{dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
-        [...damageRollTerms(formula,type,dialog.rollAttack).segments,...chosenRollBonuses(dialog).map(rollBonusTerm)],esc);};
+        [...damageRollTerms(formula,type,dialog.rollAttack).segments,...[...chosenRollBonuses(dialog),...(dialog.postRollBonuses||[])].map(rollBonusTerm)],esc);};
     return;
   }
   if(act==='roll-trait-cancel'){
@@ -6214,7 +6238,8 @@ async function handleAction(target){
     const dialog=document.querySelector('#sheet-roll-dialog');
     if(!dialog||dialog.dataset.rolling==='true')return;
     const index=Number(target.dataset.rollUse),row=dialog.rollBonuses[index];
-    if(!row||chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
+    if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
+      chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
     if(row.class_feature_id){
@@ -6231,9 +6256,12 @@ async function handleAction(target){
         onClosed:()=>{if(target.isConnected&&target.dataset.rollUsed!=='true')target.disabled=false;},
         onConfirmed:()=>{
           if(!dialog.isConnected||dialog.dataset.rolling==='true')return;
-          dialog.usedRollBonuses.push({...row,...(Object.hasOwn(valid,'flat_bonus')?{flat_bonus:valid.flat_bonus}:{dice:valid.dice})});
+          const selected={...row,...(Object.hasOwn(valid,'flat_bonus')?{flat_bonus:valid.flat_bonus}:{dice:valid.dice})};
+          const revised=applyPostRollBonus(dialog,selected);
+          if(!revised)dialog.usedRollBonuses.push(selected);
           target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
           dialog.renderRollFormula?.();
+          if(revised)void announcePostRollBonus(revised);
         }
       });
       return;
@@ -6243,20 +6271,28 @@ async function handleAction(target){
       const tracker=(fresh.trackers||[]).find(t=>t.id===row.tracker_id&&!t.disabled);
       if(!tracker)throw Error('Tracker non disponibile');
       const remaining=Number(tracker.max||0)-Number(tracker.spent||0);
-      if(remaining<Math.max(1,Number(row.tracker_cost)||1))
+      const cost=Math.max(1,Number(row.tracker_cost)||1);
+      if(remaining<cost){
+        if(row.strict_tracker)throw Error('Utilizzi esauriti: '+(tracker.name||'risorsa'));
         message('Attenzione: '+(tracker.name||'risorsa')+' esaurito; il bonus viene usato comunque.',true);
-      const used={...(creature.resource_tracker_spent||{})};
-      used[row.tracker_id]=(Number(used[row.tracker_id])||0)+Math.max(1,Number(row.tracker_cost)||1);
-      await patch({resource_tracker_spent:used});
+      }
+      if(row.strict_tracker)await patch(current=>spendTrackerUses(current,row.tracker_id,cost,fresh.trackers));
+      else{
+        const used={...(creature.resource_tracker_spent||{})};
+        used[row.tracker_id]=(Number(used[row.tracker_id])||0)+cost;
+        await patch({resource_tracker_spent:used});
+      }
       const trackerButton=dialog.querySelector('[data-roll-tracker-button="'+index+'"]');
       if(trackerButton){
         const summary=(tracker.name||'Tracker')+' · '+Math.max(0,remaining-Math.max(1,Number(row.tracker_cost)||1))+' rim.';
         trackerButton.title=summary;trackerButton.setAttribute('aria-label','Apri tracker '+summary);
       }
     }
-    dialog.usedRollBonuses.push(row);
+    const revised=applyPostRollBonus(dialog,row);
+    if(!revised)dialog.usedRollBonuses.push(row);
     target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
     dialog.renderRollFormula?.();
+    if(revised)await announcePostRollBonus(revised);
     return;
   }
   if(act==='roll-origin-open'){
@@ -6329,7 +6365,7 @@ async function handleAction(target){
     dialog.renderRollFormula=()=>{
       const formula=dialog.querySelector('[data-roll-formula]');
       const choice=dialog.querySelector('[data-roll-mode]').value;
-      if(formula)formula.innerHTML=formulaMarkup(chosenRollBonuses(dialog),choice);
+      if(formula)formula.innerHTML=formulaMarkup([...chosenRollBonuses(dialog),...(dialog.postRollBonuses||[])],choice);
     };
     dialog.addEventListener('change',event=>{
       if(event.target.matches('[data-roll-mode]'))dialog.renderRollFormula();
@@ -6356,6 +6392,7 @@ async function handleAction(target){
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
+        dialog.rollOutcome=state.roll;dialog.rollHistoryEntry=state.rollHistory[0];
         // A paid class-feature modifier applies to one damage roll only.
         // Keep the existing optional weapon dice behavior unchanged.
         const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
@@ -6368,6 +6405,14 @@ async function handleAction(target){
             }
           }
         }
+
+      // The just-finished roll owns its chosen charges. Keep the granted
+      // terms visible in the formula, but never auto-charge or auto-apply them
+      // to a later d20 roll. Available bonuses remain visible below the result.
+      dialog.postRollBonuses=[...chosen,...(dialog.postRollBonuses||[])];
+      dialog.appliedBonusIds=new Set(chosen.map(row=>row.selectionId));
+      dialog.usedRollBonuses=[];
+        dialog.renderRollFormula?.();
         // Usage was spent by the explicit Usa action. Rerolling in this dialog
         // must not silently consume the same tracker again.
         dialog.renderRollFormula?.();
@@ -6384,6 +6429,7 @@ async function handleAction(target){
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
+        dialog.rollOutcome=state.roll;dialog.rollHistoryEntry=state.rollHistory[0];
         // Tracker uses were spent at selection time, never again on rerolls.
         // A reaction modifies one roll only, even when the same dialog rerolls.
          const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
@@ -6413,11 +6459,31 @@ async function handleAction(target){
               active_spell_context:contexts,origin_enabled:enabled});
           }catch(error){message('Tiro registrato; consumo bonus non salvato: '+errorMessage(error),true);}
         }
+
+      // The just-finished roll owns its chosen charges. Keep the granted
+      // terms visible in the formula, but never auto-charge or auto-apply them
+      // to a later d20 roll. Available bonuses remain visible below the result.
+      dialog.postRollBonuses=[...chosen,...(dialog.postRollBonuses||[])];
+      dialog.appliedBonusIds=new Set(chosen.map(row=>row.selectionId));
+      dialog.usedRollBonuses=[];
         // Keep the next-roll formula in sync with the controls even after a
         // once-only bonus is consumed. Each click produces a new history entry.
         // Keep the per-dialog selection until the popup closes.
         dialog.renderRollFormula?.();
       }
+      const calculatedAfter=await computeLocalData(state.editor.read());
+      for(const button of dialog.querySelectorAll('[data-roll-use]')){
+        const row=dialog.rollBonuses[Number(button.dataset.rollUse)];
+        if(!row)continue;
+        const usedForThisRoll=dialog.appliedBonusIds.has(row.selectionId);
+        const tracker=row.tracker_id?calculatedAfter.trackers.find(t=>t.id===row.tracker_id):null;
+        const remaining=tracker?Number(tracker.max)-Number(tracker.spent||0):Infinity;
+        button.dataset.rollUsed=usedForThisRoll?'true':'false';
+        button.textContent=usedForThisRoll?'Usato':'Usa';
+        button.disabled=usedForThisRoll||!!(row.strict_tracker&&remaining<Math.max(1,Number(row.tracker_cost)||1))||
+          !!(row.consumes_spell&&!calculatedAfter.origin_spells?.some(g=>g.spell_id===row.consumes_spell));
+      }
+      dialog.renderRollFormula?.();
       if(state.paired&&state.online){
         try{await shareRoll({quiet:true});}
         catch(error){
