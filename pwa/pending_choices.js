@@ -189,7 +189,8 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
    norm(row.name)===norm(record.subrace)&&norm(row.source)===norm(record.subrace_source)&&
    norm(row.raceName)===norm(record.species));
  const replaceRaceASI=!!ownedSubrace&&(ownedSubrace.replaces_parent_ability===true||
-   Object.values(ownedSubrace.ability||{}).reduce((n,value)=>n+Math.max(0,Number(value)||0),0)>=2);
+   Object.values(ownedSubrace.ability||{}).reduce((n,value)=>n+Math.max(0,Number(value)||0),0)>=3||
+   norm(record.species)==='human'&&/mark of/i.test(record.subrace||''));
  // Race, subrace and background score choices can be fixed or source-wide.
  for(const [group,name,source] of [
    ['race',record.species,record.species_source],
@@ -207,7 +208,10 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
    const sid=group+'|'+norm(row.source)+'|'+norm(row.name);
    if(!enabled(record,sid))continue;
    const fixed=row.ability&&typeof row.ability==='object'&&!Array.isArray(row.ability)?
-     Object.entries(row.ability).filter(([key,val])=>abilities.includes(key)&&Number(val)>0):[];
+     Object.entries(row.ability).filter(([key,val])=>abilities.includes(key)&&Number(val)>0&&
+       !(group==='subrace'&&!replaceRaceASI&&Number(arr(catalogs.abilityGrants?.race)
+         .find(parent=>norm(parent.name)===norm(record.species)&&
+           norm(parent.source)===norm(record.species_source))?.ability?.[key])===Number(val))):[];
    if(fixed.length)result.push({id:'ability-fixed:'+sid,kind:'ability_fixed',
      origin_id:sid,name:row.name,label:'Incrementi automatici',
      count:fixed.length,selected:fixed.map(([key])=>key),
