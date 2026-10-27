@@ -2179,8 +2179,7 @@ function selectableInfusions(mode,creature,calculated){
  const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
  if(mode==="prepare")return known;
  return (calculated.infusion_catalog||[]).filter(row=>!row.legacy_replicate&&
-   caps.level>=Math.max(2,Number(row.min_level)||2)&&
-   !known.some(entry=>entry.id===row.id))
+   caps.level>=Math.max(2,Number(row.min_level)||2))
    .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
     String(a.name).localeCompare(String(b.name),"it"));
 }
@@ -2207,18 +2206,40 @@ async function openInfusionPicker(mode){
  const results=dialog.querySelector(".infusion-picker-results");
  const paint=()=>{
   const shown=options.filter(row=>matchesSearch(input.value,row.name,row.source,row.replicates_item_name));
-  results.innerHTML=shown.length?shown.map(row=>{
-   const prepared=mode==="prepare"&&isInfusionPrepared(creature,row,calculated.infusion_catalog||[]);
-   return '<button type="button" class="inventory-search-result vtt-selectable" data-act="infusion-picker-select" data-infusion-id="'+esc(row.id)+'" aria-pressed="'+prepared+'">'+
-    '<span class="inventory-search-result-count'+(prepared?'':' is-add')+'" aria-hidden="true">'+(prepared?'✓':'+')+'</span>'+
-    '<span class="inventory-search-result-copy"><strong>'+esc(row.name)+'</strong><small>Livello '+Number(row.min_level||2)+' · '+esc(row.source||"TCE")+'</small></span>'+
-    '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
-  }).join(""):'<p class="inventory-search-notice">Nessuna infusione disponibile.</p>';
+  const levels=[...new Set(shown.map(row=>Math.max(2,Number(row.min_level)||2)))];
+  results.innerHTML=shown.length?'<div class="magic-groups">'+levels.map(level=>
+   '<section class="magic-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div><div class="magic-entries">'+
+   shown.filter(row=>Math.max(2,Number(row.min_level)||2)===level).map(row=>{
+    const isKnown=known.some(entry=>entry.id===row.id);
+    const active=mode==="learn"?isKnown:isInfusionPrepared(creature,row,calculated.infusion_catalog||[]);
+    const action=mode==="learn"?(active?"Dimentica":"+ Impara"):(active?"✓ Preparata":"+ Prepara");
+    return '<div class="magic-catalog-row vtt-selectable'+(active?' is-selected':'')+'">'+
+     '<button type="button" class="magic-catalog-name" data-act="infusion-picker-details" data-infusion-id="'+esc(row.id)+'" aria-label="Dettagli di '+esc(row.name)+'">'+esc(row.name)+'</button>'+
+     '<button type="button" class="magic-catalog-action'+(active?' is-selected':'')+'" data-act="infusion-picker-select" data-infusion-id="'+esc(row.id)+'" aria-pressed="'+active+'">'+action+'</button></div>';
+   }).join('')+'</div></section>').join('')+'</div>':
+    '<p class="hint">Nessuna infusione disponibile.</p>';
  };
  input.addEventListener("input",paint);paint();
  app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
 }
 
+
+async function openInfusionPickerPreview(id){
+ const c=state.editor?.read();if(!c)throw Error("Scheda non disponibile.");
+ const d=await computeLocalData(c),entry=(d.infusion_catalog||[]).find(row=>row.id===id);
+ if(!entry)throw Error("Infusione non disponibile.");
+ app.querySelector("#infusion-preview-dialog")?.remove();
+ const dialog=document.createElement("dialog");dialog.id="infusion-preview-dialog";
+ dialog.className="sheet-roll-dialog magic-spell-dialog infusion-preview-dialog";
+ dialog.innerHTML=actionDialogIntro(entry.name,[
+  {label:"Livello richiesto",value:String(Math.max(2,Number(entry.min_level)||2))},
+  ...(entry.item_prerequisite?[{label:"Oggetto richiesto",value:entry.item_prerequisite}]:[]),
+  ...(entry.replicates_item_name?[{label:"Oggetto replicato",value:entry.replicates_item_name}]:[])
+ ],flattenDescription(entry)||String(entry.description||"")||"Descrizione non disponibile.",
+  "Infusione dell’Artefice · "+(entry.source||"TCE"),"infusion-preview-close")+
+  '<div class="actions"><button type="button" class="btn" data-act="infusion-preview-close">Chiudi</button></div>';
+ app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
+}
 async function openInfusionActionDialog(index){
  const creature=state.editor?.read();
  if(!creature)throw Error('Apri prima la scheda di una creatura.');
@@ -6812,14 +6833,22 @@ async function handleAction(target){
   if(act==='infusion-picker-close'){
     closeDialog(app.querySelector("#infusion-picker-dialog"),{remove:true});return;
   }
+  if(act==='infusion-picker-details'){
+    await openInfusionPickerPreview(target.dataset.infusionId);return;
+  }
+  if(act==='infusion-preview-close'){
+    closeDialog(app.querySelector("#infusion-preview-dialog"),{remove:true});return;
+  }
   if(act==='infusion-picker-select'){
     const dialog=app.querySelector("#infusion-picker-dialog"),record=state.editor?.read();
     if(!dialog?.open||!record)throw Error("Riapri la selezione delle infusioni.");
     const d=await computeLocalData(record),mode=dialog.dataset.mode;
     const option=selectableInfusions(mode,record,d).find(row=>row.id===target.dataset.infusionId);
     if(!option)throw Error("Infusione non disponibile.");
-    const changes=mode==="learn"?
-      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[]):
+    const already=learnedInfusions(record,d.infusion_catalog).find(row=>row.id===option.id);
+    const changes=mode==="learn"?(already?
+      forgetInfusionPatch(record,already):
+      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[])):
       prepareInfusionPatch(record,option,d.infusion_catalog,d.features||[],
         !isInfusionPrepared(record,option,d.infusion_catalog));
     await patch(changes);closeDialog(dialog,{remove:true});await render();
