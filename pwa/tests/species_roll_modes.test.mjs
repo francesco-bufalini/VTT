@@ -31,7 +31,7 @@ test('native pre-2024 racial roll modes regenerate exactly from reviewed traits'
   'Grovel, Cower, and Beg','Timberwalk']);
  for(const race of refs.races.filter(x=>!['XPHB','XDMG','XMM','EFA','LFL','RHW','ABH','FRHOF','AU','SRD52','BQGT','FFOTR'].includes(x.source))){
   for(const trait of race.entries||[]){
-   if(!/\\badvantage\\b|\\bdisadvantage\\b/i.test(JSON.stringify(trait.entries||[])))continue;
+   if(!/\badvantage\b|\bdisadvantage\b/i.test(JSON.stringify(trait.entries||[])))continue;
    if(exceptions.has(trait.name))continue; // Non-user advantage, or negation of normal long-range DIS.
    assert.ok(catalog.races.find(x=>x.name===race.name&&x.source===race.source)
     ?.rules.some(x=>x.trait===trait.name),race.name+' '+race.source+' '+trait.name);
