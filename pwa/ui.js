@@ -1105,13 +1105,13 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   {label:'Origine',value:ability.origin_name||'Tratto di classe'}
  ],ability.description||'',ability.active?'Capacità attiva':'Capacità disponibile','feature-close')+
   abilityPaymentField(ability,calculated)+
-  (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" value="1"></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
+  (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" required></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
   (ability.mode==='heal_roll'?'<p>Tira 1d10 e aggiungi il livello da Guerriero. La cura si applica a te stesso.</p>':'')+
   (conversion?'<label>Livello slot<select data-feature-level>'+[1,2,3,4,5].map(n=>'<option>'+n+'</option>').join('')+'</select></label><label class="check"><input data-feature-create type="checkbox" checked>Crea uno slot (disattiva per convertire uno slot in punti)</label>':'')+
   (recovery?'<p>Massimo '+Math.ceil(Number((c.classes||[]).find(x=>x.name==='Wizard')?.level||c.level||0)/2)+' livelli di slot.</p>'+[1,2,3,4,5].map(n=>'<label>Slot di livello '+n+'<input data-feature-recover="'+n+'" type="number" min="0" max="'+Number(c.spell_slots_spent?.[n]||0)+'" value="0"></label>').join(''):'')+
   (enhanced?'<label class="check"><input data-feature-enhanced type="checkbox">Versione potenziata · 1 punto Focus</label>':'')+
   (ability.mode==='metamagic_roll'?'<p>Scegli i dadi da sostituire: devi utilizzare i nuovi risultati.</p>'+
-   (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
+   (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" required></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
   featureCompanionFields(companion)+
    '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
@@ -1121,10 +1121,13 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   const button=event.currentTarget;button.disabled=true;
   try{
    const current=state.editor?.read();if(current?.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
+   for(const input of dialog.querySelectorAll('[data-feature-amount],[data-feature-count]')){
+     if(input.value.trim()===''||!input.checkValidity())throw Error('Inserisci un valore numerico valido.');
+   }
    const fresh=await computeLocalData(current),options={amount:dialog.querySelector('[data-feature-amount]')?.value,
     level:dialog.querySelector('[data-feature-level]')?.value,create_slot:dialog.querySelector('[data-feature-create]')?.checked,
     apply_to_self:dialog.querySelector('[data-feature-self]')?.checked,enhanced:!!dialog.querySelector('[data-feature-enhanced]')?.checked,
-    count:Number(dialog.querySelector('[data-feature-count]')?.value||1),sides:Number(dialog.querySelector('[data-feature-sides]')?.value||20),
+    count:Number(dialog.querySelector('[data-feature-count]')?.value??1),sides:Number(dialog.querySelector('[data-feature-sides]')?.value||20),
     levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value)),
     tracker_id:abilityPaymentChoice(dialog)};
    if(ability.mode==='heal_roll')options.roll=randomDie(10);
@@ -1183,7 +1186,7 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
  'subclass-tracker-close')+
  (paymentOptions.length?'<label>Risorsa da utilizzare<select data-companion-payment>'+paymentOptions.map(([id,label])=>'<option value="'+esc(id)+'">'+esc(label)+'</option>').join('')+'</select></label>':
    available>1?'<label>Utilizzi da consumare<input type="number" data-subclass-amount min="1" max="'+
-  esc(available)+'" step="1" value="1"></label>':'')+
+  esc(available)+'" step="1" required></label>':'')+
  featureCompanionFields(companion)+
   '<p data-subclass-result role="status"></p>'+
  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-subclass-confirm>Conferma utilizzo</button>'+
@@ -1195,7 +1198,10 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
   try{
    const current=state.editor?.read();
    if(!current||current.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
-   const raw=dialog.querySelector('[data-subclass-amount]')?.value??'1',amount=Number(raw);
+   const amountInput=dialog.querySelector('[data-subclass-amount]');
+   if(amountInput&&(amountInput.value.trim()===''||!amountInput.checkValidity()))
+     throw Error('Inserisci un numero valido di utilizzi.');
+   const raw=amountInput?.value??'1',amount=Number(raw);
    const fresh=await computeLocalData(current);
    const liveCompanion=companion?await companionFeatureChoices(current,fresh,originId):null;
    if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
@@ -1418,7 +1424,7 @@ function openInventorySearchAddDialog(catalogIndex){
     dialogCloseButton('inventory-search-add-close','Chiudi','play-button')+'</header>'+
     '<div class="sheet-context-body inventory-search-add-fields">'+
     '<label>Sezione<select id="inventory-search-add-section">'+options+'</select></label>'+
-    '<label>Quantità<input type="number" id="inventory-search-add-quantity" value="1" min="1" max="99999" step="1" required></label></div>'+
+    '<label>Quantità<input type="number" id="inventory-search-add-quantity" min="1" max="99999" step="1" required></label></div>'+
     '<footer class="pending-choice-actions"><button type="button" data-act="inventory-search-add-close">Annulla</button>'+
     '<button type="button" data-act="inventory-search-add-confirm">Aggiungi oggetto</button></footer>';
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -3212,8 +3218,8 @@ function diceResult(){
 }
 function diceView(){
   return '<h2 id="chat-dice-title">Lancia i dadi</h2><div class="columns">'+
-    '<label>Numero dadi<input id="die-count" type="number" value="1" min="1" max="20"></label>'+
-    '<label>Modificatore<input id="die-mod" type="number" value="0" min="-999" max="999"></label></div>'+
+    '<label>Numero dadi<input id="die-count" type="number" min="1" max="20" required></label>'+
+    '<label>Modificatore<input id="die-mod" type="number" min="-999" max="999"></label></div>'+
     '<div class="dice-options">'+[4,6,8,10,12,20,100].map(n=>
     '<button class="btn" type="button" data-act="select-die" data-sides="'+n+'" aria-pressed="'+(state.diceSides===n)+'">d'+n+'</button>').join("")+'</div>'+
     '<div class="actions"><button type="button" class="btn primary full" data-act="roll">Tira d'+state.diceSides+'</button></div>'+
@@ -6672,7 +6678,7 @@ async function handleAction(target){
     const diceControls=pools.map(pool=>'<label class="play-rest-die">'+
       '<span>d'+pool.die+' · '+pool.available+' / '+pool.total+' disponibili</span>'+
       '<input type="number" inputmode="numeric" data-rest-die="'+pool.die+
-      '" min="0" max="'+pool.available+'" step="1" value="0" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
+      '" min="0" max="'+pool.available+'" step="1" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
     const preview=document.createElement('section');
     preview.className='play-rest-confirm';preview.dataset.restPreview=event;
     preview.innerHTML='<h3>Conferma '+(event==='long_rest'?'riposo lungo':'riposo breve')+'</h3>'+
@@ -7235,9 +7241,8 @@ function configureHpAdjustDialog(dialog,mode){
   if(!['damage','heal','set'].includes(mode))throw Error('Operazione sui PF non valida.');
   dialog.dataset.hpMode=mode;
   const amount=dialog.querySelector('#hp-adjust-amount');
-  const current=Number(state.editor?.read()?.current_hp)||0;
   amount.min=mode==='set'?'0':'1';
-  amount.value=mode==='set'?String(Math.max(0,current)):'1';
+  amount.value='';
   dialog.querySelector('#hp-adjust-amount-label').textContent=mode==='damage'?'Danni subiti':mode==='heal'?'PF recuperati':'PF attuali';
   dialog.querySelector('#hp-adjust-confirm').textContent=mode==='damage'?'Applica danni':mode==='heal'?'Applica cura':'Salva PF';
   for(const choice of dialog.querySelectorAll('[data-act="hp-adjust-mode"]'))

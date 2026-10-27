@@ -56,3 +56,26 @@ test('dialog lifecycle supports native modal and fallback open state',()=>{
   closeDialog(fallback);
   assert.equal(fallback.open,false);
 });
+
+test('numeric popup fields start empty and preserve a value while already open',()=>{
+  const amount={value:'1',disabled:false,readOnly:false};
+  const oldScore={value:'12',disabled:false,readOnly:false};
+  const disabled={value:'5',disabled:true,readOnly:false};
+  const readOnly={value:'2',disabled:false,readOnly:true};
+  const dialog={dataset:{},open:false,
+    querySelectorAll(selector){
+      assert.equal(selector,'input[type="number"]');
+      return [amount,oldScore,disabled,readOnly];
+    },
+    showModal(){this.open=true;},
+    close(){this.open=false;}
+  };
+  openDialog(dialog);
+  assert.deepEqual([amount.value,oldScore.value,disabled.value,readOnly.value],['','','5','2']);
+  amount.value='7';
+  openDialog(dialog);
+  assert.equal(amount.value,'7','Opening an already-visible popup cannot discard typed input');
+  dialog.close();
+  openDialog(dialog);
+  assert.equal(amount.value,'','Reopening starts with a fresh empty numeric value');
+});

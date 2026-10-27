@@ -1230,7 +1230,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-act="hp-damage"]');
  await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
  assert.equal(document.querySelector('#hp-adjust-title').textContent,'Infliggi danni');
- assert.equal(document.querySelector('#hp-adjust-amount').value,'1');
+ assert.equal(document.querySelector('#hp-adjust-amount').value,'');
  click('[data-act="hp-adjust-cancel"]');
  await until(()=>!document.querySelector('#hp-adjust-dialog[open]'));
  assert.equal((await loadCreature(saved.data.id)).data.current_hp,20,
