@@ -117,6 +117,7 @@ export function selectedSources(record,index={},features=null){
     proficiencyOwnerActive(record,byId.has(sid)&&
       proficiencyFeatureOwner(record,byId.get(sid),kind,key,owned));
   const activeSaved=row=>row&&!row.disabled&&liveSource(record,row.origin_id||'')&&
+    (!String(row.origin_id||'').startsWith('feature:class|')||byId.has(row.origin_id))&&
     activeGrant(row.origin_id,row.kind,row.key)&&featureStoredGrantAllowed(byId.get(row.origin_id),row)&&
     (!String(row.origin_id||'').startsWith('feature:class|')||
       array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f)));
@@ -264,7 +265,8 @@ export function fixedProficiencies(record,index={},features=null){
   if(!row||row.disabled||muted(record,String(row.origin_id||""))||
      !liveSource(record,String(row.origin_id||"")))return false;
   if(String(row.origin_id||'').startsWith('feature:class|')&&
-    !array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f)))return false;
+    (!byId.has(row.origin_id)||
+      !array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f))))return false;
   const source=byId.get(row.origin_id);
   if(row.origin_id==='race|tce|custom lineage'&&row.kind==='skill'&&
     record.origin_sense_choices?.[row.origin_id]==='darkvision')return false;
@@ -318,6 +320,7 @@ export function proficiencyGrantOrigins(record={},index={},kind,key,features=nul
       record.origin_sense_choices?.[row.origin_id]==='darkvision')&&
     featureStoredGrantAllowed(byId.get(row.origin_id),row)&&
     (!String(row.origin_id||'').startsWith('feature:class|')||
+      byId.has(row.origin_id)&&
       array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f))))
     add(row.origin_id,row.origin_name||byId.get(row.origin_id)?.origin||row.origin_id,
      byId.get(row.origin_id));
