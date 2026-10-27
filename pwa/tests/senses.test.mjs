@@ -55,3 +55,57 @@ test('item-granted senses require the exact active item, even with structured it
  const disabled={...present,trait_enabled:{[trait.key]:false}};
  assert.equal(calculateSenses(disabled,[],catalog).distances.blindsight,undefined);
 });
+
+test('every 2014 5etools race and subrace has its latest source-qualified senses audited',()=>{
+ assert.equal(catalog.audit.races.length,134);
+ assert.equal(catalog.audit.subraces.length,98);
+ const vision=senses=>Object.fromEntries((senses||[]).map(v=>{
+  const [type,feet]=v.split(':');return [type,Number(feet)];
+ }));
+ let verified=0;
+ for(const race of catalog.audit.races){
+  const character={species:race.name,species_source:race.source};
+  const actual=calculateSenses(character,[],catalog).distances;
+  const expected=vision(race.senses);
+  for(const type of ['darkvision','blindsight']){
+   // Custom Lineage requires the character's explicit choice.
+   const optional=race.name==='Custom Lineage'&&race.source==='TCE'&&type==='darkvision';
+   assert.equal(actual[type]||0,optional?0:expected[type]||0,
+    'Race '+race.name+' · '+race.source+' · '+type);
+  }
+  verified++;
+ }
+ for(const sub of catalog.audit.subraces){
+  const parent=catalog.audit.races.find(r=>r.name===sub.race_name&&r.source===sub.race_source);
+  const expected=vision(parent?.senses),extra=vision(sub.senses);
+  for(const [type,feet] of Object.entries(extra))expected[type]=Math.max(expected[type]||0,feet);
+  const actual=calculateSenses({species:sub.race_name,species_source:sub.race_source,
+   subrace:sub.name,subrace_source:sub.source},[],catalog).distances;
+  for(const type of ['darkvision','blindsight'])
+   assert.equal(actual[type]||0,expected[type]||0,
+    'Subrace '+sub.race_name+' / '+sub.name+' · '+sub.source+' · '+type);
+  verified++;
+ }
+ assert.equal(verified,232);
+});
+test('latest 2014 race variants, flattened subraces, and choice-only vision are correct',()=>{
+ for(const [name,source,feet] of [
+  ['Duergar','MPMM',120],['Deep Gnome','MPMM',120],['Shadar-Kai','MPMM',60],
+  ['Sea Elf','MPMM',60],['Shifter','MPMM',60],['Triton','MPMM',60],
+  ['Owlin','SCC',120],['Genasi (Air)','MPMM',60],['Elf (Drow)','PHB',120],
+  ['Dwarf (Duergar)','MTF',120],['Dragonborn (Draconblood)','EGW',60],
+  ['Dragonborn (Ravenite)','EGW',60],['Aasimar (Fallen)','VGM',60]
+ ])assert.equal(calculateSenses({species:name,species_source:source},[],catalog).distances.darkvision,feet,name);
+ assert.equal(calculateSenses({species:'Reborn',species_source:'VRGR'},[],catalog).distances.darkvision,undefined);
+ assert.equal(calculateSenses({species:'Custom Lineage',species_source:'TCE'},[],catalog).distances.darkvision,undefined);
+ assert.equal(calculateSenses({species:'Custom Lineage',species_source:'TCE',
+  origin_sense_choices:{'race|tce|custom lineage':'darkvision'}},[],catalog).distances.darkvision,60);
+ assert.equal(calculateSenses({species:'Custom Lineage',species_source:'TCE',
+  origin_sense_choices:{'race|tce|custom lineage':'skill'}},[],catalog).distances.darkvision,undefined);
+});
+test('subrace senses respect book source and source activation',()=>{
+ const elf={species:'Elf',species_source:'PHB',subrace:'Drow',subrace_source:'PHB'};
+ assert.equal(calculateSenses(elf,[],catalog).distances.darkvision,120);
+ assert.equal(calculateSenses({...elf,origin_enabled:{'subrace|phb|drow':false}},[],catalog).distances.darkvision,60);
+ assert.equal(calculateSenses({...elf,subrace_source:'MTF'},[],catalog).distances.darkvision,60);
+});
