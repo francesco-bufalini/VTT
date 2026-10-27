@@ -25,6 +25,7 @@ import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
 import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
+import {characterDefenseSummary} from "./defense_summary.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
@@ -4754,6 +4755,27 @@ function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
  dialog.querySelector('input')?.select();
  return dialog;
 }
+function openSheetDefensesDialog(record={},calculated={}){
+ document.querySelector('#sheet-defenses-dialog')?.remove();
+ const data=characterDefenseSummary(record,calculated);
+ const dialog=document.createElement('dialog');
+ dialog.id='sheet-defenses-dialog';
+ dialog.className='sheet-context-dialog sheet-senses-dialog sheet-defenses-dialog';
+ const content=data.groups.filter(group=>group.items.length)
+  .map(group=>'<section class="sheet-senses-sources"><h3>'+esc(group.title)+'</h3><ul>'+
+   group.items.map(row=>'<li><strong>'+esc(row.label)+'</strong><span>'+esc(row.origin_name)+'</span></li>').join('')+
+   '</ul></section>').join('');
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Difese</h2>'+
+  dialogCloseButton('sheet-defenses-close','Chiudi','play-button')+'</header>'+
+  '<div class="sheet-senses-body"><div class="sheet-senses-passive sheet-defenses-armor">'+
+  '<span>Classe armatura</span><strong>'+esc(data.armor_class??'—')+'</strong></div>'+
+  (content||'<p class="sheet-senses-note">Nessuna resistenza, immunità o vulnerabilità attiva.</p>')+
+  '</div>';
+ app.append(dialog);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close?.();});
+ openDialog(dialog);
+}
 function openSheetSensesDialog(calculated={}){
  document.querySelector('#sheet-senses-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -4777,6 +4799,14 @@ function openSheetSensesDialog(calculated={}){
   '<p class="sheet-senses-note">In luce fioca le prove di Percezione basate sulla vista subiscono svantaggio (−5 alla percezione passiva pertinente). La scurovisione tratta la luce fioca come intensa e l’oscurità non magica come fioca entro la sua portata; al buio non distingue i colori.</p>'+
   '<p class="sheet-senses-note">La percezione tellurica rileva vibrazioni tramite una superficie condivisa: non equivale a vedere. La vista cieca e la vista pura non dipendono dall’illuminazione entro la loro portata. Fuori portata valgono le condizioni della visione normale.</p>'+
   (origins?'<section class="sheet-senses-sources"><h3>Privilegi e origini</h3><ul>'+origins+'</ul></section>':'')+
+  (state.editor?.read()?.species==='Custom Lineage'&&state.editor?.read()?.species_source==='TCE'?
+   '<section class="sheet-senses-sources"><h3>Tratto variabile · Custom Lineage</h3>'+
+   '<p class="sheet-senses-note">Puoi scegliere la scurovisione oppure una competenza in un’abilità, non entrambe.</p>'+
+   '<div class="sheet-sense-choice-actions">'+
+   [['darkvision','Scurovisione (60 ft)'],['skill','Competenza in abilità']].map(([value,label])=>
+    '<button type="button" class="play-button" data-act="sheet-sense-choice" data-sense-choice="'+value+'" aria-pressed="'+
+    String((state.editor?.read()?.origin_sense_choices||{})['race|tce|custom lineage']===value)+'">'+esc(label)+'</button>').join('')+
+   '</div></section>':'')+
   '</div>';
  app.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -6057,6 +6087,20 @@ async function handleAction(target){
     state.traitPopupKey=key;state.traitPopupConfirm='';
     state.traitPopupDraftKind=kind;state.traitPopupDraftTarget=targetKey;
     mountTraitBenefitDialog();return;
+  }
+  if(act==='sheet-defenses-open'){
+   if(!state.editor)throw Error('Apri prima una creatura');
+   const record=state.editor.read();openSheetDefensesDialog(record,await computeLocalData(record));return;
+  }
+  if(act==='sheet-sense-choice'){
+   if(!state.editor)throw Error('Apri prima una creatura');
+   const record=state.editor.read();
+   if(record.species!=='Custom Lineage'||record.species_source!=='TCE')throw Error('Scelta non disponibile');
+   const choice=String(target.dataset.senseChoice||'');
+   if(!['darkvision','skill'].includes(choice))throw Error('Scelta non valida');
+   await patch({origin_sense_choices:{...(record.origin_sense_choices||{}),['race|tce|custom lineage']:choice}});
+   await render();
+   openSheetSensesDialog(await computeLocalData(state.editor.read()));return;
   }
   if(act==='sheet-senses-open'){
    if(!state.editor)throw Error('Apri prima una creatura');
@@ -7762,6 +7806,9 @@ function listen(){
       const dialog=document.querySelector('#roll-trait-picker');
       closeDialog(dialog,{remove:true});
       return;
+    }
+    if(closeAction==='sheet-defenses-close'){
+     closeDialog(document.querySelector('#sheet-defenses-dialog'),{remove:true});return;
     }
     if(closeAction==='sheet-senses-close'){
      closeDialog(document.querySelector('#sheet-senses-dialog'),{remove:true});return;
