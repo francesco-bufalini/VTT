@@ -1,5 +1,6 @@
 import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
+import {speciesDefenseEntries} from './species_defenses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {collectEffectExtensions} from './effect_extensions.js';
@@ -758,6 +759,8 @@ function calculateSheetValues(record={},catalogs={}){
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
+  const damage_defense_entries=[...arr(record.damage_defense_entries),
+    ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed)];
   const grantingCastingTrait=member=>{
     // Partial/offline catalog tables must not impersonate a real feature grant.
     if(!catalogs.classFeatures)return null;
@@ -1279,7 +1282,7 @@ function calculateSheetValues(record={},catalogs={}){
     proficiency_sources:Object.fromEntries([...proficiencies.keys()]
       .map(key=>{const [kind,...parts]=key.split(':');return [key,
         proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'),features)];})),
-    casting_classes:spellClasses,trackers,attacks,
+    casting_classes:spellClasses,trackers,attacks,damage_defense_entries,
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
     effect_extensions,
     item_damage_resistances:effect_extensions.filter(row=>row.operation==='resistance'&&row.target_kind==='item')
@@ -1342,9 +1345,12 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.extensions)?data.extensions:[]),
     fetch('/catalog/spell_grant_rules.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.rules)?data.rules:[])
-      .catch(()=>[])
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,spellGrantRules])=>({
-    abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,featureRules:featureRules||{},
+      .catch(()=>[]),
+    fetch('/catalog/species_defenses.json').then(r=>{if(!r.ok)throw Error('Difese delle specie non disponibili');return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
+      .catch(error=>{console.warn('VTT: catalogo difese delle specie non disponibile',error);return {races:[],load_error:true};})
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,spellGrantRules,speciesDefenses])=>({
+    abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,speciesDefenses,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
