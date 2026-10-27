@@ -346,7 +346,7 @@ export function savePendingChoice(record,choice,values=[]){
  }
  if(choice.kind==='defense'){
   if(selected.length>1||selected.some(key=>!choice.options.includes(key))||
-    !String(choice.defense_source_id||'').startsWith('race|'))
+    !/^(race|subrace)\\|[^|]+\\|[^|]+$/.test(String(choice.defense_source_id||'')))
    throw Error('Tipo di danno non consentito dalla specie.');
   const current={...(record.origin_defense_choices||{})};
   if(selected.length)current[choice.defense_source_id]=selected[0];
