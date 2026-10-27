@@ -65,8 +65,9 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
   const definition=catalog.find(s=>s.id===grant.spell_id);if(!definition)continue;
   const stored=creature.spellcasting_section_abilities?.['origin:'+grant.origin_id];
   const permitted=arr(grant.spellcasting_ability_options);
-  const casting=grant.spellcasting_ability||
-    (permitted.length?(permitted.includes(stored)?stored:permitted[0]):stored)||
+  const casting=(permitted.length?
+      permitted.includes(stored)?stored:grant.spellcasting_ability||permitted[0]:
+      stored||grant.spellcasting_ability)||
     creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int';
   entries.push({...definition,grant_id:grant.id,caster_ability:casting,
     casting_label:grant.origin_name||'Origine'});
