@@ -1680,6 +1680,7 @@ async function editorView() {
         manualMagicSources(c,calculated),
         'magic-panel')+
       infusionPanel(c,calculated)+
+      armorModelPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
   case "conditions":
@@ -2122,6 +2123,96 @@ function documentRow(item,index,stored){
     '<div class="actions"><button type="button" class="btn small danger" data-act="document-remove" data-index="'+index+'">Elimina copia</button></div>'+
     '</div></details>';
 }
+// Exclusive, data-defined equipment models share the infusion card layout.
+// The state catalog supplies both choices, their eligibility and effects.
+function armorModels(c,calculated){
+ const rules=(calculated.trait_state_catalog||[]).filter(row=>row.group==='armor_model');
+ if(!rules.length)return [];
+ const members=Array.isArray(c.classes)&&c.classes.length?c.classes:[{
+   name:c.class,source:c.class_source,subclass:c.subclass,level:c.level
+ }];
+ const match=(a,b)=>String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
+ return rules.filter(row=>
+   members.some(member=>match(member.name,row.class_name)&&
+     (!row.class_source||match(member.source||c.class_source,row.class_source))&&
+     (!row.subclass||match(member.subclass||c.subclass,row.subclass)))&&
+   (calculated.features||[]).some(feature=>match(feature.name,row.trait)&&
+     !feature.inactive&&!feature.disabled&&
+     match(feature.class_name||String(feature.origin_key||'').split('|')[2],row.class_name)&&
+     c.origin_enabled?.[feature.origin_id]!==false&&c.origin_enabled?.[feature.origin_key]!==false));
+}
+function armorModelSelection(c,rules){
+ const group=rules[0]?.group;
+ if(!group)return '';
+ if(Object.hasOwn(c.trait_state_selection||{},group))return c.trait_state_selection[group]||'';
+ const legacyField=rules[0]?.legacy_field,legacy=legacyField?c[legacyField]:undefined;
+ if(legacy!==undefined&&legacy!==null&&legacy!=='')
+   return rules.find(row=>row.legacy_value===legacy)?.id||'';
+ return rules.find(row=>row.legacy_default)?.id||'';
+}
+function armorModelPanel(c,calculated){
+ const rules=armorModels(c,calculated);
+ if(!rules.length)return '';
+ const selected=armorModelSelection(c,rules);
+ const activeRules=new Set(calculated.active_trait_state_ids||[]);
+ const trackerId=rules.find(row=>row.activation_tracker?.id)?.activation_tracker?.id;
+ const tracker=(calculated.trackers||[]).find(row=>row.id===trackerId&&!row.disabled);
+ const counter=tracker?'<span>Modifiche '+Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0))+' / '+Number(tracker.max||0)+'</span>':'';
+ const summary='<div class="infusion-overview"><strong>Modello applicato: '+esc(rules.find(row=>row.id===selected)?.name.replace(/^Modello armatura · /,'')||'Nessuno')+
+   '</strong>'+counter+'</div>';
+ return panel('Modelli di armatura',summary+rules.map(rule=>{
+   const available=(calculated.state_actions||[]).some(action=>action.state_id===rule.id);
+   const active=available&&activeRules.has(rule.id);
+   const label=active?'Attivo':selected===rule.id?'Selezionato':'Non attivo';
+   return '<div class="magic-spell-row armor-model-entry" data-armor-model-id="'+esc(rule.id)+
+     '" data-armor-model-active="'+active+'" data-armor-model-available="'+available+'">'+
+     '<span class="magic-spell-open">'+esc(rule.name.replace(/^Modello armatura · /,''))+
+     '<small class="infusion-status">'+label+(available?'':' · Armatura richiesta')+'</small></span></div>';
+ }).join(''),'armor-model-panel');
+}
+async function openArmorModelDialog(id){
+ const creature=state.editor?.read();
+ if(!creature)throw Error('Apri prima una creatura.');
+ const calculated=await computeLocalData(creature),rules=armorModels(creature,calculated);
+ const rule=rules.find(row=>row.id===id);
+ if(!rule)throw Error('Modello di armatura non disponibile.');
+ const selected=armorModelSelection(creature,rules),available=(calculated.state_actions||[])
+  .some(action=>action.state_id===id);
+ const active=selected===id&&available;
+ const payment=rule.activation_tracker||{},tracker=(calculated.trackers||[])
+  .find(row=>row.id===payment.id&&!row.disabled);
+ const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ const description=String(rule.summary||'').trim();
+ const benefits=[
+   ...(rule.attacks||[]).map(attack=>({name:attack.name||attack.trait,detail:attack.damage?
+     attack.damage+' · '+(attack.range_feet?attack.range_feet+' ft':''):''})),
+   ...(rule.granted_features||[]).map(name=>({name})),
+   ...(rule.numeric_grants||[]).map(grant=>({name:grant.trait||grant.id,detail:'+'+grant.amount+' · '+grant.target}))
+ ];
+ app.querySelector('#armor-model-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='armor-model-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog armor-model-dialog';
+ dialog.dataset.armorModelId=id;dialog.dataset.creatureId=creature.id;
+ dialog.innerHTML=actionDialogIntro(rule.name,[
+   {label:'Stato',value:active?'Attivo':selected===id?'Selezionato':'Non attivo'},
+   {label:'Azione',value:'Gratuita'},
+   {label:'Origine',value:rule.trait||'Privilegio di sottoclasse'},
+   {label:'Oggetto',value:available?'Armatura equipaggiata':'Richiede un’armatura equipaggiata'}
+ ],description,'Artificer · '+(rule.subclass||'Armorer'),'armor-model-close')+
+ (benefits.length?'<section class="infusion-dialog-active armor-model-benefits"><h3>Benefici del modello</h3>'+
+   benefits.map(row=>'<div class="infusion-dialog-item"><span>'+esc(row.name)+
+     (row.detail?'<small>'+esc(row.detail)+'</small>':'')+'</span></div>').join('')+'</section>':'')+
+ (!active&&available&&payment.id?abilityPaymentField({
+   tracker_id:payment.id,tracker:payment.name,cost:payment.cost||0},calculated):'')+
+ (!available?'<p class="hint armor-model-unavailable">Equipaggia un’armatura per utilizzare questo modello.</p>':'')+
+ '<p class="hint armor-model-error" data-armor-model-error role="status" hidden></p>'+
+ '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="armor-model-apply"'+
+   (available?'':' disabled')+'>'+(active?'Disattiva':'Usa')+'</button>'+
+ '<button type="button" class="btn" data-act="armor-model-close">Chiudi</button></div>';
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ openDialog(dialog);
+}
+
 function infusionPanel(c,calculated){
  const caps=infusionLimits(c,calculated.infusion_mechanics,calculated.features||[]);
  if(!caps.level)return "";
@@ -6854,6 +6945,36 @@ async function handleAction(target){
     return;
   }
 
+  if(act==='armor-model-open'){
+    await openArmorModelDialog(String(target.dataset.armorModelId||''));return;
+  }
+  if(act==='armor-model-close'){
+    closeDialog(app.querySelector('#armor-model-dialog'),{remove:true});return;
+  }
+  if(act==='armor-model-apply'){
+    const dialog=app.querySelector('#armor-model-dialog');
+    const record=state.editor?.read();
+    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)
+      throw Error('Riapri il modello dalla scheda.');
+    const error=dialog.querySelector('[data-armor-model-error]');
+    target.disabled=true;
+    try{
+      const fresh=await computeLocalData(record),rule=armorModels(record,fresh)
+        .find(row=>row.id===dialog.dataset.armorModelId);
+      if(!rule||(fresh.state_actions||[]).every(action=>action.state_id!==rule.id))
+        throw Error('Equipaggia l’armatura per usare il modello.');
+      const options={tracker_id:dialog.querySelector('[data-ability-payment]')?.value};
+      const changes=traitStateActivationPatch(record,fresh.features,fresh.trait_state_catalog,rule.id,
+        fresh.trackers,options);
+      await patch(changes);
+      if(state.saveError)throw Error(state.saveError);
+      closeDialog(dialog,{remove:true});await render();return;
+    }catch(errorInfo){
+      target.disabled=false;
+      error.hidden=false;error.textContent=errorMessage(errorInfo);
+      return;
+    }
+  }
   if(act==='infusion-picker-open'){
     await openInfusionPicker(target.dataset.mode);return;
   }
