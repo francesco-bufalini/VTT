@@ -24,6 +24,27 @@
       ]
     },
     {
+      "id": "5etools:races:aag:autognome",
+      "name": "Autognome",
+      "source": "AAG",
+      "rules": [
+        {
+          "trait": "Mechanical Nature",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro Paralizzato o Avvelenato"
+        }
+      ],
+      "trait_details": [
+        {
+          "name": "Mechanical Nature",
+          "entries": [
+            "You have resistance to poison damage and immunity to disease, and you have advantage on saving throws against being {@condition paralyzed} or {@condition poisoned}. You don't need to eat, drink, or breathe."
+          ]
+        }
+      ]
+    },
+    {
       "id": "5etools:races:mpmm:bugbear",
       "name": "Bugbear",
       "source": "MPMM",
