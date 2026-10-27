@@ -1024,6 +1024,13 @@ function calculateSheetValues(record={},catalogs={}){
       }
     }
     if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
+    // A cast-generated origin exists only while its actual saved item effect
+    // exists. It cannot be silently rejected as an unknown manual bonus.
+    if(sid.startsWith('spell_cast:'))return arr(record.active_item_spell_effects)
+      .some(effect=>sid==='spell_cast:'+effect.id&&
+        (!effect.requires_concentration||
+         arr(record.conditions).includes('concentrating')&&
+         String(record.concentrating_spell_id||'')===String(effect.spell_id||'')));
     // A generated infusion is a separate, verifiable equipment origin, not
     // an unknown manual bonus or an unconditional class privilege.
     if(sid.startsWith("infusion:"))return activeInfusions(record,index?.artificer_infusions||[],features)
