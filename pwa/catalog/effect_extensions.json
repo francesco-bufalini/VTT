@@ -154,6 +154,229 @@
       "trigger": "saving_throw",
       "frequency": "once_per_use",
       "description": "PF temporanei al termine del tiro salvezza"
+    },
+    {
+      "id": "infusion-arcane-propulsion-armor-grant_property-0",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|arcane propulsion armor"
+      },
+      "target_kind": "item",
+      "operation": "grant_property",
+      "trigger": "passive",
+      "frequency": "each",
+      "description": "L'armatura diventa solidale con il corpo e non può essere rimossa contro la volontà del portatore"
+    },
+    {
+      "id": "infusion-arcane-propulsion-armor-add_effect-1",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|arcane propulsion armor"
+      },
+      "target_kind": "item",
+      "operation": "add_effect",
+      "trigger": "passive",
+      "frequency": "each",
+      "description": "La velocità sul terreno aumenta di 5 ft; i guanti diventano armi magiche da mischia 1d8 forza, lanciabili a 20/60 ft"
+    },
+    {
+      "id": "infusion-armor-of-magical-strength-grant_action-2",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|armor of magical strength"
+      },
+      "target_kind": "item",
+      "operation": "grant_action",
+      "trigger": "reaction",
+      "frequency": "each",
+      "description": "6 cariche: usa una carica per aggiungere Intelligenza a una prova di Forza o a un tiro salvezza di Forza"
+    },
+    {
+      "id": "infusion-armor-of-magical-strength-grant_action-3",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|armor of magical strength"
+      },
+      "target_kind": "item",
+      "operation": "grant_action",
+      "trigger": "reaction",
+      "frequency": "each",
+      "description": "6 cariche: usa una reazione e una carica per evitare di essere buttato prono; recupera 1d6 cariche all'alba"
+    },
+    {
+      "id": "infusion-boots-of-the-winding-path-grant_action-4",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|boots of the winding path"
+      },
+      "target_kind": "item",
+      "operation": "grant_action",
+      "trigger": "on_use",
+      "frequency": "each",
+      "description": "Azione bonus: teletrasporto fino a 15 ft verso uno spazio non occupato già occupato durante il turno corrente"
+    },
+    {
+      "id": "infusion-enhanced-arcane-focus-add_effect-5",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|enhanced arcane focus"
+      },
+      "target_kind": "item",
+      "operation": "add_effect",
+      "trigger": "passive",
+      "frequency": "each",
+      "description": "Gli attacchi con incantesimi ignorano la mezza copertura quando si impugna questo focus"
+    },
+    {
+      "id": "infusion-helm-of-awareness-roll_mode-6",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|helm of awareness"
+      },
+      "target_kind": "item",
+      "operation": "roll_mode",
+      "trigger": "initiative",
+      "frequency": "each",
+      "description": "Vantaggio ai tiri di iniziativa mentre l'elmo è indossato",
+      "value": "advantage"
+    },
+    {
+      "id": "infusion-helm-of-awareness-add_effect-7",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|helm of awareness"
+      },
+      "target_kind": "item",
+      "operation": "add_effect",
+      "trigger": "passive",
+      "frequency": "each",
+      "description": "Il portatore non può essere sorpreso mentre è cosciente"
+    },
+    {
+      "id": "infusion-homunculus-servant-add_effect-8",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|homunculus servant"
+      },
+      "target_kind": "item",
+      "operation": "add_effect",
+      "trigger": "passive",
+      "frequency": "each",
+      "description": "Il gioiello infuso funge da cuore di un servitore omuncolo; la creatura associata è gestita separatamente"
+    },
+    {
+      "id": "infusion-mind-sharpener-grant_action-9",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|mind sharpener"
+      },
+      "target_kind": "item",
+      "operation": "grant_action",
+      "trigger": "concentration_fail",
+      "frequency": "each",
+      "description": "Reazione: usa una delle 4 cariche per riuscire un tiro salvezza di concentrazione fallito; recupera 1d4 cariche all'alba"
+    },
+    {
+      "id": "infusion-radiant-weapon-grant_property-10",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|radiant weapon"
+      },
+      "target_kind": "item",
+      "operation": "grant_property",
+      "trigger": "passive",
+      "frequency": "each",
+      "description": "L'arma emette luce intensa per 30 ft e luce fioca per altri 30 ft, disattivabile"
+    },
+    {
+      "id": "infusion-radiant-weapon-grant_action-11",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|radiant weapon"
+      },
+      "target_kind": "item",
+      "operation": "grant_action",
+      "trigger": "reaction",
+      "frequency": "each",
+      "description": "4 cariche: dopo essere colpito da un attacco, una reazione e una carica per accecare l'attaccante (TS Costituzione); recupera 1d4 cariche all'alba"
+    },
+    {
+      "id": "infusion-repeating-shot-grant_property-12",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|repeating shot"
+      },
+      "target_kind": "item",
+      "operation": "grant_property",
+      "trigger": "passive",
+      "frequency": "each",
+      "description": "Ignora la proprietà Ricarica (Loading); l'arma produce munizioni magiche quando è usata per un attacco a distanza"
+    },
+    {
+      "id": "infusion-returning-weapon-grant_property-13",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|returning weapon"
+      },
+      "target_kind": "item",
+      "operation": "grant_property",
+      "trigger": "on_throw",
+      "frequency": "each",
+      "description": "L'arma ritorna nella mano dell'utilizzatore immediatamente dopo l'attacco a distanza con lancio"
+    },
+    {
+      "id": "infusion-repulsion-shield-grant_action-14",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|repulsion shield"
+      },
+      "target_kind": "item",
+      "operation": "grant_action",
+      "trigger": "reaction",
+      "frequency": "each",
+      "description": "4 cariche: dopo essere colpito da un attacco in mischia, una reazione e una carica per spingere l'attaccante fino a 15 ft; recupera 1d4 cariche all'alba"
+    },
+    {
+      "id": "infusion-resistant-armor-resistance-15",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|resistant armor"
+      },
+      "target_kind": "item",
+      "operation": "resistance",
+      "trigger": "passive",
+      "frequency": "each",
+      "description": "Conferisce resistenza al tipo di danno scelto al momento dell'infusione",
+      "value_from_item_choice": "damage_type"
+    },
+    {
+      "id": "infusion-spell-refueling-ring-grant_action-16",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "infusion",
+        "id": "infusion|tce|spell-refueling ring"
+      },
+      "target_kind": "item",
+      "operation": "grant_action",
+      "trigger": "on_use",
+      "frequency": "each",
+      "description": "Una volta all'alba: con un'azione, recupera uno slot incantesimo speso di livello massimo 3"
     }
   ]
 }
