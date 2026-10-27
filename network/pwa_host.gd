@@ -52,6 +52,7 @@ const FILES := {
   "/spell_selection.js": ["res://pwa/spell_selection.js", "text/javascript; charset=utf-8"],
   "/activated_abilities.js": ["res://pwa/activated_abilities.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules.js": ["res://pwa/sheet_rules.js", "text/javascript; charset=utf-8"],
+	"/species_defenses.js": ["res://pwa/species_defenses.js", "text/javascript; charset=utf-8"],
 	"/ability_choice_rules.js": ["res://pwa/ability_choice_rules.js", "text/javascript; charset=utf-8"],
 	"/feat_picker.js": ["res://pwa/feat_picker.js", "text/javascript; charset=utf-8"],
 	"/concentration_rules.js": ["res://pwa/concentration_rules.js", "text/javascript; charset=utf-8"],
