@@ -1899,6 +1899,8 @@ function mountTraitBenefitDialog(){
   {...state.traitPopupTrait,inactive:!traitIsActive(record,state.traitPopupTrait)}:null);
  if(!trait){state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupTrait=null;return;}
  state.traitPopupTrait=trait;
+ // Confirmation is scoped to one explicit deletion request, never a refresh.
+ state.traitPopupConfirm='';
  const benefitProjection={...(state.calculated||{}),
   activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{},
    {includeUnavailable:true})};
@@ -2011,10 +2013,9 @@ function mountTraitBenefitDialog(){
      '</span></div><button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'"'+
      ' aria-label="'+esc((choice.remaining?'Scegli ':'Modifica ')+choice.label)+'">'+
      (choice.remaining?'Scegli':'Modifica')+'</button></div>').join('')+'</section>':'';
- const confirmId=state.traitPopupConfirm;
- const match=groups.flatMap(group=>group.items.map(item=>({...item,type:group.type}))).find(item=>item.id===confirmId);
  const dialog=document.createElement('dialog');
  dialog.id='trait-benefits-dialog';dialog.className='trait-benefits-dialog';
+ dialog.dataset.traitKey=trait.key;
  dialog.setAttribute('aria-labelledby','trait-benefits-title');
  dialog.innerHTML='<header class="trait-benefits-dialog-head">'+
   '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+
@@ -2033,9 +2034,6 @@ function mountTraitBenefitDialog(){
      '<span class="trait-activation-thumb" aria-hidden="true"></span><span class="trait-activation-label">'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+'</span></button>'+
    '</div>')+
    '<div class="trait-benefits">'+(benefits+choiceBenefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
-   (match?'<section class="trait-benefit-confirm" role="alert"><p>Eliminare '+esc(match.label)+(match.value?' · '+esc(match.value):'')+'?</p>'+
-     '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(match.id)+'" data-benefit-type="'+esc(match.type)+'">Conferma eliminazione</button>'+
-     '<button type="button" class="btn" data-act="trait-benefits-remove-cancel">Annulla</button></div></section>':'')+
    (!trait.readonly&&hidden.length?'<button type="button" class="trait-benefits-restore" data-act="trait-benefits-restore">Ripristina benefici originali ('+hidden.length+')</button>':'')+
    (trait.readonly?'':'<div class="trait-benefits-dialog-actions"><button type="button" class="trait-benefits-add-toggle" data-act="trait-benefits-add" aria-label="Aggiungi beneficio" title="Aggiungi beneficio">＋</button></div>'+
    '<section class="trait-benefits-add-form"'+(state.traitPopupDraftKind?'':' hidden')+' data-trait-add-form>'+
@@ -2083,6 +2081,23 @@ function mountTraitBenefitDialog(){
      event.clientY<rect.top||event.clientY>rect.bottom)dismissTraitBenefitDialog();
  });
  openDialog(dialog);
+}
+// Removal confirmation is a local modal interaction, not a sheet render.
+// Otherwise rebuilding the sheet can resurrect an old prompt or retarget a tap.
+function setTraitBenefitRemovalConfirmation(item=null){
+ const dialog=app.querySelector('#trait-benefits-dialog[open]');
+ if(!dialog||dialog.dataset.traitKey!==state.traitPopupKey)return;
+ dialog.querySelector('.trait-benefit-confirm')?.remove();
+ state.traitPopupConfirm=item?.id||'';
+ if(!item)return;
+ const section=document.createElement('section');
+ section.className='trait-benefit-confirm';
+ section.setAttribute('role','alert');
+ section.innerHTML='<p>Eliminare '+esc(item.label)+(item.value?' · '+esc(item.value):'')+'?</p>'+
+   '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(item.type)+'">Conferma eliminazione</button>'+
+   '<button type="button" class="btn" data-act="trait-benefits-remove-cancel">Annulla</button></div>';
+ dialog.querySelector('.trait-benefits')?.after(section);
+ section.scrollIntoView?.({block:'nearest'});
 }
 function documentRow(item,index,stored){
   const {title,body,style,addedAt}=documentInfo(item,stored?.data);
@@ -6321,16 +6336,20 @@ async function handleAction(target){
     await render();return;
   }
   if(act==='trait-benefits-remove-request'){
+    const dialog=target.closest?.('#trait-benefits-dialog[open]');
+    if(!dialog||dialog!==app.querySelector('#trait-benefits-dialog[open]')||
+       dialog.dataset.traitKey!==state.traitPopupKey)return;
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
-    const id=target.dataset.benefitId;
-    if(!trait||!traitBenefitGroups(trait,state.editor.read(),state.calculated)
-      .some(group=>group.items.some(item=>item.id===id)))throw Error('Beneficio non presente');
-    state.traitPopupConfirm=id;
-    await render();return;
+    const id=target.dataset.benefitId,type=target.dataset.benefitType;
+    const item=trait&&traitBenefitGroups(trait,state.editor.read(),state.calculated)
+      .find(group=>group.type===type)?.items.find(row=>row.id===id);
+    if(!item)throw Error('Beneficio non presente');
+    setTraitBenefitRemovalConfirmation({...item,type});
+    return;
   }
   if(act==='trait-benefits-remove-cancel'){
-    state.traitPopupConfirm='';
-    await render();return;
+    setTraitBenefitRemovalConfirmation();
+    return;
   }
   if(act==='trait-benefits-remove-confirm'){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
@@ -7328,6 +7347,12 @@ function toggleLibraryHoldSelection(id){
  syncLibrarySelectionUI();
 }
 function listen(){
+  // Require a fresh pointer press on the X inside an already-open dialog.
+  // This prevents a mobile release/click from being retargeted after opening.
+  let armedBenefitRemovalTarget=null;
+  document.addEventListener('pointerdown',e=>{
+    armedBenefitRemovalTarget=e.target?.closest?.('#trait-benefits-dialog[open] [data-act="trait-benefits-remove-request"]')||null;
+  },true);
   // The roster is an ordinary tap target until held for 520 ms. Cancel
   // on movement so vertical scrolling never unexpectedly selects a card.
   document.addEventListener('pointerdown',e=>{
@@ -7423,9 +7448,16 @@ function listen(){
       return;
     }
     if(button.disabled)return;
+    if(closeAction==='trait-benefits-remove-request'){
+      // Keyboard and assistive clicks have detail=0 and need no pointer.
+      if(e.detail>0&&armedBenefitRemovalTarget!==button)return;
+      armedBenefitRemovalTarget=null;
+    }
     button.disabled=true;
     try {
       await flushPendingFields();
+      // A concurrent save can replace the button while this handler awaits.
+      if(!button.isConnected)return;
       const isDestination=Boolean(button.dataset.nav)||button.dataset.act==='sheet';
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
