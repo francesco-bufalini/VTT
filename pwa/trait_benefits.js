@@ -349,7 +349,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   const onItem=trait.category==='oggetti'&&trait.rank===0&&
    extension.target_kind==='item'&&indices.some(index=>{
     const item=rows(record.inventory)[index];
-    return item&&String(trait.item_id||'')===String(item.id||'')&&
+    return item&&String(trait.item_id||String(trait.origin_key||'').replace(/^item:/,''))===String(item.id||'')&&
      effectExtensionsFor([extension],{kind:'item',id:item.id,name:item.name,
       instance_id:item.instance_id,inventory_index:index}).length>0;
    });
