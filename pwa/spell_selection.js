@@ -467,7 +467,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     }
    });
    if(alternatives.size||fixed.size){
-    const first=blockFor(origin,blocks[0],0);output.trackers.push(...first.trackers);
+    const first=blockFor(origin,blocks[0],0,row);output.trackers.push(...first.trackers);
     for(const choice of alternatives.values()){
      choice.tracker_id=first.choices.find(c=>choiceSignature(c)===choiceSignature(choice))?.tracker_id||'';
      output.choices.push(choice);
