@@ -7,6 +7,7 @@ import {SKILLS} from './sheet_rules.js';
 import {traitBenefitSources} from './trait_benefits.js';
 import {contentForRules} from './source_edition.js';
 import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants} from './ability_choice_rules.js';
+import {selectedSpeciesDefenseRules} from './species_defenses.js';
 
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
@@ -197,36 +198,28 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
      options:fixed.map(([key])=>key),amounts:Object.fromEntries(fixed),
      remaining:0});
    const variants=originVariants(catalogs.abilityGrants,group,row,source);
-   result.push(...allocationChoiceRows(record,sid,row.name,variants));
+   result.p // The same resolved parent and subrace sources drive both the defense
+ // calculation and its picker. Never offer an unrelated 5etools variant.
+ for(const source of selectedSpeciesDefenseRules(record,catalogs.speciesDefenses)){
+  if(!enabled(record,source.source_id)||!enabled(record,source.origin_key))continue;
+  const chosen=record.origin_defense_choices?.[source.source_id]??
+   record.origin_defense_choices?.[source.row.id]??
+   record.origin_defense_choices?.[source.origin_key];
+  for(const rule of source.choices){
+   const feature=arr(calculated.features).find(f=>norm(f.name)===norm(rule.trait)&&
+     f.origin_key===source.origin_key);
+   if(feature&&(feature.disabled||feature.inactive||
+     !enabled(record,feature.origin_id)||record.trait_enabled?.[feature.key]===false))continue;
+   const options=arr(rule.from).filter(x=>typeof x==='string');
+   const selected=typeof chosen==='string'&&options.includes(norm(chosen))?[norm(chosen)]:[];
+   result.push({id:'defense:'+source.source_id+':'+rule.rank+':'+norm(rule.trait),
+    kind:'defense',origin_id:feature?.origin_id||source.source_id,
+    defense_source_id:source.source_id,name:'Tratto · '+rule.trait,
+    label:rule.rank===1?'Resistenza ai danni':rule.rank===2?'Immunità ai danni':'Tipo di difesa',
+    count:1,selected,options,remaining:selected.length?0:1});
   }
  }
- // Damage-type selections (for example Draconic Ancestry) are source-bound
- // choices, not permanent resistance to every option in the 5etools table.
- const defenseRule=arr(catalogs.speciesDefenses?.races).find(row=>
-  record.species_id&&row.id===record.species_id&&
-   norm(row.source)===norm(record.species_source)&&
-   (norm(row.name)===norm(record.species)||record.subrace&&
-    norm(row.name).startsWith(norm(record.species)+' (')))||
-  arr(catalogs.speciesDefenses?.races).find(row=>
-   norm(row.name)===norm(record.species)&&norm(row.source)===norm(record.species_source));
- if(defenseRule){
-  const sourceId='race|'+norm(defenseRule.source)+'|'+norm(defenseRule.name);
-  const parent='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
-  const chosen=record.origin_defense_choices?.[defenseRule.id]??
-    record.origin_defense_choices?.[sourceId]??record.origin_defense_choices?.[parent];
-  if(enabled(record,sourceId)&&enabled(record,parent))
-   for(const rule of arr(defenseRule.choices)){
-    const feature=arr(calculated.features).find(f=>norm(f.name)===norm(rule.trait)&&
-      f.origin_key===parent);
-    if(feature&&(feature.disabled||feature.inactive||
-      !enabled(record,feature.origin_id)||record.trait_enabled?.[feature.key]===false))continue;
-    const options=arr(rule.from).filter(x=>typeof x==='string');
-    const selected=typeof chosen==='string'&&options.includes(norm(chosen))?[norm(chosen)]:[];
-    result.push({id:'defense:'+sourceId+':'+rule.rank+':'+norm(rule.trait),
-      kind:'defense',origin_id:feature?.origin_id||sourceId,
-      defense_source_id:sourceId,name:'Tratto · '+rule.trait,
-      label:rule.rank===1?'Resistenza ai danni':rule.rank===2?'Immunità ai danni':'Tipo di difesa',
-      count:1,selected,options,remaining:selected.length?0:1});
+ count:1,selected,options,remaining:selected.length?0:1});
    }
  }
  // Class-level Ability Score Improvement has an explicit 5etools feature ID.
