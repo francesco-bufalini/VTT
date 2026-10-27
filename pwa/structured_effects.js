@@ -43,7 +43,13 @@ export function selectedSources(record,index={},features=null){
   const push=(group,source,origin,mode="starting")=>{
     if(!source?.name)return;
     const id=identity(group,source);
-    if(!selected.some(x=>x.id===id))selected.push({id,group,source,origin,mode});
+    if(!selected.some(x=>x.id===id)){
+     // Custom Lineage grants darkvision OR a skill, never both.
+     const effective=id==='race|tce|custom lineage'&&
+       record.origin_sense_choices?.[id]==='darkvision'?
+       {...source,skillProficiencies:[]}:source;
+     selected.push({id,group,source:effective,origin,mode});
+   }
   };
   for(const [group,field,sourceField] of [["race","species","species_source"]]){
     if(!record[field])continue;
@@ -236,6 +242,8 @@ export function fixedProficiencies(record,index={},features=null){
   if(String(row.origin_id||'').startsWith('feature:class|')&&
     !array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f)))return false;
   const source=byId.get(row.origin_id);
+  if(row.origin_id==='race|tce|custom lineage'&&row.kind==='skill'&&
+    record.origin_sense_choices?.[row.origin_id]==='darkvision')return false;
   if(!featureStoredGrantAllowed(source,row))return false;
   return proficiencyOwnerActive(record,source&&
     proficiencyFeatureOwner(record,source,row.kind,row.key,features));
@@ -282,6 +290,8 @@ export function proficiencyGrantOrigins(record={},index={},kind,key,features=nul
  for(const row of array(record.proficiency_choices))
   if(row&&!row.disabled&&row.kind===kind&&norm(row.key)===wanted&&
     !muted(record,row.origin_id)&&liveSource(record,row.origin_id)&&!excluded(row.origin_id)&&
+    !(row.origin_id==='race|tce|custom lineage'&&row.kind==='skill'&&
+      record.origin_sense_choices?.[row.origin_id]==='darkvision')&&
     featureStoredGrantAllowed(byId.get(row.origin_id),row)&&
     (!String(row.origin_id||'').startsWith('feature:class|')||
       array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f))))
