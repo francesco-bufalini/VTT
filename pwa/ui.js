@@ -2189,14 +2189,14 @@ async function openInfusionPicker(mode){
  app.querySelector("#infusion-picker-dialog")?.remove();
  const dialog=document.createElement("dialog");dialog.id="infusion-picker-dialog";
  dialog.dataset.mode=mode;dialog.className="sheet-roll-dialog magic-tools-dialog infusion-picker-dialog";
- dialog.innerHTML='<header class="vtt-popup-heading"><h2>'+
+ dialog.innerHTML='<div class="magic-tools-head"><h2>'+
    (mode==="learn"?"Impara infusioni":"Prepara infusioni")+'</h2>'+
-   dialogCloseButton("infusion-picker-close","Chiudi","")+'</header>'+
+   dialogCloseButton("infusion-picker-close","Chiudi","magic-tool-close")+'</div><div class="magic-tools-body">'+
    '<p class="magic-selection-warning">'+(mode==="learn"?"Conosciute ":"Preparate ")+esc(count)+'</p>'+
    '<label class="vtt-list-search magic-editor-search">Cerca infusione'+
    '<input type="search" data-infusion-search autocomplete="off" placeholder="Nome o fonte"></label>'+
    '<div class="catalog-results vtt-selection-list magic-editor-results infusion-picker-results" role="list"></div>'+
-   '<div class="actions"><button type="button" class="btn" data-act="infusion-picker-close">Chiudi</button></div>';
+   '<div class="actions"><button type="button" class="btn" data-act="infusion-picker-close">Chiudi</button></div></div>';
  const input=dialog.querySelector("[data-infusion-search]");
  const results=dialog.querySelector(".infusion-picker-results");
  const paint=()=>{
