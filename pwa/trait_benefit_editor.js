@@ -5,7 +5,7 @@ import {normalizeEffectExtension} from './effect_extensions.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 export const BENEFIT_TYPES=[
- ['bonus','Bonus'],['base_override','Sostituzione valore base'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],
+ ['bonus','Bonus'],['base_override','Sostituzione valore base'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],['senses','Sensi'],
  ['defenses','Resistenza / immunità / vulnerabilità'],['resources','Risorsa'],
  ['spells','Incantesimo'],['actions','Azione'],['effect_extensions','Estensione di incantesimo o capacità']
 ];
@@ -70,7 +70,7 @@ export function removeBenefitPatch(record,trait,item){
  if(!trait?.key||!item?.id)throw Error('Beneficio non identificato');
  const id=String(item.id);
  const collection={base_overrides:'base_value_overrides',bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
-  proficiency:'proficiency_choices',defenses:'damage_defense_entries',
+  proficiency:'proficiency_choices',senses:'sense_grants',defenses:'damage_defense_entries',
   resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants',
   attack_count:'attack_count_grants',effect_extensions:'effect_extensions'}[item.type];
  const original=rows(record[collection]);
@@ -81,6 +81,7 @@ export function removeBenefitPatch(record,trait,item){
   if(item.type==='dice')return 'dice:'+String(row.id||'')===id;
   if(item.type==='roll_modes')return 'roll_mode:'+String(row.id||'')===id;
   if(item.type==='proficiency')return 'proficiency:'+String(row.origin_id||'')+':'+row.kind+':'+norm(row.key)===id;
+  if(item.type==='senses')return 'sense:'+String(row.id||'')===id;
   if(item.type==='defenses')return 'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)===id;
   if(item.type==='resources')return 'tracker:'+String(row.id||'')===id;
   if(item.type==='spells')return 'spell:'+String(row.origin_id||'')+':'+String(row.spell_id||'')===id;
@@ -195,6 +196,13 @@ export function addBenefitPatch(record,trait,kind,values={},id){
  }else if(kind==='proficiency'){
   field='proficiency_choices';row={...common,kind:required('proficiency_kind'),key:norm(required('key'))};
   if(!PROFICIENCY_KINDS.some(([x])=>x===row.kind))throw Error('Tipo competenza non valido');
+ }else if(kind==='senses'){
+  const type=norm(required('sense_type')),range_feet=Number(values.range_feet);
+  if(!['darkvision','blindsight','tremorsense','truesight','devils_sight'].includes(type))
+   throw Error('Tipo di senso non valido');
+  if(!Number.isInteger(range_feet)||range_feet<1||range_feet>10000)
+   throw Error('Portata del senso non valida');
+  field='sense_grants';row={...common,type,range_feet};
  }else if(kind==='defenses'){
   field='damage_defense_entries';row={...common,rank:Number(values.rank),key:norm(required('key'))};
   if(!DEFENSE_RANKS.some(([rank])=>rank===row.rank))throw Error('Tipo di difesa non valido');
