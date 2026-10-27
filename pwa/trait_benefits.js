@@ -218,7 +218,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    (Number(row.multiplier??multipliers.get(row.id))>1?' ×'+Number(row.multiplier??multipliers.get(row.id)):'')+
    (row.disabled?' · Disattivato':''),'bonus:'+String(row.id||''));
  }
- for(const row of rows(record.dice_bonuses)){
+ for(const row of [...rows(record.dice_bonuses),...rows(calculated.racial_roll_bonuses)]){
   if(row.disabled||!belongs(row))continue;
   const copies=trait.category==='oggetti'&&trait.rank===0?trait.item_active_quantity:1;
   add('bonus','Bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice)+(copies>1?' ×'+copies:''),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));

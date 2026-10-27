@@ -16,7 +16,7 @@ export function racialPowerSubraces(index={}) {
  })));
 }
 export function racialPowerProjection(record={},index={},features=[]) {
- const output={features:[],trackers:[],abilities:[],origin_spells:[],active_forms:[],rest_choices:[]};
+ const output={features:[],trackers:[],abilities:[],origin_spells:[],active_forms:[],rest_choices:[],roll_bonuses:[]};
  const race=rows(index.races).find(row=>norm(row.name)===norm(record.species)&&
    norm(row.source)===norm(record.species_source));
  if(!race||record.rules_version==='2024')return output;
@@ -38,6 +38,21 @@ export function racialPowerProjection(record={},index={},features=[]) {
    String(f.origin_key||'').startsWith('species|')&&!f.disabled&&!f.inactive&&
    record.trait_enabled?.[f.key]!==false&&permitted(record,f.origin_id)&&
    permitted(record,f.origin_key)&&permitted(record,raceRoot));
+ const bonus=race.roll_bonus,bonusOwner=bonus&&featureFor(bonus.trait);
+ if(bonusOwner&&bonus.tracker_id&&bonus.dice&&rows(bonus.targets).length){
+   const tracker={id:bonus.tracker_id,name:bonus.trait,
+     max:bonus.uses==='proficiency'?2+Math.floor((currentLevel(record)-1)/4):Math.max(0,Number(bonus.uses)||0),
+     recharge:bonus.recharge||'long_rest',origin_id:bonusOwner.origin_id,
+     origin_name:'Tratto · '+bonus.trait,automatic:true};
+   output.trackers.push(tracker);
+   output.roll_bonuses.push({id:bonus.id||'racial-roll:'+tracker.id,
+     origin_id:bonusOwner.origin_id,origin_name:'Tratto · '+bonus.trait,
+     origin_parent_id:raceRoot,granting_trait:bonus.trait,
+     name:bonus.name||bonus.trait,description:bonus.description||'',
+     dice:bonus.dice,targets:bonus.targets,tracker_id:tracker.id,
+     tracker_cost:Math.max(1,Number(bonus.tracker_cost)||1),strict_tracker:bonus.strict_tracker===true,
+     automatic:true,optional:true});
+ }
  const teleport=race.teleport,teleportOwner=teleport&&featureFor(teleport.trait);
  if(teleportOwner&&teleport.spell_id&&teleport.tracker_id){
    output.trackers.push({id:teleport.tracker_id,name:teleport.trait,

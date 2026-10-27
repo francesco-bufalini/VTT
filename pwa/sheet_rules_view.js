@@ -197,6 +197,44 @@ export function rollSheetDice(modifier,bonuses=[],die,mode='normal'){
   ' · modificatore '+(base>=0?'+':'')+base+' · totale '+total;
  return {sides:20,count:rolls.length,modifier:base,rolls,total,notation,detail,parts};
 }
+
+// Apply an optional bonus to an already rolled outcome. Its d20 (and any
+// advantage/disadvantage dice) are preserved: only the granted dice are rolled.
+export function appendRollBonus(outcome={},bonus={},die){
+ if(!Array.isArray(outcome.parts)||!outcome.parts.length||
+    !Number.isSafeInteger(outcome.total)||typeof die!=='function')
+   throw Error('Risultato del tiro non disponibile.');
+ let part;
+ if(Object.hasOwn(bonus,'flat_bonus')){
+   const flat=Number(bonus.flat_bonus);
+   if(!Number.isSafeInteger(flat)||Math.abs(flat)>10000)throw Error('Bonus fisso non valido');
+   part={name:String(bonus.origin_name||'Bonus'),notation:(flat>=0?'+':'')+flat,
+     rolls:[],subtotal:flat,flat,kind:'flat'};
+ }else{
+   const notation=String(bonus.dice||'').replaceAll(' ','');
+   const match=notation.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
+   if(!match||Number(match[1])>100)throw Error('Dadi bonus non validi');
+   const count=Number(match[1]),sides=Number(match[2]),flat=Number(match[3]||0);
+   const rolls=Array.from({length:count},()=>{
+     const value=die(sides);
+     if(!Number.isInteger(value)||value<1||value>sides)throw Error('Risultato dado non valido');
+     return value;
+   });
+   part={name:String(bonus.origin_name||'Bonus'),notation,rolls,
+     subtotal:rolls.reduce((total,value)=>total+value,flat),flat};
+ }
+ const total=outcome.total+part.subtotal;
+ const addition=part.kind==='flat'?part.notation:'+'+part.notation;
+ const note=part.kind==='flat'?
+   part.name+' [bonus fisso '+part.notation+'] = '+part.subtotal:
+   part.name+' ['+part.rolls.join(', ')+']'+
+     (part.flat?(part.flat>0?' + ':' − ')+Math.abs(part.flat):'')+' = '+part.subtotal;
+ const previousDetail=String(outcome.detail||'').replace(/ · totale -?\d+$/,'');
+ return {...outcome,total,parts:[...outcome.parts,part],
+   notation:String(outcome.notation||'')+addition,
+   detail:previousDetail+' · '+note+' · totale '+total};
+}
+
 /** Roll an explicitly calculated weapon-damage formula, never evaluate arbitrary text. */
 export function rollBattleDamage(formula,die){
  if(typeof die!=='function')throw Error('Generatore dadi non disponibile');

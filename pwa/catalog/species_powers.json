@@ -82,6 +82,27 @@
         "weapon_tool_count": 1,
         "description": "Dopo una trance scegli una competenza in un'abilità e una in un'arma o uno strumento. Mantieni le competenze fino al prossimo riposo lungo e puoi riselezionarle al termine di ogni riposo lungo."
       }
+    },
+    {
+      "name": "Autognome",
+      "source": "AAG",
+      "roll_bonus": {
+        "id": "race:aag:autognome:built_for_success",
+        "trait": "Built for Success",
+        "name": "Built for Success",
+        "dice": "1d4",
+        "targets": [
+          "attack_roll",
+          "ability_check",
+          "saving_throw"
+        ],
+        "tracker_id": "race:aag:autognome:built_for_success:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest",
+        "tracker_cost": 1,
+        "strict_tracker": true,
+        "description": "Dopo aver visto il d20, ma prima della risoluzione, aggiungi 1d4 a un tiro per colpire, una prova di caratteristica o un tiro salvezza. Utilizzi pari al bonus di competenza per riposo lungo."
+      }
     }
   ]
 }

@@ -137,7 +137,9 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
  const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
  const fits=row=>[target,scope].includes(row.target)||row.target==='any_d20'&&scope!=='damage_roll'||
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
- const rows=arr(record.dice_bonuses).filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&fits(row))
+ const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&validBonusDice(row.dice)&&
+   (arr(row.targets).some(target=>fits({target}))||fits(row))).map(row=>({...row,target}));
+ const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&fits(row))
    .flatMap(row=>{
     const id=String(row.origin_id||'');
     const fromItem=id.startsWith('item:')||id.startsWith('feature:trait:item:');
@@ -1319,6 +1321,7 @@ function calculateSheetValues(record={},catalogs={}){
     casting_classes:spellClasses,trackers,attacks,damage_defense_entries,
     racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
     racial_rest_choices:racialPowers.rest_choices,
+    racial_roll_bonuses:racialPowers.roll_bonuses,
     racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{}),
     active_celestial_form:celestialForm||null,
     active_racial_damage_bonus:celestialForm?{
