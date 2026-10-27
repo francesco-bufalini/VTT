@@ -2954,6 +2954,10 @@ function originSpellSections(c,calculated,renderRow){
        '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(group.name)+'</h3></div>'+
        '<div class="magic-source-resources" aria-label="Risorse di lancio">'+badges+'</div></header>'+
        castingStatistics(c,'origin:'+origin,group.ability,group.allowed)+
+       (calculated.active_celestial_form&&group.items.some(item=>
+         item.grant.spell_id===calculated.active_celestial_form.spell_id)?
+         '<div class="magic-active-form"><strong>Manifestazione attiva · 1 minuto</strong> '+
+         '<button type="button" class="btn small" data-act="end-racial-power">Termina</button></div>':'')+
        groupedMagicSpells(group.items,({grant,info})=>renderRow(grant,info))+
        '</section>';
    }).join('');
@@ -3256,9 +3260,13 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
            extensions.map(extension=>'<li><strong>'+esc(extension.origin_name||'Privilegio')+'</strong> · '+
              esc(effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}))+'</li>').join('')+
            '</ul></div>':'')+
-         '<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(ability.feature_id||ability.origin_id||'')+'">'+actionGlyph('proficiency')+'<span>Apri il tratto di origine</span></button></div></details>';
+         '<div class="actions"><button type="button" class="btn primary" data-act="battle-use-ability" data-ability-id="activated:'+esc(ability.id)+'">Usa</button>'+
+         '<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(ability.feature_id||ability.origin_id||'')+'">'+actionGlyph('proficiency')+'<span>Apri il tratto di origine</span></button></div></div></details>';
        }).join('')+'</div>':'';
-   const popup=panel(group.name,header+[...stats.entries()].map(([origin,meta])=>
+   const activeForm=calculated.active_celestial_form;
+   const ending=activeForm&&group.spells.some(row=>row.grant.spell_id===activeForm.spell_id)?
+     '<div class="magic-active-form">Manifestazione attiva <button type="button" class="btn small" data-act="end-racial-power">Termina</button></div>':'';
+   const popup=panel(group.name,header+ending+[...stats.entries()].map(([origin,meta])=>
      '<div class="magic-source-ability"><span class="hint">'+esc(meta.name)+'</span>'+
      castingStatistics(c,'origin:'+origin,meta.ability,meta.allowed)+'</div>').join('')+
      spellRows+abilityRows,'magic-panel magic-tracker-panel');
@@ -5418,6 +5426,14 @@ async function handleAction(target){
     await activateSubclassTracker(creature,calculated,
       String(target.dataset.trackerId||''),String(target.dataset.originId||''));
     return;
+  }
+  if(act==='end-racial-power'){
+    const current=state.editor?.read();
+    if(!current?.active_class_features?.['racial:celestial_revelation'])
+      throw Error('Nessuna manifestazione celestiale attiva.');
+    const active={...current.active_class_features};
+    delete active['racial:celestial_revelation'];
+    await patch({active_class_features:active});await render();return;
   }
   if(act==='battle-use-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
