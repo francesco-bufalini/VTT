@@ -390,6 +390,13 @@ export function collectionPatch(c,key,rows){
 export function referencePatch(c,key,selected={}){
  const name=selected.name||'',source=selected.source||'',id=selected.id||'';
  const patch={...identityPatch(c,key,name),[key+'_id']:id,[key+'_source']:source};
+ if(['species','subrace'].includes(key)&&
+   (name!==c[key]||source!==(c[key+'_source']||''))&&
+   c.active_class_features?.['racial:celestial_revelation']){
+   const active={...c.active_class_features};
+   delete active['racial:celestial_revelation'];
+   patch.active_class_features=active;
+ }
  if(key==='class'||key==='subclass'){
   const changed=name!==c[key]||source!==(c[key+'_source']||'');
   const classes=patch.classes||rowsFor(c,'classes');
