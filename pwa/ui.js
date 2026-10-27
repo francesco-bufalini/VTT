@@ -4,7 +4,7 @@ import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, expandedInfusionDefinitions, learnedInfusions, infusionEligible, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -1058,7 +1058,7 @@ async function computeLocalData(record){
     ...(record.known_spells||[])].filter(spell=>spell&&typeof spell==='object'&&spell.id);
   catalogs={...catalogs,spells:[...new Map([...(catalogs.spells||[]),...visibleSpells]
     .map(spell=>[spell.id,spell])).values()]};
-  catalogs.abilityGrants={...(catalogs.abilityGrants||{}),artificer_infusions:expandedInfusionDefinitions(catalogs.abilityGrants?.artificer_infusions||[])};
+  catalogs.abilityGrants={...(catalogs.abilityGrants||{}),artificer_infusions:(inventoryModule.expandedInfusionDefinitions||((rows)=>rows))(catalogs.abilityGrants?.artificer_infusions||[])};
   const calculated=calculateSheet(record,catalogs);
   return {...calculated,loadError,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
@@ -2289,7 +2289,7 @@ async function openInfusionActionDialog(index){
    const query=search.value.trim();
    const owned=targets.filter(({item})=>matchesSearch(query,item.name,item.source,item.id));
    const catalog=(state.referenceCatalogs.items||[]).map((item,index)=>({item,index}))
-    .filter(({item})=>query.length>=2&&item?.name&&matchesSearch(query,item.name,item.source)&&
+    .filter(({item})=>query.length>=2&&item?.id&&item?.name&&matchesSearch(query,item.name,item.source)&&
       isContentAvailableForRules(item,creature.rules_version)&&
       !creature.inventory?.some(owned=>owned.id===item.id)&&
       infusionEligible(entry,createOwnedItem(item,"infusion-preview")))
