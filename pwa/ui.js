@@ -34,7 +34,7 @@ import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
-import {healingHandsPatch} from "./species_powers.js";
+import {healingHandsPatch,restTrainingPatch} from "./species_powers.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
@@ -42,7 +42,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
-import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
@@ -1781,6 +1781,7 @@ async function editorView() {
         'magic-panel')+
       infusionPanel(c,calculated)+
       armorModelPanel(c,calculated)+
+       racialRestTrainingPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
   case "conditions":
@@ -2230,6 +2231,63 @@ function documentRow(item,index,stored){
 }
 // Exclusive, data-defined equipment models share the infusion card layout.
 // The state catalog supplies both choices, their eligibility and effects.
+
+function racialRestTrainingPanel(c,calculated){
+ return (calculated.racial_rest_choices||[]).map(choice=>{
+  const selected=(c.proficiency_choices||[]).filter(row=>row.rest_training_group===choice.group);
+  const skill=selected.find(row=>row.kind==='skill')?.key||'Da scegliere';
+  const other=selected.find(row=>row.kind==='weapon'||row.kind==='tool');
+  const label=other?(other.kind==='weapon'?'Arma':'Strumento')+' · '+other.key:'Da scegliere';
+  const available=canReselectPower(c,choice.group);
+  return panel(choice.trait,'<div class="infusion-overview"><strong>Competenze temporanee</strong>'+
+    '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
+    '<div class="infusion-dialog-item"><span>Abilità<small>'+esc(skill)+'</small></span></div>'+
+    '<div class="infusion-dialog-item"><span>Arma / strumento<small>'+esc(label)+'</small></span></div>'+
+    '<div class="actions"><button type="button" class="btn primary" data-act="rest-training-open" data-training-group="'+esc(choice.group)+'"'+
+    (available?'':' disabled')+'>'+(selected.length?'Cambia competenze':'Scegli competenze')+'</button></div>'+
+    (available?'':'<p class="hint">Puoi riselezionare le competenze dopo un riposo lungo.</p>'),
+    'armor-model-panel');
+ }).join('');
+}
+async function openRacialRestTrainingDialog(group){
+ const creature=state.editor?.read();
+ if(!creature)throw Error('Apri prima una creatura.');
+ const calculated=await computeLocalData(creature);
+ const choice=(calculated.racial_rest_choices||[]).find(row=>row.group===group);
+ if(!choice)throw Error('Privilegio non disponibile.');
+ if(!canReselectPower(creature,group))throw Error('Puoi riselezionare dopo un riposo lungo.');
+ const skillOptions=SKILLS.map(([key,label])=>[key,label]);
+ const weaponOptions=trainingProficiencyOptions('weapon',creature);
+ const toolOptions=trainingProficiencyOptions('tool',creature);
+ const selected=(creature.proficiency_choices||[]).filter(row=>row.rest_training_group===group);
+ const skill=selected.find(row=>row.kind==='skill')?.key||'';
+ const second=selected.find(row=>['weapon','tool'].includes(row.kind));
+ const proficiency=second?second.kind+':'+second.key:'';
+ const opt=(key,label,selected)=>'<option value="'+esc(key)+'"'+(key===selected?' selected':'')+'>'+esc(label)+'</option>';
+ app.querySelector('#racial-rest-training-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='racial-rest-training-dialog';
+ dialog.className='sheet-roll-dialog magic-spell-dialog armor-model-dialog';
+ dialog.dataset.trainingGroup=group;dialog.dataset.creatureId=creature.id;
+ dialog.innerHTML=actionDialogIntro(choice.trait,[
+   {label:'Cambio',value:selectionRestLabel(choice.recovery)},
+   {label:'Origine',value:'Tratto · '+choice.trait},
+   {label:'Durata',value:'Fino alla prossima trance'}
+ ],choice.description||'','Specie · '+creature.species,'rest-training-close')+
+ '<div class="magic-ability-detail"><label>Competenza in abilità<select data-rest-training-skill>'+
+   opt('','Scegli abilità',skill)+skillOptions.map(([key,label])=>opt(key,label,skill)).join('')+
+ '</select></label><label>Competenza in arma o strumento<select data-rest-training-other>'+
+   opt('','Scegli arma o strumento',proficiency)+
+   '<optgroup label="Armi">'+weaponOptions.map(key=>opt('weapon:'+key,key,proficiency)).join('')+'</optgroup>'+
+   '<optgroup label="Strumenti">'+toolOptions.map(key=>opt('tool:'+key,key,proficiency)).join('')+'</optgroup>'+
+ '</select></label></div>'+
+ '<p class="hint" data-rest-training-error role="status" hidden></p>'+
+ '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="rest-training-apply">Applica competenze</button>'+
+ '<button type="button" class="btn" data-act="rest-training-close">Chiudi</button></div>';
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ openDialog(dialog);
+}
+
 function armorModels(c,calculated){
  const rules=(calculated.trait_state_catalog||[]).filter(row=>row.group==='armor_model');
  if(!rules.length)return [];
@@ -7189,6 +7247,42 @@ async function handleAction(target){
     }catch(error){
       button.disabled=false;
       preview.querySelector('[data-rest-error]').textContent=errorMessage(error);
+    }
+    return;
+  }
+
+
+  if(act==='rest-training-open'){
+    await openRacialRestTrainingDialog(String(target.dataset.trainingGroup||''));
+    return;
+  }
+  if(act==='rest-training-close'){
+    closeDialog(app.querySelector('#racial-rest-training-dialog'),{remove:true});
+    return;
+  }
+  if(act==='rest-training-apply'){
+    const dialog=app.querySelector('#racial-rest-training-dialog');
+    const current=state.editor?.read();
+    if(!dialog?.open||!current||dialog.dataset.creatureId!==current.id)
+      throw Error('Riapri il privilegio dalla scheda.');
+    const fresh=await computeLocalData(current);
+    const choice=(fresh.racial_rest_choices||[]).find(row=>row.group===dialog.dataset.trainingGroup);
+    if(!choice)throw Error('Privilegio non disponibile.');
+    const skill=dialog.querySelector('[data-rest-training-skill]')?.value||'';
+    const other=dialog.querySelector('[data-rest-training-other]')?.value||'';
+    const allowed={skill:SKILLS.map(([key])=>key),
+      weapon:trainingProficiencyOptions('weapon',current),
+      tool:trainingProficiencyOptions('tool',current)};
+    const changes=restTrainingPatch(current,choice,skill,other,allowed);
+    target.disabled=true;
+    try{
+      await patch(changes);
+      if(state.saveError)throw Error(state.saveError);
+      closeDialog(dialog,{remove:true});await render();
+    }catch(error){
+      target.disabled=false;
+      const errorView=dialog.querySelector('[data-rest-training-error]');
+      errorView.hidden=false;errorView.textContent=errorMessage(error);
     }
     return;
   }
