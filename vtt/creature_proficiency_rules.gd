@@ -216,6 +216,8 @@ static func choices(record: Dictionary) -> Array[Dictionary]:
 			if kind == "language" and String(row.get("origin_id", "")) == replaced_parent_source:
 				continue
 			var key: String = normalized_key(String(row.get("key", "")))
+			if kind == "language" and key == "other":
+				continue # Legacy 5etools placeholder, never a spoken language.
 			if kind not in TYPES or key.is_empty():
 				continue
 			result.append({
