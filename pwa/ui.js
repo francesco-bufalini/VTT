@@ -7345,7 +7345,7 @@ function hpAdjustDraft(dialog,calculated){
     return value;
   };
   return {
-    current_hp:get('#hp-adjust-current',max,'PF attuali'),
+    current_hp:get('#hp-adjust-current',Math.max(max,Number(state.editor?.read()?.current_hp)||0),'PF attuali'),
     temporary_hp:get('#hp-adjust-temporary',99999,'PF temporanei')
   };
 }
