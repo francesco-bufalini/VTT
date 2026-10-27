@@ -237,6 +237,23 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     remaining:value?0:1});
   }
  }
+ // Casting stat selection is an owned benefit of the granting trait.
+ const casterOwners=new Set();
+ for(const grant of arr(calculated.origin_spells)){
+  if(!grant?.origin_id||casterOwners.has(grant.origin_id)||!enabled(record,grant.origin_id))continue;
+  if(!grant.tracker_id)continue;
+  const options=arr(grant.spellcasting_ability_options).length?
+    arr(grant.spellcasting_ability_options).filter(value=>abilities.includes(value)):
+    (!grant.spellcasting_ability?abilities:[]);
+  if(!options.length)continue;
+  casterOwners.add(grant.origin_id);
+  const current=record.spellcasting_section_abilities?.['origin:'+grant.origin_id]||'';
+  const selected=options.includes(current)?[current]:[];
+  result.push({id:'casting-ability:'+grant.origin_id,kind:'casting_ability',
+    origin_id:grant.origin_id,name:grant.origin_name||grant.origin_id,
+    label:'Caratteristica da incantatore',count:1,selected,options,
+    remaining:selected.length?0:1});
+ }
  for(const choice of arr(calculated.origin_choices)){
   if(!choice?.id||!enabled(record,choice.origin_id))continue;
   const feature=arr(calculated.features).find(row=>row.origin_id===choice.origin_id);
@@ -267,7 +284,7 @@ export function choicesForTrait(trait,record,choices=[]){
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
 export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):strip(value)));
  const prefix='__custom__:';
@@ -304,6 +321,12 @@ export function savePendingChoice(record,choice,values=[]){
      ...(variant?{spell_variant:variant}:{}),granted_by:choice.origin_id});
   }else advancements.push({origin_id:choice.origin_id,mode:'feat'});
   return {advancement_choices:advancements,feats_catalog:otherFeats};
+ }
+ if(choice.kind==='casting_ability'){
+  if(selected.length!==1||!abilities.includes(selected[0])||
+    !choice.options.includes(selected[0]))throw Error('Scegli una caratteristica da incantatore valida.');
+  return {spellcasting_section_abilities:{...(record.spellcasting_section_abilities||{}),
+    ['origin:'+choice.origin_id]:selected[0]}};
  }
  if(choice.kind==='ability_mode')return saveAllocationChoice(record,choice,selected);
  if(choice.kind==='ability'){
