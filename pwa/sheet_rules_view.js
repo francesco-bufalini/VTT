@@ -943,9 +943,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Show the actual ability modifier, never the ability-check total, while keeping the click target as the check.
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
   html+='<div class="play-ability-quickstats">'+
-   '<button type="button" class="play-quickstat" data-act="sheet-score-formula" data-target="proficiency" data-label="Bonus competenza" aria-label="Bonus competenza"><span>Competenza</span><strong>'+output('proficiency',true)+'</strong></button>'+
+   '<button type="button" class="play-quickstat" data-act="sheet-context" data-sheet-context="tools" aria-label="Apri altre competenze"><span>Competenza</span><strong>'+output('proficiency',true)+'</strong></button>'+
    '<button type="button" class="play-quickstat" data-act="sheet-senses-open" aria-label="Sensi e percezione passiva"><span>Sensi</span><strong>Passiva '+output('passive_perception')+'</strong></button>'+
-   '<button type="button" class="play-quickstat" data-act="sheet-score-formula" data-target="passive_skill:investigation" data-label="Indagare passivo" aria-label="Indagare passivo"><span>Indagare</span><strong>'+output('passive_skill:investigation')+'</strong></button></div>';
+   '<button type="button" class="play-quickstat" data-act="sheet-defenses-open" aria-label="Apri resistenze, immunità e vulnerabilità"><span>Difese</span><strong>CA '+output('ac')+'</strong></button></div>';
   // Competences are one flat, line-divided section rather than another card.
   // Skills expand inline while equipment/language proficiencies retain their
   // existing full editor, including the button for changing selections.
