@@ -6,6 +6,7 @@ const norm=value=>String(value??'').trim().toLowerCase();
 export const EXTENSION_TARGETS=[['spell','Incantesimo'],['ability','Capacità magica'],['item','Oggetto']];
 export const EXTENSION_OPERATIONS=[
  ['set_range','Imposta gittata (ft)'],['bonus_damage','Danni aggiuntivi'],
+ ['attack_bonus','Bonus al tiro per colpire'],['damage_bonus','Bonus ai danni'],
  ['push','Spinge (ft)'],['pull','Attira (ft)'],['reduce_speed','Riduce velocità (ft)'],
  ['roll_twice','Tira due volte, usa il migliore'],['area_damage','Danni ad area'],
  ['temporary_hp','Punti ferita temporanei'],['add_effect','Effetto aggiuntivo'],
@@ -67,7 +68,9 @@ export function normalizeEffectExtension(row={}){
     !known(EXTENSION_TRIGGERS,trigger)||!known(EXTENSION_FREQUENCIES,frequency)||
     !String(row.target_name||row.target_id||'').trim())return null;
  const value=String(row.value??'').trim();
- if(['set_range','push','pull','reduce_speed'].includes(operation)){
+ if(['attack_bonus','damage_bonus'].includes(operation)){
+  if(!/^[+-]?\d{1,3}$/.test(value))return null;
+ }else if(['set_range','push','pull','reduce_speed'].includes(operation)){
   if(!/^[1-9]\d{0,3}$/.test(value))return null;
  }else if(['bonus_damage','temporary_hp','area_damage'].includes(operation)){
   if(!/^[a-z0-9_+*(). -]{1,120}$/i.test(value))return null;
@@ -86,7 +89,7 @@ export function collectEffectExtensions(record={},catalog=[],features=[],infusio
  const excluded=new Set(Object.values(record.trait_benefit_removed||{}).flatMap(rows));
  for(const rule of rows(catalog)){
   if(rule.rules_version&&String(record.rules_version||'2014')!==String(rule.rules_version))continue;
-  if(rule.owner?.kind==='infusion')continue;
+  if(['infusion','spell_cast'].includes(rule.owner?.kind))continue;
   const owner=catalogOwner(record,features,rule);
   if(!owner)continue;
   const row=normalizeEffectExtension({...rule,...owner});
@@ -114,6 +117,27 @@ export function collectEffectExtensions(record={},catalog=[],features=[],infusio
    if(row&&!excluded.has('effect_extension:'+id)&&enabled(record,row))result.push(row);
   }
  }
+ // Temporary spell effects are tied to an individual item instance and cast.
+ // Once the concentration condition or spell identity changes they no longer
+ // project, even if a stale saved row survives a host synchronization.
+ for(const active of rows(record.active_item_spell_effects)){
+  if(active.requires_concentration&&(!rows(record.conditions).includes('concentrating')||
+    String(record.concentrating_spell_id||'')!==String(active.spell_id||'')))continue;
+  const index=rows(record.inventory).findIndex(item=>item&&
+    String(item.instance_id||'')===String(active.target_instance_id||'')&&
+    String(item.id||'')===String(active.item_id||'')&&Number(item.quantity??1)>0);
+  if(index<0)continue;
+  const item=record.inventory[index];
+  for(const rule of rows(active.effects)){
+   const id=String(active.id)+'|'+String(rule.id);
+   const row=normalizeEffectExtension({...rule,id,origin_id:'spell_cast:'+active.id,
+    origin_name:'Incantesimo · '+active.spell_name,
+    cast_id:active.id,source_spell_id:active.spell_id,
+    target_kind:'item',target_name:item.name||item.id,target_id:item.id,
+    target_instance_id:item.instance_id,target_inventory_index:index});
+   if(row&&!excluded.has('effect_extension:'+id))result.push(row);
+  }
+ }
  for(const raw of rows(record.effect_extensions)){
   const row=normalizeEffectExtension(raw);
   if(row&&enabled(record,row)&&!excluded.has('effect_extension:'+row.id))result.push(row);
@@ -134,6 +158,39 @@ export function effectExtensionsFor(extensions=[],target={}){
   }
   return Boolean(row.target_id&&id&&norm(row.target_id)===id||
    name&&[row.target_name,...rows(row.target_aliases)].some(alias=>norm(alias)===name));
+ });
+}
+// Project effects onto the actual equipped attack; never enchant a different
+// copy of the same catalog weapon, including the corresponding thrown attack.
+export function applyItemAttackExtensions(record={},attacks=[],extensions=[]){
+ return rows(attacks).map(attack=>{
+  if(!String(attack.id||'').startsWith('item:')||!Number.isSafeInteger(attack.inventory_index)||
+    attack.inventory_index<0)return attack;
+  const item=rows(record.inventory)[attack.inventory_index];
+  if(!item)return attack;
+  const active=effectExtensionsFor(extensions,{kind:'item',id:item.id,name:item.name,
+    instance_id:item.instance_id,inventory_index:attack.inventory_index})
+    .filter(effect=>['passive','on_hit','attack_roll'].includes(effect.trigger));
+  let hit=0,damageBonus=0;
+  const extra=[];
+  for(const effect of active){
+   if(effect.operation==='attack_bonus')hit+=Number(effect.value)||0;
+   if(effect.operation==='damage_bonus')damageBonus+=Number(effect.value)||0;
+   if(effect.operation==='bonus_damage'&&/^([1-9]\d{0,1})d(4|6|8|10|12|20|100)([+-]\d+)?$/i.test(effect.value))
+    extra.push({dice:effect.value,damage_type:effect.damage_type||'',
+      origin_name:effect.origin_name,cast_id:effect.cast_id||''});
+  }
+  if(!hit&&!damageBonus&&!extra.length)return attack;
+  const sign=value=>value>0?' + '+value:value<0?' − '+Math.abs(value):'';
+  const damage=String(attack.damage||'')+sign(damageBonus);
+  return {...attack,hit:Number(attack.hit)+hit,damage,
+   damage_extra_modifier:Number(attack.damage_extra_modifier||0)+damageBonus,
+   damage_extras:extra,
+   damage_roll_formula:damage+extra.map(row=>' + '+row.dice).join(''),
+   damage_explanation:[attack.damage_explanation||'',
+    ...(hit?['Incantesimo: colpire '+sign(hit).trim()]:[]),
+    ...(damageBonus?['Incantesimo: danni '+sign(damageBonus).trim()]:[])]
+    .filter(Boolean).join(' · ')};
  });
 }
 const expressionValue=(expr,variables={})=>{
@@ -165,6 +222,7 @@ export function applyEffectExtensions(effect={},extensions=[],target={},variable
 }
 export function effectExtensionLabel(row,variables={}){
  const labels={set_range:'Gittata',bonus_damage:'Danni aggiuntivi',
+  attack_bonus:'Bonus al tiro per colpire',damage_bonus:'Bonus ai danni',
   push:'Spinta',pull:'Attrazione',reduce_speed:'Velocità ridotta',
   roll_twice:'Ripeti il dado (tieni il migliore)',area_damage:'Danni ad area',
   temporary_hp:'PF temporanei',add_effect:'Effetto aggiuntivo',
@@ -176,7 +234,8 @@ export function effectExtensionLabel(row,variables={}){
  const value=expressionValue(row.value,variables);
  const suffix=row.operation==='roll_twice'?'':row.operation==='add_effect'?'':row.value?
   ' · '+(value===null?row.value:value)+
-   (['set_range','push','pull','reduce_speed'].includes(row.operation)?' ft':''):'';
+   (['set_range','push','pull','reduce_speed'].includes(row.operation)?' ft':'')+
+   (row.damage_type?' '+row.damage_type:''):'';
  return [labels[row.operation]||row.operation,suffix,
    times[row.trigger]?' · '+times[row.trigger]:'',
    row.frequency==='once_per_turn'?' · 1/turno':row.frequency==='once_per_use'?' · 1/uso':'',
