@@ -1380,8 +1380,8 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
-   if(power?.mode==='heal_dice'){
-     if(!spend||choice!==power.tracker_id)
+   if(healPower?.mode==='heal_dice'){
+     if(!spend||choice!==healPower.tracker_id)
        throw Error('Healing Hands richiede un utilizzo del tracker.');
      const candidates=(await listCreatures()).map(row=>row.creature||row).filter(row=>row?.id);
      const owned=selectedTarget?candidates.find(row=>
@@ -1389,7 +1389,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
        candidates.find(row=>row.id===dialog.querySelector('[data-heal-target]')?.value);
      const targetId=owned?.id||(selectedTarget?null:current.id);
      const self=targetId===current.id;
-     const healed=healingHandsPatch(current,fresh,power,randomDie,self?'self':null);
+     const healed=healingHandsPatch(current,fresh,healPower,randomDie,self?'self':null);
      await patch(healed.patch);
      let applied=self;
      if(targetId&&!self){
@@ -1402,7 +1402,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
        }catch(error){console.warn('Cura al destinatario non sincronizzata',error);}
      }
      closeDialog(dialog,{remove:true});await render();
-     message(power.name+': '+healed.notation+' → '+healed.dice.join(' + ')+
+     message(healPower.name+': '+healed.notation+' → '+healed.dice.join(' + ')+
        ' = '+healed.total+' PF. '+(applied?'PF aggiornati.':
          'Applica la cura al bersaglio sul desktop.'));return;
    }
