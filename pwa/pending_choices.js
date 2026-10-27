@@ -38,7 +38,8 @@ const strip=x=>norm(x).replace(/^\{@item\s+/,'').replace(/\}$/, '').split('|')[0
 const enabled=(record,id)=>record.origin_enabled?.[id]!==false&&
   !arr(record.proficiency_origins).some(row=>row?.id===id&&row.disabled);
 const presentRows=(record,id,kind)=>arr(record.proficiency_choices).filter(row=>
-  row?.origin_id===id&&row.kind===kind&&!row.disabled);
+  row?.origin_id===id&&row.kind===kind&&!row.disabled&&
+  !(kind==='language'&&norm(row.key)==='other'));
 const unique=values=>[...new Set(values.filter(Boolean))];
 
 // The native picker combines the canonical catalogs with explicit "from"
@@ -65,7 +66,8 @@ function optionPool(kind,record,index){
    }
   }
  }
- for(const row of arr(record.proficiency_choices))if(row?.kind===kind&&!row.custom)values.push(strip(row.key));
+ for(const row of arr(record.proficiency_choices))if(row?.kind===kind&&!row.custom&&
+   !(kind==='language'&&strip(row.key)==='other'))values.push(strip(row.key));
  return unique(values.map(strip));
 }
 const simpleTrainingWeapons=['club','dagger','greatclub','handaxe','javelin','light hammer',
