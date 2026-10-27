@@ -23,6 +23,16 @@ FIELDS = (
 )
 IGNORED_SOURCES = {"XDMG", "EFA"}
 
+# Reviewed language overrides for 2014-era player races/subraces. Some 5etools
+# "other" fields stand for *named* racial languages (e.g. Quori), not picks.
+# Keep this supplement in the generator so regenerated native/PWA catalogs agree.
+LANGUAGE_OVERRIDES = {
+    (entry["kind"], entry["name"].casefold(), entry["source"].casefold(),
+     entry.get("raceName", "").casefold(), entry.get("raceSource", "").casefold()): entry
+    for entry in json.loads((Path(__file__).resolve().parent / "data/race_language_grants_2014.json")
+                            .read_text(encoding="utf-8"))["entries"]
+}
+
 # Typed fallback definitions for feats whose choice mechanics are omitted by
 # upstream 5etools proficiency fields. Shared pick groups use a *single* pool.
 FEAT_PROFICIENCY_OVERRIDES = {
@@ -127,6 +137,23 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
         # Never replace the structured field when the upstream supplies it.
         if kind == "race" and record["source"] == "MPMM" and "languageProficiencies" not in row:
             row["languageProficiencies"] = [{"common": True, "anyStandard": 1}]
+        if kind in ("race", "subrace"):
+            key = (kind, str(record["name"]).casefold(), str(record["source"]).casefold(),
+                   str(record.get("raceName", "")).casefold(),
+                   str(record.get("raceSource", "")).casefold())
+            override = LANGUAGE_OVERRIDES.get(key)
+            if override is not None:
+                row["languageProficiencies"] = deepcopy(override["languageProficiencies"])
+                if override.get("replaces_parent_languages"):
+                    row["replaces_parent_languages"] = True
+            # An unknown 5etools "other" is ambiguous: never silently turn it
+            # into a literal language, or guess that it means a free choice.
+            if any(isinstance(grant, dict) and (
+                    "other" in grant or
+                    isinstance(grant.get("choose"), dict) and
+                    "other" in grant["choose"].get("from", [])
+                    ) for grant in row.get("languageProficiencies", [])):
+                raise ValueError(f"Unaudited race language 'other': {kind} {row['name']} {row['source']}")
         if kind == "class":
             if "proficiency" in record:
                 row["savingThrows"] = record["proficiency"]
