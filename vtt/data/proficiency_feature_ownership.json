@@ -1142,6 +1142,28 @@
         "language:common": "Languages",
         "language:goblin": "Languages"
       }
+    },
+    {
+      "kind": "race",
+      "name": "Hadozee",
+      "source": "AAG",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Thri-kreen",
+      "source": "AAG",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
     }
   ]
 }
