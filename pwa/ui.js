@@ -6849,11 +6849,9 @@ async function handleAction(target){
     const option=selectableInfusions(mode,record,d).find(row=>row.id===target.dataset.infusionId);
     if(!option)throw Error("Infusione non disponibile.");
     const already=learnedInfusions(record,d.infusion_catalog).find(row=>row.id===option.id);
-    const changes=mode==="learn"?(already?
+    const changes=already?
       forgetInfusionPatch(record,already):
-      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[])):
-      prepareInfusionPatch(record,option,d.infusion_catalog,d.features||[],
-        !isInfusionPrepared(record,option,d.infusion_catalog));
+      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[]);
     await patch(changes);closeDialog(dialog,{remove:true});await render();
     await openInfusionPicker(mode);return;
   }
@@ -6879,7 +6877,7 @@ async function handleAction(target){
   if(act==='infusion-dialog-close'){
     closeDialog(app.querySelector('#infusion-action-dialog'),{remove:true});return;
   }
-  if(['infusion-dialog-prepare','infusion-dialog-activate','infusion-dialog-remove'].includes(act)){
+  if(['infusion-dialog-activate','infusion-dialog-remove'].includes(act)){
     const dialog=app.querySelector('#infusion-action-dialog');
     const creature=state.editor?.read();
     if(!dialog?.open||!creature)throw Error('Riapri l’infusione dalla scheda.');
@@ -6887,10 +6885,7 @@ async function handleAction(target){
     const index=Number(dialog.dataset.infusionIndex),entry=learnedInfusions(creature,definitions)[index];
     if(!entry)throw Error('Infusione non più disponibile.');
     let changes;
-    if(act==='infusion-dialog-prepare'){
-      changes=prepareInfusionPatch(creature,entry,definitions,calculated.features||[],true);
-    }else if(act==='infusion-dialog-activate'){
-      if(!isInfusionPrepared(creature,entry,definitions))throw Error('Prepara prima l’infusione.');
+    if(act==='infusion-dialog-activate'){
       let itemIndex=Number(dialog.dataset.selectedItem),targetRecord=creature;
       if(dialog.dataset.selectedCatalogIndex){
         const catalogIndex=Number(dialog.dataset.selectedCatalogIndex);
@@ -6921,36 +6916,11 @@ async function handleAction(target){
     closeDialog(dialog,{remove:true});
     await render();return;
   }
-  if(['infusion-learn','infusion-prepare','infusion-start','infusion-confirm',
-      'infusion-cancel','infusion-forget','infusion-clear'].includes(act)){
-    const creature=state.editor.read(),calculated=await computeLocalData(creature);
-    const definitions=calculated.infusion_catalog,mechanics=calculated.infusion_mechanics;
-    const features=calculated.features||[],known=learnedInfusions(creature,definitions);
-    const selected=known[Number(target.dataset.index??state.infusionPending)];
-    if(act==='infusion-start'){
-      if(!selected||!isInfusionPrepared(creature,selected,definitions))throw Error('Prepara prima l’infusione.');
-      state.infusionPending=Number(target.dataset.index);state.sheetPopup='infusions';state.sheetPopupTitle='Applica infusione';await render();return;
-    }
-    if(act==='infusion-cancel'){state.infusionPending=-1;state.sheetPopup='';await render();return;}
-    let changes;
-    if(act==='infusion-learn'){
-      const option=definitions.find(row=>row.id===app.querySelector('#infusion-available')?.value);
-      changes=learnInfusionPatch(creature,option,definitions,mechanics,Number(app.querySelector('#infusion-plan')?.value??-1),features);
-    }else if(act==='infusion-prepare'){
-      changes=prepareInfusionPatch(creature,selected,definitions,features,!isInfusionPrepared(creature,selected,definitions));
-    }else if(act==='infusion-confirm'){
-      if(!selected)throw Error('Infusione non selezionata.');
-      const index=Number(app.querySelector('#infusion-item')?.value);
-      const choice=selected.effect_choice;
-      const value=app.querySelector('[data-infusion-effect-choice]')?.value||'';
-      changes=applyInfusionPatch(creature,selected,definitions,mechanics,index,features,
-        choice?{[choice.key]:value}:{});
-      state.infusionPending=-1;state.sheetPopup='';
-    }else if(act==='infusion-forget'){
-      changes=forgetInfusionPatch(creature,selected);
-      state.infusionPending=-1;state.sheetPopup='';
-    }else changes=clearInfusionPatch(creature,Number(target.dataset.index));
-    await patch(changes);await render();return;
+  if(act==='infusion-clear'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Apri prima una creatura.');
+    await patch(clearInfusionPatch(creature,Number(target.dataset.index)));
+    await render();return;
   }
   if(["inventory-container-add","inventory-container-rename","inventory-container-delete"].includes(act)){
     const record=state.editor?.read();if(!record)throw Error("Apri prima una creatura.");
