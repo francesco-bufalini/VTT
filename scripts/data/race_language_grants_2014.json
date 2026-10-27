@@ -437,7 +437,8 @@
           "common": true,
           "keldon": true
         }
-      ]
+      ],
+      "replaces_parent_languages": true
     },
     {
       "kind": "subrace",
