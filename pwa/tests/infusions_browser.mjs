@@ -16,25 +16,31 @@ try{
  await learner.waitFor({state:'visible'});
  await learner.locator('[data-infusion-search]').fill('Enhanced Arcane Focus');
  await learner.locator('[data-act="infusion-picker-details"][data-infusion-id="infusion|tce|enhanced arcane focus"]').click();
- assert.match(await page.locator('#infusion-preview-dialog .magic-spell-description').innerText(),/incantesimi/i);
+ assert.match(await page.locator('#infusion-preview-dialog .magic-spell-description').innerText(),/spell|attack|bonus/i);
  await page.locator('#infusion-preview-dialog [data-act="infusion-preview-close"]').first().click();
  await learner.locator('[data-act="infusion-picker-select"][data-infusion-id="infusion|tce|enhanced arcane focus"]').click();
  await learner.locator('[data-act="infusion-picker-close"]').click();
  const infusion=page.locator('#sheet-play-view [data-act="infusion-open"]');
  assert.equal(await infusion.count(),1,'Known infusion appears once with spell-like UI');
  assert.equal(await page.locator('#sheet-play-view .play-infusion-card .casting-statistics').count(),0);
- assert.equal(await infusion.locator('.play-infusion-state').getAttribute('title'),'Non preparata');
- await page.locator('#sheet-play-view [data-act="infusion-picker-open"][data-mode="prepare"]').click();
- const preparer=page.locator('#infusion-picker-dialog');
- await preparer.locator('[data-act="infusion-picker-select"][data-infusion-id="infusion|tce|enhanced arcane focus"]').click();
- await preparer.locator('[data-act="infusion-picker-close"]').click();
- assert.equal(await infusion.locator('.play-infusion-state').getAttribute('title'),'Preparata');
+ assert.equal(await infusion.locator('.play-infusion-state').getAttribute('title'),'Conosciuta');
+ assert.equal(await page.locator('#sheet-play-view [data-mode="prepare"]').count(),0);
  await infusion.click();
  const actionDialog=page.locator('#infusion-action-dialog');
  await actionDialog.waitFor({state:'visible'});
- assert.match(await actionDialog.locator('.magic-spell-description').innerText(),/tiro|colpire|incantesimi/i);
+ assert.match(await actionDialog.locator('.magic-spell-description').innerText(),/spell|attack|bonus/i);
  assert.equal((await actionDialog.locator('[data-act="infusion-dialog-activate"]').innerText()).trim(),'Usa');
  assert(await actionDialog.locator('[data-act="infusion-dialog-activate"]').isDisabled());
+ assert.equal(await actionDialog.locator('[data-act="infusion-object-choose"][data-index="0"]').count(),1,
+   'All compatible owned items must be visible without searching');
+ await page.setViewportSize({width:390,height:860});
+ assert(await page.evaluate(()=>{
+   const dialog=document.querySelector('#infusion-action-dialog');
+   const search=dialog?.querySelector('.infusion-target-search input');
+   const rect=search?.getBoundingClientRect(),bounds=dialog?.getBoundingClientRect();
+   return !!rect&&!!bounds&&rect.left>=bounds.left-1&&rect.right<=bounds.right+1&&
+     document.documentElement.scrollWidth<=innerWidth;
+ }), 'Search must not overflow its dialog at 390px');
  await actionDialog.locator('[data-infusion-object-search]').fill('Arcane');
  await actionDialog.locator('[data-act="infusion-object-choose"][data-index="0"]').click();
  assert(await actionDialog.locator('[data-act="infusion-dialog-activate"]').isEnabled());
@@ -63,5 +69,5 @@ try{
  assert.equal((await inspect()).d.values.spell_attack,0);
  assert.equal(await page.locator('#sheet-play-view').getByText('Capacità magiche attive',{exact:true}).count(),0);
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);assert.deepEqual(f.writes,[]);
- console.log('PASS: Chrome infusion learn/prepare/item targeting, attunement bonus, active conditions, trait disabling, 390/1440px');
+ console.log('PASS: Chrome infusion learn/use, 5etools details, immediate compatible inventory, mobile overflow, attunement, trait disabling');
 }finally{await f.close();}

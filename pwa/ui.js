@@ -4,7 +4,7 @@ import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -2110,96 +2110,48 @@ function infusionPanel(c,calculated){
  if(!caps.level)return "";
  const trait=infusionGrantingTrait(c,calculated.features||[]);
  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
- const prepared=known.filter(row=>isInfusionPrepared(c,row,definitions));
- const active=(c.inventory||[]).map((item,index)=>({item,index}))
-   .filter(({item})=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
- const available=definitions.filter(row=>caps.level>=Math.max(2,Number(row.min_level)||2)&&
-   (!row.legacy_replicate&&!known.some(entry=>entry.id===row.id)))
-   .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
-     String(a.name).localeCompare(String(b.name),'it'));
- const choices=(id,entries)=>'<select id="'+id+'">'+entries.map(([key,label])=>
-   '<option value="'+esc(key)+'">'+esc(label)+'</option>').join('')+'</select>';
- const optionsByLevel=[...new Set(available.map(row=>Math.max(2,Number(row.min_level)||2)))].map(level=>
-   '<optgroup label="Livello '+level+'">'+available.filter(row=>Math.max(2,Number(row.min_level)||2)===level)
-     .map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+'</option>').join('')+'</optgroup>').join('');
+ const active=(c.inventory||[]).filter(item=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
  const summary='<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+caps.known+
-   '</strong><span>Preparate '+prepared.length+' / '+caps.active+'</span>'+
-   '<span>Applicate '+active.length+' / '+caps.active+'</span></div>';
+   '</strong><span>Applicate '+active.length+' / '+caps.active+'</span></div>';
  const levels=[...new Set(known.map(row=>Math.max(2,Number(row.min_level)||2)))].sort((a,b)=>a-b);
  const learned=levels.map(level=>'<section class="infusion-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div>'+
-   known.map((entry,index)=>({entry,index})).filter(({entry})=>Math.max(2,Number(entry.min_level)||2)===level)
-   .map(({entry,index})=>{
-     const ready=isInfusionPrepared(c,entry,definitions);
-     const applied=active.filter(({item})=>item.infusion?.id===entry.id&&
-       (entry.plan_item_id?item.infusion?.plan_item_id===entry.plan_item_id:true));
-     return '<div class="magic-spell-row infusion-entry" data-infusion-index="'+index+'" data-infusion-active="'+Boolean(applied.length)+'" data-infusion-prepared="'+ready+'"><span class="magic-spell-open">'+esc(entry.name)+
+   known.map((entry,index)=>({entry,index})).filter(({entry})=>Math.max(2,Number(entry.min_level)||2)===level).map(({entry,index})=>{
+     const applied=active.filter(item=>item.infusion?.id===entry.id&&
+       (!entry.plan_item_id||item.infusion?.plan_item_id===entry.plan_item_id));
+     return '<div class="magic-spell-row infusion-entry" data-infusion-index="'+index+
+       '" data-infusion-active="'+Boolean(applied.length)+'"><span class="magic-spell-open">'+esc(entry.name)+
        (entry.plan_item_name?'<small>'+esc(entry.plan_item_name)+'</small>':'')+
-       '<small class="infusion-status">'+(applied.length?'Applicata a '+esc(applied.map(({item})=>item.name||item.id).join(', ')):
-         ready?'Preparata':'Conosciuta · non preparata')+'</small></span>'+
-       '<button type="button" class="btn small" data-act="infusion-prepare" data-index="'+index+
-         '" aria-label="'+(ready?'Rimuovi preparazione':'Prepara')+' '+esc(entry.name)+'">'+
-         (ready?'Non preparare':'Prepara')+'</button>'+
-       (ready?'<button type="button" class="btn small" data-act="infusion-start" data-index="'+index+
-         '" aria-label="Applica '+esc(entry.name)+' a un oggetto">Applica</button>':'')+
-       '<button type="button" class="btn small" data-act="infusion-forget" data-index="'+index+
-         '" aria-label="Dimentica '+esc(entry.name)+'">×</button></div>'+
-       applied.map(({item,index:itemIndex})=>'<div class="infusion-equipped"><span>'+esc(item.name||item.id)+
-         ' · '+(!['weapon','shield','armor'].includes(itemKind(item))?'Attivo nell’inventario':
-          item.equipped||item.attuned||(item.equipped_slots||[]).length?'In uso':'Non equipaggiato')+'</span>'+
-         '<button type="button" class="btn small" data-act="infusion-clear" data-index="'+itemIndex+'">Rimuovi infusione</button></div>').join('');
-   }).join('')+'</section>').join('')||'<p class="hint">Nessuna infusione conosciuta. Imparane una dal catalogo.</p>';
- const selected=known[state.infusionPending];
- const targets=selected?compatibleInfusionTargets(c,selected,definitions,calculated.features||[]):[];
- const targetPicker=selected?'<section class="infusion-target-picker"><h3>Applica '+esc(selected.name)+'</h3>'+
-   '<p class="hint">Scegli un oggetto compatibile. I benefici funzionano quando è equipaggiato e, se necessario, in sintonia.</p>'+
-   (targets.length?'<label>Oggetto bersaglio'+choices('infusion-item',targets.map(({item,index})=>[index,item.name||item.id]))+
-      '</label>'+(selected.effect_choice?'<label>'+esc(selected.effect_choice.label||'Scelta effetto')+
-        '<select data-infusion-effect-choice>'+selected.effect_choice.options.map(value=>
-          '<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
-      '<div class="actions">'+btn('infusion-confirm','Conferma','primary')+
-      btn('infusion-cancel','Annulla')+'</div>':
-      '<p class="warning">Nessun oggetto compatibile. Controlla tipo, rarità, equipaggiamento ed eventuali infusioni già applicate.</p>'+btn('infusion-cancel','Chiudi'))+'</section>':'';
- const learnForm=available.length?'<div class="infusion-learning"><h3>Impara un’infusione</h3>'+
-   '<label>Infusioni disponibili<select id="infusion-available">'+optionsByLevel+'</select></label>'+
-   '<details class="infusion-replication"><summary>Oggetto per Replicate Magic Item</summary>'+
-      '<p class="hint">Scegli un oggetto magico replicabile dall’inventario solo se impari Replicate Magic Item.</p>'+
-      '<label>Oggetto'+choices('infusion-plan',(c.inventory||[]).map((item,index)=>[index,item.name||item.id]))+
-      '</label></details>'+btn('infusion-learn','Impara','primary')+'</div>':
-   '<p class="hint">Non ci sono nuove infusioni disponibili per questo livello.</p>';
+       '<small class="infusion-status">'+(applied.length?'Applicata a '+esc(applied.map(item=>item.name||item.id).join(', ')):'Conosciuta')+
+       '</small></span></div>';
+   }).join('')+'</section>').join('')||'<p class="hint">Nessuna infusione conosciuta.</p>';
  return panel('Infusioni',summary+
-   (!trait?'<p class="warning">Il tratto Infuse Item non è disponibile o è disattivato.</p>':
-     '<p class="hint">Impara → Prepara → Applica a un oggetto. L’effetto è legato al tratto e all’oggetto infuso, non alla classe.</p>'+
-      learned+learnForm+targetPicker)+
-   (known.length>caps.known?'<p class="warning">Infusioni conosciute oltre il massimo consigliato: '+known.length+' / '+caps.known+'.</p>':'')+
-   (prepared.length>caps.active?'<p class="warning">Infusioni preparate oltre il massimo di oggetti infondibili: '+prepared.length+' / '+caps.active+'.</p>':'')+
-   (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
+   (!trait?'<p class="warning">Il tratto Infuse Item non è disponibile o è disattivato.</p>':learned)+
+   (known.length>caps.known?'<p class="warning">Infusioni conosciute oltre il massimo: '+known.length+' / '+caps.known+'.</p>':'')+
+   (!definitions.length?'<p class="warning">Indice delle infusioni non caricato.</p>':''));
 }
-
 
 function selectableInfusions(mode,creature,calculated){
  const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
  const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
- if(mode==="prepare")return known;
  return (calculated.infusion_catalog||[]).filter(row=>!row.legacy_replicate&&
    caps.level>=Math.max(2,Number(row.min_level)||2))
    .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
     String(a.name).localeCompare(String(b.name),"it"));
 }
 async function openInfusionPicker(mode){
- if(!["learn","prepare"].includes(mode))throw Error("Selezione non valida.");
+ if(mode!=="learn")throw Error("Selezione non valida.");
  const creature=state.editor?.read();if(!creature)throw Error("Scheda non disponibile.");
  const calculated=await computeLocalData(creature),options=selectableInfusions(mode,creature,calculated);
  const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
  const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
- const count=mode==="learn"?known.length+" / "+caps.known:
-  known.filter(row=>isInfusionPrepared(creature,row,calculated.infusion_catalog||[])).length+" / "+caps.active;
+ const count=known.length+" / "+caps.known;
  app.querySelector("#infusion-picker-dialog")?.remove();
  const dialog=document.createElement("dialog");dialog.id="infusion-picker-dialog";
  dialog.dataset.mode=mode;dialog.className="sheet-roll-dialog magic-tools-dialog infusion-picker-dialog";
  dialog.innerHTML='<div class="magic-tools-head"><h2>'+
-   (mode==="learn"?"Impara infusioni":"Prepara infusioni")+'</h2>'+
+   'Impara infusioni</h2>'+
    dialogCloseButton("infusion-picker-close","Chiudi","magic-tool-close")+'</div><div class="magic-tools-body">'+
-   '<p class="magic-selection-warning">'+(mode==="learn"?"Conosciute ":"Preparate ")+esc(count)+'</p>'+
+   '<p class="magic-selection-warning">Conosciute '+esc(count)+'</p>'+
    '<label class="vtt-list-search magic-editor-search">Cerca infusione'+
    '<input type="search" data-infusion-search autocomplete="off" placeholder="Nome o fonte"></label>'+
    '<div class="catalog-results vtt-selection-list magic-editor-results infusion-picker-results" role="list"></div>'+
@@ -2213,8 +2165,8 @@ async function openInfusionPicker(mode){
    '<section class="magic-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div><div class="magic-entries">'+
    shown.filter(row=>Math.max(2,Number(row.min_level)||2)===level).map(row=>{
     const isKnown=known.some(entry=>entry.id===row.id);
-    const active=mode==="learn"?isKnown:isInfusionPrepared(creature,row,calculated.infusion_catalog||[]);
-    const action=mode==="learn"?(active?"Dimentica":"+ Impara"):(active?"✓ Preparata":"+ Prepara");
+    const active=isKnown;
+    const action=active?"Dimentica":"+ Impara";
     return '<div class="magic-catalog-row vtt-selectable'+(active?' is-selected':'')+'">'+
      '<button type="button" class="magic-catalog-name" data-act="infusion-picker-details" data-infusion-id="'+esc(row.id)+'" aria-label="Dettagli di '+esc(row.name)+'">'+esc(row.name)+'</button>'+
      '<button type="button" class="magic-catalog-action'+(active?' is-selected':'')+'" data-act="infusion-picker-select" data-infusion-id="'+esc(row.id)+'" aria-pressed="'+active+'">'+action+'</button></div>';
@@ -2233,11 +2185,14 @@ async function openInfusionPickerPreview(id){
  app.querySelector("#infusion-preview-dialog")?.remove();
  const dialog=document.createElement("dialog");dialog.id="infusion-preview-dialog";
  dialog.className="sheet-roll-dialog magic-spell-dialog infusion-preview-dialog";
+ const detail=await detailedEntry('optional_features',{
+   name:entry.description_source_name||entry.name,
+   source:entry.description_source||entry.source||'TCE',_category:'optional_features'});
  dialog.innerHTML=actionDialogIntro(entry.name,[
   {label:"Livello richiesto",value:String(Math.max(2,Number(entry.min_level)||2))},
   ...(entry.item_prerequisite?[{label:"Oggetto richiesto",value:entry.item_prerequisite}]:[]),
   ...(entry.replicates_item_name?[{label:"Oggetto replicato",value:entry.replicates_item_name}]:[])
- ],flattenDescription(entry)||String(entry.description||"")||"Descrizione non disponibile.",
+ ],flattenDescription(detail)||"Descrizione 5etools non disponibile nel catalogo offline.",
   "Infusione dell’Artefice · "+(entry.source||"TCE"),"infusion-preview-close")+
   '<div class="actions"><button type="button" class="btn" data-act="infusion-preview-close">Chiudi</button></div>';
  app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
@@ -2248,18 +2203,19 @@ async function openInfusionActionDialog(index){
  const calculated=await computeLocalData(creature),definitions=calculated.infusion_catalog||[];
  const entry=learnedInfusions(creature,definitions)[index];
  if(!entry)throw Error('Infusione non più disponibile.');
- const prepared=isInfusionPrepared(creature,entry,definitions);
  const applied=(creature.inventory||[]).map((item,itemIndex)=>({item,index:itemIndex}))
   .filter(({item})=>Number(item.quantity??1)>0&&item.infusion?.creator_id===creature.id&&
    item.infusion.id===entry.id&&(!entry.plan_item_id||item.infusion.plan_item_id===entry.plan_item_id));
- const targets=prepared?compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]):[];
+ const targets=compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]);
  const facts=[
-  {label:'Stato',value:applied.length?'Attiva su '+applied.length+(applied.length===1?' oggetto':' oggetti'):prepared?'Preparata':'Non preparata'},
+  {label:'Stato',value:applied.length?'Attiva su '+applied.length+(applied.length===1?' oggetto':' oggetti'):'Conosciuta'},
   ...(entry.item_prerequisite?[{label:'Oggetto richiesto',value:entry.item_prerequisite}]:[]),
   {label:'Sintonia',value:entry.requires_attunement?'Richiesta per beneficiare degli effetti':'Non richiesta'}
  ];
- const description=flattenDescription(entry)||String(entry.description||'').trim()||
-  'L’infusione modifica magicamente un oggetto. Consulta il tratto per i dettagli.';
+ const detail=await detailedEntry('optional_features',{
+   name:entry.description_source_name||entry.name,
+   source:entry.description_source||entry.source||'TCE',_category:'optional_features'});
+ const description=flattenDescription(detail)||'Descrizione 5etools non disponibile nel catalogo offline.';
  app.querySelector('#infusion-action-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='infusion-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
@@ -2272,16 +2228,13 @@ async function openInfusionActionDialog(index){
      applied.map(({item,index:itemIndex})=>'<div class="infusion-dialog-item"><span>'+esc(item.name||item.id)+
        '<small>Infusione applicata</small></span><button type="button" class="btn" data-act="infusion-dialog-remove" data-index="'+itemIndex+'">Disattiva</button></div>').join('')+
      '</section>':'')+
-   (prepared?'<label class="vtt-list-search inventory-global-search infusion-target-search">Cerca oggetto compatibile'+
-     '<input type="search" data-infusion-object-search placeholder="Cerca nell’inventario e nel catalogo" autocomplete="off"></label>'+
-     '<div class="inventory-search-results vtt-selection-list infusion-target-results" role="list" aria-label="Oggetti compatibili"></div>':
-     prepared?'<p class="hint">Nessun oggetto compatibile disponibile.</p>':
-     '<p class="hint">Prepara l’infusione prima di usarla.</p>')+
-   (prepared&&options.length?
+   '<label class="vtt-list-search inventory-global-search infusion-target-search">'+
+     '<input type="search" data-infusion-object-search aria-label="Cerca oggetto compatibile" placeholder="Cerca oggetto compatibile" autocomplete="off"></label>'+
+   '<div class="inventory-search-results vtt-selection-list infusion-target-results" role="list" aria-label="Oggetti compatibili"></div>'+
+   (options.length?
      '<label>'+esc(entry.effect_choice.label||'Scelta effetto')+'<select data-infusion-dialog-effect>'+
      options.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
    '<div class="actions magic-dialog-actions">'+
-    (!prepared?'<button type="button" class="btn" data-act="infusion-dialog-prepare">Prepara</button>':'')+
     '<button type="button" class="btn primary" data-act="infusion-dialog-activate" disabled>Usa</button>'+
     '<button type="button" class="btn" data-act="infusion-dialog-close">Chiudi</button></div>';
  const results=dialog.querySelector('.infusion-target-results'),search=dialog.querySelector('[data-infusion-object-search]');
@@ -2320,7 +2273,7 @@ async function openInfusionActionDialog(index){
  }
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
- if(prepared)ensureInventorySearchCatalog();
+ ensureInventorySearchCatalog();
 }
 
 const INVENTORY_PROPERTY_LABELS={
@@ -6129,7 +6082,7 @@ async function handleAction(target){
   if(act==='hp-adjust-max'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
-    openSheetBaseEditor(creature,await computeLocalData(creature),'hp');
+    openSheetScoreFormula(creature,await computeLocalData(creature),'hp','PF massimi');
     return;
   }
   if(act==='hp-adjust-apply'){
@@ -6896,11 +6849,9 @@ async function handleAction(target){
     const option=selectableInfusions(mode,record,d).find(row=>row.id===target.dataset.infusionId);
     if(!option)throw Error("Infusione non disponibile.");
     const already=learnedInfusions(record,d.infusion_catalog).find(row=>row.id===option.id);
-    const changes=mode==="learn"?(already?
+    const changes=already?
       forgetInfusionPatch(record,already):
-      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[])):
-      prepareInfusionPatch(record,option,d.infusion_catalog,d.features||[],
-        !isInfusionPrepared(record,option,d.infusion_catalog));
+      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[]);
     await patch(changes);closeDialog(dialog,{remove:true});await render();
     await openInfusionPicker(mode);return;
   }
@@ -6926,7 +6877,7 @@ async function handleAction(target){
   if(act==='infusion-dialog-close'){
     closeDialog(app.querySelector('#infusion-action-dialog'),{remove:true});return;
   }
-  if(['infusion-dialog-prepare','infusion-dialog-activate','infusion-dialog-remove'].includes(act)){
+  if(['infusion-dialog-activate','infusion-dialog-remove'].includes(act)){
     const dialog=app.querySelector('#infusion-action-dialog');
     const creature=state.editor?.read();
     if(!dialog?.open||!creature)throw Error('Riapri l’infusione dalla scheda.');
@@ -6934,10 +6885,7 @@ async function handleAction(target){
     const index=Number(dialog.dataset.infusionIndex),entry=learnedInfusions(creature,definitions)[index];
     if(!entry)throw Error('Infusione non più disponibile.');
     let changes;
-    if(act==='infusion-dialog-prepare'){
-      changes=prepareInfusionPatch(creature,entry,definitions,calculated.features||[],true);
-    }else if(act==='infusion-dialog-activate'){
-      if(!isInfusionPrepared(creature,entry,definitions))throw Error('Prepara prima l’infusione.');
+    if(act==='infusion-dialog-activate'){
       let itemIndex=Number(dialog.dataset.selectedItem),targetRecord=creature;
       if(dialog.dataset.selectedCatalogIndex){
         const catalogIndex=Number(dialog.dataset.selectedCatalogIndex);
@@ -6968,36 +6916,11 @@ async function handleAction(target){
     closeDialog(dialog,{remove:true});
     await render();return;
   }
-  if(['infusion-learn','infusion-prepare','infusion-start','infusion-confirm',
-      'infusion-cancel','infusion-forget','infusion-clear'].includes(act)){
-    const creature=state.editor.read(),calculated=await computeLocalData(creature);
-    const definitions=calculated.infusion_catalog,mechanics=calculated.infusion_mechanics;
-    const features=calculated.features||[],known=learnedInfusions(creature,definitions);
-    const selected=known[Number(target.dataset.index??state.infusionPending)];
-    if(act==='infusion-start'){
-      if(!selected||!isInfusionPrepared(creature,selected,definitions))throw Error('Prepara prima l’infusione.');
-      state.infusionPending=Number(target.dataset.index);state.sheetPopup='infusions';state.sheetPopupTitle='Applica infusione';await render();return;
-    }
-    if(act==='infusion-cancel'){state.infusionPending=-1;state.sheetPopup='';await render();return;}
-    let changes;
-    if(act==='infusion-learn'){
-      const option=definitions.find(row=>row.id===app.querySelector('#infusion-available')?.value);
-      changes=learnInfusionPatch(creature,option,definitions,mechanics,Number(app.querySelector('#infusion-plan')?.value??-1),features);
-    }else if(act==='infusion-prepare'){
-      changes=prepareInfusionPatch(creature,selected,definitions,features,!isInfusionPrepared(creature,selected,definitions));
-    }else if(act==='infusion-confirm'){
-      if(!selected)throw Error('Infusione non selezionata.');
-      const index=Number(app.querySelector('#infusion-item')?.value);
-      const choice=selected.effect_choice;
-      const value=app.querySelector('[data-infusion-effect-choice]')?.value||'';
-      changes=applyInfusionPatch(creature,selected,definitions,mechanics,index,features,
-        choice?{[choice.key]:value}:{});
-      state.infusionPending=-1;state.sheetPopup='';
-    }else if(act==='infusion-forget'){
-      changes=forgetInfusionPatch(creature,selected);
-      state.infusionPending=-1;state.sheetPopup='';
-    }else changes=clearInfusionPatch(creature,Number(target.dataset.index));
-    await patch(changes);await render();return;
+  if(act==='infusion-clear'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Apri prima una creatura.');
+    await patch(clearInfusionPatch(creature,Number(target.dataset.index)));
+    await render();return;
   }
   if(["inventory-container-add","inventory-container-rename","inventory-container-delete"].includes(act)){
     const record=state.editor?.read();if(!record)throw Error("Apri prima una creatura.");

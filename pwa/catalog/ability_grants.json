@@ -4017,8 +4017,7 @@
           "armor"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'armatura infusa diventa magica e dispone di arti propulsivi che possono essere usati per attaccare."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|armor of magical strength",
@@ -4034,8 +4033,7 @@
           "armor"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'armatura infusa spende cariche per aiutare nelle prove e nei tiri salvezza di Forza."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|boots of the winding path",
@@ -4051,8 +4049,7 @@
           "boot"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "Gli stivali infusi consentono di tornare magicamente a un luogo occupato durante il turno."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|enhanced arcane focus",
@@ -4074,8 +4071,7 @@
           "wand"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "Un focus infuso conferisce +1 ai tiri per colpire con incantesimi (+2 dal livello 10 dell'Artefice)."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|enhanced defense",
@@ -4096,8 +4092,7 @@
           "shield"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "Un'armatura o uno scudo infuso conferisce +1 alla Classe Armatura (+2 dal livello 10 dell'Artefice)."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|enhanced weapon",
@@ -4117,8 +4112,7 @@
           "weapon"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'arma infusa conferisce +1 ai tiri per colpire e ai danni (+2 dal livello 10 dell'Artefice)."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|helm of awareness",
@@ -4134,8 +4128,7 @@
           "helm"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'elmo infuso migliora la percezione dei pericoli e l'iniziativa in combattimento."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|homunculus servant",
@@ -4152,8 +4145,7 @@
           "tool"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'infusione su una gemma o un cristallo crea un servitore omuncolo."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|mind sharpener",
@@ -4172,8 +4164,7 @@
           "robe"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'armatura o la veste infusa può utilizzare cariche per mantenere la concentrazione dopo un danno."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|radiant weapon",
@@ -4192,8 +4183,7 @@
           "weapon"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'arma infusa conferisce +1 ai tiri per colpire e ai danni, emette luce e può produrre un lampo accecante."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|repeating shot",
@@ -4220,8 +4210,7 @@
           "A"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "Un'arma a distanza infusa conferisce +1 ai tiri per colpire e ai danni e produce le munizioni necessarie."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|replicate magic item",
@@ -4459,8 +4448,7 @@
           "shield"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "Lo scudo infuso conferisce +1 alla CA e può respingere un avversario consumando una carica."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|resistant armor",
@@ -4492,8 +4480,7 @@
           "armor"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'armatura infusa concede resistenza a un tipo di danno scelto durante l'applicazione."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|returning weapon",
@@ -4515,8 +4502,7 @@
           "T"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'arma da lancio infusa conferisce +1 ai tiri per colpire e ai danni e ritorna in mano dopo essere stata lanciata."
+      "application_kind": "enhancement"
     },
     {
       "id": "infusion|tce|spell-refueling ring",
@@ -4532,8 +4518,7 @@
           "ring"
         ]
       },
-      "application_kind": "enhancement",
-      "description": "L'anello infuso può ripristinare uno slot incantesimo consumato secondo i limiti del tratto."
+      "application_kind": "enhancement"
     }
   ],
   "source_ability_choices": {

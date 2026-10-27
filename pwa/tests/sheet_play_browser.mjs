@@ -202,6 +202,10 @@ try{
  assert(await hpDialog.locator('#hp-adjust-current').evaluate(el=>el.getBoundingClientRect().width<170),
    'HP numeric fields remain compact');
  await hpDialog.locator('[data-act="hp-adjust-max"]').click();
+ await scoreFormula.waitFor({state:'visible'});
+ assert.match(await scoreFormula.locator('h2').textContent(),/PF massimi/);
+ assert.equal(await editor.count(),0,'HP maximum opens the formula popup, not the base editor');
+ await scoreFormula.locator('[data-act="sheet-score-edit-base"]').click();
  assert.equal(await editor.getAttribute('data-score-target'),'hp');
  assert.equal(await editor.locator('#sheet-score-input').inputValue(),'40');
  const autoHp=editor.locator('[data-act="sheet-base-auto-hp"]');
@@ -212,7 +216,9 @@ try{
  assert(Number.isInteger(automaticHp)&&automaticHp>0,'Automatic hit dice prefill the base HP field');
  assert.equal((await record()).max_hp_base,40,'Automatic HP is a preview until saved');
  await editor.locator('.sheet-base-editor-cancel').click();
+ await scoreFormula.waitFor({state:'visible'});
  assert.equal((await record()).max_hp_base,40,'Cancel leaves original maximum HP untouched');
+ await scoreFormula.locator('[data-act="close-score-formula"]').click();
  await hpDialog.locator('[data-act="hp-adjust-cancel"]').first().click();
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
   'Obsolete class-only toggle is absent');
