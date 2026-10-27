@@ -5,6 +5,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {projectSpeciesAttacks} from './species_mechanics.mjs';
 import {projectSpeciesDefenses} from './species_defenses.mjs';
 import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
+import {projectFlattenedSpeciesAbilities} from './species_ability_variants.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
 // Project typed TCE infusion data to a URL already served by PwaHost.
 // Older native snapshots lack selectors: use source-qualified structured
@@ -191,6 +192,10 @@ for(const kind of ['race','subrace']){
   }
  }
 }
+const flatReferenceSource=await read('../../vtt/data/creature_references_5etools.json');
+const flatSpellSource=await read('../../vtt/data/additional_spells_5etools.json');
+abilityIndex.race.push(...projectFlattenedSpeciesAbilities(
+ abilityIndex,flatReferenceSource.races,flatSpellSource.entries));
 // PHB feat actions, contextual roll modes and resource trackers are maintained
 // in native typed data; the browser only projects those declarations.
 const featMechanics=await read('../../vtt/data/feat_mechanics_2014.json');
