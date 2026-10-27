@@ -1,0 +1,271 @@
+{
+  "version": 1,
+  "units": "feet",
+  "species": [
+    {
+      "name": "Dwarf",
+      "source": "PHB",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Elf",
+      "source": "PHB",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Gnome",
+      "source": "PHB",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Half-Elf",
+      "source": "PHB",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Half-Orc",
+      "source": "PHB",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Tiefling",
+      "source": "PHB",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Aasimar",
+      "source": "VGM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Aasimar",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Tabaxi",
+      "source": "VGM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Tabaxi",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Goblin",
+      "source": "VGM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Goblin",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Bugbear",
+      "source": "VGM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Bugbear",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Hobgoblin",
+      "source": "VGM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Hobgoblin",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Kobold",
+      "source": "VGM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Kobold",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Yuan-ti Pureblood",
+      "source": "VGM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Yuan-ti",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Shadar-kai",
+      "source": "MTF",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Shadar-kai",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Eladrin",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Orc",
+      "source": "MPMM",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Orc",
+      "source": "ERLW",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Dhampir",
+      "source": "VRGR",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Hexblood",
+      "source": "VRGR",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    },
+    {
+      "name": "Reborn",
+      "source": "VRGR",
+      "range_feet": 60,
+      "type": "darkvision",
+      "trait": "Darkvision"
+    }
+  ],
+  "subraces": [
+    {
+      "name": "Drow",
+      "source": "PHB",
+      "race_name": "Elf",
+      "type": "darkvision",
+      "range_feet": 120,
+      "trait": "Superior Darkvision"
+    },
+    {
+      "name": "Duergar",
+      "source": "SCAG",
+      "race_name": "Dwarf",
+      "type": "darkvision",
+      "range_feet": 120,
+      "trait": "Superior Darkvision"
+    },
+    {
+      "name": "Deep Gnome",
+      "source": "SCAG",
+      "race_name": "Gnome",
+      "type": "darkvision",
+      "range_feet": 120,
+      "trait": "Superior Darkvision"
+    }
+  ],
+  "features": [
+    {
+      "name": "Devil's Sight",
+      "source": "PHB",
+      "type": "devils_sight",
+      "range_feet": 120
+    },
+    {
+      "name": "Devil's Sight",
+      "source": "XGE",
+      "type": "devils_sight",
+      "range_feet": 120
+    },
+    {
+      "name": "Blind Fighting",
+      "source": "TCE",
+      "type": "blindsight",
+      "range_feet": 10
+    },
+    {
+      "name": "Eyes of the Dark",
+      "class_name": "Sorcerer",
+      "class_source": "XGE",
+      "type": "darkvision",
+      "range_feet": 120
+    },
+    {
+      "name": "Eyes of Night",
+      "class_name": "Cleric",
+      "class_source": "TCE",
+      "type": "darkvision",
+      "range_feet": 300
+    },
+    {
+      "name": "Umbral Sight",
+      "class_name": "Ranger",
+      "class_source": "XGE",
+      "type": "darkvision",
+      "range_feet": 30,
+      "mode": "increase_if_existing",
+      "fallback_feet": 60
+    }
+  ]
+}
