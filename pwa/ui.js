@@ -25,6 +25,7 @@ import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
 import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
+import {applicableSpeciesRollModes} from './species_roll_modes.js';
 import {characterDefenseSummary} from "./defense_summary.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
@@ -4766,7 +4767,8 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
        const trackerLabel=row.tracker_id?(row.tracker_name||'Tracker')+' · '+(row.remaining??0)+' rim.':'Nessun tracker associato';
        return '<div class="sheet-roll-bonus-item">'+
          '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open" data-origin-id="'+esc(row.origin_id||'')+'" title="'+esc(row.condition_label||'Apri tratto')+'">'+
-           '<span class="sheet-roll-origin-symbol">'+esc(Object.hasOwn(row,'flat_bonus')?
+           '<span class="sheet-roll-origin-symbol">'+esc(row.roll_mode?
+              row.roll_mode==='advantage'?'ADV':'DIS':Object.hasOwn(row,'flat_bonus')?
               (row.flat_bonus>=0?'+':'')+row.flat_bonus:'+'+row.dice)+'</span>'+
            (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
            '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
@@ -6354,15 +6356,20 @@ async function handleAction(target){
        }]}}:calculated;
     const bonuses=rollOptionalDice(creature,calculated,[
        ...applicableDiceBonuses(creature,key,state.spellCatalog||[],calculated),
-       ...classFeatureRollBonuses(creature,calculated,key)
+       ...classFeatureRollBonuses(creature,calculated,key),
+       ...applicableSpeciesRollModes(creature,calculated,key)
       ],{kind:'d20'});
      const autoSources=classFeatureRollSources(creature,calculated,key,rollContext);
     const automatic=resolveClassRollMode(autoSources);
     const formulaMarkup=(chosen=[],choice='auto')=>{
-      const resolved=resolveClassRollMode(autoSources,choice);
+      const selectedModes=chosen.filter(row=>row.roll_mode).map(row=>({
+        mode:row.roll_mode,origin_id:row.origin_id,
+        origin_name:row.origin_name,kind:'feature',condition_label:row.condition_label
+      }));
+      const resolved=resolveClassRollMode([...autoSources,...selectedModes],choice);
       return sheetRollOriginHtml(sheetRollOriginSegments(creature,formulaData,key,
         {mode:resolved.mode,modeSources:resolved.sources,cancelled:resolved.cancelled,
-          diceBonuses:chosen}),esc);
+          diceBonuses:chosen.filter(row=>!row.roll_mode)}),esc);
     };
     const autoLabel=automatic.cancelled?' · vantaggio e svantaggio annullati':
       automatic.mode==='advantage'?' · vantaggio':
