@@ -315,6 +315,7 @@ export function sheetScoreOriginSegments(record,calculated,target){
    const baseValues={
      hp:()=>Number(record?.max_hp_base??record?.max_hp??1),
      second_max:()=>Number(record?.second_form_max_hp??0),
+      attunement_max:()=>Math.max(0,Number(record?.attunement_max_base??3)),
      proficiency:()=>2+Math.floor((Math.max(1,Number(calculated?.stats?.level)||1)-1)/4)
    };
    if(target.startsWith('ability:')){
@@ -329,8 +330,9 @@ export function sheetScoreOriginSegments(record,calculated,target){
      baseName='Modificatore della caratteristica';
    }else if(baseValues[target]){
      base=baseValues[target]();
-     formula=target==='hp'?'PF di base':target==='proficiency'?'Competenza per livello':'PF seconda forma di base';
-     baseName=target==='hp'?'Creatura':target==='proficiency'?'Progressione':'Seconda forma';
+     formula=target==='hp'?'PF di base':target==='proficiency'?'Competenza per livello':
+        target==='attunement_max'?'Sintonie di base':'PF seconda forma di base';
+     baseName=target==='hp'?'Creatura':target==='proficiency'?'Progressione':target==='attunement_max'?'Sintonia':'Seconda forma';
    }else{
      base=total-list(all[target]).reduce((sum,row)=>sum+num(row.value),0);
      formula=target==='ac'?'Armatura, scudo e regole':target.startsWith('speed')?'Velocità di base':'Valore di base';

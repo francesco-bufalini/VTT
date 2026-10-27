@@ -47,7 +47,7 @@ export function initialCreature(kind,name,id,owner_id){
     abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},
     saving_throw_proficiencies:[],skill_proficiencies:[],skill_expertise:[],
     armor_class:10,armor_class_base:10,armor_natural_formula:"",
-    temporary_ac:0,initiative:0,initiative_base:0,
+    temporary_ac:0,initiative:0,initiative_base:0,attunement_max_base:3,
     max_hp:1,max_hp_base:1,current_hp:1,temporary_hp:0,
     variant_schema_version:1,variants:[],current_form_id:"",
     speed_base:30,speed:30,speed_is_custom:false,darkvision:0,exhaustion:0,

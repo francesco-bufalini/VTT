@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
+import {sheetScoreOriginSegments} from '../sheet_roll_origin.js';
 import {initialCreature} from '../character_core.js';
 import {itemAttunementCount,inventoryAttunementCounts,changeOwnedItem,changeItemOverride,consolidateOwnedItems} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
@@ -54,6 +55,18 @@ test('four luckstones grant exactly one or three copies of their bonuses accordi
  }
 });
 
+test('maximum attunements track the editable base separately from feature bonuses',()=>{
+ const record={...creature([stone(4)]),attunement_max_base:4,
+  formula_bonuses:[{id:'attunement-extension',target:'attunement_max',expression:'2'}]};
+ const calculated=calculateSheet(record);
+ assert.equal(calculated.values.attunement_max,6);
+ assert.equal(calculated.attunements.maximum,6);
+ assert.equal(calculated.attunements.used,4);
+ const segments=sheetScoreOriginSegments(record,calculated,'attunement_max');
+ assert.equal(segments.find(row=>row.kind==='base')?.value,4);
+ assert.equal(segments.reduce((sum,row)=>sum+row.value,0),6);
+ assert.equal(calculateSheet({...record,attunement_max_base:0}).values.attunement_max,2);
+});
 test('external over-allocation cannot exceed capacity and does not rewrite saved inventory',()=>{
  const record=creature([stone(4),stone(1,{id:'ring'})]),before=structuredClone(record);
  const result=calculateSheet(record),baseline=calculateSheet(creature([]));
