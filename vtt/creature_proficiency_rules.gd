@@ -199,6 +199,11 @@ static func normalized_key(value: String) -> String:
 static func choices(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var current_sources: Dictionary = _active_identity_sources(record)
+	var replaced_parent_source := ""
+	for source: Dictionary in candidate_sources(record):
+		if String(source.get("group", "")) == "race" and bool((source.get("data", {}) as Dictionary).get("parent_languages_replaced", false)):
+			replaced_parent_source = String(source.get("id", ""))
+			break
 	var raw: Variant = record.get("proficiency_choices", [])
 	if raw is Array:
 		for value: Variant in raw:
@@ -208,6 +213,8 @@ static func choices(record: Dictionary) -> Array[Dictionary]:
 			if _is_replaced_identity(String(row.get("origin_id", "")), current_sources):
 				continue
 			var kind: String = String(row.get("kind", ""))
+			if kind == "language" and String(row.get("origin_id", "")) == replaced_parent_source:
+				continue
 			var key: String = normalized_key(String(row.get("key", "")))
 			if kind not in TYPES or key.is_empty():
 				continue
@@ -415,6 +422,34 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 				candidates.append({"id": sid,
 					"name": _origin_title(group, name, "starting") + " · " + source,
 					"group": group, "data": row, "mode": "starting"})
+	# A few 2014-era subraces replace the parent's full Languages feature.
+	# Keep the race identity but hide only its language grants and choices.
+	var replaced_languages := false
+	var enabled_sources: Dictionary = record.get("origin_enabled", {})
+	var saved_origins: Variant = record.get("proficiency_origins", [])
+	for candidate: Dictionary in candidates:
+		if String(candidate.get("group", "")) != "subrace" or not bool((candidate.get("data", {}) as Dictionary).get("replaces_parent_languages", false)):
+			continue
+		var sid: String = String(candidate.get("id", ""))
+		if not bool(enabled_sources.get(sid, true)):
+			continue
+		var disabled := false
+		if saved_origins is Array:
+			for origin: Variant in saved_origins:
+				if origin is Dictionary and String(origin.get("id", "")) == sid and bool(origin.get("disabled", false)):
+					disabled = true
+					break
+		if not disabled:
+			replaced_languages = true
+			break
+	if replaced_languages:
+		for candidate: Dictionary in candidates:
+			if String(candidate.get("group", "")) != "race":
+				continue
+			var adjusted: Dictionary = (candidate.get("data", {}) as Dictionary).duplicate(true)
+			adjusted["languageProficiencies"] = []
+			adjusted["parent_languages_replaced"] = true
+			candidate["data"] = adjusted
 	return candidates
 
 
