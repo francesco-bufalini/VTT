@@ -4,7 +4,7 @@ import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, expandedInfusionDefinitions, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, expandedInfusionDefinitions, learnedInfusions, infusionEligible, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -1370,6 +1370,7 @@ function ensureInventorySearchCatalog(){
   inventoryCatalogRequest=catalogEntries('items').then(rows=>{
     state.referenceCatalogs.items=rows;
     paintInventorySearchResults();
+    app.querySelector('#infusion-action-dialog [data-infusion-object-search]')?.dispatchEvent(new Event('input'));
   }).catch(error=>{
     state.inventorySearchCatalogError=errorMessage(error);
     paintInventorySearchResults();
@@ -2261,7 +2262,7 @@ async function openInfusionActionDialog(index){
  app.querySelector('#infusion-action-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='infusion-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
- dialog.dataset.infusionIndex=String(index);dialog.dataset.selectedItem='';
+ dialog.dataset.infusionIndex=String(index);dialog.dataset.selectedItem='';dialog.dataset.selectedCatalogIndex='';
  const options=(entry.effect_choice?.options||[]);
  dialog.innerHTML=actionDialogIntro(entry.name,facts,description,
    'Infusione dell’artefice'+(entry.source?' · '+entry.source:''),
@@ -2270,12 +2271,12 @@ async function openInfusionActionDialog(index){
      applied.map(({item,index:itemIndex})=>'<div class="infusion-dialog-item"><span>'+esc(item.name||item.id)+
        '<small>Infusione applicata</small></span><button type="button" class="btn" data-act="infusion-dialog-remove" data-index="'+itemIndex+'">Disattiva</button></div>').join('')+
      '</section>':'')+
-   (targets.length?'<label class="vtt-list-search inventory-global-search infusion-target-search">Cerca oggetto compatibile'+
-     '<input type="search" data-infusion-object-search placeholder="Cerca nell’inventario" autocomplete="off"></label>'+
+   (prepared?'<label class="vtt-list-search inventory-global-search infusion-target-search">Cerca oggetto compatibile'+
+     '<input type="search" data-infusion-object-search placeholder="Cerca nell’inventario e nel catalogo" autocomplete="off"></label>'+
      '<div class="inventory-search-results vtt-selection-list infusion-target-results" role="list" aria-label="Oggetti compatibili"></div>':
      prepared?'<p class="hint">Nessun oggetto compatibile disponibile.</p>':
      '<p class="hint">Prepara l’infusione prima di usarla.</p>')+
-   (prepared&&targets.length&&options.length?
+   (prepared&&options.length?
      '<label>'+esc(entry.effect_choice.label||'Scelta effetto')+'<select data-infusion-dialog-effect>'+
      options.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
    '<div class="actions magic-dialog-actions">'+
@@ -2285,21 +2286,40 @@ async function openInfusionActionDialog(index){
  const results=dialog.querySelector('.infusion-target-results'),search=dialog.querySelector('[data-infusion-object-search]');
  if(results&&search){
   const paint=()=>{
-   const shown=targets.filter(({item})=>matchesSearch(search.value,item.name,item.source,item.id));
-   results.innerHTML=shown.length?shown.map(({item,index:itemIndex})=>{
-    const active=dialog.dataset.selectedItem===String(itemIndex);
+   const query=search.value.trim();
+   const owned=targets.filter(({item})=>matchesSearch(query,item.name,item.source,item.id));
+   const catalog=(state.referenceCatalogs.items||[]).map((item,index)=>({item,index}))
+    .filter(({item})=>query.length>=2&&item?.name&&matchesSearch(query,item.name,item.source)&&
+      isContentAvailableForRules(item,creature.rules_version)&&
+      !creature.inventory?.some(owned=>owned.id===item.id)&&
+      infusionEligible(entry,createOwnedItem(item,"infusion-preview")))
+    .slice(0,60);
+   const rows=owned.map(({item,index:itemIndex})=>{
+    const active=dialog.dataset.selectedItem===String(itemIndex)&&!dialog.dataset.selectedCatalogIndex;
     return '<button type="button" class="inventory-search-result vtt-selectable'+(active?' is-selected':'')+
       '" data-act="infusion-object-choose" data-index="'+itemIndex+'" aria-pressed="'+active+'">'+
-      '<span class="inventory-search-result-count'+(active?'':' is-add')+'" aria-hidden="true">'+(active?'✓':'+')+'</span>'+
+      '<span class="inventory-search-result-count'+(active?'':' is-add')+'" aria-hidden="true">'+(active?'✓':'×'+Math.max(1,Number(item.quantity)||1))+'</span>'+
       '<span class="inventory-search-result-copy"><strong>'+esc(item.name||item.id)+'</strong>'+
       (item.source?'<small>'+esc(item.source)+'</small>':'')+'</span>'+
       '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
-   }).join(''):'<p class="inventory-search-notice">Nessun oggetto compatibile trovato.</p>';
+   });
+   rows.push(...catalog.map(({item,index})=>{
+    const active=dialog.dataset.selectedCatalogIndex===String(index);
+    return '<button type="button" class="inventory-search-result vtt-selectable'+(active?' is-selected':'')+
+      '" data-act="infusion-object-choose" data-catalog-index="'+index+'" aria-pressed="'+active+'">'+
+      '<span class="inventory-search-result-count'+(active?'':' is-add')+'" aria-hidden="true">'+(active?'✓':'+')+'</span>'+
+      '<span class="inventory-search-result-copy"><strong>'+esc(item.name||item.id)+'</strong>'+
+      '<small>'+esc(item.source||"Catalogo")+'</small></span>'+
+      '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
+   }));
+   results.innerHTML=rows.length?rows.join(''):'<p class="inventory-search-notice">'+
+     (query.length<2?'Cerca un oggetto nel catalogo o scegli un oggetto posseduto.':'Nessun oggetto compatibile trovato.')+'</p>';
   };
   search.addEventListener('input',paint);paint();
  }
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
+ if(prepared)ensureInventorySearchCatalog();
 }
 
 const INVENTORY_PROPERTY_LABELS={
@@ -6860,12 +6880,16 @@ async function handleAction(target){
   if(act==='infusion-object-choose'){
     const dialog=app.querySelector('#infusion-action-dialog');
     if(!dialog?.open)throw Error('Riapri la selezione dell’oggetto.');
-    dialog.dataset.selectedItem=target.dataset.index;
+    dialog.dataset.selectedCatalogIndex=target.dataset.catalogIndex||'';
+    dialog.dataset.selectedItem=target.dataset.catalogIndex?'':target.dataset.index;
     for(const row of dialog.querySelectorAll('[data-act="infusion-object-choose"]')){
-      const active=row.dataset.index===dialog.dataset.selectedItem;
+      const active=dialog.dataset.selectedCatalogIndex?
+        row.dataset.catalogIndex===dialog.dataset.selectedCatalogIndex:
+        !row.dataset.catalogIndex&&row.dataset.index===dialog.dataset.selectedItem;
       row.classList.toggle('is-selected',active);
       row.setAttribute('aria-pressed',String(active));
-      row.querySelector('.inventory-search-result-count').textContent=active?'✓':'+';
+      row.querySelector('.inventory-search-result-count').textContent=active?'✓':
+        row.dataset.catalogIndex?'+':'×'+Math.max(1,Number(state.editor?.read()?.inventory?.[Number(row.dataset.index)]?.quantity)||1);
     }
     dialog.querySelector('[data-act="infusion-dialog-activate"]').disabled=false;return;
   }
@@ -6884,12 +6908,24 @@ async function handleAction(target){
       changes=prepareInfusionPatch(creature,entry,definitions,calculated.features||[],true);
     }else if(act==='infusion-dialog-activate'){
       if(!isInfusionPrepared(creature,entry,definitions))throw Error('Prepara prima l’infusione.');
-      const itemIndex=Number(dialog.dataset.selectedItem);
-      const eligible=compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]);
-      if(!dialog.dataset.selectedItem||!eligible.some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
+      let itemIndex=Number(dialog.dataset.selectedItem),targetRecord=creature;
+      if(dialog.dataset.selectedCatalogIndex){
+        const catalogIndex=Number(dialog.dataset.selectedCatalogIndex);
+        const candidate=state.referenceCatalogs.items?.[catalogIndex];
+        if(!candidate||!isContentAvailableForRules(candidate,creature.rules_version))
+          throw Error('Oggetto del catalogo non disponibile.');
+        const owned=createOwnedItem(candidate,'pwa_'+crypto.randomUUID());
+        if(!infusionEligible(entry,owned))throw Error('Oggetto non compatibile.');
+        targetRecord={...creature,inventory:[...(creature.inventory||[]),owned]};
+        itemIndex=targetRecord.inventory.length-1;
+      }
+      const eligible=compatibleInfusionTargets(targetRecord,entry,definitions,calculated.features||[]);
+      if((!dialog.dataset.selectedItem&&!dialog.dataset.selectedCatalogIndex)||
+         !eligible.some(row=>row.index===itemIndex))
+        throw Error('Scegli un oggetto compatibile.');
       const choice=entry.effect_choice;
       const value=dialog.querySelector('[data-infusion-dialog-effect]')?.value||'';
-      changes=applyInfusionPatch(creature,entry,definitions,calculated.infusion_mechanics,itemIndex,
+      changes=applyInfusionPatch(targetRecord,entry,definitions,calculated.infusion_mechanics,itemIndex,
         calculated.features||[],choice?{[choice.key]:value}:{});
     }else{
       const itemIndex=Number(target.dataset.index),item=creature.inventory?.[itemIndex];
