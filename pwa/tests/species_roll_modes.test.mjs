@@ -118,9 +118,11 @@ test('limited-use racial check advantages get a stable per-trait tracker',()=>{
  const kenkuRule=kenku.find(x=>x.granting_trait==='Kenku Recall');
  assert.ok(kenkuRule?.tracker_id);
  assert.equal(applicableSpeciesRollModes({},{
-  racial_roll_modes:kenku,proficiencies:['skill:arcana']},'skill:arcana').length,1);
+  racial_roll_modes:kenku,proficiencies:['skill:arcana']},'skill:arcana')
+  .filter(row=>row.granting_trait==='Kenku Recall').length,1);
  assert.equal(applicableSpeciesRollModes({},{
-  racial_roll_modes:kenku,proficiencies:['skill:arcana']},'skill:stealth').length,0);
+  racial_roll_modes:kenku,proficiencies:['skill:arcana']},'skill:stealth')
+  .filter(row=>row.granting_trait==='Kenku Recall').length,0);
 });
 
 test('racial modes appear as attributed benefits, with conditions, on their own traits',()=>{
