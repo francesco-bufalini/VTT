@@ -1249,6 +1249,9 @@ function calculateSheetValues(record={},catalogs={}){
       if(!['tracker','slot','free'].includes(resolved.payment_mode))
         resolved.payment_mode=resolved.tracker_id?'tracker':
           ['known','prepared'].includes(resolved.mode)?'slot':'free';
+      // The alternate slot path is meaningful only for an active tracker.
+      if(resolved.payment_mode!=='tracker'||!resolved.tracker_id)
+        resolved.slot_alternative=false;
       originSpellMap.set(key,resolved);
     }
   }
