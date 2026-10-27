@@ -94,6 +94,26 @@ test('SCAG Undying counters stay attached to the selected 2014 Warlock patron',(
   .trackers.some(row=>['Defy Death','Indestructible Life'].includes(row.name)),false);
 });
 
+test('XGE Hexblade uses and actions follow the granting 2014 traits',()=>{
+ const hexblade=creature('Warlock','2014',10,'The Hexblade');
+ const own=calculateSheet(hexblade,catalogs).trackers;
+ const curse=own.find(row=>row.name==="Hexblade's Curse");
+ const specter=own.find(row=>row.name==='Accursed Specter');
+ assert.equal(curse?.max,1);
+ assert.equal(curse?.recharge,'short_rest');
+ assert.equal(curse?.origin_name,"Tratto · Hexblade's Curse");
+ assert.equal(specter?.max,1);
+ assert.equal(specter?.recharge,'long_rest');
+ assert.equal(specter?.origin_name,'Tratto · Accursed Specter');
+ const actions=actionsFor(hexblade,own).filter(row=>row.rule_id.startsWith('warlock_phb_xge_hexblade_'));
+ assert.deepEqual(actions.map(row=>row.time),['bonus','reaction']);
+ assert.equal(actions[0].tracker_id,curse.id);
+ assert.equal(actions[1].tracker_id,'');
+ assert(!calculateSheet(creature('Warlock','2014',5,'The Hexblade'),catalogs).trackers.some(row=>row.name==='Accursed Specter'));
+ assert(!calculateSheet(creature('Warlock','2014',10,'The Fiend'),catalogs).trackers.some(row=>row.name==="Hexblade's Curse"));
+ assert(!calculateSheet(creature('Warlock','2024',10,'The Hexblade'),catalogs).trackers.some(row=>row.name==="Hexblade's Curse"));
+});
+
 test('non-reprinted SCAG Monk and Paladin actions require their own 2014 subclass traits',()=>{
  const longDeath=creature('Monk','2014',6,'Long Death');
  const hour=actionsFor(longDeath,calculateSheet(longDeath,catalogs).trackers)

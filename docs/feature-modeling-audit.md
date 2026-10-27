@@ -7,6 +7,39 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-27: competenze dei tratti XGE non ristampati
+
+Verificate otto voci `subclassFeature` delle classi PHB, con fonte XGE,
+livello e sottoclasse esatti. I record 5etools selezionati non dichiarano
+`reprintedAs`; le versioni XPHB restano separate. Le competenze esplicite
+sono state confrontate con gli XML FightClub5e XGE delle rispettive classi:
+[Bard](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-bard-xge.xml),
+[Cleric](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-cleric-xge.xml),
+[Druid](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-druid-xge.xml),
+[Monk](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-monk-xge.xml),
+[Rogue](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-rogue-xge.xml),
+[Sorcerer](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-sorcerer-xge.xml) e
+[Warlock](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-warlock-xge.xml).
+Le identità sono nei file 5etools
+[`class-*.json`](https://github.com/5etools-mirror-3/5etools-src/tree/master/data/class)
+e sono abbinate al tratto effettivamente presente nella scheda, non al nome
+della classe.
+
+| Sottoclasse e tratto (livello) | Beneficio strutturato |
+| --- | --- |
+| Bard, College of Swords: Bonus Proficiencies (3) | Armatura media e scimitarra. |
+| Cleric, Forge Domain: Bonus Proficiency (1) | Armatura pesante e strumenti da fabbro. |
+| Druid, Circle of the Shepherd: Speech of the Woods (2) | Lingua Silvano. |
+| Monk, Way of the Drunken Master: Bonus Proficiencies (3) | Performance e strumenti da birraio. |
+| Rogue, Mastermind: Master of Intrigue (3) | Disguise kit, forgery kit; un gioco e due lingue rimangono scelte esplicite. |
+| Rogue, Scout: Survivalist (3) | Nature e Survival, ciascuna con expertise. |
+| Sorcerer, Storm Sorcery: Wind Speaker (1) | Lingua Primordial. |
+| Warlock, The Hexblade: Hex Warrior (1) | Armatura media, scudi e armi marziali. |
+
+La proiezione nativa delle competenze legge le stesse righe integrative
+già usate dalla PWA e ne ricava l'ID del `subclassFeature` attivo. Gli
+effetti che dipendono da bersagli, stato o scelta restano nella lista separata.
+
 ## Lotto 2026-10-27: benefici numerici XGE e Wizard War Magic
 
 Riesaminati i tratti XGE di Samurai, Scout e Swashbuckler già censiti, più
@@ -66,7 +99,7 @@ dati mantengono l'identità della voce **XGE** selezionata.
 | Unearthly Recovery (18) | **Ora strutturati:** azione bonus e un uso per riposo lungo; soltanto sotto metà PF, cura metà PF massimi. |
 | Storm Sorcery (1) | Intestazione della sottoclasse XGE. |
 | Tempestuous Magic (1) | **Ora strutturata:** azione bonus immediatamente prima/dopo un incantesimo di livello almeno 1; volo 10 piedi e attacchi di opportunità dipendono dal lancio reale. |
-| Wind Speaker (1) | Lingua Primordial e comprensione dei quattro dialetti; da attribuire al tratto. |
+| Wind Speaker (1) | **Ora strutturata:** lingua Primordial dal tratto. La comprensione dei quattro dialetti resta contestuale. |
 | Heart of the Storm (6) | Resistenza a fulmine/tuono; danno a creature scelte entro 10 piedi al lancio di incantesimo idoneo, metà livello da Sorcerer. Non danno costante. |
 | Storm Guide (6) | **Ora strutturate:** azione per sospendere la pioggia, azione bonus per terminarla e azione bonus per dirigere il vento; effetti disponibili solo con il meteo corrispondente. |
 | Storm's Fury (14) | **Ora strutturata:** reazione al colpo in mischia; danno da fulmine pari al livello da Sorcerer, TS FOR per la spinta. |
@@ -132,14 +165,14 @@ legate alla sottoclasse Rogue **PHB**, senza attribuirle a Rogue XPHB.
 | Inquisitive: Unerring Eye (13) | **Ora strutturati:** azione e usi pari al modificatore Saggezza (minimo uno) per riposo lungo, dal tratto XGE. Rilevamento, portata e condizioni dei sensi restano contestuali. |
 | Inquisitive: Eye for Weakness (17) | +3d6 al Furtivo contro una creatura cui si applica Insightful Fighting; non danno permanente. |
 | Mastermind: Mastermind (3) | Intestazione dell'archetipo. |
-| Mastermind: Master of Intrigue (3) | Competenze nei due strumenti, un gioco scelto e due lingue scelte; imitazione dopo ascolto. Concessioni ancora da legare al tratto. |
+| Mastermind: Master of Intrigue (3) | **Ora strutturate:** competenze nei due strumenti e requisiti per un gioco e due lingue scelti, dal tratto. Imitazione dopo ascolto ancora contestuale. |
 | Mastermind: Master of Tactics (3) | **Ora strutturata:** Help come azione bonus. Portata 30 piedi solo per aiutare un attacco e se il bersaglio può vedere o sentire. |
 | Mastermind: Insightful Manipulator (9) | Osservazione/interazione di almeno un minuto e confronto di due caratteristiche scelte; risposta del DM. |
 | Mastermind: Misdirection (13) | **Ora strutturata:** reazione del tratto. Bersaglio dell'attacco e copertura fornita da altra creatura entro 5 piedi restano contestuali. |
 | Mastermind: Soul of Deceit (17) | Protezione dei pensieri, possibile finzione e magia della verità; scelte e prove contestuali. |
 | Scout: Scout (3) | Intestazione dell'archetipo. |
 | Scout: Skirmisher (3) | **Ora strutturata:** reazione del tratto. Trigger a fine turno del nemico, distanza, metà velocità e assenza di attacchi di opportunità restano contestuali. |
-| Scout: Survivalist (3) | Nature e Survival con competenza raddoppiata; da attribuire al tratto esatto. |
+| Scout: Survivalist (3) | **Ora strutturato:** Nature e Survival con expertise dal tratto esatto. |
 | Scout: Superior Mobility (9) | **Ora strutturato:** +10 piedi a camminare dal tratto XGE. Nuoto/scalata aumentano solo se già posseduti; resta aperto il loro aggiornamento condizionale. |
 | Scout: Ambush Master (13) | Vantaggio all'iniziativa e vantaggio agli attacchi contro il primo bersaglio colpito nel primo round fino al turno successivo; trigger contestuale. |
 | Scout: Sudden Strike (17) | **Ora strutturata:** azione bonus dopo Attack. Attacco e secondo Furtivo richiedono bersagli diversi nello stesso turno. |
@@ -344,7 +377,7 @@ nei dati senza usare il livello totale del personaggio in multiclasse.
 | Dreams: Hidden Paths (10) | **Ora strutturati:** usi pari a Saggezza (minimo uno), riposo lungo, due attivazioni sullo stesso pool: bonus per sé, azione per creatura consenziente toccata. Posizione e spazio libero restano manuali. |
 | Dreams: Walker in Dreams (14) | **Ora strutturato:** un uso/riposo lungo. Incantesimo scelto dopo un riposo breve, destinazione speciale e fallimento non consumante restano aperti. |
 | Shepherd: Circle of the Shepherd (2) | Intestazione della sottoclasse. |
-| Shepherd: Speech of the Woods (2) | Lingua Silvano e comunicazione con bestie; attribuire la lingua al tratto esatto. |
+| Shepherd: Speech of the Woods (2) | **Ora strutturata:** lingua Silvano dal tratto esatto. La comunicazione con bestie resta contestuale. |
 | Shepherd: Spirit Totem (2) | **Ora strutturati:** un uso/riposo breve e azione bonus per evocare. Tipo di spirito scelto, aura, durata e spostamento del totem restano contestuali. |
 | Shepherd: Mighty Summoner (6) | PF e attacchi delle creature evocate da propri incantesimi; non un bonus al Druido. |
 | Shepherd: Guardian Spirit (10) | Cura a fine turno delle creature evocate dentro l'aura del totem. |

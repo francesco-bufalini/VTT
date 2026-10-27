@@ -4,7 +4,8 @@
     "5etools-src/data/class/class-*.json",
     "FightClub5eXML/class-druid-phb.xml",
     "FightClub5eXML/class-bard-phb.xml",
-    "FightClub5eXML/class-wizard-xge.xml"
+    "FightClub5eXML/class-wizard-xge.xml",
+    "FightClub5eXML/class-warlock-xge.xml"
   ],
   "note": "Validated class/edition/subclass activation alternatives and full/partial/limited recovery. Runtime uses exact structured identifiers; text and tags are informative only. Partial recovery is not a short-rest reset. Optional recovery requires explicit use. Attack-count benefits use their granting feature and never stack: highest active attacks_per_action wins.",
   "actions": [
@@ -662,6 +663,36 @@
       "activation": "free",
       "tracker_name": "Channel Divinity",
       "detail": "Quando tiri danni da fulmine o tuono, usa Incanalare Divinità per massimizzare quei dadi.",
+      "kind": "activation",
+      "priority": 0
+    },
+    {
+      "id": "warlock_phb_xge_hexblade_hexblades_curse",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "min_level": 1,
+      "subclass": "The Hexblade",
+      "feature": "Hexblade's Curse",
+      "action_id": "hexblades_curse",
+      "name": "Maledizione dell'Hexblade",
+      "activation": "bonus",
+      "tracker_name": "Hexblade's Curse",
+      "detail": "Azione bonus e un uso del tratto: maledici una creatura visibile entro 30 piedi per un minuto. Bersaglio, bonus ai danni, critico e cura alla morte restano da applicare nel contesto.",
+      "kind": "activation",
+      "priority": 0
+    },
+    {
+      "id": "warlock_phb_xge_hexblade_armor_of_hexes",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "min_level": 10,
+      "subclass": "The Hexblade",
+      "feature": "Armor of Hexes",
+      "action_id": "armor_of_hexes",
+      "name": "Armatura dei malefici",
+      "activation": "reaction",
+      "tracker_name": "",
+      "detail": "Reazione quando il bersaglio della tua Hexblade's Curse ti colpisce: con 4–6 su un d6 l'attacco manca. Il bersaglio e il tiro restano contestuali.",
       "kind": "activation",
       "priority": 0
     },

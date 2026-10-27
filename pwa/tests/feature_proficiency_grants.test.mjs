@@ -15,6 +15,46 @@ const traitOf=c=>c.features.find(f=>f.name==='Tools of the Trade');
 const featureChoices=(r,c=calculateSheet(r,catalogs))=>pendingCharacterChoices(r,c,catalogs)
  .filter(choice=>choice.origin_id===traitOf(c)?.origin_id);
 
+test('unreprinted XGE training belongs to eight individual 2014 subclass traits',()=>{
+ const legacy=(klass,subclass,level,source='PHB')=>({kind:'character',
+  rules_version:source==='PHB'?'2014':'2024',class:klass,class_source:source,
+  level,subclass,subclass_source:'XGE',
+  classes:[{name:klass,source,level,subclass,subclass_source:'XGE'}],
+  abilities:{str:10,dex:14,con:10,int:12,wis:14,cha:14},inventory:[]});
+ const cases=[
+  ['Bard','College of Swords',3,'Bonus Proficiencies',['armor:medium','weapon:scimitar']],
+  ['Cleric','Forge Domain',1,'Bonus Proficiency',['armor:heavy',"tool:smith's tools"]],
+  ['Druid','Circle of the Shepherd',2,'Speech of the Woods',['language:sylvan']],
+  ['Monk','Way of the Drunken Master',3,'Bonus Proficiencies',['skill:performance',"tool:brewer's supplies"]],
+  ['Rogue','Mastermind',3,'Master of Intrigue',['tool:disguise kit','tool:forgery kit']],
+  ['Rogue','Scout',3,'Survivalist',['skill:nature','skill:survival','expertise:nature','expertise:survival']],
+  ['Sorcerer','Storm Sorcery',1,'Wind Speaker',['language:primordial']],
+  ['Warlock','The Hexblade',1,'Hex Warrior',['armor:medium','armor:shield','weapon:martial']]
+ ];
+ for(const [klass,subclass,level,name,keys] of cases){
+  const r=legacy(klass,subclass,level),c=calculateSheet(r,catalogs);
+  const trait=c.features.find(f=>f.name===name);
+  assert(trait,`${klass}: ${name} must be an owned trait`);
+  for(const key of keys){
+   assert(c.proficiencies.includes(key),`${klass}: ${key}`);
+   assert(c.proficiency_sources[key]?.some(row=>row.id===trait.origin_id),`${name} must grant ${key}`);
+   const muted=calculateSheet({...r,origin_enabled:{[trait.origin_id]:false}},catalogs);
+   assert(!muted.proficiency_sources[key]?.some(row=>row.id===trait.origin_id));
+   const revised=calculateSheet(legacy(klass,subclass,level,'XPHB'),catalogs);
+   assert(!revised.proficiency_sources[key]?.some(row=>row.id===trait.origin_id));
+  }
+  if(level>1){
+   const below=legacy(klass,subclass,level-1);
+   assert(!calculateSheet(below,catalogs).features.some(f=>f.name===name));
+  }
+ }
+ const m=legacy('Rogue','Mastermind',3),c=calculateSheet(m,catalogs);
+ const trait=c.features.find(f=>f.name==='Master of Intrigue');
+ const choices=pendingCharacterChoices(m,c,catalogs).filter(choice=>choice.origin_id===trait.origin_id);
+ assert(choices.some(choice=>choice.proficiency_kind==='tool'&&choice.count===1&&choice.options.includes('dice set')));
+ assert(choices.some(choice=>choice.proficiency_kind==='language'&&choice.count===2));
+});
+
 test('Armorer grants heavy armor and smith tools at level 3 on its actual trait in both editions',()=>{
  for(const source of ['TCE','EFA']){
   const before=calculateSheet(armorer(2,source),catalogs);

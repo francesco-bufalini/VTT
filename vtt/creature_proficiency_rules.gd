@@ -259,7 +259,7 @@ static func choices(record: Dictionary) -> Array[Dictionary]:
 								result.append({"kind": "weapon", "key": item_name, "origin_id": "", "origin_name": "", "disabled": false})
 	# Structured unconditional grants are materialized for every eligible
 	# origin, including a fresh sheet that has never opened the editor.
-	for source: Dictionary in candidate_sources(record):
+	for source: Dictionary in _grant_sources(record):
 		if not source_has_grants(source):
 			continue
 		var fixed: Array[Dictionary] = fixed_grants(source)
@@ -416,6 +416,25 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 					"name": _origin_title(group, name, "starting") + " · " + source,
 					"group": group, "data": row, "mode": "starting"})
 	return candidates
+
+
+# Feature grants use the exact live trait identity. Keep this separate from
+# candidate_sources(), which is called while the feature list is assembled.
+static func _grant_sources(record: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = candidate_sources(record)
+	_load_sources()
+	var by_id: Dictionary = {}
+	for group: String in ["classFeature", "subclassFeature"]:
+		for row: Dictionary in _sources.get(group, []):
+			by_id[String(row.get("id", ""))] = row
+	for feature_origin: Dictionary in trait_origins(record):
+		var sid: String = String(feature_origin.get("id", ""))
+		var feature_id: String = sid.substr(sid.rfind("|") + 1)
+		if not by_id.has(feature_id):
+			continue
+		result.append({"id": sid, "name": String(feature_origin.get("name", "")),
+			"group": "feature", "data": by_id[feature_id], "mode": "feature"})
+	return result
 
 
 static func _selected_source(record: Dictionary, group: String, name: String, source: String, indexed: Dictionary = {}) -> bool:
@@ -611,7 +630,7 @@ static func _weapon_group(key: String) -> String:
 static func suggest_origins(record: Dictionary, kind: String, key: String) -> Array[Dictionary]:
 	var matches: Array[Dictionary] = []
 	var group := _weapon_group(normalized_key(key)) if kind == "weapon" else ""
-	for candidate: Dictionary in candidate_sources(record):
+	for candidate: Dictionary in _grant_sources(record):
 		var grants: Variant = _grants_data(candidate, kind)
 		var matching := grant_matches(grants, kind, key)
 		if matching == 0 and kind == "weapon" and not group.is_empty() and group != normalized_key(key):
@@ -746,7 +765,7 @@ static func _is_replaced_identity(sid: String, active: Dictionary) -> bool:
 static func is_mandatory_grant(record: Dictionary, sid: String, kind: String, key: String) -> bool:
 	if sid.is_empty():
 		return false
-	for source: Dictionary in candidate_sources(record):
+	for source: Dictionary in _grant_sources(record):
 		if String(source.get("id", "")) != sid:
 			continue
 		for grant: Dictionary in fixed_grants(source):
@@ -839,7 +858,7 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 				if _is_replaced_identity(sid, live):
 					continue
 				saved[sid] = item
-	for source: Dictionary in candidate_sources(record):
+	for source: Dictionary in _grant_sources(record):
 		if not source_has_grants(source) and String(source.get("group", "")) != "feat":
 			continue
 		var sid: String = String(source.get("id", ""))

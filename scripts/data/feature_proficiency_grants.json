@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "Reviewed against 5etools v2.37.0 class feature entries (PHB/TCE/EFA); supplements fill absent typed fields only. Other prose-only mechanics require an explicit reviewed entry.",
+  "source": "Reviewed against source-qualified 5etools class features (PHB/XGE/TCE/EFA) and FightClub5eXML; supplements fill absent typed fields only. Other prose-only mechanics require an explicit reviewed entry.",
   "entries": [
     {
       "kind": "subclassFeature",
@@ -172,6 +172,100 @@
           "heavy": true
         }
       ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "XGE",
+      "className": "Bard",
+      "classSource": "PHB",
+      "subclassShortName": "Swords",
+      "subclassSource": "XGE",
+      "level": 3,
+      "armorProficiencies": [{"medium": true}],
+      "weaponProficiencies": [{"scimitar": true}]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiency",
+      "source": "XGE",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Forge",
+      "subclassSource": "XGE",
+      "level": 1,
+      "armorProficiencies": [{"heavy": true}],
+      "toolProficiencies": [{"smith's tools": true}]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Speech of the Woods",
+      "source": "XGE",
+      "className": "Druid",
+      "classSource": "PHB",
+      "subclassShortName": "Shepherd",
+      "subclassSource": "XGE",
+      "level": 2,
+      "languageProficiencies": [{"sylvan": true}]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "XGE",
+      "className": "Monk",
+      "classSource": "PHB",
+      "subclassShortName": "Drunken Master",
+      "subclassSource": "XGE",
+      "level": 3,
+      "skillProficiencies": [{"performance": true}],
+      "toolProficiencies": [{"brewer's supplies": true}]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Master of Intrigue",
+      "source": "XGE",
+      "className": "Rogue",
+      "classSource": "PHB",
+      "subclassShortName": "Mastermind",
+      "subclassSource": "XGE",
+      "level": 3,
+      "toolProficiencies": [{"disguise kit": true, "forgery kit": true}, {"anyGamingSet": 1}],
+      "languageProficiencies": [{"any": 2}]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Survivalist",
+      "source": "XGE",
+      "className": "Rogue",
+      "classSource": "PHB",
+      "subclassShortName": "Scout",
+      "subclassSource": "XGE",
+      "level": 3,
+      "skillProficiencies": [{"nature": true, "survival": true}],
+      "expertise": [{"nature": true, "survival": true}]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Wind Speaker",
+      "source": "XGE",
+      "className": "Sorcerer",
+      "classSource": "PHB",
+      "subclassShortName": "Storm",
+      "subclassSource": "XGE",
+      "level": 1,
+      "languageProficiencies": [{"primordial": true}]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Hex Warrior",
+      "source": "XGE",
+      "className": "Warlock",
+      "classSource": "PHB",
+      "subclassShortName": "Hexblade",
+      "subclassSource": "XGE",
+      "level": 1,
+      "armorProficiencies": [{"medium": true, "shield": true}],
+      "weaponProficiencies": [{"martial": true}]
     }
   ]
 }
