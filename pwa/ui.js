@@ -4,7 +4,7 @@ import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -1059,6 +1059,7 @@ async function computeLocalData(record){
     ...(record.known_spells||[])].filter(spell=>spell&&typeof spell==='object'&&spell.id);
   catalogs={...catalogs,spells:[...new Map([...(catalogs.spells||[]),...visibleSpells]
     .map(spell=>[spell.id,spell])).values()]};
+  catalogs.abilityGrants={...(catalogs.abilityGrants||{}),artificer_infusions:(inventoryModule.expandedInfusionDefinitions||((rows)=>rows))(catalogs.abilityGrants?.artificer_infusions||[])};
   const calculated=calculateSheet(record,catalogs);
   return {...calculated,loadError,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
@@ -1105,13 +1106,13 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   {label:'Origine',value:ability.origin_name||'Tratto di classe'}
  ],ability.description||'',ability.active?'Capacità attiva':'Capacità disponibile','feature-close')+
   abilityPaymentField(ability,calculated)+
-  (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" value="1"></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
+  (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" required></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
   (ability.mode==='heal_roll'?'<p>Tira 1d10 e aggiungi il livello da Guerriero. La cura si applica a te stesso.</p>':'')+
   (conversion?'<label>Livello slot<select data-feature-level>'+[1,2,3,4,5].map(n=>'<option>'+n+'</option>').join('')+'</select></label><label class="check"><input data-feature-create type="checkbox" checked>Crea uno slot (disattiva per convertire uno slot in punti)</label>':'')+
   (recovery?'<p>Massimo '+Math.ceil(Number((c.classes||[]).find(x=>x.name==='Wizard')?.level||c.level||0)/2)+' livelli di slot.</p>'+[1,2,3,4,5].map(n=>'<label>Slot di livello '+n+'<input data-feature-recover="'+n+'" type="number" min="0" max="'+Number(c.spell_slots_spent?.[n]||0)+'" value="0"></label>').join(''):'')+
   (enhanced?'<label class="check"><input data-feature-enhanced type="checkbox">Versione potenziata · 1 punto Focus</label>':'')+
   (ability.mode==='metamagic_roll'?'<p>Scegli i dadi da sostituire: devi utilizzare i nuovi risultati.</p>'+
-   (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
+   (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" required></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
   featureCompanionFields(companion)+
    '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
@@ -1121,10 +1122,13 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   const button=event.currentTarget;button.disabled=true;
   try{
    const current=state.editor?.read();if(current?.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
+   for(const input of dialog.querySelectorAll('[data-feature-amount],[data-feature-count]')){
+     if(input.value.trim()===''||!input.checkValidity())throw Error('Inserisci un valore numerico valido.');
+   }
    const fresh=await computeLocalData(current),options={amount:dialog.querySelector('[data-feature-amount]')?.value,
     level:dialog.querySelector('[data-feature-level]')?.value,create_slot:dialog.querySelector('[data-feature-create]')?.checked,
     apply_to_self:dialog.querySelector('[data-feature-self]')?.checked,enhanced:!!dialog.querySelector('[data-feature-enhanced]')?.checked,
-    count:Number(dialog.querySelector('[data-feature-count]')?.value||1),sides:Number(dialog.querySelector('[data-feature-sides]')?.value||20),
+    count:Number(dialog.querySelector('[data-feature-count]')?.value??1),sides:Number(dialog.querySelector('[data-feature-sides]')?.value||20),
     levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value)),
     tracker_id:abilityPaymentChoice(dialog)};
    if(ability.mode==='heal_roll')options.roll=randomDie(10);
@@ -1183,7 +1187,7 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
  'subclass-tracker-close')+
  (paymentOptions.length?'<label>Risorsa da utilizzare<select data-companion-payment>'+paymentOptions.map(([id,label])=>'<option value="'+esc(id)+'">'+esc(label)+'</option>').join('')+'</select></label>':
    available>1?'<label>Utilizzi da consumare<input type="number" data-subclass-amount min="1" max="'+
-  esc(available)+'" step="1" value="1"></label>':'')+
+  esc(available)+'" step="1" required></label>':'')+
  featureCompanionFields(companion)+
   '<p data-subclass-result role="status"></p>'+
  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-subclass-confirm>Conferma utilizzo</button>'+
@@ -1195,7 +1199,10 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
   try{
    const current=state.editor?.read();
    if(!current||current.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
-   const raw=dialog.querySelector('[data-subclass-amount]')?.value??'1',amount=Number(raw);
+   const amountInput=dialog.querySelector('[data-subclass-amount]');
+   if(amountInput&&(amountInput.value.trim()===''||!amountInput.checkValidity()))
+     throw Error('Inserisci un numero valido di utilizzi.');
+   const raw=amountInput?.value??'1',amount=Number(raw);
    const fresh=await computeLocalData(current);
    const liveCompanion=companion?await companionFeatureChoices(current,fresh,originId):null;
    if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
@@ -1364,6 +1371,7 @@ function ensureInventorySearchCatalog(){
   inventoryCatalogRequest=catalogEntries('items').then(rows=>{
     state.referenceCatalogs.items=rows;
     paintInventorySearchResults();
+    app.querySelector('#infusion-action-dialog [data-infusion-object-search]')?.dispatchEvent(new Event('input'));
   }).catch(error=>{
     state.inventorySearchCatalogError=errorMessage(error);
     paintInventorySearchResults();
@@ -1418,7 +1426,7 @@ function openInventorySearchAddDialog(catalogIndex){
     dialogCloseButton('inventory-search-add-close','Chiudi','play-button')+'</header>'+
     '<div class="sheet-context-body inventory-search-add-fields">'+
     '<label>Sezione<select id="inventory-search-add-section">'+options+'</select></label>'+
-    '<label>Quantità<input type="number" id="inventory-search-add-quantity" value="1" min="1" max="99999" step="1" required></label></div>'+
+    '<label>Quantità<input type="number" id="inventory-search-add-quantity" min="1" max="99999" step="1" required></label></div>'+
     '<footer class="pending-choice-actions"><button type="button" data-act="inventory-search-add-close">Annulla</button>'+
     '<button type="button" data-act="inventory-search-add-confirm">Aggiungi oggetto</button></footer>';
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -2106,7 +2114,7 @@ function infusionPanel(c,calculated){
  const active=(c.inventory||[]).map((item,index)=>({item,index}))
    .filter(({item})=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
  const available=definitions.filter(row=>caps.level>=Math.max(2,Number(row.min_level)||2)&&
-   (row.application_kind==='replicate'||!known.some(entry=>entry.id===row.id)))
+   (!row.legacy_replicate&&!known.some(entry=>entry.id===row.id)))
    .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
      String(a.name).localeCompare(String(b.name),'it'));
  const choices=(id,entries)=>'<select id="'+id+'">'+entries.map(([key,label])=>
@@ -2167,6 +2175,73 @@ function infusionPanel(c,calculated){
    (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
 }
 
+
+function selectableInfusions(mode,creature,calculated){
+ const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
+ const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
+ if(mode==="prepare")return known;
+ return (calculated.infusion_catalog||[]).filter(row=>!row.legacy_replicate&&
+   caps.level>=Math.max(2,Number(row.min_level)||2))
+   .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
+    String(a.name).localeCompare(String(b.name),"it"));
+}
+async function openInfusionPicker(mode){
+ if(!["learn","prepare"].includes(mode))throw Error("Selezione non valida.");
+ const creature=state.editor?.read();if(!creature)throw Error("Scheda non disponibile.");
+ const calculated=await computeLocalData(creature),options=selectableInfusions(mode,creature,calculated);
+ const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
+ const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
+ const count=mode==="learn"?known.length+" / "+caps.known:
+  known.filter(row=>isInfusionPrepared(creature,row,calculated.infusion_catalog||[])).length+" / "+caps.active;
+ app.querySelector("#infusion-picker-dialog")?.remove();
+ const dialog=document.createElement("dialog");dialog.id="infusion-picker-dialog";
+ dialog.dataset.mode=mode;dialog.className="sheet-roll-dialog magic-tools-dialog infusion-picker-dialog";
+ dialog.innerHTML='<div class="magic-tools-head"><h2>'+
+   (mode==="learn"?"Impara infusioni":"Prepara infusioni")+'</h2>'+
+   dialogCloseButton("infusion-picker-close","Chiudi","magic-tool-close")+'</div><div class="magic-tools-body">'+
+   '<p class="magic-selection-warning">'+(mode==="learn"?"Conosciute ":"Preparate ")+esc(count)+'</p>'+
+   '<label class="vtt-list-search magic-editor-search">Cerca infusione'+
+   '<input type="search" data-infusion-search autocomplete="off" placeholder="Nome o fonte"></label>'+
+   '<div class="catalog-results vtt-selection-list magic-editor-results infusion-picker-results" role="list"></div>'+
+   '<div class="actions"><button type="button" class="btn" data-act="infusion-picker-close">Chiudi</button></div></div>';
+ const input=dialog.querySelector("[data-infusion-search]");
+ const results=dialog.querySelector(".infusion-picker-results");
+ const paint=()=>{
+  const shown=options.filter(row=>matchesSearch(input.value,row.name,row.source,row.replicates_item_name));
+  const levels=[...new Set(shown.map(row=>Math.max(2,Number(row.min_level)||2)))];
+  results.innerHTML=shown.length?'<div class="magic-groups">'+levels.map(level=>
+   '<section class="magic-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div><div class="magic-entries">'+
+   shown.filter(row=>Math.max(2,Number(row.min_level)||2)===level).map(row=>{
+    const isKnown=known.some(entry=>entry.id===row.id);
+    const active=mode==="learn"?isKnown:isInfusionPrepared(creature,row,calculated.infusion_catalog||[]);
+    const action=mode==="learn"?(active?"Dimentica":"+ Impara"):(active?"✓ Preparata":"+ Prepara");
+    return '<div class="magic-catalog-row vtt-selectable'+(active?' is-selected':'')+'">'+
+     '<button type="button" class="magic-catalog-name" data-act="infusion-picker-details" data-infusion-id="'+esc(row.id)+'" aria-label="Dettagli di '+esc(row.name)+'">'+esc(row.name)+'</button>'+
+     '<button type="button" class="magic-catalog-action'+(active?' is-selected':'')+'" data-act="infusion-picker-select" data-infusion-id="'+esc(row.id)+'" aria-pressed="'+active+'">'+action+'</button></div>';
+   }).join('')+'</div></section>').join('')+'</div>':
+    '<p class="hint">Nessuna infusione disponibile.</p>';
+ };
+ input.addEventListener("input",paint);paint();
+ app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
+}
+
+
+async function openInfusionPickerPreview(id){
+ const c=state.editor?.read();if(!c)throw Error("Scheda non disponibile.");
+ const d=await computeLocalData(c),entry=(d.infusion_catalog||[]).find(row=>row.id===id);
+ if(!entry)throw Error("Infusione non disponibile.");
+ app.querySelector("#infusion-preview-dialog")?.remove();
+ const dialog=document.createElement("dialog");dialog.id="infusion-preview-dialog";
+ dialog.className="sheet-roll-dialog magic-spell-dialog infusion-preview-dialog";
+ dialog.innerHTML=actionDialogIntro(entry.name,[
+  {label:"Livello richiesto",value:String(Math.max(2,Number(entry.min_level)||2))},
+  ...(entry.item_prerequisite?[{label:"Oggetto richiesto",value:entry.item_prerequisite}]:[]),
+  ...(entry.replicates_item_name?[{label:"Oggetto replicato",value:entry.replicates_item_name}]:[])
+ ],flattenDescription(entry)||String(entry.description||"")||"Descrizione non disponibile.",
+  "Infusione dell’Artefice · "+(entry.source||"TCE"),"infusion-preview-close")+
+  '<div class="actions"><button type="button" class="btn" data-act="infusion-preview-close">Chiudi</button></div>';
+ app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
+}
 async function openInfusionActionDialog(index){
  const creature=state.editor?.read();
  if(!creature)throw Error('Apri prima la scheda di una creatura.');
@@ -2183,12 +2258,12 @@ async function openInfusionActionDialog(index){
   ...(entry.item_prerequisite?[{label:'Oggetto richiesto',value:entry.item_prerequisite}]:[]),
   {label:'Sintonia',value:entry.requires_attunement?'Richiesta per beneficiare degli effetti':'Non richiesta'}
  ];
- const description=flattenDescription(entry)||
-  'Applica questa infusione a un oggetto compatibile. Gli effetti dipendono dall’infusione e dalle condizioni dell’oggetto.';
+ const description=flattenDescription(entry)||String(entry.description||'').trim()||
+  'L’infusione modifica magicamente un oggetto. Consulta il tratto per i dettagli.';
  app.querySelector('#infusion-action-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='infusion-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
- dialog.dataset.infusionIndex=String(index);
+ dialog.dataset.infusionIndex=String(index);dialog.dataset.selectedItem='';dialog.dataset.selectedCatalogIndex='';
  const options=(entry.effect_choice?.options||[]);
  dialog.innerHTML=actionDialogIntro(entry.name,facts,description,
    'Infusione dell’artefice'+(entry.source?' · '+entry.source:''),
@@ -2197,20 +2272,55 @@ async function openInfusionActionDialog(index){
      applied.map(({item,index:itemIndex})=>'<div class="infusion-dialog-item"><span>'+esc(item.name||item.id)+
        '<small>Infusione applicata</small></span><button type="button" class="btn" data-act="infusion-dialog-remove" data-index="'+itemIndex+'">Disattiva</button></div>').join('')+
      '</section>':'')+
-   (targets.length?'<label>Oggetto bersaglio<select id="infusion-item-target">'+
-     targets.map(({item,index:itemIndex})=>'<option value="'+itemIndex+'">'+esc(item.name||item.id)+'</option>').join('')+
-     '</select></label>':
-     prepared?'<p class="hint">Nessun oggetto compatibile disponibile per una nuova attivazione.</p>':
-     '<p class="hint">Prepara l’infusione prima di applicarla a un oggetto.</p>')+
-   (prepared&&targets.length&&options.length?
+   (prepared?'<label class="vtt-list-search inventory-global-search infusion-target-search">Cerca oggetto compatibile'+
+     '<input type="search" data-infusion-object-search placeholder="Cerca nell’inventario e nel catalogo" autocomplete="off"></label>'+
+     '<div class="inventory-search-results vtt-selection-list infusion-target-results" role="list" aria-label="Oggetti compatibili"></div>':
+     prepared?'<p class="hint">Nessun oggetto compatibile disponibile.</p>':
+     '<p class="hint">Prepara l’infusione prima di usarla.</p>')+
+   (prepared&&options.length?
      '<label>'+esc(entry.effect_choice.label||'Scelta effetto')+'<select data-infusion-dialog-effect>'+
      options.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
    '<div class="actions magic-dialog-actions">'+
     (!prepared?'<button type="button" class="btn" data-act="infusion-dialog-prepare">Prepara</button>':'')+
-    '<button type="button" class="btn primary" data-act="infusion-dialog-activate"'+(!prepared||!targets.length?' disabled':'')+'>Attiva</button>'+
+    '<button type="button" class="btn primary" data-act="infusion-dialog-activate" disabled>Usa</button>'+
     '<button type="button" class="btn" data-act="infusion-dialog-close">Chiudi</button></div>';
+ const results=dialog.querySelector('.infusion-target-results'),search=dialog.querySelector('[data-infusion-object-search]');
+ if(results&&search){
+  const paint=()=>{
+   const query=search.value.trim();
+   const owned=targets.filter(({item})=>matchesSearch(query,item.name,item.source,item.id));
+   const catalog=(state.referenceCatalogs.items||[]).map((item,index)=>({item,index}))
+    .filter(({item})=>query.length>=2&&item?.id&&item?.name&&matchesSearch(query,item.name,item.source)&&
+      isContentAvailableForRules(item,creature.rules_version)&&
+      !creature.inventory?.some(owned=>owned.id===item.id)&&
+      infusionEligible(entry,createOwnedItem(item,"infusion-preview")))
+    .slice(0,60);
+   const rows=owned.map(({item,index:itemIndex})=>{
+    const active=dialog.dataset.selectedItem===String(itemIndex)&&!dialog.dataset.selectedCatalogIndex;
+    return '<button type="button" class="inventory-search-result vtt-selectable'+(active?' is-selected':'')+
+      '" data-act="infusion-object-choose" data-index="'+itemIndex+'" aria-pressed="'+active+'">'+
+      '<span class="inventory-search-result-count'+(active?'':' is-add')+'" aria-hidden="true">'+(active?'✓':'×'+Math.max(1,Number(item.quantity)||1))+'</span>'+
+      '<span class="inventory-search-result-copy"><strong>'+esc(item.name||item.id)+'</strong>'+
+      (item.source?'<small>'+esc(item.source)+'</small>':'')+'</span>'+
+      '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
+   });
+   rows.push(...catalog.map(({item,index})=>{
+    const active=dialog.dataset.selectedCatalogIndex===String(index);
+    return '<button type="button" class="inventory-search-result vtt-selectable'+(active?' is-selected':'')+
+      '" data-act="infusion-object-choose" data-catalog-index="'+index+'" aria-pressed="'+active+'">'+
+      '<span class="inventory-search-result-count'+(active?'':' is-add')+'" aria-hidden="true">'+(active?'✓':'+')+'</span>'+
+      '<span class="inventory-search-result-copy"><strong>'+esc(item.name||item.id)+'</strong>'+
+      '<small>'+esc(item.source||"Catalogo")+'</small></span>'+
+      '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
+   }));
+   results.innerHTML=rows.length?rows.join(''):'<p class="inventory-search-notice">'+
+     (query.length<2?'Cerca un oggetto nel catalogo o scegli un oggetto posseduto.':'Nessun oggetto compatibile trovato.')+'</p>';
+  };
+  search.addEventListener('input',paint);paint();
+ }
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
+ if(prepared)ensureInventorySearchCatalog();
 }
 
 const INVENTORY_PROPERTY_LABELS={
@@ -3150,8 +3260,8 @@ function diceResult(){
 }
 function diceView(){
   return '<h2 id="chat-dice-title">Lancia i dadi</h2><div class="columns">'+
-    '<label>Numero dadi<input id="die-count" type="number" value="1" min="1" max="20"></label>'+
-    '<label>Modificatore<input id="die-mod" type="number" value="0" min="-999" max="999"></label></div>'+
+    '<label>Numero dadi<input id="die-count" type="number" min="1" max="20" required></label>'+
+    '<label>Modificatore<input id="die-mod" type="number" min="-999" max="999"></label></div>'+
     '<div class="dice-options">'+[4,6,8,10,12,20,100].map(n=>
     '<button class="btn" type="button" data-act="select-die" data-sides="'+n+'" aria-pressed="'+(state.diceSides===n)+'">d'+n+'</button>').join("")+'</div>'+
     '<div class="actions"><button type="button" class="btn primary full" data-act="roll">Tira d'+state.diceSides+'</button></div>'+
@@ -6612,7 +6722,7 @@ async function handleAction(target){
     const diceControls=pools.map(pool=>'<label class="play-rest-die">'+
       '<span>d'+pool.die+' · '+pool.available+' / '+pool.total+' disponibili</span>'+
       '<input type="number" inputmode="numeric" data-rest-die="'+pool.die+
-      '" min="0" max="'+pool.available+'" step="1" value="0" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
+      '" min="0" max="'+pool.available+'" step="1" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
     const preview=document.createElement('section');
     preview.className='play-rest-confirm';preview.dataset.restPreview=event;
     preview.innerHTML='<h3>Conferma '+(event==='long_rest'?'riposo lungo':'riposo breve')+'</h3>'+
@@ -6739,8 +6849,52 @@ async function handleAction(target){
     }
     return;
   }
+
+  if(act==='infusion-picker-open'){
+    await openInfusionPicker(target.dataset.mode);return;
+  }
+  if(act==='infusion-picker-close'){
+    closeDialog(app.querySelector("#infusion-picker-dialog"),{remove:true});return;
+  }
+  if(act==='infusion-picker-details'){
+    await openInfusionPickerPreview(target.dataset.infusionId);return;
+  }
+  if(act==='infusion-preview-close'){
+    closeDialog(app.querySelector("#infusion-preview-dialog"),{remove:true});return;
+  }
+  if(act==='infusion-picker-select'){
+    const dialog=app.querySelector("#infusion-picker-dialog"),record=state.editor?.read();
+    if(!dialog?.open||!record)throw Error("Riapri la selezione delle infusioni.");
+    const d=await computeLocalData(record),mode=dialog.dataset.mode;
+    const option=selectableInfusions(mode,record,d).find(row=>row.id===target.dataset.infusionId);
+    if(!option)throw Error("Infusione non disponibile.");
+    const already=learnedInfusions(record,d.infusion_catalog).find(row=>row.id===option.id);
+    const changes=mode==="learn"?(already?
+      forgetInfusionPatch(record,already):
+      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[])):
+      prepareInfusionPatch(record,option,d.infusion_catalog,d.features||[],
+        !isInfusionPrepared(record,option,d.infusion_catalog));
+    await patch(changes);closeDialog(dialog,{remove:true});await render();
+    await openInfusionPicker(mode);return;
+  }
   if(act==='infusion-open'){
     await openInfusionActionDialog(Number(target.dataset.index));return;
+  }
+  if(act==='infusion-object-choose'){
+    const dialog=app.querySelector('#infusion-action-dialog');
+    if(!dialog?.open)throw Error('Riapri la selezione dell’oggetto.');
+    dialog.dataset.selectedCatalogIndex=target.dataset.catalogIndex||'';
+    dialog.dataset.selectedItem=target.dataset.catalogIndex?'':target.dataset.index;
+    for(const row of dialog.querySelectorAll('[data-act="infusion-object-choose"]')){
+      const active=dialog.dataset.selectedCatalogIndex?
+        row.dataset.catalogIndex===dialog.dataset.selectedCatalogIndex:
+        !row.dataset.catalogIndex&&row.dataset.index===dialog.dataset.selectedItem;
+      row.classList.toggle('is-selected',active);
+      row.setAttribute('aria-pressed',String(active));
+      row.querySelector('.inventory-search-result-count').textContent=active?'✓':
+        row.dataset.catalogIndex?'+':'×'+Math.max(1,Number(state.editor?.read()?.inventory?.[Number(row.dataset.index)]?.quantity)||1);
+    }
+    dialog.querySelector('[data-act="infusion-dialog-activate"]').disabled=false;return;
   }
   if(act==='infusion-dialog-close'){
     closeDialog(app.querySelector('#infusion-action-dialog'),{remove:true});return;
@@ -6757,12 +6911,24 @@ async function handleAction(target){
       changes=prepareInfusionPatch(creature,entry,definitions,calculated.features||[],true);
     }else if(act==='infusion-dialog-activate'){
       if(!isInfusionPrepared(creature,entry,definitions))throw Error('Prepara prima l’infusione.');
-      const itemIndex=Number(dialog.querySelector('#infusion-item-target')?.value);
-      const eligible=compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]);
-      if(!eligible.some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
+      let itemIndex=Number(dialog.dataset.selectedItem),targetRecord=creature;
+      if(dialog.dataset.selectedCatalogIndex){
+        const catalogIndex=Number(dialog.dataset.selectedCatalogIndex);
+        const candidate=state.referenceCatalogs.items?.[catalogIndex];
+        if(!candidate||!isContentAvailableForRules(candidate,creature.rules_version))
+          throw Error('Oggetto del catalogo non disponibile.');
+        const owned=createOwnedItem(candidate,'pwa_'+crypto.randomUUID());
+        if(!infusionEligible(entry,owned))throw Error('Oggetto non compatibile.');
+        targetRecord={...creature,inventory:[...(creature.inventory||[]),owned]};
+        itemIndex=targetRecord.inventory.length-1;
+      }
+      const eligible=compatibleInfusionTargets(targetRecord,entry,definitions,calculated.features||[]);
+      if((!dialog.dataset.selectedItem&&!dialog.dataset.selectedCatalogIndex)||
+         !eligible.some(row=>row.index===itemIndex))
+        throw Error('Scegli un oggetto compatibile.');
       const choice=entry.effect_choice;
       const value=dialog.querySelector('[data-infusion-dialog-effect]')?.value||'';
-      changes=applyInfusionPatch(creature,entry,definitions,calculated.infusion_mechanics,itemIndex,
+      changes=applyInfusionPatch(targetRecord,entry,definitions,calculated.infusion_mechanics,itemIndex,
         calculated.features||[],choice?{[choice.key]:value}:{});
     }else{
       const itemIndex=Number(target.dataset.index),item=creature.inventory?.[itemIndex];
@@ -7143,9 +7309,8 @@ function configureHpAdjustDialog(dialog,mode){
   if(!['damage','heal','set'].includes(mode))throw Error('Operazione sui PF non valida.');
   dialog.dataset.hpMode=mode;
   const amount=dialog.querySelector('#hp-adjust-amount');
-  const current=Number(state.editor?.read()?.current_hp)||0;
   amount.min=mode==='set'?'0':'1';
-  amount.value=mode==='set'?String(Math.max(0,current)):'1';
+  amount.value='';
   dialog.querySelector('#hp-adjust-amount-label').textContent=mode==='damage'?'Danni subiti':mode==='heal'?'PF recuperati':'PF attuali';
   dialog.querySelector('#hp-adjust-confirm').textContent=mode==='damage'?'Applica danni':mode==='heal'?'Applica cura':'Salva PF';
   for(const choice of dialog.querySelectorAll('[data-act="hp-adjust-mode"]'))

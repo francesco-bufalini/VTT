@@ -539,12 +539,63 @@ async function loadStartupModules() {
   }
 }
 
+// Both checks are deliberately optional: the PWA must boot offline even
+// when the native desktop, Git or its reverse proxy is unavailable.
+async function servedCommit() {
+  try {
+    const response = await deadline(fetch("/__vtt_version", { cache: "no-store" }),
+      3000, "Versione del server");
+    if (!response.ok) return "";
+    const { commit } = await response.json();
+    return typeof commit === "string" && /^[0-9a-f]{40}$/.test(commit) ? commit : "";
+  } catch (_) { return ""; }
+}
+
+async function workerCommit(controller) {
+  if (!controller || typeof MessageChannel === "undefined") return "";
+  return new Promise(resolve => {
+    const channel = new MessageChannel();
+    let done = false;
+    const finish = value => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      channel.port1.close();
+      resolve(value);
+    };
+    const timer = setTimeout(() => finish(""), 600);
+    channel.port1.onmessage = event => finish(event.data?.commit || "");
+    try { controller.postMessage({ type: "VTT_SHELL_REVISION" }, [channel.port2]); }
+    catch (_) { finish(""); }
+  });
+}
+
 async function installOfflineShell() {
   if (!("serviceWorker" in navigator) || !self.isSecureContext) return;
   try {
-    const registration = await deadline(navigator.serviceWorker.register("/sw.js"), 10000, "Registrazione offline");
-    // Updating the offline shell must NEVER gate local creature access.
-    registration.update().catch(error => console.warn("VTT offline update unavailable", error));
+    // Capture the previous controller before register/update, since a new
+    // version can activate as soon as its complete cache is ready.
+    const previousController = navigator.serviceWorker.controller;
+    if (previousController) {
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        // A full navigation resets Safari's ES module map: do not combine a
+        // graph loaded from the old worker with the new worker's modules.
+        location.reload();
+      }, { once: true });
+    }
+    const registration = await deadline(navigator.serviceWorker.register("/sw.js"),
+      10000, "Registrazione offline");
+    // Compare actual deployed Git SHA and the controlling worker SHA. A new
+    // worker script is served with commit-specific bytes, so update() installs
+    // a fresh atomic cache without touching IndexedDB or stored characters.
+    const [serverSha, activeSha] = await Promise.all([
+      servedCommit(), workerCommit(navigator.serviceWorker.controller)
+    ]);
+    if (serverSha && activeSha && serverSha !== activeSha)
+      console.info("VTT Mobile: aggiornamento disponibile", activeSha.slice(0, 12),
+        "→", serverSha.slice(0, 12));
+    registration.update().catch(error =>
+      console.warn("VTT offline update unavailable", error));
     // Preload optional reference data once the required, atomic shell is ready.
     navigator.serviceWorker.ready.then(ready => {
       ready.active?.postMessage({ type: "CACHE_OPTIONAL" });

@@ -9,6 +9,12 @@ export function openDialog(dialog,{removeOnClose=false}={}){
     dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   }
   if(!dialog.open){
+    // Numeric fields in popups are requests for a new value, not implicit
+    // one-unit actions. Clear only the editable input DOM state; the owning
+    // creature/feature data remains unchanged until explicit confirmation.
+    for(const input of dialog.querySelectorAll?.('input[type="number"]')??[]){
+      if(!input.disabled&&!input.readOnly)input.value='';
+    }
     if(typeof dialog.showModal==='function')dialog.showModal();
     else dialog.setAttribute('open','');
   }

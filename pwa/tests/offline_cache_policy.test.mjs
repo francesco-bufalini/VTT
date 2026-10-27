@@ -5,7 +5,7 @@ import { runInNewContext } from "node:vm";
 
 // Execute the actual worker with a minimal CacheStorage and network, rather
 // than inspecting strings for "cache-first" and missing the real behavior.
-async function workerFixture() {
+async function workerFixture(revision = "a".repeat(40)) {
   const listeners = new Map();
   const buckets = new Map();
   const requests = [];
@@ -41,7 +41,8 @@ async function workerFixture() {
     clients: { claim: async () => {} }
   };
   const source = await readFile(new URL("../sw.js", import.meta.url), "utf8");
-  runInNewContext(source, { self, caches, fetch, Response, URL, console });
+  runInNewContext(source.replaceAll("__VTT_COMMIT_SHA__", revision),
+    { self, caches, fetch, Response, URL, console });
   const dispatch = async (kind, request) => {
     const tasks = [];
     let response;
@@ -92,4 +93,15 @@ test("uncached assets fail safely and game APIs are never cached", async () => {
   const storage = await worker.caches.open("vtt-mobile-shell-v132");
   assert.equal(await storage.match("/api/status"), undefined);
   assert.equal(await storage.match("/catalog/bestiary/missing.json"), undefined);
+});
+
+
+test("offline cache name follows the served Git revision without deleting saved data", async () => {
+  const revision = "b".repeat(40);
+  const worker = await workerFixture(revision);
+  await worker.dispatch("install");
+  assert((await worker.caches.keys()).includes("vtt-mobile-shell-v192-" + revision));
+  worker.setOffline(true);
+  const cached = await worker.dispatch("fetch", new Request("https://vtt.example/ui.js"));
+  assert.equal(cached.status, 200);
 });

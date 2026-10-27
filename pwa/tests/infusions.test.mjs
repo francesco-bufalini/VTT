@@ -5,7 +5,7 @@ import {
  artificerLevel,infusionLimits,learnedInfusions,infusionEligible,infusionNumericBonuses,
  infusionGrantingTrait,isInfusionPrepared,prepareInfusionPatch,activeInfusions,
  targetableInventoryItems,compatibleInfusionTargets,
- learnInfusionPatch,applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch
+ learnInfusionPatch,applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch,expandedInfusionDefinitions
 } from "../item_controls.js";
 import {calculateSheet} from "../sheet_rules.js";
 import {collectTraitRows} from "../trait_projection.js";
@@ -186,4 +186,32 @@ test("infusion bonus provenance remains valid and withdraws with the granting tr
  assert.equal(result.values.spell_attack,2);
  const disabled={...record,origin_enabled:{[result.features.find(f=>f.name==='Infuse Item').origin_id]:false}};
  assert.equal(calculateSheet(disabled,sheetCatalogs).values.spell_attack,0);
+});
+
+test("Replicate Magic Item expands to distinct options, each usable on any owned item",()=>{
+ const expanded=expandedInfusionDefinitions(definitions);
+ const base=definitions.find(row=>row.application_kind==="replicate");
+ const variants=expanded.filter(row=>row.application_kind==="replicate_variant");
+ assert.equal(variants.length,base.replicable_items.length);
+ assert(variants.every(row=>row.item_selector&&Object.keys(row.item_selector).length===0));
+ const bag=variants.find(row=>row.name.includes("Bag of holding"));
+ assert(bag&&bag.min_level===2);
+ const advanced=variants.find(row=>row.name.includes("Winged boots"));
+ assert(advanced&&advanced.min_level===10);
+ let c=make(10);c.inventory=[sword()];
+ c={...c,...learnInfusionPatch(c,bag,expanded,mechanics,-1,[infusionTrait])};
+ const known=learnedInfusions(c,expanded)[0];
+ assert.equal(known.plan_item_id,"");
+ c={...c,...prepareInfusionPatch(c,known,expanded,[infusionTrait],true)};
+ assert.deepEqual(compatibleInfusionTargets(c,known,expanded,[infusionTrait]).map(x=>x.index),[0]);
+ c={...c,...applyInfusionPatch(c,known,expanded,mechanics,0,[infusionTrait])};
+ assert.equal(c.inventory[0].infusion.id,bag.id);
+});
+test("Old generic Replicate Magic Item records still resolve",()=>{
+ const original=definitions.find(row=>row.application_kind==="replicate");
+ const expanded=expandedInfusionDefinitions(definitions);
+ const c=make(10);c.optional_features_catalog=[{id:original.id,name:original.name,
+   plan_item_id:"magic_item:bag_of_holding",plan_item_name:"Bag of holding"}];
+ assert.equal(learnedInfusions(c,expanded).length,1);
+ assert.equal(learnedInfusions(c,expanded)[0].legacy_replicate,true);
 });

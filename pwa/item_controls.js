@@ -367,6 +367,28 @@ export function infusionLimits(record={},classMechanics={},features=[]){
  const active=level<2||!enabled?0:Math.max(0,Number(array(column?.levels)[level-1])||0);
  return {level,active,known:active*2};
 }
+
+/** One selectable infusion per Replicate Magic Item catalog choice.
+ * The original definition remains resolvable for existing saved characters. */
+export function expandedInfusionDefinitions(definitions=[]){
+ const result=[];
+ for(const entry of Array.isArray(definitions)?definitions:[]){
+  if(entry?.application_kind!=="replicate"){result.push(entry);continue;}
+  result.push({...entry,legacy_replicate:true});
+  for(const item of Array.isArray(entry.replicable_items)?entry.replicable_items:[]){
+   const name=String(item?.name||"").trim();
+   if(!name)continue;
+   const suffix=name.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+   result.push({id:entry.id+"|"+suffix,name:"Replicate Magic Item · "+name,
+    source:entry.source||"TCE",min_level:Math.max(2,Number(item.level)||2),
+    application_kind:"replicate_variant",replicates_item_name:name,
+    item_selector:{},requires_attunement:false,
+    description:"Replica l'oggetto magico "+name+". Puoi applicare questa infusione a un qualsiasi oggetto dell'inventario, senza requisiti sul bersaglio."});
+  }
+ }
+ return result;
+}
+
 export function learnedInfusions(record={},definitions=[]){
  return array(record.optional_features_catalog).flatMap((saved,index)=>{
    const option=array(definitions).find(row=>row.id===saved?.id);
