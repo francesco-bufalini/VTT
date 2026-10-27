@@ -2,7 +2,7 @@ import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEX
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
-import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
+import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
@@ -5574,6 +5574,14 @@ async function handleAction(target){
       String(row.id||row.ability_id||row.name)===requested)||
       (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
     if(!ability)throw Error('Capacità non disponibile per questa creatura.');
+    // Generic typed attack abilities open the same unified d20 popup as
+    // ordinary weapons. No special-case code is needed for a specific race.
+    if(ability.roll_attack){
+      const roll=abilityAttackRoll(ability,calculated);
+      if(!roll)throw Error('L’attacco collegato a questa capacità non è disponibile.');
+      await handleAction({dataset:{act:'sheet-roll',target:roll.target,label:roll.label}});
+      return;
+    }
     if(ability.rule_action_id==='wild_shape'||ability.id==='vtt_wild_shape'||ability.ability_id==='vtt_wild_shape'){
       await handleAction({dataset:{act:'miniature-pick',miniatureKind:'current',wildShape:'true'}});return;
     }

@@ -60,6 +60,27 @@ export function racialPowerProjection(record={},index={},features=[]) {
        strict_tracker:bonus.strict_tracker===true}:{}),
      automatic:true,optional:true});
  }
+ // Racial actions are trait-owned, source-qualified and do not need a
+ // tracker. An attack reference reuses an existing computed attack roll.
+ for(const action of rows(race.actions)){
+   const actionOwner=featureFor(action.trait);
+   if(!actionOwner||!action.id||!action.action_type)continue;
+   const roll=action.roll_attack;
+   if(roll&&!(roll.kind==='attack'&&
+     (typeof roll.trait==='string'&&roll.trait.trim()||
+      typeof roll.id==='string'&&roll.id.trim())))continue;
+   output.abilities.push({
+     id:action.id,name:action.name||action.trait,feature_id:actionOwner.origin_id,
+     origin_id:actionOwner.origin_id,origin_name:'Tratto · '+action.trait,
+     source:race.source,description:action.description||'',
+     action_type:action.action_type,activation_mode:action.action_type,
+     action_kind:'ability',resource_cost:0,
+     ...(roll?{roll_attack:{kind:'attack',
+       ...(roll.id?{id:String(roll.id)}:{}),
+       ...(roll.trait?{trait:String(roll.trait)}:{}),
+       ...(roll.slot?{slot:String(roll.slot)}:{})}}:{})
+   });
+ }
  const teleport=race.teleport,teleportOwner=teleport&&featureFor(teleport.trait);
  if(teleportOwner&&teleport.spell_id&&teleport.tracker_id){
    output.trackers.push({id:teleport.tracker_id,name:teleport.trait,

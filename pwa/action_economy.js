@@ -520,6 +520,21 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
 const classOrigin=row=>String(row?.origin_id||'').startsWith('class|')||
  String(row?.origin_id||'').startsWith('feature:class|')||
  String(row?.id||'').startsWith('class_feature:')||!!row?.class_feature_id;
+// Reusable typed abilities route to the ordinary d20 attack popup; they
+// do not duplicate hit, damage, advantage or provenance calculations.
+export function abilityAttackRoll(ability={},calculated={}){
+ const ref=ability.roll_attack;
+ if(ref?.kind!=='attack')return null;
+ const attacks=arr(calculated.attacks);
+ const byId=ref.id?attacks.find(attack=>String(attack.id)===String(ref.id)):null;
+ const byTrait=ref.trait?attacks.find(attack=>
+   String(attack.name||'').trim().toLowerCase()===String(ref.trait).trim().toLowerCase()&&
+   (!ref.slot||attack.slot===ref.slot)):null;
+ const attack=byId||byTrait;
+ return attack?.id&&Number.isFinite(Number(calculated.values?.['attack_hit:'+attack.id]))?
+   {target:'attack_hit:'+attack.id,label:String(ability.name||'Capacità')+' · '+String(attack.name||'Attacco')}:
+   null;
+}
 export function battleAbilityEntries(record={},calculated={},entries=[],activated=[]){
  const result=entries.filter(row=>row.origin==='personal'&&row.type==='Capacità'&&classOrigin(row));
  const seen=new Set(result.map(row=>String(row.name||'').trim().toLocaleLowerCase('it')));

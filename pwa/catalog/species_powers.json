@@ -121,6 +121,24 @@
           "description": "Se colpisci una creatura con un tiro per colpire, infliggi 2d6 danni aggiuntivi se la creatura non ha ancora svolto un turno nel combattimento attuale. Controlla il requisito sul bersaglio prima di usare il bonus. Nessun tracker o limite per combattimento: il bonus si applica a ogni attacco che soddisfa la condizione."
         }
       ]
+    },
+    {
+      "name": "Centaur",
+      "source": "MPMM",
+      "actions": [
+        {
+          "id": "race:mpmm:centaur:charge",
+          "trait": "Charge",
+          "name": "Charge",
+          "action_type": "bonus",
+          "roll_attack": {
+            "kind": "attack",
+            "trait": "Hooves",
+            "slot": "natural"
+          },
+          "description": "Come azione bonus, effettua un attacco con gli zoccoli tramite il normale popup del tiro per colpire. Non viene richiesta una verifica del movimento precedente."
+        }
+      ]
     }
   ]
 }
