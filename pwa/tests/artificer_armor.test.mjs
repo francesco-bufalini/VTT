@@ -83,12 +83,12 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  const catalog=catalogs.traitStates;
  let calculated=calculateSheet(r,catalogs);
  assert.ok(calculated.state_actions.some(row=>row.state_id==='armor_model:guardian'));
- const tracker=calculated.trackers.find(row=>row.id==='feature:armor_model:activation');
- assert.equal(tracker?.max,1);
- assert.equal(tracker?.recharge,'short_rest');
- assert.ok(tracker.origin_id.startsWith('feature:'));
+ assert.equal(calculated.trackers.some(row=>row.id==='feature:armor_model:activation'),false,
+   'Armor Model is a rest-based choice, not a resource tracker');
+ assert.equal(catalog.filter(row=>row.group==='armor_model').every(row=>row.selection_recovery==='short_rest'),true);
  let next={...r,...traitStateActivationPatch(r,calculated.features,catalog,'armor_model:infiltrator',calculated.trackers)};
- assert.equal(next.resource_tracker_spent[tracker.id],1);
+ assert.equal(next.resource_tracker_spent,undefined);
+ assert.equal(next.rest_selection_available.armor_model,false);
  calculated=calculateSheet(next,catalogs);
  assert.equal(calculated.attacks[0].id,'class_feature:lightning_launcher');
  assert.equal(calculated.values.speed,35);
@@ -101,13 +101,14 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(suppressed.trackers.some(row=>row.id==='feature:lightning_launcher:extra_damage'),false);
  assert.equal(calculated.trackers.find(row=>row.id==='feature:lightning_launcher:extra_damage')?.max,1);
  assert.equal(calculated.active_feature_effects.filter(row=>row.category==='stato').length,1);
- assert.throws(()=>traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers),/Utilizzi insufficienti/);
- const rested=recoveryPatch(next,'short_rest',calculated.trackers);
- assert.equal(rested.resource_tracker_spent[tracker.id],undefined);
+ assert.throws(()=>traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers),/riposo breve/i);
+ const rested=recoveryPatch(next,'short_rest',calculated.trackers,calculated);
+ assert.equal(rested.rest_selection_available.armor_model,true);
  next={...next,...rested};
  calculated=calculateSheet(next,catalogs);
  next={...next,...traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers)};
- assert.equal(next.resource_tracker_spent[tracker.id],1);
+ assert.equal(next.rest_selection_available.armor_model,false);
+ assert.equal(next.resource_tracker_spent,undefined);
  calculated=calculateSheet(next,catalogs);
  assert.equal(calculated.attacks[0].id,'class_feature:thunder_gauntlets');
  assert.equal(calculated.trait_state_optional_dice.length,0);
@@ -116,18 +117,19 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(calculateSheet(disabled,catalogs).attacks.some(row=>row.id==='class_feature:thunder_gauntlets'),false);
 });
 
-test('Armor Model supports the explicit no-tracker option without charging on deactivation',()=>{
+test('Armor Model can be reselected after a long rest too, with no resource payment',()=>{
  const r=sheet('Artificer',8,'TCE','Armorer');
  r.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
- const c=calculateSheet(r,catalogs),catalog=catalogs.traitStates;
- const selection=traitStateActivationPatch(r,c.features,catalog,'armor_model:infiltrator',c.trackers,{tracker_id:''});
- assert.equal(selection.resource_tracker_spent,undefined);
- const active={...r,...selection},fresh=calculateSheet(active,catalogs);
- const deactivate=traitStateActivationPatch(active,fresh.features,catalog,'armor_model:infiltrator',fresh.trackers);
- assert.equal(deactivate.resource_tracker_spent,undefined);
- assert.throws(()=>traitStateActivationPatch(r,c.features,catalog,'armor_model:infiltrator',c.trackers,{tracker_id:'other'}),/non collegato/);
+ r.artificer_armor_model='infiltrator'; // Existing character already has a choice.
+ let calculated=calculateSheet(r,catalogs),catalog=catalogs.traitStates;
+ assert.throws(()=>traitStateActivationPatch(r,calculated.features,catalog,'armor_model:guardian',calculated.trackers),/riposo breve/i);
+ let next={...r,...recoveryPatch(r,'long_rest',calculated.trackers,calculated)};
+ assert.equal(next.rest_selection_available.armor_model,true);
+ calculated=calculateSheet(next,catalogs);
+ const changes=traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers);
+ assert.equal(changes.resource_tracker_spent,undefined);
+ assert.equal(changes.rest_selection_available.armor_model,false);
 });
-
 test('tracker resources describe both structured flat and attack-specific dice bonuses',()=>{
  const artificer=sheet('Artificer',8,'TCE','Armorer');
  artificer.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
