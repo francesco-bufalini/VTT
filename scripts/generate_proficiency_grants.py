@@ -4,12 +4,14 @@
 Usage:
     python scripts/generate_proficiency_grants.py /path/to/5etools-src
 
-No prose parsing is performed. Class features and subclass features currently
-lack structured proficiency fields in upstream data and are not inferred.
+Class and subclass features retain source-qualified identities and level gates.
+Missing upstream fields use reviewed typed supplements, never runtime prose parsing.
 """
+import argparse
+from copy import deepcopy
 import json
-import sys
 from pathlib import Path
+from urllib.parse import quote
 
 FIELDS = (
     "skillProficiencies",
@@ -37,6 +39,57 @@ FEAT_PROFICIENCY_OVERRIDES = {
         {"anyMusicalInstrument": 3}]},
 }
 
+
+
+FEATURE_GROUPS = ("classFeature", "subclassFeature")
+FEATURE_FIELDS = FIELDS + ("saveProficiencies", "proficiencyChoices", "proficiencyReplacements")
+FEATURE_ID_FIELDS = {
+    "classFeature": ("className", "classSource", "level", "source", "name"),
+    "subclassFeature": ("className", "classSource", "subclassShortName", "subclassSource", "level", "source", "name"),
+}
+FEATURE_METADATA = {"className": "class_name", "classSource": "class_source",
+                    "subclassShortName": "subclass_short_name", "subclassSource": "subclass_source"}
+
+
+def feature_identity(kind: str, record: dict) -> str:
+    if kind == "classFeature":
+        # Match generate_creature_references.py; never change persisted trait IDs.
+        return ("5etools:class_features:" + str(record.get("source", "")).lower() + ":" +
+                quote(str(record.get("name", "")).lower(), safe="") + ":" +
+                str(record.get("className", "")).lower() + ":" + str(record.get("level", "")))
+    namespace = "subclass_features"
+    value = "|".join(str(record.get(key, "")) for key in FEATURE_ID_FIELDS[kind]).lower()
+    return "5etools:" + namespace + ":" + quote(value, safe="-_.!~*'()")
+
+
+def convert_features(kind: str, records: list[dict], supplements: list[dict]) -> list[dict]:
+    """Only explicit typed grants; a matching supplement fills missing fields."""
+    def key(record):
+        return tuple(str(record.get(field, "")).casefold() for field in FEATURE_ID_FIELDS[kind])
+
+    rules = {key(rule): rule for rule in supplements if rule["kind"] == kind}
+    output = {}
+    for record in records:
+        if not record.get("name") or not record.get("source") or not record.get("className"):
+            continue
+        if record["source"].startswith("UA") or record["source"] == "XDMG":
+            continue
+        if not record.get("classSource") or int(record.get("level", 0)) < 1:
+            continue
+        if kind == "subclassFeature" and not (record.get("subclassShortName") and record.get("subclassSource")):
+            continue
+        sid = feature_identity(kind, record)
+        fields = {field: deepcopy(record[field]) for field in FEATURE_FIELDS if field in record}
+        for field in FEATURE_FIELDS:
+            if field in rules.get(key(record), {}):
+                fields.setdefault(field, deepcopy(rules[key(record)][field]))
+        if not fields:
+            continue
+        output[key(record)] = {"id": sid, "name": record["name"], "source": record["source"],
+                       **{target: record[key] for key, target in FEATURE_METADATA.items() if key in record},
+                       "level": int(record["level"]), **fields}
+    return sorted(output.values(), key=lambda row: (row["class_name"].casefold(), row["class_source"],
+                  row.get("subclass_short_name", "").casefold(), row.get("subclass_source", ""), row["level"], row["id"]))
 
 
 def read_json(path: Path) -> dict:
@@ -148,9 +201,12 @@ def generate_language_catalog(root: Path, release: str) -> tuple[Path, int]:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: generate_proficiency_grants.py /path/to/5etools-src")
-    root = Path(sys.argv[1])
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("root", type=Path)
+    parser.add_argument("--features-only", action="store_true",
+                        help="Refresh feature sections without changing existing origin catalogs or languages")
+    args = parser.parse_args()
+    root = args.root
     package = read_json(root / "package.json")
     release = "v" + str(package.get("version", "unknown")).lstrip("v")
     index = read_json(root / "data/class/index.json")
@@ -161,9 +217,24 @@ def main() -> None:
         "background": [],
         "feat": [],
     }
-    for file in index.values():
+    feature_records = {kind: [] for kind in FEATURE_GROUPS}
+    for file in sorted(set(index.values())):
         data = read_json(root / "data/class" / file)
         sources["class"].extend(data.get("class", []))
+        for kind in FEATURE_GROUPS:
+            feature_records[kind].extend(data.get(kind, []))
+    supplements_path = Path(__file__).resolve().parent / "data/feature_proficiency_grants.json"
+    supplements = read_json(supplements_path)["entries"]
+    feature_output = {kind: convert_features(kind, rows, supplements)
+                      for kind, rows in feature_records.items()}
+    destination = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_grants_5etools.json"
+    if args.features_only:
+        out = read_json(destination)
+        out.update(feature_output)
+        out["meta"]["featureSnapshot"] = release
+        destination.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        print("Updated " + ", ".join(f"{kind}: {len(rows)}" for kind, rows in feature_output.items()))
+        return
     for filename in ["races.json", "backgrounds.json", "feats.json"]:
         data = read_json(root / "data" / filename)
         for category in ["race", "subrace", "background", "feat"]:
@@ -177,6 +248,8 @@ def main() -> None:
     }
     for category, entries in sources.items():
         out[category] = convert(category, entries)
+    out.update(feature_output)
+    out["meta"]["featureSnapshot"] = release
     for (name, source), fields in FEAT_PROFICIENCY_OVERRIDES.items():
         if not any(row["name"] == name and row["source"] == source for row in out["feat"]):
             out["feat"].append({"name": name, "source": source, **fields})

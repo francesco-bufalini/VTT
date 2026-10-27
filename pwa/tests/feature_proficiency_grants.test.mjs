@@ -1,0 +1,122 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {calculateSheet} from '../sheet_rules.js';
+import {fixedProficiencies,selectedSources} from '../structured_effects.js';
+import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from '../pending_choices.js';
+import {traitBenefitGroups} from '../trait_benefits.js';
+const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
+const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
+ abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants')};
+const armorer=(level=3,source='TCE')=>({kind:'character',rules_version:source==='TCE'?'2014':'2024',
+ level,classes:[{name:'Artificer',source,level,subclass:'Armorer',subclass_source:source}],
+ abilities:{str:10,dex:14,con:14,int:16,wis:10,cha:10},inventory:[]});
+const traitOf=c=>c.features.find(f=>f.name==='Tools of the Trade');
+const featureChoices=(r,c=calculateSheet(r,catalogs))=>pendingCharacterChoices(r,c,catalogs)
+ .filter(choice=>choice.origin_id===traitOf(c)?.origin_id);
+
+test('Armorer grants heavy armor and smith tools at level 3 on its actual trait in both editions',()=>{
+ for(const source of ['TCE','EFA']){
+  const before=calculateSheet(armorer(2,source),catalogs);
+  assert(!before.proficiencies.includes('armor:heavy'));
+  assert(!before.proficiencies.includes("tool:smith's tools"));
+  const r=armorer(3,source),c=calculateSheet(r,catalogs),f=traitOf(c);
+  for(const key of ['armor:heavy',"tool:smith's tools"]){
+   assert(c.proficiencies.includes(key));
+   assert.equal(c.proficiency_sources[key][0].id,f.origin_id);
+  }
+  const trait={key:f.key,feature_origin:f.origin_id,origin_key:f.origin_key};
+  const groups=traitBenefitGroups(trait,r,c);
+  assert.equal(groups.find(g=>g.type==='proficiency')?.items.length,2);
+  assert.equal(featureChoices(r,c).length,0);
+  assert(fixedProficiencies(r,catalogs.proficiencyGrants).has('armor:heavy'),'offline compact catalog');
+  const {classFeatures,...withoutDescriptions}=catalogs;
+  assert(calculateSheet(r,withoutDescriptions).proficiencies.includes('armor:heavy'),'metadata-only class features');
+ }
+});
+
+test('class, subclass, trait and benefit switches suppress only the corresponding grants',()=>{
+ const r=armorer(),c=calculateSheet(r,catalogs),f=traitOf(c);
+ for(const id of [f.origin_id,f.origin_key,'class|tce|artificer']){
+  const next=calculateSheet({...r,origin_enabled:{[id]:false}},catalogs);
+  assert(!next.proficiencies.includes('armor:heavy'));
+ }
+ assert(!calculateSheet({...r,trait_enabled:{[f.key]:false}},catalogs).proficiencies.includes('armor:heavy'));
+ const removed='proficiency:'+f.origin_id+':armor:heavy';
+ const next=calculateSheet({...r,trait_benefit_removed:{[f.key]:[removed]}},catalogs);
+ assert(!next.proficiencies.includes('armor:heavy'));
+ assert(next.proficiencies.includes("tool:smith's tools"));
+ assert(calculateSheet({...r,classes:[{...r.classes[0],subclass:'Alchemist'}]},catalogs)
+  .proficiencies.includes("tool:alchemist's supplies"));
+ assert(!calculateSheet({...r,classes:[{...r.classes[0],subclass:'Alchemist'}]},catalogs)
+  .proficiencies.includes('armor:heavy'));
+});
+
+test('duplicate smith tools open one artisan choice, preserve it, and withdraw it when no longer eligible',()=>{
+ const r={...armorer(),proficiency_choices:[{kind:'tool',key:"smith's tools",origin_id:'class|tce|artificer'}]};
+ const c=calculateSheet(r,catalogs),f=traitOf(c),[choice]=featureChoices(r,c);
+ assert.equal(choice.remaining,1);
+ assert.equal(choice.count,1);
+ assert(!choice.options.includes("smith's tools"));
+ assert(!choice.options.includes("tinker's tools"));
+ assert(choice.options.includes("carpenter's tools"));
+ assert.throws(()=>savePendingChoice(r,choice,["__custom__:smith's tools"]),/Selezione/);
+ assert.throws(()=>savePendingChoice(r,choice,["__custom__:tinker's tools"]),/Selezione/);
+ assert.equal(choicesForTrait({feature_origin:f.origin_id},r,[choice]).length,1);
+ const chosen={...r,...savePendingChoice(r,choice,["carpenter's tools"])};
+ assert.equal(featureChoices(chosen)[0].remaining,0);
+ assert(calculateSheet(chosen,catalogs).proficiencies.includes("tool:carpenter's tools"));
+ const withdrawn={...chosen,proficiency_choices:chosen.proficiency_choices.filter(row=>row.origin_id===f.origin_id)};
+ assert.equal(featureChoices(withdrawn).length,0);
+ assert(!calculateSheet(withdrawn,catalogs).proficiencies.includes("tool:carpenter's tools"));
+ assert(calculateSheet(withdrawn,catalogs).proficiencies.includes("tool:smith's tools"));
+ const changed={...chosen,classes:[{...r.classes[0],subclass:'Alchemist'}]};
+ assert(!calculateSheet(changed,catalogs).proficiencies.includes("tool:carpenter's tools"));
+ assert(!calculateSheet({...chosen,origin_enabled:{[f.origin_id]:false}},catalogs)
+  .proficiencies.includes("tool:carpenter's tools"));
+ assert.equal(featureChoices({...chosen,origin_enabled:{'class|tce|artificer':false}}).length,0);
+});
+
+test('disabled or removed prior grants do not trigger replacement, nor does the trait own saved automatic copy',()=>{
+ const r=armorer(),f=traitOf(calculateSheet(r,catalogs));
+ for(const saved of [
+  {kind:'tool',key:"smith's tools",origin_id:'class|tce|artificer',disabled:true},
+  {kind:'tool',key:"smith's tools",origin_id:f.origin_id,automatic:true},
+  {kind:'tool',key:"smith's tools",origin_id:'class|phb|fighter'}
+ ])assert.equal(featureChoices({...r,proficiency_choices:[saved]}).length,0);
+ const previous={kind:'tool',key:"smith's tools",origin_id:'class|tce|artificer'};
+ const removed='proficiency:class|tce|artificer:tool:smith\'s tools';
+ assert.equal(featureChoices({...r,proficiency_choices:[previous],trait_benefit_removed:{starting:[removed]}}).length,0);
+});
+
+test('multiclass levels and source identity determine feature eligibility',()=>{
+ const r=armorer(2);r.level=8;r.classes.unshift({name:'Fighter',source:'PHB',level:6});
+ assert(!calculateSheet(r,catalogs).proficiencies.includes("tool:smith's tools"));
+ r.classes[1].level=3;
+ const c=calculateSheet(r,catalogs);
+ assert(c.proficiencies.includes("tool:smith's tools"));
+ const mismatch={...armorer(),classes:[{...armorer().classes[0],subclass_source:'EFA'}]};
+ assert(!calculateSheet(mismatch,catalogs).proficiencies.includes('armor:heavy'));
+});
+
+test('class feature grants keep their existing canonical trait identities',()=>{
+ for(const [name,key] of [['Druid','druidic'],['Rogue',"thieves' cant"]]){
+  const r={...armorer(1),classes:[{name,source:'PHB',level:1}]},c=calculateSheet(r,catalogs);
+  assert(c.proficiencies.includes('language:'+key));
+  const f=c.features.find(f=>f.name===(name==='Druid'?'Druidic':"Thieves' Cant"));
+  assert.equal(c.proficiency_sources['language:'+key][0].id,f.origin_id);
+  assert(!calculateSheet({...r,origin_enabled:{[f.origin_id]:false}},catalogs).proficiencies.includes('language:'+key));
+ }
+});
+
+test('upstream typed feature choices use the ordinary pending-choice flow without a prose rule',()=>{
+ const row={id:'fixture:trained',name:'Training',class_name:'Fighter',class_source:'PHB',source:'PHB',level:4,
+  skillProficiencies:[{choose:{from:['arcana','history'],count:1}}]};
+ const index={classFeature:[row]},r={kind:'character',classes:[{name:'Fighter',source:'PHB',level:4}]};
+ const choice=pendingCharacterChoices(r,{}, {proficiencyGrants:index})[0];
+ assert.deepEqual(choice.options,['arcana','history']);
+ assert.equal(choice.remaining,1);
+ const selected={...r,...savePendingChoice(r,choice,['arcana'])};
+ assert(fixedProficiencies(selected,index).has('skill:arcana'));
+ assert.equal(selectedSources({...r,classes:[{...r.classes[0],level:3}]},index).length,0);
+});

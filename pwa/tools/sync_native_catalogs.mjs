@@ -1,3 +1,4 @@
+import {syncProficiencyCatalog} from './sync_proficiency_catalog.mjs';
 // Regenerate the browser's existing catalog URLs from native structured data.
 // No native files are changed; no catalog output is edited by hand.
 import {readFile,writeFile} from 'node:fs/promises';
@@ -226,32 +227,7 @@ const references=await read('../../vtt/data/creature_references_5etools.json');
 await writeFile(new URL('../catalog/species_attacks.json',import.meta.url),
  JSON.stringify(projectSpeciesAttacks(references.races),null,2)+'\n');
 mechanics.races=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));
-const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
-const browserProficiencies=await read('../catalog/proficiency_grants.json');
-browserProficiencies.subrace=proficiencies.subrace;
-// Ownership is authored in the native typed index and must survive a PWA sync.
-// Supplemental browser-only feat grants remain untouched.
-for(const group of ['race','subrace','feat']){
- const current=browserProficiencies[group]||[];
- for(const source of proficiencies[group]||[]){
-  const row=current.find(candidate=>candidate.name===source.name&&candidate.source===source.source);
-  if(!row)continue;
-  for(const field of ['trait_proficiencies','trait_proficiency_choices']){
-   if(source[field])row[field]=source[field];
-  }
- }
-}
-// Source-qualified, unconditional feat proficiencies missing from typed 5etools
-// fields use the existing proficiency evaluator (no runtime feat exceptions).
-const featProficiencies=await read('../../vtt/data/feat_proficiency_bonuses_2014.json');
-for(const row of featProficiencies.feats){
- const existing=browserProficiencies.feat.find(feat=>feat.name.toLowerCase()===row.name.toLowerCase()&&feat.source.toLowerCase()===row.source.toLowerCase());
- if(existing){
-  for(const [key,items] of Object.entries(row))if(Array.isArray(items))
-   existing[key]=[...new Set([...(existing[key]||[]),...items])];
- }else browserProficiencies.feat.push(row);
-}
-await writeFile(new URL('../catalog/proficiency_grants.json',import.meta.url),JSON.stringify(browserProficiencies)+'\n');
+await syncProficiencyCatalog();
 const featureCatalog=await read('../../vtt/data/subclass_features_5etools.json');
 mechanics.resource_features=[...references.class_features,...featureCatalog.subclass_features].map(row=>Object.fromEntries(['id','name','class_name','class_source','subclass_name','subclass_short_name','subclass_source','level'].filter(k=>row[k]!==undefined).map(k=>[k,row[k]])));
 const previousSubraceIdentities=(await read('../catalog/class_mechanics.json')).subraces||[];

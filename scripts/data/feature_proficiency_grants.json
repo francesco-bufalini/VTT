@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "source": "Reviewed against 5etools v2.37.0 class feature entries (PHB/TCE/EFA); supplements fill absent typed fields only. Other prose-only mechanics require an explicit reviewed entry.",
+  "entries": [
+    {
+      "kind": "subclassFeature",
+      "name": "Tools of the Trade",
+      "source": "TCE",
+      "className": "Artificer",
+      "classSource": "TCE",
+      "subclassShortName": "Armorer",
+      "subclassSource": "TCE",
+      "level": 3,
+      "toolProficiencies": [
+        {
+          "smith's tools": true
+        }
+      ],
+      "proficiencyReplacements": [
+        {
+          "kind": "tool",
+          "key": "smith's tools",
+          "choose": {
+            "anyArtisansTool": 1
+          }
+        }
+      ],
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Tool Proficiency",
+      "source": "TCE",
+      "className": "Artificer",
+      "classSource": "TCE",
+      "subclassShortName": "Alchemist",
+      "subclassSource": "TCE",
+      "level": 3,
+      "toolProficiencies": [
+        {
+          "alchemist's supplies": true
+        }
+      ],
+      "proficiencyReplacements": [
+        {
+          "kind": "tool",
+          "key": "alchemist's supplies",
+          "choose": {
+            "anyArtisansTool": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Tool Proficiency",
+      "source": "TCE",
+      "className": "Artificer",
+      "classSource": "TCE",
+      "subclassShortName": "Artillerist",
+      "subclassSource": "TCE",
+      "level": 3,
+      "toolProficiencies": [
+        {
+          "woodcarver's tools": true
+        }
+      ],
+      "proficiencyReplacements": [
+        {
+          "kind": "tool",
+          "key": "woodcarver's tools",
+          "choose": {
+            "anyArtisansTool": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Tool Proficiency",
+      "source": "TCE",
+      "className": "Artificer",
+      "classSource": "TCE",
+      "subclassShortName": "Battle Smith",
+      "subclassSource": "TCE",
+      "level": 3,
+      "toolProficiencies": [
+        {
+          "smith's tools": true
+        }
+      ],
+      "proficiencyReplacements": [
+        {
+          "kind": "tool",
+          "key": "smith's tools",
+          "choose": {
+            "anyArtisansTool": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Battle Ready",
+      "source": "TCE",
+      "className": "Artificer",
+      "classSource": "TCE",
+      "subclassShortName": "Battle Smith",
+      "subclassSource": "TCE",
+      "level": 3,
+      "weaponProficiencies": [
+        {
+          "martial": true
+        }
+      ]
+    },
+    {
+      "kind": "classFeature",
+      "name": "Druidic",
+      "source": "PHB",
+      "className": "Druid",
+      "classSource": "PHB",
+      "level": 1,
+      "languageProficiencies": [
+        {
+          "druidic": true
+        }
+      ]
+    },
+    {
+      "kind": "classFeature",
+      "name": "Thieves' Cant",
+      "source": "PHB",
+      "className": "Rogue",
+      "classSource": "PHB",
+      "level": 1,
+      "languageProficiencies": [
+        {
+          "thieves' cant": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Tools of the Trade",
+      "source": "EFA",
+      "className": "Artificer",
+      "classSource": "EFA",
+      "subclassShortName": "Armorer",
+      "subclassSource": "EFA",
+      "level": 3,
+      "toolProficiencies": [
+        {
+          "smith's tools": true
+        }
+      ],
+      "proficiencyReplacements": [
+        {
+          "kind": "tool",
+          "key": "smith's tools",
+          "choose": {
+            "anyArtisansTool": 1
+          }
+        }
+      ],
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ]
+    }
+  ]
+}

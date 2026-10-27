@@ -27,7 +27,18 @@ export function effectiveBackgrounds(record={}){
   seen.add(key);return true;
  });
 }
-export function selectedSources(record,index={}){
+// Feature grants use the existing trait IDs, not a second class-wide source.
+// A compact proficiency catalog can resolve these even without descriptions offline.
+function proficiencyFeatures(record,index,features){
+ return features??collectStructuredFeatures(record,{classFeatures:{
+  class_features:array(index.classFeature),subclass_features:array(index.subclassFeature)}});
+}
+function proficiencyTraitActive(record,feature){
+ const parent=String(feature?.origin_key||''),base=parent.split('|').slice(0,3).join('|');
+ return !!feature&&!feature.inactive&&!feature.disabled&&record.trait_enabled?.[feature.key]!==false&&
+  ![feature.origin_id,parent,base].some(id=>id&&muted(record,id));
+}
+export function selectedSources(record,index={},features=null){
   const selected=[];
   const push=(group,source,origin,mode="starting")=>{
     if(!source?.name)return;
@@ -60,6 +71,54 @@ export function selectedSources(record,index={}){
         match(x.source,member.source)))
       push("class",source,member.name,first?"starting":"multiclass");
     first=false;
+  }
+  const owned=proficiencyFeatures(record,index,features);
+  for(const group of ['classFeature','subclassFeature']){
+    for(const row of array(index[group])){
+      const feature=array(owned).find(f=>f.id===row.id&&match(f.class_name,row.class_name)&&
+        match(f.class_source,row.class_source)&&(!f.source||match(f.source,row.source))&&
+        (group!=='subclassFeature'||match(f.subclass_short_name,row.subclass_short_name)&&
+          match(f.subclass_source,row.subclass_source)));
+      if(!proficiencyTraitActive(record,feature))continue;
+      selected.push({id:feature.origin_id,group,source:row,origin:'Tratto · '+feature.name,
+        feature,mode:'feature'});
+    }
+  }
+  // Replacement choices are conditional on another active grant. A feature's
+  // own automatic grant (including an older saved copy) cannot trigger itself.
+  const suppressed=removedBenefitIds(record),byId=new Map(selected.map(source=>[source.id,source]));
+  const activeGrant=(sid,kind,key)=>!muted(record,sid)&&
+    !suppressed.has('proficiency:'+(sid||'')+':'+kind+':'+norm(key))&&
+    proficiencyOwnerActive(record,byId.has(sid)&&
+      proficiencyFeatureOwner(record,byId.get(sid),kind,key,owned));
+  const activeSaved=row=>row&&!row.disabled&&liveSource(record,row.origin_id||'')&&
+    activeGrant(row.origin_id,row.kind,row.key)&&featureStoredGrantAllowed(byId.get(row.origin_id),row)&&
+    (!String(row.origin_id||'').startsWith('feature:class|')||
+      array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f)));
+  const activeFixed=(source,grant)=>activeGrant(source.id,grant.kind,grant.key)&&
+    !array(record.proficiency_choices).some(saved=>saved.origin_id===source.id&&
+      saved.kind===grant.kind&&norm(saved.key)===grant.key&&saved.disabled);
+  for(const [i,source] of selected.entries()){
+    for(const rule of array(source.source.proficiencyReplacements)){
+      const kind=rule.kind,key=norm(rule.key),field=fields[kind];
+      if(!field||!rule.choose)continue;
+      const priorFixed=selected.slice(0,i).some(other=>fixedGrants(other).some(grant=>
+        grant.kind===kind&&grant.key===key&&activeFixed(other,grant)));
+      const priorSaved=array(record.proficiency_choices).some(saved=>saved?.origin_id!==source.id&&
+        saved?.kind===kind&&norm(saved.key)===key&&activeSaved(saved));
+      if(!priorFixed&&!priorSaved)continue;
+      const data=array(source.source[field]).map(row=>{
+        if(!row||typeof row!=='object'||Array.isArray(row))return row;
+        return Object.fromEntries(Object.entries(row).filter(([name])=>norm(name.split('|')[0])!==key));
+      }).filter(row=>row!==null&&(typeof row!=='object'||Object.keys(row).length));
+      source.source={...source.source,[field]:[...data,rule.choose]};
+      const unavailable=new Set([key]);
+      for(const other of selected.filter(other=>other.id!==source.id))
+        for(const grant of fixedGrants(other))if(grant.kind===kind&&activeFixed(other,grant))unavailable.add(grant.key);
+      for(const saved of array(record.proficiency_choices))
+        if(saved?.origin_id!==source.id&&saved?.kind===kind&&activeSaved(saved))unavailable.add(norm(saved.key));
+      source.choice_exclusions={...source.choice_exclusions,[kind]:[...unavailable]};
+    }
   }
   return selected;
 }
@@ -153,16 +212,31 @@ export function proficiencyFeatureOwner(record={},source={},kind="",key="",featu
 }
 function proficiencyOwnerActive(record,owner){
  return !owner||(!owner.feature?.inactive&&!owner.feature?.disabled&&
-   !muted(record,owner.id)&&!muted(record,owner.feature?.origin_key));
+   record.trait_enabled?.[owner.feature?.key]!==false&&!muted(record,owner.id)&&!muted(record,owner.feature?.origin_key));
 }
-export function fixedProficiencies(record,index={},features=[]){
+// A saved conditional choice stays in the record, but grants nothing while
+// its rule is unavailable. Manual benefits use their separate trait-editor IDs.
+function featureStoredGrantAllowed(source,row){
+ if(source?.mode!=='feature')return true;
+ if(fixedGrants(source).some(grant=>grant.kind===row.kind&&grant.key===norm(row.key)))return true;
+ if(array(source.choice_exclusions?.[row.kind]).includes(norm(row.key)))return false;
+ return array(grantedFields(source,row.kind)).some(data=>data&&typeof data==='object'&&
+   Object.entries(data).some(([key,value])=>key==='choose'&&value||
+     key.startsWith('any')&&Number(value)>0))||
+   array(source.source.proficiencyChoices).some(rule=>array(rule.choose?.fromKinds).includes(row.kind));
+}
+export function fixedProficiencies(record,index={},features=null){
  const suppressed=removedBenefitIds(record);
  const excluded=(id,kind,key)=>suppressed.has("proficiency:"+id+":"+kind+":"+norm(key));
- const selected=selectedSources(record,index),byId=new Map(selected.map(s=>[s.id,s]));
+ const owned=proficiencyFeatures(record,index,features);
+ const selected=selectedSources(record,index,owned),byId=new Map(selected.map(s=>[s.id,s]));
  const stored=array(record.proficiency_choices).filter(row=>{
   if(!row||row.disabled||muted(record,String(row.origin_id||""))||
      !liveSource(record,String(row.origin_id||"")))return false;
+  if(String(row.origin_id||'').startsWith('feature:class|')&&
+    !array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f)))return false;
   const source=byId.get(row.origin_id);
+  if(!featureStoredGrantAllowed(source,row))return false;
   return proficiencyOwnerActive(record,source&&
     proficiencyFeatureOwner(record,source,row.kind,row.key,features));
  });
@@ -190,10 +264,11 @@ export function fixedProficiencies(record,index={},features=[]){
 }
 // Expose the exact granted-by feature, but keep saved grants and suppression
 // keyed to their existing parent IDs so old creature records still work.
-export function proficiencyGrantOrigins(record={},index={},kind,key,features=[]){
+export function proficiencyGrantOrigins(record={},index={},kind,key,features=null){
  const suppressed=removedBenefitIds(record),wanted=norm(key);
  const excluded=id=>suppressed.has('proficiency:'+id+':'+kind+':'+wanted);
- const sources=[],seen=new Set(),selected=selectedSources(record,index);
+ const owned=proficiencyFeatures(record,index,features);
+ const sources=[],seen=new Set(),selected=selectedSources(record,index,owned);
  const byId=new Map(selected.map(source=>[source.id,source]));
  const add=(id,name,source)=>{
   const owner=source&&proficiencyFeatureOwner(record,source,kind,wanted,features);
@@ -206,7 +281,10 @@ export function proficiencyGrantOrigins(record={},index={},kind,key,features=[])
  };
  for(const row of array(record.proficiency_choices))
   if(row&&!row.disabled&&row.kind===kind&&norm(row.key)===wanted&&
-    !muted(record,row.origin_id)&&liveSource(record,row.origin_id)&&!excluded(row.origin_id))
+    !muted(record,row.origin_id)&&liveSource(record,row.origin_id)&&!excluded(row.origin_id)&&
+    featureStoredGrantAllowed(byId.get(row.origin_id),row)&&
+    (!String(row.origin_id||'').startsWith('feature:class|')||
+      array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f))))
     add(row.origin_id,row.origin_name||byId.get(row.origin_id)?.origin||row.origin_id,
      byId.get(row.origin_id));
  for(const source of selected){

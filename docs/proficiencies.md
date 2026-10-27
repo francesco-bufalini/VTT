@@ -16,8 +16,9 @@ non esistono più i pulsanti che ciclano fra i gradi.
 
 ## Concessioni automatiche e scelte
 
-L'indice `vtt/data/proficiency_grants_5etools.json` deriva **solo** da campi
-strutturati di 5etools, non dal testo dei privilegi. Quando classe, razza,
+L'indice `vtt/data/proficiency_grants_5etools.json` deriva da campi
+strutturati di 5etools e integrazioni tipizzate verificate, senza interpretare
+il testo dei privilegi durante l'esecuzione. Quando classe, razza,
 background o talento posseduto hanno competenze dirette senza `choose`,
 creiamo automaticamente origine e singole competenze.
 Quando esiste una scelta strutturata (`choose`, `any`, ecc.), creiamo
@@ -87,3 +88,46 @@ dei tratti non è disponibile offline, il beneficio resta visibile sulla
 sorgente di origine; non viene assegnato a un privilegio indovinato.
 Disattivare la razza o il singolo tratto continua a sopprimere il beneficio.
 L'indice non crea competenze nuove e non interpreta il testo in esecuzione.
+
+## Privilegi di classe e sottoclasse
+
+Il generatore legge anche `classFeature` e `subclassFeature` da tutti i file
+indicizzati in `data/class/index.json`. Conserva i campi di competenza tipizzati,
+classe e fonte della classe, sottoclasse e relativa fonte, fonte del privilegio
+e livello richiesto. Gli ID coincidono con quelli già usati dal catalogo dei
+tratti: le competenze iniziali e di multiclasse mantengono le vecchie identità.
+
+Molti privilegi upstream descrivono le competenze solo nel testo. I casi
+verificati sono normalizzati in `scripts/data/feature_proficiency_grants.json`;
+queste integrazioni colmano campi mancanti senza sostituire quelli strutturati
+upstream. Non si estraggono meccaniche dal testo durante l'esecuzione. Un nuovo
+privilegio con campi strutturati passa automaticamente dal generatore; per un
+privilegio solo descrittivo serve un'integrazione esplicita verificata.
+
+Le integrazioni iniziali coprono Druidic e Thieves' Cant PHB, i quattro
+specialisti Artificer TCE (incluse le armi marziali di Battle Ready) e Tools of
+the Trade dell'Armorer EFA. Le fonti restano distinte; questo non modifica
+l'insieme di classi iniziali supportate dall'indice esistente.
+
+La PWA applica queste concessioni solo quando il relativo tratto è posseduto,
+ha raggiunto il livello nella sua classe ed è attivo. I benefici e le scelte
+restano sul tratto concreto. Cambiare classe/sottoclasse o disattivare il tratto
+sospende le concessioni senza cancellare le scelte salvate.
+
+`proficiencyReplacements` rappresenta i casi «se possiedi già questa
+competenza, scegli un altro strumento». Tools of the Trade concede strumenti
+da fabbro oppure, se già acquisiti da un'altra origine attiva, una scelta di
+strumenti da artigiano. La scelta non propone le competenze già possedute e
+resta sospesa se viene meno il requisito della sostituzione.
+
+Per aggiornare solo le nuove sezioni senza rigenerare le origini preesistenti:
+
+```bash
+python scripts/generate_proficiency_grants.py /percorso/a/5etools-src --features-only
+node pwa/tools/sync_proficiency_catalog.mjs
+```
+
+La sincronizzazione completa `node pwa/tools/sync_native_catalogs.mjs` richiama
+lo stesso aggiornamento delle competenze. Le sezioni nuove sono presenti nel
+catalogo nativo condiviso; la proiezione e le scelte descritte qui sono quelle
+della scheda PWA.

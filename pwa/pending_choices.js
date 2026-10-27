@@ -132,25 +132,28 @@ export function singleNewPendingChoice(before=[],after=[],completed={}){
 
 export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  const result=[],index=catalogs.proficiencyGrants||{};
- for(const source of selectedSources(record,index)){
+ for(const source of selectedSources(record,index,calculated.features??null)){
   if(!enabled(record,source.id))continue;
   for(const [i,req] of requirementEntries(source).entries()){
    const mixed=req.kind==='mixed';
    const options=(mixed?mixedOptions(req.data,record,index):
-     optionPool(req.kind,record,index).filter(key=>allowedByRule(req.kind,req.data,key,record,index)))
+     optionPool(req.kind,record,index).filter(key=>allowedByRule(req.kind,req.data,key,record,index)&&
+       !arr(source.choice_exclusions?.[req.kind]).includes(key)))
      .sort((a,b)=>a.localeCompare(b,'it'));
    const stored=mixed?arr(record.proficiency_choices).filter(row=>
      row?.origin_id===source.id&&['skill','tool'].includes(row.kind)&&!row.disabled):presentRows(record,source.id,req.kind);
    const valueOf=row=>mixed?row.kind+':'+strip(row.key):strip(row.key);
-   const selected=unique(stored.map(valueOf).filter(key=>
-     stored.some(row=>row.custom&&valueOf(row)===key)||options.includes(key)));
-   const custom_values=unique(stored.filter(row=>row.custom===true&&(!mixed||row.kind==='tool'))
+   const excluded=arr(source.choice_exclusions?.[req.kind]);
+   const selected=unique(stored.map(valueOf).filter(key=>!excluded.includes(key)&&
+     (stored.some(row=>row.custom&&valueOf(row)===key)||options.includes(key))));
+   const custom_values=unique(stored.filter(row=>row.custom===true&&!excluded.includes(valueOf(row))&&(!mixed||row.kind==='tool'))
      .map(row=>strip(row.key)));
    const total=Math.max(1,Math.floor(req.count));
    result.push({id:'proficiency:'+source.id+':'+req.kind+':'+i,kind:'proficiency',
      origin_id:source.id,name:source.origin||source.source?.name||source.id,
      label:kindNames[req.kind]||req.kind,proficiency_kind:req.kind,
      count:total,selected,options,custom_values,
+     ...(excluded.length?{excluded_options:excluded}:{}),
      custom_allowed:['tool','language','mixed'].includes(req.kind),
      remaining:Math.max(0,total-selected.length)});
   }
@@ -277,7 +280,8 @@ export function savePendingChoice(record,choice,values=[]){
     regular.some(key=>!choice.options.includes(key))||
     (custom.length&&(!choice.custom_allowed||choice.kind!=='proficiency'))||
     custom.some(key=>!(mixed?key.slice(5):key)||(mixed?key.slice(5):key).length>80||
-       /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||regular.includes(key)))
+       /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||
+       arr(choice.excluded_options).includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
  if(['advancement_mode','advancement_feat'].includes(choice.kind)){
   const previous=arr(record.advancement_choices).find(row=>row.origin_id===choice.origin_id);
