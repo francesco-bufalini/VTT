@@ -298,8 +298,9 @@ export function proficiencyGrantOrigins(record={},index={},kind,key,features=nul
 }
 export const automaticId=(sid,field,target,suffix="")=>
   "auto|"+sid+"|"+field+"|"+target+suffix;
-export function numericGrant(sid,name,field,target,value,suffix=""){
-  if(!target||!validAmount(value))return null;
+export function numericGrant(sid,name,field,target,value,suffix="",allowModifier=false){
+  if(!target||!validAmount(value)&&
+    !(allowModifier&&typeof value==="string"&&/^(?:str|dex|con|int|wis|cha)_mod$/.test(value.trim().toLowerCase())))return null;
   return {id:automaticId(sid,field,target,suffix),
     origin_id:sid,origin_name:name,target,expression:String(value),
     automatic:true,disabled:false};
@@ -464,7 +465,7 @@ export function structuredFeatureGrants(record,catalogs={},features=collectStruc
       if(!row||typeof row!=="object")continue;
       const target=String(row.target||"");
       const grant=numericGrant(feature.origin_id,"Tratto · "+feature.name,
-        "bonuses",target,row.expression,"|"+target);
+        "bonuses",target,row.expression,"|"+target,true);
       if(grant)result.push({...grant,requirements:feature.requirements,
         parent_origin:feature.origin_key});
     }

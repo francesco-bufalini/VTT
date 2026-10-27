@@ -3,7 +3,8 @@
   "sources": [
     "5etools-src/data/class/class-*.json",
     "FightClub5eXML/class-druid-phb.xml",
-    "FightClub5eXML/class-bard-phb.xml"
+    "FightClub5eXML/class-bard-phb.xml",
+    "FightClub5eXML/class-wizard-xge.xml"
   ],
   "note": "Validated class/edition/subclass activation alternatives and full/partial/limited recovery. Runtime uses exact structured identifiers; text and tags are informative only. Partial recovery is not a short-rest reset. Optional recovery requires explicit use. Attack-count benefits use their granting feature and never stack: highest active attacks_per_action wins.",
   "actions": [
@@ -842,6 +843,21 @@
       "tracker_name": "Spirit Totem",
       "detail": "Evoca il totem in un punto visibile entro 60 piedi; scegli il tipo di spirito e applica l'aura pertinente.",
       "kind": "activation",
+      "priority": 0
+    },
+    {
+      "id": "wizard_phb_war_arcane_deflection",
+      "kind": "activation",
+      "class_name": "Wizard",
+      "class_source": "PHB",
+      "subclass": "War Magic",
+      "feature": "Arcane Deflection",
+      "min_level": 2,
+      "action_id": "war_arcane_deflection",
+      "name": "Deviazione arcana",
+      "activation": "reaction",
+      "tracker_name": "",
+      "detail": "Solo quando un attacco ti colpisce o fallisci un tiro salvezza; scegli +2 CA contro quell’attacco oppure +4 al tiro salvezza. Il limite agli incantesimi dura fino alla fine del tuo turno successivo.",
       "priority": 0
     }
   ],

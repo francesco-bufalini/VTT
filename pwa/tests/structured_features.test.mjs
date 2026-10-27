@@ -62,6 +62,39 @@ test("feature IDs match CreatureFeatures and saved disabled automatic grants",()
  assert.equal(calculateSheet({...c,classes:[],class:"Wizard",class_source:"PHB"},catalog).stats.armor_class,12);
 });
 
+test("XGE 2014 passive subclass benefits follow their exact granting trait",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const bundled=JSON.parse(readFileSync(new URL("../catalog/classes.json",import.meta.url)));
+ const catalogs={classFeatures:bundled,originDetails:{}};
+ const sheet=(className,subclass,level,source="PHB")=>({
+  kind:"character",class:className,class_source:source,level,
+  subclass,subclass_source:"XGE",rules_version:source==="PHB"?"2014":"2024",
+  classes:[{name:className,source,level,subclass,subclass_source:"XGE"}],
+  abilities:{str:10,dex:14,con:10,int:16,wis:14,cha:16},
+  speed_base:30,armor_class_base:10,max_hp_base:20,inventory:[]
+ });
+ const cases=[
+  ["Wizard","War Magic",2,"Tactical Wit","initiative",3],
+  ["Rogue","Swashbuckler",3,"Rakish Audacity","initiative",3],
+  ["Rogue","Scout",9,"Superior Mobility","speed",10],
+  ["Fighter","Samurai",7,"Elegant Courtier","skill:persuasion",2]
+ ];
+ for(const [className,subclass,level,name,target,amount] of cases){
+  const record=sheet(className,subclass,level);
+  const lower={...record,level:level-1,classes:[{...record.classes[0],level:level-1}]};
+  const feature=collectStructuredFeatures(record,catalogs).find(row=>row.name===name);
+  assert(feature,`${name} must be the granting trait`);
+  const grant=structuredFeatureGrants(record,catalogs).find(row=>row.origin_id===feature.origin_id&&row.target===target);
+  assert(grant,`${name} must grant ${target}`);
+  assert(!structuredFeatureGrants(lower,catalogs).some(row=>row.origin_id===feature.origin_id));
+  assert(!structuredFeatureGrants(sheet(className,subclass,level,"XPHB"),catalogs).some(row=>row.target===target&&row.origin_name===`Tratto · ${name}`));
+  const without={...record,origin_enabled:{[feature.origin_id]:false}};
+  const value=out=>target==="initiative"?out.stats.initiative:
+    target==="speed"?out.stats.speeds.walk:out.skills.persuasion;
+  assert.equal(value(calculateSheet(record,catalogs))-value(calculateSheet(without,catalogs)),amount);
+ }
+});
+
 test("catalog feature actions appear only when granted and remain separate from passive traits",()=>{
  const c=fighter(2),calculated=calculateSheet(c,catalog),actions=actionEntries(c,calculated,[]);
  assert(actions.some(row=>row.name==="Surge"&&row.time==="bonus"));

@@ -13,9 +13,29 @@ from urllib.parse import quote
 from generate_effects_catalog import ROOT
 
 BASE = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/"
+BONUSES_PATH = ROOT / "scripts/data/subclass_feature_bonuses_2014.json"
 
 
-def build(offline=False, refresh=False):
+def apply_curated_bonuses(features):
+    rules = json.loads(BONUSES_PATH.read_text(encoding="utf-8"))["entries"]
+    for rule in rules:
+        feature = features[rule["feature_id"]]
+        for field in ("name", "source", "class_name", "class_source",
+                      "subclass_name", "subclass_source", "level"):
+            assert feature[field] == rule[field], (rule["feature_id"], field)
+        feature["bonuses"] = rule["bonuses"]
+
+
+def build(offline=False, refresh=False, overlay_only=False):
+    if overlay_only:
+        target = ROOT / "vtt/data/subclass_features_5etools.json"
+        records = json.loads(target.read_text(encoding="utf-8"))["subclass_features"]
+        apply_curated_bonuses({row["id"]: row for row in records})
+        target.write_text(json.dumps({"subclass_features": records}, ensure_ascii=False,
+                                     separators=(",", ":")) + "\n", encoding="utf-8")
+        print(f"Updated curated benefits in {target}")
+        return
+
     def read(filename):
         cache = ROOT / ".5etools-cache" / filename
         if refresh or not cache.exists():
@@ -135,6 +155,8 @@ def build(offline=False, refresh=False):
             if alternate:
                 row["subclass_name"] = alternate
 
+    apply_curated_bonuses(features)
+
     data_dir = ROOT / "vtt/data"
     for filename, key, records in [
         ("subclasses_5etools.json", "subclasses", subclasses),
@@ -153,5 +175,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--offline", action="store_true")
     parser.add_argument("--refresh", action="store_true")
+    parser.add_argument("--overlay-only", action="store_true",
+                        help="Reapply curated benefits to the existing 5etools index")
     args = parser.parse_args()
-    build(args.offline, args.refresh)
+    build(args.offline, args.refresh, args.overlay_only)

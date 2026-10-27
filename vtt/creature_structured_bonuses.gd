@@ -32,8 +32,12 @@ static func _number(value: Variant) -> String:
 	return ""
 
 
-static func _add(result: Array[Dictionary], sid: String, label: String, field: String, target: String, amount: Variant, suffix: String = "") -> void:
+static func _add(result: Array[Dictionary], sid: String, label: String, field: String, target: String, amount: Variant, suffix: String = "", allow_modifier: bool = false) -> void:
 	var expression: String = _number(amount)
+	if expression.is_empty() and allow_modifier and amount is String:
+		var candidate: String = String(amount).strip_edges().to_lower()
+		if candidate in ["str_mod", "dex_mod", "con_mod", "int_mod", "wis_mod", "cha_mod"]:
+			expression = candidate
 	if expression.is_empty() or target.is_empty():
 		return
 	result.append({
@@ -309,7 +313,7 @@ static func derive(record: Dictionary) -> Array[Dictionary]:
 		for grant: Variant in structured:
 			if grant is Dictionary:
 				_add(result, sid, label, "bonuses", String(grant.get("target", "")),
-					grant.get("expression", ""), "|" + String(grant.get("target", "")))
+					grant.get("expression", ""), "|" + String(grant.get("target", "")), true)
 	_cached_signature = signature
 	_cached_results = result.duplicate(true)
 	return result

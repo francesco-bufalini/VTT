@@ -19,6 +19,15 @@ const creature=(name,edition,level,subclass='')=>({
  kind:'character',rules_version:edition,class:name,class_source:edition==='2024'?'XPHB':'PHB',
  level,subclass,abilities:{str:10,dex:10,con:10,int:10,wis:16,cha:16}
 });
+test('War Magic 2014 Arcane Deflection is the XGE trait reaction',()=>{
+ const war=creature('Wizard','2014',14,'War Magic');
+ const matching=record=>actionsFor(record).filter(row=>row.rule_id==='wizard_phb_war_arcane_deflection');
+ assert.equal(matching(war).length,1);
+ assert.equal(matching(war)[0].time,'reaction');
+ assert.equal(matching({...war,level:1}).length,0);
+ assert.equal(matching(creature('Wizard','2024',14,'War Magic')).length,0);
+ assert(!actionsFor(war).some(row=>row.rule_id.includes('deflecting_shroud')));
+});
 test('typed supplement tracks feature, class source, level and subclass without prose heuristics',()=>{
  assert.equal(rules.version,1);
  assert(rules.actions.length>=12);

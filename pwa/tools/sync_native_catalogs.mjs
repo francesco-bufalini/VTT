@@ -228,6 +228,7 @@ await writeFile(new URL('../catalog/species_attacks.json',import.meta.url),
  JSON.stringify(projectSpeciesAttacks(references.races),null,2)+'\n');
 mechanics.races=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));
 await syncProficiencyCatalog();
+const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
 const featureCatalog=await read('../../vtt/data/subclass_features_5etools.json');
 mechanics.resource_features=[...references.class_features,...featureCatalog.subclass_features].map(row=>Object.fromEntries(['id','name','class_name','class_source','subclass_name','subclass_short_name','subclass_source','level'].filter(k=>row[k]!==undefined).map(k=>[k,row[k]])));
 const previousSubraceIdentities=(await read('../catalog/class_mechanics.json')).subraces||[];

@@ -7,6 +7,43 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-27: benefici numerici XGE e Wizard War Magic
+
+Riesaminati i tratti XGE di Samurai, Scout e Swashbuckler già censiti, più
+le **6 voci** `subclassFeature` di War Magic con `classSource=PHB` in
+[5etools Fighter](https://github.com/5etools-mirror-3/5etools-src/blob/master/data/class/class-fighter.json)
+(`8826f3114c0c2009c6ec3a7327b81986bee12abd`),
+[Rogue](https://github.com/5etools-mirror-3/5etools-src/blob/master/data/class/class-rogue.json)
+(`a449139b732c30bae4a09122796c610d2d65c964`) e
+[Wizard](https://github.com/5etools-mirror-3/5etools-src/blob/master/data/class/class-wizard.json)
+(`f24f04808d71a574482b78079050022bbb60bc3b`). Confronto con gli XML
+FightClub5e [Fighter](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-fighter-xge.xml)
+(`2f6c94111ea863648ecea2ece01b3df07685f579`),
+[Rogue](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-rogue-xge.xml)
+(`42a334534d4265101b51ae74ba011b46ccdba5db`) e
+[Wizard](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-wizard-xge.xml)
+(`327728172f33a8d6db2f54688e9cecb437c2c5ee`). Queste sottoclassi XGE
+non dichiarano `reprintedAs`; le righe di compatibilità `classSource=XPHB`
+restano separate e non ricevono i benefici del tratto PHB.
+
+| Tratto XGE (livello) | Esito |
+| --- | --- |
+| Samurai, Elegant Courtier (7) | **Ora strutturato:** modificatore Saggezza alla sola Persuasione, dal tratto. La competenza alternativa al TS richiede una scelta distinta. |
+| Scout, Superior Mobility (9) | **Ora strutturato:** +10 piedi alla velocità di cammino. L'aumento di nuoto/scalata vale solo se già posseduti. |
+| Swashbuckler, Rakish Audacity (3) | **Ora strutturato:** modificatore Carisma all'iniziativa. Il Furtivo alternativo dipende dalla posizione delle creature. |
+| War Magic, War Magic (2) | Intestazione della sottoclasse; non concede da sola un bonus. |
+| War Magic, Arcane Deflection (2) | **Ora strutturata:** reazione del tratto. +2 CA o +4 al TS valgono solo per il tiro scatenante; il limite al lancio successivo resta contestuale. |
+| War Magic, Tactical Wit (2) | **Ora strutturato:** modificatore Intelligenza all'iniziativa, dal tratto. |
+| War Magic, Power Surge (6) | Riserva con massimo pari al modificatore Intelligenza (minimo uno), parte da uno dopo riposo lungo e può aumentare con due incantesimi specifici; recupero/spesa non corrispondono a un semplice contatore di riposo. |
+| War Magic, Durable Magic (10) | +2 CA e TS soltanto mentre si mantiene concentrazione su un incantesimo; nessun bonus permanente. |
+| War Magic, Deflecting Shroud (14) | Si attiva insieme ad Arcane Deflection, senza nuova reazione; creature scelte, distanza e danno richiedono il trigger effettivo. |
+
+I quattro incrementi usano i normali benefici numerici con origine nel
+`subclassFeature` esatto. Le sole formule aggiunte sono i modificatori di
+caratteristica già calcolati dal foglio; gli altri effetti sono nella lista
+aperta. La rigenerazione 5etools riapplica le correzioni curate senza
+modificare il testo originale dei tratti.
+
 ## Lotto 2026-10-26: Sorcerer XGE Divine Soul e Storm Sorcery
 
 Controllate le **13 voci** `subclassFeature` (6 Divine Soul, 7 Storm) della
@@ -103,12 +140,12 @@ legate alla sottoclasse Rogue **PHB**, senza attribuirle a Rogue XPHB.
 | Scout: Scout (3) | Intestazione dell'archetipo. |
 | Scout: Skirmisher (3) | **Ora strutturata:** reazione del tratto. Trigger a fine turno del nemico, distanza, metà velocità e assenza di attacchi di opportunità restano contestuali. |
 | Scout: Survivalist (3) | Nature e Survival con competenza raddoppiata; da attribuire al tratto esatto. |
-| Scout: Superior Mobility (9) | +10 piedi a velocità di cammino e alle velocità di nuoto/scalata già possedute; origine e aggiornamento dinamico ancora aperti. |
+| Scout: Superior Mobility (9) | **Ora strutturato:** +10 piedi a camminare dal tratto XGE. Nuoto/scalata aumentano solo se già posseduti; resta aperto il loro aggiornamento condizionale. |
 | Scout: Ambush Master (13) | Vantaggio all'iniziativa e vantaggio agli attacchi contro il primo bersaglio colpito nel primo round fino al turno successivo; trigger contestuale. |
 | Scout: Sudden Strike (17) | **Ora strutturata:** azione bonus dopo Attack. Attacco e secondo Furtivo richiedono bersagli diversi nello stesso turno. |
 | Swashbuckler: Swashbuckler (3) | Intestazione dell'archetipo. |
 | Swashbuckler: Fancy Footwork (3) | Nega attacchi di opportunità solo alla creatura attaccata in mischia durante quel turno. |
-| Swashbuckler: Rakish Audacity (3) | Modificatore Carisma all'iniziativa e condizione alternativa per il Furtivo; il secondo beneficio resta contestuale. |
+| Swashbuckler: Rakish Audacity (3) | **Ora strutturato:** modificatore Carisma all'iniziativa dal tratto XGE; la condizione alternativa per il Furtivo resta contestuale. |
 | Swashbuckler: Panache (9) | **Ora strutturata:** azione del tratto. Prova contrapposta e risultati diversi per creatura ostile/non ostile restano contestuali. |
 | Swashbuckler: Elegant Maneuver (13) | **Ora strutturata:** azione bonus; vantaggio alla successiva prova Acrobazia o Atletica dello stesso turno. |
 | Swashbuckler: Master Duelist (17) | **Ora strutturato:** un uso per riposo breve dopo un attacco mancato; il nuovo tiro con vantaggio avviene sul tiro stesso, senza azione separata. |
@@ -273,7 +310,7 @@ un titolo o da un'altra edizione.
 | Samurai (3) | Intestazione della sottoclasse. |
 | Bonus Proficiency (3) | Abilità oppure lingua scelta; nessuna scelta precompilata. |
 | Fighting Spirit (3) | **Ora strutturati:** 3 usi/riposo lungo e azione bonus del tratto XGE. Vantaggio e PF temporanei 5/10/15 richiedono stato e livello della classe. |
-| Elegant Courtier (7) | Modificatore Saggezza sulla sola Persuasion e competenza in TS Saggezza, con sostituzione a scelta se già posseduta. |
+| Elegant Courtier (7) | **Ora strutturato:** modificatore Saggezza sulla sola Persuasion; competenza in TS Saggezza e sostituzione a scelta se già posseduta richiedono una scelta distinta. |
 | Tireless Spirit (10) | Recupera un uso di Fighting Spirit all'iniziativa **solo a zero**; non un reset completo. |
 | Rapid Strike (15) | Un attacco aggiuntivo una volta nel turno solo rinunciando al vantaggio su un tiro idoneo. |
 | Strength before Death (18) | **Ora strutturati:** 1 uso/riposo lungo e reazione del tratto XGE. Il turno extra al trigger 0 PF e i TS morte restano contestuali. |

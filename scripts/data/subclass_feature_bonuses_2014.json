@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "source": "5etools XGE subclassFeature, checked against FightClub5eXML XGE class XML",
+  "entries": [
+    {
+      "feature_id": "5etools:subclass_features:fighter%7Cphb%7Csamurai%7Cxge%7C7%7Cxge%7Celegant%20courtier",
+      "name": "Elegant Courtier",
+      "source": "XGE",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Samurai",
+      "subclass_source": "XGE",
+      "level": 7,
+      "bonuses": [{"target": "skill:persuasion", "expression": "wis_mod"}]
+    },
+    {
+      "feature_id": "5etools:subclass_features:rogue%7Cphb%7Cscout%7Cxge%7C9%7Cxge%7Csuperior%20mobility",
+      "name": "Superior Mobility",
+      "source": "XGE",
+      "class_name": "Rogue",
+      "class_source": "PHB",
+      "subclass_name": "Scout",
+      "subclass_source": "XGE",
+      "level": 9,
+      "bonuses": [{"target": "speed", "expression": "10"}]
+    },
+    {
+      "feature_id": "5etools:subclass_features:rogue%7Cphb%7Cswashbuckler%7Cxge%7C3%7Cxge%7Crakish%20audacity",
+      "name": "Rakish Audacity",
+      "source": "XGE",
+      "class_name": "Rogue",
+      "class_source": "PHB",
+      "subclass_name": "Swashbuckler",
+      "subclass_source": "XGE",
+      "level": 3,
+      "bonuses": [{"target": "initiative", "expression": "cha_mod"}]
+    },
+    {
+      "feature_id": "5etools:subclass_features:wizard%7Cphb%7Cwar%7Cxge%7C2%7Cxge%7Ctactical%20wit",
+      "name": "Tactical Wit",
+      "source": "XGE",
+      "class_name": "Wizard",
+      "class_source": "PHB",
+      "subclass_name": "War Magic",
+      "subclass_source": "XGE",
+      "level": 2,
+      "bonuses": [{"target": "initiative", "expression": "int_mod"}]
+    }
+  ]
+}
