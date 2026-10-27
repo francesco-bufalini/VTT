@@ -1065,7 +1065,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
          '</button></div>';
      }).join('');
      html+=card('Infusioni',
-       '<div class="play-magic-selection">'+btn('Gestisci infusioni','book','data-act="sheet-context" data-sheet-context="infusions"','<span>Impara e prepara infusioni</span>')+'</div>'+
+       '<div class="play-magic-selection">'+
+       btn('Prepara infusioni','book','data-act="infusion-picker-open" data-mode="prepare"','<span>Prepara</span>')+
+       btn('Impara infusioni','book','data-act="infusion-picker-open" data-mode="learn"','<span>Impara</span>')+'</div>'+
        (rows||'<p class="play-empty">Nessuna infusione conosciuta.</p>'),
        counters?'<div class="play-magic-source-resources" aria-label="Riepilogo infusioni">'+counters+'</div>':'',
        'play-magic-class-card play-infusion-card');
