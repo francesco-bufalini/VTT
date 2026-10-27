@@ -1112,6 +1112,15 @@ async function computeLocalData(record){
     .map(spell=>[spell.id,spell])).values()]};
   catalogs.abilityGrants={...(catalogs.abilityGrants||{}),artificer_infusions:(inventoryModule.expandedInfusionDefinitions||((rows)=>rows))(catalogs.abilityGrants?.artificer_infusions||[])};
   const calculated=calculateSheet(record,catalogs);
+  // Internal racial powers must remain resolvable offline, even when the
+  // native host has not supplied a full/selected spell catalogue yet.
+  const ownedAreaIds=new Set((calculated.origin_spells||[]).map(row=>row.spell_id));
+  const embedded=(calculated.racial_spell_definitions||[]).filter(row=>ownedAreaIds.has(row.id));
+  if(embedded.length){
+    const spellMap=new Map((state.spellCatalog||[]).map(row=>[row.id,row]));
+    for(const definition of embedded)spellMap.set(definition.id,{...definition,...spellMap.get(definition.id)});
+    state.spellCatalog=[...spellMap.values()];
+  }
   return {...calculated,loadError,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
