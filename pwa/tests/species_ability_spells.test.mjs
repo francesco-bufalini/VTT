@@ -150,3 +150,32 @@ test('turning off a granting subrace trait suspends spells without deleting the 
  const restored=sheet(c);
  assert.ok(restored.origin_spells.some(row=>row.origin_id===feature.origin_id));
 });
+
+test('flat race selection retains the same PHB, MTF and EEPC racial scores',()=>{
+ assert.equal(result(character('Dwarf (Mountain)','PHB')).con,12);
+ assert.equal(result(character('Dwarf (Mountain)','PHB')).str,12);
+ assert.equal(result(character('Genasi (Fire)','EEPC')).con,12);
+ assert.equal(result(character('Genasi (Fire)','EEPC')).int,11);
+ assert.equal(result(character('Tiefling (Baalzebul)','MTF')).cha,12);
+ assert.equal(result(character('Tiefling (Baalzebul)','MTF')).int,11);
+ assert.equal(result(character("Tiefling (Variant; Hellfire)",'SCAG')).int,11);
+ assert.equal(result(character('Human (Variant)','PHB')).str,10);
+ const pending=pendingCharacterChoices(character('Human (Variant)','PHB'),
+  sheet(character('Human (Variant)','PHB')),catalog);
+ assert.ok(pending.some(row=>row.kind==='ability'&&row.count===2));
+});
+
+test('flat subrace selections retain their real spell-granting traits',()=>{
+ for(const [race,book,names] of [
+  ['Genasi (Fire)','MPMM',['phb2014_produce_flame','phb2014_burning_hands','phb2014_flame_blade']],
+  ['Tiefling (Baalzebul)','MTF',['phb2014_thaumaturgy','phb2014_ray_of_sickness','phb2014_crown_of_madness']],
+  ['Tiefling (Asmodeus)','MTF',['phb2014_thaumaturgy','phb2014_hellish_rebuke','phb2014_darkness']],
+  ['Aasimar (Fallen)','VGM',['phb2014_light']],
+  ['Elf (Drow)','PHB',['phb2014_dancing_lights','phb2014_faerie_fire','phb2014_darkness']]
+ ]){
+  const projected=spellResult(character(race,book));
+  assert.deepEqual(projected.grants.map(g=>g.spell_id).sort(),[...names].sort(),
+   race+' '+book);
+ }
+ assert.deepEqual(spellResult(character('Tiefling (Variant; Winged)','SCAG')).grants,[]);
+});
