@@ -66,6 +66,13 @@ export function selectedSources(record,index={},features=null){
     match(x.source,record.subrace_source)&&
     match(x.raceSource,record.species_source)))
     push("subrace",source,record.subrace);
+  // Some later subraces replace their parent's Languages grant rather than
+  // augmenting it. Exclude the parent's fixed and chosen languages only;
+  // unrelated proficiencies and other origins remain intact.
+  if(selected.some(row=>row.group==="subrace"&&row.source.replaces_parent_languages&&
+      !muted(record,row.id)))
+    for(const parent of selected.filter(row=>row.group==="race"))
+      parent.source={...parent.source,languageProficiencies:[],parent_languages_replaced:true};
   for(const feat of array(record.feats_catalog)){
     if(!feat||feat.disabled)continue;
     for(const source of array(index.feat).filter(x=>match(x.name,feat.name)&&
@@ -223,6 +230,8 @@ function proficiencyOwnerActive(record,owner){
 // A saved conditional choice stays in the record, but grants nothing while
 // its rule is unavailable. Manual benefits use their separate trait-editor IDs.
 function featureStoredGrantAllowed(source,row){
+ // Withdraw legacy saved choices when a subrace replaces racial Languages.
+ if(source?.source?.parent_languages_replaced&&row.kind==='language')return false;
  if(source?.mode!=='feature')return true;
  if(fixedGrants(source).some(grant=>grant.kind===row.kind&&grant.key===norm(row.key)))return true;
  if(array(source.choice_exclusions?.[row.kind]).includes(norm(row.key)))return false;
