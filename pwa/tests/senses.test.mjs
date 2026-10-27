@@ -34,14 +34,24 @@ test('each manual sense remains owned by the trait and can be disabled or remove
 });
 test('a feature only grants its own sense while active',()=>{
  const f={name:'Eyes of the Dark',key:'sorcerer|eyes',origin_id:'feature:eyes',
-  origin_key:'class|xge|sorcerer',requirements:{class_name:'Sorcerer',class_source:'XGE'}};
+  origin_key:'class|phb|sorcerer|subclass|shadow magic|xge',requirements:{class_name:'Sorcerer',class_source:'PHB'}};
  assert.equal(calculateSenses({},[f],catalog).distances.darkvision,120);
  assert.equal(calculateSenses({trait_enabled:{[f.key]:false}},[f],catalog).distances.darkvision,undefined);
 });
 test('Gloom Stalker raises existing darkvision and grants a baseline without it',()=>{
  const f={name:'Umbral Sight',key:'ranger|umbral',origin_id:'feature:umbral',
-  origin_key:'class|xge|ranger|subclass|gloom stalker|xge',
-  requirements:{class_name:'Ranger',class_source:'XGE'}};
+  origin_key:'class|phb|ranger|subclass|gloom stalker|xge',
+  requirements:{class_name:'Ranger',class_source:'PHB'}};
  assert.equal(calculateSenses({species:'Elf',species_source:'PHB'},[f],catalog).distances.darkvision,90);
  assert.equal(calculateSenses({},[f],catalog).distances.darkvision,60);
+});
+test('item-granted senses require the exact active item, even with structured item IDs',()=>{
+ const itemId='rod|tce|focus',trait={key:'item:'+itemId+'|0|sight',name:'Senso infuso'};
+ const patch=addBenefitPatch({},trait,'senses',{sense_type:'blindsight',range_feet:'10'},'trait:abcd1235');
+ const before={...patch};
+ assert.equal(calculateSenses(before,[],catalog).distances.blindsight,undefined);
+ const present={...before,inventory:[{id:itemId,name:'Rod',quantity:1}]};
+ assert.equal(calculateSenses(present,[],catalog).distances.blindsight,10);
+ const disabled={...present,trait_enabled:{[trait.key]:false}};
+ assert.equal(calculateSenses(disabled,[],catalog).distances.blindsight,undefined);
 });
