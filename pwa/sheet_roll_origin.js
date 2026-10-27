@@ -134,6 +134,13 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  if(target.startsWith('casting_hit:'))targetKeys.push('spell_attack');
  targetKeys.push(target);
  for(const key of targetKeys)for(const row of list(all[key]))add(row);
+ if(target.startsWith('attack_hit:')){
+  const attack=list(calculated?.attacks).find(a=>'attack_hit:'+a.id===target);
+  for(const row of list(attack?.enchantment_hit_bonuses))add({
+   ...row,expression:String(row.value),origin_id:'spell_cast:'+row.cast_id,
+   origin_name:row.origin_name
+  });
+ }
  // Some legacy monsters and attack rules have additional built-in terms not
  // represented by a grant. Keep their value in Base instead of inventing an
  // origin or silently dropping it.
@@ -249,10 +256,12 @@ export function damageRollSegments(roll,type='',attack=null){
  return groups.map((group,index)=>{
    const base=index===0;
    const formula=group.dice.join(' + ');
+   const extra=base?null:list(attack?.damage_extras).find(row=>row.damage_type===group.damageType);
    return {key:'damage:'+index,kind:base?'base':'formula',
      formula:(base?'':' + ')+formula+(base?damageModifierExpression(modifier,attack,notation):''),
-     expanded:'',damageType:group.damageType,originName:base?'Danno base':'Danno aggiuntivo',
-     originId:base?String(attack?.origin_id||''):'',value:base?modifier:0};
+     expanded:'',damageType:group.damageType,
+     originName:base?'Danno base':extra?.origin_name||'Danno aggiuntivo',
+     originId:base?String(attack?.origin_id||''):extra?.cast_id?'spell_cast:'+extra.cast_id:'',value:base?modifier:0};
  });
 }
 export const rollDamageName=type=>{
