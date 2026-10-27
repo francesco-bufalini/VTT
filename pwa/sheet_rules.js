@@ -189,7 +189,8 @@ function indexRows(record,index,warnings){
   const replacesParentASI=!!subraceASI&&(
     subraceASI.replaces_parent_ability===true||
     Object.values(subraceASI.ability||{}).reduce((total,v)=>
-      total+Math.max(0,Number(v)||0),0)>=2);
+      total+Math.max(0,Number(v)||0),0)>=3||
+    same(record.species,'Human')&&/mark of/i.test(record.subrace||''));
   const append=(sid,name,amounts)=>{
     for(const [ability,value] of Object.entries(amounts)){
       const grant=numericGrant(sid,name,"ability","ability:"+ability,value);
@@ -238,7 +239,14 @@ function indexRows(record,index,warnings){
       (!record.subrace_source||same(r.source,record.subrace_source)));
     if(matches.length===1){
       const r=matches[0],sid="subrace|"+String(r.source).toLowerCase()+"|"+String(r.name).toLowerCase();
-      append(sid,r.name,fixedAbilities(r));
+      const subraceFixed=fixedAbilities(r);
+      if(!replacesParentASI){
+        const parent=arr(index.race).find(row=>same(row.name,record.species)&&
+          same(row.source,record.species_source));
+        for(const [stat,amount] of Object.entries(subraceFixed))
+          if(Number(parent?.ability?.[stat])===amount)delete subraceFixed[stat];
+      }
+      append(sid,r.name,subraceFixed);
       for(const choice of selectedAbilityChoices(record,r,sid,index,"subrace")){
         const grant=numericGrant(sid,r.name,"ability_choice","ability:"+choice.ability,choice.amount);
         if(grant)rows.push(grant);
