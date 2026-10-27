@@ -1,0 +1,529 @@
+{
+  "version": 1,
+  "note": "Explicitly reviewed pre-2024 racial language grants. 'other' may denote a named language, not a choice; never project language:other. Sources remain source-qualified. For lineage sourcebooks without a typed Languages field, Common + one agreed language is materialized.",
+  "entries": [
+    {
+      "kind": "race",
+      "name": "Aarakocra",
+      "source": "EEPC",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "aarakocra": true,
+          "auran": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Bullywug",
+      "source": "DMG",
+      "languageProficiencies": [
+        {
+          "bullywug": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Gith",
+      "source": "MTF",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "gith": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Grung",
+      "source": "OGA",
+      "languageProficiencies": [
+        {
+          "grung": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Khenra",
+      "source": "PSA",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "khenra": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Kor",
+      "source": "PSZ",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "kor": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Leonin",
+      "source": "MOT",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "leonin": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Loxodon",
+      "source": "GGR",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "loxodon": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Minotaur",
+      "source": "GGR",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "minotaur": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Minotaur (Amonkhet)",
+      "source": "PSA",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "minotaur": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Naga",
+      "source": "PSA",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "naga": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Siren",
+      "source": "PSX",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "siren": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Troglodyte",
+      "source": "DMG",
+      "languageProficiencies": [
+        {
+          "troglodyte": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Vampire",
+      "source": "PSZ",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "vampire": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Vedalken",
+      "source": "PSK",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "vedalken": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Gnoll",
+      "source": "DMG",
+      "languageProficiencies": [
+        {
+          "gnoll": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Goblin (Dankwood)",
+      "source": "AWM",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "goblin": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Orc",
+      "source": "EGW",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "orc": true
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Kalashtar",
+      "source": "ERLW",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "quori": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Merfolk",
+      "source": "PSZ",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "merfolk": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Vedalken",
+      "source": "GGR",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "vedalken": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Aven",
+      "source": "PSA",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Aven",
+      "source": "PSD",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Human (Kaladesh)",
+      "source": "PSK",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Human (Zendikar)",
+      "source": "PSZ",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Human (Ixalan)",
+      "source": "PSX",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Astral Elf",
+      "source": "AAG",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Autognome",
+      "source": "AAG",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Giff",
+      "source": "AAG",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Plasmoid",
+      "source": "AAG",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Kender",
+      "source": "DSotDQ",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Owlin",
+      "source": "SCC",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Harengon",
+      "source": "WBtW",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Fairy",
+      "source": "WBtW",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Hexblood",
+      "source": "VRGR",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Dhampir",
+      "source": "VRGR",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Reborn",
+      "source": "VRGR",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Simic Hybrid",
+      "source": "GGR",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "choose": {
+            "from": [
+              "elvish",
+              "vedalken"
+            ],
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Keldon",
+      "source": "PSD",
+      "raceName": "Human",
+      "raceSource": "PHB",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "keldon": true
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Ixalan; Blue",
+      "source": "PSX",
+      "raceName": "Merfolk",
+      "raceSource": "PSZ",
+      "languageProficiencies": []
+    },
+    {
+      "kind": "subrace",
+      "name": "Ixalan; Green",
+      "source": "PSX",
+      "raceName": "Merfolk",
+      "raceSource": "PSZ",
+      "languageProficiencies": []
+    },
+    {
+      "kind": "subrace",
+      "name": "Chromatic",
+      "source": "FTD",
+      "raceName": "Dragonborn",
+      "raceSource": "PHB",
+      "replaces_parent_languages": true,
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Gem",
+      "source": "FTD",
+      "raceName": "Dragonborn",
+      "raceSource": "PHB",
+      "replaces_parent_languages": true,
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Metallic",
+      "source": "FTD",
+      "raceName": "Dragonborn",
+      "raceSource": "PHB",
+      "replaces_parent_languages": true,
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "raceName": "Half-Orc",
+      "raceSource": "PHB",
+      "replaces_parent_languages": true,
+      "languageProficiencies": [
+        {
+          "common": true,
+          "goblin": true
+        }
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "raceName": "Human",
+      "raceSource": "PHB",
+      "replaces_parent_languages": true,
+      "languageProficiencies": [
+        {
+          "common": true,
+          "goblin": true
+        }
+      ]
+    }
+  ]
+}
