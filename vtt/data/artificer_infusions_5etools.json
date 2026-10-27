@@ -460,6 +460,11 @@
       "min_level": 6,
       "item_prerequisite": "A suit of armor (requires attunement)",
       "requires_attunement": true,
+      "effect_choice": {
+        "key": "damage_type",
+        "label": "Tipo di resistenza",
+        "options": ["acid", "cold", "fire", "force", "lightning", "necrotic", "poison", "psychic", "radiant", "thunder"]
+      },
       "fightclub_name": "Infusion: Resistant Armor (Level 6)",
       "application_kind": "enhancement",
       "item_selector": {
