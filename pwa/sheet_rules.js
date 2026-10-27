@@ -180,6 +180,14 @@ function selectedAbilityChoices(record,row,sid,index,group,legacy=''){
 }
 function indexRows(record,index,warnings){
   const rows=[];
+  // Some source-specific subraces replace the entire parental ASI (e.g.
+  // FTD Dragonborn, Eberron dragonmarks), rather than stacking onto it.
+  const subraceASI=arr(index.subrace).find(r=>same(r.name,record.subrace)&&
+    same(r.raceName,record.species)&&same(r.source,record.subrace_source));
+  const replacesParentASI=!!subraceASI&&(
+    subraceASI.replaces_parent_ability===true||
+    Object.values(subraceASI.ability||{}).reduce((total,v)=>
+      total+Math.max(0,Number(v)||0),0)>=2);
   const append=(sid,name,amounts)=>{
     for(const [ability,value] of Object.entries(amounts)){
       const grant=numericGrant(sid,name,"ability","ability:"+ability,value);
@@ -188,6 +196,7 @@ function indexRows(record,index,warnings){
   };
   const categories=[["race","species","species_source"]];
   for(const [group,field,sourceField] of categories){
+    if(group==='race'&&replacesParentASI)continue;
     const value=record[field];
     if(!value)continue;
     const options=arr(index[group]).filter(r=>same(r.name,value)&&(!record[sourceField]||same(r.source,record[sourceField])));
