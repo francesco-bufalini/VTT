@@ -53,7 +53,8 @@
             "spell_id": "vtt_aasimar_radiant_soul",
             "radius_feet": 10,
             "damage_type": "radiant",
-            "description": "Per un minuto ottieni volo pari alla velocità di camminata; una volta per turno puoi aggiungere danni radianti pari al bonus competenza. L'emanazione visualizza la forma e segue il token."
+            "description": "Per un minuto ottieni volo pari alla velocità di camminata; una volta per turno puoi aggiungere danni radianti pari al bonus competenza. L'emanazione visualizza la forma e segue il token.",
+            "fly_equals_walk": true
           }
         ]
       }
