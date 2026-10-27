@@ -100,7 +100,13 @@ export function projectSpeciesRollModes(races=[]){
     rules.push(row);
    }
   }
-  if(rules.length)items.push({id:race.id||'',name:race.name,source:race.source,rules});
+  if(rules.length){
+   const details=[...new Set(rules.map(row=>row.trait))].map(name=>{
+    const original=(race.entries||[]).find(entry=>entry?.name===name);
+    return {name,entries:original?.entries||[]};
+   });
+   items.push({id:race.id||'',name:race.name,source:race.source,rules,trait_details:details});
+  }
  }
  return {version:1,source:'vtt/data/creature_references_5etools.json',races:items};
 }
