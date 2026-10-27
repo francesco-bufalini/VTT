@@ -182,8 +182,16 @@
       "subclassShortName": "Swords",
       "subclassSource": "XGE",
       "level": 3,
-      "armorProficiencies": [{"medium": true}],
-      "weaponProficiencies": [{"scimitar": true}]
+      "armorProficiencies": [
+        {
+          "medium": true
+        }
+      ],
+      "weaponProficiencies": [
+        {
+          "scimitar": true
+        }
+      ]
     },
     {
       "kind": "subclassFeature",
@@ -194,8 +202,16 @@
       "subclassShortName": "Forge",
       "subclassSource": "XGE",
       "level": 1,
-      "armorProficiencies": [{"heavy": true}],
-      "toolProficiencies": [{"smith's tools": true}]
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ],
+      "toolProficiencies": [
+        {
+          "smith's tools": true
+        }
+      ]
     },
     {
       "kind": "subclassFeature",
@@ -206,7 +222,11 @@
       "subclassShortName": "Shepherd",
       "subclassSource": "XGE",
       "level": 2,
-      "languageProficiencies": [{"sylvan": true}]
+      "languageProficiencies": [
+        {
+          "sylvan": true
+        }
+      ]
     },
     {
       "kind": "subclassFeature",
@@ -217,8 +237,16 @@
       "subclassShortName": "Drunken Master",
       "subclassSource": "XGE",
       "level": 3,
-      "skillProficiencies": [{"performance": true}],
-      "toolProficiencies": [{"brewer's supplies": true}]
+      "skillProficiencies": [
+        {
+          "performance": true
+        }
+      ],
+      "toolProficiencies": [
+        {
+          "brewer's supplies": true
+        }
+      ]
     },
     {
       "kind": "subclassFeature",
@@ -229,8 +257,20 @@
       "subclassShortName": "Mastermind",
       "subclassSource": "XGE",
       "level": 3,
-      "toolProficiencies": [{"disguise kit": true, "forgery kit": true}, {"anyGamingSet": 1}],
-      "languageProficiencies": [{"any": 2}]
+      "toolProficiencies": [
+        {
+          "disguise kit": true,
+          "forgery kit": true
+        },
+        {
+          "anyGamingSet": 1
+        }
+      ],
+      "languageProficiencies": [
+        {
+          "any": 2
+        }
+      ]
     },
     {
       "kind": "subclassFeature",
@@ -241,8 +281,18 @@
       "subclassShortName": "Scout",
       "subclassSource": "XGE",
       "level": 3,
-      "skillProficiencies": [{"nature": true, "survival": true}],
-      "expertise": [{"nature": true, "survival": true}]
+      "skillProficiencies": [
+        {
+          "nature": true,
+          "survival": true
+        }
+      ],
+      "expertise": [
+        {
+          "nature": true,
+          "survival": true
+        }
+      ]
     },
     {
       "kind": "subclassFeature",
@@ -253,7 +303,11 @@
       "subclassShortName": "Storm",
       "subclassSource": "XGE",
       "level": 1,
-      "languageProficiencies": [{"primordial": true}]
+      "languageProficiencies": [
+        {
+          "primordial": true
+        }
+      ]
     },
     {
       "kind": "subclassFeature",
@@ -264,8 +318,228 @@
       "subclassShortName": "Hexblade",
       "subclassSource": "XGE",
       "level": 1,
-      "armorProficiencies": [{"medium": true, "shield": true}],
-      "weaponProficiencies": [{"martial": true}]
+      "armorProficiencies": [
+        {
+          "medium": true,
+          "shield": true
+        }
+      ],
+      "weaponProficiencies": [
+        {
+          "martial": true
+        }
+      ]
+    },
+    {
+      "kind": "classFeature",
+      "name": "Favored Enemy",
+      "source": "PHB",
+      "className": "Ranger",
+      "classSource": "PHB",
+      "level": 1,
+      "languageProficiencies": [
+        {
+          "any": 1
+        }
+      ]
+    },
+    {
+      "kind": "classFeature",
+      "name": "Favored Enemy and Natural Explorer improvements",
+      "source": "PHB",
+      "className": "Ranger",
+      "classSource": "PHB",
+      "level": 6,
+      "languageProficiencies": [
+        {
+          "any": 1
+        }
+      ]
+    },
+    {
+      "kind": "classFeature",
+      "name": "Favored Enemy improvement",
+      "source": "PHB",
+      "className": "Ranger",
+      "classSource": "PHB",
+      "level": 14,
+      "languageProficiencies": [
+        {
+          "any": 1
+        }
+      ]
+    },
+    {
+      "kind": "classFeature",
+      "name": "Deft Explorer",
+      "source": "TCE",
+      "className": "Ranger",
+      "classSource": "PHB",
+      "level": 1,
+      "languageProficiencies": [
+        {
+          "any": 2
+        }
+      ],
+      "language_grant_requires_opt_in": true
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Giant Power",
+      "source": "BGG",
+      "className": "Barbarian",
+      "classSource": "PHB",
+      "subclassShortName": "Giant",
+      "subclassSource": "BGG",
+      "level": 3,
+      "languageProficiencies": [
+        {
+          "giant": true
+        }
+      ],
+      "proficiencyReplacements": [
+        {
+          "kind": "language",
+          "key": "giant",
+          "choose": {
+            "any": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Blessings of Knowledge",
+      "source": "PHB",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Knowledge",
+      "subclassSource": "PHB",
+      "level": 1,
+      "languageProficiencies": [
+        {
+          "any": 2
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "TCE",
+      "className": "Fighter",
+      "classSource": "PHB",
+      "subclassShortName": "Rune Knight",
+      "subclassSource": "TCE",
+      "level": 3,
+      "languageProficiencies": [
+        {
+          "giant": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiency",
+      "source": "XGE",
+      "className": "Fighter",
+      "classSource": "PHB",
+      "subclassShortName": "Cavalier",
+      "subclassSource": "XGE",
+      "level": 3,
+      "proficiencyChoices": [
+        {
+          "choose": {
+            "fromKinds": [
+              "skill",
+              "language"
+            ],
+            "fromByKind": {
+              "skill": [
+                "animal handling",
+                "history",
+                "insight",
+                "performance",
+                "persuasion"
+              ]
+            },
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiency",
+      "source": "XGE",
+      "className": "Fighter",
+      "classSource": "PHB",
+      "subclassShortName": "Samurai",
+      "subclassSource": "XGE",
+      "level": 3,
+      "proficiencyChoices": [
+        {
+          "choose": {
+            "fromKinds": [
+              "skill",
+              "language"
+            ],
+            "fromByKind": {
+              "skill": [
+                "history",
+                "insight",
+                "performance",
+                "persuasion"
+              ]
+            },
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Draconic Disciple",
+      "source": "FTD",
+      "className": "Monk",
+      "classSource": "PHB",
+      "subclassShortName": "Ascendant Dragon",
+      "subclassSource": "FTD",
+      "level": 3,
+      "languageProficiencies": [
+        {
+          "any": 1
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Draconic Gift",
+      "source": "FTD",
+      "className": "Ranger",
+      "classSource": "PHB",
+      "subclassShortName": "Drakewarden",
+      "subclassSource": "FTD",
+      "level": 3,
+      "languageProficiencies": [
+        {
+          "any": 1
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Dragon Ancestor",
+      "source": "PHB",
+      "className": "Sorcerer",
+      "classSource": "PHB",
+      "subclassShortName": "Draconic",
+      "subclassSource": "PHB",
+      "level": 1,
+      "languageProficiencies": [
+        {
+          "draconic": true
+        }
+      ]
     }
   ]
 }

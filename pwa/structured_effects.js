@@ -33,7 +33,12 @@ function proficiencyFeatures(record,index,features){
  return features??collectStructuredFeatures(record,{classFeatures:{
   class_features:array(index.classFeature),subclass_features:array(index.subclassFeature)}});
 }
-function proficiencyTraitActive(record,feature){
+function proficiencyTraitActive(record,feature,grant={}){
+ // Optional class features never grant languages until chosen explicitly.
+ if(grant.language_grant_requires_opt_in&&
+   record.origin_enabled?.[feature?.origin_id]!==true&&
+   !array(record.optional_features_catalog).some(row=>!row?.disabled&&match(row.name,feature?.name)&&
+     (!row.source||match(row.source,feature?.source))))return false;
  const parent=String(feature?.origin_key||''),base=parent.split('|').slice(0,3).join('|');
  return !!feature&&!feature.inactive&&!feature.disabled&&record.trait_enabled?.[feature.key]!==false&&
   ![feature.origin_id,parent,base].some(id=>id&&muted(record,id));
@@ -92,7 +97,7 @@ export function selectedSources(record,index={},features=null){
         match(f.class_source,row.class_source)&&(!f.source||match(f.source,row.source))&&
         (group!=='subclassFeature'||match(f.subclass_short_name,row.subclass_short_name)&&
           match(f.subclass_source,row.subclass_source)));
-      if(!proficiencyTraitActive(record,feature))continue;
+      if(!proficiencyTraitActive(record,feature,row))continue;
       selected.push({id:feature.origin_id,group,source:row,origin:'Tratto · '+feature.name,
         feature,mode:'feature'});
     }

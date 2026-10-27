@@ -12,7 +12,7 @@ import {selectedSpeciesDefenseRules} from './species_defenses.js';
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
 const abilities=['str','dex','con','int','wis','cha'];
-const kindNames={mixed:'Abilità o strumenti',skill:'Abilità',expertise:'Maestria',save:'Tiri salvezza',
+const kindNames={mixed:'Competenze o lingue',skill:'Abilità',expertise:'Maestria',save:'Tiri salvezza',
   weapon:'Armi',armor:'Armature',tool:'Strumenti',language:'Lingue'};
 const kindFields=['weapon','armor','skill','expertise','save','tool','language'];
 const artisanTools=['alchemist\'s supplies','brewer\'s supplies','calligrapher\'s supplies',
@@ -90,6 +90,7 @@ function allowedByRule(kind,data,key,record,index){
   }
   if(choose.any!==undefined)return kind!=='weapon'||!['simple','martial','all'].includes(key);
  }
+ if(kind==='language'&&secretLanguages.has(key))return false;
  if(data?.any!==undefined)return kind!=='weapon'||!['simple','martial','all'].includes(key);
  if(data?.anyProficientSkill!==undefined)return kind==='skill'||kind==='expertise'?
    fixedProficiencies(record,index).has('skill:'+key):false;
@@ -110,10 +111,11 @@ function allowedByRule(kind,data,key,record,index){
  return false;
 }
 function mixedOptions(rule,record,index){
- const kinds=arr(rule?.choose?.fromKinds).filter(kind=>kind==='skill'||kind==='tool');
+ const kinds=arr(rule?.choose?.fromKinds).filter(kind=>['skill','tool','language'].includes(kind));
  const allowed=rule?.choose?.fromByKind||{};
  return unique(kinds.flatMap(kind=>optionPool(kind,record,index)
-   .filter(key=>!Array.isArray(allowed[kind])||allowed[kind].map(strip).includes(key))
+   .filter(key=>(kind!=='language'||!secretLanguages.has(key))&&
+     (!Array.isArray(allowed[kind])||allowed[kind].map(strip).includes(key)))
    .map(key=>kind+':'+key)));
 }
 function requirementEntries(source){
@@ -164,7 +166,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
        !arr(source.choice_exclusions?.[req.kind]).includes(key)))
      .sort((a,b)=>a.localeCompare(b,'it'));
    const stored=mixed?arr(record.proficiency_choices).filter(row=>
-     row?.origin_id===source.id&&['skill','tool'].includes(row.kind)&&!row.disabled):presentRows(record,source.id,req.kind);
+     row?.origin_id===source.id&&['skill','tool','language'].includes(row.kind)&&!row.disabled):presentRows(record,source.id,req.kind);
    const valueOf=row=>mixed?row.kind+':'+strip(row.key):strip(row.key);
    const excluded=arr(source.choice_exclusions?.[req.kind]);
    const selected=unique(stored.map(valueOf).filter(key=>!excluded.includes(key)&&
@@ -177,7 +179,8 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
      label:kindNames[req.kind]||req.kind,proficiency_kind:req.kind,
      count:total,selected,options,custom_values,
      ...(excluded.length?{excluded_options:excluded}:{}),
-     custom_allowed:['tool','language','mixed'].includes(req.kind),
+     custom_allowed:req.kind==='mixed'?arr(req.data?.choose?.fromKinds).includes('tool'):
+       ['tool','language'].includes(req.kind),
      remaining:Math.max(0,total-selected.length)});
   }
  }
@@ -419,7 +422,7 @@ export function savePendingChoice(record,choice,values=[]){
    // Repair pre-audit saves on the next normal language selection.
    if(row?.origin_id===choice.origin_id&&row.kind==='language'&&strip(row.key)==='other')return false;
    if(row?.origin_id!==choice.origin_id||row.automatic)return true;
-   if(mixed)return !['skill','tool'].includes(row.kind)||
+   if(mixed)return !['skill','tool','language'].includes(row.kind)||
      !(choice.options.includes(row.kind+':'+strip(row.key))||row.custom===true);
    return row.kind!==choice.proficiency_kind||
      !(choice.options.includes(strip(row.key))||row.custom===true);
@@ -428,7 +431,7 @@ export function savePendingChoice(record,choice,values=[]){
    const colon=mixed?key.indexOf(':'):-1;
    const kind=mixed?key.slice(0,colon):choice.proficiency_kind;
    const proficiencyKey=mixed?key.slice(colon+1):key;
-   if(mixed&&!['skill','tool'].includes(kind))throw Error('Categoria di competenza non valida.');
+   if(mixed&&!['skill','tool','language'].includes(kind))throw Error('Categoria di competenza non valida.');
    rows.push({kind,key:proficiencyKey,origin_id:choice.origin_id,
      origin_name:choice.name,disabled:false,
      ...(custom.includes(key)?{custom:true}:{})});
