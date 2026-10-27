@@ -205,9 +205,22 @@ export function addBenefitPatch(record,trait,kind,values={},id){
   if(!['manual','turn','short_rest','long_rest','d6'].includes(recharge))throw Error('Recupero non valido');
   row={...common,name:required('name'),max,recharge};
  }else if(kind==='spells'){
+  const payment=String(values.payment_mode||'free'),tracker=String(values.tracker_id||'').trim();
+  const slotAlternative=values.slot_alternative===true||values.slot_alternative==='true';
+  const ability=String(values.spellcasting_ability||'').trim().toLowerCase();
+  const allowed=[...new Set(String(values.spellcasting_ability_options||'').split(',')
+    .map(value=>value.trim().toLowerCase()).filter(Boolean))];
+  const stats=['str','dex','con','int','wis','cha'];
+  if(!['free','slot','tracker'].includes(payment))throw Error('Consumo non valido');
+  if(payment==='tracker'&&!tracker)throw Error('Seleziona un tracker.');
+  if(slotAlternative&&payment!=='tracker')throw Error('Gli slot alternativi richiedono un tracker.');
+  if((ability&&!stats.includes(ability))||allowed.some(value=>!stats.includes(value))||
+    (ability&&allowed.length&&!allowed.includes(ability)))
+    throw Error('Caratteristica da incantatore non valida.');
   field='origin_spell_grants';row={...common,spell_id:required('spell_id'),
-   payment_mode:values.payment_mode||'free',tracker_id:'',tracker_cost:1};
-  if(!['free','slot'].includes(row.payment_mode))throw Error('Consumo non valido');
+    payment_mode:payment,tracker_id:payment==='tracker'?tracker:'',tracker_cost:1,
+    slot_alternative:slotAlternative,spellcasting_ability:ability,
+    spellcasting_ability_options:ability?[]:allowed};
  }else if(kind==='actions'){
   field='action_grants';row={...common,name:required('name'),action_type:required('action_type')};
  }else if(kind==='effect_extensions'){
