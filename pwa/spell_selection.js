@@ -391,7 +391,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
   const name=block.spell_traits?.[token]||origin.spell_traits?.[token]||supplement?.trait||'';
   if(!name)return origin;
   const owner=features.find(f=>norm(f.name)===norm(name)&&
-    norm(f.origin_key)===norm(origin.feature_key)&&!f.disabled&&!f.inactive);
+    norm(f.origin_key)===norm(origin.feature_key));
   return owner?{...origin,id:owner.origin_id,name:owner.name,granting_trait:name,
     parent_id:origin.id,parent_name:origin.name}:
     {...origin,granting_trait:name,parent_id:origin.id,parent_name:origin.name};
