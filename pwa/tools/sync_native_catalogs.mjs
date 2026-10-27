@@ -172,6 +172,24 @@ const infusionSelectors={
 const abilityIndex=await read('../../vtt/data/structured_ability_grants_5etools.json');
 const choicePolicies=await read('../../vtt/data/ability_choice_policies_5etools.json');
 Object.assign(abilityIndex,choicePolicies);
+for(const kind of ['race','subrace']){
+ const existing=new Set((abilityIndex[kind]||[]).map(row=>
+   [row.name,row.source,row.raceName||'',row.raceSource||''].join('|').toLowerCase()));
+ for(const rule of choicePolicies[kind+'_grants']||[]){
+  const key=[rule.name,rule.source,rule.raceName||'',rule.raceSource||''].join('|').toLowerCase();
+  if(existing.has(key)){
+   const current=abilityIndex[kind].find(row=>
+    [row.name,row.source,row.raceName||'',row.raceSource||''].join('|').toLowerCase()===key);
+   // The original 5etools fixed scores take precedence, but an explicit
+   // supplemental chooser can add its missing flexible allocation.
+   if(rule.ability_choices&&!current.ability_choices)current.ability_choices=rule.ability_choices;
+   if(rule.replaces_parent_ability)current.replaces_parent_ability=true;
+  }else{
+   abilityIndex[kind].push(rule);
+   existing.add(key);
+  }
+ }
+}
 // PHB feat actions, contextual roll modes and resource trackers are maintained
 // in native typed data; the browser only projects those declarations.
 const featMechanics=await read('../../vtt/data/feat_mechanics_2014.json');
