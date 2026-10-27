@@ -4885,13 +4885,8 @@ function openSheetSensesDialog(calculated={}){
   '<p class="sheet-senses-note">La percezione tellurica rileva vibrazioni tramite una superficie condivisa: non equivale a vedere. La vista cieca e la vista pura non dipendono dall’illuminazione entro la loro portata. Fuori portata valgono le condizioni della visione normale.</p>'+
   (origins?'<section class="sheet-senses-sources"><h3>Privilegi e origini</h3><ul>'+origins+'</ul></section>':'')+
   (state.editor?.read()?.species==='Custom Lineage'&&state.editor?.read()?.species_source==='TCE'?
-   '<section class="sheet-senses-sources"><h3>Tratto variabile · Custom Lineage</h3>'+
-   '<p class="sheet-senses-note">Puoi scegliere la scurovisione oppure una competenza in un’abilità, non entrambe.</p>'+
-   '<div class="sheet-sense-choice-actions">'+
-   [['darkvision','Scurovisione (60 ft)'],['skill','Competenza in abilità']].map(([value,label])=>
-    '<button type="button" class="play-button" data-act="sheet-sense-choice" data-sense-choice="'+value+'" aria-pressed="'+
-    String((state.editor?.read()?.origin_sense_choices||{})['race|tce|custom lineage']===value)+'">'+esc(label)+'</button>').join('')+
-   '</div></section>':'')+
+   '<section class="sheet-senses-sources"><h3>Custom Lineage · Tratto variabile</h3>'+
+   '<p class="sheet-senses-note">Le due versioni, con Scurovisione oppure Competenza in abilità, si selezionano dalla specie nella scheda Info. Entrambe concedono un talento.</p></section>':'')+
   '</div>';
  app.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -6986,7 +6981,7 @@ async function handleAction(target){
         {background:entry.name,background_id:entry.id||"",background_source:entry.source||""};
       await editor.update({...changes,...quickGrantPatch(sheet,entry)});
     }else if(category==="races"){
-      await editor.update({species:entry.name,species_source:entry.source||""});
+      await editor.update(referencePatch(sheet,'species',entry));
     }else throw new Error("Categoria non assegnabile alla scheda.");
     state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
     if(state.pendingItemOwner&&category!=='feats'){

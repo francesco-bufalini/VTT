@@ -20,6 +20,23 @@ const GROUPS = {
   weapons:"/catalog/items.json",armor:"/catalog/items.json",
   tools:"/catalog/items.json",mundane_items:"/catalog/items.json"
 };
+// Display the two mutually exclusive 2014 Custom Lineage options as distinct
+// species picker entries. Both retain the original 5etools race identity in
+// saved characters, so existing score, language and feat origins stay valid.
+export function customLineageRaceOptions(races=[]){
+ return (Array.isArray(races)?races:[]).flatMap(race=>{
+  if(race?.name!=='Custom Lineage'||String(race.source||'').toUpperCase()!=='TCE'||
+     race.raceName)return [race];
+  return [
+   {choice:'darkvision',suffix:'Scurovisione (60 ft)'},
+   {choice:'skill',suffix:'Competenza in abilità'}
+  ].map(option=>({...race,
+    id:'vtt:races:tce:custom-lineage:'+option.choice,
+    name:'Custom Lineage — '+option.suffix,
+    canonical_race_name:race.name,canonical_race_id:race.id,
+    origin_sense_choice:option.choice}));
+ });
+}
 let catalog=null;
 const details=new Map();
 export async function loadReferenceCatalog() {
@@ -39,7 +56,7 @@ async function supplementalCatalog(category){
     // Descriptive indexes omit speed and stable native race IDs.
     const {loadRuleCatalogs}=await import('./sheet_rules.js');
     const rules=await loadRuleCatalogs();
-    if(Array.isArray(rules.classMechanics?.races))return [...rules.classMechanics.races,...(rules.classMechanics.subraces||[]),...racialPowerSubraces(rules.speciesPowers)];
+    if(Array.isArray(rules.classMechanics?.races))return customLineageRaceOptions([...rules.classMechanics.races,...(rules.classMechanics.subraces||[]),...racialPowerSubraces(rules.speciesPowers)]);
   }
   const path=(["classes","subclasses","class_features","subclass_features"].includes(category))?
     "/catalog/classes.json":category==="races"?"/catalog/features.json":"/catalog/backgrounds.json";

@@ -387,7 +387,21 @@ export function collectionPatch(c,key,rows){
  }
  return patch;
 }
+// A displayed Custom Lineage variant is a choice on the canonical TCE race,
+// not an independent rules source. The original race ID remains stable.
+export function customLineageVariantPatch(c,key,selected={}){
+ if(key!=='species'||!['darkvision','skill'].includes(selected.origin_sense_choice)||
+    selected.canonical_race_name!=='Custom Lineage'||selected.source!=='TCE')return null;
+ const root='race|tce|custom lineage';
+ return {species:'Custom Lineage',species_source:'TCE',
+   species_id:selected.canonical_race_id||'5etools:races:tce:custom%20lineage',
+   subrace:'',subrace_id:'',subrace_source:'',
+   origin_sense_choices:{...(c.origin_sense_choices||{}),
+     [root]:selected.origin_sense_choice}};
+}
 export function referencePatch(c,key,selected={}){
+ const custom=customLineageVariantPatch(c,key,selected);
+ if(custom)return custom;
  const name=selected.name||'',source=selected.source||'',id=selected.id||'';
  const patch={...identityPatch(c,key,name),[key+'_id']:id,[key+'_source']:source};
  if(['species','subrace'].includes(key)&&
@@ -527,7 +541,10 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    }
    const rows=availableReferenceRows(c,key,category,catalogs);
    const current=c[key]||'', source=c[key+'_source']||'';
-   const active=rows.find(r=>r.name===current&&(!source||r.source===source)) ||
+   const active=rows.find(r=>key==='species'&&r.canonical_race_name===current&&
+     (!source||r.source===source)&&
+     c.origin_sense_choices?.['race|tce|custom lineage']===r.origin_sense_choice) ||
+     rows.find(r=>r.name===current&&(!source||r.source===source)) ||
      rows.find(r=>c[key+'_id']&&r.id===c[key+'_id']&&(!source||r.source===source));
    const options=[['','Nessuno'],...(!active&&current?[['__current__',current+' · importato']]:[]),
      ...rows.map(r=>[String(r.id||r.name+'|'+(r.source||'')),r.name+(r.source?' · '+r.source:'')])];
