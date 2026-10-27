@@ -1261,6 +1261,9 @@ function calculateSheetValues(record={},catalogs={}){
       // An origin-granted cantrip is at-will by default, regardless of the
       // "known" storage group. Explicit limited-use cantrip trackers remain
       // chargeable; a cantrip never consumes a spell slot.
+      const originSpellDefinition=arr(catalogs.spells).find(spell=>spell.id===resolved.spell_id);
+      if(originSpellDefinition?.level===0||resolved.cantrip===true)
+        resolved.cantrip=true;
       if(resolved.cantrip===true&&resolved.payment_mode!=='tracker')
         resolved.payment_mode='free';
       if(!['tracker','slot','free'].includes(resolved.payment_mode))
