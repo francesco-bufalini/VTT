@@ -100,3 +100,40 @@ test('post-result bonus also preserves advantage dice and handles fixed bonuses'
  assert.deepEqual(fixed.parts[0].rolls,[8,8]);
  assert.equal(fixed.parts.length,3);
 });
+
+
+test('MPMM Bugbear Surprise Attack is an optional untracked 2d6 on attack damage only',()=>{
+ const origin='species|5etools:races:mpmm:bugbear|mpmm';
+ const feature={name:'Surprise Attack',origin_key:origin,
+   origin_id:'feature:'+origin+'|1|surprise attack',key:origin+'|1|surprise attack'};
+ const character={...hero(),species:'Bugbear',species_source:'MPMM',
+   species_id:'5etools:races:mpmm:bugbear'};
+ const options=racialPowerProjection(character,index,[feature]);
+ assert.equal(options.trackers.length,0,'MPMM version has no charge tracker');
+ assert.equal(options.roll_bonuses.length,1);
+ const bonus=options.roll_bonuses[0];
+ assert.equal(bonus.dice,'2d6');
+ assert.equal(bonus.origin_id,feature.origin_id);
+ assert.equal(bonus.granting_trait,'Surprise Attack');
+ assert.deepEqual(bonus.targets,['attack_damage']);
+ assert.equal(bonus.tracker_id,undefined);
+ assert.match(bonus.condition_label,/bersaglio.+turno/i);
+ const calc={racial_roll_bonuses:options.roll_bonuses,trackers:[]};
+ for(const target of ['attack_damage:item:sword','attack_damage:unarmed',
+   'attack_damage:item:bow']){
+   const applied=applicableDiceBonuses(character,target,[],calc);
+   assert.equal(applied.length,1,target);
+   assert.equal(applied[0].target,target);
+   const button=rollOptionalDice(character,calc,applied,{kind:'damage',attackId:target.slice(14)});
+   assert.equal(button.length,1,target);
+   assert.equal(button[0].tracker_cost,0);
+ }
+ for(const target of ['spell_damage','save:con','attack_hit:item:sword','spell_attack']){
+   assert.deepEqual(applicableDiceBonuses(character,target,[],calc),[],target);
+ }
+ assert.equal(racialPowerProjection({...character,rules_version:'2024'},index,[feature]).roll_bonuses.length,0);
+ assert.equal(racialPowerProjection(character,index,[{...feature,inactive:true}]).roll_bonuses.length,0);
+ assert.equal(racialPowerProjection({...character,trait_enabled:{[feature.key]:false}},index,[feature]).roll_bonuses.length,0);
+ assert.equal(racialPowerProjection({...character,origin_enabled:{[feature.origin_id]:false}},index,[feature]).roll_bonuses.length,0);
+ assert.equal(racialPowerProjection({...character,species_source:'VGM'},index,[feature]).roll_bonuses.length,0);
+});

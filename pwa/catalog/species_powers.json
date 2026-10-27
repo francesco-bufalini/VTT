@@ -103,6 +103,24 @@
         "strict_tracker": true,
         "description": "Dopo aver visto il d20, ma prima della risoluzione, aggiungi 1d4 a un tiro per colpire, una prova di caratteristica o un tiro salvezza. Utilizzi pari al bonus di competenza per riposo lungo."
       }
+    },
+    {
+      "name": "Bugbear",
+      "source": "MPMM",
+      "roll_bonuses": [
+        {
+          "id": "race:mpmm:bugbear:surprise_attack",
+          "trait": "Surprise Attack",
+          "name": "Surprise Attack",
+          "dice": "2d6",
+          "targets": [
+            "attack_damage"
+          ],
+          "optional": true,
+          "condition_label": "Solo se il bersaglio non ha ancora svolto alcun turno nel combattimento",
+          "description": "Se colpisci una creatura con un tiro per colpire, infliggi 2d6 danni aggiuntivi se la creatura non ha ancora svolto un turno nel combattimento attuale. Controlla il requisito sul bersaglio prima di usare il bonus. Nessun tracker o limite per combattimento: il bonus si applica a ogni attacco che soddisfa la condizione."
+        }
+      ]
     }
   ]
 }

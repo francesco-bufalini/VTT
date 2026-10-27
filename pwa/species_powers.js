@@ -38,19 +38,26 @@ export function racialPowerProjection(record={},index={},features=[]) {
    String(f.origin_key||'').startsWith('species|')&&!f.disabled&&!f.inactive&&
    record.trait_enabled?.[f.key]!==false&&permitted(record,f.origin_id)&&
    permitted(record,f.origin_key)&&permitted(record,raceRoot));
- const bonus=race.roll_bonus,bonusOwner=bonus&&featureFor(bonus.trait);
- if(bonusOwner&&bonus.tracker_id&&bonus.dice&&rows(bonus.targets).length){
-   const tracker={id:bonus.tracker_id,name:bonus.trait,
-     max:bonus.uses==='proficiency'?2+Math.floor((currentLevel(record)-1)/4):Math.max(0,Number(bonus.uses)||0),
-     recharge:bonus.recharge||'long_rest',origin_id:bonusOwner.origin_id,
-     origin_name:'Tratto · '+bonus.trait,automatic:true};
-   output.trackers.push(tracker);
-   output.roll_bonuses.push({id:bonus.id||'racial-roll:'+tracker.id,
+ // Each racial die bonus is owned by its individual trait. A tracker is
+ // optional: an unlimited situational benefit must never fabricate a resource.
+ for(const bonus of [...(race.roll_bonus?[race.roll_bonus]:[]),...rows(race.roll_bonuses)]){
+   const bonusOwner=featureFor(bonus.trait);
+   if(!bonusOwner||!bonus.dice||!rows(bonus.targets).length)continue;
+   const trackerId=String(bonus.tracker_id||'');
+   if(trackerId){
+     output.trackers.push({id:trackerId,name:bonus.trait,
+       max:bonus.uses==='proficiency'?2+Math.floor((currentLevel(record)-1)/4):Math.max(0,Number(bonus.uses)||0),
+       recharge:bonus.recharge||'long_rest',origin_id:bonusOwner.origin_id,
+       origin_name:'Tratto · '+bonus.trait,automatic:true});
+   }
+   output.roll_bonuses.push({id:bonus.id||'racial-roll:'+norm(race.name)+':'+norm(bonus.trait),
      origin_id:bonusOwner.origin_id,origin_name:'Tratto · '+bonus.trait,
      origin_parent_id:raceRoot,granting_trait:bonus.trait,
      name:bonus.name||bonus.trait,description:bonus.description||'',
-     dice:bonus.dice,targets:bonus.targets,tracker_id:tracker.id,
-     tracker_cost:Math.max(1,Number(bonus.tracker_cost)||1),strict_tracker:bonus.strict_tracker===true,
+     condition_label:bonus.condition_label||'',
+     dice:bonus.dice,targets:bonus.targets,
+     ...(trackerId?{tracker_id:trackerId,tracker_cost:Math.max(1,Number(bonus.tracker_cost)||1),
+       strict_tracker:bonus.strict_tracker===true}:{}),
      automatic:true,optional:true});
  }
  const teleport=race.teleport,teleportOwner=teleport&&featureFor(teleport.trait);

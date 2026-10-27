@@ -4765,11 +4765,12 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
      bonuses.map((row,i)=>{
        const trackerLabel=row.tracker_id?(row.tracker_name||'Tracker')+' · '+(row.remaining??0)+' rim.':'Nessun tracker associato';
        return '<div class="sheet-roll-bonus-item">'+
-         '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open" data-origin-id="'+esc(row.origin_id||'')+'" title="Apri tratto">'+
+         '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open" data-origin-id="'+esc(row.origin_id||'')+'" title="'+esc(row.condition_label||'Apri tratto')+'">'+
            '<span class="sheet-roll-origin-symbol">'+esc(Object.hasOwn(row,'flat_bonus')?
               (row.flat_bonus>=0?'+':'')+row.flat_bonus:'+'+row.dice)+'</span>'+
            (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
            '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
+         (row.condition_label?'<small class="sheet-roll-bonus-condition">'+esc(row.condition_label)+'</small>':'')+
          '<div class="sheet-roll-bonus-controls">'+
            '<button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'"'+(row.strict_tracker&&Number(row.remaining)<Number(row.tracker_cost)?' disabled title="Utilizzi esauriti"':'')+'>Usa</button>'+
            '<button type="button" class="sheet-roll-tracker-open" data-act="sheet-roll-open-tracker" data-roll-tracker-button="'+i+'" aria-label="Apri tracker '+esc(trackerLabel)+'" title="'+esc(trackerLabel)+'"'+(row.tracker_id?'':' disabled')+'>'+
