@@ -2,6 +2,7 @@
 // used by the native VTT, not scraped at runtime or reimplemented game rules.
 import { listRecords, getRecord, deleteRecordIfRevision } from "./storage.js";
 import { saveHomebrewDefinition, listCreatures } from "./creatures.js";
+import {racialPowerSubraces} from "./species_powers.js";
 import { characterHomebrewEntries, appendSharedHomebrew } from "./character_homebrew.js";
 
 export const CATALOG_CATEGORIES = [
@@ -38,7 +39,7 @@ async function supplementalCatalog(category){
     // Descriptive indexes omit speed and stable native race IDs.
     const {loadRuleCatalogs}=await import('./sheet_rules.js');
     const rules=await loadRuleCatalogs();
-    if(Array.isArray(rules.classMechanics?.races))return [...rules.classMechanics.races,...(rules.classMechanics.subraces||[])];
+    if(Array.isArray(rules.classMechanics?.races))return [...rules.classMechanics.races,...(rules.classMechanics.subraces||[]),...racialPowerSubraces(rules.speciesPowers)];
   }
   const path=(["classes","subclasses","class_features","subclass_features"].includes(category))?
     "/catalog/classes.json":category==="races"?"/catalog/features.json":"/catalog/backgrounds.json";
