@@ -1005,9 +1005,34 @@ try{
  await trigger.click();
  assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
   'Reopening the popup must never reopen its add form');
- await benefitDialog.locator('[data-act="trait-benefits-remove-request"][data-benefit-id^="bonus:trait:"]').click();
+ assert.equal(await benefitDialog.locator('.trait-benefit-confirm').count(),0,
+  'Opening a benefit panel must never inherit a pending deletion');
+ const removeButton=benefitDialog.locator('[data-act="trait-benefits-remove-request"][data-benefit-id^="bonus:trait:"]');
+ await benefitDialog.evaluate(dialog=>{dialog.dataset.regressionMarker='same-modal';});
+ // A synthetic click without a pointerdown on this X represents a mobile
+ // click-through: only a fresh intentional press can start deletion.
+ await removeButton.evaluate(button=>button.dispatchEvent(new MouseEvent('click',
+  {bubbles:true,cancelable:true,detail:1})));
+ assert.equal(await benefitDialog.locator('.trait-benefit-confirm').count(),0,
+  'A click without a new pointer gesture must not ask to delete a benefit');
+ await removeButton.click();
+ assert.equal(await benefitDialog.getAttribute('data-regression-marker'),'same-modal',
+  'Removal request must not rebuild the modal or character sheet');
+ assert.equal(await benefitDialog.locator('.trait-benefit-confirm').count(),1);
  assert.equal((await record()).formula_bonuses.filter(x=>x.id?.startsWith('trait:')).length,1,
   'First removal click only asks for confirmation');
+ await benefitDialog.locator('[data-act="trait-benefits-remove-cancel"]').click();
+ assert.equal(await benefitDialog.locator('.trait-benefit-confirm').count(),0,
+  'Cancel clears the pending deletion without redrawing');
+ await removeButton.click();
+ assert.equal(await benefitDialog.locator('.trait-benefit-confirm').count(),1);
+ await activeSwitch.click();
+ await page.waitForFunction(()=>document.querySelector('.play-info-traits .trait-row')?.dataset.traitEnabled==='false');
+ assert.equal(await benefitDialog.locator('.trait-benefit-confirm').count(),0,
+  'A refresh after changing a trait must not resurrect a pending deletion');
+ await activeSwitch.click();
+ await page.waitForFunction(()=>document.querySelector('.play-info-traits .trait-row')?.dataset.traitEnabled==='true');
+ await removeButton.click();
  await benefitDialog.locator('[data-act="trait-benefits-remove-confirm"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
   return !(await listCreatures())[0].creature.formula_bonuses?.some(x=>x.id?.startsWith('trait:'));
