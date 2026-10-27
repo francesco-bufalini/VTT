@@ -94,6 +94,57 @@ export async function listSubcreatures(parentId, scope = "default") {
     .sort((a,b) => a.creature.name.localeCompare(b.creature.name));
 }
 
+// Permanent identity is the granting rule + typed source + original bestiary
+// entry. The creature's editable display name NEVER participates in lookup.
+const companionText=value=>String(value??"").trim().toLocaleLowerCase("en");
+function companionIdentity(reference={},source={}){
+ const stat=source?.stat_block||source;
+ const rule=String(reference.rule_id||"").trim();
+ const grantKind=String(reference.grant?.kind|| (reference.feature_id?"feature":reference.spell_id?"spell":"")).trim();
+ const grantId=String(reference.grant?.id||reference.feature_id||reference.spell_id||"").trim();
+ const name=String(reference.bestiary_name||reference.name||stat?.name||"").trim();
+ const book=String(reference.bestiary_source||reference.source||stat?.source||"").trim();
+ return {rule_id:rule,grant_kind:grantKind,grant_id:grantId,bestiary_name:name,bestiary_source:book};
+}
+function sameCompanionOrigin(a,b){
+ return companionText(a.rule_id)===companionText(b.rule_id)&&
+  companionText(a.grant_kind)===companionText(b.grant_kind)&&
+  companionText(a.grant_id)===companionText(b.grant_id);
+}
+function sameCompanionIdentity(a,b){
+ return sameCompanionOrigin(a,b)&&companionText(a.bestiary_name)===companionText(b.bestiary_name)&&
+  companionText(a.bestiary_source)===companionText(b.bestiary_source);
+}
+function legacyCompanionIdentity(child={}){
+ return {rule_id:child.companion_rule_id||"",
+  grant_kind:child.companion_grant?.kind|| (child.companion_origin_feature_id?"feature":child.companion_origin_spell_id?"spell":""),
+  grant_id:child.companion_grant?.id||child.companion_origin_feature_id||child.companion_origin_spell_id||"",
+  bestiary_name:child.bestiary_ref?.name||"",bestiary_source:child.bestiary_ref?.source||""};
+}
+// Legacy sheets made before the identity metadata may lack their typed grant,
+// but must still match the exact rule AND the bestiary entry. A manual monster
+// with the same species must never be mistaken for a summoned creature.
+function savedCompanionMatches(child={},wanted={}){
+ const old=child.companion_identity;
+ if(old)return sameCompanionIdentity(old,wanted);
+ const legacy=legacyCompanionIdentity(child);
+ if(!wanted.rule_id||!legacy.rule_id||companionText(legacy.rule_id)!==companionText(wanted.rule_id))return false;
+ if(legacy.grant_id&&(!legacy.grant_kind||!sameCompanionOrigin(legacy,wanted))){
+  // Legacy spell IDs had no typed 'spell_effect' grant; keep them compatible.
+  const compatibleSpell=legacy.grant_kind==="spell"&&wanted.grant_kind==="spell_effect"&&
+   companionText(legacy.grant_id)===companionText(wanted.grant_id).replace(/^spell:/,"");
+  if(!compatibleSpell)return false;
+ }
+ return companionText(legacy.bestiary_name)===companionText(wanted.bestiary_name)&&
+  companionText(legacy.bestiary_source)===companionText(wanted.bestiary_source);
+}
+function companionOriginMatches(child={},wanted={}){
+ if(child.companion_identity)return sameCompanionOrigin(child.companion_identity,wanted);
+ const legacy=legacyCompanionIdentity(child);
+ return legacy.rule_id&&companionText(legacy.rule_id)===companionText(wanted.rule_id)&&
+  (!legacy.grant_id||legacy.grant_kind===wanted.grant_kind&&
+   companionText(legacy.grant_id)===companionText(wanted.grant_id));
+}
 // A familiar is a complete monster sheet, never another form of its owner.
 export async function createSubcreature(parentId, source, reference = {}, scope = "default") {
   const parent = await loadCreature(parentId, scope);
@@ -114,10 +165,19 @@ export async function createSubcreature(parentId, source, reference = {}, scope 
   creature.linked_token_sync_id = "";
   creature.linked_token_name = "";
   creature.current_form_id = "";
+  const identity=companionIdentity(reference,raw);
   creature.bestiary_ref = {
-    name: String(reference.name || raw.name || creature.name).slice(0,160),
-    source: String(reference.source || raw.source || "").slice(0,80)
+    name:identity.bestiary_name.slice(0,160),
+    source:identity.bestiary_source.slice(0,80)
   };
+  if(identity.rule_id||identity.grant_id){
+    creature.companion_identity=identity;
+    const originName=String(reference.origin_name||reference.rule?.names?.[0]||"").trim().slice(0,160);
+    if(originName)creature.companion_origin_name=originName;
+    const customName=String(reference.display_name||"").trim();
+    creature.name=(customName||(originName?originName+" - "+identity.bestiary_name:
+      creature.name)).slice(0,160);
+  }
   if (reference.spell_id) creature.companion_origin_spell_id = String(reference.spell_id).slice(0,256);
   if (reference.feature_id) creature.companion_origin_feature_id = String(reference.feature_id).slice(0,256);
   if (reference.rule_id) creature.companion_rule_id = String(reference.rule_id).slice(0,160);
@@ -129,30 +189,30 @@ export async function createSubcreature(parentId, source, reference = {}, scope 
   return saveCreature(creature, scope, 0);
 }
 
-// One complete, editable saved sheet per owner + bestiary source/name.
-// Other selected types may be hidden, but are never reset or deleted.
+// Exact ability origin + bestiary identity survives independent sheet renames
+// and distinguishes identical monsters granted by different abilities.
 export async function summonSubcreature(parentId,source,reference={},scope="default"){
  const max=Number(reference.limit_per_owner_rule??1);
  if(!Number.isInteger(max)||max<0||max>50)throw Error("Limite evocazione non valido.");
- const children=await listSubcreatures(parentId,scope),stat=source?.stat_block||source;
- const name=String(reference.name||stat?.name||"").trim().toLowerCase();
- const book=String(reference.source||stat?.source||"").trim().toLowerCase();
- const existing=max===1?children.find(row=>
-  String(row.creature.bestiary_ref?.name||"").trim().toLowerCase()===name&&
-  String(row.creature.bestiary_ref?.source||"").trim().toLowerCase()===book):null;
- const fromRule=children.filter(row=>reference.rule_id&&row.creature.companion_rule_id===reference.rule_id);
- if(max>1&&fromRule.length>=max)throw Error("Limite di creature evocate raggiunto.");
- if(max===1)for(const other of fromRule){
+ const children=await listSubcreatures(parentId,scope);
+ const wanted=companionIdentity(reference,source);
+ const existing=max===1?children.find(row=>savedCompanionMatches(row.creature,wanted)):null;
+ const fromOrigin=children.filter(row=>companionOriginMatches(row.creature,wanted));
+ if(max>1&&fromOrigin.length>=max)throw Error("Limite di creature evocate raggiunto.");
+ if(max===1)for(const other of fromOrigin){
   if(other.creature.id===existing?.creature.id||other.creature.companion_selected===false)continue;
   await saveCreature({...other.creature,companion_selected:false},scope,other.revision);
  }
  if(existing){
   const updated={...existing.creature,companion_selected:true,
+   companion_identity:wanted,
+   ...(reference.origin_name?{companion_origin_name:String(reference.origin_name).slice(0,160)}:{}),
    ...(reference.rule_id?{companion_rule_id:String(reference.rule_id)}:{}),
    ...(reference.spell_id?{companion_origin_spell_id:String(reference.spell_id)}:{}),
    ...(reference.feature_id?{companion_origin_feature_id:String(reference.feature_id)}:{}),
    ...(reference.grant?.kind&&reference.grant?.id?{companion_grant:{
     kind:String(reference.grant.kind),id:String(reference.grant.id)}}:{})};
+  // Never touch 'name', HP, inventory, notes, token links or other sheet edits.
   return {...await saveCreature(updated,scope,existing.revision),reused:true};
  }
  return {...await createSubcreature(parentId,source,reference,scope),reused:false};

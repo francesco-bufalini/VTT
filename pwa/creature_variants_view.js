@@ -27,7 +27,9 @@ export function openVariantsDialog({read,save,switchForm,sources,notify,icon=()=
    }).join('')+'</div><button type="button" class="btn variant-create" data-variant-new>'+icon('increase')+'<span>Crea variante</span></button>'+
    (addSubcreature?'<section class="variant-familiars"><h3>Famigli e sottocreature</h3>'+
     '<div class="variant-list vtt-selection-list">'+(subcreatures.length?subcreatures.map(child=>
-      '<button type="button" class="vtt-variant-source-option vtt-selectable" data-subcreature-open="'+esc(child.id)+'"><strong>'+esc(child.name)+'</strong><small>'+esc(child.bestiary_ref?.source||'Mostro')+(child.is_available===false?' · Non disponibile':'')+'</small></button>').join(''):'<p class="hint">Nessuna sottocreatura collegata.</p>')+'</div>'+
+      '<button type="button" class="vtt-variant-source-option vtt-selectable" data-subcreature-open="'+esc(child.id)+'"><strong>'+esc(child.name)+'</strong><small>'+esc([child.companion_origin_name&&child.bestiary_ref?.name?
+        child.companion_origin_name+' - '+child.bestiary_ref.name:'',
+       child.bestiary_ref?.source||'Mostro',child.is_available===false?'Non disponibile':''].filter(Boolean).join(' · '))+'</small></button>').join(''):'<p class="hint">Nessuna sottocreatura collegata.</p>')+'</div>'+
     '<button type="button" class="btn variant-create" data-subcreature-new>'+icon('increase')+'<span>Aggiungi famiglio dal bestiario</span></button>'+
     '<div data-subcreature-picker hidden><label class="vtt-list-search">Cerca nel bestiario<input type="search" data-subcreature-search placeholder="Nome del mostro"></label><div class="vtt-variant-source-list vtt-selection-list" data-subcreature-choices></div><button type="button" class="btn primary" data-subcreature-create disabled>Crea scheda mostro</button></div></section>':'')+
    (manualCompanions.length?'<section class="variant-familiars"><h3>Creature da privilegi</h3>'+
