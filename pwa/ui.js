@@ -36,7 +36,7 @@ import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from 
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
-import {traitStateActivationPatch} from './trait_state_rules.js';
+import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
@@ -1666,7 +1666,9 @@ async function editorView() {
           return '<section class="magic-source"><header class="magic-source-header">'+
             '<div class="magic-source-title"><h3>'+esc(member.name)+'</h3>'+
             (member.source?'<span class="hint">'+esc(member.source)+'</span>':'')+'</div>'+
-            '<div class="magic-source-resources" aria-label="Risorse di lancio">'+magicSlotUsageChip()+'</div></header>'+
+            '<div class="magic-source-resources" aria-label="Risorse di lancio">'+magicSlotUsageChip()+
+            (member.mode==='Preparati'?'<span class="magic-source-resource magic-selection-rest" title="Puoi riselezionare gli incantesimi dopo un riposo lungo"><span class="magic-source-resource-label">Riposo lungo</span></span>':'')+
+            '</div></header>'+
             castingStatistics(c,member.id,member.ability)+
             '<div class="magic-source-controls">'+
             (member.mode==='Preparati'?
@@ -2155,15 +2157,14 @@ function armorModelPanel(c,calculated){
  if(!rules.length)return '';
  const selected=armorModelSelection(c,rules);
  const activeRules=new Set(calculated.active_trait_state_ids||[]);
- const trackerId=rules.find(row=>row.activation_tracker?.id)?.activation_tracker?.id;
- const tracker=(calculated.trackers||[]).find(row=>row.id===trackerId&&!row.disabled);
- const counter=tracker?'<span>Modifiche '+Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0))+' / '+Number(tracker.max||0)+'</span>':'';
+ const recovery=selectionRestLabel(rules[0].selection_recovery||'short_rest');
+ const ready=canReselectPower(c,rules[0].group,rules[0].legacy_field);
  const summary='<div class="infusion-overview"><strong>Modello applicato: '+esc(rules.find(row=>row.id===selected)?.name.replace(/^Modello armatura · /,'')||'Nessuno')+
-   '</strong>'+counter+'</div>';
+   '</strong><span class="power-selection-rest">'+esc(recovery)+'</span></div>';
  return panel('Modelli di armatura',summary+rules.map(rule=>{
    const available=(calculated.state_actions||[]).some(action=>action.state_id===rule.id);
    const active=available&&activeRules.has(rule.id);
-   const label=active?'Attivo':selected===rule.id?'Selezionato':'Non attivo';
+   const label=active?'Attivo':selected===rule.id?'Selezionato':ready?'Selezionabile':'Cambio dopo '+recovery.toLowerCase();
    return '<div class="magic-spell-row armor-model-entry" data-armor-model-id="'+esc(rule.id)+
      '" data-armor-model-active="'+active+'" data-armor-model-available="'+available+'">'+
      '<span class="magic-spell-open">'+esc(rule.name.replace(/^Modello armatura · /,''))+
@@ -2179,9 +2180,8 @@ async function openArmorModelDialog(id){
  const selected=armorModelSelection(creature,rules),available=(calculated.state_actions||[])
   .some(action=>action.state_id===id);
  const active=selected===id&&available;
- const payment=rule.activation_tracker||{},tracker=(calculated.trackers||[])
-  .find(row=>row.id===payment.id&&!row.disabled);
- const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ const rest=selectionRestLabel(rule.selection_recovery||'short_rest');
+ const canChange=canReselectPower(creature,rule.group,rule.legacy_field);
  const description=String(rule.summary||'').trim();
  const benefits=[
    ...(rule.attacks||[]).map(attack=>({name:attack.name||attack.trait,detail:attack.damage?
@@ -2196,18 +2196,18 @@ async function openArmorModelDialog(id){
  dialog.innerHTML=actionDialogIntro(rule.name,[
    {label:'Stato',value:active?'Attivo':selected===id?'Selezionato':'Non attivo'},
    {label:'Azione',value:'Gratuita'},
+   {label:'Cambio del modello',value:rest},
    {label:'Origine',value:rule.trait||'Privilegio di sottoclasse'},
    {label:'Oggetto',value:available?'Armatura equipaggiata':'Richiede un’armatura equipaggiata'}
  ],description,'Artificer · '+(rule.subclass||'Armorer'),'armor-model-close')+
  (benefits.length?'<section class="infusion-dialog-active armor-model-benefits"><h3>Benefici del modello</h3>'+
    benefits.map(row=>'<div class="infusion-dialog-item"><span>'+esc(row.name)+
      (row.detail?'<small>'+esc(row.detail)+'</small>':'')+'</span></div>').join('')+'</section>':'')+
- (!active&&available&&payment.id?abilityPaymentField({
-   tracker_id:payment.id,tracker:payment.name,cost:payment.cost||0},calculated):'')+
- (!available?'<p class="hint armor-model-unavailable">Equipaggia un’armatura per utilizzare questo modello.</p>':'')+
+ (!available?'<p class="hint armor-model-unavailable">Equipaggia un’armatura per utilizzare questo modello.</p>':
+   !canChange?'<p class="hint armor-model-unavailable">Potrai riselezionare il modello dopo un '+esc(rest.toLowerCase())+'.</p>':'')+
  '<p class="hint armor-model-error" data-armor-model-error role="status" hidden></p>'+
  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="armor-model-apply"'+
-   (available?'':' disabled')+'>'+(active?'Disattiva':'Usa')+'</button>'+
+   (available&&canChange?'':' disabled')+'>'+(active?'Disattiva':'Usa')+'</button>'+
  '<button type="button" class="btn" data-act="armor-model-close">Chiudi</button></div>';
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
@@ -2220,7 +2220,7 @@ function infusionPanel(c,calculated){
  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
  const active=(c.inventory||[]).filter(item=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
  const summary='<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+caps.known+
-   '</strong><span>Applicate '+active.length+' / '+caps.active+'</span></div>';
+   '</strong><span>Applicate '+active.length+' / '+caps.active+'</span><span class="power-selection-rest">Riposo lungo</span></div>';
  const levels=[...new Set(known.map(row=>Math.max(2,Number(row.min_level)||2)))].sort((a,b)=>a-b);
  const learned=levels.map(level=>'<section class="infusion-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div>'+
    known.map((entry,index)=>({entry,index})).filter(({entry})=>Math.max(2,Number(entry.min_level)||2)===level).map(({entry,index})=>{
@@ -6963,9 +6963,8 @@ async function handleAction(target){
         .find(row=>row.id===dialog.dataset.armorModelId);
       if(!rule||(fresh.state_actions||[]).every(action=>action.state_id!==rule.id))
         throw Error('Equipaggia l’armatura per usare il modello.');
-      const options={tracker_id:dialog.querySelector('[data-ability-payment]')?.value};
       const changes=traitStateActivationPatch(record,fresh.features,fresh.trait_state_catalog,rule.id,
-        fresh.trackers,options);
+        fresh.trackers);
       await patch(changes);
       if(state.saveError)throw Error(state.saveError);
       closeDialog(dialog,{remove:true});await render();return;
