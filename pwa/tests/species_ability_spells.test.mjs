@@ -137,3 +137,16 @@ test('MPMM racial leveled spells retain the option to use spell slots',()=>{
  const triton=spellResult(character('Triton','MPMM'));
  assert.ok(triton.grants.filter(g=>g.tracker_id).every(g=>g.slot_alternative));
 });
+
+test('turning off a granting subrace trait suspends spells without deleting the choice',()=>{
+ const c=character('Genasi','MPMM','Fire','MPMM');
+ const initial=sheet(c);
+ const feature=initial.features.find(row=>row.name==='Reach to the Blaze'&&
+   row.origin_key==='subrace|mpmm|fire');
+ assert.ok(feature);
+ assert.ok(initial.origin_spells.some(row=>row.origin_id===feature.origin_id));
+ const disabled=sheet({...c,trait_enabled:{[feature.key]:false}});
+ assert.ok(!disabled.origin_spells.some(row=>row.origin_id===feature.origin_id));
+ const restored=sheet(c);
+ assert.ok(restored.origin_spells.some(row=>row.origin_id===feature.origin_id));
+});
