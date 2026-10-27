@@ -6251,6 +6251,9 @@ async function handleAction(target){
     const index=Number(target.dataset.rollUse),row=dialog.rollBonuses[index];
     if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
       chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
+    // A situational d20 mode must be chosen before the first d20 result.
+    if(row.roll_mode&&dialog.rollOutcome)
+      throw Error('Vantaggio e svantaggio vanno scelti prima del tiro.');
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
     if(row.class_feature_id){
@@ -6298,6 +6301,15 @@ async function handleAction(target){
         const summary=(tracker.name||'Tracker')+' · '+Math.max(0,remaining-Math.max(1,Number(row.tracker_cost)||1))+' rim.';
         trackerButton.title=summary;trackerButton.setAttribute('aria-label','Apri tracker '+summary);
       }
+    }
+    if(row.roll_mode){
+      const current=await computeLocalData(state.editor.read());
+      if(!current.racial_roll_modes?.some(rule=>rule.benefit_id===row.benefit_id))
+        throw Error('Il tratto razziale non è più disponibile.');
+      dialog.usedRollBonuses.push(row);
+      target.textContent='Attivo';target.dataset.rollUsed='true';target.disabled=true;
+      dialog.renderRollFormula?.();
+      return;
     }
     const revised=applyPostRollBonus(dialog,row);
     if(!revised)dialog.usedRollBonuses.push(row);
@@ -6435,11 +6447,16 @@ async function handleAction(target){
         const key=dialog.dataset.rollTarget,label=dialog.dataset.rollLabel;
         const calculated=await computeLocalData(creature),modifier=calculated.values[key];
         if(!Number.isFinite(modifier))throw Error('Modificatore non disponibile.');
-        const chosen=chosenRollBonuses(dialog);
+        const chosen=chosenRollBonuses(dialog),numeric=chosen.filter(row=>!row.roll_mode);
         const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
-        const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key,dialog.dataset.rollContext||''),choice);
+        const confirmed=chosen.filter(row=>row.roll_mode).map(row=>({
+          mode:row.roll_mode,origin_id:row.origin_id,origin_name:row.origin_name,
+          kind:'feature',condition_label:row.condition_label
+        }));
+        const automatic=classFeatureRollSources(creature,calculated,key,dialog.dataset.rollContext||'');
+        const resolved=resolveClassRollMode([...automatic,...confirmed],choice);
         const penalty=exhaustionRollModifier(calculated.exhaustion_effects,key);
-        const outcome=rollSheetDice(modifier+penalty,chosen,randomDie,resolved.mode);
+        const outcome=rollSheetDice(modifier+penalty,numeric,randomDie,resolved.mode);
         state.roll={...outcome,label,author:selectedName()};
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
@@ -6478,9 +6495,9 @@ async function handleAction(target){
       // The just-finished roll owns its chosen charges. Keep the granted
       // terms visible in the formula, but never auto-charge or auto-apply them
       // to a later d20 roll. Available bonuses remain visible below the result.
-      dialog.postRollBonuses=[...chosen];
-      dialog.appliedBonusIds=new Set(chosen.map(row=>row.selectionId));
-      dialog.usedRollBonuses=[];
+      dialog.postRollBonuses=[...numeric];
+      dialog.appliedBonusIds=new Set(numeric.map(row=>row.selectionId));
+      dialog.usedRollBonuses=chosen.filter(row=>row.roll_mode);
         // Keep the next-roll formula in sync with the controls even after a
         // once-only bonus is consumed. Each click produces a new history entry.
         // Keep the per-dialog selection until the popup closes.
