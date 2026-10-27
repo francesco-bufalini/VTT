@@ -5,7 +5,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureRollSources} from '../feature_mechanics.js';
 import {collectEffectExtensions,effectExtensionsFor,applyEffectExtensions} from '../effect_extensions.js';
 import {addBenefitPatch,removeBenefitPatch} from '../trait_benefit_editor.js';
-import {applyInfusionPatch,clearInfusionPatch,learnInfusionPatch,prepareInfusionPatch,learnedInfusions,infusionNumericBonuses} from '../item_controls.js';
+import {applyInfusionPatch,clearInfusionPatch,learnInfusionPatch,learnedInfusions,infusionNumericBonuses} from '../item_controls.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 
 const abilityGrants=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
@@ -36,7 +36,7 @@ test('infusion extensions are scoped to the actually infused inventory instance'
  const record=base();
  const original=grant('Returning Weapon',weapon('copy_one',{equipped_slots:['main']}),record);
  record.inventory=[original,weapon('copy_two')];
- record.optional_features_catalog=[{id:byName('Returning Weapon').id,name:'Returning Weapon',source:'TCE'}];
+ record.optional_features_catalog=[{id:byName('Returning Weapon').id,name:'Returning Weapon',source:'TCE',origin_id:infusionTrait.origin_id}];
  const sheet=calculateSheet(record,catalogs);
  const owned=effectExtensionsFor(sheet.effect_extensions,
   {kind:'item',id:original.id,name:original.name,instance_id:'copy_one',inventory_index:0});
@@ -49,9 +49,10 @@ test('infusion extensions are scoped to the actually infused inventory instance'
  const result=applyEffectExtensions(original,sheet.effect_extensions,
   {kind:'item',id:original.id,name:original.name,instance_id:'copy_one',inventory_index:0});
  assert.equal(result.extended_effects.length,1);
- const optional={key:'optional|tce|returning weapon|0|returning weapon',feature_origin:'optional|tce|returning weapon',
-  origin_key:'optional|tce|returning weapon',name:'Returning Weapon',category:'altro',rank:2};
- assert.equal(traitBenefitGroups(optional,record,sheet).find(row=>row.type==='effect_extensions')?.items.length,1);
+ const parent={key:'feature:class|tce|artificer|infuse_item',feature_origin:infusionTrait.origin_id,
+  origin_key:'class|tce|artificer',name:'Infuse Item',category:'classi',rank:2};
+ assert.equal(traitBenefitGroups(parent,record,sheet).find(row=>row.type==='effect_extensions'),undefined,
+  'An applied infusion must not duplicate its effects on the granting class feature');
  const itemTrait={key:'item:weapon:javelin|javelin|0',origin_key:'item:weapon:javelin',
   name:'Javelin',category:'oggetti',rank:0};
  assert.equal(traitBenefitGroups(itemTrait,record,sheet).find(row=>row.type==='effect_extensions')?.items.length,1);
@@ -82,7 +83,6 @@ test('Resistant Armor asks for an explicit allowed damage choice and obeys attun
   equipped_slots:['body'],attuned:false}];
  record={...record,...learnInfusionPatch(record,entry,definitions,classMechanics,-1,[infusionTrait])};
  let known=learnedInfusions(record,definitions)[0];
- record={...record,...prepareInfusionPatch(record,known,definitions,[infusionTrait],true)};
  assert.throws(()=>applyInfusionPatch(record,known,definitions,classMechanics,0,[infusionTrait]),
   /Seleziona/);
  assert.throws(()=>applyInfusionPatch(record,known,definitions,classMechanics,0,[infusionTrait],{damage_type:'unknown'}),
