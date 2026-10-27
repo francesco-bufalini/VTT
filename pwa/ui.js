@@ -2934,7 +2934,8 @@ function originSpellSections(c,calculated,renderRow){
    const origin=String(grant.origin_id||'other');
    if(!origins.has(origin))origins.set(origin,{
      name:grant.origin_name||'Origine non specificata',
-     ability:grant.spellcasting_ability||'int',allowed:grant.spellcasting_ability_options?.length?grant.spellcasting_ability_options:[grant.spellcasting_ability||'int'],items:[],trackers:new Map(),
+     ability:grant.spellcasting_ability||'int',showStats:grant.casting_ability_not_required!==true,
+     allowed:grant.spellcasting_ability_options?.length?grant.spellcasting_ability_options:[grant.spellcasting_ability||'int'],items:[],trackers:new Map(),
      usesSlots:false,missingTracker:false,hasFree:false
    });
    const group=origins.get(origin);
@@ -2962,7 +2963,7 @@ function originSpellSections(c,calculated,renderRow){
      return '<section class="magic-source magic-origin-panel" data-magic-origin="'+esc(origin)+'">'+
        '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(group.name)+'</h3></div>'+
        '<div class="magic-source-resources" aria-label="Risorse di lancio">'+badges+'</div></header>'+
-       castingStatistics(c,'origin:'+origin,group.ability,group.allowed)+
+       (group.showStats?castingStatistics(c,'origin:'+origin,group.ability,group.allowed):'')+
        (calculated.active_celestial_form&&group.items.some(item=>
          item.grant.spell_id===calculated.active_celestial_form.spell_id)?
          '<div class="magic-active-form"><strong>Manifestazione attiva · 1 minuto</strong> '+
@@ -3150,7 +3151,9 @@ function magicSpellInfo(row){
   const record=typeof row==='object'&&row?row:{};
   const rawLevel=definition?.level??record.level;
   const level=rawLevel===undefined||rawLevel===null?null:Number(rawLevel);
-  return {id,name:text(definition?.name||record.name||(typeof row==='string'?row:id)),level:Number.isInteger(level)&&level>=0&&level<=9?level:null};
+  return {id,name:text(definition?.name||record.name||(typeof row==='string'?row:id)),
+    level:Number.isInteger(level)&&level>=0&&level<=9?level:null,
+    internal_grant:definition?.internal_grant===true||record.internal_grant===true};
 }
 function groupedMagicSpells(items,renderRow,{slotSummary=null}={}){
   if(!items.length && !(slotSummary?.size))return '<p class="hint magic-empty">Nessun incantesimo.</p>';
@@ -3170,7 +3173,7 @@ function groupedMagicSpells(items,renderRow,{slotSummary=null}={}){
       (slots.classSlot?magicLevelSlotChip(level,slots.classSlot):'')+
       (slots.pact?magicLevelSlotChip(level,slots.pact,true):'')+'</div>':'';
     return '<section class="magic-level" data-magic-level="'+esc(level)+'"><div class="magic-level-heading"><h4>'+
-      (level===0?'Trucchetti':level===null?'Livello non disponibile':'Livello '+level)+'</h4>'+badges+'</div>'+
+      (level===0?(entries.length&&entries.every(row=>row.info.internal_grant)?'Capacità':'Trucchetti'):level===null?'Livello non disponibile':'Livello '+level)+'</h4>'+badges+'</div>'+
       (entries.length?'<div class="magic-entries">'+entries.map(renderRow).join('')+'</div>':'')+'</section>';
   }).join('')+'</div>';
 }
@@ -3243,7 +3246,7 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
    const stats=new Map();
    for(const item of group.spells){
      const origin=item.grant.origin_id||'other';
-     if(!stats.has(origin))stats.set(origin,{name:item.grant.origin_name||'Origine',ability:item.grant.spellcasting_ability||'int',allowed:item.grant.spellcasting_ability_options?.length?item.grant.spellcasting_ability_options:[item.grant.spellcasting_ability||'int']});
+     if(!stats.has(origin)&&!item.grant.casting_ability_not_required)stats.set(origin,{name:item.grant.origin_name||'Origine',ability:item.grant.spellcasting_ability||'int',allowed:item.grant.spellcasting_ability_options?.length?item.grant.spellcasting_ability_options:[item.grant.spellcasting_ability||'int']});
    }
    const header=(group.tracker?'<section class="power-resource-summary"><span class="power-section-label">Utilizzi disponibili</span><div class="magic-tracker-controls" data-magic-tracker-id="'+esc(group.tracker.id)+'">'+
      '<span class="magic-tracker-count"><strong data-tracker-remaining="'+esc(group.tracker.id)+'">'+
@@ -5828,7 +5831,7 @@ async function handleAction(target){
     });
     const metaChoices=metamagicOptions(record).filter(o=>!['Empowered Spell','Seeking Spell'].includes(o.name));
     dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts({...detailed,range:extendedSpell.range||detailed.range}),description,
-      (level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
+      (level===0?(spell.internal_grant?'Capacità':'Trucchetto'):level===null?'Livello non specificato':'Livello '+level)+
       (detailed.school?' · '+detailed.school:'')+(detailed.source?' · '+detailed.source:''),'action-cast-cancel')+
       (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
       (spellExtensions.length?'<section class="magic-effect-extensions"><h3>Estensioni attive</h3><ul>'+
