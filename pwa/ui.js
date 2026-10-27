@@ -7456,8 +7456,9 @@ function listen(){
     button.disabled=true;
     try {
       await flushPendingFields();
-      // A concurrent save can replace the button while this handler awaits.
-      if(!button.isConnected)return;
+      // A concurrent refresh invalidates a pending removal request. Other
+      // actions preserve their existing behavior across field autosaves.
+      if(closeAction==='trait-benefits-remove-request'&&!button.isConnected)return;
       const isDestination=Boolean(button.dataset.nav)||button.dataset.act==='sheet';
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
