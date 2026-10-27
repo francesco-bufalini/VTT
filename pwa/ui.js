@@ -1967,7 +1967,11 @@ function mountTraitBenefitDialog(){
     formSelect('Recupero','recharge',[['manual','Manuale'],['short_rest','Riposo breve'],['long_rest','Riposo lungo'],['turn','Inizio turno'],['d6','Ricarica d6']])],
   ['spells',formSelect('Incantesimo','spell_id',(state.spellCatalog||[]).filter(row=>row.id&&!row.internal_grant)
      .map(row=>[row.id,row.name+' · '+(row.source||'')]))+
-     formSelect('Consumo','payment_mode',[['free','Gratuito'],['slot','Slot']])],
+     formSelect('Consumo','payment_mode',[['free','Gratuito'],['slot','Slot'],['tracker','Tracker']])+
+     formSelect('Tracker','tracker_id',trackerOptions)+
+     formSelect('Slot come alternativa','slot_alternative',[['false','No'],['true','Sì, oltre al tracker']])+
+     formSelect('Caratteristica da incantatore','spellcasting_ability',[['','Da scegliere'],...Object.entries(abilities)])+
+     '<label>Caratteristiche consentite (selezione, facoltativa)<input name="spellcasting_ability_options" placeholder="Es. int,wis,cha"></label>'],
   ['actions',formInput('Azione concessa','name')+
      formSelect('Tipo di azione','action_type',[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Nessun costo']])],
   ['effect_extensions',formSelect('Effetto modificato','target_kind',EXTENSION_TARGETS).replace('name="target_kind"','name="target_kind" data-extension-target-kind')+
@@ -4044,6 +4048,17 @@ async function handleField(target) {
   }
   if(target.dataset.castingSection){
     if(!Object.hasOwn(abilities,target.value))throw Error('Caratteristica non valida');
+    const section=target.dataset.castingSection;
+    if(section.startsWith('origin:')){
+      const source=section.slice(7);
+      const grants=(state.calculated?.origin_spells||[]).filter(row=>row.origin_id===source);
+      const allowed=grants[0]?.spellcasting_ability_options;
+      if(Array.isArray(allowed)&&allowed.length&&!allowed.includes(target.value))
+        throw Error('Caratteristica non ammessa da questo tratto.');
+      if(grants.length&&(!allowed||!allowed.length)&&grants[0].spellcasting_ability&&
+        grants[0].spellcasting_ability!==target.value)
+        throw Error('La caratteristica di questo tratto è fissa.');
+    }
     await patch({spellcasting_section_abilities:{...creature.spellcasting_section_abilities,[target.dataset.castingSection]:target.value}});
     await render();return;
   }
