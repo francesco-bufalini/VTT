@@ -119,6 +119,11 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  // Never duplicate an explicitly owned resource on the overview card.
  const belongs=row=>{
   if(!row)return false;
+  // For physical infusions the source is the specific item instance. Their
+  // parent Infuse Item class feature grants the choice, not a second copy of
+  // the applied benefits or the effect's description.
+  if(row.target_kind==='item'&&String(row.origin_id||'').startsWith('infusion:'))
+   return ids.has(row.origin_id);
   if(row.granting_trait){
    // Prefer the actual feature ID to avoid duplicate benefits on repeated
    // same-name traits; never fall back to the broad source when it exists.
