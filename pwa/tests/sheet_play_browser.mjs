@@ -191,12 +191,17 @@ try{
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  if((await skills.getAttribute('open'))!==null)await skills.locator(':scope > summary').click();
  await sheet('battle');
- const maxHp=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="hp"]');
- assert.equal(await maxHp.count(),1);
- await maxHp.click();
- assert.match(await scoreFormula.locator('h2').textContent(),/PF massimi/);
- assert.equal(await scoreFormula.locator('[data-roll-mode], [data-act="roll-sheet-confirm"]').count(),0);
- await scoreFormula.locator('[data-act="sheet-score-edit-base"]').click();
+ const hpCard=page.locator('#sheet-play-view .play-health');
+ assert.equal(await hpCard.locator('.play-hp-edit').count(),0,'HP card has no extra edit icon');
+ await hpCard.click({position:{x:22,y:80}});
+ const hpDialog=page.locator('#hp-adjust-dialog');
+ await hpDialog.waitFor({state:'visible'});
+ assert.equal(await hpDialog.locator('#hp-adjust-amount').inputValue(),'','Quick HP amount starts empty');
+ assert.equal(await hpDialog.locator('#hp-adjust-current').inputValue(),'47');
+ assert.equal(await hpDialog.locator('#hp-adjust-temporary').inputValue(),'0');
+ assert(await hpDialog.locator('#hp-adjust-current').evaluate(el=>el.getBoundingClientRect().width<170),
+   'HP numeric fields remain compact');
+ await hpDialog.locator('[data-act="hp-adjust-max"]').click();
  assert.equal(await editor.getAttribute('data-score-target'),'hp');
  assert.equal(await editor.locator('#sheet-score-input').inputValue(),'40');
  const autoHp=editor.locator('[data-act="sheet-base-auto-hp"]');
@@ -205,13 +210,10 @@ try{
  await autoHp.click();
  const automaticHp=Number(await editor.locator('#sheet-score-input').inputValue());
  assert(Number.isInteger(automaticHp)&&automaticHp>0,'Automatic hit dice prefill the base HP field');
- assert.equal((await record()).max_hp_base,40,
-   'Calculating is a preview; only Save changes the creature');
+ assert.equal((await record()).max_hp_base,40,'Automatic HP is a preview until saved');
  await editor.locator('.sheet-base-editor-cancel').click();
- await scoreFormula.waitFor({state:'visible'});
- assert.equal((await record()).max_hp_base,40,
-   'Cancel leaves the original maximum HP untouched');
- await scoreFormula.locator('[data-act="close-score-formula"]').click();
+ assert.equal((await record()).max_hp_base,40,'Cancel leaves original maximum HP untouched');
+ await hpDialog.locator('[data-act="hp-adjust-cancel"]').first().click();
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
   'Obsolete class-only toggle is absent');
 
@@ -500,7 +502,16 @@ try{
  assert(await movementPanel.locator('[data-action-timing="movement"]').textContent().then(t=>t.includes('Muoversi')));
  await sheet('info');await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="others"]').getAttribute('open'),'');
- await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('10');await page.locator('#hp-adjust-confirm').click();
+ await hpCard.click({position:{x:22,y:80}});
+ await page.locator('#hp-adjust-current').fill('46');
+ await page.locator('#hp-adjust-temporary').fill('5');
+ await page.locator('#hp-adjust-confirm').click();
+ assert.equal((await record()).current_hp,46,'Direct current HP edits are saved');
+ assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
+ await hpCard.click({position:{x:22,y:80}});
+ assert.equal(await page.locator('#hp-adjust-amount').inputValue(),'','Damage amount starts empty');
+ await page.locator('#hp-adjust-amount').fill('14');
+ await page.locator('#hp-adjust-dialog [data-hp-mode="damage"]').click();
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view [data-read-field="current_hp"]')?.textContent==='37');
  assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,0,37]);
  const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
