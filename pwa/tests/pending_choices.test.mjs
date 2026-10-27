@@ -283,3 +283,28 @@ test('legacy name-only feat entries can be removed from the owned list',()=>{
  assert.deepEqual(removed.feats_catalog,[{name:'Musician',source:'XPHB'}]);
  assert.deepEqual(removed.proficiency_choices,c.proficiency_choices);
 });
+
+test('tracked spell traits own a casting-ability choice restricted by structured data',()=>{
+ const origin='feature:species|test|3|wind caller';
+ const c={...artificer(),spellcasting_section_abilities:{}};
+ const grant={id:'gust',origin_id:origin,origin_name:'Wind Caller',spell_id:'gust',
+   tracker_id:'daily_gust',payment_mode:'tracker',slot_alternative:true,
+   spellcasting_ability_options:['int','wis','cha']};
+ const computed={features:[{origin_id:origin,origin_key:'species|test'}],origin_spells:[grant]};
+ const choice=choices(c,computed).find(row=>row.kind==='casting_ability');
+ assert(choice);
+ assert.equal(choice.origin_id,origin);
+ assert.deepEqual(choice.options,['int','wis','cha']);
+ assert.equal(choice.remaining,1);
+ assert(choicesForTrait({feature_origin:origin},c,[choice]).some(row=>row.id===choice.id));
+ assert.throws(()=>savePendingChoice(c,choice,['str']),/Selezione|caratteristica/i);
+ const patch=savePendingChoice(c,choice,['wis']);
+ assert.equal(patch.spellcasting_section_abilities['origin:'+origin],'wis');
+ assert.equal(choices({...c,...patch},computed).find(row=>row.id===choice.id).remaining,0);
+ assert(!choices({...c,origin_enabled:{[origin]:false}},computed).some(row=>row.id===choice.id));
+ const unspecified={...grant,spellcasting_ability_options:[]};
+ assert.deepEqual(choices(c,{...computed,origin_spells:[unspecified]})
+   .find(row=>row.kind==='casting_ability').options,['str','dex','con','int','wis','cha']);
+ const fixed={...grant,spellcasting_ability:'int',spellcasting_ability_options:[]};
+ assert(!choices(c,{...computed,origin_spells:[fixed]}).some(row=>row.kind==='casting_ability'));
+});
