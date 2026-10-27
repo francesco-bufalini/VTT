@@ -124,6 +124,7 @@ async function createInfusionCompanion(owner,infusion,calculated){
  if(!choice)throw Error('Profilo della sottocreatura non disponibile.');
  const row=await summonSubcreature(owner.id,await choice.load(),{
   name:choice.name,source:choice.source,template_id:choice.template_id,rule_id:rule.id,
+  origin_name:rule.names?.[0]||infusion.name,
   limit_per_owner_rule:rule.limit_per_owner_rule??1,grant:{kind:'inventory_infusion',id:infusion.id}
  });
  await askCompanionRest(row);return row;
@@ -175,8 +176,8 @@ async function createFeatureCompanion(parent,context,dialog){
   if(!loaded||typeof loaded!=='object')throw Error('Voce del bestiario non valida.');
   if(requested)loaded={...loaded,name:requested};
   const row=await summonSubcreature(parent.id,loaded,{
-    ...choice,name:choice.name,
-    feature_id:originId,rule_id:rule.id,
+    ...choice,name:choice.name,display_name:requested,
+    origin_name:rule.names?.[0]||'',feature_id:originId,rule_id:rule.id,
     grant:{kind:'feature',id:originId},
     duration:rule.duration||'',limit_per_owner_rule:rule.limit_per_owner_rule??1
   });
@@ -953,8 +954,11 @@ async function libraryView(){
   const monster=c.kind==='monster';
   const species=c.species||c.race||(typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||c.type||'Razza non specificata';
   const classes=localClasses(c).map(m=>String(m.name)+' '+Math.max(1,Number(m.level)||1)).join(' · ');
-  const subline=c.parent_creature_id?'Famiglio di '+(byId.get(c.parent_creature_id)?.name||'creatura sconosciuta')+
-    (companionGrantActive(byId.get(c.parent_creature_id)||{},c)?'':' · Non disponibile'):
+  const subline=c.parent_creature_id?
+    [c.companion_origin_name&&c.bestiary_ref?.name?
+      c.companion_origin_name+' - '+c.bestiary_ref.name:'',
+     'Di '+(byId.get(c.parent_creature_id)?.name||'creatura sconosciuta'),
+     companionGrantActive(byId.get(c.parent_creature_id)||{},c)?'':'Non disponibile'].filter(Boolean).join(' · '):
     (classes||(c.level?'Liv. '+c.level:''));
   return '<div class="library-creature-entry" data-library-id="'+esc(c.id)+'" data-library-subcreature="'+Boolean(c.parent_creature_id)+'" data-library-kind="'+(monster?'monster':'character')+'">'+
    '<label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
@@ -5798,7 +5802,8 @@ async function handleAction(target){
       await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
         companionSource?{...companionSource,spell_id:selection.id,rule:companion.rule,
           grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
-          rule_id:companion.rule.id,limit_per_owner_rule:companion.rule.limit_per_owner_spell??1}:null);return;
+          rule_id:companion.rule.id,origin_name:companion.rule.names?.[0]||selection.name,
+          limit_per_owner_rule:companion.rule.limit_per_owner_spell??1}:null);return;
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
     app.querySelector('#action-cast-dialog')?.close();
@@ -5806,6 +5811,7 @@ async function handleAction(target){
     if(Object.keys({...plan.patch,...effect}).length)await patch({...plan.patch,...effect});
     if(companionSource)await summonSpellCompanion(record.id,companionSource,{
       ...companionSource,spell_id:selection.id,rule_id:companion.rule.id,
+      origin_name:companion.rule.names?.[0]||selection.name,
       grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
       limit_per_owner_rule:companion.rule.limit_per_owner_spell??1});
     await render();

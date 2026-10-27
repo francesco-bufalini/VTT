@@ -261,3 +261,67 @@ test("exclusive companions are re-summoned in one stable sheet while nonexclusiv
  const exported=JSON.parse(await (await exportCreature(owner.id,scope)).text());
  assert.equal(exported.subcreatures.length,4);
 });
+
+test("companion identity uses privilege and original bestiary type, never the editable creature name",async()=>{
+ const scope='companion_identity_'+Date.now(),owner=await createCreature('character','Druido',scope);
+ const hawk={name:'Hawk',source:'MM',type:'beast',size:'T',hp:{average:1},ac:[13],speed:{fly:60}};
+ const familiar={rule_id:'find_familiar_2014',origin_name:'Find Familiar',
+   grant:{kind:'spell_effect',id:'spell:find_familiar'},name:'Hawk',source:'MM',limit_per_owner_rule:1};
+ const wild={rule_id:'wild_shape_2014',origin_name:'Wild Shape',
+   grant:{kind:'feature',id:'feature:druid:wild_shape'},name:'Hawk',source:'MM',limit_per_owner_rule:1};
+ const first=await summonSubcreature(owner.id,hawk,familiar,scope);
+ assert.equal(first.data.name,'Find Familiar - Hawk');
+ assert.deepEqual(first.data.companion_identity,{
+  rule_id:'find_familiar_2014',grant_kind:'spell_effect',grant_id:'spell:find_familiar',
+  bestiary_name:'Hawk',bestiary_source:'MM'});
+ const edit=await openCreatureEditor(first.id,scope);
+ await edit.update({name:'Saetta',current_hp:1,notes:'Famiglio con cicatrice'});await edit.flush();
+ const other=await summonSubcreature(owner.id,hawk,wild,scope);
+ assert.notEqual(other.id,first.id);
+ assert.equal(other.data.name,'Wild Shape - Hawk');
+ assert.equal(other.data.companion_selected,true);
+ const resumed=await summonSubcreature(owner.id,{...hawk,hp:{average:15}},familiar,scope);
+ assert.equal(resumed.id,first.id);
+ assert.equal(resumed.reused,true);
+ assert.equal(resumed.data.name,'Saetta');
+ assert.equal(resumed.data.max_hp,1);
+ assert.equal(resumed.data.notes,'Famiglio con cicatrice');
+ assert.equal((await loadCreature(other.id,scope)).data.companion_selected,true,
+  'Different origins must not deselect each other');
+ const manual=await createSubcreature(owner.id,hawk,{name:'Hawk',source:'MM'},scope);
+ assert.notEqual(manual.id,first.id);
+ const exported=JSON.parse(await (await exportCreature(owner.id,scope)).text());
+ assert.equal(exported.subcreatures.length,3);
+ assert.equal(exported.subcreatures.find(c=>c.id===first.id).name,'Saetta');
+ assert.deepEqual(exported.subcreatures.find(c=>c.id===first.id).companion_identity,
+  resumed.data.companion_identity);
+});
+test("identical bestiary types with different feature IDs retain distinct sheets",async()=>{
+ const scope='companion_grants_'+Date.now(),owner=await createCreature('character','Artefice',scope);
+ const data={name:'Homunculus Servant',source:'TCE',type:'construct',size:'T',hp:{average:9},ac:[13]};
+ const origin={rule_id:'homunculus_servant_2014',origin_name:'Homunculus Servant',
+  name:'Homunculus Servant',source:'TCE',limit_per_owner_rule:1};
+ const a=await summonSubcreature(owner.id,data,{...origin,grant:{kind:'inventory_infusion',id:'infusion:a'}},scope);
+ const b=await summonSubcreature(owner.id,data,{...origin,grant:{kind:'inventory_infusion',id:'infusion:b'}},scope);
+ assert.notEqual(a.id,b.id);
+ const edited=await openCreatureEditor(a.id,scope);await edited.update({name:'Piccolo',notes:'A'});await edited.flush();
+ const reuse=await summonSubcreature(owner.id,data,{...origin,grant:{kind:'inventory_infusion',id:'infusion:a'}},scope);
+ assert.equal(reuse.id,a.id);
+ assert.equal(reuse.data.name,'Piccolo');
+ assert.equal((await loadCreature(b.id,scope)).data.companion_selected,true);
+});
+test("old companions with source-qualified bestiary refs migrate without resetting edits",async()=>{
+ const scope='companion_migration_'+Date.now(),owner=await createCreature('character','Mago',scope);
+ const hawk={name:'Hawk',source:'MM',type:'beast',size:'T',hp:{average:1},ac:[13]};
+ const legacy=await createSubcreature(owner.id,hawk,{
+  name:'Hawk',source:'MM',spell_id:'spell-old',rule_id:'find_familiar_2014'},scope);
+ const editor=await openCreatureEditor(legacy.id,scope);
+ await editor.update({name:'Il falco',notes:'Legacy',companion_identity:null});await editor.flush();
+ const restored=await summonSubcreature(owner.id,hawk,{name:'Hawk',source:'MM',
+  spell_id:'spell-old',rule_id:'find_familiar_2014',origin_name:'Find Familiar',
+  grant:{kind:'spell_effect',id:'spell:spell-old'},limit_per_owner_rule:1},scope);
+ assert.equal(restored.id,legacy.id);
+ assert.equal(restored.data.name,'Il falco');
+ assert.equal(restored.data.notes,'Legacy');
+ assert.equal(restored.data.companion_origin_name,'Find Familiar');
+});
