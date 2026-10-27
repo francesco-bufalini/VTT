@@ -1054,19 +1054,17 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      const rows=known.map(row=>{
        const index=row.dataset.infusionIndex;
        const applied=row.dataset.infusionActive==='true';
-       const prepared=row.dataset.infusionPrepared==='true';
        const name=row.querySelector('.magic-spell-open')?.firstChild?.textContent?.trim()||'Infusione';
        const itemName=row.querySelector('.magic-spell-open>small:not(.infusion-status)')?.textContent.trim()||'';
-       const status=applied?'Attiva':prepared?'Preparata':'Non preparata';
+       const status=applied?'Attiva':'Conosciuta';
        return '<div class="play-spell play-infusion-row"><button type="button" class="play-button" data-act="infusion-open" data-index="'+esc(index)+'" aria-label="Apri '+esc(name)+' · '+status+'">'+
          icon('infusion')+'<span class="play-infusion-name">'+esc(name)+
          (itemName?'<small>'+esc(itemName)+'</small>':'')+'</span>'+
-         '<span class="play-infusion-state'+(applied?' is-active':'')+'" title="'+status+'" aria-label="'+status+'"><span aria-hidden="true">'+(applied?'✓':prepared?'◇':'○')+'</span></span>'+
+         '<span class="play-infusion-state'+(applied?' is-active':'')+'" title="'+status+'" aria-label="'+status+'"><span aria-hidden="true">'+(applied?'✓':'○')+'</span></span>'+
          '</button></div>';
      }).join('');
      html+=card('Infusioni',
        '<div class="play-magic-selection">'+
-       btn('Prepara infusioni','book','data-act="infusion-picker-open" data-mode="prepare"','<span>Prepara</span>')+
        btn('Impara infusioni','book','data-act="infusion-picker-open" data-mode="learn"','<span>Impara</span>')+'</div>'+
        (rows||'<p class="play-empty">Nessuna infusione conosciuta.</p>'),
        counters?'<div class="play-magic-source-resources" aria-label="Riepilogo infusioni">'+counters+'</div>':'',
