@@ -416,6 +416,8 @@ export function savePendingChoice(record,choice,values=[]){
   return {feats_catalog:feats};
  }
  const rows=arr(record.proficiency_choices).filter(row=>{
+   // Repair pre-audit saves on the next normal language selection.
+   if(row?.origin_id===choice.origin_id&&row.kind==='language'&&strip(row.key)==='other')return false;
    if(row?.origin_id!==choice.origin_id||row.automatic)return true;
    if(mixed)return !['skill','tool'].includes(row.kind)||
      !(choice.options.includes(row.kind+':'+strip(row.key))||row.custom===true);
