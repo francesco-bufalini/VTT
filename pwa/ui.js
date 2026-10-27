@@ -2765,15 +2765,17 @@ function listField(label,index,key,value,type="text") {
   return '<label>'+label+'<input type="'+type+'" data-item-index="'+index+'" data-item-key="'+key+
     '" value="'+esc(value)+'" '+(type==="number"?'min="0"':"")+'></label>';
 }
-function castingStatistics(c,section,ability){
- const selected=c.spellcasting_section_abilities?.[section]||ability;
+function castingStatistics(c,section,ability,permitted=null){
+ const available=Array.isArray(permitted)&&permitted.length?permitted:Object.keys(abilities);
+ const saved=c.spellcasting_section_abilities?.[section];
+ const selected=available.includes(saved)?saved:available.includes(ability)?ability:available[0]||'int';
  // A single, readable inline stat strip. Full names remain available to screen
  // readers and via the native select, while short labels fit narrow phones.
  return '<div class="casting-statistics" role="group" aria-label="Statistiche di lancio">'+
    '<label class="casting-stat casting-stat--ability">'+
      '<span class="casting-stat-label">Caratt.</span>'+
      '<select aria-label="Caratteristica degli incantesimi" title="Caratteristica degli incantesimi" data-casting-section="'+esc(section)+'">'+
-       Object.entries(abilities).map(([id,label])=>
+       Object.entries(abilities).filter(([id])=>available.includes(id)).map(([id,label])=>
          '<option value="'+esc(id)+'" aria-label="'+esc(label)+'" title="'+esc(label)+'" '+
          (selected===id?'selected':'')+'>'+esc(({str:'FOR',dex:'DES',con:'COS',int:'INT',wis:'SAG',cha:'CAR'})[id]||id.toUpperCase())+'</option>').join('')+
      '</select></label>'+
@@ -2830,7 +2832,7 @@ function originSpellSections(c,calculated,renderRow){
    const origin=String(grant.origin_id||'other');
    if(!origins.has(origin))origins.set(origin,{
      name:grant.origin_name||'Origine non specificata',
-     ability:grant.spellcasting_ability||'int',items:[],trackers:new Map(),
+     ability:grant.spellcasting_ability||'int',allowed:grant.spellcasting_ability_options?.length?grant.spellcasting_ability_options:[grant.spellcasting_ability||'int'],items:[],trackers:new Map(),
      usesSlots:false,missingTracker:false,hasFree:false
    });
    const group=origins.get(origin);
@@ -2839,7 +2841,7 @@ function originSpellSections(c,calculated,renderRow){
    group.items.push({grant,info});
    const mode=grant.payment_mode||(grant.tracker_id?'tracker':
      ['known','prepared'].includes(grant.mode)?'slot':'free');
-   if(mode==='slot')group.usesSlots=true;
+   if(mode==='slot'||grant.slot_alternative===true)group.usesSlots=true;
    else if(mode==='tracker'){
      const tracker=(calculated.trackers||[]).find(t=>t.id===grant.tracker_id&&!t.disabled);
      if(tracker)group.trackers.set(tracker.id,tracker);
@@ -2856,7 +2858,7 @@ function originSpellSections(c,calculated,renderRow){
      return '<section class="magic-source magic-origin-panel" data-magic-origin="'+esc(origin)+'">'+
        '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(group.name)+'</h3></div>'+
        '<div class="magic-source-resources" aria-label="Risorse di lancio">'+badges+'</div></header>'+
-       castingStatistics(c,'origin:'+origin,group.ability)+
+       castingStatistics(c,'origin:'+origin,group.ability,group.allowed)+
        groupedMagicSpells(group.items,({grant,info})=>renderRow(grant,info))+
        '</section>';
    }).join('');
@@ -2997,7 +2999,7 @@ function magicToolsDialog(c,calculated){
    const grant=(calculated.origin_spells||[]).find(row=>row.id===spell.grant_id);
    const mode=grant?.payment_mode||(grant?.tracker_id?'tracker':
      ['known','prepared'].includes(grant?.mode)?'slot':'free');
-   return mode==='slot';
+   return mode==='slot'||grant?.slot_alternative===true;
  });
  const slotSpells='<section class="magic-slot-spells"><h3>Incantesimi lanciabili</h3>'+
    '<p class="magic-editor-help">Livello '+chosenLevel+' o inferiore. Il lancio conferma lo slot nella schermata dell’incantesimo.</p>'+
@@ -3091,6 +3093,9 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
      '<label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(grant.id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+
      '<label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(grant.id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label>'+
      '<label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(grant.id)+'"></label>'+
+     '<label>Slot alternativi<select data-origin-config="slot_alternative" data-grant-id="'+esc(grant.id)+'">'+
+       [['false','Non consentiti'],['true','Consentiti']].map(([value,label])=>
+         '<option value="'+value+'"'+(String(Boolean(grant.slot_alternative))===value?' selected':'')+'>'+label+'</option>').join('')+'</select></label>'+
      (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(grant.id)+'">Cambia scelta</button>':'')+
      '</details></div>';
  };
@@ -3988,10 +3993,11 @@ async function handleField(target) {
   }
   if(target.dataset.originConfig){
     const id=target.dataset.grantId,key=target.dataset.originConfig;
-    if(!['payment_mode','tracker_id','tracker_cost'].includes(key)||!state.calculated.origin_spells.some(g=>g.id===id))throw Error('Concessione non disponibile');
+    if(!['payment_mode','tracker_id','tracker_cost','slot_alternative'].includes(key)||!state.calculated.origin_spells.some(g=>g.id===id))throw Error('Concessione non disponibile');
     let value=target.value;
     if(key==='tracker_cost'){value=Number(value);if(!Number.isInteger(value)||value<1||value>999)throw Error('Costo da 1 a 999');}
     if(key==='payment_mode'&&!['free','slot','tracker'].includes(value))throw Error('Consumo non valido');
+   if(key==='slot_alternative')value=value==='true';
     const configs=structuredClone(creature.origin_spell_configs||{});configs[id]={...configs[id],[key]:value};
     await patch({origin_spell_configs:configs});await render();return;
   }
@@ -5625,15 +5631,23 @@ async function handleAction(target){
     if(entry&&level!==null){
       const assigned=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
       const mode=assigned?.payment_mode||(assigned?.tracker_id?'tracker':level===0?'free':(['known','prepared'].includes(assigned?.mode)||!assigned)?'slot':'free');
-      if(level===0||mode==='free'||mode==='tracker'){
-        options.push(['auto:0',mode==='tracker'?'Usa il tracker previsto':'Senza slot']);
+      if(level===0||mode==='free'){
+        options.push(['auto:0','Senza slot']);
       }else{
-        for(const slot of calculated.spell_slots||[]){
-          if(Number(slot.level)>=level&&Number(slot.total)-Number(slot.spent)>0)
-            options.push(['slot:'+slot.level,'Slot '+slot.level+'° · '+(slot.total-slot.spent)+' disponibili']);
+        if(mode==='tracker'){
+          const pool=calculated.trackers.find(t=>t.id===assigned?.tracker_id&&!t.disabled);
+          const cost=Math.max(1,Number(assigned?.tracker_cost)||1);
+          if(pool&&pool.max-pool.spent>=cost)
+            options.push(['auto:0','Usa il tracker previsto']);
         }
-        if(calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
-          options.push(['pact:'+calculated.pact_slots.level,'Patto · '+calculated.pact_slots.level+'° livello']);
+        if(mode==='slot'||assigned?.slot_alternative===true){
+          for(const slot of calculated.spell_slots||[]){
+            if(Number(slot.level)>=level&&Number(slot.total)-Number(slot.spent)>0)
+              options.push(['slot:'+slot.level,'Slot '+slot.level+'° · '+(slot.total-slot.spent)+' disponibili']);
+          }
+          if(calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
+            options.push(['pact:'+calculated.pact_slots.level,'Patto · '+calculated.pact_slots.level+'° livello']);
+        }
       }
     }
     app.querySelector('#action-cast-dialog')?.remove();
