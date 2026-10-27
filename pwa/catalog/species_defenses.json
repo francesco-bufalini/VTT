@@ -752,6 +752,44 @@
       "choices": []
     },
     {
+      "id": "5etools:races:egw:dragonborn%20%28draconblood%29",
+      "name": "Dragonborn (Draconblood)",
+      "source": "EGW",
+      "entries": [],
+      "choices": [
+        {
+          "rank": 1,
+          "trait": "Damage Resistance",
+          "from": [
+            "acid",
+            "cold",
+            "fire",
+            "lightning",
+            "poison"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:egw:dragonborn%20%28ravenite%29",
+      "name": "Dragonborn (Ravenite)",
+      "source": "EGW",
+      "entries": [],
+      "choices": [
+        {
+          "rank": 1,
+          "trait": "Damage Resistance",
+          "from": [
+            "acid",
+            "cold",
+            "fire",
+            "lightning",
+            "poison"
+          ]
+        }
+      ]
+    },
+    {
       "id": "5etools:races:mtf:dwarf%20%28duergar%29",
       "name": "Dwarf (Duergar)",
       "source": "MTF",
