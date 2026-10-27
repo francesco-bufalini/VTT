@@ -3139,7 +3139,7 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
    const stats=new Map();
    for(const item of group.spells){
      const origin=item.grant.origin_id||'other';
-     if(!stats.has(origin))stats.set(origin,{name:item.grant.origin_name||'Origine',ability:item.grant.spellcasting_ability||'int'});
+     if(!stats.has(origin))stats.set(origin,{name:item.grant.origin_name||'Origine',ability:item.grant.spellcasting_ability||'int',allowed:item.grant.spellcasting_ability_options?.length?item.grant.spellcasting_ability_options:[item.grant.spellcasting_ability||'int']});
    }
    const header=(group.tracker?'<section class="power-resource-summary"><span class="power-section-label">Utilizzi disponibili</span><div class="magic-tracker-controls" data-magic-tracker-id="'+esc(group.tracker.id)+'">'+
      '<span class="magic-tracker-count"><strong data-tracker-remaining="'+esc(group.tracker.id)+'">'+
@@ -3169,7 +3169,7 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
        }).join('')+'</div>':'';
    const popup=panel(group.name,header+[...stats.entries()].map(([origin,meta])=>
      '<div class="magic-source-ability"><span class="hint">'+esc(meta.name)+'</span>'+
-     castingStatistics(c,'origin:'+origin,meta.ability)+'</div>').join('')+
+     castingStatistics(c,'origin:'+origin,meta.ability,meta.allowed)+'</div>').join('')+
      spellRows+abilityRows,'magic-panel magic-tracker-panel');
    return forBattle?'<div data-battle-power-group="'+esc(key)+'">'+popup+'</div>':popup;
  }).join('');
@@ -3185,7 +3185,7 @@ function originChoicesView(calculated){
   const supported=(state.spellCatalog||[]).some(spell=>originChoiceMatches(choice,spell).supported);
   return '<article class="native-entry pending-spell-choice'+(choice.id===state.pendingSpellChoiceId?' is-target':'')+
    '" data-pending-spell-choice="'+esc(choice.id)+'"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
-   (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+groupedMagicOptions(offered)+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
+   (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+groupedMagicOptions(offered)+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).filter(([key])=>!choice.spellcasting_ability_options?.length||choice.spellcasting_ability_options.includes(key)).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
      '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
  }).join(''));
 }
