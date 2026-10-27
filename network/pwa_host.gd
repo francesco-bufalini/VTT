@@ -101,6 +101,7 @@ const FILES := {
 	"/catalog/effect_extensions.json": ["res://pwa/catalog/effect_extensions.json", "application/json; charset=utf-8"],
 	"/catalog/species_types.json": ["res://pwa/catalog/species_types.json", "application/json; charset=utf-8"],
 	"/catalog/species_attacks.json": ["res://pwa/catalog/species_attacks.json", "application/json; charset=utf-8"],
+	"/catalog/species_defenses.json": ["res://pwa/catalog/species_defenses.json", "application/json; charset=utf-8"],
 	"/catalog/proficiency_grants.json": ["res://pwa/catalog/proficiency_grants.json", "application/json; charset=utf-8"],
 	"/catalog/player.json": ["res://vtt/data/player_5etools_catalog.json", "application/json; charset=utf-8"],
 	"/catalog/backgrounds.json": ["res://vtt/data/compendium_backgrounds_5etools.json", "application/json; charset=utf-8"],
