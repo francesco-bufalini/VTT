@@ -90,6 +90,12 @@ export function projectSpeciesRollModes(races=[]){
       ...(raw.uses?{uses:raw.uses,recharge:raw.recharge}:{}),
       ...(raw.attack_name?{attack_name:raw.attack_name}:{}),
       ...(raw.requires_proficiency?{requires_proficiency:true}:{})};
+    // Kuo-Toa and Troglodyte have the narrower 'while in sunlight'
+    // wording, unlike Drow/Kobold (self, target, or observed object).
+    if(entry.name==='Sunlight Sensitivity'&&['Kuo-Toa','Troglodyte'].includes(race.name))
+      row.condition_label=row.target==='attack_roll'?
+       'Solo quando sei alla luce solare diretta':
+       'Solo alla luce solare diretta, per prove basate sulla vista';
     if(entry.name==='Shifting'&&String(race.source).toUpperCase()!=='MPMM')continue;
     if(entry.name==='Kobold Legacy'&&String(race.source).toUpperCase()!=='MPMM')continue;
     if(entry.name==='Magic Resistance'&&norm(race.name)==='Satyr'&&race.source==='MOT')
