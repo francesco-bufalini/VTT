@@ -290,8 +290,9 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    const infusionDetail=await lookup('optional_features',group.infusionName,item.infusion?.source||'TCE');
    const infusionDescription=infusionDetail?.entries??infusionDetail?.description??'';
    if(infusionDescription)
-    description=[...arr(itemDescription).length?arr(itemDescription):itemDescription?[itemDescription]:[],
-      ...arr(infusionDescription).length?arr(infusionDescription):[infusionDescription]];
+    description=[...(Array.isArray(itemDescription)?itemDescription:
+      itemDescription?[itemDescription]:[]),
+      ...(Array.isArray(infusionDescription)?infusionDescription:[infusionDescription])];
   }
   add({name:displayName,entries:description,source:info.source||item.source,
    item_id:id,item_inventory_indices:group.indices,
