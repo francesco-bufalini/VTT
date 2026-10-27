@@ -5655,3 +5655,10 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 .sheet-senses-sources li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #9e7f5126;font-size:12px;color:#c5b195}
 .sheet-senses-sources li strong{color:#e9c99d}
 @media(max-width:390px){.play-ability-quickstats{gap:5px}.play-quickstat{padding:6px 2px}.play-quickstat>span{font-size:10px}.play-quickstat strong{font-size:13px}}
+
+.sheet-defenses-dialog .sheet-defenses-armor{cursor:default}
+.sheet-defenses-dialog .sheet-senses-sources:first-of-type{margin-top:0;border-top:0;padding-top:0}
+.sheet-sense-choice-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.sheet-sense-choice-actions .play-button{min-width:0;white-space:normal;text-align:center;justify-content:center;min-height:44px;border:1px solid #95754969;background:#6b4b3128;padding:8px}
+.sheet-sense-choice-actions .play-button[aria-pressed=true]{background:#a980423b;border-color:#e8bc70;color:#f6ddad}
+@media(max-width:390px){.sheet-sense-choice-actions{grid-template-columns:1fr}}
