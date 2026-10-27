@@ -6934,9 +6934,17 @@ async function handleAction(target){
       if(exhaustion)recovered.push('Indebolimento: '+exhaustion+' livello rimosso');
       const recoveryHtml=recovered.length?'<ul>'+recovered.map(row=>'<li>'+esc(row)+'</li>').join('')+'</ul>':
         '<p>Nessun altro recupero effettuato.</p>';
+      // Rest-based reselection rights are not resource tracker recoveries.
+      const choices=powerRestSelections(current,calculated).filter(row=>
+        row.recovery===event||event==='long_rest'&&row.recovery==='short_rest');
+      const choiceHtml=choices.length?'<ul>'+choices.map(row=>
+        '<li><strong>'+esc(row.name)+'</strong> · '+esc(row.label)+
+        ' · opzioni riselezionabili in Poteri</li>').join('')+'</ul>':
+        '<p>Nessuna nuova opzione da riselezionare.</p>';
       summary.innerHTML='<div class="play-rest-confirm"><h3>Riposo completato</h3>'+
         '<p><strong>'+result.healed+' PF recuperati.</strong></p>'+rolled+
         '<h4>Risorse recuperate</h4>'+recoveryHtml+
+        '<h4>Scelte modificabili</h4>'+choiceHtml+
         '<button type="button" class="btn primary" data-act="sheet-context-close">Chiudi</button></div>';
     }catch(error){
       button.disabled=false;
