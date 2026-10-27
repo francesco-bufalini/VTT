@@ -3,7 +3,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses} from './sheet_rules.js';
-import {activeInfusions,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts} from './item_controls.js';
+import {activeInfusions,infusionInstanceOrigin,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts} from './item_controls.js';
 import {traitIsActive} from './trait_benefit_editor.js';
 import {conditionOptions,conditionDescriptionHtml,exhaustionLevel,exhaustionConditionRows} from './condition_catalog.js';
 
@@ -72,6 +72,9 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    item_quantity:Math.max(1,Number(entry.item_quantity)||1),
    item_active_quantity:Math.max(0,Number(entry.item_active_quantity)||0),
    item_requires_attunement:entry.item_requires_attunement===true,
+   item_id:String(entry.item_id||''),item_inventory_indices:arr(entry.item_inventory_indices),
+   item_base_origin:String(entry.item_base_origin||''),
+   infusion_origin_id:String(entry.infusion_origin_id||''),
    feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name)),
    // Keep explicit activation metadata even for a standalone feat, item or
    // monster trait that has no separate calculated feature record.
@@ -204,11 +207,17 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     add(section,{...options,level:at,rank:2});
   });
  }
- // Individually selected optional privileges (maneuvers, invocations,
- // metamagic, etc.) are real traits, even when disabled. They need a benefits
- // popup just like class, race or feat privileges.
+ // Non-infusion optional privileges (maneuvers, invocations, metamagic) are
+ // still actual traits. Learned infusions are choices belonging to Infuse Item:
+ // their benefits appear only on the enchanted inventory copy, never as a
+ // separate "Privilegio opzionale" card.
+ const infusionDefinitions=arr(calculated.infusion_catalog);
+ const isInfusionOption=option=>Boolean(option&&(
+  String(option.id||'').startsWith('infusion|tce|')||
+  infusionDefinitions.some(def=>def.id===option.id||
+    same(def.name,option.name)&&same(option.source||'TCE',def.source||'TCE'))));
  for(const optional of arr(record.optional_features_catalog)){
-  if(!optional?.name)continue;
+  if(!optional?.name||isInfusionOption(optional))continue;
   const ownId=optional.origin_id||'optional|'+norm(optional.source)+'|'+norm(optional.name);
   const details=await lookup('optional_features',optional.name,optional.source)||optional;
   add({name:optional.name,entries:details.entries??details.description??optional.entries??'',
@@ -226,12 +235,16 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   if(spell)add(spell,{category:'incantesimi',origin:'Incantesimo · '+spell.name,
    origin_key:origin.id,level:1,inactive:!!origin.disabled});
  }
- // Group every owned instance of the same catalog item into one trait.
- // Common carried items do not need an equip flag. Armor and weapons retain
- // their physical slots; items requiring attunement still need that condition.
+ // Ordinary copies of a catalog item share one trait. Infused copies are
+ // separate physical instances: the infusion is part of that object's card,
+ // not a second item, an optional-feature card, or a fabricated active state.
  const groupedItems=new Map();
  const attunements=calculated.attunements?.counts||inventoryAttunementCounts(record.inventory,
   calculated.values?.attunement_max??record.attunement_max_base??3);
+ const effectiveInventory=arr(record.inventory).map((item,i)=>requiresAttunement(resolveOwnedItem(item))?
+  {...item,attuned_count:attunements[i]||0,attuned:attunements[i]>0}:item);
+ const activeByIndex=new Map(activeInfusions({...record,inventory:effectiveInventory},
+  infusionDefinitions,calculated.features||[]).map(applied=>[applied.index,applied]));
  for(const [index,item] of arr(record.inventory).entries()){
   if(!item?.id||Number(item.quantity??1)<=0||isDocument(item))continue;
   const effective=resolveOwnedItem(item),needsAttunement=requiresAttunement(effective);
@@ -243,48 +256,49 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     slots.includes('main')||slots.includes('off');
   const active=eligible&&(!slotted||inSlot);
   const qty=Math.max(1,Math.floor(Number(item.quantity)||1)),id=String(item.id);
-  const group=groupedItems.get(id)||{item,quantity:0,activeQuantity:0,slotted,needsAttunement:false};
+  const infusion=item.infusion?.id?item.infusion:null;
+  const infusionName=infusion?
+    infusionDefinitions.find(def=>def.id===infusion.id)?.name||infusion.name||'Infusione':'';
+  const instanceOrigin=infusion?infusionInstanceOrigin(item,index):'';
+  const groupKey=infusion?id+'|'+instanceOrigin:id;
+  const group=groupedItems.get(groupKey)||{item,quantity:0,activeQuantity:0,
+   slotted,needsAttunement:false,indices:[],infusionName,infusionOrigin:''};
+  group.indices.push(index);
   group.needsAttunement||=needsAttunement;
   group.quantity+=qty;
   if(active){
    group.activeQuantity+=needsAttunement?attunements[index]:slotted?Math.min(qty,Math.max(1,slots.length)):qty;
    group.item=item;
   }
-  groupedItems.set(id,group);
+  // Only verified active infusions can attribute mechanical grants. An
+  // unattuned copy retains the combined title but has no infusion benefits.
+  if(activeByIndex.has(index))group.infusionOrigin=activeByIndex.get(index).id;
+  groupedItems.set(groupKey,group);
  }
- for(const [id,group] of groupedItems){
-  const item=group.item;
+ for(const [groupKey,group] of groupedItems){
+  const item=group.item,id=String(item.id);
   const info=await lookup('items',item.name||id,item.source||'',id)||item;
   if(isDocument(info))continue;
-  const name=item.name||info.name||id;
-  const options={category:'oggetti',origin:'Oggetto · '+name,origin_key:'item:'+id,
-    level:0,inactive:group.activeQuantity===0};
-  add({name,entries:info.entries??info.description??item.entries??item.description??'',
-   source:info.source||item.source,
+  const name=item.name||info.name||id,infused=Boolean(group.infusionName);
+  const displayName=infused?name+' - '+group.infusionName:name;
+  const originKey='item:'+groupKey;
+  const options={category:'oggetti',origin:'Oggetto · '+displayName,
+   origin_key:originKey,level:0,inactive:group.activeQuantity===0};
+  const itemDescription=info.entries??info.description??item.entries??item.description??'';
+  let description=itemDescription;
+  if(infused){
+   const infusionDetail=await lookup('optional_features',group.infusionName,item.infusion?.source||'TCE');
+   const infusionDescription=infusionDetail?.entries??infusionDetail?.description??'';
+   if(infusionDescription)
+    description=[...arr(itemDescription).length?arr(itemDescription):itemDescription?[itemDescription]:[],
+      ...arr(infusionDescription).length?arr(infusionDescription):[infusionDescription]];
+  }
+  add({name:displayName,entries:description,source:info.source||item.source,
+   item_id:id,item_inventory_indices:group.indices,
+   item_base_origin:'item:'+id,infusion_origin_id:group.infusionOrigin,
    item_quantity:group.quantity,item_active_quantity:group.activeQuantity,
    item_requires_attunement:group.needsAttunement,
    action_type:item.action_type||info.action_type||info.activation||''}, {...options,rank:0});
-  // Legacy activation toggles targeted the obsolete equipped flag.
-  // Common owned items now activate their trait automatically.
-  if(!group.slotted){
-   const trait=rows.find(row=>row.category==='oggetti'&&row.origin_key==='item:'+id&&row.rank===0);
-   if(trait)trait.inactive=group.activeQuantity===0;
-  }
- }
- // Only an equipped, eligible infusion produces a visible subordinate trait.
- const infusionStates=[];
- const effectiveInventory=arr(record.inventory).map((item,i)=>requiresAttunement(resolveOwnedItem(item))?
-  {...item,attuned_count:attunements[i]||0,attuned:attunements[i]>0}:item);
- for(const applied of activeInfusions({...record,inventory:effectiveInventory},calculated.infusion_catalog||[],calculated.features||[])){
-   const detail=await lookup('optional_features',applied.name,'TCE')||applied.definition;
-   const description=detail.entries??detail.description??applied.definition.item_prerequisite??'';
-   add({name:'Infusione · '+applied.name,
-     entries:description,source:'TCE',feature_origin:applied.id},
-     {category:'oggetti',origin:'Oggetto · '+(applied.item.name||applied.item.id),
-      origin_key:applied.id,level:0,rank:2});
-   infusionStates.push({id:'infusion:'+applied.id,name:applied.name,
-     description:description||'Infusione attiva su '+(applied.item.name||applied.item.id),
-     origin_id:applied.origin_id,infusion_id:applied.id});
  }
  // Persistent effects share stable state-trait keys with the States cards.
  // These are read-only projections: native numeric/mechanical state is unchanged.
@@ -355,16 +369,14 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    origin_id:effect.origin_id,state_key:key,
    state_id:key.startsWith('trait_state:')?key.slice('trait_state:'.length):''});
  }
- for(const infused of infusionStates)
-  stateTrait(infused.id,infused.name,infused.description,{
-   origin_id:infused.origin_id,state_key:infused.id,infusion_id:infused.infusion_id});
  // Keep explicitly calculated traits if a catalog is unavailable offline, and
  // cover portable grants absent from a descriptive index without duplicating.
  for(const feature of arr(calculated.features)){
   const originKey=String(feature.origin_key||'altro');
   // Do not resurrect item-only structured features for unequipped inventory,
   // and do not replace the full item description with partial effect text.
-  if(originKey.startsWith('item:'))continue;
+  if(originKey.startsWith('item:')||
+    originKey.startsWith('optional|')&&isInfusionOption(feature))continue;
   const category=originKey.startsWith('class|')?'classi':
    originKey.startsWith('species|')||originKey.startsWith('race|')||
    originKey.startsWith('subrace|')?'razza':
