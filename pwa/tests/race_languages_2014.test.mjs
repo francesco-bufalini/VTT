@@ -109,6 +109,8 @@ test('previously stored 5etools other placeholders never grant or fulfill a lang
  const selected={...record,...savePendingChoice(record,choice,['sylvan'])};
  assert(has(selected,'sylvan'));
  assert(!has(selected,'other'));
+ assert(!selected.proficiency_choices.some(row=>row.kind==='language'&&row.key==='other'),
+   'saving a valid selection cleans up the legacy placeholder');
 });
 
 test('Simic Hybrid offers exactly Elvish or Vedalken; both are source-qualified',()=>{
