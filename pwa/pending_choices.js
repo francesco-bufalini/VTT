@@ -174,13 +174,20 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
   const legacy=variants.length===1&&variants[0].parts.length===1?feat.ability_choice:'';
   result.push(...allocationChoiceRows(record,sid,feat.name,variants,legacy));
  }
+ // Full replacement subraces take precedence over fixed/flexible base
+ // race scores, just as they do in sheet_rules.indexRows.
+ const ownedSubrace=arr(catalogs.abilityGrants?.subrace).find(row=>
+   norm(row.name)===norm(record.subrace)&&norm(row.source)===norm(record.subrace_source)&&
+   norm(row.raceName)===norm(record.species));
+ const replaceRaceASI=!!ownedSubrace&&(ownedSubrace.replaces_parent_ability===true||
+   Object.values(ownedSubrace.ability||{}).reduce((n,value)=>n+Math.max(0,Number(value)||0),0)>=2);
  // Race, subrace and background score choices can be fixed or source-wide.
  for(const [group,name,source] of [
    ['race',record.species,record.species_source],
    ...(record.subrace?[['subrace',record.subrace,record.subrace_source]]:[]),
    ...effectiveBackgrounds(record).map(row=>['background',row.name,row.source])
  ]){
-  if(!name||!source)continue;
+  if(!name||!source||group==='race'&&replaceRaceASI)continue;
   const matching=arr(catalogs.abilityGrants?.[group]).filter(row=>
     norm(row.name)===norm(name)&&norm(row.source)===norm(source)&&
     (group!=='subrace'||norm(row.raceName)===norm(record.species)&&
