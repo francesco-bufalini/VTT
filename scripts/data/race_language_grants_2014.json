@@ -525,6 +525,28 @@
           "goblin": true
         }
       ]
+    },
+    {
+      "kind": "race",
+      "name": "Hadozee",
+      "source": "AAG",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
+    },
+    {
+      "kind": "race",
+      "name": "Thri-kreen",
+      "source": "AAG",
+      "languageProficiencies": [
+        {
+          "common": true,
+          "anyStandard": 1
+        }
+      ]
     }
   ]
 }
