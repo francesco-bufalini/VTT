@@ -2133,27 +2133,25 @@ function infusionPanel(c,calculated){
 function selectableInfusions(mode,creature,calculated){
  const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
  const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
- if(mode==="prepare")return known;
  return (calculated.infusion_catalog||[]).filter(row=>!row.legacy_replicate&&
    caps.level>=Math.max(2,Number(row.min_level)||2))
    .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
     String(a.name).localeCompare(String(b.name),"it"));
 }
 async function openInfusionPicker(mode){
- if(!["learn","prepare"].includes(mode))throw Error("Selezione non valida.");
+ if(mode!=="learn")throw Error("Selezione non valida.");
  const creature=state.editor?.read();if(!creature)throw Error("Scheda non disponibile.");
  const calculated=await computeLocalData(creature),options=selectableInfusions(mode,creature,calculated);
  const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
  const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
- const count=mode==="learn"?known.length+" / "+caps.known:
-  known.filter(row=>isInfusionPrepared(creature,row,calculated.infusion_catalog||[])).length+" / "+caps.active;
+ const count=known.length+" / "+caps.known;
  app.querySelector("#infusion-picker-dialog")?.remove();
  const dialog=document.createElement("dialog");dialog.id="infusion-picker-dialog";
  dialog.dataset.mode=mode;dialog.className="sheet-roll-dialog magic-tools-dialog infusion-picker-dialog";
  dialog.innerHTML='<div class="magic-tools-head"><h2>'+
-   (mode==="learn"?"Impara infusioni":"Prepara infusioni")+'</h2>'+
+   'Impara infusioni</h2>'+
    dialogCloseButton("infusion-picker-close","Chiudi","magic-tool-close")+'</div><div class="magic-tools-body">'+
-   '<p class="magic-selection-warning">'+(mode==="learn"?"Conosciute ":"Preparate ")+esc(count)+'</p>'+
+   '<p class="magic-selection-warning">Conosciute '+esc(count)+'</p>'+
    '<label class="vtt-list-search magic-editor-search">Cerca infusione'+
    '<input type="search" data-infusion-search autocomplete="off" placeholder="Nome o fonte"></label>'+
    '<div class="catalog-results vtt-selection-list magic-editor-results infusion-picker-results" role="list"></div>'+
@@ -2167,8 +2165,8 @@ async function openInfusionPicker(mode){
    '<section class="magic-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div><div class="magic-entries">'+
    shown.filter(row=>Math.max(2,Number(row.min_level)||2)===level).map(row=>{
     const isKnown=known.some(entry=>entry.id===row.id);
-    const active=mode==="learn"?isKnown:isInfusionPrepared(creature,row,calculated.infusion_catalog||[]);
-    const action=mode==="learn"?(active?"Dimentica":"+ Impara"):(active?"✓ Preparata":"+ Prepara");
+    const active=isKnown;
+    const action=active?"Dimentica":"+ Impara";
     return '<div class="magic-catalog-row vtt-selectable'+(active?' is-selected':'')+'">'+
      '<button type="button" class="magic-catalog-name" data-act="infusion-picker-details" data-infusion-id="'+esc(row.id)+'" aria-label="Dettagli di '+esc(row.name)+'">'+esc(row.name)+'</button>'+
      '<button type="button" class="magic-catalog-action'+(active?' is-selected':'')+'" data-act="infusion-picker-select" data-infusion-id="'+esc(row.id)+'" aria-pressed="'+active+'">'+action+'</button></div>';
@@ -2187,11 +2185,14 @@ async function openInfusionPickerPreview(id){
  app.querySelector("#infusion-preview-dialog")?.remove();
  const dialog=document.createElement("dialog");dialog.id="infusion-preview-dialog";
  dialog.className="sheet-roll-dialog magic-spell-dialog infusion-preview-dialog";
+ const detail=await detailedEntry('optional_features',{
+   name:entry.description_source_name||entry.name,
+   source:entry.description_source||entry.source||'TCE',_category:'optional_features'});
  dialog.innerHTML=actionDialogIntro(entry.name,[
   {label:"Livello richiesto",value:String(Math.max(2,Number(entry.min_level)||2))},
   ...(entry.item_prerequisite?[{label:"Oggetto richiesto",value:entry.item_prerequisite}]:[]),
   ...(entry.replicates_item_name?[{label:"Oggetto replicato",value:entry.replicates_item_name}]:[])
- ],flattenDescription(entry)||String(entry.description||"")||"Descrizione non disponibile.",
+ ],flattenDescription(detail)||"Descrizione 5etools non disponibile nel catalogo offline.",
   "Infusione dell’Artefice · "+(entry.source||"TCE"),"infusion-preview-close")+
   '<div class="actions"><button type="button" class="btn" data-act="infusion-preview-close">Chiudi</button></div>';
  app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
