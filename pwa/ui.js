@@ -26,7 +26,6 @@ import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./tr
 import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
 import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
 import {applicableSpeciesRollModes} from './species_roll_modes.js';
-import {characterDefenseSummary} from "./defense_summary.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
@@ -4840,21 +4839,39 @@ function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
  dialog.querySelector('input')?.select();
  return dialog;
 }
-function openSheetDefensesDialog(record={},calculated={}){
- document.querySelector('#sheet-defenses-dialog')?.remove();
- const data=characterDefenseSummary(record,calculated);
+function openSheetMovementDialog(calculated={}){
+ document.querySelector('#sheet-movement-dialog')?.remove();
  const dialog=document.createElement('dialog');
- dialog.id='sheet-defenses-dialog';
- dialog.className='sheet-context-dialog sheet-senses-dialog sheet-defenses-dialog';
- const content=data.groups.filter(group=>group.items.length)
-  .map(group=>'<section class="sheet-senses-sources"><h3>'+esc(group.title)+'</h3><ul>'+
-   group.items.map(row=>'<li><strong>'+esc(row.label)+'</strong><span>'+esc(row.origin_name)+'</span></li>').join('')+
-   '</ul></section>').join('');
- dialog.innerHTML='<header class="sheet-context-head"><h2>Difese</h2>'+
-  dialogCloseButton('sheet-defenses-close','Chiudi','play-button')+'</header>'+
-  '<div class="sheet-senses-body"><div class="sheet-senses-passive sheet-defenses-armor">'+
-  '<span>Classe armatura</span><strong>'+esc(data.armor_class??'—')+'</strong></div>'+
-  (content||'<p class="sheet-senses-note">Nessuna resistenza, immunità o vulnerabilità attiva.</p>')+
+ dialog.id='sheet-movement-dialog';
+ dialog.className='sheet-context-dialog sheet-senses-dialog sheet-movement-dialog';
+ const modes=[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],
+  ['speed:fly','Volo'],['speed:burrow','Scavo']];
+ const values=calculated.values||{},speeds=calculated.stats?.speeds||{};
+ const entries=modes.map(([key,label])=>{
+  const kind=key==='speed'?'walk':key.slice(6);
+  const raw=values[key]??speeds[kind];
+  const n=raw===null||raw===undefined||raw===''?NaN:Number(raw);
+  return {key,label,value:n};
+ }).filter(row=>Number.isFinite(row.value)&&row.value>=0&&
+  (row.key==='speed'||row.value>0));
+ const jumps=calculated.stats?.jumps||{};
+ const jumpRows=[['In lungo · con rincorsa',jumps.long],
+  ['In lungo · da fermo',Number(jumps.long)/2],
+  ['In alto · con rincorsa',jumps.high],
+  ['In alto · da fermo',Number(jumps.high)/2]]
+  .filter(([,n])=>Number.isFinite(Number(n))&&Number(n)>=0);
+ const showValue=n=>Number.isInteger(n)?String(n):String(Math.round(n*10)/10);
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Movimento e velocità</h2>'+
+  dialogCloseButton('sheet-movement-close','Chiudi','play-button')+'</header>'+
+  '<div class="sheet-senses-body">'+
+  '<p class="sheet-senses-note">Velocità attuali, comprensive dei benefici e delle modifiche applicabili. Tocca una velocità per vedere il calcolo e i suoi privilegi di origine.</p>'+
+  '<section class="sheet-senses-sources sheet-movement-values"><h3>Velocità</h3><ul>'+
+  entries.map(row=>'<li><button type="button" class="sheet-movement-value" data-act="sheet-score-formula" data-target="'+esc(row.key)+
+   '" data-label="Velocità · '+esc(row.label)+'"><span>'+esc(row.label)+'</span><strong>'+showValue(row.value)+' ft</strong></button></li>').join('')+
+  '</ul></section>'+
+  (jumpRows.length?'<section class="sheet-senses-sources sheet-movement-jumps"><h3>Salti · distanza massima</h3><ul>'+
+   jumpRows.map(([label,n])=>'<li><span>'+esc(label)+'</span><strong>'+showValue(Number(n))+' ft</strong></li>').join('')+
+   '</ul></section>':'')+
   '</div>';
  app.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -6176,9 +6193,9 @@ async function handleAction(target){
     state.traitPopupDraftKind=kind;state.traitPopupDraftTarget=targetKey;
     mountTraitBenefitDialog();return;
   }
-  if(act==='sheet-defenses-open'){
+  if(act==='sheet-movement-open'){
    if(!state.editor)throw Error('Apri prima una creatura');
-   const record=state.editor.read();openSheetDefensesDialog(record,await computeLocalData(record));return;
+   openSheetMovementDialog(await computeLocalData(state.editor.read()));return;
   }
   if(act==='sheet-sense-choice'){
    if(!state.editor)throw Error('Apri prima una creatura');
@@ -8009,8 +8026,8 @@ function listen(){
       closeDialog(dialog,{remove:true});
       return;
     }
-    if(closeAction==='sheet-defenses-close'){
-     closeDialog(document.querySelector('#sheet-defenses-dialog'),{remove:true});return;
+    if(closeAction==='sheet-movement-close'){
+     closeDialog(document.querySelector('#sheet-movement-dialog'),{remove:true});return;
     }
     if(closeAction==='sheet-senses-close'){
      closeDialog(document.querySelector('#sheet-senses-dialog'),{remove:true});return;
