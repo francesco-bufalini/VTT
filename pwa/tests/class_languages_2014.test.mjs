@@ -122,3 +122,16 @@ test('Mastermind generic language choices exclude Druidic and Thieves Cant',()=>
  assert(p&&p.count===2);
  assert(!p.options.includes('druidic')&&!p.options.includes("thieves' cant"));
 });
+
+test('Favored Foe optional replacement revokes Favored Enemy language choices',()=>{
+ const r=ch('Ranger',6),f=trait(r,'Favored Foe');
+ assert(f);
+ const p=choices(r).find(x=>x.proficiency_kind==='language');
+ const saved={...r,...savePendingChoice(r,p,['sylvan'])};
+ assert(sheet(saved).proficiencies.includes('language:sylvan'));
+ const replaced={...saved,origin_enabled:{[f.origin_id]:true}};
+ assert(!sheet(replaced).proficiencies.includes('language:sylvan'));
+ assert(!choices(replaced).some(x=>x.proficiency_kind==='language'));
+ const restored={...replaced,origin_enabled:{[f.origin_id]:false}};
+ assert(sheet(restored).proficiencies.includes('language:sylvan'));
+});

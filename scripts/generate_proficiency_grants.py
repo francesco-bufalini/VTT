@@ -52,7 +52,7 @@ FEAT_PROFICIENCY_OVERRIDES = {
 
 
 FEATURE_GROUPS = ("classFeature", "subclassFeature")
-FEATURE_FIELDS = FIELDS + ("saveProficiencies", "proficiencyChoices", "proficiencyReplacements", "language_grant_requires_opt_in")
+FEATURE_FIELDS = FIELDS + ("saveProficiencies", "proficiencyChoices", "proficiencyReplacements", "language_grant_requires_opt_in", "language_grant_replaced_by")
 FEATURE_ID_FIELDS = {
     "classFeature": ("className", "classSource", "level", "source", "name"),
     "subclassFeature": ("className", "classSource", "subclassShortName", "subclassSource", "level", "source", "name"),

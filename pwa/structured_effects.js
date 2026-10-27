@@ -98,6 +98,13 @@ export function selectedSources(record,index={},features=null){
         (group!=='subclassFeature'||match(f.subclass_short_name,row.subclass_short_name)&&
           match(f.subclass_source,row.subclass_source)));
       if(!proficiencyTraitActive(record,feature,row))continue;
+      // An optional replacement removes its predecessor only if explicitly selected.
+      if(row.language_grant_replaced_by&&(
+        array(record.optional_features_catalog).some(opt=>!opt?.disabled&&
+          match(opt.name,row.language_grant_replaced_by))||
+        array(owned).some(other=>match(other.name,row.language_grant_replaced_by)&&
+          match(other.class_name,row.class_name)&&record.origin_enabled?.[other.origin_id]===true)))
+        continue;
       selected.push({id:feature.origin_id,group,source:row,origin:'Tratto · '+feature.name,
         feature,mode:'feature'});
     }

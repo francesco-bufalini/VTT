@@ -341,7 +341,8 @@
         {
           "any": 1
         }
-      ]
+      ],
+      "language_grant_replaced_by": "Favored Foe"
     },
     {
       "kind": "classFeature",
@@ -354,7 +355,8 @@
         {
           "any": 1
         }
-      ]
+      ],
+      "language_grant_replaced_by": "Favored Foe"
     },
     {
       "kind": "classFeature",
@@ -367,7 +369,8 @@
         {
           "any": 1
         }
-      ]
+      ],
+      "language_grant_replaced_by": "Favored Foe"
     },
     {
       "kind": "classFeature",
