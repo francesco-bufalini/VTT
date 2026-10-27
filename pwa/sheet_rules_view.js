@@ -619,7 +619,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Both battle entry points display the exact same editor and computed AC.
   bind('equipment',bank.querySelector('.battle-defense-panel'));
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
-  html='<section class="play-health" role="button" tabindex="0" data-act="sheet-context" data-sheet-context="hp" aria-label="Gestisci punti ferita"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+scoreOutput('hp','PF massimi')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
+  html='<section class="play-health" role="button" tabindex="0" data-act="sheet-context" data-sheet-context="hp" aria-label="Gestisci punti ferita"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+'</div></header><div class="play-hp-number"><span class="play-hp-reading">'+val('current_hp')+'<small> / '+scoreOutput('hp','PF massimi')+'</small></span><button type="button" class="play-button play-hp-edit" data-act="hp-adjust-open" aria-label="Modifica PF attuali" title="Modifica PF attuali">'+icon('healing')+'</button></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+'</div></section>';
   const fastest=fastestMovement(d);
   const vital=(context,title,glyph,label,key,suffix='',fastestLabel=false)=>
     '<div class="play-button play-vital-card">'+
@@ -910,13 +910,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const identity=panelNamed('Identità');bind('identity',identity);
   const classMembers=localClasses(c),totalClassLevel=classMembers.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
   const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
-  html='<section class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
+  const portrait=isPortraitDataUrl(c.sheet_portrait_data)?c.sheet_portrait_data:'';
+  const identityMarkup='<div class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
-   edit('identity','Modifica identità','settings')+'</section>';
-  const portrait=isPortraitDataUrl(c.sheet_portrait_data)?c.sheet_portrait_data:'';
-  html+='<section class="play-character-portrait" aria-label="Foto del personaggio">'+
+   edit('identity','Modifica identità','settings')+'</div>';
+  html='<section class="play-character-portrait'+(portrait?' has-portrait':'')+'" aria-label="Identità e foto del personaggio">'+
    (portrait?'<figure class="play-portrait-frame"><img src="'+esc(portrait)+'" alt="Ritratto di '+esc(c.name)+'"></figure>':'')+
+   identityMarkup+
    '<div class="play-portrait-controls"><button type="button" class="play-portrait-pick" data-act="info-portrait-pick">'+
    icon('eye')+'<span>'+(portrait?'Cambia foto':'Aggiungi foto')+'</span></button>'+
    (portrait?'<button type="button" class="play-portrait-remove" data-act="info-portrait-remove" aria-label="Rimuovi foto del personaggio">'+

@@ -625,14 +625,21 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       '<button type="button" class="btn" data-act="hp-restore" aria-label="Ripristina tutti i punti ferita" title="PF pieni">↺ PF pieni</button>'+
     '</div>'+
     '<dialog id="hp-adjust-dialog" class="sheet-roll-dialog hp-adjust-dialog" aria-labelledby="hp-adjust-title">'+
-      '<h2 id="hp-adjust-title">Modifica punti ferita</h2>'+
-      '<form id="hp-adjust-form">'+
-        '<label for="hp-adjust-amount">Punti ferita<input id="hp-adjust-amount" type="number" inputmode="numeric" min="1" max="99999" value="1" required></label>'+
-        '<div class="hp-adjust-actions">'+
-          '<button type="button" class="btn" data-act="hp-adjust-cancel">Annulla</button>'+
-          '<button type="submit" class="btn primary" id="hp-adjust-confirm">Applica</button>'+
-        '</div>'+
-      '</form>'+
+     '<header class="hp-adjust-heading"><h2 id="hp-adjust-title">Modifica PF attuali</h2>'+
+     '<button type="button" class="hp-adjust-close" data-act="hp-adjust-cancel" aria-label="Chiudi" title="Chiudi">×</button></header>'+
+     '<p class="hp-adjust-current">Attuali <strong>'+esc(c.current_hp??0)+'</strong> / '+esc(Math.max(0,Number(calculated.stats?.max_hp??0)))+' PF</p>'+
+     '<div class="hp-adjust-modes" role="group" aria-label="Tipo di modifica">'+
+      '<button type="button" data-act="hp-adjust-mode" data-hp-mode="set" aria-pressed="true">Imposta</button>'+
+      '<button type="button" data-act="hp-adjust-mode" data-hp-mode="damage" aria-pressed="false">Danni</button>'+
+      '<button type="button" data-act="hp-adjust-mode" data-hp-mode="heal" aria-pressed="false">Cura</button></div>'+
+     '<form id="hp-adjust-form">'+
+      '<label for="hp-adjust-amount"><span id="hp-adjust-amount-label">PF attuali</span><input id="hp-adjust-amount" type="number" inputmode="numeric" min="0" max="99999" value="'+esc(c.current_hp??0)+'" required></label>'+
+      '<div class="hp-adjust-actions">'+
+       '<button type="button" class="btn" data-act="hp-adjust-cancel">Annulla</button>'+
+       '<button type="submit" class="btn primary" id="hp-adjust-confirm">Salva PF</button>'+
+      '</div>'+
+     '</form>'+
+     '<button type="button" class="hp-adjust-full" data-act="hp-restore">Ripristina PF massimi</button>'+
     '</dialog>',
     'battle-hp-panel')+
    panel('Classe armatura',

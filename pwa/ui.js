@@ -5933,17 +5933,19 @@ async function handleAction(target){
     if((act==='slot-use'||act==='slot-recover')&&state.magicPopup==='slot-menu')state.magicPopup='';
     await render();return;
   }
-  if(act==='hp-damage'||act==='hp-heal'){
+  if(['hp-adjust-open','hp-damage','hp-heal'].includes(act)){
     const dialog=app.querySelector('#hp-adjust-dialog');
     if(!dialog)throw Error('Pannello punti ferita non disponibile.');
-    const damage=act==='hp-damage';
-    dialog.dataset.hpMode=damage?'damage':'heal';
-    dialog.querySelector('#hp-adjust-title').textContent=damage?'Infliggi danni':'Cura punti ferita';
-    dialog.querySelector('#hp-adjust-confirm').textContent=damage?'Applica danni':'Applica cura';
-    const amount=dialog.querySelector('#hp-adjust-amount');
-    amount.value='1';
+    configureHpAdjustDialog(dialog,act==='hp-damage'?'damage':act==='hp-heal'?'heal':'set');
     openSessionDialog(dialog);
-    amount.focus();
+    dialog.querySelector('#hp-adjust-amount')?.focus();
+    return;
+  }
+  if(act==='hp-adjust-mode'){
+    const dialog=target.closest('#hp-adjust-dialog');
+    if(!dialog)throw Error('Pannello punti ferita non disponibile.');
+    configureHpAdjustDialog(dialog,target.dataset.hpMode);
+    dialog.querySelector('#hp-adjust-amount')?.focus();
     return;
   }
   if(act==='hp-adjust-cancel'){
@@ -6994,17 +6996,32 @@ async function handleAction(target){
   }
   if(act==="roll"){await roll(state.diceSides);return;}
 }
+function configureHpAdjustDialog(dialog,mode){
+  if(!['damage','heal','set'].includes(mode))throw Error('Operazione sui PF non valida.');
+  dialog.dataset.hpMode=mode;
+  const amount=dialog.querySelector('#hp-adjust-amount');
+  const current=Number(state.editor?.read()?.current_hp)||0;
+  amount.min=mode==='set'?'0':'1';
+  amount.value=mode==='set'?String(Math.max(0,current)):'1';
+  dialog.querySelector('#hp-adjust-amount-label').textContent=mode==='damage'?'Danni subiti':mode==='heal'?'PF recuperati':'PF attuali';
+  dialog.querySelector('#hp-adjust-confirm').textContent=mode==='damage'?'Applica danni':mode==='heal'?'Applica cura':'Salva PF';
+  for(const choice of dialog.querySelectorAll('[data-act="hp-adjust-mode"]'))
+    choice.setAttribute('aria-pressed',String(choice.dataset.hpMode===mode));
+}
 async function handleSubmit(form){
   if(form.id==='hp-adjust-form'){
     const dialog=form.closest('#hp-adjust-dialog');
     const mode=dialog?.dataset.hpMode;
-    if(mode!=='damage'&&mode!=='heal')throw Error('Operazione sui PF non valida.');
-    const amount=Number(form.querySelector('#hp-adjust-amount')?.value);
-    if(!Number.isSafeInteger(amount)||amount<1||amount>99999)throw Error('Inserisci un valore di PF tra 1 e 99999.');
+    if(!['damage','heal','set'].includes(mode))throw Error('Operazione sui PF non valida.');
+    const raw=form.querySelector('#hp-adjust-amount')?.value;
+    const amount=Number(raw);
+    if(raw===''||!Number.isSafeInteger(amount)||amount<(mode==='set'?0:1)||amount>99999)
+      throw Error('Inserisci un valore di PF valido tra '+(mode==='set'?'0':'1')+' e 99999.');
     if(!state.editor)throw Error('Apri prima una scheda.');
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
     const damage=mode==='damage'?variantDamage(state.editor.readBase(),amount):null;
-    const changes=damage?.patch||hitPointPatch(creature,amount,calculated);
+    const changes=mode==='set'?{current_hp:Math.min(amount,Math.max(0,Number(calculated.stats?.max_hp)||0))}:
+      damage?.patch||hitPointPatch(creature,amount,calculated);
     const concentrationCheck=mode==='damage'?concentrationDamageCheck(creature,amount):null;
     await patch(changes);
     closeSessionDialog(dialog);

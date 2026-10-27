@@ -5455,3 +5455,80 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
  .background-reference-button{padding:8px 9px}
  .background-picker-dialog .feat-picker-body{gap:8px}
 }
+
+
+/* Info hero: the portrait and character identity share an overlapping nameplate. */
+.sheet-play-view[data-sheet="info"] .play-character-portrait.has-portrait{gap:0;margin:0;padding:3px 8px 5px}
+.play-character-portrait.has-portrait .play-portrait-frame{
+ width:min(100%,344px);margin:0;aspect-ratio:4/5;border-radius:18px;
+ box-shadow:inset 0 1px #ffe5b27d,0 12px 32px #08060688,0 0 0 3px #6c513127;
+}
+.play-character-portrait.has-portrait .play-portrait-frame>img{border-radius:10px;object-fit:contain}
+.play-character-portrait.has-portrait .play-identity{
+ z-index:2;box-sizing:border-box;width:min(calc(100% - 22px),326px);
+ margin:-18px auto 10px;padding:15px 51px 15px 20px;min-width:0;text-align:left;
+ border:1px solid #d1a66eaa;border-radius:13px;
+ background:linear-gradient(135deg,#544033f5,#29211ff7 64%,#423127f7);
+ box-shadow:inset 0 1px #f9d6a02b,0 7px 22px #08060699;
+}
+.play-character-portrait.has-portrait .play-identity h2{
+ margin:0 0 6px;color:#ffe2b5;font:600 clamp(20px,5vw,27px)/1.2 Georgia,serif;
+}
+.play-character-portrait.has-portrait .play-identity p{
+ color:#d7c4a9;font-size:12px;line-height:1.4;margin:0 0 4px;overflow-wrap:anywhere;
+}
+.play-character-portrait.has-portrait .play-identity>.play-button{
+ top:50%;right:7px;transform:translateY(-50%);min-width:42px;min-height:42px;
+}
+.play-character-portrait.has-portrait .play-portrait-controls{margin-top:2px}
+.sheet-play-view[data-sheet="info"] .play-character-portrait:not(.has-portrait){gap:9px;padding-top:0}
+.play-character-portrait:not(.has-portrait) .play-identity{width:100%;box-sizing:border-box}
+
+/* One thumb-sized HP editor replaces the damage/healing button row. */
+.play-health .play-hp-number{display:flex;align-items:center;gap:12px;min-width:0}
+.play-health .play-hp-reading{display:inline-flex;align-items:baseline;gap:4px;min-width:0}
+.play-health .play-hp-reading>small{display:inline-flex;align-items:baseline}
+.play-health .play-hp-edit{
+ flex:0 0 44px;width:44px;height:44px;min-height:44px;min-width:44px;
+ padding:10px;border:1px solid #d2a46e74;border-radius:12px;
+ background:linear-gradient(145deg,#765034a3,#362926a8);color:#f7d6a3;
+ box-shadow:inset 0 1px #ffe6b53a,0 3px 10px #0004;
+}
+.play-health .play-hp-edit .vtt-action-glyph{width:21px;height:21px;flex:0 0 21px}
+.play-health .play-hp-edit:hover,.play-health .play-hp-edit:focus-visible{
+ background:#966d4a9a;border-color:#f1c485;outline:2px solid #f1c48566;outline-offset:2px;
+}
+.hp-adjust-dialog{width:min(360px,calc(100vw - 24px))}
+.hp-adjust-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+.hp-adjust-heading h2{margin:0}
+.hp-adjust-close{
+ display:grid;place-items:center;min-height:42px;min-width:42px;padding:0;
+ border:0;background:transparent;color:#ddc4a4;font:30px/1 system-ui;cursor:pointer;
+}
+.hp-adjust-close:hover,.hp-adjust-close:focus-visible{color:#ffe0ad;outline:2px solid #e1b478;outline-offset:1px;border-radius:7px}
+.hp-adjust-current{margin:0 0 15px;color:#c7b69d;font-size:12px}
+.hp-adjust-current strong{color:#f6d6a4;font-variant-numeric:tabular-nums}
+.hp-adjust-modes{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+ padding:4px;margin:0 0 14px;border:1px solid #a27b4a55;border-radius:12px;background:#181414b8;
+}
+.hp-adjust-modes button{
+ min-width:0;min-height:42px;padding:7px 5px;border:1px solid transparent;
+ border-radius:9px;background:transparent;color:#c4b6a1;font:650 12px/1.2 system-ui;cursor:pointer;
+}
+.hp-adjust-modes button[aria-pressed="true"]{
+ border-color:#ddb0789c;background:linear-gradient(145deg,#785339,#463125);
+ color:#ffe2b7;box-shadow:inset 0 1px #ffe6b52d;
+}
+.hp-adjust-modes button:focus-visible{outline:2px solid #efc180;outline-offset:1px}
+.hp-adjust-full{
+ display:block;width:100%;min-height:42px;margin-top:9px;padding:8px 12px;
+ border:1px solid #a6865a69;border-radius:9px;background:transparent;
+ color:#e5c796;font:600 12px/1.3 system-ui;cursor:pointer;
+}
+.hp-adjust-full:hover,.hp-adjust-full:focus-visible{background:#7150394a;border-color:#e2b579;outline-offset:2px}
+@media(max-width:360px){
+ .play-health .play-hp-number{gap:7px}
+ .play-health .play-hp-edit{flex-basis:42px;width:42px;height:42px;min-width:42px}
+ .play-character-portrait.has-portrait .play-identity{padding-left:14px;padding-right:45px}
+}
