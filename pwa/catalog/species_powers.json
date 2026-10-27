@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "source": "MPMM",
+  "notes": "Source-qualified racial power mechanics. Celestial Revelation forms use the ordinary subrace picker and persistent caster-following VTT spell overlays. Neither Necrotic Shroud nor another form automatically applies Frightened.",
+  "races": [
+    {
+      "name": "Aasimar",
+      "source": "MPMM",
+      "healing": {
+        "trait": "Healing Hands",
+        "id": "race:mpmm:aasimar:healing_hands",
+        "tracker_id": "race:mpmm:aasimar:healing_hands:uses",
+        "uses": 1,
+        "recharge": "long_rest",
+        "action_type": "action",
+        "target_mode": "single_token",
+        "target_range_feet": 5,
+        "roll": {
+          "count": "proficiency",
+          "sides": 4
+        },
+        "description": "Come azione, tocchi una creatura e ripristini PF pari alla somma di tanti d4 quant'è il tuo bonus di competenza. Un utilizzo per riposo lungo."
+      },
+      "revelation": {
+        "trait": "Celestial Revelation",
+        "min_level": 3,
+        "tracker_id": "race:mpmm:aasimar:celestial_revelation:uses",
+        "uses": 1,
+        "recharge": "long_rest",
+        "duration_rounds": 10,
+        "action_type": "bonus",
+        "subraces": [
+          {
+            "name": "Necrotic Shroud",
+            "id": "subrace:aasimar|mpmm|necrotic shroud|mpmm",
+            "spell_id": "vtt_aasimar_necrotic_shroud",
+            "spellcasting_ability": "cha",
+            "radius_feet": 10,
+            "damage_type": "necrotic",
+            "description": "Emanazione entro 10 ft. La CD dell'eventuale tiro su Carisma dipende dalla caratteristica CAR del personaggio. Danno necrotico aggiuntivo pari al bonus competenza una volta per turno. La condizione Spaventato non viene applicata automaticamente."
+          },
+          {
+            "name": "Radiant Consumption",
+            "id": "subrace:aasimar|mpmm|radiant consumption|mpmm",
+            "spell_id": "vtt_aasimar_radiant_consumption",
+            "radius_feet": 10,
+            "damage_type": "radiant",
+            "description": "Emetti luce intensa entro 10 ft e luce fioca per altri 10 ft. Alla fine del tuo turno, le creature entro 10 ft subiscono danni radianti pari al bonus competenza. Danno radiante aggiuntivo pari alla competenza una volta per turno."
+          },
+          {
+            "name": "Radiant Soul",
+            "id": "subrace:aasimar|mpmm|radiant soul|mpmm",
+            "spell_id": "vtt_aasimar_radiant_soul",
+            "radius_feet": 10,
+            "damage_type": "radiant",
+            "description": "Per un minuto ottieni volo pari alla velocità di camminata; una volta per turno puoi aggiungere danni radianti pari al bonus competenza. L'emanazione visualizza la forma e segue il token."
+          }
+        ]
+      }
+    }
+  ]
+}
