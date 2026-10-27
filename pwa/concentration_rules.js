@@ -12,8 +12,9 @@ export function concentrationDamageCheck(creature={},damage){
    spell_id:String(creature.concentrating_spell_id||'')};
 }
 export function concentrationEndPatch(creature={}){
+ const active=Array.isArray(creature.active_item_spell_effects)?creature.active_item_spell_effects:[];
  return {conditions:(Array.isArray(creature.conditions)?creature.conditions:[])
    .filter(code=>code!=='concentrating'),concentrating_spell_id:'',
-   active_item_spell_effects:(Array.isArray(creature.active_item_spell_effects)?creature.active_item_spell_effects:[])
-     .filter(effect=>!effect.requires_concentration)};
+   ...(active.some(effect=>effect.requires_concentration)?
+     {active_item_spell_effects:active.filter(effect=>!effect.requires_concentration)}:{})};
 }
