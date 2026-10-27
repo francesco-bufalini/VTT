@@ -3,6 +3,7 @@ import {createVariant} from './creature_variants.js';
 // No regex matching feature prose; no network access in the evaluation path.
 import {resolveOwnedItem} from './item_controls.js';
 import {exhaustionRollModes} from './exhaustion_rules.js';
+import {speciesRollModeMatches} from './species_roll_modes.js';
 const rows=value=>Array.isArray(value)?value:[];
 const low=value=>String(value||'').trim().toLowerCase();
 const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school of )/,'').replace(/^the /,'');
@@ -215,6 +216,13 @@ export function classFeatureRollSources(record,calculated,target,context=''){
    for(const rule of rows(feature.roll_modes)){
      if(applies(rule))add(rule.mode,feature.origin_id,'Tratto · '+feature.name);
    }
+ }
+ // Truly unconditional racial advantages belong to the automatic d20
+ // sources. A nonempty condition_label is always manual: the app cannot
+ // assume why a saving throw was requested or whether sunlight is direct.
+ for(const rule of rows(calculated?.racial_roll_modes)){
+   if(rule.conditional||!speciesRollModeMatches(rule,target,calculated))continue;
+   add(rule.mode,rule.origin_id,rule.origin_name||'Tratto razziale');
  }
  // Context-limited feat advantages apply only to the matching kind of save.
  // A concentration save is still save:con and inherits all Constitution bonuses.
