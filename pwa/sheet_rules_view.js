@@ -1048,15 +1048,27 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   originPanels.forEach((node,i)=>{
    if(heading(node).startsWith('Infusioni')){
      bind('infusions',node);
-     const known=[...node.querySelectorAll('.magic-spell-row')];
-     html+=card('Infusioni','<p class="play-casting-facts">'+esc(node.querySelector('.hint')?.textContent||'')+'</p>'+
-       known.map(row=>'<div class="play-spell">'+
-         '<span>'+esc(row.querySelector('.magic-spell-open')?.textContent||'Infusione')+'</span>'+
-         [...row.querySelectorAll('button')].map(button=>
-           proxy(button,button.getAttribute('aria-label')||button.textContent.trim(),'',
-             '<span>'+esc(button.textContent.trim())+'</span>')).join('')+
-         '</div>').join('')+
-       go('infusions','Gestisci infusioni','infusion','Impara, prepara o applica a un oggetto'));
+     const counters=[...node.querySelector('.infusion-overview')?.children||[]]
+       .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
+     const known=[...node.querySelectorAll('.infusion-entry')];
+     const rows=known.map(row=>{
+       const index=row.dataset.infusionIndex;
+       const applied=row.dataset.infusionActive==='true';
+       const prepared=row.dataset.infusionPrepared==='true';
+       const name=row.querySelector('.magic-spell-open')?.firstChild?.textContent?.trim()||'Infusione';
+       const itemName=row.querySelector('.magic-spell-open>small:not(.infusion-status)')?.textContent.trim()||'';
+       const status=applied?'Attiva':prepared?'Preparata':'Non preparata';
+       return '<div class="play-spell play-infusion-row"><button type="button" class="play-button" data-act="infusion-open" data-index="'+esc(index)+'" aria-label="Apri '+esc(name)+' · '+status+'">'+
+         icon('infusion')+'<span class="play-infusion-name">'+esc(name)+
+         (itemName?'<small>'+esc(itemName)+'</small>':'')+'</span>'+
+         '<span class="play-infusion-state'+(applied?' is-active':'')+'" title="'+status+'" aria-label="'+status+'"><span aria-hidden="true">'+(applied?'✓':prepared?'◇':'○')+'</span></span>'+
+         '</button></div>';
+     }).join('');
+     html+=card('Infusioni',
+       '<div class="play-magic-selection">'+btn('Gestisci infusioni','book','data-act="sheet-context" data-sheet-context="infusions"','<span>Impara e prepara infusioni</span>')+'</div>'+
+       (rows||'<p class="play-empty">Nessuna infusione conosciuta.</p>'),
+       counters?'<div class="play-magic-source-resources" aria-label="Riepilogo infusioni">'+counters+'</div>':'',
+       'play-magic-class-card play-infusion-card');
      return;
    }
    const key='power:'+i;

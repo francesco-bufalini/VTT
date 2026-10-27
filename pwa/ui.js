@@ -2123,7 +2123,7 @@ function infusionPanel(c,calculated){
      const ready=isInfusionPrepared(c,entry,definitions);
      const applied=active.filter(({item})=>item.infusion?.id===entry.id&&
        (entry.plan_item_id?item.infusion?.plan_item_id===entry.plan_item_id:true));
-     return '<div class="magic-spell-row infusion-entry"><span class="magic-spell-open">'+esc(entry.name)+
+     return '<div class="magic-spell-row infusion-entry" data-infusion-index="'+index+'" data-infusion-active="'+Boolean(applied.length)+'" data-infusion-prepared="'+ready+'"><span class="magic-spell-open">'+esc(entry.name)+
        (entry.plan_item_name?'<small>'+esc(entry.plan_item_name)+'</small>':'')+
        '<small class="infusion-status">'+(applied.length?'Applicata a '+esc(applied.map(({item})=>item.name||item.id).join(', ')):
          ready?'Preparata':'Conosciuta · non preparata')+'</small></span>'+
@@ -2164,6 +2164,52 @@ function infusionPanel(c,calculated){
    (known.length>caps.known?'<p class="warning">Infusioni conosciute oltre il massimo consigliato: '+known.length+' / '+caps.known+'.</p>':'')+
    (prepared.length>caps.active?'<p class="warning">Infusioni preparate oltre il massimo di oggetti infondibili: '+prepared.length+' / '+caps.active+'.</p>':'')+
    (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
+}
+
+async function openInfusionActionDialog(index){
+ const creature=state.editor?.read();
+ if(!creature)throw Error('Apri prima la scheda di una creatura.');
+ const calculated=await computeLocalData(creature),definitions=calculated.infusion_catalog||[];
+ const entry=learnedInfusions(creature,definitions)[index];
+ if(!entry)throw Error('Infusione non più disponibile.');
+ const prepared=isInfusionPrepared(creature,entry,definitions);
+ const applied=(creature.inventory||[]).map((item,itemIndex)=>({item,index:itemIndex}))
+  .filter(({item})=>Number(item.quantity??1)>0&&item.infusion?.creator_id===creature.id&&
+   item.infusion.id===entry.id&&(!entry.plan_item_id||item.infusion.plan_item_id===entry.plan_item_id));
+ const targets=prepared?compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]):[];
+ const facts=[
+  {label:'Stato',value:applied.length?'Attiva su '+applied.length+(applied.length===1?' oggetto':' oggetti'):prepared?'Preparata':'Non preparata'},
+  ...(entry.item_prerequisite?[{label:'Oggetto richiesto',value:entry.item_prerequisite}]:[]),
+  {label:'Sintonia',value:entry.requires_attunement?'Richiesta per beneficiare degli effetti':'Non richiesta'}
+ ];
+ const description=flattenDescription(entry)||
+  'Applica questa infusione a un oggetto compatibile. Gli effetti dipendono dall’infusione e dalle condizioni dell’oggetto.';
+ app.querySelector('#infusion-action-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='infusion-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
+ dialog.dataset.infusionIndex=String(index);
+ const options=(entry.effect_choice?.options||[]);
+ dialog.innerHTML=actionDialogIntro(entry.name,facts,description,
+   'Infusione dell’artefice'+(entry.source?' · '+entry.source:''),
+   'infusion-dialog-close')+
+   (applied.length?'<section class="infusion-dialog-active"><h3>Oggetti infusi</h3>'+
+     applied.map(({item,index:itemIndex})=>'<div class="infusion-dialog-item"><span>'+esc(item.name||item.id)+
+       '<small>Infusione applicata</small></span><button type="button" class="btn" data-act="infusion-dialog-remove" data-index="'+itemIndex+'">Disattiva</button></div>').join('')+
+     '</section>':'')+
+   (targets.length?'<label>Oggetto bersaglio<select id="infusion-item-target">'+
+     targets.map(({item,index:itemIndex})=>'<option value="'+itemIndex+'">'+esc(item.name||item.id)+'</option>').join('')+
+     '</select></label>':
+     prepared?'<p class="hint">Nessun oggetto compatibile disponibile per una nuova attivazione.</p>':
+     '<p class="hint">Prepara l’infusione prima di applicarla a un oggetto.</p>')+
+   (prepared&&targets.length&&options.length?
+     '<label>'+esc(entry.effect_choice.label||'Scelta effetto')+'<select data-infusion-dialog-effect>'+
+     options.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
+   '<div class="actions magic-dialog-actions">'+
+    (!prepared?'<button type="button" class="btn" data-act="infusion-dialog-prepare">Prepara</button>':'')+
+    '<button type="button" class="btn primary" data-act="infusion-dialog-activate"'+(!prepared||!targets.length?' disabled':'')+'>Attiva</button>'+
+    '<button type="button" class="btn" data-act="infusion-dialog-close">Chiudi</button></div>';
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ openDialog(dialog);
 }
 
 const INVENTORY_PROPERTY_LABELS={
@@ -6689,6 +6735,42 @@ async function handleAction(target){
       preview.querySelector('[data-rest-error]').textContent=errorMessage(error);
     }
     return;
+  }
+  if(act==='infusion-open'){
+    await openInfusionActionDialog(Number(target.dataset.index));return;
+  }
+  if(act==='infusion-dialog-close'){
+    closeDialog(app.querySelector('#infusion-action-dialog'),{remove:true});return;
+  }
+  if(['infusion-dialog-prepare','infusion-dialog-activate','infusion-dialog-remove'].includes(act)){
+    const dialog=app.querySelector('#infusion-action-dialog');
+    const creature=state.editor?.read();
+    if(!dialog?.open||!creature)throw Error('Riapri l’infusione dalla scheda.');
+    const calculated=await computeLocalData(creature),definitions=calculated.infusion_catalog||[];
+    const index=Number(dialog.dataset.infusionIndex),entry=learnedInfusions(creature,definitions)[index];
+    if(!entry)throw Error('Infusione non più disponibile.');
+    let changes;
+    if(act==='infusion-dialog-prepare'){
+      changes=prepareInfusionPatch(creature,entry,definitions,calculated.features||[],true);
+    }else if(act==='infusion-dialog-activate'){
+      if(!isInfusionPrepared(creature,entry,definitions))throw Error('Prepara prima l’infusione.');
+      const itemIndex=Number(dialog.querySelector('#infusion-item-target')?.value);
+      const eligible=compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]);
+      if(!eligible.some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
+      const choice=entry.effect_choice;
+      const value=dialog.querySelector('[data-infusion-dialog-effect]')?.value||'';
+      changes=applyInfusionPatch(creature,entry,definitions,calculated.infusion_mechanics,itemIndex,
+        calculated.features||[],choice?{[choice.key]:value}:{});
+    }else{
+      const itemIndex=Number(target.dataset.index),item=creature.inventory?.[itemIndex];
+      if(!item?.infusion||item.infusion.creator_id!==creature.id||
+         item.infusion.id!==entry.id||entry.plan_item_id&&item.infusion.plan_item_id!==entry.plan_item_id)
+        throw Error('L’oggetto non ha più questa infusione.');
+      changes=clearInfusionPatch(creature,itemIndex);
+    }
+    await patch(changes);
+    closeDialog(dialog,{remove:true});
+    await render();return;
   }
   if(['infusion-learn','infusion-prepare','infusion-start','infusion-confirm',
       'infusion-cancel','infusion-forget','infusion-clear'].includes(act)){

@@ -5532,3 +5532,32 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
  .play-health .play-hp-edit{flex-basis:42px;width:42px;height:42px;min-width:42px}
  .play-character-portrait.has-portrait .play-identity{padding-left:14px;padding-right:45px}
 }
+
+/* Infusions use the spell-card structure, with an activation state instead
+   of a spell level. Detailed controls stay in their spell-style popup. */
+#sheet-play-view .play-infusion-card .play-magic-selection{padding:8px 12px}
+#sheet-play-view .play-infusion-card .play-magic-selection>.play-button{width:100%}
+#sheet-play-view .play-infusion-row>.play-button{
+ display:flex;align-items:center;gap:10px;min-width:0;min-height:49px
+}
+#sheet-play-view .play-infusion-name{flex:1;min-width:0;overflow-wrap:anywhere}
+#sheet-play-view .play-infusion-name small{display:block;margin-top:3px;color:#baa78c;font-size:11px}
+#sheet-play-view .play-infusion-state{
+ display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;
+ border:1px solid #9e815659;border-radius:50%;color:#b6a18c;
+ background:#43352c70;font:750 16px/1 system-ui
+}
+#sheet-play-view .play-infusion-state.is-active{
+ border-color:#deb77a;background:#83603973;color:#f8deb0
+}
+.infusion-action-dialog .infusion-dialog-active{margin:15px 16px 12px}
+.infusion-action-dialog .infusion-dialog-active h3{margin:0 0 8px;color:#edcea0;font-size:13px}
+.infusion-action-dialog .infusion-dialog-item{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ padding:9px 0;border-bottom:1px solid #a27b4a3c
+}
+.infusion-action-dialog .infusion-dialog-item span{min-width:0;overflow-wrap:anywhere;font-size:13px}
+.infusion-action-dialog .infusion-dialog-item small{display:block;color:#ae997e;font-size:11px}
+.infusion-action-dialog .infusion-dialog-item .btn{flex:none;min-height:38px}
+.infusion-action-dialog>label{display:grid;gap:6px;margin-top:12px}
+.infusion-action-dialog>label select{width:100%;min-width:0}
