@@ -32,7 +32,7 @@ const spellResult=c=>{
 
 test('the checked-in spell rules mirror typed native 2014 source- and trait-ownership',()=>{
  const projected=projectSpeciesSpellBindings(source.races,sourceSpells.entries);
- const known=rules.filter(rule=>rule.kind==='subrace');
+ const known=rules.filter(rule=>rule.kind==='subrace'||rule.generated_2014_species_spell);
  assert.deepEqual(known,projected.rules);
  assert.ok(projected.rules.length>=100);
  assert.ok(known.some(row=>row.name==='High'&&row.spell==='*choice*'));
@@ -43,7 +43,6 @@ test('PHB Human, Half-Elf and Warforged retain their distinctive 2014 score rule
   {str:11,dex:11,con:11,int:11,wis:11,cha:11});
  assert.deepEqual(result(character('Half-Elf','PHB')),
   {str:10,dex:10,con:10,int:10,wis:10,cha:12});
- const half=character('Half-Elf','PHB',{},{});
  const pending=pendingCharacterChoices(character('Half-Elf','PHB'),sheet(character('Half-Elf','PHB')),catalog);
  assert.ok(pending.some(choice=>choice.kind==='ability'&&choice.count===2));
  const selected=character('Half-Elf','PHB','','',{
@@ -127,4 +126,14 @@ test('cold sheets resolve fixed racial spells without prefetching the full spell
  assert.equal(originSpellId('mage hand#c','2014',[]),'phb2014_mage_hand');
  const genasi=spellResult(character('Genasi','EEPC','Water','EEPC'));
  assert.ok(genasi.grants.some(row=>row.spell_id==='shape_water'&&row.cantrip));
+});
+
+test('MPMM racial leveled spells retain the option to use spell slots',()=>{
+ const c=character('Genasi','MPMM','Fire','MPMM');
+ const sheet=spellResult(c);
+ const leveled=sheet.grants.filter(g=>g.tracker_id);
+ assert.equal(leveled.length,2);
+ assert.ok(leveled.every(g=>g.slot_alternative));
+ const triton=spellResult(character('Triton','MPMM'));
+ assert.ok(triton.grants.filter(g=>g.tracker_id).every(g=>g.slot_alternative));
 });
