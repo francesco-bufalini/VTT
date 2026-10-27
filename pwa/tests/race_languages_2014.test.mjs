@@ -56,7 +56,7 @@ test('complete typed 5etools language list is shared without adding another PWA 
  assert(human.options.includes('quori'),'exotic 2014 language is selectable');
  assert(human.options.includes('aven'),'named setting language is selectable');
  assert(!human.options.includes('druidic'),'class-only secret language is not freely selectable');
- assert(!human.options.includes(\"thieves' cant\"));
+ assert(!human.options.includes("thieves' cant"));
  assert(!human.options.includes('common sign language'),
    '2024 language introductions are not selectable by a 2014 character');
 });
