@@ -36,6 +36,11 @@ function owner(race, rank, key) {
  const options=[desired,...(aliases[norm(desired)]||[])].filter(Boolean);
  return available(race).find(n=>options.some(x=>norm(x)===norm(n)))||'';
 }
+function traitDetails(race, entries, choices) {
+ const names=new Set([...entries,...choices].map(e=>norm(e.trait)));
+ return (race.entries||[]).filter(row=>row&&names.has(norm(row.name)))
+  .map(row=>({name:row.name,entries:row.entries||[]}));
+}
 export function projectSpeciesDefenses(races=[]) {
  const valid=new Map();
  const output=[];
@@ -55,7 +60,8 @@ export function projectSpeciesDefenses(races=[]) {
    }
   }
   if(entries.length||choices.length){
-   const data={id:race.id,name:race.name,source:race.source,entries,choices};
+   const data={id:race.id,name:race.name,source:race.source,entries,choices,
+    trait_details:traitDetails(race,entries,choices)};
    valid.set(norm(race.name)+'|'+norm(race.source),data);
    output.push(data);
   }
@@ -72,7 +78,8 @@ export function projectSpeciesDefenses(races=[]) {
   const best=sameSource.length?sameSource:parents;
   const inherited=[...new Map(best.flatMap(p=>p.entries).filter(e=>owned.has(norm(e.trait))).map(e=>[e.rank+'|'+e.key,e])).values()];
   const inheritedChoices=[...new Map(best.flatMap(p=>p.choices).filter(e=>owned.has(norm(e.trait))).map(e=>[e.rank+'|'+e.trait,e])).values()];
-  if(inherited.length||inheritedChoices.length)output.push({id:race.id,name:race.name,source:race.source,entries:inherited,choices:inheritedChoices});
+  if(inherited.length||inheritedChoices.length)output.push({id:race.id,name:race.name,source:race.source,entries:inherited,choices:inheritedChoices,
+    trait_details:traitDetails(race,inherited,inheritedChoices)});
  }
  return {version:1,source:'vtt/data/creature_references_5etools.json',races:output};
 }
