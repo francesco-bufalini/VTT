@@ -6139,6 +6139,7 @@ async function handleAction(target){
       targetInventory=structuredClone(inventory);
       const selected=targetInventory[index];
       selected.instance_id=selected.instance_id||'pwa_instance_'+crypto.randomUUID();
+      selected.standalone_instance=true;
       if(quantity>1){
         const rest=structuredClone(item),attuned=itemAttunementCount(item);
         selected.quantity=1;
