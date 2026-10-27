@@ -65,6 +65,10 @@ export function calculateSenses(record={},features=[],catalog={},sourceEnabled=(
  for(const row of arr(catalog.species)){
   if(!same(record.species,row.name)||!same(record.species_source,row.source))continue;
   const origin='race|'+norm(row.source)+'|'+norm(row.name);
+  // Custom Lineage (TCE) offers darkvision OR a skill. The raw JSON lists
+  // darkvision as a field, but it must not become an unconditional benefit.
+  if(row.choice_required&&
+   record.origin_sense_choices?.[origin]!==row.choice_required)continue;
   const feature=features.find(f=>same(f.name,row.trait)&&String(f.origin_key||'').startsWith('species|'));
   if(feature&&!activeFeature(feature))continue;
   add({id:'auto|sense|'+origin+'|'+row.type,origin_id:feature?.origin_id||origin,
@@ -73,10 +77,11 @@ export function calculateSenses(record={},features=[],catalog={},sourceEnabled=(
  }
  for(const row of arr(catalog.subraces)){
   if(!same(record.species,row.race_name)||!same(record.subrace,row.name)||
-   !same(record.subrace_source,row.source))continue;
+   !same(record.subrace_source,row.source)||
+   row.race_source&&!same(record.species_source,row.race_source))continue;
   const origin='subrace|'+norm(row.source)+'|'+norm(row.name);
   const feature=features.find(f=>same(f.name,row.trait)&&
-   /^(subrace|species)\|/.test(String(f.origin_key||'')));
+   String(f.origin_key||'').startsWith('subrace|'));
   if(feature&&!activeFeature(feature))continue;
   add({id:'auto|sense|'+origin+'|'+row.type,origin_id:feature?.origin_id||origin,
    parent_origin:feature?origin:'',origin_name:'Sottospecie · '+row.name,
