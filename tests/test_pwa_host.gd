@@ -174,6 +174,7 @@ func run() -> void:
 	assert(module_diag.begins_with("HTTP/1.1 200"))
 	assert(module_diag.contains("\"module_events\"") and module_diag.contains("\"bytes_written\""))
 	assert(module_diag.contains("\"/ui.js\"") and module_diag.contains("\"connections_peak\""))
+	assert(module_diag.contains("\"connections_limit\""), "Diagnostics must report the active connection limit")
 	assert(not module_diag.contains("\"token\"") and not module_diag.contains("\"authorization\""))
 	var condition_script := await http("GET", "/condition_catalog.js")
 	assert(condition_script.begins_with("HTTP/1.1 200") and condition_script.contains("conditionOptions"))
@@ -196,26 +197,27 @@ func run() -> void:
 	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "restrained" and row.name == "Restrained"))
 	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "hidden"))
 	assert(conditions_2024.any(func(row: Dictionary) -> bool: return row.id == "5etools:effects:xphb:bloodied"))
-	# Concurrent module fetches must not be disconnected when more than twelve
-	# resources arrive in the same frame (old PWA_HOST active-client limit).
+	# A full module graph plus another mobile tab can exceed the old 32-client
+	# limit in a single burst. All accepted requests must complete, not become
+	# reverse-proxy HTTP 502 failures.
 	var burst := {"done": 0, "failed": 0}
 	var requests: Array[HTTPRequest] = []
-	for _index in range(20):
+	for _index in range(48):
 		var request_node := HTTPRequest.new()
 		root.add_child(request_node)
 		request_node.request_completed.connect(
 			func(result: int, status_code: int, _headers: PackedStringArray, response_body: PackedByteArray) -> void:
 				burst["done"] = int(burst["done"]) + 1
-				if result != HTTPRequest.RESULT_SUCCESS or status_code != 200 or not response_body.get_string_from_utf8().contains("openCreatureEditor"):
+				if result != HTTPRequest.RESULT_SUCCESS or status_code != 200 or not response_body.get_string_from_utf8().contains("initialCreature"):
 					burst["failed"] = int(burst["failed"]) + 1
 		)
 		requests.append(request_node)
-		assert(request_node.request("http://127.0.0.1:%d/ui.js" % _test_port) == OK)
+		assert(request_node.request("http://127.0.0.1:%d/character_core.js" % _test_port) == OK)
 	var burst_deadline := Time.get_ticks_msec() + 12000
 	while int(burst["done"]) < requests.size() and Time.get_ticks_msec() < burst_deadline:
 		await process_frame
 	assert(int(burst["done"]) == requests.size() and int(burst["failed"]) == 0,
-		"PWA failed a burst of 20 simultaneous /ui.js module requests")
+		"PWA failed a burst of 48 simultaneous JavaScript module requests")
 	for request_node in requests:
 		request_node.queue_free()
 	var stylesheet := await http("GET", "/styles.css")

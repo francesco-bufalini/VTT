@@ -18,10 +18,12 @@ const SHARE_MAX_BYTES := 16 * 1024 * 1024
 const SHARE_MAX_QUEUED_BYTES := 32 * 1024 * 1024
 const SHARE_PEER_TTL_MS := 25000
 const SHARE_TRANSFER_TTL_MS := 15 * 60 * 1000
-# Module imports, multiple phones and an existing Service Worker can issue
-# several independent requests at once. Never drop accepted connections merely
-# because a transient burst has filled the active slots.
-const MAX_CLIENTS := 32
+# A single ES module graph can request over 35 files in parallel; two tabs,
+# HTTPS reverse-proxy requests and a Service Worker can overlap. The former
+# 32-connection cap exhausted the accept queue and Tailscale Serve returned
+# HTTP 502 for module dependencies even though the assets were valid.
+# The cap remains finite to bound per-frame work and outgoing buffers.
+const MAX_CLIENTS := 96
 const TIMEOUT_MS := 15000
 const MODULE_DIAG_PATH := "/__vtt_module_diagnostics"
 const MODULE_DIAG_LIMIT := 160
@@ -537,6 +539,7 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		_answer(client, 200, {
 			"version": 1, "connections_active": _clients.size(),
 			"connections_peak": _module_diag_peak,
+			"connections_limit": MAX_CLIENTS,
 			"module_requests_recorded": _module_diag_total,
 			"module_events": _module_diag_events.duplicate(true)
 		})
@@ -881,7 +884,13 @@ func _drop(index: int, reason: String = "closed") -> void:
 		var head_bytes := int(client.get("module_header_bytes", 0))
 		var body_queued := maxi(0, int(client.get("sent", 0)) - head_bytes)
 		var body_sent := mini(body_expected, body_queued)
-		var complete := reason == "bytes_sent" and body_sent == body_expected
+		# A peer may close immediately after the whole response was queued.
+		# The TCP status can switch to NONE before the following _process tick:
+		# that is not proof of a truncated JavaScript response. Conversely a
+		# partial write must always remain visible as an incomplete transfer.
+		var complete := body_sent == body_expected and reason in ["bytes_sent", "peer_disconnected"]
+		var outcome := "socket_written" if reason == "bytes_sent" else (
+			"socket_written_peer_closed" if complete else reason)
 		var record: Dictionary = {
 			"id": int(client.get("connection_id", 0)),
 			"path": String(client.module_path),
@@ -889,7 +898,7 @@ func _drop(index: int, reason: String = "closed") -> void:
 			"bytes_written": body_sent,
 			"bytes_expected": body_expected,
 			"duration_ms": Time.get_ticks_msec() - int(client.module_started_ms),
-			"outcome": "socket_written" if complete else reason
+			"outcome": outcome
 		}
 		_module_diag_total += 1
 		_module_diag_events.append(record)

@@ -46,6 +46,10 @@ function reloadFailedModuleGraph(error) {
   try {
     if (sessionStorage.getItem(MODULE_RELOAD_KEY) === "1") return false;
     sessionStorage.setItem(MODULE_RELOAD_KEY, "1");
+    // A failed transitive import remains cached for the document. Also
+    // reduce the request burst after the reload on Android and other browsers,
+    // not only iOS: the HTTPS reverse proxy may be connection-limited.
+    sessionStorage.setItem(COMPAT_START_KEY, "1");
     location.reload();
     return true;
   } catch (_) {
@@ -81,7 +85,7 @@ const STARTUP_MODULE_PATHS = [
   "/class_spells.js", "/class_trackers.js", "/quick_homebrew.js", "/character_homebrew.js",
   "/trait_benefits.js", "/trait_benefit_editor.js", "/trait_projection.js", "/spell_metadata.js", "/chat_notifications.js",
   "/tactical_view.js", "/session_map.js", "/demo.js", "/catalog_data.js",
-  "/creature_format.js", "/share_transfer.js", "/main.js"
+  "/creature_format.js", "/main.js"
 ];
 const startupBrowserErrors = [];
 // main.js invokes boot() at top level: never dynamically re-import it.
@@ -137,7 +141,7 @@ function summarizeServerModules(snapshot, label) {
   return [
     label + ": " + data.module_requests_recorded + " richieste JS registrate, " +
       "connessioni attive " + data.connections_active +
-      ", picco " + data.connections_peak + "/32",
+      ", picco " + data.connections_peak + "/" + (data.connections_limit || 32),
     "Trasferimenti nello snapshot: " + events.length +
       ", interrotti " + incomplete.length,
     ...(incomplete.length ? [
