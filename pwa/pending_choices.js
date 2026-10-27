@@ -43,9 +43,11 @@ const unique=values=>[...new Set(values.filter(Boolean))];
 
 // The native picker combines the canonical catalogs with explicit "from"
 // values. Supplement its small vocabularies for unrestricted 5etools choices.
+const languageCatalog=(record,index)=>contentForRules(arr(index?.languages),record?.rules_version||'2014');
 function optionPool(kind,record,index){
+ const published=kind==='language'?languageCatalog(record,index).map(row=>norm(row.key)):[];
  const values=kind==='skill'||kind==='expertise'?SKILLS.map(x=>x[0]):
-   kind==='save'?abilities:kind==='language'?commonLanguages:
+   kind==='save'?[...abilities]:kind==='language'?(published.length?published:[...commonLanguages]):
    kind==='tool'?[...artisanTools,...gamingSets,...instruments,
      'thieves\' tools','disguise kit','forgery kit','herbalism kit',
      'navigator\'s tools','poisoner\'s kit']:
@@ -92,8 +94,17 @@ function allowedByRule(kind,data,key,record,index){
  if(data?.anyArtisansTool!==undefined)return artisanTools.includes(key);
  if(data?.anyGamingSet!==undefined)return gamingSets.includes(key);
  if(data?.anyMusicalInstrument!==undefined)return instruments.includes(key);
- if(data?.anyStandard!==undefined)return kind==='language'&&!secretLanguages.has(key);
- if(data?.anyExotic!==undefined)return kind==='language'&&(exoticLanguages.has(key)||rareLanguages.has(key));
+ if(data?.anyStandard!==undefined){
+  if(kind!=='language'||secretLanguages.has(key))return false;
+  const meta=languageCatalog(record,index).find(row=>norm(row.key)===key);
+  return meta?.group!=='secret';
+ }
+ if(data?.anyExotic!==undefined){
+  if(kind!=='language')return false;
+  const meta=languageCatalog(record,index).find(row=>norm(row.key)===key);
+  return meta?['exotic','rare'].includes(meta.group):
+    exoticLanguages.has(key)||rareLanguages.has(key);
+ }
  return false;
 }
 function mixedOptions(rule,record,index){
