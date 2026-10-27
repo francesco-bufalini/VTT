@@ -8,6 +8,13 @@
       "source": "MPMM",
       "spell": "gust of wind",
       "slot_alternative": true
+    },
+    {
+      "kind": "race",
+      "name": "Aasimar",
+      "source": "MPMM",
+      "spell": "light",
+      "spellcasting_ability": "cha"
     }
   ]
 }
