@@ -275,6 +275,21 @@ def main() -> None:
     }
     for category, entries in sources.items():
         out[category] = convert(category, entries)
+    # Retain reviewed races absent from the upstream proficiency index.
+    # These are real source-qualified species records, not fabricated grants.
+    for (kind, name, book, race_name, race_book), override in LANGUAGE_OVERRIDES.items():
+        rows = out[kind]
+        if any((str(row.get("name", "")).casefold(), str(row.get("source", "")).casefold(),
+                str(row.get("raceName", "")).casefold(), str(row.get("raceSource", "")).casefold())
+               == (name, book, race_name, race_book) for row in rows):
+            continue
+        created = {"name": override["name"], "source": override["source"],
+                   "languageProficiencies": deepcopy(override["languageProficiencies"])}
+        if kind == "subrace":
+            created.update({"raceName": override["raceName"], "raceSource": override["raceSource"]})
+        if override.get("replaces_parent_languages"):
+            created["replaces_parent_languages"] = True
+        rows.append(created)
     out.update(feature_output)
     out["meta"]["featureSnapshot"] = release
     for (name, source), fields in FEAT_PROFICIENCY_OVERRIDES.items():
