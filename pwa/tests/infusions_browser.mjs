@@ -15,7 +15,10 @@ try{
  const learner=page.locator('#infusion-picker-dialog');
  await learner.waitFor({state:'visible'});
  await learner.locator('[data-infusion-search]').fill('Enhanced Arcane Focus');
- await learner.locator('[data-infusion-id="infusion|tce|enhanced arcane focus"]').click();
+ await learner.locator('[data-act="infusion-picker-details"][data-infusion-id="infusion|tce|enhanced arcane focus"]').click();
+ assert.match(await page.locator('#infusion-preview-dialog .magic-spell-description').innerText(),/incantesimi/i);
+ await page.locator('#infusion-preview-dialog [data-act="infusion-preview-close"]').first().click();
+ await learner.locator('[data-act="infusion-picker-select"][data-infusion-id="infusion|tce|enhanced arcane focus"]').click();
  await learner.locator('[data-act="infusion-picker-close"]').click();
  const infusion=page.locator('#sheet-play-view [data-act="infusion-open"]');
  assert.equal(await infusion.count(),1,'Known infusion appears once with spell-like UI');
@@ -23,7 +26,7 @@ try{
  assert.equal(await infusion.locator('.play-infusion-state').getAttribute('title'),'Non preparata');
  await page.locator('#sheet-play-view [data-act="infusion-picker-open"][data-mode="prepare"]').click();
  const preparer=page.locator('#infusion-picker-dialog');
- await preparer.locator('[data-infusion-id="infusion|tce|enhanced arcane focus"]').click();
+ await preparer.locator('[data-act="infusion-picker-select"][data-infusion-id="infusion|tce|enhanced arcane focus"]').click();
  await preparer.locator('[data-act="infusion-picker-close"]').click();
  assert.equal(await infusion.locator('.play-infusion-state').getAttribute('title'),'Preparata');
  await infusion.click();
