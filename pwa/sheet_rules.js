@@ -1,5 +1,6 @@
 import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
+import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries} from './species_defenses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
@@ -1279,7 +1280,8 @@ function calculateSheetValues(record={},catalogs={}){
     const total=memo.get(target),parts=[...(components[target]?.values()||[])];
     explanations[target]=target+': '+total+(parts.length?' · '+parts.join(' · '):' · Nessun bonus aggiuntivo');
   }
-  return {source:"local",schema:1,abilities,saves,skills,
+  const senses=calculateSenses(record,features,catalogs.senseGrants||{},sourceEnabled);
+  return {source:"local",schema:1,abilities,saves,skills,senses,
     values:Object.fromEntries(memo),explanations,
     roll_components:Object.fromEntries(Object.entries(rollComponents).map(([target,rows])=>[target,[...rows.values()]])),
     proficiencies:[...proficiencies.keys()],
@@ -1354,9 +1356,10 @@ export function loadRuleCatalogs(){
       .catch(()=>[]),
     fetch('/catalog/species_defenses.json').then(r=>{if(!r.ok)throw Error('Difese delle specie non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
-      .catch(error=>{console.warn('VTT: catalogo difese delle specie non disponibile',error);return {races:[],load_error:true};})
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,spellGrantRules,speciesDefenses])=>({
-    abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,speciesDefenses,featureRules:featureRules||{},
+      .catch(error=>{console.warn('VTT: catalogo difese delle specie non disponibile',error);return {races:[],load_error:true};}),
+    fetch('/catalog/sense_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1?data:{}).catch(()=>({}))
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,spellGrantRules,speciesDefenses,senseGrants])=>({
+    abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,speciesDefenses,senseGrants,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
