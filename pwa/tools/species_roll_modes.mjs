@@ -10,6 +10,7 @@ const traits={
  'Dwarven Resilience':[adv('saving_throw','Contro il veleno o la condizione Avvelenato')],
  'Stout Resilience':[adv('saving_throw','Contro il veleno o la condizione Avvelenato')],
  'Constructed Resilience':[adv('saving_throw','Contro la condizione Avvelenato')],
+ 'Mechanical Nature':[adv('saving_throw','Contro Paralizzato o Avvelenato')],
  'Natural Resilience':[adv('saving_throw','Contro la condizione Avvelenato')],
  'Poison Resilience':[adv('saving_throw','Per evitare o terminare la condizione Avvelenato')],
  'Duergar Resilience':[adv('saving_throw','Contro illusioni, Affascinato o Paralizzato')],
