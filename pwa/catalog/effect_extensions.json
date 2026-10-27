@@ -377,6 +377,195 @@
       "trigger": "on_use",
       "frequency": "each",
       "description": "Una volta all'alba: con un'azione, recupera uno slot incantesimo speso di livello massimo 3"
+    },
+    {
+      "id": "spell-magic-weapon-hit-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "spell_cast",
+        "name": "Magic Weapon",
+        "source": "PHB",
+        "aliases": []
+      },
+      "target_kind": "item",
+      "item_selector": {
+        "kinds": [
+          "weapon"
+        ],
+        "nonmagical": true
+      },
+      "operation": "attack_bonus",
+      "trigger": "passive",
+      "frequency": "each",
+      "value": "1",
+      "value_by_slot": {
+        "2": "1",
+        "4": "2",
+        "6": "3"
+      },
+      "description": "Bonus magico ai tiri per colpire",
+      "concentration": true
+    },
+    {
+      "id": "spell-magic-weapon-damage-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "spell_cast",
+        "name": "Magic Weapon",
+        "source": "PHB",
+        "aliases": []
+      },
+      "target_kind": "item",
+      "item_selector": {
+        "kinds": [
+          "weapon"
+        ],
+        "nonmagical": true
+      },
+      "operation": "damage_bonus",
+      "trigger": "passive",
+      "frequency": "each",
+      "value": "1",
+      "value_by_slot": {
+        "2": "1",
+        "4": "2",
+        "6": "3"
+      },
+      "description": "Bonus magico ai danni",
+      "concentration": true
+    },
+    {
+      "id": "spell-elemental-weapon-hit-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "spell_cast",
+        "name": "Elemental Weapon",
+        "source": "PHB",
+        "aliases": []
+      },
+      "target_kind": "item",
+      "item_selector": {
+        "kinds": [
+          "weapon"
+        ],
+        "nonmagical": true
+      },
+      "operation": "attack_bonus",
+      "trigger": "passive",
+      "frequency": "each",
+      "value": "1",
+      "value_by_slot": {
+        "3": "1",
+        "5": "2",
+        "7": "3"
+      },
+      "concentration": true
+    },
+    {
+      "id": "spell-elemental-weapon-damage-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "spell_cast",
+        "name": "Elemental Weapon",
+        "source": "PHB",
+        "aliases": []
+      },
+      "target_kind": "item",
+      "item_selector": {
+        "kinds": [
+          "weapon"
+        ],
+        "nonmagical": true
+      },
+      "operation": "damage_bonus",
+      "trigger": "passive",
+      "frequency": "each",
+      "value": "1",
+      "value_by_slot": {
+        "3": "1",
+        "5": "2",
+        "7": "3"
+      },
+      "concentration": true
+    },
+    {
+      "id": "spell-elemental-weapon-element-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "spell_cast",
+        "name": "Elemental Weapon",
+        "source": "PHB",
+        "aliases": []
+      },
+      "target_kind": "item",
+      "item_selector": {
+        "kinds": [
+          "weapon"
+        ],
+        "nonmagical": true
+      },
+      "operation": "bonus_damage",
+      "trigger": "on_hit",
+      "frequency": "each",
+      "value": "1d4",
+      "damage_type_choices": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "thunder"
+      ],
+      "value_from_cast_choice": "damage_type",
+      "description": "Danni elementali aggiuntivi per ogni colpo",
+      "concentration": true
+    },
+    {
+      "id": "spell-holy-weapon-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "spell_cast",
+        "name": "Holy Weapon",
+        "source": "XGE",
+        "aliases": []
+      },
+      "target_kind": "item",
+      "item_selector": {
+        "kinds": [
+          "weapon"
+        ]
+      },
+      "operation": "bonus_damage",
+      "trigger": "on_hit",
+      "frequency": "each",
+      "value": "2d8",
+      "damage_type": "radiant",
+      "description": "Danni radiosi aggiuntivi per ogni colpo",
+      "concentration": true
+    },
+    {
+      "id": "spell-flame-weapon-homebrew",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "spell_cast",
+        "name": "Arma Infuocata",
+        "source": "",
+        "aliases": [
+          "Flame Weapon"
+        ]
+      },
+      "target_kind": "item",
+      "item_selector": {
+        "kinds": [
+          "weapon"
+        ]
+      },
+      "operation": "bonus_damage",
+      "trigger": "on_hit",
+      "frequency": "each",
+      "value": "1d6",
+      "damage_type": "fire",
+      "description": "Danni da fuoco aggiuntivi per ogni colpo; modificabile nel catalogo homebrew",
+      "concentration": true
     }
   ]
 }
