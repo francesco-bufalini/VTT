@@ -311,7 +311,9 @@ def main() -> None:
                     row["trait_proficiencies"] = rule["fixed"]
                 if rule.get("choice"):
                     row["trait_proficiency_choices"] = rule["choice"]
-                break
+                # Source-qualified subrace traits can exist under two different
+                # parent species (e.g. the Human and Half-Orc Mark of Finding).
+                # Apply shared ownership to every such instance, not only first.
     destination = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_grants_5etools.json"
     destination.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {destination}: " + ", ".join(f"{k}: {len(out[k])}" for k in sources))
