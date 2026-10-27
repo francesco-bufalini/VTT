@@ -188,53 +188,6 @@
         }
       }
     ],
-    "WBtW": [
-      {
-        "parts": [
-          {
-            "choose": {
-              "from": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ],
-              "amount": 2
-            }
-          },
-          {
-            "choose": {
-              "from": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ],
-              "amount": 1
-            }
-          }
-        ],
-        "distinct": true
-      },
-      {
-        "choose": {
-          "from": [
-            "str",
-            "dex",
-            "con",
-            "int",
-            "wis",
-            "cha"
-          ],
-          "count": 3,
-          "amount": 1
-        }
-      }
-    ],
     "SCC": [
       {
         "parts": [
@@ -282,7 +235,54 @@
         }
       }
     ],
-    "DSotDQ": [
+    "WBTW": [
+      {
+        "parts": [
+          {
+            "choose": {
+              "from": [
+                "str",
+                "dex",
+                "con",
+                "int",
+                "wis",
+                "cha"
+              ],
+              "amount": 2
+            }
+          },
+          {
+            "choose": {
+              "from": [
+                "str",
+                "dex",
+                "con",
+                "int",
+                "wis",
+                "cha"
+              ],
+              "amount": 1
+            }
+          }
+        ],
+        "distinct": true
+      },
+      {
+        "choose": {
+          "from": [
+            "str",
+            "dex",
+            "con",
+            "int",
+            "wis",
+            "cha"
+          ],
+          "count": 3,
+          "amount": 1
+        }
+      }
+    ],
+    "DSOTDQ": [
       {
         "parts": [
           {
