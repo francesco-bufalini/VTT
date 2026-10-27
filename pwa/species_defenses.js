@@ -8,7 +8,10 @@ const muted=(record,id)=>Boolean(id&&(record.origin_enabled?.[id]===false||
 export function speciesDefenseEntries(record={},catalog={},features=[],removed=new Set()){
  if(!record.species||!record.species_source)return [];
  const available=rows(catalog?.races);
- const race=available.find(r=>record.species_id&&r.id===record.species_id)||
+ const race=available.find(r=>record.species_id&&r.id===record.species_id&&
+   same(r.source,record.species_source)&&
+   (same(r.name,record.species)||record.subrace&&
+    norm(r.name).startsWith(norm(record.species)+' (')))||
   available.find(r=>same(r.name,record.species)&&same(r.source,record.species_source));
  if(!race||same(race.source,'XPHB'))return [];
  const base='race|'+norm(race.source)+'|'+norm(race.name);
