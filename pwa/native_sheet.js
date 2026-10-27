@@ -7,6 +7,7 @@ import {contentForRules} from './source_edition.js';
 import {featOriginLabel,featTraitOriginKey} from './feat_picker.js';
 import {itemKind,resolveOwnedItem,armorDexterityBonus,armorDexterityLimit} from './item_controls.js';
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
+import {powerRestSelections,powerRestChoicePatch} from './trait_state_rules.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["conditions","Condizioni"]];
@@ -122,7 +123,7 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
   spell_save_dc:dc+(innate?1:0),...(innate?{spell_attack_advantage:true}:{}),
   ...(meta.selection.names?.length?{metamagic:meta.selection,rules_version:c.rules_version||'2014'}:{}),source_level:c.level||1},spell:meta.spell};
 }
-export function recoveryPatch(c,event,trackers){
+export function recoveryPatch(c,event,trackers,calculated={}){
  if(!['short_rest','long_rest','turn'].includes(event))throw Error('Recupero non valido');
  const spent={...(c.resource_tracker_spent||{})};
  const ready={...(c.resource_recovery_ready||{})};
@@ -149,6 +150,7 @@ export function recoveryPatch(c,event,trackers){
  // Pact Magic and class spell slots retain their original explicit rest rules.
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
  if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
+ Object.assign(patch,powerRestChoicePatch(c,event,calculated));
  return patch;
 }
 
@@ -161,7 +163,7 @@ export function completeRest(record,event,calculated={},spend={},rollDie=sides=>
  if(!['short_rest','long_rest'].includes(event))throw Error('Tipo di riposo non valido');
  if(Number(record.current_hp||0)<1)throw Error('Serve almeno 1 PF per iniziare un riposo.');
  const pools=hitDicePools(record,calculated),version=String(record.rules_version||'2014');
- const patch=recoveryPatch(record,event,calculated.trackers||[]);
+ const patch=recoveryPatch(record,event,calculated.trackers||[],calculated);
  const totalHp=Math.max(0,Number(calculated.stats?.max_hp??record.max_hp??0));
  let healed=0;
  const rolls=[];
@@ -243,6 +245,11 @@ export function restRecoveryPreview(record,event,calculated={},spend={}){
   add('Risorse',row.name||row.id,
     (max-before)+' / '+max+' disponibili · '+Math.max(0,before-after)+' utilizzi recuperati'+
     (optional?' · '+optional+' recuperi opzionali pronti':''));
+ }
+ // Reselection rights are independent of resource recovery counts.
+ for(const choice of powerRestSelections(record,calculated)){
+  if(choice.recovery===event||event==='long_rest'&&choice.recovery==='short_rest')
+   add('Scelte modificabili',choice.name,choice.label+' · puoi cambiare le opzioni dopo questo riposo');
  }
  const pact=Math.max(0,Number(calculated.pact_slots?.total)||0);
  if(pact){
