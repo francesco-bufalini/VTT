@@ -2,6 +2,7 @@ import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
+import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {collectEffectExtensions} from './effect_extensions.js';
@@ -787,7 +788,9 @@ function calculateSheetValues(record={},catalogs={}){
   const celestialForm=racialPowers.active_forms.find(form=>
     record.active_class_features?.[form.active_key]?.spell_id===form.spell_id);
   features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
+  features.push(...speciesRollModeFeatures(record,catalogs.speciesRollModes,features));
   features.push(...supplementalSpeciesSpellFeatures(record,catalogs.spellGrantRules,features));
+  const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const damage_defense_entries=[...arr(record.damage_defense_entries),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed)];
   const grantingCastingTrait=member=>{
@@ -1211,7 +1214,7 @@ function calculateSheetValues(record={},catalogs={}){
       catalogs.featureSpellGrants||[],classCasting));
   for(const warning of additional.warnings)warnings.add(warning);
   const trackerMap=new Map();
-  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featMechanics.trackers,...racialPowers.trackers])
+  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featMechanics.trackers,...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2)])
     if(!trackerMap.has(row.id)&&sourceEnabled(row)&&!suppressed.has('tracker:'+row.id))trackerMap.set(row.id,row);
   for(const stateTracker of traitStateTrackers(record,features,catalogs.traitStates||[]))
     trackerMap.set(stateTracker.id,stateTracker);
@@ -1332,6 +1335,7 @@ function calculateSheetValues(record={},catalogs={}){
     racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
     racial_rest_choices:racialPowers.rest_choices,
     racial_roll_bonuses:racialPowers.roll_bonuses,
+    racial_roll_modes:racialRollModes,
     racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{}),
     active_celestial_form:celestialForm||null,
     active_racial_damage_bonus:celestialForm?{
@@ -1406,9 +1410,12 @@ export function loadRuleCatalogs(){
     fetch('/catalog/species_defenses.json').then(r=>{if(!r.ok)throw Error('Difese delle specie non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
       .catch(error=>{console.warn('VTT: catalogo difese delle specie non disponibile',error);return {races:[],load_error:true};}),
+    fetch('/catalog/species_roll_modes.json').then(r=>{if(!r.ok)throw Error('Modificatori ai tiri delle specie non disponibili');return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
+      .catch(error=>{console.warn('VTT: vantaggi razziali condizionali non disponibili',error);return {races:[],load_error:true};}),
     fetch('/catalog/sense_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1?data:{}).catch(()=>({}))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,spellGrantRules,speciesDefenses,senseGrants])=>({
-    abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,speciesDefenses,senseGrants,featureRules:featureRules||{},
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants])=>({
+    abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
