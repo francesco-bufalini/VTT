@@ -1,0 +1,1673 @@
+{
+  "version": 1,
+  "source": "vtt/data/creature_references_5etools.json",
+  "races": [
+    {
+      "id": "5etools:races:aag:astral%20elf",
+      "name": "Astral Elf",
+      "source": "AAG",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:bugbear",
+      "name": "Bugbear",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:bullywug",
+      "name": "Bullywug",
+      "source": "DMG",
+      "rules": [
+        {
+          "trait": "Swamp Camouflage",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Per nasconderti in terreno paludoso"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:deep%20gnome",
+      "name": "Deep Gnome",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Gnomish Magic Resistance",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro incantesimi"
+        },
+        {
+          "trait": "Gnomish Magic Resistance",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro incantesimi"
+        },
+        {
+          "trait": "Gnomish Magic Resistance",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro incantesimi"
+        },
+        {
+          "trait": "Svirfneblin Camouflage",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Attivando uno degli usi di Camuffamento svirfneblin",
+          "uses": "proficiency",
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vrgr:dhampir",
+      "name": "Dhampir",
+      "source": "VRGR",
+      "rules": [
+        {
+          "trait": "Deathless Nature",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro malattie o la condizione Avvelenato"
+        },
+        {
+          "trait": "Deathless Nature",
+          "target": "death_save",
+          "mode": "advantage",
+          "condition_label": "Solo sui tiri salvezza contro la morte"
+        },
+        {
+          "trait": "Vampiric Bite",
+          "target": "attack_roll",
+          "mode": "advantage",
+          "condition_label": "Solo con il morso e con metà o meno dei PF massimi",
+          "attack_name": "bite"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:duergar",
+      "name": "Duergar",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Dwarven Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro il veleno o la condizione Avvelenato"
+        },
+        {
+          "trait": "Psionic Fortitude",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare Affascinato o Stordito"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:dwarf",
+      "name": "Dwarf",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Dwarven Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro il veleno o la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psk:dwarf%20%28kaladesh%29",
+      "name": "Dwarf (Kaladesh)",
+      "source": "PSK",
+      "rules": [
+        {
+          "trait": "Dwarven Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro il veleno o la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:eladrin",
+      "name": "Eladrin",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:elf",
+      "name": "Elf",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29",
+      "name": "Elf (Kaladesh)",
+      "source": "PSK",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29",
+      "name": "Elf (Zendikar)",
+      "source": "PSZ",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:firbolg",
+      "name": "Firbolg",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Speech of Beast and Leaf",
+          "target": "ability_check:cha",
+          "mode": "advantage",
+          "condition_label": "Per influenzare bestie, piante o vegetazione"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vgm:firbolg",
+      "name": "Firbolg",
+      "source": "VGM",
+      "rules": [
+        {
+          "trait": "Speech of Beast and Leaf",
+          "target": "ability_check:cha",
+          "mode": "advantage",
+          "condition_label": "Per influenzare bestie, piante o vegetazione"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:aag:giff",
+      "name": "Giff",
+      "source": "AAG",
+      "rules": [
+        {
+          "trait": "Hippo Build",
+          "target": "ability_check:str",
+          "mode": "advantage",
+          "condition_label": ""
+        },
+        {
+          "trait": "Hippo Build",
+          "target": "save:str",
+          "mode": "advantage",
+          "condition_label": ""
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:githzerai",
+      "name": "Githzerai",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Mental Discipline",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro le condizioni Affascinato o Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:gnome",
+      "name": "Gnome",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:gnome%20%28deep%29",
+      "name": "Gnome (Deep)",
+      "source": "DMG",
+      "rules": [
+        {
+          "trait": "Stone Camouflage",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Per nasconderti in terreno roccioso"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:goblin",
+      "name": "Goblin",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:grimlock",
+      "name": "Grimlock",
+      "source": "DMG",
+      "rules": [
+        {
+          "trait": "Keen Hearing and Smell",
+          "target": "skill:perception",
+          "mode": "advantage",
+          "condition_label": "Quando usi l’udito o l’olfatto"
+        },
+        {
+          "trait": "Stone Camouflage",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Per nasconderti in terreno roccioso"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:half-elf",
+      "name": "Half-Elf",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:halfling",
+      "name": "Halfling",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Brave",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:hobgoblin",
+      "name": "Hobgoblin",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:kalashtar",
+      "name": "Kalashtar",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Dual Mind",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": ""
+        },
+        {
+          "trait": "Mental Discipline",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro le condizioni Affascinato o Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dsotdq:kender",
+      "name": "Kender",
+      "source": "DSotDQ",
+      "rules": [
+        {
+          "trait": "Fearless",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:kenku",
+      "name": "Kenku",
+      "source": "DMG",
+      "rules": [
+        {
+          "trait": "Ambusher",
+          "target": "attack_roll",
+          "mode": "advantage",
+          "condition_label": "Nel primo round, contro una creatura sorpresa"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:kenku",
+      "name": "Kenku",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Expert Duplication",
+          "target": "ability_check",
+          "mode": "advantage",
+          "condition_label": "Per copiare fedelmente scritti od oggetti"
+        },
+        {
+          "trait": "Kenku Recall",
+          "target": "skill",
+          "mode": "advantage",
+          "condition_label": "Su una prova con un’abilità in cui sei competente; spendi un uso",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "requires_proficiency": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vgm:kenku",
+      "name": "Kenku",
+      "source": "VGM",
+      "rules": [
+        {
+          "trait": "Expert Forgery",
+          "target": "ability_check",
+          "mode": "advantage",
+          "condition_label": "Per duplicare una scrittura o un oggetto esistente"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:kobold",
+      "name": "Kobold",
+      "source": "DMG",
+      "rules": [
+        {
+          "trait": "Pack Tactics",
+          "target": "attack_roll",
+          "mode": "advantage",
+          "condition_label": "Se un alleato non incapacitato è entro 5 ft dal bersaglio"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "attack_roll",
+          "mode": "disadvantage",
+          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "skill:perception",
+          "mode": "disadvantage",
+          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:kobold",
+      "name": "Kobold",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Draconic Cry",
+          "target": "attack_roll",
+          "mode": "advantage",
+          "condition_label": "Contro nemico che ha sentito il grido; effetto attivo fino al tuo prossimo turno"
+        },
+        {
+          "trait": "Kobold Legacy",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Solo se hai scelto Defiance: contro Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vgm:kobold",
+      "name": "Kobold",
+      "source": "VGM",
+      "rules": [
+        {
+          "trait": "Pack Tactics",
+          "target": "attack_roll",
+          "mode": "advantage",
+          "condition_label": "Se un alleato non incapacitato è entro 5 ft dal bersaglio"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "attack_roll",
+          "mode": "disadvantage",
+          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "skill:perception",
+          "mode": "disadvantage",
+          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psz:kor",
+      "name": "Kor",
+      "source": "PSZ",
+      "rules": [
+        {
+          "trait": "Brave",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:kuo-toa",
+      "name": "Kuo-Toa",
+      "source": "DMG",
+      "rules": [
+        {
+          "trait": "Slippery",
+          "target": "ability_check",
+          "mode": "advantage",
+          "condition_label": "Per sfuggire a una presa"
+        },
+        {
+          "trait": "Slippery",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per sfuggire a una presa"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "attack_roll",
+          "mode": "disadvantage",
+          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "skill:perception",
+          "mode": "disadvantage",
+          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:lr:locathah",
+      "name": "Locathah",
+      "source": "LR",
+      "rules": [
+        {
+          "trait": "Leviathan Will",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro Affascinato, Spaventato, Paralizzato, Avvelenato, Stordito o sonno"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ggr:loxodon",
+      "name": "Loxodon",
+      "source": "GGR",
+      "rules": [
+        {
+          "trait": "Loxodon Serenity",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro Affascinato o Spaventato"
+        },
+        {
+          "trait": "Keen Smell",
+          "target": "skill:perception",
+          "mode": "advantage",
+          "condition_label": "Quando la prova coinvolge l’olfatto"
+        },
+        {
+          "trait": "Keen Smell",
+          "target": "skill:survival",
+          "mode": "advantage",
+          "condition_label": "Quando la prova coinvolge l’olfatto"
+        },
+        {
+          "trait": "Keen Smell",
+          "target": "skill:investigation",
+          "mode": "advantage",
+          "condition_label": "Quando la prova coinvolge l’olfatto"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:minotaur",
+      "name": "Minotaur",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Labyrinthine Recall",
+          "target": "skill:survival",
+          "mode": "advantage",
+          "condition_label": "Per orientarti o seguire tracce"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:aag:plasmoid",
+      "name": "Plasmoid",
+      "source": "AAG",
+      "rules": [
+        {
+          "trait": "Amorphous",
+          "target": "ability_check",
+          "mode": "advantage",
+          "condition_label": "Per iniziare o sfuggire a una presa"
+        },
+        {
+          "trait": "Natural Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vrgr:reborn",
+      "name": "Reborn",
+      "source": "VRGR",
+      "rules": [
+        {
+          "trait": "Deathless Nature",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro malattie o la condizione Avvelenato"
+        },
+        {
+          "trait": "Deathless Nature",
+          "target": "death_save",
+          "mode": "advantage",
+          "condition_label": "Solo sui tiri salvezza contro la morte"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mot:satyr",
+      "name": "Satyr",
+      "source": "MOT",
+      "rules": [
+        {
+          "trait": "Magic Resistance",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro incantesimi o altri effetti magici"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:satyr",
+      "name": "Satyr",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Magic Resistance",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro incantesimi"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:sea%20elf",
+      "name": "Sea Elf",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:shadar-kai",
+      "name": "Shadar-Kai",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:shifter",
+      "name": "Shifter",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Shifting",
+          "target": "ability_check:wis",
+          "mode": "advantage",
+          "condition_label": "Solo con variante Wildhunt scelta, durante la mutazione"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:aag:thri-kreen",
+      "name": "Thri-kreen",
+      "source": "AAG",
+      "rules": [
+        {
+          "trait": "Chameleon Carapace",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Dopo aver mimetizzato il carapace, per nasconderti nell’ambiente"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:tortle",
+      "name": "Tortle",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Shell Defense",
+          "target": "save:str",
+          "mode": "advantage",
+          "condition_label": "Solo mentre sei ritirato nel guscio"
+        },
+        {
+          "trait": "Shell Defense",
+          "target": "save:con",
+          "mode": "advantage",
+          "condition_label": "Solo mentre sei ritirato nel guscio"
+        },
+        {
+          "trait": "Shell Defense",
+          "target": "save:dex",
+          "mode": "disadvantage",
+          "condition_label": "Solo mentre sei ritirato nel guscio"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ttp:tortle",
+      "name": "Tortle",
+      "source": "TTP",
+      "rules": [
+        {
+          "trait": "Shell Defense",
+          "target": "save:str",
+          "mode": "advantage",
+          "condition_label": "Solo mentre sei ritirato nel guscio"
+        },
+        {
+          "trait": "Shell Defense",
+          "target": "save:con",
+          "mode": "advantage",
+          "condition_label": "Solo mentre sei ritirato nel guscio"
+        },
+        {
+          "trait": "Shell Defense",
+          "target": "save:dex",
+          "mode": "disadvantage",
+          "condition_label": "Solo mentre sei ritirato nel guscio"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:troglodyte",
+      "name": "Troglodyte",
+      "source": "DMG",
+      "rules": [
+        {
+          "trait": "Chameleon Skin",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Per nasconderti"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "attack_roll",
+          "mode": "disadvantage",
+          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "skill:perception",
+          "mode": "disadvantage",
+          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ggr:vedalken",
+      "name": "Vedalken",
+      "source": "GGR",
+      "rules": [
+        {
+          "trait": "Vedalken Dispassion",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": ""
+        },
+        {
+          "trait": "Vedalken Dispassion",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": ""
+        },
+        {
+          "trait": "Vedalken Dispassion",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": ""
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psk:vedalken",
+      "name": "Vedalken",
+      "source": "PSK",
+      "rules": [
+        {
+          "trait": "Vedalken Cunning",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Vedalken Cunning",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Vedalken Cunning",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ai:verdan",
+      "name": "Verdan",
+      "source": "AI",
+      "rules": [
+        {
+          "trait": "Telepathic Insight",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": ""
+        },
+        {
+          "trait": "Telepathic Insight",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": ""
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:warforged",
+      "name": "Warforged",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Constructed Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:yuan-ti",
+      "name": "Yuan-Ti",
+      "source": "MPMM",
+      "rules": [
+        {
+          "trait": "Magic Resistance",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro incantesimi"
+        },
+        {
+          "trait": "Poison Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vgm:yuan-ti%20pureblood",
+      "name": "Yuan-ti Pureblood",
+      "source": "VGM",
+      "rules": [
+        {
+          "trait": "Magic Resistance",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro incantesimi o altri effetti magici"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:egw:dragonborn%20%28draconblood%29",
+      "name": "Dragonborn (Draconblood)",
+      "source": "EGW",
+      "rules": [
+        {
+          "trait": "Forceful Presence",
+          "target": "skill:intimidation",
+          "mode": "advantage",
+          "condition_label": "Attivando Presenza imponente",
+          "uses": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "trait": "Forceful Presence",
+          "target": "skill:persuasion",
+          "mode": "advantage",
+          "condition_label": "Attivando Presenza imponente",
+          "uses": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mtf:dwarf%20%28duergar%29",
+      "name": "Dwarf (Duergar)",
+      "source": "MTF",
+      "rules": [
+        {
+          "trait": "Dwarven Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro il veleno o la condizione Avvelenato"
+        },
+        {
+          "trait": "Duergar Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro illusioni, Affascinato o Paralizzato"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "attack_roll",
+          "mode": "disadvantage",
+          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "skill:perception",
+          "mode": "disadvantage",
+          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:dwarf%20%28hill%29",
+      "name": "Dwarf (Hill)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Dwarven Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro il veleno o la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29",
+      "name": "Dwarf (Mark of Warding)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Dwarven Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro il veleno o la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:dwarf%20%28mountain%29",
+      "name": "Dwarf (Mountain)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Dwarven Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro il veleno o la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28drow%29",
+      "name": "Elf (Drow)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "attack_roll",
+          "mode": "disadvantage",
+          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "skill:perception",
+          "mode": "disadvantage",
+          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:elf%20%28eladrin%29",
+      "name": "Elf (Eladrin)",
+      "source": "DMG",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28eladrin%29",
+      "name": "Elf (Eladrin)",
+      "source": "MTF",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28high%29",
+      "name": "Elf (High)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:elf%20%28mark%20of%20shadow%29",
+      "name": "Elf (Mark of Shadow)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:egw:elf%20%28pallid%29",
+      "name": "Elf (Pallid)",
+      "source": "EGW",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        },
+        {
+          "trait": "Incisive Sense",
+          "target": "skill:investigation",
+          "mode": "advantage",
+          "condition_label": ""
+        },
+        {
+          "trait": "Incisive Sense",
+          "target": "skill:insight",
+          "mode": "advantage",
+          "condition_label": ""
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28sea%29",
+      "name": "Elf (Sea)",
+      "source": "MTF",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28shadar-kai%29",
+      "name": "Elf (Shadar-kai)",
+      "source": "MTF",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28wood%29",
+      "name": "Elf (Wood)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29%20%28bishatar%20and%20tirahar%29",
+      "name": "Elf (Kaladesh) (Bishatar and Tirahar)",
+      "source": "PSK",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29%20%28vahadar%29",
+      "name": "Elf (Kaladesh) (Vahadar)",
+      "source": "PSK",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28joraga%20nation%29",
+      "name": "Elf (Zendikar) (Joraga Nation)",
+      "source": "PSZ",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29",
+      "name": "Elf (Zendikar) (Mul Daya Nation)",
+      "source": "PSZ",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "attack_roll",
+          "mode": "disadvantage",
+          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+        },
+        {
+          "trait": "Sunlight Sensitivity",
+          "target": "skill:perception",
+          "mode": "disadvantage",
+          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28tajuru%20nation%29",
+      "name": "Elf (Zendikar) (Tajuru Nation)",
+      "source": "PSZ",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mtf:gith%20%28githzerai%29",
+      "name": "Gith (Githzerai)",
+      "source": "MTF",
+      "rules": [
+        {
+          "trait": "Mental Discipline",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro le condizioni Affascinato o Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mtf:gnome%20%28deep%29",
+      "name": "Gnome (Deep)",
+      "source": "MTF",
+      "rules": [
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Stone Camouflage",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Per nasconderti in terreno roccioso"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29",
+      "name": "Gnome (Deep/Svirfneblin)",
+      "source": "SCAG",
+      "rules": [
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Stone Camouflage",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Per nasconderti in terreno roccioso"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28forest%29",
+      "name": "Gnome (Forest)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29",
+      "name": "Gnome (Mark of Scribing)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28rock%29",
+      "name": "Gnome (Rock)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:int",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:wis",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        },
+        {
+          "trait": "Gnome Cunning",
+          "target": "save:cha",
+          "mode": "advantage",
+          "condition_label": "Contro magia o effetti magici"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29",
+      "name": "Goblin (Zendikar; Lavastep Tribe)",
+      "source": "PSZ",
+      "rules": [
+        {
+          "trait": "Lavastep Grit",
+          "target": "skill:stealth",
+          "mode": "advantage",
+          "condition_label": "Per nasconderti in terreno roccioso o sotterraneo"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:half-elf%20%28%29",
+      "name": "Half-Elf ()",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20aquatic%20elf%20descent%29",
+      "name": "Half-Elf (Variant; Aquatic Elf Descent)",
+      "source": "SCAG",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20drow%20descent%29",
+      "name": "Half-Elf (Variant; Drow Descent)",
+      "source": "SCAG",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20detection%29",
+      "name": "Half-Elf (Variant; Mark of Detection)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29",
+      "name": "Half-Elf (Variant; Mark of Storm)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20moon%20elf%20or%20sun%20elf%20descent%29",
+      "name": "Half-Elf (Variant; Moon Elf or Sun Elf Descent)",
+      "source": "SCAG",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20wood%20elf%20descent%29",
+      "name": "Half-Elf (Variant; Wood Elf Descent)",
+      "source": "SCAG",
+      "rules": [
+        {
+          "trait": "Fey Ancestry",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o terminare la condizione Affascinato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:scag:halfling%20%28ghostwise%29",
+      "name": "Halfling (Ghostwise)",
+      "source": "SCAG",
+      "rules": [
+        {
+          "trait": "Brave",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:halfling%20%28lightfoot%29",
+      "name": "Halfling (Lightfoot)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Brave",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:egw:halfling%20%28lotusden%29",
+      "name": "Halfling (Lotusden)",
+      "source": "EGW",
+      "rules": [
+        {
+          "trait": "Brave",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:halfling%20%28mark%20of%20healing%29",
+      "name": "Halfling (Mark of Healing)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Brave",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:halfling%20%28mark%20of%20hospitality%29",
+      "name": "Halfling (Mark of Hospitality)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Brave",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Spaventato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:phb:halfling%20%28stout%29",
+      "name": "Halfling (Stout)",
+      "source": "PHB",
+      "rules": [
+        {
+          "trait": "Brave",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Spaventato"
+        },
+        {
+          "trait": "Stout Resilience",
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro il veleno o la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28beasthide%29",
+      "name": "Shifter (Beasthide)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Shifting Feature",
+          "target": "ability_check:wis",
+          "mode": "advantage",
+          "condition_label": "Solo nella forma Wildhunt mentre sei mutato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28longtooth%29",
+      "name": "Shifter (Longtooth)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Shifting Feature",
+          "target": "ability_check:wis",
+          "mode": "advantage",
+          "condition_label": "Solo nella forma Wildhunt mentre sei mutato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28swiftstride%29",
+      "name": "Shifter (Swiftstride)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Shifting Feature",
+          "target": "ability_check:wis",
+          "mode": "advantage",
+          "condition_label": "Solo nella forma Wildhunt mentre sei mutato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28wildhunt%29",
+      "name": "Shifter (Wildhunt)",
+      "source": "ERLW",
+      "rules": [
+        {
+          "trait": "Shifting Feature",
+          "target": "ability_check:wis",
+          "mode": "advantage",
+          "condition_label": "Solo nella forma Wildhunt mentre sei mutato"
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psx:vampire%20%28ixalan%29",
+      "name": "Vampire (Ixalan)",
+      "source": "PSX",
+      "rules": [
+        {
+          "trait": "Feast of Blood",
+          "target": "ability_check:str",
+          "mode": "advantage",
+          "condition_label": "Per 1 minuto dopo aver usato Bloodthirst"
+        },
+        {
+          "trait": "Feast of Blood",
+          "target": "ability_check:dex",
+          "mode": "advantage",
+          "condition_label": "Per 1 minuto dopo aver usato Bloodthirst"
+        },
+        {
+          "trait": "Feast of Blood",
+          "target": "save:str",
+          "mode": "advantage",
+          "condition_label": "Per 1 minuto dopo aver usato Bloodthirst"
+        },
+        {
+          "trait": "Feast of Blood",
+          "target": "save:dex",
+          "mode": "advantage",
+          "condition_label": "Per 1 minuto dopo aver usato Bloodthirst"
+        }
+      ]
+    }
+  ]
+}
