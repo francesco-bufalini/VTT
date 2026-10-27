@@ -230,6 +230,9 @@ function proficiencyOwnerActive(record,owner){
 // A saved conditional choice stays in the record, but grants nothing while
 // its rule is unavailable. Manual benefits use their separate trait-editor IDs.
 function featureStoredGrantAllowed(source,row){
+ // Earlier catalogs had an upstream placeholder mistakenly materialized as a
+ // language. Keep saved records intact, but never project this fake grant.
+ if(row?.kind==='language'&&norm(row.key)==='other')return false;
  // Withdraw legacy saved choices when a subrace replaces racial Languages.
  if(source?.source?.parent_languages_replaced&&row.kind==='language')return false;
  if(source?.mode!=='feature')return true;
