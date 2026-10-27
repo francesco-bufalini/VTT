@@ -6,6 +6,7 @@ import {selectedSpeciesRollModeRules,speciesRollModeEntries,speciesRollModeFeatu
  speciesRollModeMatches,speciesRollModeTrackers,applicableSpeciesRollModes} from '../species_roll_modes.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureRollSources,resolveClassRollMode} from '../feature_mechanics.js';
+import {rollSheetDice} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
@@ -169,4 +170,19 @@ test('calculated PWA sheets expose racial modes and real uses without custom rol
  assert.ok(second.trackers.some(tracker=>tracker.id===roll.tracker_id&&
   tracker.max===computedProficiency&&tracker.recharge==='long_rest'),
   'Kenku Recall recovers PB uses, using the PWA computed proficiency bonus');
+});
+
+test('confirming a situational racial disadvantage rolls two d20, not a numeric bonus',()=>{
+ const c=character('Elf (Drow)','PHB'),projected=project(c).entries;
+ const chosen=applicableSpeciesRollModes(c,{racial_roll_modes:projected},'attack_hit:blade')
+  .map(row=>({mode:row.roll_mode,origin_id:row.origin_id,origin_name:row.origin_name}));
+ assert.equal(chosen.length,1);
+ const resolution=resolveClassRollMode(chosen);
+ assert.equal(resolution.mode,'disadvantage');
+ let i=0;const dice=[18,5];
+ const rolled=rollSheetDice(3,[],sides=>sides===20?dice[i++]:1,resolution.mode);
+ assert.deepEqual(rolled.rolls,[18,5]);
+ assert.equal(rolled.total,8);
+ assert.equal(rolled.count,2);
+ assert.equal(resolveClassRollMode([{mode:'advantage'},...chosen]).mode,'normal');
 });
