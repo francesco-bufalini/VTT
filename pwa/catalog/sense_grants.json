@@ -247,21 +247,21 @@
     {
       "name": "Eyes of the Dark",
       "class_name": "Sorcerer",
-      "class_source": "XGE",
+      "class_source": "PHB",
       "type": "darkvision",
       "range_feet": 120
     },
     {
       "name": "Eyes of Night",
       "class_name": "Cleric",
-      "class_source": "TCE",
+      "class_source": "PHB",
       "type": "darkvision",
       "range_feet": 300
     },
     {
       "name": "Umbral Sight",
       "class_name": "Ranger",
-      "class_source": "XGE",
+      "class_source": "PHB",
       "type": "darkvision",
       "range_feet": 30,
       "mode": "increase_if_existing",
