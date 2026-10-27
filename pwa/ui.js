@@ -2167,6 +2167,52 @@ function infusionPanel(c,calculated){
    (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
 }
 
+
+function selectableInfusions(mode,creature,calculated){
+ const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
+ const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
+ if(mode==="prepare")return known;
+ return (calculated.infusion_catalog||[]).filter(row=>!row.legacy_replicate&&
+   caps.level>=Math.max(2,Number(row.min_level)||2)&&
+   !known.some(entry=>entry.id===row.id))
+   .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
+    String(a.name).localeCompare(String(b.name),"it"));
+}
+async function openInfusionPicker(mode){
+ if(!["learn","prepare"].includes(mode))throw Error("Selezione non valida.");
+ const creature=state.editor?.read();if(!creature)throw Error("Scheda non disponibile.");
+ const calculated=await computeLocalData(creature),options=selectableInfusions(mode,creature,calculated);
+ const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
+ const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
+ const count=mode==="learn"?known.length+" / "+caps.known:
+  known.filter(row=>isInfusionPrepared(creature,row,calculated.infusion_catalog||[])).length+" / "+caps.active;
+ app.querySelector("#infusion-picker-dialog")?.remove();
+ const dialog=document.createElement("dialog");dialog.id="infusion-picker-dialog";
+ dialog.dataset.mode=mode;dialog.className="sheet-roll-dialog magic-tools-dialog infusion-picker-dialog";
+ dialog.innerHTML='<header class="vtt-popup-heading"><h2>'+
+   (mode==="learn"?"Impara infusioni":"Prepara infusioni")+'</h2>'+
+   dialogCloseButton("infusion-picker-close","Chiudi","")+'</header>'+
+   '<p class="magic-selection-warning">'+(mode==="learn"?"Conosciute ":"Preparate ")+esc(count)+'</p>'+
+   '<label class="vtt-list-search magic-editor-search">Cerca infusione'+
+   '<input type="search" data-infusion-search autocomplete="off" placeholder="Nome o fonte"></label>'+
+   '<div class="catalog-results vtt-selection-list magic-editor-results infusion-picker-results" role="list"></div>'+
+   '<div class="actions"><button type="button" class="btn" data-act="infusion-picker-close">Chiudi</button></div>';
+ const input=dialog.querySelector("[data-infusion-search]");
+ const results=dialog.querySelector(".infusion-picker-results");
+ const paint=()=>{
+  const shown=options.filter(row=>matchesSearch(input.value,row.name,row.source,row.replicates_item_name));
+  results.innerHTML=shown.length?shown.map(row=>{
+   const prepared=mode==="prepare"&&isInfusionPrepared(creature,row,calculated.infusion_catalog||[]);
+   return '<button type="button" class="inventory-search-result vtt-selectable" data-act="infusion-picker-select" data-infusion-id="'+esc(row.id)+'" aria-pressed="'+prepared+'">'+
+    '<span class="inventory-search-result-count'+(prepared?'':' is-add')+'" aria-hidden="true">'+(prepared?'✓':'+')+'</span>'+
+    '<span class="inventory-search-result-copy"><strong>'+esc(row.name)+'</strong><small>Livello '+Number(row.min_level||2)+' · '+esc(row.source||"TCE")+'</small></span>'+
+    '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
+  }).join(""):'<p class="inventory-search-notice">Nessuna infusione disponibile.</p>';
+ };
+ input.addEventListener("input",paint);paint();
+ app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
+}
+
 async function openInfusionActionDialog(index){
  const creature=state.editor?.read();
  if(!creature)throw Error('Apri prima la scheda di una creatura.');
@@ -6736,6 +6782,26 @@ async function handleAction(target){
       preview.querySelector('[data-rest-error]').textContent=errorMessage(error);
     }
     return;
+  }
+
+  if(act==='infusion-picker-open'){
+    await openInfusionPicker(target.dataset.mode);return;
+  }
+  if(act==='infusion-picker-close'){
+    closeDialog(app.querySelector("#infusion-picker-dialog"),{remove:true});return;
+  }
+  if(act==='infusion-picker-select'){
+    const dialog=app.querySelector("#infusion-picker-dialog"),record=state.editor?.read();
+    if(!dialog?.open||!record)throw Error("Riapri la selezione delle infusioni.");
+    const d=await computeLocalData(record),mode=dialog.dataset.mode;
+    const option=selectableInfusions(mode,record,d).find(row=>row.id===target.dataset.infusionId);
+    if(!option)throw Error("Infusione non disponibile.");
+    const changes=mode==="learn"?
+      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[]):
+      prepareInfusionPatch(record,option,d.infusion_catalog,d.features||[],
+        !isInfusionPrepared(record,option,d.infusion_catalog));
+    await patch(changes);closeDialog(dialog,{remove:true});await render();
+    await openInfusionPicker(mode);return;
   }
   if(act==='infusion-open'){
     await openInfusionActionDialog(Number(target.dataset.index));return;
