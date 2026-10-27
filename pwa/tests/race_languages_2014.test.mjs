@@ -8,6 +8,7 @@ import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const catalog=read('../catalog/proficiency_grants.json');
 const native=read('../../vtt/data/proficiency_grants_5etools.json');
+const publishedLanguages=read('../../vtt/data/languages_5etools.json');
 const catalogs={proficiencyGrants:catalog};
 const char=(name,source,subrace='',subraceSource='')=>({
  kind:'character',rules_version:'2014',species:name,species_source:source,
@@ -45,6 +46,19 @@ test('2014 racial language catalog stays identical to native and reviewed genera
   assert(entry,name+' / '+book+' indexed');
   assert(entry.languageProficiencies.some(part=>part[language]===true),name+' missing '+language);
  }
+});
+
+test('complete typed 5etools language list is shared without adding another PWA request',()=>{
+ assert.deepEqual(catalog.languages,native.languages);
+ assert.deepEqual(catalog.languages,publishedLanguages.languages);
+ assert(catalog.languages.length>=100);
+ const [human]=picks(char('Human','PHB'));
+ assert(human.options.includes('quori'),'exotic 2014 language is selectable');
+ assert(human.options.includes('aven'),'named setting language is selectable');
+ assert(!human.options.includes('druidic'),'class-only secret language is not freely selectable');
+ assert(!human.options.includes(\"thieves' cant\"));
+ assert(!human.options.includes('common sign language'),
+   '2024 language introductions are not selectable by a 2014 character');
 });
 
 test('all indexed racial fixed languages project automatically and retain their source identity',()=>{
