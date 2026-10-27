@@ -97,7 +97,15 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
  const grant=selection.grant_id?calculated.origin_spells.find(g=>g.id===selection.grant_id&&g.spell_id===selection.id):null;
  if(selection.grant_id&&!grant)throw Error('Concessione non più disponibile');
  if(!grant&&![...list(c.prepared_spells),...list(c.spells)].some(s=>(typeof s==='string'?s:s.id)===selection.id))throw Error('Incantesimo non disponibile nella scheda');
- const mode=grant?grant.payment_mode:level===0?'free':payment==='pact'||payment==='auto'&&selection.pact?'pact':'slot';
+ const grantedMode=grant?.payment_mode||'free';
+ // A source may grant a limited-use casting AND permit ordinary/Pact slots.
+ // Explicit slot payments must never silently consume the daily tracker.
+ if(grant&&payment!=='auto'&&!grant.slot_alternative&&
+   !(grantedMode==='slot'&&['slot','pact'].includes(payment)))
+   throw Error('Questa concessione non permette il lancio con slot.');
+ const mode=grant?(grant.slot_alternative&&payment!=='auto'?payment:
+   grantedMode==='slot'&&payment==='pact'?'pact':grantedMode):
+   level===0?'free':payment==='pact'||payment==='auto'&&selection.pact?'pact':'slot';
  let patch={},slotLevel=0;
  if(mode==='tracker'){
   const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1),spent=Number(c.resource_tracker_spent?.[grant.tracker_id]||0);
