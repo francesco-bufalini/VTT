@@ -240,7 +240,7 @@
       "languageProficiencies": [
         {
           "common": true,
-          "anyStandard": 1
+          "aven": true
         }
       ]
     },
@@ -251,7 +251,7 @@
       "languageProficiencies": [
         {
           "common": true,
-          "anyStandard": 1
+          "aven": true
         }
       ]
     },
