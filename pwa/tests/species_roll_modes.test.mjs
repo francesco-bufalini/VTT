@@ -54,6 +54,17 @@ test('Drow daylight disadvantages are manual, apply to all attacks and sight-bas
  assert.equal(resolveClassRollMode([{mode:'advantage'}, {mode:light.roll_mode}]).mode,'normal');
 });
 
+test('Kuo-Toa and Troglodyte sunlight penalties require self exposure',()=>{
+ for(const species of ['Kuo-Toa','Troglodyte']){
+  const clauses=project(character(species,'DMG')).entries.filter(row=>
+   row.granting_trait==='Sunlight Sensitivity');
+  assert.equal(clauses.length,2);
+  assert.ok(clauses.every(row=>row.condition_label.includes('sei alla luce solare')||
+   row.condition_label.includes('alla luce solare diretta')));
+  assert.ok(!clauses.some(row=>row.condition_label.includes('bersaglio')));
+ }
+});
+
 test('Elf plus selected Drow, and flattened Elf (Drow), both retain race and subrace modes',()=>{
  const flat=character('Elf (Drow)','PHB');
  const nested=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'});
