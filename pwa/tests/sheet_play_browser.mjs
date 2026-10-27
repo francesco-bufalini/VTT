@@ -197,7 +197,7 @@ try{
  const hpDialog=page.locator('#hp-adjust-dialog');
  await hpDialog.waitFor({state:'visible'});
  assert.equal(await hpDialog.locator('#hp-adjust-amount').inputValue(),'','Quick HP amount starts empty');
- assert.equal(await hpDialog.locator('#hp-adjust-current').inputValue(),'47');
+ assert.equal(await hpDialog.locator('#hp-adjust-current').inputValue(),String((await record()).current_hp));
  assert.equal(await hpDialog.locator('#hp-adjust-temporary').inputValue(),'0');
  assert(await hpDialog.locator('#hp-adjust-current').evaluate(el=>el.getBoundingClientRect().width<170),
    'HP numeric fields remain compact');
@@ -503,17 +503,31 @@ try{
  await sheet('info');await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="others"]').getAttribute('open'),'');
  await hpCard.click({position:{x:22,y:80}});
- await page.locator('#hp-adjust-current').fill('46');
+ await page.locator('#hp-adjust-current').fill('39');
  await page.locator('#hp-adjust-temporary').fill('5');
  await page.locator('#hp-adjust-confirm').click();
- assert.equal((await record()).current_hp,46,'Direct current HP edits are saved');
+ assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
  await hpCard.click({position:{x:22,y:80}});
  assert.equal(await page.locator('#hp-adjust-amount').inputValue(),'','Damage amount starts empty');
- await page.locator('#hp-adjust-amount').fill('14');
+ await page.locator('#hp-adjust-amount').fill('7');
  await page.locator('#hp-adjust-dialog [data-hp-mode="damage"]').click();
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view [data-read-field="current_hp"]')?.textContent==='37');
  assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,0,37]);
+ // Healing uses the same editor and caps at the computed maximum.
+ await hpCard.click({position:{x:22,y:80}});
+ await page.locator('#hp-adjust-amount').fill('3');
+ await page.locator('#hp-adjust-dialog [data-hp-mode="heal"]').click();
+ const healedHp=(await record()).current_hp;
+ const maximumHp=Number((await page.locator('#sheet-play-view [data-calculated="hp"]').first().textContent()).trim());
+ assert.equal(healedHp,Math.min(maximumHp,40),'Healing cannot exceed maximum HP');
+ if(healedHp>37){
+  await hpCard.click({position:{x:22,y:80}});
+  await page.locator('#hp-adjust-amount').fill(String(healedHp-37));
+  await page.locator('#hp-adjust-dialog [data-hp-mode="damage"]').click();
+ }
+ assert.equal((await record()).current_hp,37,'Subsequent damage restores expected HP');
+
  const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
  assert.equal(await resourcesPanel.count(),1);
  assert.equal(await resourcesPanel.getAttribute('open'),null,'Risorse starts collapsed');
