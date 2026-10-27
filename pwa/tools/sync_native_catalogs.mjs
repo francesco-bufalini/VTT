@@ -231,7 +231,7 @@ const existingSpellRules=await read('../catalog/spell_grant_rules.json');
 const speciesSpellBindings=projectSpeciesSpellBindings(references.races,additional.entries);
 await writeFile(new URL('../catalog/spell_grant_rules.json',import.meta.url),
  JSON.stringify({...existingSpellRules,rules:[
-  ...existingSpellRules.rules.filter(rule=>rule.kind!=='subrace'),
+  ...existingSpellRules.rules.filter(rule=>rule.kind!=='subrace'&&!rule.generated_2014_species_spell),
   ...speciesSpellBindings.rules
  ]},null,2)+'\n');
 
