@@ -6247,10 +6247,10 @@ async function handleAction(target){
       const index=indices.find(index=>active?
         inventory[index].equipped===true||(inventory[index].equipped_slots||[]).length>0:true);
       if(index===undefined)throw Error('Oggetto non presente nell’inventario.');
-      const inventory=setItemEquipped(record.inventory,index,!active);
+      const updatedInventory=setItemEquipped(record.inventory,index,!active);
       // The equipment state is authoritative; clear stale manual overrides.
       const enabledPatch=traitActivationPatch(record,trait,true);
-      await patch({...enabledPatch,inventory});
+      await patch({...enabledPatch,inventory:updatedInventory});
     }else await patch(traitActivationPatch(record,trait,Boolean(trait.inactive)));
     await state.editor.flush();
     await render();return;
