@@ -56,6 +56,51 @@ const LEVEL_NAMES: Array[String] = [
 const SPELLS: Dictionary = {
 	# Built-in VTT abilities intentionally share the ordinary spell targeting,
 	# active-origin and effect pipeline; they are not learned class spells.
+	"vtt_aasimar_necrotic_shroud": {
+		"id": "vtt_aasimar_necrotic_shroud", "name": "Necrotic Shroud", "source": "MPMM",
+		"origin": "homebrew", "internal_grant": true, "action_kind": "ability",
+		"classes": [], "level": 0, "casting_time": "Bonus Action",
+		"range": "Self", "range_feet": 0, "target_mode": "self_emanation",
+		"target": "Self", "duration": "1 minute", "persistent": true,
+		"follow_caster": true, "aoe_shape": "sphere", "aoe_radius_feet": 10,
+		"visual_style": "necrotic", "condition_inflict": [],
+		"saving_throw": ["charisma"],
+		"damage_type": "necrotic", "bonus_damage_once_per_turn": "proficiency",
+		"area_damage_end_of_caster_turn": false,
+		"area_damage_formula": "",
+		"heal": false, "requires_trait": "Celestial Revelation",
+		"description": "Manifestazione celestiale dell'Aasimar MPMM. Aura personale persistente 10 ft. CD Carisma 8 + bonus competenza + modificatore CAR. Danni necrotici extra pari al bonus competenza una volta per turno. La condizione Spaventato non viene applicata automaticamente."
+	},
+	"vtt_aasimar_radiant_consumption": {
+		"id": "vtt_aasimar_radiant_consumption", "name": "Radiant Consumption", "source": "MPMM",
+		"origin": "homebrew", "internal_grant": true, "action_kind": "ability",
+		"classes": [], "level": 0, "casting_time": "Bonus Action",
+		"range": "Self", "range_feet": 0, "target_mode": "self_emanation",
+		"target": "Self", "duration": "1 minute", "persistent": true,
+		"follow_caster": true, "aoe_shape": "sphere", "aoe_radius_feet": 10,
+		"visual_style": "radiant", "condition_inflict": [],
+		"saving_throw": [],
+		"damage_type": "radiant", "bonus_damage_once_per_turn": "proficiency",
+		"area_damage_end_of_caster_turn": true,
+		"area_damage_formula": "proficiency",
+		"heal": false, "requires_trait": "Celestial Revelation",
+		"description": "Manifestazione celestiale dell'Aasimar MPMM. Aura persistente 10 ft con luce intensa (fioca per ulteriori 10 ft). Alla fine di ciascun turno dell'Aasimar, tutte le creature nell'area subiscono danni radianti pari al bonus competenza; una volta per turno aggiunge danni radianti dello stesso ammontare a un bersaglio."
+	},
+	"vtt_aasimar_radiant_soul": {
+		"id": "vtt_aasimar_radiant_soul", "name": "Radiant Soul", "source": "MPMM",
+		"origin": "homebrew", "internal_grant": true, "action_kind": "ability",
+		"classes": [], "level": 0, "casting_time": "Bonus Action",
+		"range": "Self", "range_feet": 0, "target_mode": "self_emanation",
+		"target": "Self", "duration": "1 minute", "persistent": true,
+		"follow_caster": true, "aoe_shape": "sphere", "aoe_radius_feet": 10,
+		"visual_style": "radiant", "condition_inflict": [],
+		"saving_throw": [],
+		"damage_type": "radiant", "bonus_damage_once_per_turn": "proficiency",
+		"area_damage_end_of_caster_turn": false,
+		"area_damage_formula": "",
+		"heal": false, "requires_trait": "Celestial Revelation",
+		"description": "Manifestazione celestiale dell'Aasimar MPMM. Ali spettrali, velocità di volo uguale alla camminata e danni radianti aggiuntivi pari al bonus competenza una volta per turno. L'area visualizzata segue il token."
+	},
 	"vtt_bardic_inspiration": {
 		"id": "vtt_bardic_inspiration", "name": "Bardic Inspiration",
 		"origin": "homebrew", "source": "VTT", "internal_grant": true,
