@@ -315,7 +315,8 @@
       "trait_entries": [
         "You know the {@spell shocking grasp} cantrip. Starting at 3rd level, you can cast the {@spell feather fall} spell with this trait, without requiring a material component. Starting 5th level, you can also cast the {@spell levitate} spell with this trait, without requiring a material component. Once you cast {@spell feather fall} or {@spell levitate} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -328,7 +329,8 @@
       "trait_entries": [
         "You know the {@spell shocking grasp} cantrip. Starting at 3rd level, you can cast the {@spell feather fall} spell with this trait, without requiring a material component. Starting 5th level, you can also cast the {@spell levitate} spell with this trait, without requiring a material component. Once you cast {@spell feather fall} or {@spell levitate} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -341,7 +343,8 @@
       "trait_entries": [
         "You know the {@spell shocking grasp} cantrip. Starting at 3rd level, you can cast the {@spell feather fall} spell with this trait, without requiring a material component. Starting 5th level, you can also cast the {@spell levitate} spell with this trait, without requiring a material component. Once you cast {@spell feather fall} or {@spell levitate} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -355,7 +358,8 @@
         "You know the {@spell blade ward} cantrip. You can cast it as normal, and you can also cast it as a bonus action a number of times equal to your proficiency bonus, regaining all expended uses when you finish a long rest.",
         "Starting at 5th level, you can cast the {@spell pass without trace} spell with this trait, without requiring a material component. Once you cast that spell with this trait, you can't do so again until you finish a long rest. You can also cast it using any spell slots you have of 2nd level or higher.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -369,7 +373,8 @@
         "You know the {@spell blade ward} cantrip. You can cast it as normal, and you can also cast it as a bonus action a number of times equal to your proficiency bonus, regaining all expended uses when you finish a long rest.",
         "Starting at 5th level, you can cast the {@spell pass without trace} spell with this trait, without requiring a material component. Once you cast that spell with this trait, you can't do so again until you finish a long rest. You can also cast it using any spell slots you have of 2nd level or higher.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -382,7 +387,8 @@
       "trait_entries": [
         "You know the {@spell produce flame} cantrip. Starting at 3rd level, you can cast the {@spell burning hands} spell with this trait. Starting at 5th level, you can also cast the {@spell flame blade} spell with this trait, without a material component. Once you cast {@spell burning hands} or {@spell flame blade} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -395,7 +401,8 @@
       "trait_entries": [
         "You know the {@spell produce flame} cantrip. Starting at 3rd level, you can cast the {@spell burning hands} spell with this trait. Starting at 5th level, you can also cast the {@spell flame blade} spell with this trait, without a material component. Once you cast {@spell burning hands} or {@spell flame blade} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -408,7 +415,8 @@
       "trait_entries": [
         "You know the {@spell produce flame} cantrip. Starting at 3rd level, you can cast the {@spell burning hands} spell with this trait. Starting at 5th level, you can also cast the {@spell flame blade} spell with this trait, without a material component. Once you cast {@spell burning hands} or {@spell flame blade} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -421,7 +429,8 @@
       "trait_entries": [
         "You know the {@spell acid splash} cantrip. Starting at 3rd level, you can cast the {@spell create or destroy water} spell with this trait. Starting at 5th level, you can also cast the {@spell water walk} spell with this trait, without requiring a material component. Once you cast {@spell create or destroy water} or {@spell water walk} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -434,7 +443,8 @@
       "trait_entries": [
         "You know the {@spell acid splash} cantrip. Starting at 3rd level, you can cast the {@spell create or destroy water} spell with this trait. Starting at 5th level, you can also cast the {@spell water walk} spell with this trait, without requiring a material component. Once you cast {@spell create or destroy water} or {@spell water walk} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -447,7 +457,8 @@
       "trait_entries": [
         "You know the {@spell acid splash} cantrip. Starting at 3rd level, you can cast the {@spell create or destroy water} spell with this trait. Starting at 5th level, you can also cast the {@spell water walk} spell with this trait, without requiring a material component. Once you cast {@spell create or destroy water} or {@spell water walk} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
         "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
-      ]
+      ],
+      "slot_alternative": true
     },
     {
       "kind": "subrace",
@@ -1399,6 +1410,150 @@
       "replace_parent_spell_traits": [
         "Infernal Legacy"
       ]
+    },
+    {
+      "kind": "race",
+      "name": "Aarakocra",
+      "source": "MPMM",
+      "spell": "gust of wind",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Deep Gnome",
+      "source": "MPMM",
+      "spell": "disguise self",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Deep Gnome",
+      "source": "MPMM",
+      "spell": "nondetection",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Duergar",
+      "source": "MPMM",
+      "spell": "enlarge/reduce",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Duergar",
+      "source": "MPMM",
+      "spell": "invisibility",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Fairy",
+      "source": "MPMM",
+      "spell": "faerie fire",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Fairy",
+      "source": "MPMM",
+      "spell": "enlarge/reduce",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Firbolg",
+      "source": "MPMM",
+      "spell": "detect magic",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Firbolg",
+      "source": "MPMM",
+      "spell": "disguise self",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Githyanki",
+      "source": "MPMM",
+      "spell": "jump",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Githyanki",
+      "source": "MPMM",
+      "spell": "misty step",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Githzerai",
+      "source": "MPMM",
+      "spell": "shield",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Githzerai",
+      "source": "MPMM",
+      "spell": "detect thoughts",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Triton",
+      "source": "MPMM",
+      "spell": "fog cloud",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Triton",
+      "source": "MPMM",
+      "spell": "gust of wind",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Triton",
+      "source": "MPMM",
+      "spell": "water walk",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Yuan-Ti",
+      "source": "MPMM",
+      "spell": "animal friendship",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
+    },
+    {
+      "kind": "race",
+      "name": "Yuan-Ti",
+      "source": "MPMM",
+      "spell": "suggestion",
+      "slot_alternative": true,
+      "generated_2014_species_spell": true
     },
     {
       "kind": "subrace",
