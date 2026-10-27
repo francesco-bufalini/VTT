@@ -37,6 +37,7 @@ test('2014 racial language catalog stays identical to native and reviewed genera
   ['race','Kalashtar','ERLW','','quori'],['race','Vedalken','GGR','','vedalken'],
   ['race','Grung','OGA','','grung'],['race','Gith','MTF','','gith'],
   ['race','Kender','DSotDQ','','common'],['race','Astral Elf','AAG','','common'],
+  ['race','Hadozee','AAG','','common'],['race','Thri-kreen','AAG','','common'],
   ['subrace','Gem','FTD','Dragonborn','common'],
   ['subrace','Variant; Mark of Finding','ERLW','Half-Orc','goblin']
  ]){
@@ -66,7 +67,8 @@ test('PHB and later 2014 races use the same typed language picker, persistence a
  for(const [name,source,count] of [
   ['Human','PHB',1],['Half-Elf','PHB',1],['Aasimar','MPMM',1],
   ['Kalashtar','ERLW',1],['Astral Elf','AAG',1],['Autognome','AAG',1],
-  ['Owlin','SCC',1],['Plasmoid','AAG',1],['Aetherborn','PSK',2]]){
+  ['Owlin','SCC',1],['Plasmoid','AAG',1],['Hadozee','AAG',1],
+  ['Thri-kreen','AAG',1],['Aetherborn','PSK',2]]){
   const r=char(name,source),rows=picks(r),sid='race|'+source.toLowerCase()+'|'+name.toLowerCase();
   assert.equal(rows.length,1,name+' / '+source+' needs one choice group');
   assert.equal(rows[0].origin_id,sid);
