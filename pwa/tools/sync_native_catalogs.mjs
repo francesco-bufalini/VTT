@@ -4,6 +4,7 @@ import {syncProficiencyCatalog} from './sync_proficiency_catalog.mjs';
 import {readFile,writeFile} from 'node:fs/promises';
 import {projectSpeciesAttacks} from './species_mechanics.mjs';
 import {projectSpeciesDefenses} from './species_defenses.mjs';
+import {projectSpeciesRollModes} from './species_roll_modes.mjs';
 import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
 import {projectFlattenedSpeciesAbilities} from './species_ability_variants.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
@@ -261,6 +262,8 @@ await writeFile(new URL('../catalog/species_attacks.json',import.meta.url),
  JSON.stringify(projectSpeciesAttacks(references.races),null,2)+'\n');
 await writeFile(new URL('../catalog/species_defenses.json',import.meta.url),
  JSON.stringify(projectSpeciesDefenses(references.races),null,2)+'\n');
+await writeFile(new URL('../catalog/species_roll_modes.json',import.meta.url),
+ JSON.stringify(projectSpeciesRollModes(references.races),null,2)+'\n');
 mechanics.races=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));
 await syncProficiencyCatalog();
 const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
