@@ -513,9 +513,13 @@ export function applyOriginSpellChoice(record,choice,spell,{ability='',otherList
  if(selected.length>=choice.count)throw Error('Scelta già completa.');
  if(selected.some(g=>g.spell_id===spell.id))throw Error('Incantesimo già scelto per questa origine.');
  const casting=choice.spellcasting_ability||ability;
- if(!['str','dex','con','int','wis','cha'].includes(casting))throw Error('Scegli la caratteristica da incantatore.');
+ if(!['str','dex','con','int','wis','cha'].includes(casting)||
+   arr(choice.spellcasting_ability_options).length&&
+     !choice.spellcasting_ability_options.includes(casting))
+   throw Error('Scegli una caratteristica da incantatore consentita dal tratto.');
  rows.push({id:'choice:'+choice.id+'|'+spell.id,origin_id:choice.origin_id,origin_name:choice.origin_name,source_choice_id:choice.id,
   spell_id:spell.id,tracker_id:choice.tracker_id||'',payment_mode:choice.tracker_id?'tracker':'free',tracker_cost:1,
+  slot_alternative:choice.slot_alternative===true,
   spellcasting_ability:casting,requirements:{scope:'character',min_level:/^\d+$/.test(choice.stage)?Number(choice.stage):0},disabled:false});
  return {origin_spell_grants:rows};
 }
