@@ -4,7 +4,7 @@ import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey,actionGlyph} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions,hasProperty,validSlot} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
 const inventoryContainers=inventoryModule.inventoryContainers||((record={})=>{
@@ -349,6 +349,7 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
  if(kind==='scroll'){const level=numeric(effective.spell_level??effective.spellLevel??effective.level);if(level!==null)facts.push({label:'Incantesimo',value:level===0?'Trucchetto':level+'° livello',glyph:'spark'});}
  if(kind==='weapon'&&effective.damage)facts.push({label:'Danno',value:String(effective.damage)+(effective.damage_type?' '+effective.damage_type:''),glyph:'weapon'});
  if(effective.ac!==null&&effective.ac!==undefined){const ac=typeof effective.ac==='object'?effective.ac.base:effective.ac;if(ac!==null&&ac!==undefined&&String(ac)!=='')facts.push({label:'CA',value:(kind==='shield'?'+':'')+ac,glyph:'shield'});}
+ if(kind==='armor')facts.push({label:'Destrezza alla CA',value:armorDexterityLabel(effective),glyph:'shield'});
  if(effective.range)facts.push({label:'Gittata',value:effective.range+' ft',glyph:'target'});
  if(weight!==null)facts.push({label:quantity>1?'Peso totale':'Peso',value:format(weight*quantity)+' lb',glyph:'inventory'});
  if(value!==null)facts.push({label:quantity>1?'Valore totale':'Valore',value:format(value*quantity)+' mo',glyph:'coins'});

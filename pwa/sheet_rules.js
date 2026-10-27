@@ -6,7 +6,7 @@ import {collectEffectExtensions} from './effect_extensions.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,armorDexterityBonus,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants} from './spell_selection.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
@@ -927,10 +927,8 @@ function calculateSheetValues(record={},catalogs={}){
         natural=overrideNumeric('ac_unarmored',natural,resolve,stack,'alternative');
         return natural+shieldBonus;
       }
-      const dex=resolve("ability_mod:dex",stack),type=String(armor.type||"").split("|")[0].toUpperCase();
-      const cap=armor.dexterity_max!==undefined?int(armor.dexterity_max):type==="MA"?2:type==="HA"?0:99;
-      const allowed=type!=="HA"||int(armor.dexterity_max)!==0?Math.min(dex,cap):0;
-      const equippedAc=int(armor.ac,10)+allowed;
+      const dex=resolve("ability_mod:dex",stack);
+      const equippedAc=int(armor.ac,10)+armorDexterityBonus(armor,dex);
       // Some natural armors explicitly remain selectable when wearing inferior
       // armor (Loxodon, Locathah, Lizardfolk). Tortle armor grants no benefit.
       const tortleBase=overrideNumeric('ac_unarmored',0,resolve,stack,'alternative',

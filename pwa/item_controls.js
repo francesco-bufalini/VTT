@@ -119,6 +119,27 @@ export function itemKind(item={}){
 export const ITEM_INSTANCE_FIELDS=["damage","versatile_damage","damage_type","range","properties",
   "ac","bonus_ac","bonus_weapon","weight","weapon_size"];
 export const WEAPON_SIZES=["Tiny","Small","Medium","Large","Huge","Gargantuan"];
+// Category defaults follow D&D armor rules; catalog/homebrew limits take precedence.
+export function armorDexterityLimit(armor={}){
+ const item=resolveOwnedItem(armor);
+ if(itemKind(item)!=="armor")return null;
+ if(item.dexterity_max!==undefined&&item.dexterity_max!==null&&String(item.dexterity_max).trim()!==""){
+  const limit=Number(item.dexterity_max);
+  if(Number.isFinite(limit))return limit;
+ }
+ const type=String(item.type||"").split("|")[0].toUpperCase();
+ return type==="HA"?0:type==="MA"?2:null;
+}
+export function armorDexterityBonus(armor={},modifier=0){
+ const cap=armorDexterityLimit(armor),dex=Number(modifier);
+ // Heavy armor never adds or subtracts DEX (including negative modifiers).
+ return cap===0?0:Math.min(Number.isFinite(dex)?dex:0,cap??Infinity);
+}
+export function armorDexterityLabel(armor={}){
+ const cap=armorDexterityLimit(armor);
+ return cap===0?"DES non applicata":cap===null?"+ DES (senza limite)":
+  "+ DES (max "+(cap>=0?"+":"")+cap+")";
+}
 export function resolveOwnedItem(saved={}){
   const effective={...saved},overrides=saved?.instance_overrides;
   if(overrides&&typeof overrides==="object"&&!Array.isArray(overrides))

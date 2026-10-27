@@ -9,7 +9,7 @@ const labels={
  type:'Tipo',source:'Fonte',rarity:'Rarità',tier:'Fascia',weight:'Peso',
  weightNote:'Note sul peso',value:'Valore',value_gp:'Valore (mo)',
  property:'Proprietà',properties:'Proprietà',ac:'Classe armatura',
- bonusAc:'Bonus CA',bonus_ac:'Bonus CA',bonusWeapon:'Bonus arma',
+ bonusAc:'Bonus CA',bonus_ac:'Bonus CA',dexterity_max:'Massimo DES alla CA',bonusWeapon:'Bonus arma',
  bonus_weapon:'Bonus arma',bonusWeaponAttack:'Bonus al colpire',
  bonusWeaponDamage:'Bonus ai danni',damage:'Danno',damage_type:'Tipo di danno',
  dmg1:'Danno',dmg2:'Danno a due mani',dmgType:'Tipo di danno',

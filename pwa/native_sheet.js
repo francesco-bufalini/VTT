@@ -5,7 +5,7 @@ import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
 import {contentForRules} from './source_edition.js';
 import {featOriginLabel,featTraitOriginKey} from './feat_picker.js';
-import {itemKind,resolveOwnedItem} from './item_controls.js';
+import {itemKind,resolveOwnedItem,armorDexterityBonus,armorDexterityLimit} from './item_controls.js';
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
@@ -596,14 +596,15 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   const shields=inventory.filter(item=>list(item?.equipped_slots).some(slot=>slot==='main'||slot==='off')&&itemKind(item)==='shield');
   const shieldBonus=shields.reduce((value,item)=>Math.max(value,Math.max(0,Number(item.ac)||0)),0);
   const dex=Number(calculated.values?.['ability_mod:dex']??0);
-  const type=String(wornArmor?.type||'').split('|')[0].toUpperCase();
-  const dexCap=wornArmor?.dexterity_max!==undefined?Number(wornArmor.dexterity_max):type==='MA'?2:type==='HA'?0:99;
-  const armorDex=type==='HA'&&Number(wornArmor?.dexterity_max)===0?0:Math.min(dex,dexCap);
+  const armorDex=wornArmor?armorDexterityBonus(wornArmor,dex):0;
+  const dexCap=wornArmor?armorDexterityLimit(wornArmor):null;
   const rawMonsterAc=Array.isArray(c.stat_block?.ac)?c.stat_block.ac.find(row=>typeof row==='number'||row?.ac!==undefined):c.stat_block?.ac;
   const monsterAc=typeof rawMonsterAc==='object'?rawMonsterAc?.ac:rawMonsterAc;
   const naturalBase=(c.kind==='monster'||c.variant_rules_kind==='monster')?(monsterAc??10):(c.armor_class_base??10);
   const naturalFormula=String(c.armor_natural_formula||((c.kind==='character'&&Number(naturalBase)===10)?'10 + dex_mod':String(naturalBase)));
-  const acFormula=wornArmor?String(Number(wornArmor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+(shieldBonus?' + '+shieldBonus+' scudo':''):naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
+  const acFormula=wornArmor?String(Number(wornArmor.ac)||10)+
+    (dexCap===0?' (senza DES)':' + ('+armorDex+' DES'+(dexCap===null?'':', max '+(dexCap>=0?'+':'')+dexCap)+')')+
+    (shieldBonus?' + '+shieldBonus+' scudo':''):naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
   const legacyDefense='<div class="battle-defense-values"><div class="battle-stat"><span>CA</span>'+
     formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
     '<div class="battle-defense-settings">'+armor+
