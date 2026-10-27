@@ -1,6 +1,7 @@
 // Read-only, source-bound summaries for the PWA's trait cards.
 // Use structured grants only; never extract mechanics from free-form descriptions.
 import {CLASS_FEATURE_RULES,classFeatureRollSources} from './feature_mechanics.js';
+import {SENSE_NAMES,senseRange} from './sense_rules.js';
 import {resolveOwnedItem} from './item_controls.js';
 import {attackCountBenefits} from './attack_count_benefits.js';
 import {effectExtensionLabel,effectExtensionsFor} from './effect_extensions.js';
@@ -144,6 +145,11 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(group.seen.has(key))return;
   group.seen.add(key);group.items.push({label,value,id,...extra});
  };
+ for(const sense of rows(calculated.senses?.grants)){
+  if(!belongs(sense))continue;
+  add('senses','Sensi',SENSE_NAMES[sense.type]||sense.type,
+   senseRange(sense.range_feet),'sense:'+String(sense.id||''));
+ }
  // An infused item's structured companion grant is displayed on that exact
  // object's benefit card. Mere knowledge of an infusion never grants a pet.
  if(trait.category==='oggetti'&&trait.rank===0){
