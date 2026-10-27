@@ -55,6 +55,9 @@ export function powerRestSelections(record={},calculated={}){
    if(eligible(record,calculated.features||[],matching))
      add(rule.group,rule.trait||rule.name,rule.selection_recovery);
  }
+ for(const choice of arr(calculated.racial_rest_choices))
+   if(arr(calculated.features).some(f=>f.origin_id===choice.origin_id&&enabled(record,f)))
+     add(choice.group,choice.trait,choice.recovery);
  for(const member of arr(calculated.casting_classes))
    if(member.mode==='Preparati')
      add('spells:'+String(member.id),String(member.name||'Incantesimi')+' · preparazione','long_rest');

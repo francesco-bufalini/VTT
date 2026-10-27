@@ -1312,6 +1312,7 @@ function calculateSheetValues(record={},catalogs={}){
         proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'),features)];})),
     casting_classes:spellClasses,trackers,attacks,damage_defense_entries,
     racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
+    racial_rest_choices:racialPowers.rest_choices,
     racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{}),
     active_celestial_form:celestialForm||null,
     active_racial_damage_bonus:celestialForm?{

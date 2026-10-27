@@ -427,7 +427,7 @@ export class TacticalViewer {
     if(!this.root)throw new Error("Apri prima lo snapshot della mappa.");
     if(!spell?.id)throw new Error("Seleziona un incantesimo valido.");
     const payload={token_id:this.tokenId,owner_id:await this.ownerId(),
-      spell_id:String(spell.id),name:String(spell.name||spell.id),
+      spell_id:String(spell.targeting_template_spell_id||spell.id),name:String(spell.name||spell.id),
       source:String(spell.source||""),slot_level:slotLevel,context};
     const result=await this.runAction("begin_spell",payload);
     this.targeting=result.targeting||{};

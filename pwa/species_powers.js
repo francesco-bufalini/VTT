@@ -1,4 +1,5 @@
 // Source-qualified racial powers. No ability is inferred from free-form prose.
+import {canReselectPower,selectionRestLabel} from './trait_state_rules.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const currentLevel=record=>rows(record.classes).length?
@@ -15,14 +16,14 @@ export function racialPowerSubraces(index={}) {
  })));
 }
 export function racialPowerProjection(record={},index={},features=[]) {
- const output={features:[],trackers:[],abilities:[],origin_spells:[],active_forms:[]};
+ const output={features:[],trackers:[],abilities:[],origin_spells:[],active_forms:[],rest_choices:[]};
  const race=rows(index.races).find(row=>norm(row.name)===norm(record.species)&&
    norm(row.source)===norm(record.species_source));
  if(!race||record.rules_version==='2024')return output;
- const owner=features.find(feature=>norm(feature.name)===norm(race.healing.trait)&&
+ const owner=features.find(feature=>norm(feature.name)===norm(race.healing?.trait)&&
    String(feature.origin_key||'').startsWith('species|')&&!feature.disabled&&!feature.inactive);
  const raceRoot='race|'+norm(race.source)+'|'+norm(race.name);
- if(owner&&permitted(record,owner.origin_id)&&permitted(record,raceRoot)) {
+ if(race.healing&&owner&&permitted(record,owner.origin_id)&&permitted(record,raceRoot)) {
    const heal=race.healing;
    output.trackers.push({id:heal.tracker_id,name:heal.trait,max:heal.uses,
      recharge:heal.recharge,origin_id:owner.origin_id,origin_name:heal.trait,automatic:true});
@@ -33,8 +34,29 @@ export function racialPowerProjection(record={},index={},features=[]) {
      heal_dice:heal.roll,resource_cost:1,tracker_id:heal.tracker_id,
      target_mode:heal.target_mode,target_range_feet:heal.target_range_feet});
  }
+ const featureFor=trait=>features.find(f=>norm(f.name)===norm(trait)&&
+   String(f.origin_key||'').startsWith('species|')&&!f.disabled&&!f.inactive&&
+   record.trait_enabled?.[f.key]!==false&&permitted(record,f.origin_id)&&
+   permitted(record,f.origin_key)&&permitted(record,raceRoot));
+ const teleport=race.teleport,teleportOwner=teleport&&featureFor(teleport.trait);
+ if(teleportOwner&&teleport.spell_id&&teleport.tracker_id){
+   output.trackers.push({id:teleport.tracker_id,name:teleport.trait,
+     max:teleport.uses==='proficiency'?2+Math.floor((currentLevel(record)-1)/4):Number(teleport.uses)||0,
+     recharge:teleport.recharge||'long_rest',origin_id:teleportOwner.origin_id,
+     origin_name:'Tratto · '+teleport.trait,automatic:true});
+   output.origin_spells.push({id:'racial-power:'+norm(race.source)+':'+norm(race.name)+':'+norm(teleport.trait),
+     origin_id:teleportOwner.origin_id,origin_name:teleport.trait,granting_trait:teleport.trait,
+     origin_parent_id:raceRoot,origin_parent_name:race.name,spell_id:teleport.spell_id,
+     mode:'innate',payment_mode:'tracker',tracker_id:teleport.tracker_id,
+     tracker_cost:1,cantrip:false,casting_ability_not_required:true,automatic:true});
+ }
+ const training=race.rest_training,trainingOwner=training&&featureFor(training.trait);
+ if(trainingOwner&&training.group&&training.recovery)
+   output.rest_choices.push({group:training.group,trait:training.trait,recovery:training.recovery,
+     root_id:raceRoot,origin_id:trainingOwner.origin_id,skill_count:training.skill_count||1,
+     weapon_tool_count:training.weapon_tool_count||1,description:training.description||''});
  const revelation=race.revelation;
- const form=rows(revelation.subraces).find(row=>norm(row.name)===norm(record.subrace)&&
+ const form=rows(revelation?.subraces).find(row=>norm(row.name)===norm(record.subrace)&&
    norm(record.subrace_source)===norm(race.source));
  if(form&&currentLevel(record)>=Number(revelation.min_level||3)&&
    permitted(record,raceRoot)&&permitted(record,'subrace|'+norm(race.source)+'|'+norm(form.name))) {
@@ -68,6 +90,26 @@ export function racialPowerProjection(record={},index={},features=[]) {
  }
  return output;
 }
+// Rest training uses Armor Model's reselection lifecycle and ordinary typed
+// proficiency grants; it never writes a permanent racial proficiency.
+export function restTrainingPatch(record={},choice={},skill='',second='',allowed={}){
+ if(!choice.group||!choice.root_id||!choice.origin_id||!choice.trait)
+   throw Error('Trance non disponibile.');
+ if(!canReselectPower(record,choice.group))
+   throw Error('Puoi riselezionare le competenze dopo un '+selectionRestLabel(choice.recovery).toLowerCase()+'.');
+ const [kind,...parts]=String(second).split(':'),key=parts.join(':');
+ if(!rows(allowed.skill).includes(skill)||!['weapon','tool'].includes(kind)||
+   !rows(allowed[kind]).includes(key))throw Error('Seleziona competenze valide.');
+ return {
+   proficiency_choices:[
+     ...rows(record.proficiency_choices).filter(row=>row?.rest_training_group!==choice.group),
+     ...[{kind:'skill',key:skill},{kind,key}].map(row=>({...row,
+       origin_id:choice.root_id,rest_training_group:choice.group}))
+   ],
+   trait_state_selection:{...(record.trait_state_selection||{}),[choice.group]:'selected'},
+   rest_selection_available:{...(record.rest_selection_available||{}),[choice.group]:false}
+ };
+}
 export function healingHandsPatch(record={},calculated={},power={},rollDie=()=>1,target=null) {
  if(power.mode!=='heal_dice'||power.heal_dice?.count!=='proficiency'||
    !Number.isInteger(Number(power.heal_dice?.sides))||Number(power.heal_dice.sides)<2)
@@ -90,7 +132,17 @@ export function healingHandsPatch(record={},calculated={},power={},rollDie=()=>1
 }
 
 export function racialPowerSpellDefinitions(index={}) {
- return rows(index.races).flatMap(race=>rows(race.revelation?.subraces).map(form=>({
+ return rows(index.races).flatMap(race=>[
+  ...(race.teleport?[{
+    id:race.teleport.spell_id,name:race.teleport.trait,source:race.source,
+    level:0,internal_grant:true,action_kind:'ability',classes:[],
+    time:[{number:1,unit:race.teleport.action_type||'bonus'}],casting_time:'Bonus Action',
+    range:'Self',range_feet:race.teleport.range_feet,target_mode:race.teleport.target_mode||'teleport_self',
+    teleport_range_feet:race.teleport.range_feet,
+    targeting_template_spell_id:race.teleport.targeting_template_spell_id||'',
+    duration:'Instantaneous',description:race.teleport.description
+  }]:[]),
+  ...rows(race.revelation?.subraces).map(form=>({
    id:form.spell_id,name:form.name,source:race.source,level:0,
    internal_grant:true,action_kind:'ability',classes:[],
    time:[{number:1,unit:'bonus'}],casting_time:'Bonus Action',
@@ -102,5 +154,5 @@ export function racialPowerSpellDefinitions(index={}) {
    bonus_damage_once_per_turn:'proficiency',
    area_damage_end_of_caster_turn:form.name==='Radiant Consumption',
    area_damage_formula:form.name==='Radiant Consumption'?'proficiency':''
- })));
+ }))]);
 }

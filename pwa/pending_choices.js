@@ -66,6 +66,15 @@ function optionPool(kind,record,index){
  for(const row of arr(record.proficiency_choices))if(row?.kind===kind&&!row.custom)values.push(strip(row.key));
  return unique(values.map(strip));
 }
+const simpleTrainingWeapons=['club','dagger','greatclub','handaxe','javelin','light hammer',
+ 'mace','quarterstaff','sickle','spear','light crossbow','dart','shortbow','sling'];
+export function trainingProficiencyOptions(kind,record={},index={}){
+ if(!['skill','weapon','tool'].includes(kind))return [];
+ const options=optionPool(kind,record,index);
+ if(kind==='weapon')options.push(...simpleTrainingWeapons);
+ return unique(options).filter(key=>!['simple','martial','all'].includes(key))
+   .sort((a,b)=>a.localeCompare(b,'it'));
+}
 function allowedByRule(kind,data,key,record,index){
  const choose=data?.choose;
  if(choose&&typeof choose==='object'){

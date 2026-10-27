@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "MPMM",
+  "source": "MPMM, AAG",
   "notes": "Source-qualified racial power mechanics. Celestial Revelation forms use the ordinary subrace picker and persistent caster-following VTT spell overlays. Neither Necrotic Shroud nor another form automatically applies Frightened.",
   "races": [
     {
@@ -57,6 +57,30 @@
             "fly_equals_walk": true
           }
         ]
+      }
+    },
+    {
+      "name": "Astral Elf",
+      "source": "AAG",
+      "teleport": {
+        "trait": "Starlight Step",
+        "spell_id": "vtt_astral_elf_starlight_step",
+        "targeting_template_spell_id": "phb2014_misty_step",
+        "tracker_id": "race:aag:astral_elf:starlight_step:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest",
+        "action_type": "bonus",
+        "target_mode": "teleport_self",
+        "range_feet": 30,
+        "description": "Come azione bonus, ti teletrasporti di massimo 30 ft in uno spazio libero che puoi vedere. Utilizzi pari alla competenza; recupero al riposo lungo."
+      },
+      "rest_training": {
+        "trait": "Astral Trance",
+        "group": "astral_trance_training",
+        "recovery": "long_rest",
+        "skill_count": 1,
+        "weapon_tool_count": 1,
+        "description": "Dopo una trance scegli una competenza in un'abilità e una in un'arma o uno strumento. Mantieni le competenze fino al prossimo riposo lungo e puoi riselezionarle al termine di ogni riposo lungo."
       }
     }
   ]
