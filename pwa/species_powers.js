@@ -88,3 +88,19 @@ export function healingHandsPatch(record={},calculated={},power={},rollDie=()=>1
  }
  return {patch,dice,total,notation:proficiency+'d'+sides};
 }
+
+export function racialPowerSpellDefinitions(index={}) {
+ return rows(index.races).flatMap(race=>rows(race.revelation?.subraces).map(form=>({
+   id:form.spell_id,name:form.name,source:race.source,level:0,
+   internal_grant:true,action_kind:'ability',classes:[],
+   time:[{number:1,unit:'bonus'}],casting_time:'Bonus Action',
+   range:'Self',range_feet:0,target_mode:'self_emanation',
+   aoe_shape:'sphere',aoe_radius_feet:form.radius_feet,
+   persistent:true,follow_caster:true,duration:'1 minute',
+   condition_inflict:[],saving_throw:form.spellcasting_ability?['charisma']:[],
+   description:form.description,damage_type:form.damage_type,
+   bonus_damage_once_per_turn:'proficiency',
+   area_damage_end_of_caster_turn:form.name==='Radiant Consumption',
+   area_damage_formula:form.name==='Radiant Consumption'?'proficiency':''
+ })));
+}
