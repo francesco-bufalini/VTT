@@ -413,7 +413,8 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
      origin_id:owner.id,origin_name:owner.name,
      origin_parent_id:origin.id,origin_parent_name:origin.name,
      granting_trait:owner.granting_trait||'',spell_id:id,tracker_id:tid,
-     mode,stage,spellcasting_ability:ability,
+     mode,stage,cantrip:raw.includes('#c')||Number(spells.find(spell=>spell.id===id)?.level)===0,
+     spellcasting_ability:ability,
      spellcasting_ability_options:tid?abilityOptions:[],
      slot_alternative:!!tid&&(
        block.slot_alternative===true||
