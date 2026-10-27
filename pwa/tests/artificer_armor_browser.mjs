@@ -36,15 +36,29 @@ try{
   'roll bonuses are listed under trackers instead of duplicated as ability buttons');
  const lightningResource=page.locator('#sheet-play-view [data-resource-tracker="feature:lightning_launcher:extra_damage"]');
  assert.match(await lightningResource.locator('.play-resource-bonus-row').innerText(),/\+1d6[\s\S]*Danni/);
- await page.getByRole('button',{name:'Attiva Modello armatura · Guardiano',exact:true}).click();
- const modelDialog=page.locator('#class-feature-dialog');
- await modelDialog.locator('[data-feature-confirm]').waitFor();
- assert.equal((await record()).artificer_armor_model,'infiltrator','no switch before confirmation');
+ // Armor Models are displayed and activated from their dedicated Powers card.
+ await sheet('magic');
+ const modelCard=page.locator('#sheet-play-view .play-armor-model-card');
+ assert.equal(await modelCard.locator('[data-act="armor-model-open"]').count(),2);
+ const guardian=modelCard.locator('[data-armor-model-id="armor_model:guardian"]');
+ const infiltrator=modelCard.locator('[data-armor-model-id="armor_model:infiltrator"]');
+ assert.equal(await infiltrator.locator('.play-infusion-state').getAttribute('title'),'Attivo');
+ assert.equal(await guardian.locator('.play-infusion-state').getAttribute('title'),'Non attivo');
+ await guardian.click();
+ const modelDialog=page.locator('#armor-model-dialog');
+ await modelDialog.locator('[data-act="armor-model-apply"]').waitFor();
+ assert.equal((await record()).artificer_armor_model,'infiltrator','No switch before confirmation');
+ assert.match(await modelDialog.locator('.magic-spell-description').innerText(),/Guardiano|guanti|Campo difensivo/i);
+ assert.equal(await modelDialog.locator('.armor-model-benefits .infusion-dialog-item').count(),2);
  assert.equal(await modelDialog.locator('[data-ability-payment] option').count(),2);
  assert.equal(await modelDialog.locator('[data-ability-payment] option').last().innerText(),'Nessun tracker');
- await modelDialog.locator('[data-feature-confirm]').click();
- await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.artificer_armor_model==='guardian';});
+ await modelDialog.locator('[data-act="armor-model-apply"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.artificer_armor_model==='guardian';});
  assert.equal((await record()).resource_tracker_spent['feature:armor_model:activation'],1);
+ assert.equal(await guardian.locator('.play-infusion-state').getAttribute('title'),'Attivo');
+ assert.equal(await infiltrator.locator('.play-infusion-state').getAttribute('title'),'Non attivo');
+ await sheet('battle');
  await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').waitFor({state:"attached"});
  assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').count(),0);
 
@@ -90,5 +104,5 @@ try{
  await sheet('battle');
  await shot('ore-armorer-390');
  await page.setViewportSize({width:1440,height:1000});await shot('ore-armorer-1440');
- assert.deepEqual(f.errors,[]);console.log('PASS: real Chrome model switch, Defensive Field payment and temporary HP at 390/1440px');
+ assert.deepEqual(f.errors,[]);console.log('PASS: Armor Models in Powers; exclusive selection, tracker payment, Defensive Field and HP at 390/1440px');
 }finally{await f.close();}
