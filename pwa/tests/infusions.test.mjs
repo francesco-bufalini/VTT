@@ -158,13 +158,18 @@ test("only a worn/attuned infused item adds its source-bound descriptive trait",
  };
  const calc={features:[infusionTrait],infusion_catalog:definitions};
  const traits=await collectTraitRows(record,calc,providers);
- const active=traits.filter(row=>row.name==="Infusione · Enhanced Arcane Focus");
- assert.equal(active.length,1);
- assert.equal(active[0].category,"oggetti");
- assert.equal(active[0].feature_origin,activeInfusions(record,definitions,[infusionTrait])[0].id);
- assert.deepEqual(active[0].entries,["Magical focus effect"]);
+ const itemTraits=traits.filter(row=>row.category==="oggetti");
+ assert.equal(itemTraits.length,1);
+ assert.equal(itemTraits[0].name,"Arcane Wand - Enhanced Arcane Focus");
+ assert.equal(itemTraits[0].infusion_origin_id,
+  activeInfusions(record,definitions,[infusionTrait])[0].id);
+ assert.ok(itemTraits[0].entries.includes("Magical focus effect"));
+ assert.equal(traits.some(row=>row.origin.startsWith("Privilegio opzionale")),false);
+ assert.equal(traits.some(row=>row.name==="Infusione · Enhanced Arcane Focus"),false);
+ assert.equal(traits.some(row=>row.category==="stati"&&row.infusion_id),false);
  const unequipped={...record,inventory:[{...record.inventory[0],equipped:false,attuned:false}]};
  const hidden=await collectTraitRows(unequipped,calc,providers);
+ assert.equal(hidden.find(row=>row.name==="Arcane Wand - Enhanced Arcane Focus")?.inactive,true);
  assert.equal(hidden.some(row=>row.name==="Infusione · Enhanced Arcane Focus"),false);
 });
 
