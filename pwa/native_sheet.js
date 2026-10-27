@@ -646,6 +646,9 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     equipment?'<div class="battle-defense-settings">'+equipment+'</div>':legacyDefense,
     'battle-defense-panel')+
     (calculated.feature_damage_resistances?.length?'<p class="feature-defense-summary">Ira · Resistenza a contundenti, perforanti e taglienti</p>':'')+
+    ((calculated.item_damage_resistances||[]).length?'<p class="feature-defense-summary">'+
+      (calculated.item_damage_resistances||[]).map(row=>'Oggetto · '+esc(row.origin_name||'Infusione')+
+        ' · Resistenza a '+esc(row.damage_type)).join(' · ')+'</p>':'')+
    panel('Movimento',
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
     '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+

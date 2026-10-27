@@ -223,6 +223,19 @@ export function classFeatureRollSources(record,calculated,target,context=''){
    if(!applies(rule))continue;
    add(rule.mode,rule.origin_id,rule.origin_name||'Talento');
  }
+ // Item extensions use the same roll-source pipeline as class and feat
+ // advantages. An infused helm only grants initiative advantage while the
+ // correct physical item is worn and the infusion remains active.
+ for(const extension of rows(calculated?.effect_extensions)){
+   if(extension.operation!=='roll_mode')continue;
+   const trigger=extension.trigger;
+   if(trigger==='initiative'&&target!=='initiative'||
+      trigger==='saving_throw'&&!target.startsWith('save:')||
+      trigger==='ability_check'&&!(target==='initiative'||target.startsWith('ability_check:')||target.startsWith('skill:'))||
+      trigger==='attack_roll'&&!target.startsWith('attack_hit:')||
+      !['initiative','saving_throw','ability_check','attack_roll'].includes(trigger))continue;
+   add(extension.value,extension.origin_id,extension.origin_name||'Oggetto infuso','item');
+ }
  // User-authored effects remain attached to a concrete trait and respect
  // both the trait toggle and its owning catalog source.
  for(const grant of rows(record.roll_mode_grants)){

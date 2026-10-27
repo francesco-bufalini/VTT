@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
+import {classFeatureRollSources} from '../feature_mechanics.js';
 import {collectEffectExtensions,effectExtensionsFor,applyEffectExtensions} from '../effect_extensions.js';
 import {addBenefitPatch,removeBenefitPatch} from '../trait_benefit_editor.js';
 import {applyInfusionPatch,clearInfusionPatch,learnInfusionPatch,prepareInfusionPatch,learnedInfusions,infusionNumericBonuses} from '../item_controls.js';
@@ -125,4 +126,36 @@ test('manual item extension can be bound to one owned copy and removed without c
  const removed=removeBenefitPatch(updated,trait,{type:'effect_extensions',id:'effect_extension:trait:copywise1'});
  assert.deepEqual(removed.effect_extensions,[]);
  assert.equal(updated.inventory[0].instance_id,'first');
+});
+
+
+test('Helm of Awareness contributes a real initiative advantage roll source only while attuned',()=>{
+ const record=base();
+ record.inventory=[grant('Helm of Awareness',{
+   id:'local_helm',instance_id:'helm_1',name:'Helm of Awareness target',custom_item_type:'other',
+   quantity:1,active:true,attuned:true,rarity:'none'},record)];
+ record.optional_features_catalog=[{id:byName('Helm of Awareness').id,name:'Helm of Awareness',source:'TCE'}];
+ const calculated=calculateSheet(record,catalogs);
+ assert.equal(calculated.effect_extensions.find(x=>x.operation==='roll_mode')?.value,'advantage');
+ const initiative=classFeatureRollSources(record,calculated,'initiative');
+ assert.ok(initiative.some(row=>row.mode==='advantage'&&row.kind==='item'));
+ assert.equal(classFeatureRollSources(record,calculated,'save:dex').some(row=>row.kind==='item'),false);
+ record.inventory[0].attuned=false;
+ const unequipped=calculateSheet(record,catalogs);
+ assert.equal(classFeatureRollSources(record,unequipped,'initiative').some(row=>row.kind==='item'),false);
+});
+
+test('Resistant Armor damage type is exposed as an active defense, not a generic permanent bonus',()=>{
+ const record=base();
+ record.inventory=[grant('Resistant Armor',{
+   id:'armor:chainmail',instance_id:'arm-1',name:'Chainmail',
+   custom_item_type:'armor',quantity:1,active:true,rarity:'none',
+   equipped_slots:['body'],attuned:true,infusion:{}
+ },record)];
+ record.inventory[0].infusion.effect_choice={damage_type:'fire'};
+ const sheet=calculateSheet(record,catalogs);
+ assert.deepEqual(sheet.item_damage_resistances.map(x=>x.damage_type),['fire']);
+ assert.equal(sheet.item_damage_resistances[0].target_instance_id,'arm-1');
+ record.inventory[0].equipped_slots=[];
+ assert.equal(calculateSheet(record,catalogs).item_damage_resistances.length,0);
 });
