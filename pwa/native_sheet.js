@@ -120,6 +120,14 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
   if(slotLevel<level||slotLevel<1)throw Error('Scegli uno slot almeno del livello dell’incantesimo');
   patch=slotUsePatch(c,mode==='pact'?0:slotLevel,1,calculated);
  }else slotLevel=level;
+ if(grant?.active_key){
+  if(c.active_class_features?.[grant.active_key])
+   throw Error('La manifestazione celestiale è già attiva: terminala prima di attivarla di nuovo.');
+  patch.active_class_features={...(c.active_class_features||{}),
+    [grant.active_key]:{name:grant.origin_name||selection.name,
+      spell_id:grant.spell_id,origin_id:grant.origin_id,
+      duration_rounds:grant.duration_rounds||10,remaining_rounds:grant.duration_rounds||10}};
+ }
  const ability=selection.caster_ability||c.spellcasting_ability||'int';
  const hit=calculated.values['casting_hit:'+ability],dc=calculated.values['casting_dc:'+ability];
  if(!Number.isFinite(hit)||!Number.isFinite(dc))throw Error('Caratteristica di lancio non disponibile');
