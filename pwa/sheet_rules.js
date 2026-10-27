@@ -763,6 +763,8 @@ function calculateSheetValues(record={},catalogs={}){
   const features=collectStructuredFeatures(record,catalogs);
   const racialPowers=racialPowerProjection(record,catalogs.speciesPowers||{},features);
   features.push(...racialPowers.features);
+  const celestialForm=racialPowers.active_forms.find(form=>
+    record.active_class_features?.[form.active_key]?.spell_id===form.spell_id);
   features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
   const damage_defense_entries=[...arr(record.damage_defense_entries),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed)];
@@ -955,6 +957,8 @@ function calculateSheetValues(record={},catalogs={}){
       const copiesWalk=raw===true&&key==="fly";
       const base=copiesWalk?resolve("speed",stack):
         Math.max(0,int(typeof raw==="string"?raw.split(" ")[0]:raw));
+      if(key==='fly'&&celestialForm?.fly_equals_walk)
+        return Math.max(base,resolve('speed',stack));
       if(key==="fly"&&speciesRule?.flight_no_medium_heavy_armor&&armor&&
         ['MA','HA'].includes(String(armor.type||"").split('|')[0].toUpperCase()))return 0;
       return base>0&&String(record.rules_version)==="2024"&&!copiesWalk?
@@ -1296,6 +1300,11 @@ function calculateSheetValues(record={},catalogs={}){
         proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'),features)];})),
     casting_classes:spellClasses,trackers,attacks,damage_defense_entries,
     racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
+    active_celestial_form:celestialForm||null,
+    active_racial_damage_bonus:celestialForm?{
+      origin_id:celestialForm.origin_id,source:celestialForm.name,
+      damage_type:celestialForm.damage_type,
+      amount:safe('proficiency'),once_per_turn:true}:null,
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
     effect_extensions,
     item_damage_resistances:effect_extensions.filter(row=>row.operation==='resistance'&&row.target_kind==='item')
