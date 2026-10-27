@@ -41,9 +41,9 @@ try{
  await page.locator('#sheet-play-view [data-act="sheet-context"][data-sheet-context="rests"]').click();
  const restDialog=page.locator('#sheet-context-dialog');
  await restDialog.locator('[data-act="tracker-short"]').click();
- assert.match(await restDialog.locator('[data-rest-recoveries]').innerText(),/Scelte modificabili[\\s\\S]*Armor Model/i);
+ assert.match(await restDialog.locator('[data-rest-recoveries]').innerText(),/Scelte modificabili[\s\S]*Armor Model/i);
  await restDialog.locator('[data-act="tracker-rest-confirm"]').click();
- assert.match(await restDialog.locator('.play-rest-confirm').innerText(),/Scelte modificabili[\\s\\S]*Armor Model/i);
+ assert.match(await restDialog.locator('.play-rest-confirm').innerText(),/Scelte modificabili[\s\S]*Armor Model/i);
  await restDialog.locator('[data-act="sheet-context-close"]').click();
  assert.equal((await record()).rest_selection_available.armor_model,true);
  // Armor Models are displayed and activated from their dedicated Powers card.
