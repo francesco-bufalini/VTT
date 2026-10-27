@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {structuredSpellGrants,originChoiceMatches,applyOriginSpellChoice,originSpellId,sessionSpellEntries} from '../spell_selection.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {spellCastPlan} from '../native_sheet.js';
 import {collectTraitRows,withGrantedSpellPreviews} from '../trait_projection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
@@ -160,4 +161,42 @@ test('a separate racial casting benefit binds to its own named trait',()=>{
  const cantrip=out.grants.find(g=>g.spell_id==='phb2014_light');
  assert.equal(cantrip?.origin_id,'feature:celestial');
  assert.equal(cantrip?.granting_trait,'Celestial Legacy');
+});
+
+test('Wind Caller can spend its daily tracker OR an ordinary/Pact slot without duplicated spells',()=>{
+ const rules=JSON.parse(readFileSync(new URL('../catalog/spell_grant_rules.json',import.meta.url),'utf8')).rules;
+ const speciesId='5etools:races:mpmm:aarakocra';
+ const owner='feature:wind_caller';
+ const c=record({species:'Aarakocra',species_source:'MPMM',species_id:speciesId,level:3,
+   resource_tracker_spent:{},spell_slots_spent:Array(10).fill(0),pact_slots_spent:0});
+ const features=[{name:'Wind Caller',origin_id:owner,origin_key:'species|'+speciesId+'|mpmm',level:3}];
+ const spell=[{id:'phb2014_gust_of_wind',name:'Gust of Wind',level:2,source:'PHB'}];
+ const result=structuredSpellGrants(c,mechanics.additional_spells,spell,features,rules);
+ assert.equal(result.grants.length,1);
+ const grant={...result.grants[0],payment_mode:'tracker'};
+ assert.equal(grant.slot_alternative,true);
+ assert.deepEqual(grant.spellcasting_ability_options,['int','wis','cha']);
+ assert.equal(grant.origin_id,owner);
+ const counters=result.trackers.map(t=>({...t,spent:0}));
+ const calc={origin_spells:[grant],trackers:counters,features:[],casting_classes:[],
+   spell_slots:Array.from({length:9},(_,index)=>({level:index+1,total:index===1?2:0,spent:0})),
+   pact_slots:{level:2,total:1,spent:0},
+   values:{'casting_dc:wis':13,'casting_hit:wis':5}};
+ const selection={id:grant.spell_id,grant_id:grant.id,level:2,caster_ability:'wis'};
+ const tracker=spellCastPlan(c,selection,0,calc,'auto');
+ assert.equal(tracker.patch.resource_tracker_spent[counters[0].id],1);
+ assert.equal(tracker.patch.spell_slots_spent,undefined);
+ const slot=spellCastPlan(c,selection,2,calc,'slot');
+ assert.equal(slot.patch.spell_slots_spent[2],1);
+ assert.equal(slot.patch.resource_tracker_spent,undefined);
+ const pact=spellCastPlan(c,selection,2,calc,'pact');
+ assert.equal(pact.patch.pact_slots_spent,1);
+ const exhausted={...c,resource_tracker_spent:{[counters[0].id]:1}};
+ assert.throws(()=>spellCastPlan(exhausted,selection,0,calc,'auto'),/Risorsa insufficiente/);
+ assert.equal(spellCastPlan(exhausted,selection,2,calc,'slot').patch.spell_slots_spent[2],1);
+ const noAlternate={...calc,origin_spells:[{...grant,slot_alternative:false}]};
+ assert.throws(()=>spellCastPlan(c,selection,2,noAlternate,'slot'),/non permette/);
+ const legacy=structuredSpellGrants(record({species:'Tiefling',species_source:'PHB',level:5}),
+   mechanics.additional_spells,spells,[],rules);
+ assert(legacy.grants.every(g=>!g.slot_alternative));
 });
