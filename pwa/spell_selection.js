@@ -362,7 +362,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     parent_id:origin.id,parent_name:origin.name}:
     {...origin,granting_trait:name,parent_id:origin.id,parent_name:origin.name};
  };
- const blockFor=(origin,block,blockIndex)=>{
+ const blockFor=(origin,block,blockIndex,definition)=>{
   const out={grants:[],trackers:[],choices:[]};
   if(!block||typeof block!=='object')return out;
   const ability=allAbilities.includes(block.ability)?block.ability:'';
@@ -411,7 +411,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
      slot_alternative:!!tid&&(
        block.slot_alternative===true||
        arr(block.slot_alternative).some(spell=>norm(spell)===norm(String(raw).split('#')[0].split('|')[0]))||
-       grantRule(row.kind,row.name,row.source,raw)?.slot_alternative===true),
+       grantRule(definition?.kind,definition?.name,definition?.source,raw)?.slot_alternative===true),
      automatic:true,
      mechanic_source:'5etools.additionalSpells'});
    });
@@ -436,7 +436,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
   const blocks=arr(row.blocks);
   if(blocks.length>1&&row.kind==='race'){
    const chosen=blocks.find(b=>norm(b.name)===norm(record.subrace));
-   if(chosen)append(blockFor(origin,chosen,0));
+   if(chosen)append(blockFor(origin,chosen,0,row));
    else output.warnings.push('Scegli la discendenza di '+origin.name+' per determinarne gli incantesimi.');
    continue;
   }
@@ -447,10 +447,10 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
      norm(f.name)===norm(row.name)&&norm(f.source)===norm(row.source));
    const selected=blocks.find(block=>owned?.spell_variant&&
      norm(block.name)===norm(owned.spell_variant));
-   if(selected){append(blockFor(origin,selected,blocks.indexOf(selected)));continue;}
+   if(selected){append(blockFor(origin,selected,blocks.indexOf(selected),row));continue;}
    const alternatives=new Map(),fixed=new Map(),abilities=new Set(blocks.map(b=>JSON.stringify(b.ability||'')));
    blocks.forEach((block,i)=>{
-    const part=blockFor(origin,block,i),counts=new Map();
+    const part=blockFor(origin,block,i,row),counts=new Map();
     for(const grant of part.grants){
      const key=grant.mode+'|'+grant.stage+'|'+(grant.tracker_id?'limited':'at_will');
      if(!fixed.has(key))fixed.set(key,{id:'alternatives:'+origin.id+':fixed:'+key,origin_id:origin.id,origin_name:origin.name,spell_options:[],filter:'',count:0,tracker_id:grant.tracker_id,mode:grant.mode,stage:grant.stage,spellcasting_ability:abilities.size>1?'':grant.spellcasting_ability});
@@ -479,7 +479,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     continue;
    }
   }
-  blocks.forEach((block,i)=>append(blockFor(origin,block,i)));
+  blocks.forEach((block,i)=>append(blockFor(origin,block,i,row)));
  }
  for(const key of ['grants','trackers','choices'])output[key]=[...new Map(output[key].map(row=>[row.id,row])).values()];
  return output;
