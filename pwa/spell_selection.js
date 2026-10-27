@@ -2,6 +2,28 @@
 import {isContentAvailableForRules,contentForRules} from './source_edition.js';
 const arr=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??'').trim().toLowerCase();
+// Every typed subrace spell is attached to its own 5etools feature.
+export function supplementalSpeciesSpellFeatures(record={},rules=[],features=[]){
+ if(!record.subrace||!record.subrace_source||!record.species)return [];
+ const owner='subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace);
+ const present=new Set(arr(features).filter(f=>f.origin_key===owner).map(f=>norm(f.name)));
+ const output=[];
+ for(const rule of arr(rules)){
+  if(rule.kind!=='subrace'||!rule.trait||
+    norm(rule.name)!==norm(record.subrace)||
+    norm(rule.source)!==norm(record.subrace_source)||
+    norm(rule.race_name)!==norm(record.species)||
+    rule.race_source&&norm(rule.race_source)!==norm(record.species_source)||
+    present.has(norm(rule.trait)))continue;
+  present.add(norm(rule.trait));
+  const key=owner+'|'+owner+'|1|'+norm(rule.trait);
+  output.push({name:rule.trait,key,origin_id:'feature:'+key,
+   origin_key:owner,level:1,entries:arr(rule.trait_entries),
+   requirements:{scope:'character',min_level:1},bonuses:[],
+   synthetic_species_spell:true});
+ }
+ return output;
+}
 export const spellId=row=>String(typeof row==="string"?row:row?.id||"").trim();
 export function availableSpells(creature={}){
   const out=[],seen=new Set();
@@ -320,7 +342,10 @@ export function originSpellId(token,edition,spells){
  if(ids.has(legacy))return legacy;
  // Local/test/homebrew catalogs can retain source-qualified stable IDs.
  const matches=arr(spells).filter(s=>norm(s.name)===name&&(!parts[1]||norm(s.source)===parts[1]));
- return matches.length===1?matches[0].id:'';
+ if(matches.length===1)return matches[0].id;
+ // Known native IDs: PHB 2014 uses phb2014_*, all other spell sources
+ // use a canonical name slug. The selected catalog is fetched lazily.
+ return edition==='2014'&&(!parts[1]||parts[1]==='phb')?legacy:slug;
 }
 const choiceSignature=choice=>[choice.mode||'',choice.stage||'',String(choice.filter||'').split('|').find(c=>c.startsWith('level='))?.slice(6)||'',choice.usage||''].join(':');
 export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[]){
@@ -346,7 +371,8 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
   if(['race','subrace','background'].includes(kind)){
    const field=kind==='race'?'species':kind;
    if(norm(record[field])!==name||norm(record[field+'_source'])!==source||kind==='subrace'&&row.race_name&&norm(record.species)!==norm(row.race_name))return [];
-   return [{id:kind+'|'+source+'|'+name,name:record[field],
+   return [{id:kind+'|'+source+'|'+name,name:record[field],kind,
+    source_name:row.name,source_book:row.source,
     feature_key:kind==='race'?'species|'+(record.species_id||norm(record.species))+'|'+source:
       'subrace|'+source+'|'+name,spell_traits:row.spell_traits||{}}];
   }
@@ -359,8 +385,9 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
  // Spell ownership is declared in the structured origin catalog. Never infer
  // the granting trait from a displayed description at runtime.
  const spellOrigin=(origin,block,raw)=>{
-  const token=norm(String(raw).split('#')[0].split('|')[0]);
-  const name=block.spell_traits?.[token]||origin.spell_traits?.[token]||'';
+  const token=typeof raw==='string'?norm(String(raw).split('#')[0].split('|')[0]):'*choice*';
+  const supplement=grantRule(origin.kind,origin.source_name,origin.source_book,token);
+  const name=block.spell_traits?.[token]||origin.spell_traits?.[token]||supplement?.trait||'';
   if(!name)return origin;
   const owner=features.find(f=>norm(f.name)===norm(name)&&
     norm(f.origin_key)===norm(origin.feature_key)&&!f.disabled&&!f.inactive);
@@ -402,7 +429,14 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     }
     if(raw&&typeof raw==='object'){
      if(!raw.choose||!(mode==='innate'||category!=='will'||mode==='known'&&String(raw.choose).includes('level=0')))return;
-     out.choices.push({id:origin.id+'|'+stage+'|'+mode+'|'+raw.choose+'|'+tid,origin_id:origin.id,origin_name:origin.name,spellcasting_ability:ability,spellcasting_ability_options:tid?abilityOptions:[],filter:String(raw.choose),count:Math.max(1,Number(raw.count)||1),mode,stage,usage:tid?'limited':'at_will',tracker_id:tid,
+     const owner=spellOrigin(origin,block,raw);
+     out.choices.push({id:origin.id+'|'+stage+'|'+mode+'|'+raw.choose+'|'+tid,
+      origin_id:owner.id,origin_name:owner.name,
+      origin_parent_id:origin.id,origin_parent_name:origin.name,
+      granting_trait:owner.granting_trait||'',spellcasting_ability:ability,
+      spellcasting_ability_options:tid?abilityOptions:[],filter:String(raw.choose),
+      count:Math.max(1,Number(raw.count)||1),mode,stage,
+      usage:tid?'limited':'at_will',tracker_id:tid,
       slot_alternative:!!tid&&block.slot_alternative===true});return;
     }
     if(typeof raw!=='string'||category==='will'&&mode==='prepared'||mode==='known'&&category==='will'&&!raw.includes('#c'))return;
@@ -445,9 +479,26 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
  for(const row of arr(index))for(const origin of originsFor(row).filter(o=>active(o.id))){
   const blocks=arr(row.blocks);
   if(blocks.length>1&&row.kind==='race'){
-   const chosen=blocks.find(b=>norm(b.name)===norm(record.subrace));
-   if(chosen)append(blockFor(origin,chosen,0,row));
-   else output.warnings.push('Scegli la discendenza di '+origin.name+' per determinarne gli incantesimi.');
+   const chosen=blocks.find(b=>b.name&&norm(b.name)===norm(record.subrace));
+   if(chosen){append(blockFor(origin,chosen,blocks.indexOf(chosen),row));continue;}
+   if(blocks.every(b=>!b.name)){
+    // Astral Elf: a choice of one cantrip, not three free cantrips
+    // or a nonexistent named subrace.
+    const options=blocks.flatMap((block,i)=>blockFor(origin,block,i,row).grants)
+      .filter(grant=>grant.cantrip);
+    const ids=[...new Set(options.map(grant=>grant.spell_id))];
+    if(ids.length){
+     const owner=options[0];
+     output.choices.push({id:'alternatives:'+origin.id+':cantrip',
+      origin_id:owner.origin_id,origin_name:owner.origin_name,
+      origin_parent_id:origin.id,origin_parent_name:origin.name,
+      granting_trait:owner.granting_trait||'',spell_options:ids,count:1,
+      mode:'known',stage:'1',usage:'at_will',tracker_id:'',
+      spellcasting_ability:'',spellcasting_ability_options:castingOptions(blocks[0])});
+     continue;
+    }
+   }
+   output.warnings.push('Scegli la discendenza di '+origin.name+' per determinarne gli incantesimi.');
    continue;
   }
   if(blocks.length>1&&row.kind==='feat'){
@@ -490,6 +541,20 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
    }
   }
   blocks.forEach((block,i)=>append(blockFor(origin,block,i,row)));
+ }
+ // A selected tiefling legacy replaces PHB Infernal Legacy spells and
+ // counters; a variant does not grant both sets at once.
+ const base='race|'+norm(record.species_source)+'|'+norm(record.species);
+ const replaced=new Set(arr(grantRules).filter(rule=>
+   rule.kind==='subrace'&&norm(rule.name)===norm(record.subrace)&&
+   norm(rule.source)===norm(record.subrace_source)&&
+   norm(rule.race_name)===norm(record.species)&&
+   (!rule.race_source||norm(rule.race_source)===norm(record.species_source)))
+   .flatMap(rule=>arr(rule.replace_parent_spell_traits).map(norm)));
+ if(replaced.size){
+  const displaced=row=>row.origin_parent_id===base&&replaced.has(norm(row.granting_trait));
+  output.grants=output.grants.filter(row=>!displaced(row));
+  output.trackers=output.trackers.filter(row=>!displaced(row));
  }
  for(const key of ['grants','trackers','choices'])output[key]=[...new Map(output[key].map(row=>[row.id,row])).values()];
  return output;
