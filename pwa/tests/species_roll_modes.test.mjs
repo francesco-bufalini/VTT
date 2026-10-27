@@ -151,3 +151,20 @@ test('racial modes appear as attributed benefits, with conditions, on their own 
  assert.ok(!sibling.some(x=>x.type==='roll_modes'&&
    x.items.some(y=>y.value.includes('luce solare'))));
 });
+
+test('calculated PWA sheets expose racial modes and real uses without custom roll toggles',()=>{
+ const drow=character('Elf (Drow)','PHB');
+ const original=find('Elf (Drow)','PHB');
+ const calculated=calculateSheet(drow,{speciesRollModes:catalog,
+  originDetails:{races:{'elf (drow)|phb':original}}});
+ assert.equal(calculated.racial_roll_modes.filter(x=>x.granting_trait==='Sunlight Sensitivity').length,2);
+ assert.ok(calculated.features.some(x=>x.name==='Sunlight Sensitivity'));
+ assert.ok(!classFeatureRollSources(drow,calculated,'attack_hit:test').some(x=>x.mode==='disadvantage'));
+ const kenku=character('Kenku','MPMM');
+ const second=calculateSheet(kenku,{speciesRollModes:catalog,
+  originDetails:{races:{'kenku|mpmm':find('Kenku','MPMM')}}});
+ const roll=second.racial_roll_modes.find(row=>row.granting_trait==='Kenku Recall');
+ assert.ok(roll?.tracker_id);
+ assert.ok(second.trackers.some(tracker=>tracker.id===roll.tracker_id&&
+  tracker.max===3&&tracker.recharge==='long_rest'));
+});
