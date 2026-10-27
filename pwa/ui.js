@@ -4,7 +4,7 @@ import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -2213,7 +2213,7 @@ function inventoryProperties(item={}){
     const ac=obj.ac;
     if(kind==="shield")parts.push("CA +"+(typeof ac==="number"?ac:2));
     else if(ac != null && (typeof ac!=="object"||ac.base != null))
-      parts.push("CA "+(typeof ac==="object"?ac.base:ac));
+      parts.push("CA "+(typeof ac==="object"?ac.base:ac)+" "+armorDexterityLabel(obj));
   }
   const rarity=String(obj.rarity||"").trim().toLowerCase();
   if(rarity&&rarity!=="none")parts.push(INVENTORY_RARITIES[rarity]||obj.rarity);
@@ -2262,9 +2262,8 @@ function inventoryEquipmentView(c,calculated={}){
     .map(resolveOwnedItem);
   const shieldBonus=shields.reduce((value,item)=>Math.max(value,Number(item.ac)||0),0);
   const dex=Number(calculated.values?.["ability_mod:dex"]??0);
-  const armorType=String(armor?.type||"").split("|")[0].toUpperCase();
-  const dexCap=armor?.dexterity_max!==undefined?Number(armor.dexterity_max):armorType==="MA"?2:armorType==="HA"?0:99;
-  const armorDex=armorType==="HA"&&Number(armor?.dexterity_max)===0?0:Math.min(dex,dexCap);
+  const dexCap=armor?armorDexterityLimit(armor):null;
+  const armorDex=armor?armorDexterityBonus(armor,dex):0;
   const rawMonsterAc=Array.isArray(c.stat_block?.ac)?
     c.stat_block.ac.find(row=>typeof row==="number"||row?.ac!==undefined):c.stat_block?.ac;
   const monsterAc=typeof rawMonsterAc==="object"?rawMonsterAc?.ac:rawMonsterAc;
@@ -2276,7 +2275,9 @@ function inventoryEquipmentView(c,calculated={}){
   const displayedNatural=chosenNatural?String(chosenNatural):naturalFormula;
   const usedNatural=Boolean(chosenNatural&&(!armor||appliedNatural.allow_armor||appliedNatural.ignore_armor));
   const formula=armor&&!usedNatural?
-    String(Number(armor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+
+    String(Number(armor.ac)||10)+
+      (dexCap===0?' (senza DES)':' + ('+armorDex+' DES'+
+        (dexCap===null?'':', max '+(dexCap>=0?'+':'')+dexCap)+')')+
       (shieldBonus?' + '+shieldBonus+' scudo':''):
     displayedNatural+(shieldBonus?' + '+shieldBonus+' scudo':'');
   const attackSettings='<div class="equipment-attack-options">'+
@@ -2331,8 +2332,10 @@ function inventoryAttunementView(c,entries){
   const active=state.calculated?.attunements?.used??inventoryAttunementCounts(c.inventory,max).reduce((sum,n)=>sum+n,0);
   const lines=entries.map(({index})=>inventoryAttunementControl(c,index,state.calculated||{})).join('');
   return panel("Oggetti che richiedono sintonia",
-    '<div class="inventory-attunement-meta"><span>Sintonie '+active+'/'+max+'</span>'+
-    '<label>Massimo base<input type="number" aria-label="Massimo sintonia base" data-inventory-attunement-max min="0" max="99" value="'+base+'"></label></div>'+
+    '<div class="inventory-attunement-meta"><span>Sintonie '+active+' / '+
+      formulaReadout(state.calculated||{values:{attunement_max:max}},
+        'attunement_max','Sintonie massime',{showBonus:false})+'</span>'+
+    '</div>'+
     (lines||'<p class="hint">Nessun oggetto richiede sintonia.</p>'),
     "inventory-native-panel inventory-attunement");
 }
@@ -3684,17 +3687,6 @@ async function handleField(target) {
     await patch({inventory:changed});
     await render();return;
   }
-  if(target.dataset.inventoryAttunementMax!==undefined){
-    const max=Number(target.value);
-    if(!Number.isInteger(max)||max<0||max>99)throw Error("Massimo di sintonia non valido.");
-    const next=await computeLocalData({...creature,attunement_max_base:max});
-    const occupied=(creature.inventory||[]).reduce((sum,item)=>sum+itemAttunementCount(item),0);
-    if(occupied>next.attunements.maximum){
-      await render();throw Error('Libera le sintonie in eccesso prima di ridurre il massimo.');
-    }
-    await patch({attunement_max_base:max});
-    await render();return;
-  }
   if(target.dataset.documentIndex!==undefined){
     await persistDocumentEdit(Number(target.dataset.documentIndex),target.dataset.documentPart,creature);
     return;
@@ -4330,7 +4322,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
  return dialog;
 }
 const editableScoreBaseTarget=target=>
-  target==='hp'||target==='second_max'||
+  target==='hp'||target==='second_max'||target==='attunement_max'||
   /^ability:(?:str|dex|con|int|wis|cha)$/.test(target);
 
 // A single restrained editor serves owned base scores, not derived figures.
@@ -4339,11 +4331,11 @@ const editableScoreBaseTarget=target=>
 function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
  if(!editableScoreBaseTarget(target))throw Error('Questo valore è calcolato e non modificabile direttamente.');
  const ability=target.startsWith('ability:')?target.split(':')[1]:'';
- const isHp=target==='hp',isSecond=target==='second_max';
- const title=isHp?'PF massimi':isSecond?'PF seconda forma':abilities[ability];
+ const isHp=target==='hp',isSecond=target==='second_max',isAttunement=target==='attunement_max';
+ const title=isHp?'PF massimi':isSecond?'PF seconda forma':isAttunement?'Sintonie massime':abilities[ability];
  const value=isHp?(record.max_hp_base??record.max_hp??1):
-   isSecond?(record.second_form_max_hp??0):(record.abilities?.[ability]??10);
- const minimum=isSecond?0:1,maximum=ability?30:99999;
+   isSecond?(record.second_form_max_hp??0):isAttunement?(record.attunement_max_base??3):(record.abilities?.[ability]??10);
+ const minimum=isSecond||isAttunement?0:1,maximum=isAttunement?99:ability?30:99999;
  const auto=calculated?.stats?.automatic_hp;
  document.querySelector('#sheet-score-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -5556,12 +5548,18 @@ async function handleAction(target){
     if(!editableScoreBaseTarget(scoreTarget))throw Error('Valore base non modificabile');
     const input=dialog.querySelector('#sheet-score-input'),raw=input?.value?.trim();
     const value=Number(raw),ability=scoreTarget.startsWith('ability:')?scoreTarget.split(':')[1]:'';
-    const min=scoreTarget==='second_max'?0:1,max=ability?30:99999;
+    const min=scoreTarget==='second_max'||scoreTarget==='attunement_max'?0:1,max=scoreTarget==='attunement_max'?99:ability?30:99999;
     if(!raw||!Number.isInteger(value)||value<min||value>max)
       throw Error('Inserisci un valore intero tra '+min+' e '+max);
     const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
     const change=ability?{abilities:{...creature.abilities,[ability]:value}}:
-      scoreTarget==='hp'?{max_hp_base:value}:{second_form_max_hp:value};
+      scoreTarget==='hp'?{max_hp_base:value}:scoreTarget==='attunement_max'?{attunement_max_base:value}:{second_form_max_hp:value};
+    if(scoreTarget==='attunement_max'){
+      const next=await computeLocalData({...creature,...change});
+      const occupied=(creature.inventory||[]).reduce((sum,item)=>sum+itemAttunementCount(item),0);
+      if(occupied>next.attunements.maximum)
+        throw Error('Libera le sintonie in eccesso prima di ridurre il massimo.');
+    }
     const returnTitle=String(dialog.dataset.returnFormulaTitle||'');
     await patch(change);
     dialog.close?.();dialog.remove();
@@ -7178,7 +7176,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-item-container],[data-coin-code],[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
+  const editable = "[data-item-container],[data-coin-code],[data-slot-weapon-size],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==='library-miniature-search'){
