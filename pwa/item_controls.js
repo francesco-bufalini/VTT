@@ -383,7 +383,7 @@ export function expandedInfusionDefinitions(definitions=[]){
     source:entry.source||"TCE",min_level:Math.max(2,Number(item.level)||2),
     application_kind:"replicate_variant",replicates_item_name:name,
     item_selector:{},requires_attunement:false,
-    description:"Replica l'oggetto magico "+name+". Puoi applicare questa infusione a un qualsiasi oggetto dell'inventario, senza requisiti sul bersaglio."});
+    description_source_name:entry.name,description_source:entry.source||"TCE"});
   }
  }
  return result;
@@ -395,6 +395,9 @@ export function learnedInfusions(record={},definitions=[]){
    return option?[{...option,plan_item_id:saved.plan_item_id||"",plan_item_name:saved.plan_item_name||"",saved_index:index}]:[];
  });
 }
+// The original item selector is authoritative for actual armor, weapon and
+// shield requirements. Non-equipment examples (boots, rods, rings, gems, etc.)
+// are advisory: any nonmagical object may receive those infusions.
 export function infusionEligible(option,owned){
  if(!option||!owned||typeof owned!=="object")return false;
  const entry=resolveOwnedItem(owned),selector=option.item_selector||{};
@@ -402,11 +405,18 @@ export function infusionEligible(option,owned){
  if(selector.id_prefix&&!id.startsWith(selector.id_prefix))return false;
  if(selector.nonmagical&&(id.startsWith("magic_item:")||entry.magic===true||
     !["","none","unknown","—"].includes(String(entry.rarity||"").toLowerCase())))return false;
- if(array(selector.kinds).length&&!selector.kinds.includes(kind))return false;
- if(array(selector.name_contains_any).length&&!selector.name_contains_any.some(part=>name.includes(String(part).toLowerCase())))return false;
- if(array(selector.properties_all).length&&!selector.properties_all.every(code=>hasProperty(entry,code)))return false;
+ const kinds=array(selector.kinds),strict=kinds.some(k=>["armor","weapon","shield"].includes(k));
+ const names=array(selector.name_contains_any),matchesName=names.some(part=>name.includes(String(part).toLowerCase()));
+ if(strict){
+   // Armor-or-robes (Mind Sharpener) accepts either side of the requirement.
+   if(!kinds.includes(kind)&&!matchesName)return false;
+   if(kinds.includes(kind)&&names.length&&!matchesName&&!(kinds.includes("armor")&&kind==="armor"))
+     return false;
+   if(array(selector.properties_all).length&&!array(selector.properties_all).every(code=>hasProperty(entry,code)))return false;
+ }
  return true;
 }
+
 function replicableItem(option,entry,level){
  if(!entry||!String(entry.id||"").startsWith("magic_item:"))return false;
  if(array(option.replicable_items).some(row=>sameText(row.name,entry.name)&&level>=Number(row.level||99)))return true;
@@ -415,10 +425,8 @@ function replicableItem(option,entry,level){
 // Generic learnt/prepared feature selections; other nonspell features may reuse
 // this collection instead of masquerading as class spells or trackers.
 const preparationIdentity=row=>[String(row?.kind||""),String(row?.id||""),String(row?.plan_item_id||"")].join("|");
-export function preparedFeatureRows(record={},known=[]){
- if(Array.isArray(record.prepared_features))return record.prepared_features;
- // Existing characters knew and could immediately use all their learnt infusions.
- return known.map(row=>({kind:"infusion",id:row.id,plan_item_id:row.plan_item_id||""}));
+export function preparedFeatureRows(record={}){
+ return array(record.prepared_features);
 }
 export function featurePreparationPatch(record,choice,enabled,known=[]){
  const item={kind:String(choice?.kind||""),id:String(choice?.id||""),
@@ -430,22 +438,6 @@ export function featurePreparationPatch(record,choice,enabled,known=[]){
  if(enabled&&!present)choices.push(item);
  if(!enabled&&present)return {prepared_features:choices.filter(row=>preparationIdentity(row)!==key)};
  return {prepared_features:choices};
-}
-export function isInfusionPrepared(record,option,definitions=[]){
- const known=learnedInfusions(record,definitions);
- if(!known.some(row=>row.id===option?.id&&String(row.plan_item_id||"")===String(option.plan_item_id||"")))return false;
- return preparedFeatureRows(record,known).some(row=>preparationIdentity(row)===
-   preparationIdentity({kind:"infusion",id:option.id,plan_item_id:option.plan_item_id||""}));
-}
-export function prepareInfusionPatch(record,option,definitions,features=[],enabled=true){
- if(!infusionGrantingTrait(record,features))throw Error("Il tratto Infuse Item non è disponibile.");
- const trait=infusionGrantingTrait(record,features);
- if(!learnedInfusions(record,definitions).some(row=>row.id===option?.id&&
-   String(row.plan_item_id||"")===String(option.plan_item_id||"")))
-   throw Error("Infusione non conosciuta.");
- return featurePreparationPatch(record,{kind:"infusion",id:option.id,
-   plan_item_id:option.plan_item_id||"",origin_id:trait?.origin_id||option.origin_id||""},
-   enabled,learnedInfusions(record,definitions));
 }
 export function learnInfusionPatch(record,option,definitions,classMechanics,itemIndex=-1,features=[]){
  const caps=infusionLimits(record,classMechanics,features),known=learnedInfusions(record,definitions);
@@ -462,8 +454,8 @@ export function learnInfusionPatch(record,option,definitions,classMechanics,item
  return {optional_features_catalog:[...array(record.optional_features_catalog),
    {id:option.id,name:option.name,source:option.source||"TCE",
     ...(trait?{origin_id:trait.origin_id}:{}),...(plan_item_id?{plan_item_id,plan_item_name}:{})}],
-   // A newly learnt infusion is not prepared until selected explicitly.
-   prepared_features:preparedFeatureRows(record,known)};
+   // Infusions become usable immediately upon learning.
+   prepared_features:array(record.prepared_features).filter(row=>row?.kind!=="infusion")};
 }
 // Reusable inventory targeting contract for infusions and object-targeting spells.
 // Eligibility comes exclusively from typed selectors, never narrative text.
@@ -483,8 +475,11 @@ export function targetableInventoryItems(record,selector={},predicate=()=>true){
  });
 }
 export function compatibleInfusionTargets(record,option,definitions=[],features=[]){
- if(!isInfusionPrepared(record,option,definitions)||!infusionGrantingTrait(record,features))return [];
- return targetableInventoryItems(record,option.item_selector||{},(item)=>
+ if(!infusionGrantingTrait(record,features)||!learnedInfusions(record,definitions).some(row=>
+   row.id===option?.id&&String(row.plan_item_id||"")===String(option.plan_item_id||"")))return [];
+ // Preserve the generic inventory targeting utility for spells. Infusions use
+ // their own typed eligibility so non-equipment examples can be bypassed.
+ return targetableInventoryItems(record,{},(item)=>
    infusionEligible(option,item)&&
    (option.application_kind!=="replicate"||option.plan_item_id===item.id)&&
    (!item.infusion?.id||item.infusion.creator_id===record.id));
@@ -495,8 +490,7 @@ export function applyInfusionPatch(record,known,definitions,classMechanics,index
  if(!option||!item||!array(record.optional_features_catalog).some(row=>
    row.id===option.id&&String(row.plan_item_id||"")===String(known.plan_item_id||"")))
    throw Error("Infusione non conosciuta oppure oggetto non disponibile.");
- if(!isInfusionPrepared(record,known,definitions))throw Error("Prepara prima questa infusione.");
- if(caps.level<Math.max(2,Number(option.min_level)||2)||!infusionEligible(option,item))
+  if(caps.level<Math.max(2,Number(option.min_level)||2)||!infusionEligible(option,item))
    throw Error("Oggetto incompatibile o tratto Infuse Item non disponibile.");
  if(option.application_kind==="replicate"&&(!known.plan_item_id||known.plan_item_id!==item.id))
    throw Error("Questo piano replica un altro oggetto.");
@@ -555,14 +549,10 @@ export function forgetInfusionPatch(record,known){
      delete item.infusion;item.attuned=false;item.attuned_count=0;
    }
  }
- const legacyKnown=array(record.optional_features_catalog).filter(row=>
-   String(row?.id||"").startsWith("infusion|")).map(row=>({id:row.id,
-     plan_item_id:row.plan_item_id||""}));
- const prepared=preparedFeatureRows(record,legacyKnown);
  return {optional_features_catalog:updated,inventory,
-   prepared_features:prepared.filter(row=>!(row.kind==="infusion"&&row.id===known.id&&
-     String(row.plan_item_id||"")===String(known.plan_item_id||"")) )};
+   prepared_features:array(record.prepared_features).filter(row=>!(row?.kind==="infusion"&&row.id===known.id))};
 }
+
 export const infusionInstanceOrigin=(item,index=0)=>
   "infusion:"+String(item?.infusion?.creator_id||"unknown")+"|"+
   String(item?.infusion?.id||"unknown")+"|"+
