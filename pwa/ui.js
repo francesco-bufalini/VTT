@@ -27,7 +27,7 @@ import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
-import {spellItemRules,spellItemTargetSelector,spellItemDamageTypes,itemSpellCastPatch,endItemSpellPatch,concentrationItemSpellEndPatch} from './spell_item_effects.js';
+import {spellItemRules,spellItemTargetSelector,spellItemDamageTypes,itemSpellCastPatch,endItemSpellPatch,concentrationItemSpellEndPatch} from './effect_extensions.js';
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
