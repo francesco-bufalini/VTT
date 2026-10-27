@@ -6129,7 +6129,7 @@ async function handleAction(target){
   if(act==='hp-adjust-max'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
-    openSheetBaseEditor(creature,await computeLocalData(creature),'hp');
+    openSheetScoreFormula(creature,await computeLocalData(creature),'hp','PF massimi');
     return;
   }
   if(act==='hp-adjust-apply'){
