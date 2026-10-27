@@ -3097,9 +3097,9 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
      '<label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(grant.id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+
      '<label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(grant.id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label>'+
      '<label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(grant.id)+'"></label>'+
-     '<label>Slot alternativi<select data-origin-config="slot_alternative" data-grant-id="'+esc(grant.id)+'">'+
+     (mode==='tracker'?'<label>Slot alternativi<select data-origin-config="slot_alternative" data-grant-id="'+esc(grant.id)+'">'+
        [['false','Non consentiti'],['true','Consentiti']].map(([value,label])=>
-         '<option value="'+value+'"'+(String(Boolean(grant.slot_alternative))===value?' selected':'')+'>'+label+'</option>').join('')+'</select></label>'+
+         '<option value="'+value+'"'+(String(Boolean(grant.slot_alternative))===value?' selected':'')+'>'+label+'</option>').join('')+'</select></label>':'')+
      (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(grant.id)+'">Cambia scelta</button>':'')+
      '</details></div>';
  };
@@ -4001,7 +4001,12 @@ async function handleField(target) {
     let value=target.value;
     if(key==='tracker_cost'){value=Number(value);if(!Number.isInteger(value)||value<1||value>999)throw Error('Costo da 1 a 999');}
     if(key==='payment_mode'&&!['free','slot','tracker'].includes(value))throw Error('Consumo non valido');
-   if(key==='slot_alternative')value=value==='true';
+   if(key==='slot_alternative'){
+      value=value==='true';
+      const grant=state.calculated.origin_spells.find(g=>g.id===id);
+      if(value&&(!grant?.tracker_id||grant.payment_mode!=='tracker'))
+        throw Error('Gli slot alternativi richiedono un incantesimo con tracker.');
+    }
     const configs=structuredClone(creature.origin_spell_configs||{});configs[id]={...configs[id],[key]:value};
     await patch({origin_spell_configs:configs});await render();return;
   }
