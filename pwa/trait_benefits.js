@@ -298,6 +298,17 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   }
  }
 
+ // Source-qualified racial advantages and disadvantages retain their
+ // precise condition_label on the owning trait, including suppressed
+ // sunlight sensitivity and conditional charm/fright saves.
+ for(const rule of rows(calculated.racial_roll_modes)){
+  if(!belongs(rule)||!['advantage','disadvantage'].includes(rule.mode))continue;
+  const label=traitBenefitTargetLabel(rule.target);
+  const condition=rule.condition_label?' · '+rule.condition_label:' · Sempre';
+  add('roll_modes','Vantaggi e svantaggi',label,
+   (rule.mode==='advantage'?'Vantaggio':'Svantaggio')+condition,
+   rule.benefit_id||rule.id);
+ }
  // Contextual, source-qualified feat advantages are separate from ordinary
  // Constitution saving throws and stay visible on the granting feat card.
  for(const rule of rows(calculated.feat_roll_modes)){
