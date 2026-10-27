@@ -18,16 +18,21 @@ export function projectFlattenedSpeciesAbilities(index={},nativeRaces=[],additio
   // A same-name tiefling/half-elf 2014 variant can inherit typed parent
   // scores even when 5etools omits a redundant explicit subrace entry.
   const parentSource=option?.raceSource||entitlement?.race_source||
-   (['tiefling','half-elf','half-orc','human','dragonborn'].includes(norm(parentName))?'PHB':'');
+   (['tiefling','half-elf','half-orc','dragonborn'].includes(norm(parentName))?'PHB':'');
   if(!parentSource)continue;
   const parent=(index.race||[]).find(x=>norm(x.name)===norm(parentName)&&
    norm(x.source)===norm(parentSource));
-  const replaced=option?.replaces_parent_ability===true||sum(option?.ability)>=2;
+  const replaced=option?.replaces_parent_ability===true||sum(option?.ability)>=3||
+   norm(parentName)==='human'&&/mark of/i.test(subName);
   const fixed={};
   if(!replaced)for(const [key,value] of Object.entries(parent?.ability||{}))
    fixed[key]=(fixed[key]||0)+Number(value);
-  for(const [key,value] of Object.entries(option?.ability||{}))
+  for(const [key,value] of Object.entries(option?.ability||{})){
+   // A few SCAG variants repeat the parent ASI verbatim in the flattened
+   // record. That is not a second increase of the same characteristic.
+   if(!replaced&&Number(parent?.ability?.[key])===Number(value))continue;
    fixed[key]=(fixed[key]||0)+Number(value);
+  }
   const ability_choices=option?.ability_choices||
    (!replaced?parent?.ability_choices:undefined);
   if(!Object.keys(fixed).length&&!ability_choices)continue;
