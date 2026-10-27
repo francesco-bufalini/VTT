@@ -624,7 +624,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '<button type="button" data-act="hp-adjust-max" aria-label="Modifica PF massimi" title="Modifica PF massimi">'+esc(Math.max(0,Number(calculated.stats?.max_hp??0)))+' <span aria-hidden="true">✎</span></button></div>'+
        '<label class="hp-adjust-stat" for="hp-adjust-temporary"><span>Temporanei</span><input id="hp-adjust-temporary" type="number" inputmode="numeric" step="1" min="0" max="99999" value="'+esc(c.temporary_hp??0)+'" required></label>'+
       '</div>'+
-      '<div class="hp-adjust-actions"><button type="button" class="btn" data-act="hp-adjust-cancel">Annulla</button>'+
+      '<div class="hp-adjust-actions"><button type="button" class="btn" data-act="hp-restore" title="Riporta i PF attuali al massimo">↺ PF pieni</button>'+
        '<button type="submit" class="btn primary" id="hp-adjust-confirm">Salva PF</button></div>'+
      '</form>'+
      '<div class="hp-adjust-quick"><label for="hp-adjust-amount">Applica danni o cura</label>'+
