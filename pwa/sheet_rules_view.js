@@ -897,7 +897,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    btn('Espandi tutto','increase','data-act="battle-expand-all"')+
    btn('Collassa tutto','decrease','data-act="battle-collapse-all"')+'</div>';
   if(resources+untracked)html+=disclosure('resources','Risorse','reset',
-   resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>');
+   resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>',true);
   if(view.battleActions?.attacks)html+=disclosure('attacks','Attacchi','weapon',
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));

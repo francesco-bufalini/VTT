@@ -201,7 +201,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
+  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 const sessionMapViewer=new SessionMapViewer();
@@ -631,7 +631,7 @@ async function navigate(page){
   state.traitPopupKey='';state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
   if(page==="library"){
     state.creatureId=null;
-    state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
+    state.inventorySelectedTabs=['all'];state.inventorySubtab='items';
   }
   state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
   if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
@@ -6427,7 +6427,7 @@ async function handleAction(target){
     closeDialog(dialog);
     state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";
     await refreshCharacterHomebrewOptions();
-    state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
+    state.inventorySelectedTabs=['all'];state.inventorySubtab='items';
     await render();return;
   }
   if(act==="import"||act==="library-quick-import"){
@@ -6451,7 +6451,7 @@ async function handleAction(target){
     }
     state.magicPopup="";state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;
     await refreshCharacterHomebrewOptions();
-    state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
+    state.inventorySelectedTabs=['all'];state.inventorySubtab='items';
     await render();return;
   }
   if(act==="back"){

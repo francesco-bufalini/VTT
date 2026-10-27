@@ -27,6 +27,10 @@ try{
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');
  const before=await record();
+ await panelCount(6);
+ assert.equal(await all().getAttribute('aria-pressed'),'true','All inventory sections start selected');
+ assert.match(await all().innerText(),/Mostra solo zaino/);
+ await all().click();await panelCount(1);
  const expected=['inventory-container-add','items','scrolls','documents','container:bag','container:case','container:empty'];
  for(const width of [320,360,390,768,1440]){
   await page.setViewportSize({width,height:900});
