@@ -482,7 +482,7 @@ test('battle context separates movement from identity and displays the equipped 
  assert.match(battle,/class="battle-defense-panel"/);
  assert.match(battle,/data-equip-slot="body"/);
  assert.match(battle,/Formula armatura indossata/);
- assert.match(battle,/14 \+ \(2 DES\)/);
+ assert.match(battle,/14 \+ \(2 DES, max \+2\)/);
  assert.doesNotMatch(battle,/data-field="armor_natural_formula"/);
  assert.doesNotMatch(battle,/<summary>Armatura e CA naturale<\/summary>/);
  assert.doesNotMatch(battle,/data-calculated="initiative"/);
