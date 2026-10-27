@@ -200,6 +200,35 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
    result.push(...allocationChoiceRows(record,sid,row.name,variants));
   }
  }
+ // Damage-type selections (for example Draconic Ancestry) are source-bound
+ // choices, not permanent resistance to every option in the 5etools table.
+ const defenseRule=arr(catalogs.speciesDefenses?.races).find(row=>
+  record.species_id&&row.id===record.species_id&&
+   norm(row.source)===norm(record.species_source)&&
+   (norm(row.name)===norm(record.species)||record.subrace&&
+    norm(row.name).startsWith(norm(record.species)+' (')))||
+  arr(catalogs.speciesDefenses?.races).find(row=>
+   norm(row.name)===norm(record.species)&&norm(row.source)===norm(record.species_source));
+ if(defenseRule){
+  const sourceId='race|'+norm(defenseRule.source)+'|'+norm(defenseRule.name);
+  const parent='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
+  const chosen=record.origin_defense_choices?.[defenseRule.id]??
+    record.origin_defense_choices?.[sourceId]??record.origin_defense_choices?.[parent];
+  if(enabled(record,sourceId)&&enabled(record,parent))
+   for(const rule of arr(defenseRule.choices)){
+    const feature=arr(calculated.features).find(f=>norm(f.name)===norm(rule.trait)&&
+      f.origin_key===parent);
+    if(feature&&(feature.disabled||feature.inactive||
+      !enabled(record,feature.origin_id)||record.trait_enabled?.[feature.key]===false))continue;
+    const options=arr(rule.from).filter(x=>typeof x==='string');
+    const selected=typeof chosen==='string'&&options.includes(norm(chosen))?[norm(chosen)]:[];
+    result.push({id:'defense:'+sourceId+':'+rule.rank+':'+norm(rule.trait),
+      kind:'defense',origin_id:feature?.origin_id||sourceId,
+      defense_source_id:sourceId,name:'Tratto · '+rule.trait,
+      label:rule.rank===1?'Resistenza ai danni':rule.rank===2?'Immunità ai danni':'Tipo di difesa',
+      count:1,selected,options,remaining:selected.length?0:1});
+   }
+ }
  // Class-level Ability Score Improvement has an explicit 5etools feature ID.
  // Each occurrence can grant score allocation OR an individually owned feat.
  for(const feature of arr(calculated.features)){
@@ -284,7 +313,7 @@ export function choicesForTrait(trait,record,choices=[]){
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
 export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):strip(value)));
  const prefix='__custom__:';
@@ -321,6 +350,15 @@ export function savePendingChoice(record,choice,values=[]){
      ...(variant?{spell_variant:variant}:{}),granted_by:choice.origin_id});
   }else advancements.push({origin_id:choice.origin_id,mode:'feat'});
   return {advancement_choices:advancements,feats_catalog:otherFeats};
+ }
+ if(choice.kind==='defense'){
+  if(selected.length>1||selected.some(key=>!choice.options.includes(key))||
+    !String(choice.defense_source_id||'').startsWith('race|'))
+   throw Error('Tipo di danno non consentito dalla specie.');
+  const current={...(record.origin_defense_choices||{})};
+  if(selected.length)current[choice.defense_source_id]=selected[0];
+  else delete current[choice.defense_source_id];
+  return {origin_defense_choices:current};
  }
  if(choice.kind==='casting_ability'){
   if(selected.length!==1||!abilities.includes(selected[0])||
