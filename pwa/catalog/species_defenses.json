@@ -1,0 +1,1074 @@
+{
+  "version": 1,
+  "source": "vtt/data/creature_references_5etools.json",
+  "races": [
+    {
+      "id": "5etools:races:dmg:aasimar",
+      "name": "Aasimar",
+      "source": "DMG",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Celestial Resistance"
+        },
+        {
+          "rank": 1,
+          "key": "radiant",
+          "trait": "Celestial Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:aasimar",
+      "name": "Aasimar",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Celestial Resistance"
+        },
+        {
+          "rank": 1,
+          "key": "radiant",
+          "trait": "Celestial Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:vgm:aasimar",
+      "name": "Aasimar",
+      "source": "VGM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Celestial Resistance"
+        },
+        {
+          "rank": 1,
+          "key": "radiant",
+          "trait": "Celestial Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psk:aetherborn",
+      "name": "Aetherborn",
+      "source": "PSK",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Born of Aether"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:aag:autognome",
+      "name": "Autognome",
+      "source": "AAG",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Mechanical Nature"
+        },
+        {
+          "rank": 3,
+          "key": "disease",
+          "trait": "Mechanical Nature"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:rhw:dhampir",
+      "name": "Dhampir",
+      "source": "RHW",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Trace of Undeath"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:phb:dragonborn",
+      "name": "Dragonborn",
+      "source": "PHB",
+      "entries": [],
+      "choices": [
+        {
+          "rank": 1,
+          "trait": "Damage Resistance",
+          "from": [
+            "acid",
+            "cold",
+            "fire",
+            "lightning",
+            "poison"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ftd:dragonborn%20%28chromatic%29",
+      "name": "Dragonborn (Chromatic)",
+      "source": "FTD",
+      "entries": [],
+      "choices": [
+        {
+          "rank": 1,
+          "trait": "Draconic Resistance",
+          "from": [
+            "acid",
+            "lightning",
+            "poison",
+            "fire",
+            "cold"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ftd:dragonborn%20%28gem%29",
+      "name": "Dragonborn (Gem)",
+      "source": "FTD",
+      "entries": [],
+      "choices": [
+        {
+          "rank": 1,
+          "trait": "Draconic Resistance",
+          "from": [
+            "force",
+            "radiant",
+            "psychic",
+            "thunder",
+            "necrotic"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ftd:dragonborn%20%28metallic%29",
+      "name": "Dragonborn (Metallic)",
+      "source": "FTD",
+      "entries": [],
+      "choices": [
+        {
+          "rank": 1,
+          "trait": "Draconic Resistance",
+          "from": [
+            "fire",
+            "lightning",
+            "acid",
+            "cold"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:duergar",
+      "name": "Duergar",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Dwarven Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:phb:dwarf",
+      "name": "Dwarf",
+      "source": "PHB",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Dwarven Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psk:dwarf%20%28kaladesh%29",
+      "name": "Dwarf (Kaladesh)",
+      "source": "PSK",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Dwarven Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:githyanki",
+      "name": "Githyanki",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Psychic Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:githzerai",
+      "name": "Githzerai",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Psychic Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psz:goblin",
+      "name": "Goblin",
+      "source": "PSZ",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Grit"
+        },
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Grit"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:goliath",
+      "name": "Goliath",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "cold",
+          "trait": "Mountain Born"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:vgm:goliath",
+      "name": "Goliath",
+      "source": "VGM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "cold",
+          "trait": "Mountain Born"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:oga:grung",
+      "name": "Grung",
+      "source": "OGA",
+      "entries": [
+        {
+          "rank": 2,
+          "key": "poison",
+          "trait": "Poison Immunity"
+        },
+        {
+          "rank": 3,
+          "key": "poisoned",
+          "trait": "Poison Immunity"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:efa:kalashtar",
+      "name": "Kalashtar",
+      "source": "EFA",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Mental Discipline"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:erlw:kalashtar",
+      "name": "Kalashtar",
+      "source": "ERLW",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Mental Discipline"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psa:naga",
+      "name": "Naga",
+      "source": "PSA",
+      "entries": [
+        {
+          "rank": 2,
+          "key": "poison",
+          "trait": "Poison Immunity"
+        },
+        {
+          "rank": 3,
+          "key": "poisoned",
+          "trait": "Poison Immunity"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:aag:plasmoid",
+      "name": "Plasmoid",
+      "source": "AAG",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "acid",
+          "trait": "Natural Resilience"
+        },
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Natural Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:rhw:reborn",
+      "name": "Reborn",
+      "source": "RHW",
+      "entries": [],
+      "choices": [
+        {
+          "rank": 1,
+          "trait": "Strange Endurance",
+          "from": [
+            "cold",
+            "necrotic",
+            "poison"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vrgr:reborn",
+      "name": "Reborn",
+      "source": "VRGR",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Deathless Nature"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:lfl:rimekin",
+      "name": "Rimekin",
+      "source": "LFL",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "cold",
+          "trait": "Cold Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:sea%20elf",
+      "name": "Sea Elf",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "cold",
+          "trait": "Child of the Sea"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:shadar-kai",
+      "name": "Shadar-Kai",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Necrotic Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:dmg:skeleton",
+      "name": "Skeleton",
+      "source": "DMG",
+      "entries": [
+        {
+          "rank": 2,
+          "key": "poison",
+          "trait": "Undead Nature"
+        },
+        {
+          "rank": 3,
+          "key": "exhaustion",
+          "trait": "Undead Nature"
+        },
+        {
+          "rank": 3,
+          "key": "poisoned",
+          "trait": "Undead Nature"
+        },
+        {
+          "rank": -1,
+          "key": "bludgeoning",
+          "trait": "Brittle Bones"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:phb:tiefling",
+      "name": "Tiefling",
+      "source": "PHB",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:triton",
+      "name": "Triton",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "cold",
+          "trait": "Guardian of the Depths"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:vgm:triton",
+      "name": "Triton",
+      "source": "VGM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "cold",
+          "trait": "Guardians of the Depths"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psz:vampire",
+      "name": "Vampire",
+      "source": "PSZ",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Vampiric Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:efa:warforged",
+      "name": "Warforged",
+      "source": "EFA",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Construct Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:erlw:warforged",
+      "name": "Warforged",
+      "source": "ERLW",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Constructed Resilience"
+        },
+        {
+          "rank": 3,
+          "key": "disease",
+          "trait": "Constructed Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:yuan-ti",
+      "name": "Yuan-Ti",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Poison Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:vgm:yuan-ti%20pureblood",
+      "name": "Yuan-ti Pureblood",
+      "source": "VGM",
+      "entries": [
+        {
+          "rank": 2,
+          "key": "poison",
+          "trait": "Poison Immunity"
+        },
+        {
+          "rank": 3,
+          "key": "poisoned",
+          "trait": "Poison Immunity"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:dmg:zombie",
+      "name": "Zombie",
+      "source": "DMG",
+      "entries": [
+        {
+          "rank": 2,
+          "key": "poison",
+          "trait": "Undead Nature"
+        },
+        {
+          "rank": 3,
+          "key": "poisoned",
+          "trait": "Undead Nature"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28shadar-kai%29",
+      "name": "Elf (Shadar-kai)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Necrotic Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:eepc:genasi%20%28fire%29",
+      "name": "Genasi (Fire)",
+      "source": "EEPC",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Fire Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:eepc:genasi%20%28water%29",
+      "name": "Genasi (Water)",
+      "source": "EEPC",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "acid",
+          "trait": "Acid Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:genasi%20%28air%29",
+      "name": "Genasi (Air)",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "lightning",
+          "trait": "Lightning Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:genasi%20%28fire%29",
+      "name": "Genasi (Fire)",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Fire Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mpmm:genasi%20%28water%29",
+      "name": "Genasi (Water)",
+      "source": "MPMM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "acid",
+          "trait": "Acid Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29",
+      "name": "Half-Elf (Variant; Mark of Storm)",
+      "source": "ERLW",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "lightning",
+          "trait": "Storm's Boon"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:phb:halfling%20%28stout%29",
+      "name": "Halfling (Stout)",
+      "source": "PHB",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Stout Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:vgm:aasimar%20%28fallen%29",
+      "name": "Aasimar (Fallen)",
+      "source": "VGM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Celestial Resistance"
+        },
+        {
+          "rank": 1,
+          "key": "radiant",
+          "trait": "Celestial Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:vgm:aasimar%20%28protector%29",
+      "name": "Aasimar (Protector)",
+      "source": "VGM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Celestial Resistance"
+        },
+        {
+          "rank": 1,
+          "key": "radiant",
+          "trait": "Celestial Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:vgm:aasimar%20%28scourge%29",
+      "name": "Aasimar (Scourge)",
+      "source": "VGM",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Celestial Resistance"
+        },
+        {
+          "rank": 1,
+          "key": "radiant",
+          "trait": "Celestial Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:dwarf%20%28duergar%29",
+      "name": "Dwarf (Duergar)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Dwarven Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:phb:dwarf%20%28hill%29",
+      "name": "Dwarf (Hill)",
+      "source": "PHB",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Dwarven Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29",
+      "name": "Dwarf (Mark of Warding)",
+      "source": "ERLW",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Dwarven Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:phb:dwarf%20%28mountain%29",
+      "name": "Dwarf (Mountain)",
+      "source": "PHB",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "poison",
+          "trait": "Dwarven Resilience"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psx:goblin%20%28ixalan%29",
+      "name": "Goblin (Ixalan)",
+      "source": "PSX",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Grit"
+        },
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Grit"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20grotag%20tribe%29",
+      "name": "Goblin (Zendikar; Grotag Tribe)",
+      "source": "PSZ",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Grit"
+        },
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Grit"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29",
+      "name": "Goblin (Zendikar; Lavastep Tribe)",
+      "source": "PSZ",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Grit"
+        },
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Grit"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20tuktuk%20tribe%29",
+      "name": "Goblin (Zendikar; Tuktuk Tribe)",
+      "source": "PSZ",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Grit"
+        },
+        {
+          "rank": 1,
+          "key": "psychic",
+          "trait": "Grit"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28asmodeus%29",
+      "name": "Tiefling (Asmodeus)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28baalzebul%29",
+      "name": "Tiefling (Baalzebul)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28dispater%29",
+      "name": "Tiefling (Dispater)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28fierna%29",
+      "name": "Tiefling (Fierna)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28glasya%29",
+      "name": "Tiefling (Glasya)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28levistus%29",
+      "name": "Tiefling (Levistus)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28mammon%29",
+      "name": "Tiefling (Mammon)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28mephistopheles%29",
+      "name": "Tiefling (Mephistopheles)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:scag:tiefling%20%28variant%3B%20devil%27s%20tongue%29",
+      "name": "Tiefling (Variant; Devil's Tongue)",
+      "source": "SCAG",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:scag:tiefling%20%28variant%3B%20hellfire%29",
+      "name": "Tiefling (Variant; Hellfire)",
+      "source": "SCAG",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:scag:tiefling%20%28variant%3B%20infernal%20legacy%29",
+      "name": "Tiefling (Variant; Infernal Legacy)",
+      "source": "SCAG",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:scag:tiefling%20%28variant%3B%20winged%29",
+      "name": "Tiefling (Variant; Winged)",
+      "source": "SCAG",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28zariel%29",
+      "name": "Tiefling (Zariel)",
+      "source": "MTF",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "fire",
+          "trait": "Hellish Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psx:vampire%20%28ixalan%29",
+      "name": "Vampire (Ixalan)",
+      "source": "PSX",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Vampiric Resistance"
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "5etools:races:psz:vampire%20%28zendikar%29",
+      "name": "Vampire (Zendikar)",
+      "source": "PSZ",
+      "entries": [
+        {
+          "rank": 1,
+          "key": "necrotic",
+          "trait": "Vampiric Resistance"
+        }
+      ],
+      "choices": []
+    }
+  ]
+}
