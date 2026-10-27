@@ -933,13 +933,13 @@
           "trait": "Sunlight Sensitivity",
           "target": "attack_roll",
           "mode": "disadvantage",
-          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+          "condition_label": "Solo quando sei alla luce solare diretta"
         },
         {
           "trait": "Sunlight Sensitivity",
           "target": "skill:perception",
           "mode": "disadvantage",
-          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+          "condition_label": "Solo alla luce solare diretta, per prove basate sulla vista"
         }
       ],
       "trait_details": [
@@ -1348,13 +1348,13 @@
           "trait": "Sunlight Sensitivity",
           "target": "attack_roll",
           "mode": "disadvantage",
-          "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+          "condition_label": "Solo quando sei alla luce solare diretta"
         },
         {
           "trait": "Sunlight Sensitivity",
           "target": "skill:perception",
           "mode": "disadvantage",
-          "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+          "condition_label": "Solo alla luce solare diretta, per prove basate sulla vista"
         }
       ],
       "trait_details": [
