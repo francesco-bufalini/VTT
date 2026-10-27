@@ -33,6 +33,7 @@ import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
+import {healingHandsPatch} from "./species_powers.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
@@ -1302,6 +1303,10 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
  dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.dataset.creatureId=c.id;
  const calculated=await computeLocalData(c);
  const companion=await companionFeatureChoices(c,calculated,ability.origin_id||ability.feature_id||'');
+ const healPower=(calculated.racial_abilities||[]).find(power=>
+   power.mode==='heal_dice'&&('activated:'+power.id===requested||power.id===ability.ability_id));
+ const healRecipients=healPower&&!selectedTarget?(await listCreatures()).map(row=>row.creature||row)
+   .filter(row=>row?.id):[];
  dialog.innerHTML=actionDialogIntro(ability.name,[
   {label:'Azione',value:ability.time||'Secondo il privilegio'},
   {label:'Origine',value:ability.origin_name||ability.origin||'Tratto'},
@@ -1315,6 +1320,13 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     ability.target_mode==='single_token'?'La partita non è collegata: scegli il bersaglio manualmente.':'',
   'other-ability-close')+
   abilityPaymentField(ability,calculated)+
+  (healPower?(selectedTarget?
+    '<p class="hint">Cura a contatto · '+esc(calculated.stats?.proficiency||0)+'d4. Il tiro viene effettuato alla conferma per il token selezionato.</p>':
+    '<label>Creatura da curare<select data-heal-target>'+
+       (healRecipients.length?healRecipients.map(row=>'<option value="'+esc(row.id)+'"'+
+         (row.id===c.id?' selected':'')+'>'+esc(row.name||row.id)+'</option>').join(''):
+         '<option value="'+esc(c.id)+'">Sé stesso</option>')+
+     '</select></label><p class="hint">Cura a contatto: verifica che il destinatario sia entro 5 ft.</p>'):'')+
   featureCompanionFields(companion)+
   '<p data-ability-result role="status"></p>'+
   '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-ability-confirm>Conferma</button>'+
@@ -1359,6 +1371,32 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
+   if(power?.mode==='heal_dice'){
+     if(!spend||choice!==power.tracker_id)
+       throw Error('Healing Hands richiede un utilizzo del tracker.');
+     const candidates=(await listCreatures()).map(row=>row.creature||row).filter(row=>row?.id);
+     const owned=selectedTarget?candidates.find(row=>
+       String(row.linked_token_sync_id||'')===String(selectedTarget.id)||row.id===selectedTarget.id):
+       candidates.find(row=>row.id===dialog.querySelector('[data-heal-target]')?.value);
+     const targetId=owned?.id||(selectedTarget?null:current.id);
+     const self=targetId===current.id;
+     const healed=healingHandsPatch(current,fresh,power,randomDie,self?'self':null);
+     await patch(healed.patch);
+     let applied=self;
+     if(targetId&&!self){
+       try{
+         const editor=await openCreatureEditor(targetId);
+         const recipient=editor.read(),recipientStats=await computeLocalData(recipient);
+         await editor.update({current_hp:Math.min(Math.max(0,Number(recipientStats.stats?.max_hp)||0),
+           Math.max(0,Number(recipient.current_hp)||0)+healed.total)});
+         applied=true;
+       }catch(error){console.warn('Cura al destinatario non sincronizzata',error);}
+     }
+     closeDialog(dialog,{remove:true});await render();
+     message(power.name+': '+healed.notation+' → '+healed.dice.join(' + ')+
+       ' = '+healed.total+' PF. '+(applied?'PF aggiornati.':
+         'Applica la cura al bersaglio sul desktop.'));return;
+   }
    await patch(record=>{
     const changes=cost&&spend?spendTrackerUses(record,currentAbility.tracker_id,cost,fresh.trackers):{};
     if(persistentKey){
