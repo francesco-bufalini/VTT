@@ -5805,7 +5805,7 @@ async function handleAction(target){
     if(entry&&level!==null){
       const assigned=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
       const mode=assigned?.payment_mode||(assigned?.tracker_id?'tracker':level===0?'free':(['known','prepared'].includes(assigned?.mode)||!assigned)?'slot':'free');
-      if(level===0||mode==='free'){
+      if(mode==='free'||level===0&&mode!=='tracker'){
         options.push(['auto:0','Senza slot']);
       }else{
         if(mode==='tracker'){
