@@ -27,6 +27,7 @@ import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
+import {spellItemRules,spellItemTargetSelector,spellItemDamageTypes,itemSpellCastPatch,endItemSpellPatch,concentrationItemSpellEndPatch} from './spell_item_effects.js';
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
@@ -2472,6 +2473,7 @@ function inventoryItemDescription(obj,index){
   const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
   const itemExtensions=effectExtensionsFor(state.calculated?.effect_extensions||[],
     {kind:'item',id:obj.id,name:obj.name,instance_id:obj.instance_id,inventory_index:index});
+  const itemCasts=[...new Map(itemExtensions.filter(row=>row.cast_id).map(row=>[row.cast_id,row])).values()];
   const pairs=[['Tipo',info.type],...(obj.source?[['Fonte',String(obj.source)]]:[]),
     ...(obj.rarity&&obj.rarity!=='none'?[['Rarità',INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity]]:[]),
     ...info.facts.map(fact=>[fact.label,fact.value]),...(info.status.length?[['Stato',info.status.join(' · ')]]:[])];
@@ -2502,7 +2504,10 @@ function inventoryItemDescription(obj,index){
        '<h3>Estensioni attive</h3><ul>'+itemExtensions.map(extension=>
        '<li><strong>'+esc(extension.origin_name||'Beneficio')+'</strong> · '+
        esc(effectExtensionLabel(extension,{cha_mod:state.calculated?.abilities?.cha?.modifier}))+
-       '</li>').join('')+'</ul></section>':'')+
+       '</li>').join('')+'</ul>'+
+       itemCasts.map(cast=>'<button type="button" class="btn small" data-act="item-spell-end" data-cast-id="'+
+         esc(cast.cast_id)+'">Termina · '+esc(cast.origin_name||'Incantesimo')+'</button>').join('')+
+       '</section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
 }
 function inventoryRow(item,index) {
@@ -3940,7 +3945,8 @@ async function handleField(target) {
       const entries=new Set(creature.conditions||[]);
       if(target.checked) entries.add(target.dataset.condition);
       else entries.delete(target.dataset.condition);
-      await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
+      await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?
+        {concentrating_spell_id:'',...concentrationItemSpellEndPatch(creature)}:{})});
     }
     // Update active status chips and their description sources on every edit.
     await render();
@@ -3964,6 +3970,15 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
   if(desktopHooks?.cast){
     await flushPendingFields();
     const result=await desktopHooks.cast({casterId,selection,requestedLevel,payment});
+    if(selection.item_spell_rules?.length){
+      const editor=state.editor&&state.creatureId===casterId?
+        state.editor:await openCreatureEditor(casterId);
+      const current=editor.read();
+      const enchanted=itemSpellCastPatch(current,selection,selection.item_spell_definition||selection,
+        selection.item_spell_rules,
+        requestedLevel||Number(selection.level)||0);
+      await editor.update(enchanted);
+    }
     if(companionSource)
       await summonSubcreature(casterId,await companionSource.load(),companionSource);
     return result;
@@ -3991,7 +4006,10 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
       state.editor:await openCreatureEditor(casterId);
     const current=editor.read();
     const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
-    if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
+    const enchantment=itemSpellCastPatch(current,selection,selection.item_spell_definition||selection,
+      selection.item_spell_rules||[],accepted.slotLevel);
+    if(Object.keys(accepted.patch).length||Object.keys(enchantment).length)
+      await editor.update({...accepted.patch,...enchantment});
     charged=true;
     if(companionSource){
       try{
@@ -5019,6 +5037,11 @@ async function handleAction(target){
     await patch({proficiency_origins:origins,origin_enabled:{...(c.origin_enabled||{}),[originId]:true}});
     state.sheetPopup='';await render();return;
   }
+  if(act==='item-spell-end'){
+    const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
+    await patch(endItemSpellPatch(c,String(target.dataset.castId||'')));
+    await render();return;
+  }
   if(act==='condition-remove-spell'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
     const id=String(target.dataset.spellId||''),originId='spell:'+id;
@@ -5026,7 +5049,8 @@ async function handleAction(target){
     const origins=(c.proficiency_origins||[]).filter(row=>!(row.id===originId&&row.group==='spell'));
     const contexts={...(c.active_spell_context||{})};delete contexts[id];
     const enabled={...(c.origin_enabled||{})};delete enabled[originId];
-    const changes={proficiency_origins:origins,active_spell_context:contexts,origin_enabled:enabled};
+    const changes={proficiency_origins:origins,active_spell_context:contexts,origin_enabled:enabled,
+      active_item_spell_effects:(c.active_item_spell_effects||[]).filter(row=>row.spell_id!==id)};
     for(const field of ['formula_bonuses','dice_bonuses','resource_trackers','proficiency_choices','damage_defense_entries','origin_spell_grants']){
       if(Array.isArray(c[field]))changes[field]=c[field].filter(row=>row?.origin_id!==originId&&row?.parent_origin!==originId);
     }
@@ -5268,7 +5292,9 @@ async function handleAction(target){
     const creature=state.editor.read();
     const id=String(app.querySelector('#concentration-spell')?.value||'');
     const conditions=new Set(creature.conditions||[]);conditions.add('concentrating');
-    await patch({conditions:[...conditions],concentrating_spell_id:id});
+    await patch({conditions:[...conditions],concentrating_spell_id:id,
+      ...(id!==String(creature.concentrating_spell_id||'')?
+        concentrationItemSpellEndPatch(creature):{})});
     state.magicPopup='';await render();return;
   }
   if(act==='slot-menu'){
@@ -5397,9 +5423,11 @@ async function handleAction(target){
     const spellExtensions=extendedSpell.effect_extensions||[];
     // Object-targeted spells and infusions reuse typed eligibility, never prose
     // guessing. Catalogue/homebrew spells can declare item_target_selector.
-    const targetSelector=detailed.item_target_selector||spell.item_target_selector||
-      detailed.target_item_selector||spell.target_item_selector||null;
+    const itemRules=spellItemRules((await loadRuleCatalogs()).effectExtensions,
+      {...spell,...detailed},record.rules_version);
+    const targetSelector=spellItemTargetSelector({...spell,...detailed},itemRules);
     const targetItems=targetSelector?targetableInventoryItems(record,targetSelector):[];
+    const itemDamageTypes=spellItemDamageTypes(itemRules);
     const level=magicSpellInfo({...spell,id}).level;
     const options=[];
     if(entry&&level!==null){
@@ -5437,6 +5465,9 @@ async function handleAction(target){
         (targetItems.length?'<label>Oggetto bersaglio<select id="action-cast-item-target">'+
           targetItems.map(({item,index})=>'<option value="'+index+'">'+esc(item.name||item.id)+'</option>').join('')+'</select></label>':
          '<p class="warning">Nessun oggetto compatibile in inventario per questo incantesimo.</p>'):'')+
+      (entry&&itemDamageTypes.length?'<label>Tipo di danno dell’incantamento<select id="action-cast-item-damage-type">'+
+        itemDamageTypes.map(type=>'<option value="'+esc(type)+'">'+esc(rollDamageName(type))+'</option>').join('')+
+        '</select></label>':'')+
       (entry&&metaChoices.length?'<details class="metamagic-options"><summary>Metamagia</summary><label>Opzione<select data-metamagic-name><option value="">Nessuna</option>'+metaChoices.map(o=>'<option value="'+esc(o.name)+'">'+esc(o.name)+' · '+o.cost+' punti</option>').join('')+'</select></label><label class="check"><input data-metamagic-targets type="checkbox">Raddoppiato: confermo i requisiti di bersaglio del tratto per questa edizione</label><label class="check"><input data-metamagic-damage type="checkbox">Trasmutato: confermo che il danno originale sia elementale</label><label>Nuovo danno<select data-metamagic-element>'+['acid','cold','fire','lightning','poison','thunder'].map(e=>'<option>'+e+'</option>').join('')+'</select></label></details>':'')+
       (companion?'<label>Creatura evocata dal bestiario<select id="action-cast-companion">'+
         (companion.choices.length?companion.choices.map(source=>
@@ -5463,8 +5494,9 @@ async function handleAction(target){
          String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!selection)throw Error('Incantesimo non più disponibile.');
     const detail=await detailedEntry('spells',{...selection,_category:'spells'});
-    const selector=detail.item_target_selector||selection.item_target_selector||
-      detail.target_item_selector||selection.target_item_selector||null;
+    const itemRules=spellItemRules((await loadRuleCatalogs()).effectExtensions,
+      {...selection,...detail},record.rules_version);
+    const selector=spellItemTargetSelector({...selection,...detail},itemRules);
     if(selector){
       const index=Number(app.querySelector('#action-cast-item-target')?.value);
       const matches=targetableInventoryItems(record,selector);
@@ -5473,6 +5505,11 @@ async function handleAction(target){
       // Identity is preserved for the online targeting pipeline and local casts.
       selection.item_target={inventory_index:index,
         item_id:String(choice.item.id||''),instance_id:String(choice.item.instance_id||'')};
+    }
+    if(itemRules.length){
+      selection.item_spell_rules=itemRules;
+      selection.item_spell_definition={...detail,name:detail.name||selection.name,id:selection.id};
+      selection.item_damage_type=String(app.querySelector('#action-cast-item-damage-type')?.value||'');
     }
     const metaName=app.querySelector('[data-metamagic-name]')?.value||'';
     if(metaName)selection.metamagic={names:[metaName],eligible_targeting:!!app.querySelector('[data-metamagic-targets]')?.checked,
@@ -5496,7 +5533,10 @@ async function handleAction(target){
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
     app.querySelector('#action-cast-dialog')?.close();
-    if(Object.keys(plan.patch).length)await patch(plan.patch);
+    const enchantment=itemSpellCastPatch(record,selection,selection.item_spell_definition||detail,
+      selection.item_spell_rules||[],plan.slotLevel);
+    if(Object.keys(plan.patch).length||Object.keys(enchantment).length)
+      await patch({...plan.patch,...enchantment});
     if(companionSource)
       await summonSubcreature(record.id,await companionSource.load(),
         {...companionSource,spell_id:selection.id,
