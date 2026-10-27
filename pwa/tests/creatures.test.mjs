@@ -239,17 +239,25 @@ test("exclusive companions are re-summoned in one stable sheet while nonexclusiv
  await editor.update({current_hp:2,notes:'Un oggetto precedente'});await editor.flush();
  const again=await summonSubcreature(owner.id,item(55,'L'),reference,scope);
  assert.equal(first.id,again.id,'A new animated item must replace the previous exclusive creature');
- assert.equal(again.data.max_hp,55);
- assert.equal(again.data.current_hp,55);
- assert.equal(again.data.size_name,'Large');
- assert.equal(again.data.notes,'','A replaced creature uses its new, fresh stat block');
+ assert.equal(again.data.max_hp,40);
+ assert.equal(again.data.current_hp,2);
+ assert.equal(again.data.size_name,'Medium');
+ assert.equal(again.data.notes,'Un oggetto precedente');
+ assert.equal(again.reused,true);
  assert.equal((await listSubcreatures(owner.id,scope)).length,1);
+ const other=await summonSubcreature(owner.id,item(29,'S'),{...reference,name:'Another Item'},scope);
+ assert.equal(other.reused,false);
+ assert.equal((await listSubcreatures(owner.id,scope)).length,2);
+ const recalled=await summonSubcreature(owner.id,item(80,'L'),reference,scope);
+ assert.equal(recalled.id,first.id);
+ assert.equal(recalled.data.current_hp,2);
+ assert.equal((await loadCreature(other.id,scope)).data.companion_selected,false);
  const undead={name:'Skeleton',source:'MM',hp:{average:13},ac:[13],size:'M',type:'undead'};
  await summonSubcreature(owner.id,undead,{spell_id:'animate_dead',rule_id:'animate_dead_2014',
    limit_per_owner_rule:0},scope);
  await summonSubcreature(owner.id,undead,{spell_id:'animate_dead',rule_id:'animate_dead_2014',
    limit_per_owner_rule:0},scope);
- assert.equal((await listSubcreatures(owner.id,scope)).length,3);
+ assert.equal((await listSubcreatures(owner.id,scope)).length,4);
  const exported=JSON.parse(await (await exportCreature(owner.id,scope)).text());
- assert.equal(exported.subcreatures.length,3);
+ assert.equal(exported.subcreatures.length,4);
 });

@@ -28,7 +28,8 @@
         "Spider",
         "Weasel"
       ],
-      "limit_per_owner_spell": 1
+      "limit_per_owner_spell": 1,
+      "grant_kind": "spell_effect"
     },
     {
       "id": "find_steed_2014",
@@ -46,7 +47,8 @@
         "Elk",
         "Mastiff"
       ],
-      "limit_per_owner_spell": 1
+      "limit_per_owner_spell": 1,
+      "grant_kind": "spell_effect"
     },
     {
       "id": "find_greater_steed_2014",
@@ -65,7 +67,8 @@
         "Rhinoceros",
         "Saber-Toothed Tiger"
       ],
-      "limit_per_owner_spell": 1
+      "limit_per_owner_spell": 1,
+      "grant_kind": "spell_effect"
     },
     {
       "id": "animate_dead_2014",
@@ -215,8 +218,7 @@
         "2014"
       ],
       "template": "homunculus_servant",
-      "activation": "manual",
-      "requires_optional_feature": true,
+      "activation": "item",
       "limit_per_owner_rule": 1
     }
   ],

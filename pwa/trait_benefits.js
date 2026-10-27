@@ -144,6 +144,18 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(group.seen.has(key))return;
   group.seen.add(key);group.items.push({label,value,id,...extra});
  };
+ // An infused item's structured companion grant is displayed on that exact
+ // object's benefit card. Mere knowledge of an infusion never grants a pet.
+ if(trait.category==='oggetti'&&trait.rank===0){
+  for(const index of rows(trait.item_inventory_indices)){
+   const infused=rows(record.inventory)[index]?.infusion;
+   if(!infused?.id)continue;
+   const definition=rows(calculated.infusion_catalog).find(row=>row.id===infused.id);
+   if(!definition?.companion?.rule_id)continue;
+   add('companions','Sottocreature','Creatura concessa',definition.name,
+    'companion:'+String(definition.companion.rule_id));
+  }
+ }
  // A chosen feat is an owned trait whose granting class-level ASI remains
  // inspectable as the origin. Do not manufacture a second copy of its bonuses.
  for(const feat of rows(record.feats_catalog)){
