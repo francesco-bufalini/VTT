@@ -59,7 +59,7 @@ export function initialCreature(kind,name,id,owner_id){
     resource_trackers:[],resource_tracker_spent:{},
     resource_recovery_ready:{},resource_recovery_used:{},origin_spell_grants:[],
     origin_spell_configs:{},spellcasting_section_abilities:{},
-    active_spell_context:{},conditions:[],concentrating_spell_id:"",
+    active_spell_context:{},active_item_spell_effects:[],conditions:[],concentrating_spell_id:"",
     damage_defense_overrides:{},condition_immunity_overrides:{},
     documents:[],inventory:[],weapons_catalog:[],armor_catalog:[],
     tools_catalog:[],languages_catalog:[],feats_catalog:[],class_features_catalog:[],
