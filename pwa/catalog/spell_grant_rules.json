@@ -15,6 +15,1401 @@
       "source": "MPMM",
       "spell": "light",
       "spellcasting_ability": "cha"
+    },
+    {
+      "kind": "subrace",
+      "name": "Duergar",
+      "source": "MTF",
+      "race_name": "Dwarf",
+      "race_source": "PHB",
+      "spell": "enlarge/reduce",
+      "trait": "Duergar Magic",
+      "trait_entries": [
+        "When you reach 3rd level, you can cast the {@spell Enlarge/Reduce} spell on yourself once with this trait, using only the spell's enlarge option. When you reach 5th level, you can cast the {@spell Invisibility} spell on yourself once with this trait. You don't need material components for either spell, and you can't cast them while you're in direct sunlight, although sunlight has no effect on them once cast. You regain the ability to cast these spells with this trait when you finish a long rest. Intelligence is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Duergar",
+      "source": "MTF",
+      "race_name": "Dwarf",
+      "race_source": "PHB",
+      "spell": "invisibility",
+      "trait": "Duergar Magic",
+      "trait_entries": [
+        "When you reach 3rd level, you can cast the {@spell Enlarge/Reduce} spell on yourself once with this trait, using only the spell's enlarge option. When you reach 5th level, you can cast the {@spell Invisibility} spell on yourself once with this trait. You don't need material components for either spell, and you can't cast them while you're in direct sunlight, although sunlight has no effect on them once cast. You regain the ability to cast these spells with this trait when you finish a long rest. Intelligence is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Warding",
+      "source": "ERLW",
+      "race_name": "Dwarf",
+      "race_source": "PHB",
+      "spell": "alarm",
+      "trait": "Wards and Seals",
+      "trait_entries": [
+        "You can cast the {@spell alarm} and {@spell mage armor} spells with this trait. Starting at 3rd level, you can also cast the {@spell arcane lock} spell with it. Once you cast any of these spells with this trait, you can't cast that spell with it again until you finish a long rest. Intelligence is your spellcasting ability for these spells, and you don't need material components for them when you cast them with this trait."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Warding",
+      "source": "ERLW",
+      "race_name": "Dwarf",
+      "race_source": "PHB",
+      "spell": "mage armor",
+      "trait": "Wards and Seals",
+      "trait_entries": [
+        "You can cast the {@spell alarm} and {@spell mage armor} spells with this trait. Starting at 3rd level, you can also cast the {@spell arcane lock} spell with it. Once you cast any of these spells with this trait, you can't cast that spell with it again until you finish a long rest. Intelligence is your spellcasting ability for these spells, and you don't need material components for them when you cast them with this trait."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Drow",
+      "source": "PHB",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "dancing lights",
+      "trait": "Drow Magic",
+      "trait_entries": [
+        "You know the {@spell dancing lights} cantrip. When you reach 3rd level, you can cast the {@spell faerie fire} spell once with this trait; you regain the ability to cast it when you finish a long rest. When you reach 5th level, you can also cast the {@spell darkness} spell once per day with this trait; you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Drow",
+      "source": "PHB",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "faerie fire",
+      "trait": "Drow Magic",
+      "trait_entries": [
+        "You know the {@spell dancing lights} cantrip. When you reach 3rd level, you can cast the {@spell faerie fire} spell once with this trait; you regain the ability to cast it when you finish a long rest. When you reach 5th level, you can also cast the {@spell darkness} spell once per day with this trait; you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Drow",
+      "source": "PHB",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "darkness",
+      "trait": "Drow Magic",
+      "trait_entries": [
+        "You know the {@spell dancing lights} cantrip. When you reach 3rd level, you can cast the {@spell faerie fire} spell once with this trait; you regain the ability to cast it when you finish a long rest. When you reach 5th level, you can also cast the {@spell darkness} spell once per day with this trait; you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Eladrin",
+      "source": "DMG",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "misty step",
+      "trait": "Fey Step",
+      "trait_entries": [
+        "You can cast the {@spell misty step} spell once using this trait. You regain the ability to do so when you finish a short or long rest."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "High",
+      "source": "PHB",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "*choice*",
+      "trait": "Cantrip",
+      "trait_entries": [
+        "You know one {@filter cantrip of your choice from the wizard spell list|spells|level=0|class=Wizard}. Intelligence is your spellcasting ability for it."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Shadow",
+      "source": "ERLW",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "minor illusion",
+      "trait": "Shape Shadows",
+      "trait_entries": [
+        "You know the {@spell minor illusion} cantrip. Starting at 3rd level, you can cast the {@spell invisibility} spell once with this trait, and you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Shadow",
+      "source": "ERLW",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "invisibility",
+      "trait": "Shape Shadows",
+      "trait_entries": [
+        "You know the {@spell minor illusion} cantrip. Starting at 3rd level, you can cast the {@spell invisibility} spell once with this trait, and you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Pallid",
+      "source": "EGW",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "light",
+      "trait": "Blessing of the Moon Weaver",
+      "trait_entries": [
+        "You know the {@spell light} cantrip. When you reach 3rd level, you can cast the {@spell sleep} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell invisibility} spell (targeting yourself only) once with this trait and regain the ability to do so when you finish a long rest. Casting these spells with this trait doesn't require material components. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Pallid",
+      "source": "EGW",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "sleep",
+      "trait": "Blessing of the Moon Weaver",
+      "trait_entries": [
+        "You know the {@spell light} cantrip. When you reach 3rd level, you can cast the {@spell sleep} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell invisibility} spell (targeting yourself only) once with this trait and regain the ability to do so when you finish a long rest. Casting these spells with this trait doesn't require material components. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Pallid",
+      "source": "EGW",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "spell": "invisibility",
+      "trait": "Blessing of the Moon Weaver",
+      "trait_entries": [
+        "You know the {@spell light} cantrip. When you reach 3rd level, you can cast the {@spell sleep} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell invisibility} spell (targeting yourself only) once with this trait and regain the ability to do so when you finish a long rest. Casting these spells with this trait doesn't require material components. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Vahadar",
+      "source": "PSK",
+      "race_name": "Elf (Kaladesh)",
+      "race_source": "PSK",
+      "spell": "*choice*",
+      "trait": "Cantrip",
+      "trait_entries": [
+        "You know one cantrip of your choice from the {@filter druid spell list|spells|class=druid|level=0}. Wisdom is your spellcasting ability for it."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mul Daya Nation",
+      "source": "PSZ",
+      "race_name": "Elf (Zendikar)",
+      "race_source": "PSZ",
+      "spell": "chill touch",
+      "trait": "Mul Daya Magic",
+      "trait_entries": [
+        "You know the {@spell chill touch} cantrip. When you reach 3rd level, you can cast the {@spell hex} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell darkness} spell once with this trait and regain the ability to do so when you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mul Daya Nation",
+      "source": "PSZ",
+      "race_name": "Elf (Zendikar)",
+      "race_source": "PSZ",
+      "spell": "hex",
+      "trait": "Mul Daya Magic",
+      "trait_entries": [
+        "You know the {@spell chill touch} cantrip. When you reach 3rd level, you can cast the {@spell hex} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell darkness} spell once with this trait and regain the ability to do so when you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mul Daya Nation",
+      "source": "PSZ",
+      "race_name": "Elf (Zendikar)",
+      "race_source": "PSZ",
+      "spell": "darkness",
+      "trait": "Mul Daya Magic",
+      "trait_entries": [
+        "You know the {@spell chill touch} cantrip. When you reach 3rd level, you can cast the {@spell hex} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell darkness} spell once with this trait and regain the ability to do so when you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Air",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "spell": "levitate",
+      "trait": "Mingle with the Wind",
+      "trait_entries": [
+        "You can cast the {@spell levitate} spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Earth",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "spell": "pass without trace",
+      "trait": "Merge with Stone",
+      "trait_entries": [
+        "You can cast the {@spell pass without trace} spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Fire",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "spell": "produce flame",
+      "trait": "Reach to the Blaze",
+      "trait_entries": [
+        "You know the {@spell produce flame} cantrip. Once you reach 3rd level, you can cast the {@spell burning hands} spell once with this trait as a 1st-level spell, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Fire",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "spell": "burning hands",
+      "trait": "Reach to the Blaze",
+      "trait_entries": [
+        "You know the {@spell produce flame} cantrip. Once you reach 3rd level, you can cast the {@spell burning hands} spell once with this trait as a 1st-level spell, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Water",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "spell": "shape water",
+      "trait": "Call to the Wave",
+      "trait_entries": [
+        "You know the {@spell shape water|xge} cantrip. When you reach 3rd level, you can cast the {@spell create or destroy water} spell as a 2nd-level spell once with this trait, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Water",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "spell": "create or destroy water",
+      "trait": "Call to the Wave",
+      "trait_entries": [
+        "You know the {@spell shape water|xge} cantrip. When you reach 3rd level, you can cast the {@spell create or destroy water} spell as a 2nd-level spell once with this trait, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Air",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "shocking grasp",
+      "trait": "Mingle with the Wind",
+      "trait_entries": [
+        "You know the {@spell shocking grasp} cantrip. Starting at 3rd level, you can cast the {@spell feather fall} spell with this trait, without requiring a material component. Starting 5th level, you can also cast the {@spell levitate} spell with this trait, without requiring a material component. Once you cast {@spell feather fall} or {@spell levitate} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Air",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "feather fall",
+      "trait": "Mingle with the Wind",
+      "trait_entries": [
+        "You know the {@spell shocking grasp} cantrip. Starting at 3rd level, you can cast the {@spell feather fall} spell with this trait, without requiring a material component. Starting 5th level, you can also cast the {@spell levitate} spell with this trait, without requiring a material component. Once you cast {@spell feather fall} or {@spell levitate} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Air",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "levitate",
+      "trait": "Mingle with the Wind",
+      "trait_entries": [
+        "You know the {@spell shocking grasp} cantrip. Starting at 3rd level, you can cast the {@spell feather fall} spell with this trait, without requiring a material component. Starting 5th level, you can also cast the {@spell levitate} spell with this trait, without requiring a material component. Once you cast {@spell feather fall} or {@spell levitate} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Earth",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "blade ward",
+      "trait": "Merge with Stone",
+      "trait_entries": [
+        "You know the {@spell blade ward} cantrip. You can cast it as normal, and you can also cast it as a bonus action a number of times equal to your proficiency bonus, regaining all expended uses when you finish a long rest.",
+        "Starting at 5th level, you can cast the {@spell pass without trace} spell with this trait, without requiring a material component. Once you cast that spell with this trait, you can't do so again until you finish a long rest. You can also cast it using any spell slots you have of 2nd level or higher.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Earth",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "pass without trace",
+      "trait": "Merge with Stone",
+      "trait_entries": [
+        "You know the {@spell blade ward} cantrip. You can cast it as normal, and you can also cast it as a bonus action a number of times equal to your proficiency bonus, regaining all expended uses when you finish a long rest.",
+        "Starting at 5th level, you can cast the {@spell pass without trace} spell with this trait, without requiring a material component. Once you cast that spell with this trait, you can't do so again until you finish a long rest. You can also cast it using any spell slots you have of 2nd level or higher.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Fire",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "produce flame",
+      "trait": "Reach to the Blaze",
+      "trait_entries": [
+        "You know the {@spell produce flame} cantrip. Starting at 3rd level, you can cast the {@spell burning hands} spell with this trait. Starting at 5th level, you can also cast the {@spell flame blade} spell with this trait, without a material component. Once you cast {@spell burning hands} or {@spell flame blade} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Fire",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "burning hands",
+      "trait": "Reach to the Blaze",
+      "trait_entries": [
+        "You know the {@spell produce flame} cantrip. Starting at 3rd level, you can cast the {@spell burning hands} spell with this trait. Starting at 5th level, you can also cast the {@spell flame blade} spell with this trait, without a material component. Once you cast {@spell burning hands} or {@spell flame blade} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Fire",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "flame blade",
+      "trait": "Reach to the Blaze",
+      "trait_entries": [
+        "You know the {@spell produce flame} cantrip. Starting at 3rd level, you can cast the {@spell burning hands} spell with this trait. Starting at 5th level, you can also cast the {@spell flame blade} spell with this trait, without a material component. Once you cast {@spell burning hands} or {@spell flame blade} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Water",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "acid splash",
+      "trait": "Call to the Wave",
+      "trait_entries": [
+        "You know the {@spell acid splash} cantrip. Starting at 3rd level, you can cast the {@spell create or destroy water} spell with this trait. Starting at 5th level, you can also cast the {@spell water walk} spell with this trait, without requiring a material component. Once you cast {@spell create or destroy water} or {@spell water walk} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Water",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "create or destroy water",
+      "trait": "Call to the Wave",
+      "trait_entries": [
+        "You know the {@spell acid splash} cantrip. Starting at 3rd level, you can cast the {@spell create or destroy water} spell with this trait. Starting at 5th level, you can also cast the {@spell water walk} spell with this trait, without requiring a material component. Once you cast {@spell create or destroy water} or {@spell water walk} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Water",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "spell": "water walk",
+      "trait": "Call to the Wave",
+      "trait_entries": [
+        "You know the {@spell acid splash} cantrip. Starting at 3rd level, you can cast the {@spell create or destroy water} spell with this trait. Starting at 5th level, you can also cast the {@spell water walk} spell with this trait, without requiring a material component. Once you cast {@spell create or destroy water} or {@spell water walk} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
+        "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Githyanki",
+      "source": "MTF",
+      "race_name": "Gith",
+      "race_source": "MTF",
+      "spell": "mage hand",
+      "trait": "Githyanki Psionics",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip, and the hand is {@condition invisible} when you cast the cantrip with this trait.",
+        "When you reach 3rd level, you can cast {@spell jump} once with this trait, and you regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell misty step} spell once with this trait, and you regain the ability to do so when you finish a long rest.",
+        "Intelligence is your spellcasting ability for these spells. When you cast them with this trait, they don't require components."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Githyanki",
+      "source": "MTF",
+      "race_name": "Gith",
+      "race_source": "MTF",
+      "spell": "jump",
+      "trait": "Githyanki Psionics",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip, and the hand is {@condition invisible} when you cast the cantrip with this trait.",
+        "When you reach 3rd level, you can cast {@spell jump} once with this trait, and you regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell misty step} spell once with this trait, and you regain the ability to do so when you finish a long rest.",
+        "Intelligence is your spellcasting ability for these spells. When you cast them with this trait, they don't require components."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Githyanki",
+      "source": "MTF",
+      "race_name": "Gith",
+      "race_source": "MTF",
+      "spell": "misty step",
+      "trait": "Githyanki Psionics",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip, and the hand is {@condition invisible} when you cast the cantrip with this trait.",
+        "When you reach 3rd level, you can cast {@spell jump} once with this trait, and you regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell misty step} spell once with this trait, and you regain the ability to do so when you finish a long rest.",
+        "Intelligence is your spellcasting ability for these spells. When you cast them with this trait, they don't require components."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Githzerai",
+      "source": "MTF",
+      "race_name": "Gith",
+      "race_source": "MTF",
+      "spell": "mage hand",
+      "trait": "Githzerai Psionics",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip, and the hand is {@condition invisible} when you cast the cantrip with this trait.",
+        "When you reach 3rd level, you can cast {@spell shield} once with this trait, and you regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell detect thoughts} spell once with this trait, and you regain the ability to do so when you finish a long rest.",
+        "Wisdom is your spellcasting ability for these spells. When you cast them with this trait, they don't require components."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Githzerai",
+      "source": "MTF",
+      "race_name": "Gith",
+      "race_source": "MTF",
+      "spell": "shield",
+      "trait": "Githzerai Psionics",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip, and the hand is {@condition invisible} when you cast the cantrip with this trait.",
+        "When you reach 3rd level, you can cast {@spell shield} once with this trait, and you regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell detect thoughts} spell once with this trait, and you regain the ability to do so when you finish a long rest.",
+        "Wisdom is your spellcasting ability for these spells. When you cast them with this trait, they don't require components."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Githzerai",
+      "source": "MTF",
+      "race_name": "Gith",
+      "race_source": "MTF",
+      "spell": "detect thoughts",
+      "trait": "Githzerai Psionics",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip, and the hand is {@condition invisible} when you cast the cantrip with this trait.",
+        "When you reach 3rd level, you can cast {@spell shield} once with this trait, and you regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell detect thoughts} spell once with this trait, and you regain the ability to do so when you finish a long rest.",
+        "Wisdom is your spellcasting ability for these spells. When you cast them with this trait, they don't require components."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Forest",
+      "source": "PHB",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "spell": "minor illusion",
+      "trait": "Natural Illusionist",
+      "trait_entries": [
+        "You know the {@spell minor illusion} cantrip. Intelligence is your spellcasting ability for it."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Scribing",
+      "source": "ERLW",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "spell": "message",
+      "trait": "Scribe's Insight",
+      "trait_entries": [
+        "You know the {@spell message} cantrip. You can also cast {@spell comprehend languages} once with this trait, and you regain the ability to cast it when you finish a short or long rest. Starting at 3rd level, you can cast the {@spell magic mouth} spell with this trait, and you regain the ability to cast it when you finish a long rest. Intelligence is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Scribing",
+      "source": "ERLW",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "spell": "comprehend languages",
+      "trait": "Scribe's Insight",
+      "trait_entries": [
+        "You know the {@spell message} cantrip. You can also cast {@spell comprehend languages} once with this trait, and you regain the ability to cast it when you finish a short or long rest. Starting at 3rd level, you can cast the {@spell magic mouth} spell with this trait, and you regain the ability to cast it when you finish a long rest. Intelligence is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Scribing",
+      "source": "ERLW",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "spell": "magic mouth",
+      "trait": "Scribe's Insight",
+      "trait_entries": [
+        "You know the {@spell message} cantrip. You can also cast {@spell comprehend languages} once with this trait, and you regain the ability to cast it when you finish a short or long rest. Starting at 3rd level, you can cast the {@spell magic mouth} spell with this trait, and you regain the ability to cast it when you finish a long rest. Intelligence is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Detection",
+      "source": "ERLW",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "spell": "detect magic",
+      "trait": "Magical Detection",
+      "trait_entries": [
+        "You can cast the {@spell detect magic} and {@spell detect poison and disease} spells with this trait. Starting at 3rd level, you can also cast the {@spell see invisibility} spell with it. Once you cast any of these spells with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells, and you don't require material components for them."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Detection",
+      "source": "ERLW",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "spell": "detect poison and disease",
+      "trait": "Magical Detection",
+      "trait_entries": [
+        "You can cast the {@spell detect magic} and {@spell detect poison and disease} spells with this trait. Starting at 3rd level, you can also cast the {@spell see invisibility} spell with it. Once you cast any of these spells with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells, and you don't require material components for them."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Detection",
+      "source": "ERLW",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "spell": "see invisibility",
+      "trait": "Magical Detection",
+      "trait_entries": [
+        "You can cast the {@spell detect magic} and {@spell detect poison and disease} spells with this trait. Starting at 3rd level, you can also cast the {@spell see invisibility} spell with it. Once you cast any of these spells with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells, and you don't require material components for them."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Storm",
+      "source": "ERLW",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "spell": "gust",
+      "trait": "Headwinds",
+      "trait_entries": [
+        "You know the {@spell gust|XGE} cantrip. Starting at 3rd level, you can cast the {@spell gust of wind} spell once with this trait, and you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "race_name": "Half-Orc",
+      "race_source": "PHB",
+      "spell": "hunter's mark",
+      "trait": "Finder's Magic",
+      "trait_entries": [
+        "You can cast the {@spell hunter's mark} spell with this trait. Starting at 3rd level, you can also cast the {@spell locate object} spell with it. Once you cast either spell with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "race_name": "Half-Orc",
+      "race_source": "PHB",
+      "spell": "locate object",
+      "trait": "Finder's Magic",
+      "trait_entries": [
+        "You can cast the {@spell hunter's mark} spell with this trait. Starting at 3rd level, you can also cast the {@spell locate object} spell with it. Once you cast either spell with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Lotusden",
+      "source": "EGW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "spell": "druidcraft",
+      "trait": "Child of the Wood",
+      "trait_entries": [
+        "You know the {@spell druidcraft} cantrip. When you reach 3rd level, you can cast the {@spell entangle} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell spike growth} spell once with this trait and regain the ability to do so when you finish a long rest. Casting these spells with this trait doesn't require material components. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Lotusden",
+      "source": "EGW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "spell": "entangle",
+      "trait": "Child of the Wood",
+      "trait_entries": [
+        "You know the {@spell druidcraft} cantrip. When you reach 3rd level, you can cast the {@spell entangle} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell spike growth} spell once with this trait and regain the ability to do so when you finish a long rest. Casting these spells with this trait doesn't require material components. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Lotusden",
+      "source": "EGW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "spell": "spike growth",
+      "trait": "Child of the Wood",
+      "trait_entries": [
+        "You know the {@spell druidcraft} cantrip. When you reach 3rd level, you can cast the {@spell entangle} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell spike growth} spell once with this trait and regain the ability to do so when you finish a long rest. Casting these spells with this trait doesn't require material components. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Healing",
+      "source": "ERLW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "spell": "cure wounds",
+      "trait": "Healing Touch",
+      "trait_entries": [
+        "You can cast the {@spell cure wounds} spell with this trait. Starting at 3rd level, you can also cast {@spell lesser restoration} with it. Once you cast either spell with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Healing",
+      "source": "ERLW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "spell": "lesser restoration",
+      "trait": "Healing Touch",
+      "trait_entries": [
+        "You can cast the {@spell cure wounds} spell with this trait. Starting at 3rd level, you can also cast {@spell lesser restoration} with it. Once you cast either spell with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Hospitality",
+      "source": "ERLW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "spell": "prestidigitation",
+      "trait": "Innkeeper's Magic",
+      "trait_entries": [
+        "You know the {@spell prestidigitation} cantrip. You can also cast the {@spell purify food and drink} and {@spell unseen servant} spells with this trait. Once you cast either spell with this trait, you can't cast that spell with it again until you finish long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Hospitality",
+      "source": "ERLW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "spell": "purify food and drink",
+      "trait": "Innkeeper's Magic",
+      "trait_entries": [
+        "You know the {@spell prestidigitation} cantrip. You can also cast the {@spell purify food and drink} and {@spell unseen servant} spells with this trait. Once you cast either spell with this trait, you can't cast that spell with it again until you finish long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Hospitality",
+      "source": "ERLW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "spell": "unseen servant",
+      "trait": "Innkeeper's Magic",
+      "trait_entries": [
+        "You know the {@spell prestidigitation} cantrip. You can also cast the {@spell purify food and drink} and {@spell unseen servant} spells with this trait. Once you cast either spell with this trait, you can't cast that spell with it again until you finish long rest. Charisma is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Handling",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "spell": "animal friendship",
+      "trait": "Primal Connection",
+      "trait_entries": [
+        "You can cast the {@spell animal friendship} and {@spell speak with animals} spells with this trait, requiring no material component. Once you cast either spell with this trait, you can't cast that spell with it again until you finish a short or long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Handling",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "spell": "speak with animals",
+      "trait": "Primal Connection",
+      "trait_entries": [
+        "You can cast the {@spell animal friendship} and {@spell speak with animals} spells with this trait, requiring no material component. Once you cast either spell with this trait, you can't cast that spell with it again until you finish a short or long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Making",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "spell": "mending",
+      "trait": "Spellsmith",
+      "trait_entries": [
+        "You know the {@spell mending} cantrip. You can also cast the {@spell magic weapon} spell with this trait. When you do so, the spell lasts for 1 hour and doesn't require {@status concentration}. Once you cast the spell with this trait, you can't do so again until you finish a long rest. Intelligence is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Making",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "spell": "magic weapon",
+      "trait": "Spellsmith",
+      "trait_entries": [
+        "You know the {@spell mending} cantrip. You can also cast the {@spell magic weapon} spell with this trait. When you do so, the spell lasts for 1 hour and doesn't require {@status concentration}. Once you cast the spell with this trait, you can't do so again until you finish a long rest. Intelligence is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Passage",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "spell": "misty step",
+      "trait": "Magical Passage",
+      "trait_entries": [
+        "You can cast the {@spell misty step} spell once with this trait, and you regain the ability to cast it when you finish a long rest. Dexterity is your spellcasting ability for this spell."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mark of Sentinel",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "spell": "shield",
+      "trait": "Guardian's Shield",
+      "trait_entries": [
+        "You can cast the {@spell shield} spell once with this trait, and you regain the ability to cast it after you finish a long rest. Wisdom is your spellcasting ability for this spell."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "spell": "hunter's mark",
+      "trait": "Finder's Magic",
+      "trait_entries": [
+        "You can cast the {@spell hunter's mark} spell with this trait. Starting at 3rd level, you can also cast the {@spell locate object} spell with it. Once you cast either spell with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "spell": "locate object",
+      "trait": "Finder's Magic",
+      "trait_entries": [
+        "You can cast the {@spell hunter's mark} spell with this trait. Starting at 3rd level, you can also cast the {@spell locate object} spell with it. Once you cast either spell with this trait, you can't cast that spell with it again until you finish a long rest. Wisdom is your spellcasting ability for these spells."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Ixalan; Blue",
+      "source": "PSX",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "spell": "*choice*",
+      "trait": "Cantrip",
+      "trait_entries": [
+        "You know one cantrip of your choice from the {@filter wizard spell list|spells|class=wizard|level=0}. Intelligence is your spellcasting ability for it."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Ixalan; Green",
+      "source": "PSX",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "spell": "*choice*",
+      "trait": "Cantrip",
+      "trait_entries": [
+        "You know one cantrip of your choice from the {@filter druid spell list|spells|class=Druid|level=0}. Wisdom is your spellcasting ability for it."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Zendikar; Cosi Creed",
+      "source": "PSZ",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "spell": "*choice*",
+      "trait": "Cantrip",
+      "trait_entries": [
+        "You know one cantrip of your choice from the {@filter bard spell list|spells|class=bard|level=0}. Charisma is your spellcasting ability for it."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Zendikar; Emeria Creed",
+      "source": "PSZ",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "spell": "*choice*",
+      "trait": "Cantrip",
+      "trait_entries": [
+        "You know one cantrip of your choice from the {@filter druid spell list|spells|class=druid|level=0}. Wisdom is your spellcasting ability for it."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Zendikar; Ula Creed",
+      "source": "PSZ",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "spell": "*choice*",
+      "trait": "Cantrip",
+      "trait_entries": [
+        "You know one cantrip of your choice from the {@filter wizard spell list|spells|class=wizard|level=0}. Intelligence is your spellcasting ability for it."
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Baalzebul",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "thaumaturgy",
+      "trait": "Legacy of Maladomini",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell ray of sickness} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell crown of madness} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Baalzebul",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "ray of sickness",
+      "trait": "Legacy of Maladomini",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell ray of sickness} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell crown of madness} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Baalzebul",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "crown of madness",
+      "trait": "Legacy of Maladomini",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell ray of sickness} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell crown of madness} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Dispater",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "thaumaturgy",
+      "trait": "Legacy of Dis",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell disguise self} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell detect thoughts} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Dispater",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "disguise self",
+      "trait": "Legacy of Dis",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell disguise self} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell detect thoughts} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Dispater",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "detect thoughts",
+      "trait": "Legacy of Dis",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell disguise self} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell detect thoughts} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Fierna",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "friends",
+      "trait": "Legacy of Phlegethos",
+      "trait_entries": [
+        "You know the {@spell friends} cantrip. When you reach 3rd level, you can cast the {@spell charm person} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell suggestion} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Fierna",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "charm person",
+      "trait": "Legacy of Phlegethos",
+      "trait_entries": [
+        "You know the {@spell friends} cantrip. When you reach 3rd level, you can cast the {@spell charm person} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell suggestion} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Fierna",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "suggestion",
+      "trait": "Legacy of Phlegethos",
+      "trait_entries": [
+        "You know the {@spell friends} cantrip. When you reach 3rd level, you can cast the {@spell charm person} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell suggestion} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Glasya",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "minor illusion",
+      "trait": "Legacy of Malbolge",
+      "trait_entries": [
+        "You know the {@spell minor illusion} cantrip. When you reach 3rd level, you can cast the {@spell disguise self} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell invisibility} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Glasya",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "disguise self",
+      "trait": "Legacy of Malbolge",
+      "trait_entries": [
+        "You know the {@spell minor illusion} cantrip. When you reach 3rd level, you can cast the {@spell disguise self} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell invisibility} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Glasya",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "invisibility",
+      "trait": "Legacy of Malbolge",
+      "trait_entries": [
+        "You know the {@spell minor illusion} cantrip. When you reach 3rd level, you can cast the {@spell disguise self} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell invisibility} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Levistus",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "ray of frost",
+      "trait": "Legacy of Stygia",
+      "trait_entries": [
+        "You know the {@spell ray of frost} cantrip. When you reach 3rd level, you can cast the {@spell armor of Agathys} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell darkness} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Levistus",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "armor of agathys",
+      "trait": "Legacy of Stygia",
+      "trait_entries": [
+        "You know the {@spell ray of frost} cantrip. When you reach 3rd level, you can cast the {@spell armor of Agathys} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell darkness} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Levistus",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "darkness",
+      "trait": "Legacy of Stygia",
+      "trait_entries": [
+        "You know the {@spell ray of frost} cantrip. When you reach 3rd level, you can cast the {@spell armor of Agathys} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell darkness} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mammon",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "mage hand",
+      "trait": "Legacy of Minauros",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell Tenser's floating disk} spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the {@spell arcane lock} spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mammon",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "tenser's floating disk",
+      "trait": "Legacy of Minauros",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell Tenser's floating disk} spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the {@spell arcane lock} spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mammon",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "arcane lock",
+      "trait": "Legacy of Minauros",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell Tenser's floating disk} spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the {@spell arcane lock} spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mephistopheles",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "mage hand",
+      "trait": "Legacy of Cania",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell burning hands} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell flame blade} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mephistopheles",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "burning hands",
+      "trait": "Legacy of Cania",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell burning hands} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell flame blade} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Mephistopheles",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "flame blade",
+      "trait": "Legacy of Cania",
+      "trait_entries": [
+        "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell burning hands} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell flame blade} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Devil's Tongue",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "vicious mockery",
+      "trait": "Devil's Tongue",
+      "trait_entries": [
+        "You know the {@spell vicious mockery} cantrip. When you reach 3rd level, you can cast the {@spell charm person} spell as a 2nd-level spell once with this trait. When you reach 5th level, you can cast the {@spell enthrall} spell once with this trait. You must finish a long rest to cast these spells once again with this trait. Charisma is your spellcasting ability for them. This trait replaces the Infernal Legacy trait."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Devil's Tongue",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "charm person",
+      "trait": "Devil's Tongue",
+      "trait_entries": [
+        "You know the {@spell vicious mockery} cantrip. When you reach 3rd level, you can cast the {@spell charm person} spell as a 2nd-level spell once with this trait. When you reach 5th level, you can cast the {@spell enthrall} spell once with this trait. You must finish a long rest to cast these spells once again with this trait. Charisma is your spellcasting ability for them. This trait replaces the Infernal Legacy trait."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Devil's Tongue",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "enthrall",
+      "trait": "Devil's Tongue",
+      "trait_entries": [
+        "You know the {@spell vicious mockery} cantrip. When you reach 3rd level, you can cast the {@spell charm person} spell as a 2nd-level spell once with this trait. When you reach 5th level, you can cast the {@spell enthrall} spell once with this trait. You must finish a long rest to cast these spells once again with this trait. Charisma is your spellcasting ability for them. This trait replaces the Infernal Legacy trait."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Hellfire",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "thaumaturgy",
+      "trait": "Hellfire",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. Once you reach 3rd level, you can cast the {@spell burning hands} spell once per day as a 2nd-level spell; you must finish a long rest in order to cast the spell again using this trait. Once you reach 5th level, you can also cast the {@spell darkness} spell; you must finish a long rest in order to cast the spell again using this trait. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Hellfire",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "burning hands",
+      "trait": "Hellfire",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. Once you reach 3rd level, you can cast the {@spell burning hands} spell once per day as a 2nd-level spell; you must finish a long rest in order to cast the spell again using this trait. Once you reach 5th level, you can also cast the {@spell darkness} spell; you must finish a long rest in order to cast the spell again using this trait. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Hellfire",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "darkness",
+      "trait": "Hellfire",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. Once you reach 3rd level, you can cast the {@spell burning hands} spell once per day as a 2nd-level spell; you must finish a long rest in order to cast the spell again using this trait. Once you reach 5th level, you can also cast the {@spell darkness} spell; you must finish a long rest in order to cast the spell again using this trait. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Infernal Legacy",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "thaumaturgy",
+      "trait": "Infernal Legacy",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. Once you reach 3rd level, you can cast the {@spell hellish rebuke} spell as a 2nd-level spell with this trait; you regain the ability to cast it when you finish a long rest. Once you reach 5th level, you can also cast the {@spell darkness} spell once per day with this trait; you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Infernal Legacy",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "hellish rebuke",
+      "trait": "Infernal Legacy",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. Once you reach 3rd level, you can cast the {@spell hellish rebuke} spell as a 2nd-level spell with this trait; you regain the ability to cast it when you finish a long rest. Once you reach 5th level, you can also cast the {@spell darkness} spell once per day with this trait; you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Infernal Legacy",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "darkness",
+      "trait": "Infernal Legacy",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. Once you reach 3rd level, you can cast the {@spell hellish rebuke} spell as a 2nd-level spell with this trait; you regain the ability to cast it when you finish a long rest. Once you reach 5th level, you can also cast the {@spell darkness} spell once per day with this trait; you regain the ability to cast it when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Zariel",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "thaumaturgy",
+      "trait": "Legacy of Avernus",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell searing smite} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell branding smite} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Zariel",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "searing smite",
+      "trait": "Legacy of Avernus",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell searing smite} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell branding smite} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Zariel",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "branding smite",
+      "trait": "Legacy of Avernus",
+      "trait_entries": [
+        "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell searing smite} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell branding smite} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+      ],
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Winged",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "spell": "*exclude*",
+      "replace_parent_spell_traits": [
+        "Infernal Legacy"
+      ]
     }
   ]
 }
