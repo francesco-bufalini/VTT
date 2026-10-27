@@ -116,14 +116,14 @@ function incomingDialog(offer,onImported,notify){
    '<button type="button" class="btn" data-share-later>Più tardi</button>'+
    '<button type="button" class="btn" data-share-reject>Rifiuta</button>'+
    '<button type="button" class="btn primary" data-share-accept>Importa</button></div></div>';
- const postpone=()=>{postponed.set(offer.id,Date.now()+60000);closeDialog(dialog,{remove:true});};
+ let busy=false;
+ const postpone=()=>{if(busy)return;postponed.set(offer.id,Date.now()+60000);closeDialog(dialog,{remove:true});};
  const dismiss=()=>{ignored.add(offer.id);closeDialog(dialog,{remove:true});};
- const buttons=[...dialog.querySelectorAll('[data-share-later],[data-share-reject],[data-share-accept]')];
+ const buttons=[...dialog.querySelectorAll('[data-share-later],[data-act="share-later"],[data-share-reject],[data-share-accept]')];
  dialog.querySelector('[data-share-later]').addEventListener('click',postpone);
  dialog.querySelector('[data-act="share-later"]').addEventListener('click',postpone);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
- let busy=false;
- dialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();});
+ dialog.addEventListener('cancel',event=>{event.preventDefault();postpone();});
  dialog.querySelector('[data-share-reject]').addEventListener('click',async()=>{
    if(busy)return;
    busy=true;buttons.forEach(b=>b.disabled=true);
