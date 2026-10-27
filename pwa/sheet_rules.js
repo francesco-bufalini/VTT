@@ -2,7 +2,7 @@ import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
-import {collectEffectExtensions} from './effect_extensions.js';
+import {collectEffectExtensions,applyItemAttackExtensions} from './effect_extensions.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
@@ -602,7 +602,8 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   if(slot==='main'&&!physicalOff&&hasProperty(item,'V')&&record.hand_grip_two_handed&&item.versatile_damage)damage=item.versatile_damage;
   const size=item.instance_overrides?.weapon_size||record.size_name||'Medium',factor=({Large:2,Huge:3,Gargantuan:4})[size]||1;
   if(factor>1)damage=damage.replace(/^(\s*)(\d+)d(\d+)/,(_,space,count,die)=>space+(Number(count)*factor)+'d'+die);
-  const attack={id:'item:'+(slot==='off'?'off:':'')+item.id,name:item.name+(slot==='off'?' · secondaria':''),slot,melee:!ranged,range_feet:ranged?Math.max(5,ranges[0]||0):reach,long_range_feet:ranged?ranges[1]||0:0,damage_type:item.damage_type||''};
+  const attack={id:'item:'+(slot==='off'?'off:':'')+item.id,name:item.name+(slot==='off'?' · secondaria':''),slot,melee:!ranged,range_feet:ranged?Math.max(5,ranges[0]||0):reach,long_range_feet:ranged?ranges[1]||0:0,damage_type:item.damage_type||'',
+    inventory_index:arr(record.inventory).findIndex(row=>arr(row?.equipped_slots).includes(slot)&&String(row?.id)===String(item.id))};
   append(attack,ability,proficient,damage);
   if(!ranged&&hasProperty(item,'T')&&ranges[0]>0)append({...attack,id:'item:throw:'+slot+':'+item.id,name:attack.name+' · lancio',melee:false,range_feet:ranges[0],long_range_feet:ranges[1]||0},ability,proficient,damage);
  }
@@ -1219,11 +1220,13 @@ function calculateSheetValues(record={},catalogs={}){
     return result;
   };
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
-  const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
-  const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const effect_extensions=collectEffectExtensions(record,catalogs.effectExtensions||[],featureContext.features,
     index?.artificer_infusions||[])
     .filter(row=>sourceEnabled(row));
+  const attacks=applyItemAttackExtensions(record,
+    attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],
+      target=>safe(target)??0,featureContext),effect_extensions);
+  const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
   for(const cls of classes)addOrigin('class|'+String(cls.source||'').toLowerCase()+'|'+cls.name.toLowerCase(),cls.name);
