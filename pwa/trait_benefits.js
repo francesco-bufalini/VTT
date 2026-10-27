@@ -332,12 +332,12 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   1:['Resistenza',0],2:['Immunità ai danni',1],
   3:['Immunità alle condizioni',2],[-1]:['Vulnerabilità',3]
  };
- const defenses=rows(record.damage_defense_entries)
+ const defenses=rows(calculated.damage_defense_entries??record.damage_defense_entries)
   .filter(row=>!row.disabled&&belongs(row)&&defenseKinds[Number(row.rank)])
   .map(row=>({
    label:defenseKinds[Number(row.rank)][0],
    order:defenseKinds[Number(row.rank)][1],
-   value:DAMAGE[norm(row.key)]||String(row.key||''),id:'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)
+   value:DAMAGE[norm(row.key)]||String(row.key||''),id:row.benefit_id||'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)
   }))
   .sort((a,b)=>a.order-b.order||a.value.localeCompare(b.value,'it',{sensitivity:'base'}));
  for(const row of defenses)
