@@ -6,7 +6,7 @@ import {collectEffectExtensions} from './effect_extensions.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,armorDexterityBonus,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,activeInfusions,armorDexterityBonus,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants} from './spell_selection.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
@@ -1025,13 +1025,8 @@ function calculateSheetValues(record={},catalogs={}){
     if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
     // A generated infusion is a separate, verifiable equipment origin, not
     // an unknown manual bonus or an unconditional class privilege.
-    if(sid.startsWith("infusion:"))return arr(record.inventory).some((owned,itemIndex)=>
-      infusionInstanceOrigin(owned,itemIndex)===sid&&
-      itemActive(resolveOwnedItem(owned),record)&&
-      Object.keys(infusionNumericBonuses(record,resolveOwnedItem(owned),
-        index?.artificer_infusions||[],features)).length>0&&
-      (owned.infusion?.creator_id!==record.id||
-        features.some(f=>f.name==='Infuse Item'&&featureEnabled(record,f))));
+    if(sid.startsWith("infusion:"))return activeInfusions(record,index?.artificer_infusions||[],features)
+      .some(infused=>infused.id===sid&&itemActive(resolveOwnedItem(infused.item),record));
     if(sid.startsWith("item:"))
       return inventory.some(it=>"item:"+it.id===sid&&itemActive(it,record));
     const fragments=sid.split("|"),group=fragments[0],
@@ -1226,7 +1221,8 @@ function calculateSheetValues(record={},catalogs={}){
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
-  const effect_extensions=collectEffectExtensions(record,catalogs.effectExtensions||[],featureContext.features)
+  const effect_extensions=collectEffectExtensions(record,catalogs.effectExtensions||[],featureContext.features,
+    index?.artificer_infusions||[])
     .filter(row=>sourceEnabled(row));
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};

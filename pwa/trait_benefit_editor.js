@@ -214,6 +214,7 @@ export function addBenefitPatch(record,trait,kind,values={},id){
   field='effect_extensions';row=normalizeEffectExtension({...common,trait_key:trait.key,
    parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||'',
    target_kind:values.target_kind,target_name:required('target_name'),target_id:String(values.target_id||'').trim(),
+   target_instance_id:String(values.target_instance_id||'').trim(),
    operation:values.operation,value:values.value,trigger:values.trigger,
    frequency:values.frequency,description:values.description||''});
   if(!row)throw Error('Estensione non valida: controlla bersaglio, operazione, valore e condizione');

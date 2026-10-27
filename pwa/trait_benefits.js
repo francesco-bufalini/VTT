@@ -3,7 +3,7 @@
 import {CLASS_FEATURE_RULES,classFeatureRollSources} from './feature_mechanics.js';
 import {resolveOwnedItem} from './item_controls.js';
 import {attackCountBenefits} from './attack_count_benefits.js';
-import {effectExtensionLabel} from './effect_extensions.js';
+import {effectExtensionLabel,effectExtensionsFor} from './effect_extensions.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const ABILITIES={str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
@@ -337,11 +337,19 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   add('spells','Incantesimi concessi',spell.name,spell.level===0?'Trucchetto':
     Number.isInteger(spell.level)?'Livello '+spell.level:'','spell:'+String(spell.origin_id||'')+':'+String(spell.id||''));
  for(const extension of rows(calculated.effect_extensions)){
-  if(!belongs(extension))continue;
-  const target=(extension.target_kind==='spell'?'Incantesimo':'Capacità')+' · '+(extension.target_name||extension.target_id);
+  // An infusion belongs to its granting optional trait, but the affected
+  // object's card may show it read-only too (one inventory copy at a time).
+  const onItem=trait.category==='oggetti'&&trait.rank===0&&
+   extension.target_kind==='item'&&rows(record.inventory).some((item,index)=>
+    trait.origin_key==='item:'+String(item.id||'')&&
+    effectExtensionsFor([extension],{kind:'item',id:item.id,name:item.name,
+     instance_id:item.instance_id,inventory_index:index}).length>0);
+  if(!belongs(extension)&&!onItem)continue;
+  const target=(extension.target_kind==='spell'?'Incantesimo':
+   extension.target_kind==='item'?'Oggetto':'Capacità')+' · '+(extension.target_name||extension.target_id);
   add('effect_extensions','Estensioni degli effetti',target,
    effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}),
-   'effect_extension:'+String(extension.id||''));
+   belongs(extension)?'effect_extension:'+String(extension.id||''):'');
  }
  for(const action of rows(record.action_grants)){
   if(action.disabled||!belongs(action))continue;
