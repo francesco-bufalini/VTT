@@ -138,9 +138,13 @@ try{
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
    'No legacy ± navigation remains anywhere in the rendered sheet');
- const passive=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="passive_perception"]');
- assert.equal(await passive.count(),1);
- await passive.click();
+ const senses=page.locator('#sheet-play-view [data-act="sheet-senses-open"]');
+ assert.equal(await senses.count(),1);
+ await senses.click();
+ const sensesDialog=page.locator('#sheet-senses-dialog');
+ assert(await sensesDialog.isVisible());
+ assert.match(await sensesDialog.textContent(),/Luce fioca/);
+ await sensesDialog.locator('[data-act="sheet-score-formula"][data-target="passive_perception"]').click();
  const scoreFormula=page.locator('#sheet-score-formula-dialog');
  assert(await scoreFormula.isVisible());
  assert.equal(await scoreFormula.locator('[data-act="sheet-score-edit-base"]').count(),0,
@@ -150,6 +154,7 @@ try{
  assert.equal(await scoreFormula.locator('[data-roll-mode], [data-act="roll-sheet-confirm"]').count(),0,
    'Computed scores have no dice controls');
  await scoreFormula.locator('[data-act="close-score-formula"]').click();
+ await sensesDialog.locator('[data-act="sheet-senses-close"]').click();
  assert.equal(await page.locator('#sheet-play-view .play-ability header [data-act="sheet-proxy"]').count(),0,
    'The six ability edit gears are removed from the info cards');
  await page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:str"]').click();
