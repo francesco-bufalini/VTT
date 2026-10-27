@@ -812,19 +812,6 @@
       "projected_flattened_species": true
     },
     {
-      "name": "Human (Innistrad)",
-      "source": "PSI",
-      "ability": {
-        "str": 1,
-        "dex": 1,
-        "con": 1,
-        "int": 1,
-        "wis": 1,
-        "cha": 1
-      },
-      "projected_flattened_species": true
-    },
-    {
       "name": "Aasimar (Fallen)",
       "source": "VGM",
       "ability": {
@@ -855,6 +842,7 @@
       "name": "Aven (Hawk-Headed)",
       "source": "PSA",
       "ability": {
+        "dex": 2,
         "wis": 2
       },
       "projected_flattened_species": true
@@ -917,6 +905,7 @@
       "name": "Dwarf (Mountain)",
       "source": "PHB",
       "ability": {
+        "con": 2,
         "str": 2
       },
       "projected_flattened_species": true
@@ -1078,6 +1067,7 @@
       "name": "Gith (Githyanki)",
       "source": "MTF",
       "ability": {
+        "int": 1,
         "str": 2
       },
       "projected_flattened_species": true
@@ -1086,6 +1076,7 @@
       "name": "Gith (Githzerai)",
       "source": "MTF",
       "ability": {
+        "int": 1,
         "wis": 2
       },
       "projected_flattened_species": true
@@ -1217,8 +1208,24 @@
       "name": "Half-Elf (Variant; Mark of Detection)",
       "source": "ERLW",
       "ability": {
+        "cha": 2,
         "wis": 2
       },
+      "ability_choices": [
+        {
+          "choose": {
+            "from": [
+              "str",
+              "dex",
+              "con",
+              "int",
+              "wis"
+            ],
+            "count": 2,
+            "amount": 1
+          }
+        }
+      ],
       "projected_flattened_species": true
     },
     {
@@ -1455,6 +1462,7 @@
       "name": "Merfolk (Ixalan; Blue)",
       "source": "PSX",
       "ability": {
+        "cha": 1,
         "int": 2
       },
       "projected_flattened_species": true
@@ -1463,6 +1471,7 @@
       "name": "Merfolk (Ixalan; Green)",
       "source": "PSX",
       "ability": {
+        "cha": 1,
         "wis": 2
       },
       "projected_flattened_species": true
@@ -1480,6 +1489,7 @@
       "name": "Merfolk (Zendikar; Emeria Creed)",
       "source": "PSZ",
       "ability": {
+        "cha": 1,
         "wis": 2
       },
       "projected_flattened_species": true
@@ -1488,6 +1498,7 @@
       "name": "Merfolk (Zendikar; Ula Creed)",
       "source": "PSZ",
       "ability": {
+        "cha": 1,
         "int": 2
       },
       "projected_flattened_species": true
@@ -1604,7 +1615,7 @@
       "name": "Tiefling (Variant; Devil's Tongue)",
       "source": "SCAG",
       "ability": {
-        "int": 2,
+        "int": 1,
         "cha": 2
       },
       "projected_flattened_species": true
@@ -1613,7 +1624,7 @@
       "name": "Tiefling (Variant; Hellfire)",
       "source": "SCAG",
       "ability": {
-        "int": 2,
+        "int": 1,
         "cha": 2
       },
       "projected_flattened_species": true
@@ -1622,7 +1633,7 @@
       "name": "Tiefling (Variant; Infernal Legacy)",
       "source": "SCAG",
       "ability": {
-        "int": 2,
+        "int": 1,
         "cha": 2
       },
       "projected_flattened_species": true
@@ -1631,7 +1642,7 @@
       "name": "Tiefling (Variant; Winged)",
       "source": "SCAG",
       "ability": {
-        "int": 2,
+        "int": 1,
         "cha": 2
       },
       "projected_flattened_species": true
