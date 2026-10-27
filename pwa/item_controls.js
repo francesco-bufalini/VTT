@@ -163,7 +163,7 @@ export function consolidateOwnedItems(inventory){
     const slots=array(row?.equipped_slots);
     const canStack=row&&typeof row==="object"&&!Array.isArray(row)&&
       String(row.id||row.name||"").trim()&&kind!=="document"&&
-      !row.infusion&&itemAttunementCount(row)===0&&row.attuned!==true&&
+      !row.infusion&&row.standalone_instance!==true&&itemAttunementCount(row)===0&&row.attuned!==true&&
       Number.isInteger(quantity)&&quantity>=1&&quantity<=99999&&
       slots.every(slot=>["main","off","body"].includes(slot))&&
       new Set(slots).size===slots.length&&slots.length<=quantity;
