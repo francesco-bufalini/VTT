@@ -6127,13 +6127,33 @@ async function handleAction(target){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     if(!fields||!trait)throw Error('Tratto o campi mancanti');
     const values=Object.fromEntries([...fields.querySelectorAll('[name]')].map(node=>[node.name,node.value]));
+    let targetInventory=null;
     if(type==='effect_extensions'&&values.target_kind==='item'){
       const index=Number(values.target_item_index),inventory=state.editor.read().inventory||[];
       const item=inventory[index];
       if(!Number.isInteger(index)||index<0||!item||!item.id)throw Error('Seleziona un oggetto valido.');
+      const quantity=Number(item.quantity??1);
+      if(!Number.isSafeInteger(quantity)||quantity<1)throw Error('Quantità oggetto non valida.');
+      // The chosen stack may contain identical physical copies. Split off
+      // exactly one and attach a stable instance ID before saving the benefit.
+      targetInventory=structuredClone(inventory);
+      const selected=targetInventory[index];
+      selected.instance_id=selected.instance_id||'pwa_instance_'+crypto.randomUUID();
+      if(quantity>1){
+        const rest=structuredClone(item),attuned=itemAttunementCount(item);
+        selected.quantity=1;
+        rest.quantity=quantity-1;rest.instance_id='pwa_instance_'+crypto.randomUUID();
+        rest.equipped=false;rest.equipped_slots=[];
+        if(requiresAttunement(resolveOwnedItem(item))){
+          selected.attuned_count=Math.min(1,attuned);selected.attuned=selected.attuned_count>0;
+          rest.attuned_count=Math.max(0,attuned-1);rest.attuned=rest.attuned_count>0;
+        }
+        targetInventory.splice(index+1,0,rest);
+      }
       values.target_name=String(item.name||item.id);
       values.target_id=String(item.id);
-      values.target_instance_id=String(item.instance_id||'');
+      values.target_instance_id=String(selected.instance_id);
+      if(quantity===1&&item.instance_id)targetInventory=null;
     }
     // Dice that modify a permanent score resolve once; a sheet redraw never
     // changes the rolled value or redirects the origin of the benefit.
@@ -6150,7 +6170,7 @@ async function handleAction(target){
     if(type==='bonus'&&!validBonusDice(values.expression)&&
        /Formula non applicata/.test(formulaPreview(values.expression,state.calculated)))
       throw Error('Formula non valida');
-    await patch(changes);
+    await patch({...changes,...(targetInventory?{inventory:targetInventory}:{})});
     await state.editor.flush();
     // A persisted record may become visible before the asynchronous rerender.
     // Hide the now-committed draft synchronously to prevent an editable stale
