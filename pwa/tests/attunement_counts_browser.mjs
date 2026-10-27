@@ -78,6 +78,24 @@ try{
  assert.equal(await count(0).getAttribute('max'),'1','Only one instance remains');
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');await popup('item:0');
  await waitCount(0,1);assert.equal((await stats()).initiative,1);
+ await dismiss();
+ const cap=page.locator('#sheet-play-view .inventory-attunement [data-act="sheet-score-formula"][data-target="attunement_max"]');
+ assert.equal(await cap.count(),1,'Maximum attunements open the shared score formula');
+ await cap.click();
+ const formula=page.locator('#sheet-score-formula-dialog');
+ assert.match(await formula.locator('[data-score-formula]').textContent(),/Sintonie di base/);
+ await formula.locator('[data-act="sheet-score-edit-base"]').click();
+ const score=page.locator('#sheet-score-dialog');
+ assert.equal(await score.locator('#sheet-score-input').inputValue(),'3');
+ await score.locator('#sheet-score-input').fill('1');
+ await score.locator('[data-act="save-score"]').click();
+ assert.equal((await record()).attunement_max_base,3,'Occupied slots prevent lowering the base below actual capacity');
+ assert.equal(await score.count(),1,'Rejected score edits leave the dialog open');
+ await score.locator('#sheet-score-input').fill('2');
+ await score.locator('[data-act="save-score"]').click();
+ assert.equal((await record()).attunement_max_base,2,'Shared base-score editor persists a valid capacity');
+ assert.equal((await stats()).attunements.maximum,2);
+ await page.locator('#sheet-score-formula-dialog [data-act="close-score-formula"]').click();
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);assert.deepEqual(f.writes,[]);
  console.log('PASS: four luckstones use one or three attunements; exact bonuses and trait ×N, shared cap, typed-value validation, quantity shrink, 48px controls at 320–1440px, and reload persistence.');
 }finally{await f.close();}
