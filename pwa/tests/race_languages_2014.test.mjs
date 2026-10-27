@@ -116,6 +116,9 @@ test('Mark of Finding changes ancestry languages, while ordinary High Elf adds o
   assert(has(r,'goblin'));assert(has(r,'common'));
   assert(!has(r,'orc'),'Mark of Finding replaces Half-Orc language');
  }
+ const keldon=char('Human','PHB','Keldon','PSD');
+ assert(has(keldon,'keldon'));
+ assert.equal(picks(keldon).length,0,'Keldon replaces the Human free language choice');
  const high=char('Elf','PHB','High','PHB');
  assert(has(high,'elvish'));assert(has(high,'common'));
  assert.equal(picks(high).filter(x=>x.origin_id==='subrace|phb|high').length,1);
