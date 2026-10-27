@@ -401,7 +401,17 @@ export function customLineageVariantPatch(c,key,selected={}){
 }
 export function referencePatch(c,key,selected={}){
  const custom=customLineageVariantPatch(c,key,selected);
- if(custom)return custom;
+ if(custom){
+  // Changing away from Aasimar also clears its previous persistent form,
+  // exactly as an ordinary species replacement does.
+  if((c.species!=='Custom Lineage'||c.species_source!=='TCE')&&
+     c.active_class_features?.['racial:celestial_revelation']){
+    const active={...c.active_class_features};
+    delete active['racial:celestial_revelation'];
+    custom.active_class_features=active;
+  }
+  return custom;
+ }
  const name=selected.name||'',source=selected.source||'',id=selected.id||'';
  const patch={...identityPatch(c,key,name),[key+'_id']:id,[key+'_source']:source};
  if(['species','subrace'].includes(key)&&
