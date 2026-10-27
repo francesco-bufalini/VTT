@@ -2229,12 +2229,12 @@ async function openInfusionActionDialog(index){
   ...(entry.item_prerequisite?[{label:'Oggetto richiesto',value:entry.item_prerequisite}]:[]),
   {label:'Sintonia',value:entry.requires_attunement?'Richiesta per beneficiare degli effetti':'Non richiesta'}
  ];
- const description=flattenDescription(entry)||
-  'Applica questa infusione a un oggetto compatibile. Gli effetti dipendono dall’infusione e dalle condizioni dell’oggetto.';
+ const description=flattenDescription(entry)||String(entry.description||'').trim()||
+  'L’infusione modifica magicamente un oggetto. Consulta il tratto per i dettagli.';
  app.querySelector('#infusion-action-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='infusion-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
- dialog.dataset.infusionIndex=String(index);
+ dialog.dataset.infusionIndex=String(index);dialog.dataset.selectedItem='';
  const options=(entry.effect_choice?.options||[]);
  dialog.innerHTML=actionDialogIntro(entry.name,facts,description,
    'Infusione dell’artefice'+(entry.source?' · '+entry.source:''),
@@ -2243,18 +2243,34 @@ async function openInfusionActionDialog(index){
      applied.map(({item,index:itemIndex})=>'<div class="infusion-dialog-item"><span>'+esc(item.name||item.id)+
        '<small>Infusione applicata</small></span><button type="button" class="btn" data-act="infusion-dialog-remove" data-index="'+itemIndex+'">Disattiva</button></div>').join('')+
      '</section>':'')+
-   (targets.length?'<label>Oggetto bersaglio<select id="infusion-item-target">'+
-     targets.map(({item,index:itemIndex})=>'<option value="'+itemIndex+'">'+esc(item.name||item.id)+'</option>').join('')+
-     '</select></label>':
-     prepared?'<p class="hint">Nessun oggetto compatibile disponibile per una nuova attivazione.</p>':
-     '<p class="hint">Prepara l’infusione prima di applicarla a un oggetto.</p>')+
+   (targets.length?'<label class="vtt-list-search inventory-global-search infusion-target-search">Cerca oggetto compatibile'+
+     '<input type="search" data-infusion-object-search placeholder="Cerca nell’inventario" autocomplete="off"></label>'+
+     '<div class="inventory-search-results vtt-selection-list infusion-target-results" role="list" aria-label="Oggetti compatibili"></div>':
+     prepared?'<p class="hint">Nessun oggetto compatibile disponibile.</p>':
+     '<p class="hint">Prepara l’infusione prima di usarla.</p>')+
    (prepared&&targets.length&&options.length?
      '<label>'+esc(entry.effect_choice.label||'Scelta effetto')+'<select data-infusion-dialog-effect>'+
      options.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
    '<div class="actions magic-dialog-actions">'+
     (!prepared?'<button type="button" class="btn" data-act="infusion-dialog-prepare">Prepara</button>':'')+
-    '<button type="button" class="btn primary" data-act="infusion-dialog-activate"'+(!prepared||!targets.length?' disabled':'')+'>Attiva</button>'+
+    '<button type="button" class="btn primary" data-act="infusion-dialog-activate" disabled>Usa</button>'+
     '<button type="button" class="btn" data-act="infusion-dialog-close">Chiudi</button></div>';
+ const results=dialog.querySelector('.infusion-target-results'),search=dialog.querySelector('[data-infusion-object-search]');
+ if(results&&search){
+  const paint=()=>{
+   const shown=targets.filter(({item})=>matchesSearch(search.value,item.name,item.source,item.id));
+   results.innerHTML=shown.length?shown.map(({item,index:itemIndex})=>{
+    const active=dialog.dataset.selectedItem===String(itemIndex);
+    return '<button type="button" class="inventory-search-result vtt-selectable'+(active?' is-selected':'')+
+      '" data-act="infusion-object-choose" data-index="'+itemIndex+'" aria-pressed="'+active+'">'+
+      '<span class="inventory-search-result-count'+(active?'':' is-add')+'" aria-hidden="true">'+(active?'✓':'+')+'</span>'+
+      '<span class="inventory-search-result-copy"><strong>'+esc(item.name||item.id)+'</strong>'+
+      (item.source?'<small>'+esc(item.source)+'</small>':'')+'</span>'+
+      '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
+   }).join(''):'<p class="inventory-search-notice">Nessun oggetto compatibile trovato.</p>';
+  };
+  search.addEventListener('input',paint);paint();
+ }
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
 }
@@ -6806,6 +6822,18 @@ async function handleAction(target){
   if(act==='infusion-open'){
     await openInfusionActionDialog(Number(target.dataset.index));return;
   }
+  if(act==='infusion-object-choose'){
+    const dialog=app.querySelector('#infusion-action-dialog');
+    if(!dialog?.open)throw Error('Riapri la selezione dell’oggetto.');
+    dialog.dataset.selectedItem=target.dataset.index;
+    for(const row of dialog.querySelectorAll('[data-act="infusion-object-choose"]')){
+      const active=row.dataset.index===dialog.dataset.selectedItem;
+      row.classList.toggle('is-selected',active);
+      row.setAttribute('aria-pressed',String(active));
+      row.querySelector('.inventory-search-result-count').textContent=active?'✓':'+';
+    }
+    dialog.querySelector('[data-act="infusion-dialog-activate"]').disabled=false;return;
+  }
   if(act==='infusion-dialog-close'){
     closeDialog(app.querySelector('#infusion-action-dialog'),{remove:true});return;
   }
@@ -6821,9 +6849,9 @@ async function handleAction(target){
       changes=prepareInfusionPatch(creature,entry,definitions,calculated.features||[],true);
     }else if(act==='infusion-dialog-activate'){
       if(!isInfusionPrepared(creature,entry,definitions))throw Error('Prepara prima l’infusione.');
-      const itemIndex=Number(dialog.querySelector('#infusion-item-target')?.value);
+      const itemIndex=Number(dialog.dataset.selectedItem);
       const eligible=compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]);
-      if(!eligible.some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
+      if(!dialog.dataset.selectedItem||!eligible.some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
       const choice=entry.effect_choice;
       const value=dialog.querySelector('[data-infusion-dialog-effect]')?.value||'';
       changes=applyInfusionPatch(creature,entry,definitions,calculated.infusion_mechanics,itemIndex,
