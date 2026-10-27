@@ -99,13 +99,19 @@ test('spellcasting ability selection follows the source shown in PWA powers',()=
 test('always-prepared origin spells use ordinary slots unless a cost is explicitly configured',()=>{
  const base=record({origin_spell_grants:[
   {id:'feature:known',origin_id:'feature:cleric',origin_name:'Domain Spells',
-   spell_id:'phb2014_light',mode:'prepared',spellcasting_ability:'wis'},
+   spell_id:'phb2014_shield',mode:'prepared',spellcasting_ability:'wis'},
   {id:'feature:innate',origin_id:'feature:elf',origin_name:'Innate',
    spell_id:'phb2014_mage_hand',mode:'innate',spellcasting_ability:'int'}
  ]});
  const computed=calculateSheet(base,{classMechanics:mechanics,spells});
  assert.equal(computed.origin_spells.find(spell=>spell.id==='feature:known').payment_mode,'slot');
  assert.equal(computed.origin_spells.find(spell=>spell.id==='feature:innate').payment_mode,'free');
+ const cantrip={...base,origin_spell_grants:[
+   {...base.origin_spell_grants[0],spell_id:'phb2014_light'},
+   base.origin_spell_grants[1]
+ ]};
+ assert.equal(calculateSheet(cantrip,{classMechanics:mechanics,spells})
+   .origin_spells.find(spell=>spell.id==='feature:known').payment_mode,'free');
  const overridden=calculateSheet({...base,origin_spell_configs:{'feature:known':{payment_mode:'free'}}},
    {classMechanics:mechanics,spells});
  assert.equal(overridden.origin_spells.find(spell=>spell.id==='feature:known').payment_mode,'free');
