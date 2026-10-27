@@ -446,7 +446,7 @@ export function compatibleInfusionTargets(record,option,definitions=[],features=
    (option.application_kind!=="replicate"||option.plan_item_id===item.id)&&
    (!item.infusion?.id||item.infusion.creator_id===record.id));
 }
-export function applyInfusionPatch(record,known,definitions,classMechanics,index,features=[]){
+export function applyInfusionPatch(record,known,definitions,classMechanics,index,features=[],effectChoice={}){
  const caps=infusionLimits(record,classMechanics,features),items=structuredClone(array(record.inventory));
  const option=array(definitions).find(row=>row.id===known?.id),item=items[index];
  if(!option||!item||!array(record.optional_features_catalog).some(row=>
@@ -463,6 +463,11 @@ export function applyInfusionPatch(record,known,definitions,classMechanics,index
       String(inf.plan_item_id||"")===String(known.plan_item_id||""))
      throw Error("Infusione già applicata a un altro oggetto.");
  }
+ const selection=option.effect_choice;
+ const selected=selection?String(effectChoice?.[selection.key]||
+   (item.infusion?.id===option.id?item.infusion.effect_choice?.[selection.key]:'')||''):'';
+ if(selection&&(!array(selection.options).includes(selected)||!selection.key))
+   throw Error('Seleziona una delle opzioni previste per l’effetto dell’infusione.');
  const old=item.infusion;
  if(old&&Object.keys(old).length&&old.creator_id!==record.id)throw Error("Infusione appartenente a un altro Artefice.");
  const active=items.filter(row=>Number(row?.quantity??1)>0&&row?.infusion?.creator_id===record.id).length;
@@ -483,7 +488,8 @@ export function applyInfusionPatch(record,known,definitions,classMechanics,index
  item.infusion={id:option.id,name:option.name,source:"TCE",level:caps.level,
    creator_id:record.id,plan_item_id:known.plan_item_id||"",
    ...(trait?{origin_id:trait.origin_id}:{}),
-   requires_attunement:Boolean(option.requires_attunement)};
+   requires_attunement:Boolean(option.requires_attunement),
+   ...(selection?{effect_choice:{[selection.key]:selected}}:{})};
  return {inventory:items};
 }
 export function clearInfusionPatch(record,index){
