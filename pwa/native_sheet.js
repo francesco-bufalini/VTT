@@ -488,7 +488,10 @@ export function speciesCreatureType(creature,catalogs={}){
 export function availableReferenceRows(c,key,category,catalogs={}){
  return contentForRules(list(catalogs[category]),c.rules_version).filter(r=>r?.name &&
    (key!=='species'||!r.raceName) &&
-   (key!=='subrace'||!!r.raceName&&r.raceName===c.species&&(!c.species_source||r.raceSource===c.species_source)) &&
+   (key!=='subrace'||!!r.raceName&&r.raceName===c.species&&
+     (!c.species_source||r.raceSource===c.species_source)&&
+     Number(r.level||1)<=Math.max(Number(c.level)||1,
+       (c.classes||[]).reduce((sum,row)=>sum+Math.max(0,Number(row.level)||0),0))) &&
    (key!=='subclass'||!!c.class&&(!r.class_name||r.class_name===c.class)&&(!c.class_source||!r.class_source||r.class_source===c.class_source)) &&
    (key!=='class'||c.rules_version!=='2024'||r.source!=='PHB'));
 }
