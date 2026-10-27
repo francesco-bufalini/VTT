@@ -20,8 +20,7 @@
         "kinds": [
           "armor"
         ]
-      },
-      "description": "L'armatura infusa diventa magica e dispone di arti propulsivi che possono essere usati per attaccare."
+      }
     },
     {
       "id": "infusion|tce|armor of magical strength",
@@ -37,8 +36,7 @@
         "kinds": [
           "armor"
         ]
-      },
-      "description": "L'armatura infusa spende cariche per aiutare nelle prove e nei tiri salvezza di Forza."
+      }
     },
     {
       "id": "infusion|tce|boots of the winding path",
@@ -54,8 +52,7 @@
         "name_contains_any": [
           "boot"
         ]
-      },
-      "description": "Gli stivali infusi consentono di tornare magicamente a un luogo occupato durante il turno."
+      }
     },
     {
       "id": "infusion|tce|enhanced arcane focus",
@@ -77,8 +74,7 @@
           "staff",
           "wand"
         ]
-      },
-      "description": "Un focus infuso conferisce +1 ai tiri per colpire con incantesimi (+2 dal livello 10 dell'Artefice)."
+      }
     },
     {
       "id": "infusion|tce|enhanced defense",
@@ -99,8 +95,7 @@
           "armor",
           "shield"
         ]
-      },
-      "description": "Un'armatura o uno scudo infuso conferisce +1 alla Classe Armatura (+2 dal livello 10 dell'Artefice)."
+      }
     },
     {
       "id": "infusion|tce|enhanced weapon",
@@ -120,8 +115,7 @@
         "kinds": [
           "weapon"
         ]
-      },
-      "description": "L'arma infusa conferisce +1 ai tiri per colpire e ai danni (+2 dal livello 10 dell'Artefice)."
+      }
     },
     {
       "id": "infusion|tce|helm of awareness",
@@ -137,8 +131,7 @@
         "name_contains_any": [
           "helm"
         ]
-      },
-      "description": "L'elmo infuso migliora la percezione dei pericoli e l'iniziativa in combattimento."
+      }
     },
     {
       "id": "infusion|tce|homunculus servant",
@@ -155,8 +148,7 @@
           "other",
           "tool"
         ]
-      },
-      "description": "L'infusione su una gemma o un cristallo crea un servitore omuncolo."
+      }
     },
     {
       "id": "infusion|tce|mind sharpener",
@@ -175,8 +167,7 @@
         "name_contains_any": [
           "robe"
         ]
-      },
-      "description": "L'armatura o la veste infusa può utilizzare cariche per mantenere la concentrazione dopo un danno."
+      }
     },
     {
       "id": "infusion|tce|radiant weapon",
@@ -195,8 +186,7 @@
         "kinds": [
           "weapon"
         ]
-      },
-      "description": "L'arma infusa conferisce +1 ai tiri per colpire e ai danni, emette luce e può produrre un lampo accecante."
+      }
     },
     {
       "id": "infusion|tce|repeating shot",
@@ -223,8 +213,7 @@
         "properties_all": [
           "A"
         ]
-      },
-      "description": "Un'arma a distanza infusa conferisce +1 ai tiri per colpire e ai danni e produce le munizioni necessarie."
+      }
     },
     {
       "id": "infusion|tce|replicate magic item",
@@ -462,8 +451,7 @@
         "kinds": [
           "shield"
         ]
-      },
-      "description": "Lo scudo infuso conferisce +1 alla CA e può respingere un avversario consumando una carica."
+      }
     },
     {
       "id": "infusion|tce|resistant armor",
@@ -495,8 +483,7 @@
         "kinds": [
           "armor"
         ]
-      },
-      "description": "L'armatura infusa concede resistenza a un tipo di danno scelto durante l'applicazione."
+      }
     },
     {
       "id": "infusion|tce|returning weapon",
@@ -518,8 +505,7 @@
         "properties_all": [
           "T"
         ]
-      },
-      "description": "L'arma da lancio infusa conferisce +1 ai tiri per colpire e ai danni e ritorna in mano dopo essere stata lanciata."
+      }
     },
     {
       "id": "infusion|tce|spell-refueling ring",
@@ -535,8 +521,7 @@
         "name_contains_any": [
           "ring"
         ]
-      },
-      "description": "L'anello infuso può ripristinare uno slot incantesimo consumato secondo i limiti del tratto."
+      }
     }
   ]
 }
