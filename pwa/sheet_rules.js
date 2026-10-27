@@ -1,7 +1,7 @@
 import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {calculateSenses} from './sense_rules.js';
-import {speciesDefenseEntries} from './species_defenses.js';
+import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {collectEffectExtensions} from './effect_extensions.js';
@@ -763,6 +763,7 @@ function calculateSheetValues(record={},catalogs={}){
   const features=collectStructuredFeatures(record,catalogs);
   const racialPowers=racialPowerProjection(record,catalogs.speciesPowers||{},features);
   features.push(...racialPowers.features);
+  features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
   const damage_defense_entries=[...arr(record.damage_defense_entries),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed)];
   const grantingCastingTrait=member=>{
