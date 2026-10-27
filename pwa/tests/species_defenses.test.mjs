@@ -5,6 +5,7 @@ import {projectSpeciesDefenses} from '../tools/species_defenses.mjs';
 import {speciesDefenseEntries} from '../species_defenses.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
+import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const source=read('../../vtt/data/creature_references_5etools.json');
@@ -93,4 +94,23 @@ test('inherited variant data remains attached to matching source and real trait'
  const fallen=catalog.races.find(row=>row.name==='Aasimar (Fallen)'&&row.source==='VGM');
  assert.deepEqual(hill.entries.map(x=>x.key),['poison']);
  assert.deepEqual(fallen.entries.map(x=>x.key).sort(),['necrotic','radiant']);
+});
+
+test('dragonborn resistance is chosen through the ordinary pending choice UI and persists',()=>{
+ const character=creature('Dragonborn (Gem)','FTD');
+ const sheet=calculate(character);
+ const choice=pendingCharacterChoices(character,sheet,{speciesDefenses:catalog})
+  .find(row=>row.kind==='defense');
+ assert.ok(choice,'the source-qualified damage choice must be offered');
+ assert.equal(choice.remaining,1);
+ assert.ok(choice.options.includes('psychic'));
+ const patch=savePendingChoice(character,choice,['psychic']);
+ assert.equal(patch.origin_defense_choices['race|ftd|dragonborn (gem)'],'psychic');
+ const saved={...character,...patch};
+ assert.deepEqual(keys(calculate(saved)),['1:psychic']);
+ const selected=pendingCharacterChoices(saved,calculate(saved),{speciesDefenses:catalog})
+  .find(row=>row.kind==='defense');
+ assert.deepEqual(selected.selected,['psychic']);
+ const cleared=savePendingChoice(saved,selected,[]);
+ assert.deepEqual(keys(calculate({...saved,...cleared})),[]);
 });
