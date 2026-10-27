@@ -1,7 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {inventoryReadout} from '../sheet_rules_view.js';
-import {addSpellScroll,isSpellScroll,spellScrollName,spellScrollLevel} from '../item_controls.js';
+import {addSpellScroll,isSpellScroll,spellScrollName,spellScrollLevel,armorDexterityLimit,armorDexterityBonus,armorDexterityLabel} from '../item_controls.js';
+import {calculateSheet} from '../sheet_rules.js';
 
 test('inventory summaries resolve each owned copy and multiply only recorded unit data',()=>{
  const item={id:'local_blade',name:'Spada',custom_item_type:'weapon',damage:'1d6',weight:3,value:1500,quantity:2,equipped_slots:['main'],instance_overrides:{damage:'1d8',weight:4}};
@@ -11,6 +12,28 @@ test('inventory summaries resolve each owned copy and multiply only recorded uni
  assert(info.facts.some(row=>row.label==='Peso totale'&&row.value==='8 lb'));
  assert.deepEqual(info.status,['Mano principale']);assert.deepEqual(item,before);
 });
+test('armor labels match DEX limits used by AC calculation',()=>{
+ const light={type:'LA',ac:11,equipped_slots:['body']};
+ const medium={type:'MA',ac:14,equipped_slots:['body']};
+ const heavy={type:'HA',ac:18,equipped_slots:['body']};
+ assert.equal(armorDexterityLimit(light),null);
+ assert.equal(armorDexterityLimit(medium),2);
+ assert.equal(armorDexterityLimit(heavy),0);
+ assert.equal(armorDexterityLabel(medium),'+ DES (max +2)');
+ assert.equal(armorDexterityBonus(medium,4),2);
+ assert.equal(armorDexterityBonus(medium,-2),-2);
+ assert.equal(armorDexterityBonus(heavy,-2),0);
+ const custom={...medium,dexterity_max:3};
+ assert.equal(armorDexterityBonus(custom,4),3);
+ assert.equal(armorDexterityLabel(custom),'+ DES (max +3)');
+ assert(inventoryReadout(medium).facts.some(row=>row.label==='Destrezza alla CA'&&row.value==='+ DES (max +2)'));
+ for(const [armor,dex,ac] of [[light,4,15],[medium,4,16],[heavy,-2,18],[custom,4,17]]){
+  const record={kind:'character',level:1,
+   abilities:{str:10,dex:10+dex*2,con:10,int:10,wis:10,cha:10},inventory:[armor]};
+  assert.equal(calculateSheet(record).values.ac,ac);
+ }
+});
+
 test('inventory distinguishes unknown data from explicitly recorded zero',()=>{
  const missing=inventoryReadout({weight:null,value_gp:'',value:null,ac:null});
  assert.equal(missing.weight,null);assert.equal(missing.value,null);assert.deepEqual(missing.facts,[]);
