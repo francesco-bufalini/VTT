@@ -5615,3 +5615,18 @@ dialog.infusion-action-dialog .infusion-target-results .inventory-search-result-
 }
 dialog.infusion-picker-dialog .magic-tools-body{min-width:0}
 dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-sizing:border-box}
+
+/* Rest-affiliated choices in Powers. These labels are not resource counters. */
+.power-selection-rest,.magic-selection-rest{
+ display:inline-flex;align-items:center;white-space:nowrap;
+ padding:3px 8px;border:1px solid #a88b644f;border-radius:8px;
+ color:#e7cba5;background:#56422d3c;font-size:11px;font-weight:600;
+}
+.infusion-overview .power-selection-rest{margin-left:auto;flex:none}
+.magic-source-header .magic-selection-rest{font-size:11px;min-width:0;max-width:100%}
+.play-armor-model-card .play-magic-source-resources,
+.play-infusion-card .play-magic-source-resources{flex-wrap:wrap}
+@media(max-width:420px){
+ .infusion-overview{flex-wrap:wrap;gap:7px}
+ .infusion-overview .power-selection-rest{margin-left:0}
+}
