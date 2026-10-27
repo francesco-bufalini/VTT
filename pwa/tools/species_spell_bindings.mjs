@@ -33,6 +33,7 @@ export function projectSpeciesSpellBindings(races=[],additional=[]){
    output.push({kind:'subrace',name:grant.name,source:grant.source,
     race_name:grant.race_name,race_source:grant.race_source,
     spell,trait:actual.name,trait_entries:actual.entries||[],
+    ...(norm(grant.source)==='mpmm'?{slot_alternative:true}:{}),
     ...(norm(grant.race_name)==='tiefling'?{replace_parent_spell_traits:['Infernal Legacy']}:{})});
   }
   if(spells.length===0){
@@ -41,6 +42,15 @@ export function projectSpeciesSpellBindings(races=[],additional=[]){
    if(choice)output.push({kind:'subrace',name:grant.name,source:grant.source,
     race_name:grant.race_name,race_source:grant.race_source,
     spell:'*choice*',trait:choice.name,trait_entries:choice.entries||[]});
+  }
+ }
+ // MPMM racial innate spells can also be cast using appropriate
+ // spell slots. Cantrips are in known lists and are never charged a slot.
+ for(const grant of additional.filter(row=>row.kind==='race'&&norm(row.source)==='mpmm')){
+  for(const spell of new Set(rows(grant.blocks).flatMap(block=>
+   allSpellTokens({innate:block?.innate})))){
+   output.push({kind:'race',name:grant.name,source:grant.source,spell,
+    slot_alternative:true,generated_2014_species_spell:true});
   }
  }
  // SCAG Winged replaces Infernal Legacy entirely, without casting a spell.
