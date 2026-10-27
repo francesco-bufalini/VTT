@@ -983,7 +983,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-ability-quickstats">'+
    '<button type="button" class="play-quickstat" data-act="sheet-context" data-sheet-context="tools" aria-label="Apri altre competenze"><span>Competenza</span><strong>'+output('proficiency',true)+'</strong></button>'+
    '<button type="button" class="play-quickstat" data-act="sheet-senses-open" aria-label="Sensi e percezione passiva"><span>Sensi</span><strong>Passiva '+output('passive_perception')+'</strong></button>'+
-   '<button type="button" class="play-quickstat" data-act="sheet-defenses-open" aria-label="Apri resistenze, immunità e vulnerabilità"><span>Difese</span><strong>CA '+output('ac')+'</strong></button></div>';
+   '<button type="button" class="play-quickstat" data-act="sheet-movement-open" aria-label="Apri velocità e movimento"><span>Movimento</span><strong>'+output(fastestMovement(d).key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated=')+'</strong></button></div>';
   // Competences are one flat, line-divided section rather than another card.
   // Skills expand inline while equipment/language proficiencies retain their
   // existing full editor, including the button for changing selections.
