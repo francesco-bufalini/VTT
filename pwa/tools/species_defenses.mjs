@@ -71,7 +71,8 @@ export function projectSpeciesDefenses(races=[]) {
   const sameSource=parents.filter(r=>norm(r.source)===norm(race.source));
   const best=sameSource.length?sameSource:parents;
   const inherited=[...new Map(best.flatMap(p=>p.entries).filter(e=>owned.has(norm(e.trait))).map(e=>[e.rank+'|'+e.key,e])).values()];
-  if(inherited.length)output.push({id:race.id,name:race.name,source:race.source,entries:inherited,choices:[]});
+  const inheritedChoices=[...new Map(best.flatMap(p=>p.choices).filter(e=>owned.has(norm(e.trait))).map(e=>[e.rank+'|'+e.trait,e])).values()];
+  if(inherited.length||inheritedChoices.length)output.push({id:race.id,name:race.name,source:race.source,entries:inherited,choices:inheritedChoices});
  }
  return {version:1,source:'vtt/data/creature_references_5etools.json',races:output};
 }
