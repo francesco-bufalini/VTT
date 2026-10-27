@@ -407,6 +407,8 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     }
     if(typeof raw!=='string'||category==='will'&&mode==='prepared'||mode==='known'&&category==='will'&&!raw.includes('#c'))return;
     const id=originSpellId(raw,edition,spells);
+    const supplement=grantRule(definition?.kind,definition?.name,definition?.source,raw);
+    const fixedAbility=allAbilities.includes(supplement?.spellcasting_ability)?supplement.spellcasting_ability:ability;
     if(!id){out.warnings??=[];out.warnings.push('Incantesimo non presente nel catalogo locale: '+raw);return;}
     if(out.grants.some(g=>g.origin_id===owner.id&&g.spell_id===id&&g.tracker_id===tid))return;
     out.grants.push({id:'5etools:'+origin.id+'|'+id+'|'+mode+'|'+stage,
@@ -414,12 +416,12 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
      origin_parent_id:origin.id,origin_parent_name:origin.name,
      granting_trait:owner.granting_trait||'',spell_id:id,tracker_id:tid,
      mode,stage,cantrip:raw.includes('#c')||Number(spells.find(spell=>spell.id===id)?.level)===0,
-     spellcasting_ability:ability,
-     spellcasting_ability_options:tid?abilityOptions:[],
+     spellcasting_ability:fixedAbility,
+     spellcasting_ability_options:fixedAbility?[]:abilityOptions,
      slot_alternative:!!tid&&(
        block.slot_alternative===true||
        arr(block.slot_alternative).some(spell=>norm(spell)===norm(String(raw).split('#')[0].split('|')[0]))||
-       grantRule(definition?.kind,definition?.name,definition?.source,raw)?.slot_alternative===true),
+       supplement?.slot_alternative===true),
      automatic:true,
      mechanic_source:'5etools.additionalSpells'});
    });
