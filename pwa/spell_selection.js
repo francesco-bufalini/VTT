@@ -41,7 +41,7 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
  }
  for(const grant of calculated.origin_spells){
   const definition=catalog.find(s=>s.id===grant.spell_id);if(!definition)continue;
-  entries.push({...definition,grant_id:grant.id,caster_ability:creature.spellcasting_section_abilities?.['origin:'+grant.origin_id]||grant.spellcasting_ability||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',casting_label:grant.origin_name||'Origine'});
+  entries.push({...definition,grant_id:grant.id,caster_ability:grant.spellcasting_ability||creature.spellcasting_section_abilities?.['origin:'+grant.origin_id]||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',casting_label:grant.origin_name||'Origine'});
  }
  return entries;
 }
@@ -317,10 +317,23 @@ export function originSpellId(token,edition,spells){
  return matches.length===1?matches[0].id:'';
 }
 const choiceSignature=choice=>[choice.mode||'',choice.stage||'',String(choice.filter||'').split('|').find(c=>c.startsWith('level='))?.slice(6)||'',choice.usage||''].join(':');
-export function structuredSpellGrants(record,index=[],spells=[],features=[]){
+export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[]){
  const output={grants:[],trackers:[],choices:[],warnings:[]};
  if(record.kind==='monster')return output;
  const level=Number(record.level||1),edition=String(record.rules_version||'2014');
+ const allAbilities=['str','dex','con','int','wis','cha'];
+ // Source-qualified supplements can add rules absent from upstream 5etools
+ // additionalSpells. Future catalogs can embed slot_alternative directly.
+ const grantRule=(kind,name,source,raw)=>arr(grantRules).find(rule=>
+   norm(rule.kind)===norm(kind)&&norm(rule.name)===norm(name)&&
+   norm(rule.source)===norm(source)&&
+   norm(rule.spell)===norm(String(raw).split('#')[0].split('|')[0]));
+ const castingOptions=block=>{
+   const chosen=arr(block?.ability?.choose).map(norm).filter(key=>allAbilities.includes(key));
+   if(chosen.length)return [...new Set(chosen)];
+   return typeof block?.ability==='string'&&allAbilities.includes(norm(block.ability))?
+     []:block?.ability==='inherit'?[]:allAbilities;
+ };
  const active=id=>record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled);
  const originsFor=row=>{
   const kind=row.kind,name=norm(row.name),source=norm(row.source);
@@ -352,7 +365,8 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[]){
  const blockFor=(origin,block,blockIndex)=>{
   const out={grants:[],trackers:[],choices:[]};
   if(!block||typeof block!=='object')return out;
-  const ability=['str','dex','con','int','wis','cha'].includes(block.ability)?block.ability:'';
+  const ability=allAbilities.includes(block.ability)?block.ability:'';
+  const abilityOptions=castingOptions(block);
   const group=(spec,mode,stage,category,uses='')=>{
    if(!Array.isArray(spec))return;
    let tracker='';
@@ -382,7 +396,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[]){
     }
     if(raw&&typeof raw==='object'){
      if(!raw.choose||!(mode==='innate'||category!=='will'||mode==='known'&&String(raw.choose).includes('level=0')))return;
-     out.choices.push({id:origin.id+'|'+stage+'|'+mode+'|'+raw.choose+'|'+tid,origin_id:origin.id,origin_name:origin.name,spellcasting_ability:ability,filter:String(raw.choose),count:Math.max(1,Number(raw.count)||1),mode,stage,usage:tid?'limited':'at_will',tracker_id:tid});return;
+     out.choices.push({id:origin.id+'|'+stage+'|'+mode+'|'+raw.choose+'|'+tid,origin_id:origin.id,origin_name:origin.name,spellcasting_ability:ability,spellcasting_ability_options:tid?abilityOptions:[],filter:String(raw.choose),count:Math.max(1,Number(raw.count)||1),mode,stage,usage:tid?'limited':'at_will',tracker_id:tid});return;
     }
     if(typeof raw!=='string'||category==='will'&&mode==='prepared'||mode==='known'&&category==='will'&&!raw.includes('#c'))return;
     const id=originSpellId(raw,edition,spells);
@@ -392,7 +406,13 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[]){
      origin_id:owner.id,origin_name:owner.name,
      origin_parent_id:origin.id,origin_parent_name:origin.name,
      granting_trait:owner.granting_trait||'',spell_id:id,tracker_id:tid,
-     mode,stage,spellcasting_ability:ability,automatic:true,
+     mode,stage,spellcasting_ability:ability,
+     spellcasting_ability_options:tid?abilityOptions:[],
+     slot_alternative:!!tid&&(
+       block.slot_alternative===true||
+       arr(block.slot_alternative).some(spell=>norm(spell)===norm(String(raw).split('#')[0].split('|')[0]))||
+       grantRule(row.kind,row.name,row.source,raw)?.slot_alternative===true),
+     automatic:true,
      mechanic_source:'5etools.additionalSpells'});
    });
   };
