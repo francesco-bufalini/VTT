@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {projectSpeciesDefenses} from '../tools/species_defenses.mjs';
-import {speciesDefenseEntries} from '../species_defenses.js';
+import {speciesDefenseEntries,selectedSpeciesDefenseRules} from '../species_defenses.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
@@ -113,4 +113,89 @@ test('dragonborn resistance is chosen through the ordinary pending choice UI and
  assert.deepEqual(selected.selected,['psychic']);
  const cleared=savePendingChoice(saved,selected,[]);
  assert.deepEqual(keys(calculate({...saved,...cleared})),[]);
+});
+
+test('2014 PHB Dwarf retains poison resistance with no subrace, Hill or Mountain',()=>{
+ for(const subrace of ['', 'Hill', 'Mountain']){
+  const record=creature('Dwarf','PHB',subrace?{subrace,subrace_source:'PHB',
+   subrace_id:find('Dwarf ('+subrace+')','PHB').id}:{});
+  const sheet=calculate(record);
+  assert.deepEqual(keys(sheet),['1:poison'],'Dwarf '+(subrace||'base'));
+  assert.equal(effects(sheet)[0].granting_trait,'Dwarven Resilience');
+  assert.equal(effects(sheet)[0].origin_parent_id,'race|phb|dwarf',
+   'the inherited PHB racial benefit must remain owned by the species');
+  assert.equal(effects(sheet).length,1,'a flattened subrace must not duplicate parent defenses');
+ }
+});
+
+test('Stout Halfling gains a subrace-only resistance and its actual visible trait',()=>{
+ const character=creature('Halfling','PHB',{subrace:'Stout',subrace_source:'PHB',
+  subrace_id:find('Halfling (Stout)','PHB').id});
+ const sheet=calculate(character);
+ assert.deepEqual(keys(sheet),['1:poison']);
+ const grant=effects(sheet)[0];
+ assert.equal(grant.granting_trait,'Stout Resilience');
+ assert.equal(grant.origin_parent_id,'subrace|phb|stout');
+ const trait=sheet.features.find(feature=>feature.origin_id===grant.origin_id);
+ assert.ok(trait);
+ assert.equal(trait.origin_key,'subrace|phb|stout');
+ assert.match(JSON.stringify(trait.entries),/resistance against poison damage/i);
+ assert.deepEqual(traitBenefitGroups({feature_origin:trait.origin_id,origin_key:trait.origin_key,
+  name:trait.name,category:'razza',rank:2},character,sheet)
+  .find(group=>group.type==='defenses')?.items.map(row=>row.value),['Veleno']);
+ const base=traitBenefitGroups({origin_key:'species|'+character.species_id+'|phb',
+  name:'Descrizione · Halfling',category:'razza',rank:0},character,sheet);
+ assert.ok(!base.some(group=>group.type==='defenses'));
+ assert.deepEqual(keys(calculate({...character,origin_enabled:{'subrace|phb|stout':false}})),[]);
+ assert.deepEqual(keys(calculate({...character,origin_enabled:{[grant.origin_id]:false}})),[]);
+ assert.deepEqual(keys(calculate({...character,subrace:'Lightfoot',subrace_id:''})),[]);
+});
+
+test('Genasi elemental subraces grant only their own source-qualified damage resistance',()=>{
+ for(const [subrace,book,type] of [
+  ['Fire','EEPC','fire'],['Water','EEPC','acid'],
+  ['Air','MPMM','lightning'],['Fire','MPMM','fire'],['Water','MPMM','acid']
+ ]){
+  const character=creature('Genasi','EEPC',{subrace,subrace_source:book,
+   subrace_id:find('Genasi ('+subrace+')',book).id});
+  const sheet=calculate(character);
+  assert.deepEqual(keys(sheet),['1:'+type],book+' Genasi ('+subrace+')');
+  assert.equal(effects(sheet)[0].origin_parent_id,'subrace|'+book.toLowerCase()+'|'+subrace.toLowerCase());
+ }
+});
+
+test('older Aasimar, Tiefling and Elf subraces inherit only the correct parent or variant trait',()=>{
+ const checks=[
+  ['Aasimar','VGM','Fallen','VGM',['1:necrotic','1:radiant'],'race|vgm|aasimar'],
+  ['Tiefling','PHB','Asmodeus','MTF',['1:fire'],'race|phb|tiefling'],
+  ['Elf','PHB','Shadar-kai','MTF',['1:necrotic'],'subrace|mtf|shadar-kai'],
+  ['Dwarf','PHB','Duergar','MTF',['1:poison'],'race|phb|dwarf']
+ ];
+ for(const [species,source,subrace,subsource,expected,parent] of checks){
+  const creatureRecord=creature(species,source,{subrace,subrace_source:subsource,
+    subrace_id:find(species+' ('+subrace+')',subsource).id});
+  const sheet=calculate(creatureRecord);
+  assert.deepEqual(keys(sheet),expected,species+' ('+subrace+')');
+  assert.ok(effects(sheet).every(row=>row.origin_parent_id===parent));
+ }
+});
+
+test('all typed pre-2024 resistances and immunity are present in generated defenses',()=>{
+ for(const race of source.races.filter(row=>row.source!=='XPHB')){
+  const typed=['resist','immune','conditionImmune','vulnerable'].flatMap(field=>
+   Array.isArray(race[field])?race[field]:[]);
+  if(!typed.length)continue;
+  const matching=catalog.races.find(row=>row.id===race.id);
+  assert.ok(matching,race.name+' ('+race.source+') missing');
+  assert.equal(matching.entries.length+matching.choices.length,typed.length,
+   race.name+' ('+race.source+') missing or duplicated defenses');
+ }
+});
+
+test('subrace-only resistances disappear when switching or disabling the subrace',()=>{
+ const original=creature('Halfling','PHB',{subrace:'Stout',subrace_source:'PHB'});
+ assert.equal(selectedSpeciesDefenseRules(original,catalog).length,1);
+ const gone={...original,subrace:'Lightfoot'};
+ assert.deepEqual(selectedSpeciesDefenseRules(gone,catalog),[]);
+ assert.deepEqual(keys(calculate(gone)),[]);
 });
