@@ -97,7 +97,11 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
  const grant=selection.grant_id?calculated.origin_spells.find(g=>g.id===selection.grant_id&&g.spell_id===selection.id):null;
  if(selection.grant_id&&!grant)throw Error('Concessione non più disponibile');
  if(!grant&&![...list(c.prepared_spells),...list(c.spells)].some(s=>(typeof s==='string'?s:s.id)===selection.id))throw Error('Incantesimo non disponibile nella scheda');
- const grantedMode=grant?.payment_mode||'free';
+ // Cantrips are intrinsically slot-free. The only chargeable exception
+ // is an explicitly linked limited-use tracker in structured source data.
+ const cantrip=level===0;
+ if(cantrip&&['slot','pact'].includes(payment))throw Error('Un trucchetto non usa slot.');
+ const grantedMode=cantrip&&grant?.payment_mode!=='tracker'?'free':grant?.payment_mode||'free';
  // A source may grant a limited-use casting AND permit ordinary/Pact slots.
  // Explicit slot payments must never silently consume the daily tracker.
  if(grant&&payment!=='auto'&&!grant.slot_alternative&&
