@@ -71,7 +71,7 @@ try{
      assert.equal(await physical.locator('[data-action-timing]').count(),0,'Attacks are not divided by action cost');
      assert.equal(await physical.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is always available');
      const resources=page.locator('[data-battle-action="resources"]');
-       assert.notEqual(await resources.getAttribute('open'),null,'Risorse starts expanded by default');
+      assert.notEqual(await resources.getAttribute('open'),null,'Risorse starts expanded by default');
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"]').count(),1);
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),5);
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="ability_checks"] .play-resource-power-open strong').textContent(),'Prova abilità');
