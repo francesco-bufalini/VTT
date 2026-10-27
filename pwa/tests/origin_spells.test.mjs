@@ -200,3 +200,25 @@ test('Wind Caller can spend its daily tracker OR an ordinary/Pact slot without d
    mechanics.additional_spells,spells,[],rules);
  assert(legacy.grants.every(g=>!g.slot_alternative));
 });
+
+test('MPMM Aasimar Light Bearer is a Charisma cantrip and never spends spell slots',()=>{
+ const rules=JSON.parse(readFileSync(new URL('../catalog/spell_grant_rules.json',import.meta.url),'utf8')).rules;
+ const creature=record({species:'Aasimar',species_source:'MPMM',
+   species_id:'5etools:races:mpmm:aasimar',
+   spellcasting_section_abilities:{}});
+ const derived=calculateSheet(creature,{classMechanics:mechanics,spells,spellGrantRules:rules});
+ const light=derived.origin_spells.find(grant=>grant.spell_id==='phb2014_light');
+ assert(light,'Light Bearer grant exists');
+ assert.equal(light.cantrip,true);
+ assert.equal(light.payment_mode,'free');
+ assert.equal(light.spellcasting_ability,'cha');
+ assert.equal(light.tracker_id,'');
+ const choice=sessionSpellEntries(creature,derived,spells).find(row=>row.grant_id===light.id);
+ assert.equal(choice.caster_ability,'cha');
+ const plan=spellCastPlan(creature,choice,0,derived,'auto');
+ assert.deepEqual(plan.patch,{});
+ const older={...derived,origin_spells:[{...light,payment_mode:'slot',cantrip:false}]};
+ assert.deepEqual(spellCastPlan(creature,choice,0,older,'auto').patch,{},
+   'legacy erroneously slot-marked racial cantrips still cast for free');
+ assert.throws(()=>spellCastPlan(creature,choice,1,derived,'slot'),/trucchetto/i);
+});
