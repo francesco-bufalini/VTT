@@ -109,7 +109,9 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     {category:'mostro',origin:'Mostro · '+label,origin_key:'monster|'+section,level:0,rank:0}));
  }else if(record.species){
   const selected=record.subrace?
-   await lookup('races',record.species+' ('+record.subrace+')',record.subrace_source):null;
+   (await lookup('races',record.species+' ('+record.subrace+')',record.subrace_source)||
+     (await load('races')).find(row=>same(row.raceName,record.species)&&
+       same(row.name,record.subrace)&&same(row.source,record.subrace_source))||null):null;
   const baseRace=await lookup('races',record.species,record.species_source,record.species_id);
   const race=baseRace||selected;
   if(race){
