@@ -198,7 +198,10 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
      options:fixed.map(([key])=>key),amounts:Object.fromEntries(fixed),
      remaining:0});
    const variants=originVariants(catalogs.abilityGrants,group,row,source);
-   result.p // The same resolved parent and subrace sources drive both the defense
+   result.push(...allocationChoiceRows(record,sid,row.name,variants));
+  }
+ }
+ // The same resolved parent and subrace sources drive both the defense
  // calculation and its picker. Never offer an unrelated 5etools variant.
  for(const source of selectedSpeciesDefenseRules(record,catalogs.speciesDefenses)){
   if(!enabled(record,source.source_id)||!enabled(record,source.origin_key))continue;
@@ -218,9 +221,6 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     label:rule.rank===1?'Resistenza ai danni':rule.rank===2?'Immunità ai danni':'Tipo di difesa',
     count:1,selected,options,remaining:selected.length?0:1});
   }
- }
- count:1,selected,options,remaining:selected.length?0:1});
-   }
  }
  // Class-level Ability Score Improvement has an explicit 5etools feature ID.
  // Each occurrence can grant score allocation OR an individually owned feat.
