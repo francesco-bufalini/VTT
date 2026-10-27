@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses} from '../feature_mechanics.js';
 import {trackerRollBonusRows,trackerRollBonusTargets} from '../sheet_rules_view.js';
-import {traitStateActivationPatch} from '../trait_state_rules.js';
-import {recoveryPatch} from '../native_sheet.js';
+import {traitStateActivationPatch,powerRestSelections} from '../trait_state_rules.js';
+import {recoveryPatch,restRecoveryPreview,completeRest} from '../native_sheet.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
@@ -129,6 +129,26 @@ test('Armor Model can be reselected after a long rest too, with no resource paym
  const changes=traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers);
  assert.equal(changes.resource_tracker_spent,undefined);
  assert.equal(changes.rest_selection_available.armor_model,false);
+});
+test('Powers selection rests are separate from tracker recovery and enumerate available changes',()=>{
+ const record={...sheet('Artificer',8,'TCE','Armorer'),
+   current_hp:20,inventory:[{id:'armor',type:'MA',ac:14,quantity:1,equipped_slots:['body']}]};
+ const calc=calculateSheet(record,catalogs);
+ const choices=powerRestSelections(record,calc);
+ const armor=choices.find(row=>row.id==='armor_model');
+ assert.equal(armor?.recovery,'short_rest');
+ const magic=choices.filter(row=>row.id.startsWith('spells:'));
+ assert(magic.every(row=>row.recovery==='long_rest'));
+ assert(!calc.trackers.some(row=>row.id==='feature:armor_model:activation'));
+ const short=restRecoveryPreview(record,'short_rest',calc);
+ assert(short.entries.some(row=>row.group==='Scelte modificabili'&&row.name==='Armor Model'));
+ assert(!short.entries.some(row=>row.group==='Scelte modificabili'&&row.name.includes('preparazione')));
+ const long=restRecoveryPreview(record,'long_rest',calc);
+ assert(long.entries.some(row=>row.group==='Scelte modificabili'&&row.name==='Armor Model'));
+ for(const group of magic)assert(long.entries.some(row=>row.name===group.name));
+ const completed=completeRest(record,'short_rest',calc);
+ assert.equal(completed.patch.rest_selection_available.armor_model,true);
+ assert.equal(completed.patch.resource_tracker_spent?.['feature:armor_model:activation'],undefined);
 });
 test('tracker resources describe both structured flat and attack-specific dice bonuses',()=>{
  const artificer=sheet('Artificer',8,'TCE','Armorer');
