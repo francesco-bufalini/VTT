@@ -38,6 +38,48 @@ function selection(record,rule) {
   if(stored!==undefined&&stored!==null&&stored!=='')return stored===rule.legacy_value?rule.id:null;
   return rule.legacy_default?rule.id:null;
 }
+// Rest-gated power choices are not trackers. The source rules supply the
+// recovery event and the same group identity used by trait-state exclusivity.
+export const selectionRestLabel = event=>event==='short_rest'?'Riposo breve':
+  event==='long_rest'?'Riposo lungo':'Nessun riposo';
+export function powerRestSelections(record={},calculated={}){
+ const rows=[],seen=new Set(),add=(id,name,recovery)=>{
+   if(!id||!['short_rest','long_rest'].includes(recovery)||seen.has(id))return;
+   seen.add(id);rows.push({id,name,recovery,label:selectionRestLabel(recovery)});
+ };
+ for(const rule of arr(calculated.trait_state_catalog)){
+   if(!rule.selection_recovery||!rule.group)continue;
+   // Eligibility for choices is based on the feature and subclass, even
+   // when equipment is temporarily absent during a rest.
+   const matching={...rule};delete matching.require_equipped;
+   if(eligible(record,calculated.features||[],matching))
+     add(rule.group,rule.trait||rule.name,rule.selection_recovery);
+ }
+ for(const member of arr(calculated.casting_classes))
+   if(member.mode==='Preparati')
+     add('spells:'+String(member.id),String(member.name||'Incantesimi')+' · preparazione','long_rest');
+ if(arr(calculated.infusion_catalog).length&&
+   (arr(record.optional_features_catalog).some(x=>String(x?.id||'').startsWith('infusion|'))||
+    arr(calculated.features).some(x=>norm(x.name)==='infuse item'&&!x.disabled&&!x.inactive)))
+   add('infusions','Infusioni · oggetti applicati','long_rest');
+ return rows;
+}
+export function powerRestChoicePatch(record={},event='',calculated={}){
+ if(!['short_rest','long_rest'].includes(event))return {};
+ const groups=powerRestSelections(record,calculated).filter(row=>
+   row.recovery===event||(event==='long_rest'&&row.recovery==='short_rest'));
+ if(!groups.length)return {};
+ const ready={...(record.rest_selection_available||{})};
+ for(const group of groups)ready[group.id]=true;
+ return {rest_selection_available:ready};
+}
+export function canReselectPower(record={},group='',legacyField=''){
+ if(record.rest_selection_available?.[group]===true)return true;
+ // A character creating its first choice has no rest to wait for.
+ return !Object.hasOwn(record.trait_state_selection||{},group)&&
+   (!legacyField||!record[legacyField]);
+}
+
 export function traitStateActions(record={},features=[],catalog=[]) {
   return arr(catalog).flatMap(rule=>{
     const trait=eligible(record,features,rule);
@@ -61,6 +103,9 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   const rule=arr(catalog).find(row=>row.id===id);
   if(!rule||!eligible(record,features,rule))throw Error('Privilegio o armatura non disponibili.');
   const current=selection(record,rule)===rule.id;
+  const rest=rule.selection_recovery||'';
+  if(rest&&!canReselectPower(record,rule.group,rule.legacy_field))
+    throw Error('Puoi riselezionare il modello dopo un '+selectionRestLabel(rest).toLowerCase()+'.');
   const active={...(record.active_class_features||{})};
   // An exclusive group changes atomically and cannot leave two states applied.
   for(const sibling of arr(catalog).filter(row=>row.group===rule.group))delete active['trait_state:'+sibling.id];
@@ -68,6 +113,7 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   if(!current)active['trait_state:'+rule.id]={
     name:rule.name,origin_id:owningTrait(record,features,rule)?.origin_id||'',category:rule.category||'stato'};
   const changes={trait_state_selection:selected,active_class_features:active};
+  if(rest)changes.rest_selection_available={...(record.rest_selection_available||{}),[rule.group]:false};
   // This cost is bound to the originating trait and only paid on activation.
   // Deselecting an active state is free, and payment is atomic with selection.
   const payment=rule.activation_tracker;
