@@ -26,6 +26,7 @@ const SHARE_TRANSFER_TTL_MS := 15 * 60 * 1000
 const MAX_CLIENTS := 96
 const TIMEOUT_MS := 15000
 const MODULE_DIAG_PATH := "/__vtt_module_diagnostics"
+const VERSION_PATH := "/__vtt_version"
 const MODULE_DIAG_LIMIT := 160
 const TOKEN_PATH := "user://pwa_pairing_token.txt"
 const SHORT_CODE_LIFETIME_MS := 300000
@@ -136,6 +137,7 @@ var _clients: Array[Dictionary] = []
 # player data, query strings or request headers are retained.
 var _module_diag_events: Array[Dictionary] = []
 var _module_diag_total := 0
+var _pwa_revision: String = ""
 var _module_diag_peak := 0
 var _module_diag_next_id := 0
 var _token := ""
@@ -205,6 +207,7 @@ func _start_listener() -> Error:
 	if err != OK:
 		push_warning("PWA: localhost:%d non disponibile: %s" % [_listen_port, error_string(err)])
 		return err
+	_pwa_revision = _read_pwa_revision()
 	set_process(true)
 	var board := get_tree().current_scene
 	if _is_board_scene(board) and not board.tree_exiting.is_connected(_on_board_exiting):
@@ -223,6 +226,24 @@ func _stop_listener() -> void:
 		if peer != null:
 			peer.disconnect_from_host()
 	_clients.clear()
+
+
+# The revision describes the checked-out commit on THIS desktop, not remote
+# GitHub HEAD. Resolve on every listener start after a local git pull/restart.
+# If Git is unavailable (e.g. an export without .git), report no revision
+# rather than inventing a hash that could keep stale JS cached forever.
+func _read_pwa_revision() -> String:
+	var output: Array = []
+	var project_path := ProjectSettings.globalize_path("res://")
+	var exit_code := OS.execute("git", PackedStringArray([
+		"-C", project_path, "rev-parse", "--verify", "HEAD"
+	]), output)
+	if exit_code != 0 or output.is_empty():
+		return ""
+	var revision := String(output[0]).strip_edges().to_lower()
+	if revision.length() == 40 and revision.is_valid_hex_number():
+		return revision
+	return ""
 
 
 func _pairing_token() -> String:
@@ -534,6 +555,9 @@ func _inspect_request(client: Dictionary) -> void:
 
 func _handle_http(client: Dictionary, method: String, path: String,
 		headers: Dictionary, body: PackedByteArray) -> void:
+	if method == "GET" and path == VERSION_PATH:
+		_answer(client, 200, {"commit": _pwa_revision})
+		return
 	if method == "GET" and path == MODULE_DIAG_PATH:
 		# Anonymous read-only snapshot of JS transfer health, not session data.
 		_answer(client, 200, {
@@ -555,7 +579,14 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		if not FileAccess.file_exists(asset[0]):
 			_answer(client, 500, {"error": "missing_pwa_asset"})
 			return
-		_respond(client, 200, String(asset[1]), FileAccess.get_file_as_bytes(asset[0]))
+		var payload := FileAccess.get_file_as_bytes(asset[0])
+		if path == "/sw.js":
+			# Make the worker bytes (and therefore its atomic offline cache)
+			# change automatically with the checked-out Git commit.
+			var revision := _pwa_revision if not _pwa_revision.is_empty() else "unversioned"
+			payload = payload.get_string_from_utf8().replace(
+				"__VTT_COMMIT_SHA__", revision).to_utf8_buffer()
+		_respond(client, 200, String(asset[1]), payload)
 		return
 	# This payload is also used to package the standalone offline prototype.
 	if path == "/catalog/spells.json" and method == "GET":
