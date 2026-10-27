@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
  artificerLevel,infusionLimits,learnedInfusions,infusionEligible,infusionNumericBonuses,
- infusionGrantingTrait,isInfusionPrepared,prepareInfusionPatch,activeInfusions,
+ infusionGrantingTrait,activeInfusions,
  targetableInventoryItems,compatibleInfusionTargets,
  learnInfusionPatch,applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch,expandedInfusionDefinitions
 } from "../item_controls.js";
@@ -42,7 +42,7 @@ test("learn, infuse one stacked sword, and compute upgraded +2 attack/damage ent
  let record=make(10),entry=byName("Enhanced Weapon");
  record.inventory=[sword()];
  record={...record,...learnInfusionPatch(record,entry,definitions,mechanics,-1,[infusionTrait])};
- record={...record,...prepareInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,[infusionTrait],true)};
+
  const known=learnedInfusions(record,definitions);
  assert.equal(known.length,1);
  record={...record,...applyInfusionPatch(record,known[0],definitions,mechanics,0,[infusionTrait])};
@@ -67,7 +67,7 @@ test("infusion attunement, low-level restrictions and forgetting",()=>{
  const focus=byName("Enhanced Arcane Focus");
  assert.equal(infusionEligible(focus,wand),true);
  record={...record,...learnInfusionPatch(record,focus,definitions,mechanics,-1,[infusionTrait])};
- record={...record,...prepareInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,[infusionTrait],true)};
+
  record={...record,...applyInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,mechanics,0,[infusionTrait])};
  assert.equal(record.inventory[0].infusion.requires_attunement,true);
  const output=calculateSheet(record,sheetCatalogs);
@@ -98,23 +98,19 @@ test("typed selectors reject mismatched or magical items; Repeating Shot applies
 });
 
 
-test("Infuse Item is the only granting feature; known and prepared are independent",()=>{
+test("known infusions are immediately usable while disabled source still blocks them",()=>{
  const record=make(10),source=[infusionTrait],entry=byName("Enhanced Weapon");
  assert.equal(infusionGrantingTrait(record,source)?.origin_id,infusionTrait.origin_id);
- assert.equal(infusionLimits(record,mechanics,[]).active,0,
-   "Class membership without the owned, enabled feature must grant no infusion capacity");
+ assert.equal(infusionLimits(record,mechanics,[]).active,0);
  assert.throws(()=>learnInfusionPatch(record,entry,definitions,mechanics,-1,[]),/limite|non disponibile/i);
  const learned={...record,...learnInfusionPatch(record,entry,definitions,mechanics,-1,source)};
- assert.equal(isInfusionPrepared(learned,learnedInfusions(learned,definitions)[0],definitions),false);
- assert.throws(()=>applyInfusionPatch({...learned,inventory:[sword()]},learnedInfusions(learned,definitions)[0],definitions,mechanics,0,source),
-   /Prepara/);
- const prepared={...learned,...prepareInfusionPatch(learned,learnedInfusions(learned,definitions)[0],definitions,source,true)};
- assert.equal(isInfusionPrepared(prepared,learnedInfusions(prepared,definitions)[0],definitions),true);
- assert.deepEqual(compatibleInfusionTargets({...prepared,inventory:[sword()]},
-   learnedInfusions(prepared,definitions)[0],definitions,source).map(x=>x.index),[0]);
+ const option=learnedInfusions(learned,definitions)[0];
+ assert.deepEqual(compatibleInfusionTargets({...learned,inventory:[sword()]},
+   option,definitions,source).map(row=>row.index),[0]);
+ const applied=applyInfusionPatch({...learned,inventory:[sword()]},option,definitions,mechanics,0,source);
+ assert.equal(applied.inventory[0].infusion.id,entry.id);
  assert.deepEqual(targetableInventoryItems({...record,inventory:[sword()]},{kinds:["armor"]}),[]);
 });
-
 test("equipped and attuned infusion projects one magical trait; disabled source suppresses it",()=>{
  const entry=byName("Enhanced Arcane Focus"),source=[infusionTrait];
  const wand={id:"local_arcane_wand",name:"Arcane Wand",quantity:1,custom_item_type:"other",
@@ -122,7 +118,7 @@ test("equipped and attuned infusion projects one magical trait; disabled source 
  let record={...make(10),inventory:[wand]};
  record={...record,...learnInfusionPatch(record,entry,definitions,mechanics,-1,source)};
  let known=learnedInfusions(record,definitions)[0];
- record={...record,...prepareInfusionPatch(record,known,definitions,source,true)};
+
  record={...record,...applyInfusionPatch(record,known,definitions,mechanics,0,source)};
  assert.equal(activeInfusions(record,definitions,source).length,0,"Attunement is required");
  record.inventory[0].attuned=true;
@@ -137,15 +133,14 @@ test("equipped and attuned infusion projects one magical trait; disabled source 
  assert.deepEqual(infusionNumericBonuses(record,record.inventory[0],definitions,source),{});
 });
 
-test("legacy learned infusions remain prepared until preparation is explicitly saved",()=>{
+test("legacy preparation records cannot block learned infusions",()=>{
  const entry=byName("Enhanced Weapon");
- const record={...make(10),optional_features_catalog:[{id:entry.id,name:entry.name,source:"TCE"}]};
- assert.equal(isInfusionPrepared(record,learnedInfusions(record,definitions)[0],definitions),true);
- const changed={...record,...prepareInfusionPatch(record,learnedInfusions(record,definitions)[0],
-   definitions,[infusionTrait],false)};
- assert.equal(isInfusionPrepared(changed,learnedInfusions(changed,definitions)[0],definitions),false);
+ const record={...make(10),optional_features_catalog:[{id:entry.id,name:entry.name,source:"TCE"}],
+   prepared_features:[] ,inventory:[sword()]};
+ const known=learnedInfusions(record,definitions)[0];
+ assert.deepEqual(compatibleInfusionTargets(record,known,definitions,[infusionTrait]).map(row=>row.index),[0]);
+ assert.equal(applyInfusionPatch(record,known,definitions,mechanics,0,[infusionTrait]).inventory[0].infusion.id,entry.id);
 });
-
 test("only a worn/attuned infused item adds its source-bound descriptive trait",async()=>{
  const entry=byName("Enhanced Arcane Focus");
  const item={id:"local_arcane_wand",name:"Arcane Wand",quantity:1,
@@ -153,7 +148,7 @@ test("only a worn/attuned infused item adds its source-bound descriptive trait",
  let record={...make(10),inventory:[item]};
  record={...record,...learnInfusionPatch(record,entry,definitions,mechanics,-1,[infusionTrait])};
  const known=learnedInfusions(record,definitions)[0];
- record={...record,...prepareInfusionPatch(record,known,definitions,[infusionTrait],true)};
+
  record={...record,...applyInfusionPatch(record,known,definitions,mechanics,0,[infusionTrait])};
  const providers={
    entries:async category=>category==="class_features"?[infusionTrait]:
@@ -202,7 +197,7 @@ test("Replicate Magic Item expands to distinct options, each usable on any owned
  c={...c,...learnInfusionPatch(c,bag,expanded,mechanics,-1,[infusionTrait])};
  const known=learnedInfusions(c,expanded)[0];
  assert.equal(known.plan_item_id,"");
- c={...c,...prepareInfusionPatch(c,known,expanded,[infusionTrait],true)};
+
  assert.deepEqual(compatibleInfusionTargets(c,known,expanded,[infusionTrait]).map(x=>x.index),[0]);
  c={...c,...applyInfusionPatch(c,known,expanded,mechanics,0,[infusionTrait])};
  assert.equal(c.inventory[0].infusion.id,bag.id);
@@ -214,4 +209,30 @@ test("Old generic Replicate Magic Item records still resolve",()=>{
    plan_item_id:"magic_item:bag_of_holding",plan_item_name:"Bag of holding"}];
  assert.equal(learnedInfusions(c,expanded).length,1);
  assert.equal(learnedInfusions(c,expanded)[0].legacy_replicate,true);
+});
+
+test("non-equipment example names can be bypassed while armor/weapon/shield remain strict",()=>{
+ const plain={id:"other:stone",name:"Smooth Pebble",custom_item_type:"other",quantity:1,rarity:"none",active:true};
+ for(const name of ["Enhanced Arcane Focus","Boots of the Winding Path",
+   "Helm of Awareness","Homunculus Servant","Spell-Refueling Ring"]){
+   assert.equal(infusionEligible(byName(name),plain),true,name+" should allow generic objects");
+ }
+ for(const name of ["Enhanced Weapon","Enhanced Defense","Repulsion Shield",
+   "Radiant Weapon","Armor of Magical Strength","Repeating Shot"]){
+   assert.equal(infusionEligible(byName(name),plain),false,name+" should enforce equipment category");
+ }
+ const magic={...plain,id:"magic_item:stone",rarity:"rare"};
+ assert.equal(infusionEligible(byName("Enhanced Arcane Focus"),magic),false,"nonmagical restriction survives");
+ const robe={...plain,name:"Comfortable Robe"};
+ assert.equal(infusionEligible(byName("Mind Sharpener"),robe),true,"robes are a valid alternative");
+});
+test("infusion descriptions are sourced from the packaged 5etools optional feature index",()=>{
+ const compendium=JSON.parse(readFileSync(new URL("../../vtt/data/compendium_features_5etools.json",import.meta.url),"utf8"));
+ for(const row of definitions.filter(row=>row.application_kind!=="replicate")){
+   assert.equal(typeof row.description,"undefined","no manually authored infusion prose: "+row.name);
+   const source=compendium.optional_features[row.name.toLowerCase()+"|"+row.source.toLowerCase()];
+   assert(source?.entries?.length>0,"missing 5etools entries for "+row.name);
+ }
+ const variants=expandedInfusionDefinitions(definitions).filter(row=>row.application_kind==="replicate_variant");
+ assert(variants.every(row=>row.description_source_name==="Replicate Magic Item"));
 });
