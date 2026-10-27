@@ -21,7 +21,7 @@ const REQUIRED_CATALOGS = [
   "/catalog/player.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json",
   "/catalog/roll_bonus_rules.json", "/catalog/effect_extensions.json",
-  "/catalog/activated_abilities.json", "/catalog/effects_5etools.json", "/catalog/species_types.json", "/catalog/species_attacks.json",
+  "/catalog/activated_abilities.json", "/catalog/effects_5etools.json", "/catalog/species_types.json", "/catalog/species_attacks.json", "/catalog/species_defenses.json",
   "/catalog/action_feature_overrides.json", "/catalog/combat_actions_5etools.json",
   "/catalog/combat_action_supplements_5etools.json",
   "/catalog/class_resource_overrides.json",
