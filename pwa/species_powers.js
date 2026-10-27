@@ -62,7 +62,9 @@ export function racialPowerProjection(record={},index={},features=[]) {
    });
    output.active_forms.push({id:form.id,name:form.name,spell_id:form.spell_id,
      origin_id:featureId,tracker_id:revelation.tracker_id,
-     active_key:'racial:celestial_revelation',duration_rounds:revelation.duration_rounds});
+     active_key:'racial:celestial_revelation',duration_rounds:revelation.duration_rounds,
+     fly_equals_walk:form.fly_equals_walk===true,damage_type:form.damage_type,
+     bonus_damage_once_per_turn:'proficiency'});
  }
  return output;
 }
