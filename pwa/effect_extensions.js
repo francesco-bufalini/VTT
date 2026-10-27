@@ -336,9 +336,13 @@ export function itemSpellCastPatch(record={},selection={},spell={},rules=[],slot
     concentrating_spell_id:recordEffect.spell_id}:{})};
 }
 export function endItemSpellPatch(record={},castId=''){
- if(!rows(record.active_item_spell_effects).some(row=>row.id===castId))
-  throw Error('Effetto non più attivo.');
- return {active_item_spell_effects:rows(record.active_item_spell_effects).filter(row=>row.id!==castId)};
+ const effect=rows(record.active_item_spell_effects).find(row=>row.id===castId);
+ if(!effect)throw Error('Effetto non più attivo.');
+ const concentrating=effect.requires_concentration&&
+  String(record.concentrating_spell_id||'')===String(effect.spell_id||'');
+ return {active_item_spell_effects:rows(record.active_item_spell_effects).filter(row=>row.id!==castId),
+  ...(concentrating?{conditions:rows(record.conditions).filter(code=>code!=='concentrating'),
+    concentrating_spell_id:''}:{})};
 }
 export function concentrationItemSpellEndPatch(record={},spellId=null){
  return {active_item_spell_effects:rows(record.active_item_spell_effects).filter(row=>
