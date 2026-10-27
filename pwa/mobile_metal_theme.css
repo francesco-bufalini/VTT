@@ -5662,3 +5662,15 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 .sheet-sense-choice-actions .play-button{min-width:0;white-space:normal;text-align:center;justify-content:center;min-height:44px;border:1px solid #95754969;background:#6b4b3128;padding:8px}
 .sheet-sense-choice-actions .play-button[aria-pressed=true]{background:#a980423b;border-color:#e8bc70;color:#f6ddad}
 @media(max-width:390px){.sheet-sense-choice-actions{grid-template-columns:1fr}}
+
+
+/* Character Info movement card: same compact vocabulary as Sensi. */
+.sheet-movement-dialog .sheet-movement-values{margin-top:12px}
+.sheet-movement-dialog .sheet-movement-values li{padding:0;display:block}
+.sheet-movement-dialog .sheet-movement-value{display:flex;width:100%;align-items:center;justify-content:space-between;
+ gap:12px;min-height:44px;padding:10px 2px;background:transparent;border:0;color:#dfc49e;text-align:left;cursor:pointer}
+.sheet-movement-dialog .sheet-movement-value:hover,.sheet-movement-dialog .sheet-movement-value:focus-visible{
+ color:#ffe5b7;outline-offset:0;background:#ae855218}
+.sheet-movement-dialog .sheet-movement-value strong,.sheet-movement-dialog .sheet-movement-jumps strong{
+ color:#f5dcb2;white-space:nowrap;font-size:14px}
+.sheet-movement-dialog .sheet-movement-jumps li{display:flex;align-items:center;justify-content:space-between;gap:12px}
