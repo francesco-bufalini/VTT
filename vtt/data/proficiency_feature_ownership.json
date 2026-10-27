@@ -19,7 +19,8 @@
       "source": "EEPC",
       "fixed": {
         "language:common": "Language",
-        "language:auran": "Language"
+        "language:auran": "Language",
+        "language:aarakocra": "Languages"
       }
     },
     {
@@ -57,7 +58,11 @@
       "name": "Astral Elf",
       "source": "AAG",
       "fixed": {
-        "skill:perception": "Keen Senses"
+        "skill:perception": "Keen Senses",
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
       }
     },
     {
@@ -65,7 +70,11 @@
       "name": "Autognome",
       "source": "AAG",
       "choice": {
-        "tool": "Specialized Design"
+        "tool": "Specialized Design",
+        "language": "Languages"
+      },
+      "fixed": {
+        "language:common": "Languages"
       }
     },
     {
@@ -73,7 +82,8 @@
       "name": "Aven",
       "source": "PSA",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:aven": "Languages"
       }
     },
     {
@@ -82,7 +92,8 @@
       "source": "PSD",
       "fixed": {
         "skill:perception": "Hawkeyed",
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:aven": "Languages"
       },
       "choice": {
         "language": "Languages"
@@ -271,7 +282,8 @@
       "name": "Gith",
       "source": "MTF",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:gith": "Languages"
       }
     },
     {
@@ -360,7 +372,8 @@
       "name": "Grung",
       "source": "OGA",
       "fixed": {
-        "skill:perception": "Arboreal Alertness"
+        "skill:perception": "Arboreal Alertness",
+        "language:grung": "Languages"
       }
     },
     {
@@ -408,7 +421,11 @@
       "name": "Harengon",
       "source": "WBtW",
       "fixed": {
-        "skill:perception": "Leporine Senses"
+        "skill:perception": "Leporine Senses",
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
       }
     },
     {
@@ -416,7 +433,11 @@
       "name": "Hexblood",
       "source": "VRGR",
       "choice": {
-        "skill": "Ancestral Legacy"
+        "skill": "Ancestral Legacy",
+        "language": "Languages"
+      },
+      "fixed": {
+        "language:common": "Languages"
       }
     },
     {
@@ -467,7 +488,11 @@
       "name": "Kalashtar",
       "source": "ERLW",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:quori": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
       }
     },
     {
@@ -475,7 +500,11 @@
       "name": "Kender",
       "source": "DSotDQ",
       "choice": {
-        "skill": "Kender Curiosity"
+        "skill": "Kender Curiosity",
+        "language": "Languages"
+      },
+      "fixed": {
+        "language:common": "Languages"
       }
     },
     {
@@ -507,7 +536,8 @@
         "language:common": "Languages",
         "weapon:longsword": "Khenra Weapon Training",
         "weapon:spear": "Khenra Weapon Training",
-        "weapon:javelin": "Khenra Weapon Training"
+        "weapon:javelin": "Khenra Weapon Training",
+        "language:khenra": "Languages"
       }
     },
     {
@@ -543,7 +573,8 @@
       "fixed": {
         "skill:athletics": "Kor Climbing",
         "skill:acrobatics": "Kor Climbing",
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:kor": "Languages"
       }
     },
     {
@@ -559,7 +590,8 @@
       "name": "Leonin",
       "source": "MOT",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:leonin": "Languages"
       },
       "choice": {
         "skill": "Hunter's Instincts"
@@ -617,7 +649,8 @@
       "name": "Loxodon",
       "source": "GGR",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:loxodon": "Languages"
       }
     },
     {
@@ -634,7 +667,8 @@
       "name": "Merfolk",
       "source": "PSZ",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:merfolk": "Languages"
       },
       "choice": {
         "language": "Languages"
@@ -645,7 +679,8 @@
       "name": "Minotaur",
       "source": "GGR",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:minotaur": "Languages"
       },
       "choice": {
         "skill": "Imposing Presence"
@@ -657,7 +692,8 @@
       "source": "PSA",
       "fixed": {
         "skill:intimidation": "Menacing",
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:minotaur": "Languages"
       }
     },
     {
@@ -666,7 +702,8 @@
       "source": "PSA",
       "fixed": {
         "language:common": "Languages",
-        "tool:poisoner's kit": "Poison Affinity"
+        "tool:poisoner's kit": "Poison Affinity",
+        "language:naga": "Languages"
       }
     },
     {
@@ -717,7 +754,11 @@
       "name": "Owlin",
       "source": "SCC",
       "fixed": {
-        "skill:stealth": "Silent Feathers"
+        "skill:stealth": "Silent Feathers",
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
       }
     },
     {
@@ -778,6 +819,9 @@
       "source": "GGR",
       "fixed": {
         "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
       }
     },
     {
@@ -785,7 +829,8 @@
       "name": "Siren",
       "source": "PSX",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:siren": "Languages"
       },
       "choice": {
         "language": "Languages"
@@ -854,7 +899,8 @@
       "name": "Vampire",
       "source": "PSZ",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:vampire": "Languages"
       }
     },
     {
@@ -862,7 +908,8 @@
       "name": "Vedalken",
       "source": "GGR",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:vedalken": "Languages"
       },
       "choice": {
         "skill": "Tireless Precision",
@@ -875,7 +922,8 @@
       "name": "Vedalken",
       "source": "PSK",
       "fixed": {
-        "language:common": "Languages"
+        "language:common": "Languages",
+        "language:vedalken": "Languages"
       },
       "choice": {
         "language": "Languages"
@@ -912,6 +960,187 @@
         "language:common": "Languages",
         "language:abyssal": "Languages",
         "language:draconic": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Bullywug",
+      "source": "DMG",
+      "fixed": {
+        "language:bullywug": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Troglodyte",
+      "source": "DMG",
+      "fixed": {
+        "language:troglodyte": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Gnoll",
+      "source": "DMG",
+      "fixed": {
+        "language:gnoll": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Goblin (Dankwood)",
+      "source": "AWM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:goblin": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Orc",
+      "source": "EGW",
+      "fixed": {
+        "language:common": "Languages",
+        "language:orc": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Human (Kaladesh)",
+      "source": "PSK",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Human (Zendikar)",
+      "source": "PSZ",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Human (Ixalan)",
+      "source": "PSX",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Giff",
+      "source": "AAG",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Plasmoid",
+      "source": "AAG",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Fairy",
+      "source": "WBtW",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Dhampir",
+      "source": "VRGR",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Reborn",
+      "source": "VRGR",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "Keldon",
+      "source": "PSD",
+      "fixed": {
+        "language:common": "Languages",
+        "language:keldon": "Languages"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "Chromatic",
+      "source": "FTD",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "Gem",
+      "source": "FTD",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "Metallic",
+      "source": "FTD",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "subrace",
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "fixed": {
+        "language:common": "Languages",
+        "language:goblin": "Languages"
       }
     }
   ]
