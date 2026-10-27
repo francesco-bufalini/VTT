@@ -263,7 +263,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  const casterOwners=new Set();
  for(const grant of arr(calculated.origin_spells)){
   if(!grant?.origin_id||casterOwners.has(grant.origin_id)||!enabled(record,grant.origin_id))continue;
-  if(!grant.tracker_id)continue;
+  if(!grant.tracker_id&&grant.cantrip!==true)continue;
   const options=arr(grant.spellcasting_ability_options).length?
     arr(grant.spellcasting_ability_options).filter(value=>abilities.includes(value)):
     (!grant.spellcasting_ability?abilities:[]);
