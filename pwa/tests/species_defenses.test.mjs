@@ -6,6 +6,7 @@ import {speciesDefenseEntries,selectedSpeciesDefenseRules} from '../species_defe
 import {calculateSheet} from '../sheet_rules.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
+import {collectTraitRows} from '../trait_projection.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const source=read('../../vtt/data/creature_references_5etools.json');
@@ -198,4 +199,25 @@ test('subrace-only resistances disappear when switching or disabling the subrace
  const gone={...original,subrace:'Lightfoot'};
  assert.deepEqual(selectedSpeciesDefenseRules(gone,catalog),[]);
  assert.deepEqual(keys(calculate(gone)),[]);
+});
+
+test('rendered racial trait cards show PHB Dwarf and Stout subrace defenses',async()=>{
+ for(const [species,subrace,expectedOrigin,expectedTrait] of [
+  ['Dwarf','Hill','species|','Dwarven Resilience'],
+  ['Halfling','Stout','subrace|phb|stout','Stout Resilience']
+ ]){
+  const character=creature(species,'PHB',{subrace,subrace_source:'PHB'});
+  const calculated=calculate(character);
+  const base=find(species,'PHB');
+  const list=await collectTraitRows(character,calculated,{
+   entries:async category=>category==='races'?[base]:[],
+   detail:async(_category,row)=>row
+  });
+  const shown=list.find(t=>t.name===expectedTrait&&
+   t.origin_key.startsWith(expectedOrigin));
+  assert.ok(shown,species+' ('+subrace+') must render '+expectedTrait);
+  const group=traitBenefitGroups(shown,character,calculated)
+   .find(g=>g.type==='defenses');
+  assert.deepEqual(group?.items.map(i=>i.value),['Veleno']);
+ }
 });
