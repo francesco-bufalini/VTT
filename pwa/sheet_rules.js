@@ -11,7 +11,7 @@ import {collectEffectExtensions} from './effect_extensions.js';
 import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,activeInfusions,armorDexterityBonus,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants} from './spell_selection.js';
-import {racialPowerProjection} from './species_powers.js';
+import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
@@ -1300,6 +1300,7 @@ function calculateSheetValues(record={},catalogs={}){
         proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'),features)];})),
     casting_classes:spellClasses,trackers,attacks,damage_defense_entries,
     racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
+    racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{}),
     active_celestial_form:celestialForm||null,
     active_racial_damage_bonus:celestialForm?{
       origin_id:celestialForm.origin_id,source:celestialForm.name,
