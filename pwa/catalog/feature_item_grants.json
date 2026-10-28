@@ -145,7 +145,8 @@
           "origin": "cannon",
           "description": "Il cannone e le creature scelte entro 10 ft dal cannone ottengono PF temporanei; si usa il valore più alto, non si sommano."
         }
-      }
+      },
+      "command_action_id": "command_cannon"
     },
     {
       "id": "artificer-right-tool",
