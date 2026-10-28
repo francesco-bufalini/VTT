@@ -1,6 +1,7 @@
 // Browser transport for the native desktop's PWA bridge.
 // One HTTPS origin serves app updates, the current game and mobile commands.
 import { setting } from "./storage.js";
+import { ensureCurrentAppVersion } from "./version_gate.js";
 
 const PAIRING_KEY = "paired-desktop-secret";
 const PENDING_QR_KEY = "vtt-mobile-pending-qr-code";
@@ -35,9 +36,13 @@ async function currentToken() {
   return volatileToken || (await setting(PAIRING_KEY)) || "";
 }
 
-export function status() {
-  // Presence checks must never delay an offline-first local UI.
-  return exchange("/api/status", "", null, 3000);
+export async function status() {
+  // The local archive remains offline-first. Only a reachable live game must
+  // match the code installed on this device before we join its session.
+  const result = await exchange("/api/status", "", null, 3000);
+  if (result.desktop_online)
+    await ensureCurrentAppVersion({ strict: true });
+  return result;
 }
 
 // A remembered bearer remains useful while the native board is temporarily
@@ -53,6 +58,7 @@ export async function hasPairingCredential() {
 // Exchange it for a strong 256-bit bearer; never save the short code.
 // Previously enrolled browsers keep using the original 64-hex bearer.
 export async function pair(code, { remember = true } = {}) {
+  await ensureCurrentAppVersion({ strict: true });
   if (!self.isSecureContext) throw new Error("HTTPS necessario per associare VTT");
   const input = String(code || "").replace(/[\s-]/g, "").toUpperCase();
   let token;
@@ -116,6 +122,7 @@ export async function unpair() {
 }
 
 export async function session() {
+  await ensureCurrentAppVersion({ strict: true });
   return exchange("/api/session", await currentToken());
 }
 

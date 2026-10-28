@@ -1,5 +1,5 @@
-// Substituted by the Godot host from the local Git commit at server startup.
-// Each commit gets an atomic app-shell cache. IndexedDB is never cleared.
+// Substituted by the host with the fingerprint of the actual served assets.
+// Each deployed version gets an atomic app-shell cache; IndexedDB is untouched.
 const REVISION = "__VTT_COMMIT_SHA__";
 const CACHE = "vtt-mobile-shell-v193-" + REVISION;
 const CATALOGS = ["/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
@@ -12,6 +12,7 @@ const SHELL = [
   "/",
   "/index.html",
   "/main.js",
+  "/version_gate.js",
   "/ui.js",
   "/ui_primitives.js",
   "/trait_benefits.js",
@@ -227,7 +228,8 @@ self.addEventListener("fetch", event => {
     // Cache-first is essential for Android/Chromium: attempting the network on
     // every module, stylesheet and SVG adds multi-second delays and can reject
     // the module graph while the desktop or Tailscale proxy is unavailable.
-    // Each app release gets a new atomic cache, so cached modules stay in sync.
+    // Each app release gets a new atomic cache; the startup version gate
+    // checks it against the live host before allowing a session connection.
     // Query strings (/?open=chat and icon ?v=...) resolve to the same asset.
     const cached = await cache.match(url.pathname);
     if (cached) return cached;

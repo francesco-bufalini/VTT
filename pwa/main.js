@@ -547,7 +547,7 @@ async function servedCommit() {
       3000, "Versione del server");
     if (!response.ok) return "";
     const { commit } = await response.json();
-    return typeof commit === "string" && /^[0-9a-f]{40}$/.test(commit) ? commit : "";
+    return typeof commit === "string" && /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(commit) ? commit : "";
   } catch (_) { return ""; }
 }
 
@@ -625,8 +625,20 @@ async function installOfflineShell(flushPendingFields) {
 }
 
 async function boot() {
-  let phase = "Caricamento dei moduli";
+  let phase = "Verifica versione dell'app";
   try {
+    showStage("Controllo della versione dell'app…");
+    // Do this before loading ui.js and its dependencies: otherwise the old
+    // cache-first worker can start an obsolete ES module graph and join a
+    // newer desktop session before its asynchronous update finishes.
+    const { ensureCurrentAppVersion } = await deadline(import("./version_gate.js"),
+      7000, "Controllo versione");
+    const versionState = await ensureCurrentAppVersion({ waitForUpdate: true });
+    if (versionState === "updated") {
+      location.reload(); // New controller + a fresh ES module map.
+      return;
+    }
+    phase = "Caricamento dei moduli";
     showStage("Caricamento dell'interfaccia…");
     // Dynamic import ensures syntax/network/module-link errors are caught here.
     const [{ mount, desktopSheetSession }, { openStorage, requestPersistentStorage, storageEstimate }] =

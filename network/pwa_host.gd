@@ -141,6 +141,7 @@ const FILES := {
 	"/creatures.js": ["res://pwa/creatures.js", "text/javascript; charset=utf-8"],
 	"/creature_format.js": ["res://pwa/creature_format.js", "text/javascript; charset=utf-8"],
 	"/sw.js": ["res://pwa/sw.js", "text/javascript; charset=utf-8"],
+	"/version_gate.js": ["res://pwa/version_gate.js", "text/javascript; charset=utf-8"],
 	"/manifest.webmanifest": ["res://pwa/manifest.webmanifest", "application/manifest+json"],
 	"/icon.svg": ["res://pwa/icon.svg", "image/svg+xml"],
 	"/icons/action_dashboard_gloss.svg": ["res://pwa/icons/action_dashboard_gloss.svg", "image/svg+xml"],
@@ -260,22 +261,30 @@ func _stop_listener() -> void:
 	_clients.clear()
 
 
-# The revision describes the checked-out commit on THIS desktop, not remote
-# GitHub HEAD. Resolve on every listener start after a local git pull/restart.
-# If Git is unavailable (e.g. an export without .git), report no revision
-# rather than inventing a hash that could keep stale JS cached forever.
+# Fingerprint what this server actually serves, including uncommitted changes,
+# rather than git HEAD (which can stay unchanged across local PWA edits).
+# Hash in small chunks to avoid loading large catalogs into memory at startup.
 func _read_pwa_revision() -> String:
-	var output: Array = []
-	var project_path := ProjectSettings.globalize_path("res://")
-	var exit_code := OS.execute("git", PackedStringArray([
-		"-C", project_path, "rev-parse", "--verify", "HEAD"
-	]), output)
-	if exit_code != 0 or output.is_empty():
+	var digest := HashingContext.new()
+	if digest.start(HashingContext.HASH_SHA256) != OK:
 		return ""
-	var revision := String(output[0]).strip_edges().to_lower()
-	if revision.length() == 40 and revision.is_valid_hex_number():
-		return revision
-	return ""
+	var paths: Array = FILES.keys()
+	paths.sort()
+	for path in paths:
+		var route := String(path)
+		digest.update(route.to_utf8_buffer())
+		digest.update(PackedByteArray([0]))
+		var asset: Array = FILES[route]
+		var file := FileAccess.open(String(asset[0]), FileAccess.READ)
+		if file == null:
+			digest.update(PackedByteArray([0]))
+			continue
+		while not file.eof_reached():
+			var chunk := file.get_buffer(65536)
+			if chunk.is_empty():
+				break
+			digest.update(chunk)
+	return digest.finish().hex_encode()
 
 
 func _pairing_token() -> String:
@@ -596,7 +605,7 @@ func _inspect_request(client: Dictionary) -> void:
 func _handle_http(client: Dictionary, method: String, path: String,
 		headers: Dictionary, body: PackedByteArray) -> void:
 	if method == "GET" and path == VERSION_PATH:
-		_answer(client, 200, {"commit": _pwa_revision})
+		_answer(client, 200, {"revision": _pwa_revision, "commit": _pwa_revision})
 		return
 	if method == "GET" and path == MODULE_DIAG_PATH:
 		# Anonymous read-only snapshot of JS transfer health, not session data.
@@ -621,8 +630,8 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			return
 		var payload := FileAccess.get_file_as_bytes(asset[0])
 		if path == "/sw.js":
-			# Make the worker bytes (and therefore its atomic offline cache)
-			# change automatically with the checked-out Git commit.
+			# Make the worker bytes (and its atomic offline cache) change
+			# whenever the actual files served by this host change.
 			var revision := _pwa_revision if not _pwa_revision.is_empty() else "unversioned"
 			payload = payload.get_string_from_utf8().replace(
 				"__VTT_COMMIT_SHA__", revision).to_utf8_buffer()

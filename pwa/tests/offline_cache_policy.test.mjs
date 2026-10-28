@@ -101,8 +101,8 @@ test("uncached assets fail safely and game APIs are never cached", async () => {
 });
 
 
-test("offline cache name follows the served Git revision without deleting saved data", async () => {
-  const revision = "b".repeat(40);
+test("offline cache name follows the served asset fingerprint without deleting saved data", async () => {
+  const revision = "b".repeat(64);
   const worker = await workerFixture(revision);
   await worker.dispatch("install");
   assert((await worker.caches.keys()).includes("vtt-mobile-shell-v193-" + revision));
