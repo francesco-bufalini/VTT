@@ -1,0 +1,43 @@
+{
+  "release_tag": "characters",
+  "meters_per_cell": 1.5,
+  "triangle_budget": 250000,
+  "max_texture_size": 2048,
+  "blender_version": "5.2.2 LTS",
+  "tokens": [
+    {
+      "id": "nazaryl",
+      "name": "Nazaryl",
+      "source_file": "69815875c6d4ffacbff18f46ebb8edea.glb",
+      "source_sha256": "66569516d1114f2809bdc850cd0339f53c3f2c87dff2b57de72dabf56873e4d9",
+      "optimized_sha256": "d9f63f0e3ad9b88b21e2eaedbc9f2eb7d3cb70162879ca477165761b08f460c6",
+      "source_bytes": 79852056,
+      "optimized_bytes": 25793356,
+      "height_m": 1.85,
+      "race": "elf",
+      "source_head_height_cells": 1.1391350058714564,
+      "scale_factor": 1.0826928564009968,
+      "source_collection": "Nazaryl.glb",
+      "size_name": "Medium",
+      "footprint": 1.0,
+      "version": 1
+    },
+    {
+      "id": "tiabald",
+      "name": "Tiabald",
+      "source_file": "7ccca3010b51531da3d0537f0def6967.glb",
+      "source_sha256": "7cbfd50b4ca66246b6c796448163afdda92ccf7dd90f1cd3cde244ce620e3404",
+      "optimized_sha256": "5ee544118eebfc7b354bb93ee39906656e2c7b175e8b784c670f40ce181c4dfe",
+      "source_bytes": 93188460,
+      "optimized_bytes": 29079248,
+      "height_m": 1.8,
+      "race": "human",
+      "source_head_height_cells": 0.9190794560644364,
+      "scale_factor": 1.305654252286832,
+      "source_collection": "Tiabald.glb",
+      "size_name": "Medium",
+      "footprint": 1.0,
+      "version": 1
+    }
+  ]
+}
