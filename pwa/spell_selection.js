@@ -84,7 +84,9 @@ export function spellRecord(value){
   return {id,name:value.name,source:String(value.source||""),level};
 }
 export function spellEligible(entry,member){
- return !entry.internal_grant&&Number(entry.level||0)<=member.max_level&&arr(entry.classes).some(name=>String(name).toLowerCase()===member.name.toLowerCase());
+ if(!member||entry.internal_grant||Number(entry.level||0)>member.max_level)return false;
+ return arr(entry.classes).some(name=>String(typeof name==='string'?name:name?.name).toLowerCase()===member.name.toLowerCase())||
+  arr(member.expanded_spell_ids).includes(spellId(entry));
 }
 export function spellsForEdition(catalog,edition='2014'){
  if(edition==='2024')return arr(catalog).filter(s=>!String(s.id).startsWith('phb2014_'));
@@ -350,6 +352,47 @@ export function originSpellId(token,edition,spells){
  // Known native IDs: PHB 2014 uses phb2014_*, all other spell sources
  // use a canonical name slug. The selected catalog is fetched lazily.
  return edition==='2014'&&(!parts[1]||parts[1]==='phb')?legacy:slug;
+}
+// Expanded origin lists extend a spellcasting class's *available list*.
+// They are neither always prepared nor free racial casts; the caster still
+// learns/prepares the spell and pays the normal class slot or Pact Magic slot.
+export function expandedOriginClassSpellIds(record={},definitions=[],features=[]){
+ if(record.rules_version==='2024')return [];
+ const results=new Set();
+ const active=feature=>feature&&!feature.disabled&&!feature.inactive&&
+  record.trait_enabled?.[feature.key]!==false&&
+  record.origin_enabled?.[feature.origin_id]!==false&&
+  record.origin_enabled?.[feature.origin_key]!==false&&
+  !arr(record.proficiency_origins).some(row=>row.disabled&&
+   [feature.origin_id,feature.origin_key].includes(row.id));
+ for(const source of arr(definitions)){
+  const kind=norm(source.kind);
+  if(!['race','subrace'].includes(kind))continue;
+  if(kind==='race'&&!(norm(record.species)===norm(source.name)&&
+    norm(record.species_source)===norm(source.source)))continue;
+  if(kind==='subrace'&&!(norm(record.species)===norm(source.race_name)&&
+    norm(record.species_source)===norm(source.race_source)&&
+    norm(record.subrace)===norm(source.name)&&
+    norm(record.subrace_source)===norm(source.source)))continue;
+  const ownerKey=kind==='subrace'?
+   'subrace|'+norm(source.source)+'|'+norm(source.name):
+   'species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
+  // The mark's *Spells of the Mark* trait owns the expansion; disabling it
+  // must withdraw the additional list without removing normal class spells.
+  const title=source.expanded_trait||'Spells of the Mark';
+  const owner=arr(features).find(feature=>feature.origin_key===ownerKey&&
+   norm(feature.name)===norm(title));
+  if(!active(owner))continue;
+  for(const block of arr(source.blocks)){
+   if(!block?.expanded)continue;
+   for(const tokens of Object.values(block.expanded))
+    for(const token of arr(tokens))if(typeof token==='string'){
+     const id=originSpellId(token,record.rules_version||'2014',[]);
+     if(id)results.add(id);
+    }
+  }
+ }
+ return [...results];
 }
 const choiceSignature=choice=>[choice.mode||'',choice.stage||'',String(choice.filter||'').split('|').find(c=>c.startsWith('level='))?.slice(6)||'',choice.usage||''].join(':');
 export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[],racialUsage=[]){
