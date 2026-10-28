@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "MPMM, AAG",
+  "source": "MPMM, AAG, FTD",
   "notes": "Source-qualified racial power mechanics. Celestial Revelation forms use the ordinary subrace picker and persistent caster-following VTT spell overlays. Neither Necrotic Shroud nor another form automatically applies Frightened.",
   "races": [
     {
@@ -139,6 +139,142 @@
           "description": "Come azione bonus, effettua un attacco con gli zoccoli tramite il normale popup del tiro per colpire. Non viene richiesta una verifica del movimento precedente."
         }
       ]
+    },
+    {
+      "name": "Dragonborn (Chromatic)",
+      "variant": "chromatic",
+      "draconic_ancestries": [
+        {
+          "name": "Black",
+          "damage_type": "acid"
+        },
+        {
+          "name": "Blue",
+          "damage_type": "lightning"
+        },
+        {
+          "name": "Green",
+          "damage_type": "poison"
+        },
+        {
+          "name": "Red",
+          "damage_type": "fire"
+        },
+        {
+          "name": "White",
+          "damage_type": "cold"
+        }
+      ],
+      "breath_weapon": {
+        "shape": "line",
+        "length_feet": 30,
+        "width_feet": 5
+      },
+      "special": {
+        "trait": "Chromatic Warding",
+        "min_level": 5,
+        "mode": "temporary_defense",
+        "action_type": "action",
+        "duration_rounds": 10,
+        "persistent_key": "racial:dragonborn_ftd:warding",
+        "description": "Come azione ottieni immunità al danno della tua ascendenza draconica per 1 minuto. Un utilizzo per riposo lungo."
+      }
+    },
+    {
+      "name": "Dragonborn (Metallic)",
+      "variant": "metallic",
+      "draconic_ancestries": [
+        {
+          "name": "Brass",
+          "damage_type": "fire"
+        },
+        {
+          "name": "Bronze",
+          "damage_type": "lightning"
+        },
+        {
+          "name": "Copper",
+          "damage_type": "acid"
+        },
+        {
+          "name": "Gold",
+          "damage_type": "fire"
+        },
+        {
+          "name": "Silver",
+          "damage_type": "cold"
+        }
+      ],
+      "breath_weapon": {
+        "shape": "cone",
+        "radius_feet": 15
+      },
+      "special": {
+        "trait": "Metallic Breath Weapon",
+        "min_level": 5,
+        "mode": "choice_area",
+        "action_type": "action",
+        "shape": "cone",
+        "radius_feet": 15,
+        "description": "Sostituisce un attacco dell'azione Attacco. Scegli il soffio: la CD è 8 + bonus competenza + modificatore Costituzione.",
+        "options": [
+          {
+            "id": "enervating",
+            "name": "Enervating Breath",
+            "save_ability": "con",
+            "effect": "incapacitated",
+            "duration_rounds": 1,
+            "description": "TS Costituzione: incapacitado fino all'inizio del tuo prossimo turno."
+          },
+          {
+            "id": "repulsion",
+            "name": "Repulsion Breath",
+            "save_ability": "str",
+            "effect": "push_prone",
+            "push_feet": 20,
+            "description": "TS Forza: spinto di 20 ft e prono in caso di fallimento."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Dragonborn (Gem)",
+      "variant": "gem",
+      "draconic_ancestries": [
+        {
+          "name": "Amethyst",
+          "damage_type": "force"
+        },
+        {
+          "name": "Crystal",
+          "damage_type": "radiant"
+        },
+        {
+          "name": "Emerald",
+          "damage_type": "psychic"
+        },
+        {
+          "name": "Sapphire",
+          "damage_type": "thunder"
+        },
+        {
+          "name": "Topaz",
+          "damage_type": "necrotic"
+        }
+      ],
+      "breath_weapon": {
+        "shape": "cone",
+        "radius_feet": 15
+      },
+      "special": {
+        "trait": "Gem Flight",
+        "min_level": 5,
+        "mode": "temporary_flight",
+        "action_type": "bonus",
+        "duration_rounds": 10,
+        "persistent_key": "racial:dragonborn_ftd:flight",
+        "description": "Come azione bonus ottieni volo pari alla velocità di camminata e hovering per 1 minuto. Un utilizzo per riposo lungo."
+      }
     }
   ]
 }
