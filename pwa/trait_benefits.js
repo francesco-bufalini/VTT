@@ -299,7 +299,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(row.disabled||!belongs(row))continue;
   const copies=trait.category==='oggetti'&&trait.rank===0?trait.item_active_quantity:1;
   add('bonus','Bonus',rows(row.targets).length?rows(row.targets).map(traitBenefitTargetLabel).join(' · '):traitBenefitTargetLabel(row.target),
-   (Object.hasOwn(row,'flat_bonus')?signedTraitFormula(String(row.flat_bonus)):signedTraitFormula(row.dice))+
+   (row.proficiency_multiplier?'Competenza ×'+row.proficiency_multiplier+' (contestuale)':
+     Object.hasOwn(row,'flat_bonus')?signedTraitFormula(String(row.flat_bonus)):signedTraitFormula(row.dice))+
    (row.condition_label?' · '+row.condition_label:'')+(copies>1?' ×'+copies:''),
    'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
  }
