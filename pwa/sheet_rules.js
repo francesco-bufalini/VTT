@@ -1341,7 +1341,7 @@ function calculateSheetValues(record={},catalogs={}){
     racial_rest_choices:racialPowers.rest_choices,
     racial_roll_bonuses:racialPowers.roll_bonuses,
     racial_roll_modes:racialRollModes,
-    racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{},record),
+    racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{},record,catalogs.originDetails||{}),
     active_celestial_form:celestialForm||null,
     active_racial_damage_bonus:celestialForm?{
       origin_id:celestialForm.origin_id,source:celestialForm.name,
