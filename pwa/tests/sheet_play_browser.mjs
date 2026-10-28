@@ -228,7 +228,7 @@ try{
  await hpDialog.waitFor({state:'visible'});
  assert.equal(await hpDialog.locator('#hp-adjust-amount').inputValue(),'','Quick HP amount starts empty');
  assert.equal(await hpDialog.locator('#hp-adjust-current').inputValue(),String((await record()).current_hp));
- assert.equal(await hpDialog.locator('#hp-adjust-temporary').inputValue(),'0');
+ assert.equal(await hpDialog.locator('#hp-adjust-temporary').inputValue(),'3', 'Seeded temporary HP must appear in dialog');
  assert(await hpDialog.locator('#hp-adjust-current').evaluate(el=>el.getBoundingClientRect().width<170),
    'HP numeric fields remain compact');
  await hpDialog.locator('[data-act="hp-adjust-max"]').click();
