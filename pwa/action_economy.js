@@ -434,9 +434,6 @@ function battleEffectMarkup(item,attack){
   (canRoll?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+
     esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-attack-id="'+esc(attack?.id||'')+'" data-damage-label="'+esc(item.name)+
     '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+
-  (arr(attack?.on_hit_effects).some(row=>row.trigger==='on_hit'&&row.operation==='roll_mode')?
-    '<button type="button" class="btn small" data-act="battle-attack-hit-effect" data-hit-attack-id="'+
-      esc(attack.id)+'" title="Applica dopo aver confermato il colpo">Applica effetto</button>':'')+
   '</div>';
 }
 function battleAttackRow(item,calculated,attacksById,descriptions){
@@ -487,6 +484,10 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const mapButton=rangeLabel&&selectedAttack?.id?
   '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="'+esc(selectedAttack.id)+
   '" aria-label="Mostra la gittata di '+esc(actionName)+' sulla mappa" title="Gittata sulla mappa">'+actionGlyph('map')+'</button>':'';
+ const hitButton=selectedAttack?.id?
+  '<button type="button" class="btn small play-battle-hit" data-act="battle-attack-hit" data-hit-attack-id="'+
+  esc(selectedAttack.id)+'" title="Seleziona una creatura sulla mappa e applica gli effetti dell’attacco"'+
+  (item.available===false?' disabled':'')+'>Colpisci</button>':'';
  const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
@@ -511,14 +512,15 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
    '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
    source+target+resources+'</div></details>')+
-  (rolls.length||mapButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
+  (rolls.length||mapButton||hitButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
    '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
    esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
    (index===0?mapButton:'')+
    '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
    '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+
-   (!rolls.length&&mapButton?'<div class="play-battle-attack-roll-line">'+mapButton+'</div>':'')+'</div>':'')+
+   (!rolls.length&&mapButton?'<div class="play-battle-attack-roll-line">'+mapButton+'</div>':'')+
+   (hitButton?'<div class="play-battle-attack-roll-line">'+hitButton+'</div>':'')+'</div>':'')+
   '</div>'+battleEffectMarkup({...item,name:actionName},selectedAttack)+'</article>';
 }
 
