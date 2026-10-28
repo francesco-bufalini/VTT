@@ -1052,16 +1052,14 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="documents"][aria-pressed="true"]'));
   assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length,2,
     "Pergamene stays visible when Documenti is selected too");
-  if(document.querySelector('#sheet-play-view [data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
-   click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
   await until(()=>document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length===0);
   if(document.querySelector('#sheet-play-view [data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
    click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
   await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="item:1"] .play-badge')?.textContent.includes('4'));
   click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]');
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="documents"][aria-pressed="false"]'));
-  if(document.querySelector('#sheet-play-view [data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
-   click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"][aria-pressed="false"]'));
   await until(()=>document.querySelector('#sheet-play-view .inventory-play-coins'));
   assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-item').length,1);
@@ -1075,8 +1073,9 @@ test("scroll creation selects a spell and casting level without opening item cat
   change('[data-field="name"]',"Scriba degli incantesimi");
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"]'));
-  click('#sheet-play-view [data-subtab="scrolls"]');
-  await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="scroll-create"]'));
+  if(document.querySelector('#sheet-play-view [data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
+    click('#sheet-play-view [data-subtab="scrolls"]');
+  await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
   assert.equal(document.querySelector('#sheet-play-view [data-act="item-catalog"]'),null);
   // The scroll creator is now an inline panel inside the Pergamene section.
   await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
