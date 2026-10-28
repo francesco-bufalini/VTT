@@ -62,7 +62,9 @@ async function until(fn,limit=3000) {
 }
 // These tests share an IndexedDB fixture, but each interaction begins from the
 // archive instead of accidentally depending on the previous test's open tab.
+let uiMounted=false;
 test.beforeEach(async()=>{
+  if(!uiMounted)return;
   const library=document.querySelector('#nav [data-nav="library"]');
   if(library&&!document.querySelector('.library-index')){
     library.click();
@@ -117,7 +119,7 @@ async function changeScore(ability,value){
   await until(()=>!document.querySelector('#sheet-score-formula-dialog'));
 }
 test("mobile navigation and local creature editing persist through tabs",async()=>{
-  await mount();
+  await mount();uiMounted=true;
   assert.ok(document.querySelector(".library-index"));
   assert.equal(document.querySelector("#section-menu"),null);
   assert.equal(document.querySelectorAll('#nav [data-nav]').length,3);
