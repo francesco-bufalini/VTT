@@ -36,8 +36,11 @@ test('Barbarian supplements come from feature-keyed declarative grants',()=>{
 });
 
 test('offline app-shell contains every declarative rule module',()=>{
- const sw=source('../sw.js');
+ const sw=source('../sw.js'),host=source('../../network/pwa_host.gd');
  for(const file of ['class_defense_rules.js','class_feature_operations.js',
-  'class_numeric_feature_grants.js','barbarian_2014_rules.js','supplemental_rules.js'])
-   assert(sw.includes('"/catalog/'+file+'"'),file);
+  'class_numeric_feature_grants.js','barbarian_2014_rules.js','supplemental_rules.js']){
+   assert(sw.includes('"/catalog/'+file+'"'),file+' missing from offline shell');
+   assert(host.includes('"/catalog/'+file+'": ["res://pwa/catalog/'+file+'"'),
+     file+' missing from native host routes');
+ }
 });
