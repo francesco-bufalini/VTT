@@ -193,6 +193,16 @@
           "condition_label": "Solo quando hai scelto −5 al tiro per colpire dello stesso attacco con arma a distanza"
         }
       ]
+    },
+    {
+      "name": "Athlete",
+      "source": "PHB",
+      "movement_rules": [
+        {
+          "mode": "climb_at_walking_cost",
+          "description": "Climbing does not cost extra movement; use walking speed for climbing if faster."
+        }
+      ]
     }
   ]
 }
