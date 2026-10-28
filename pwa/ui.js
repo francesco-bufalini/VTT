@@ -17,6 +17,7 @@ import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_COND
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import {openSendDialog,pollIncomingShares} from './share_transfer.js';
+import {exportInventoryItems} from './inventory_transfer.js';
 import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportCreatureArchive, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
@@ -258,7 +259,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
+  inventorySelectedIndex:0, inventorySelectedIndices:new Set(), inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 const sessionMapViewer=new SessionMapViewer();
@@ -720,6 +721,7 @@ async function navigate(page){
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
   state.traitPopupKey='';state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
+  state.inventorySelectedIndices.clear();
   if(page==="library"){
     state.creatureId=null;
     state.inventorySelectedTabs=['all'];state.inventorySubtab='items';
@@ -4493,6 +4495,9 @@ async function refreshSharedCatalog(kind){
     state.catalogSelected=-1;
     await render();
   }else if(state.page==='library'&&state.libraryMode)await render();
+  else if(kind==='inventory'&&state.page==='library'&&!state.libraryMode){
+    state.inventorySelectedIndices.clear();state.editor=null;await render();
+  }
 }
 function startChat() {
   ++chatGeneration;
@@ -4552,6 +4557,7 @@ async function patch(patchValue,{syncPresentation=true}={}) {
   if(status){ status.textContent="Salvataggio…"; status.classList.remove("error"); }
   try {
     await state.editor.update(patchValue);
+    if(patchValue&&Object.hasOwn(patchValue,'inventory'))state.inventorySelectedIndices.clear();
     const editor=state.editor,revision=editor.revision;
     const calculated=await computeLocalData(editor.read());
     if(state.editor===editor&&revision===editor.revision){
@@ -5050,7 +5056,7 @@ function organizeSheetPanels(){
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
-  if(state.sheet==='inventory')paintInventorySearchResults();
+  if(state.sheet==='inventory'){paintInventorySearchResults();syncInventorySelectionUI();}
   if(state.sheet==='info'){
     const root=app.querySelector('#sheet-play-view');
     const choices=state.calculated.pending_choices||[];
@@ -5916,6 +5922,33 @@ function openRemoveFeatDialog(originKey){
 async function handleAction(target){
   const act=target.dataset.act;
   if(act==='server-backup-now'){serverBackups.schedule(true);return;}
+  if(['inventory-bulk-export','inventory-bulk-send','inventory-bulk-delete'].includes(act)){
+    if(state.sheet!=='inventory'||!state.editor)throw Error('Apri prima un inventario.');
+    await flushPendingFields();
+    const record=state.editor.read(),indices=[...state.inventorySelectedIndices].sort((a,b)=>a-b);
+    if(!indices.length||indices.some(i=>!record.inventory?.[i]))throw Error('Seleziona almeno un oggetto.');
+    if(act==='inventory-bulk-delete'){
+      if(!await confirmInventoryDeletion(indices.map(i=>record.inventory[i])))return;
+      const inventory=structuredClone(record.inventory);
+      for(const i of [...indices].reverse())inventory.splice(i,1);
+      state.inventorySelectedIndices.clear();
+      state.inventorySelectedIndex=0;state.sheetPopup='';
+      await patch({inventory});await render();
+      message('Eliminati '+indices.length+' oggetti dall’inventario.');
+      return;
+    }
+    if(act==='inventory-bulk-send'){
+      const title=indices.length===1?record.inventory[indices[0]].name:indices.length+' oggetti';
+      await openSendDialog('inventory',title,()=>exportInventoryItems(record,indices),message);
+      return;
+    }
+    const payload=await exportInventoryItems(record,indices);
+    if(await download(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),
+      'vtt-inventario-selezionato.json'))
+      message('Esportati '+indices.length+' oggetti con quantità e dati homebrew.');
+    return;
+  }
+
 
   if(act==='info-portrait-remove'){
     if(!state.editor||state.sheet!=='info')throw Error('Apri prima la scheda Info.');
@@ -7891,7 +7924,7 @@ async function handleAction(target){
       else state.librarySelectedIds.add(id);
       syncLibrarySelectionUI();return;
     }
-    state.magicPopup="";state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;
+    state.magicPopup="";state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;state.inventorySelectedIndices.clear();
     await refreshCharacterHomebrewOptions();
     state.inventorySelectedTabs=['all'];state.inventorySubtab='items';
     await render();return;
@@ -7912,7 +7945,7 @@ async function handleAction(target){
     state.magicPopup="";
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
     if(!state.creatureId)return;
-    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=['actions','traits'].includes(target.dataset.sheet)?(target.dataset.sheet==='traits'?'info':'battle'):target.dataset.sheet;await render();return;
+    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.inventorySelectedIndices.clear();state.sheet=['actions','traits'].includes(target.dataset.sheet)?(target.dataset.sheet==='traits'?'info':'battle'):target.dataset.sheet;await render();return;
   }
   if(act==="send"){
     await flushPendingFields();
