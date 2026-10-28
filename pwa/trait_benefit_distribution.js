@@ -52,15 +52,10 @@ export function distributeTraitBenefits(traits=[],record={},calculated={}){
   const groups=leftovers.map(group=>({
    ...group,items:group.items.filter(item=>!hidden.has(item.id))
   })).filter(group=>group.items.length);
-  visible.push(general);
+  const last=visible.findLastIndex(row=>row.category===summary.category&&
+   row.origin_key===summary.origin_key);
+  visible.splice(last+1,0,general);
   byKey.set(key,groups);
  }
- // Stable ordering: keep the origin overview first and the general card last.
- visible.sort((a,b)=>{
-  if(a.origin_key!==b.origin_key||a.category!==b.category)return 0;
-  if(a.virtual_origin_benefits!==b.virtual_origin_benefits)
-   return a.virtual_origin_benefits?1:-1;
-  return 0;
- });
  return {rows:visible,byKey};
 }
