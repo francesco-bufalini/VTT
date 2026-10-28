@@ -433,7 +433,11 @@ function battleEffectMarkup(item,attack){
   '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(detail)+'</strong></span>'+
   (canRoll?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+
     esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-attack-id="'+esc(attack?.id||'')+'" data-damage-label="'+esc(item.name)+
-    '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+'</div>';
+    '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+
+  (arr(attack?.on_hit_effects).some(row=>row.trigger==='on_hit'&&row.operation==='roll_mode')?
+    '<button type="button" class="btn small" data-act="battle-attack-hit-effect" data-hit-attack-id="'+
+      esc(attack.id)+'" title="Applica dopo aver confermato il colpo">Applica effetto</button>':'')+
+  '</div>';
 }
 function battleAttackRow(item,calculated,attacksById,descriptions){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
