@@ -64,6 +64,38 @@ func run() -> void:
 	var restored: Dictionary = await board.board_sync._handle_mobile_action("set_appearance", {"token_id": token_id, "owner_id": "foreign-mobile-owner", "miniature_id": "test-mobile-base"})
 	assert(restored.ok and hero.get_token_pack_id() == "test-mobile-base")
 	assert(hero.get_reach_feet() == 10, "Appearance must preserve combat properties")
+	# Colpisci directly marks a target; no roll result or success flag exists.
+	var victim_id: String = board.board_sync.get_sync_id_for_node(selected)
+	var hit_payload := {"token_id": token_id, "target_id": victim_id,
+		"owner_id": "foreign-mobile-owner",
+		"attack_id": "class_feature:thunder_gauntlets", "attack_name": "Thunder Gauntlets",
+		"effects": [{"trigger": "on_hit", "operation": "roll_mode", "target": "attack_roll",
+			"mode": "disadvantage", "duration": "until_start_of_next_turn",
+			"condition_label": "Attacchi contro creature diverse dall'Artefice"}]}
+	var unauthorized: Dictionary = await board.board_sync._handle_mobile_action(
+		"hit_attack", hit_payload.merged({"owner_id": "wrong-owner"}, true))
+	assert(not unauthorized.ok, "Only the controlling token owner can apply a hit")
+	var hit_result: Dictionary = await board.board_sync._handle_mobile_action("hit_attack", hit_payload)
+	assert(hit_result.ok and hit_result.effects_applied == 1,
+		"The target accepts a hit with structured effect but no dice")
+	var projected_target: Dictionary = {}
+	for row: Dictionary in board.board_sync.get_tactical_map_data().tokens:
+		if String(row.id) == victim_id:
+			projected_target = row
+			break
+	var marks: Array = projected_target.get("hit_effects", [])
+	assert(marks.size() == 1 and String(marks[0].get("mode", "")) == "disadvantage",
+		"On-hit effects are visible on all shared tokens, including unowned monsters")
+	# Repeated hits refresh their own mark, never stack duplicates.
+	assert(bool((await board.board_sync._handle_mobile_action("hit_attack", hit_payload)).get("ok", false)))
+	assert((selected.get_meta("attack_hit_effects", []) as Array).size() == 1)
+	var ordinary: Dictionary = await board.board_sync._handle_mobile_action("hit_attack",
+		{"token_id": token_id, "target_id": victim_id,
+		 "owner_id": "foreign-mobile-owner", "attack_id": "unarmed",
+		 "attack_name": "Colpo senz'armi", "effects": []})
+	assert(ordinary.ok and ordinary.effects_applied == 0,
+		"Every attack can hit a token, even with no additional effect")
+
 	var alias_result: Dictionary = await board.board_sync._handle_mobile_action("set_appearance", {"token_id": token_id, "owner_id": "foreign-mobile-owner", "miniature_id": "test-mobile-base", "display_name": "Alias della creatura"})
 	assert(alias_result.ok and hero.get_display_name() == "Alias della creatura")
 	assert(hero.get_meta("creature_id") == "remote-character" and hero.get_meta("creature_owner_id") == "foreign-mobile-owner")
