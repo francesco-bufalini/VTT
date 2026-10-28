@@ -159,6 +159,8 @@ export function passiveClassRollBonuses(record={},calculated={},target=''){
    target==='initiative'?'dex':/^(?:ability_check|ability_mod):(?:str|dex|con|int|wis|cha)$/.test(target)?target.split(':')[1]:'';
  const rank=skill?(known.has('expertise:'+skill)?2:known.has('skill:'+skill)?1:0):0;
  const toolKnown=[...known].some(item=>item.startsWith('tool:'));
+ const initiativeIncludesProficiency=target==='initiative'&&rows(calculated.automatic_bonuses).some(row=>
+  row?.target==='initiative'&&!row.disabled&&String(row.expression||'').trim()==='proficiency');
  const bonuses=[];
  for(const rule of rows(calculated.roll_bonus_rules)){
   if(!rule?.passive||!rule?.bonus||!rule?.class_name||!rule.feature_name)continue;
@@ -192,7 +194,7 @@ export function passiveClassRollBonuses(record={},calculated={},target=''){
    if(!isCheck||!toolKnown)continue;
    amount=proficiency*Math.max(0,2-rank);
   }else if(mode==='untrained_half'||mode==='untrained_half_physical'){
-   if(rank||!ability)continue;
+   if(rank||!ability||initiativeIncludesProficiency)continue;
    if(mode==='untrained_half_physical'&&!['str','dex','con'].includes(ability))continue;
    amount=mode==='untrained_half_physical'?Math.ceil(proficiency/2):Math.floor(proficiency/2);
   }else if(mode==='favored_terrain_expertise'){
