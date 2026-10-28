@@ -61,11 +61,11 @@ test('Eldritch Cannon uses the generic item-grant contract and its own paid abil
 });
 
 test('Armorer model applies source-bound Stealth advantage and has the Thunder Gauntlets hit effect',()=>{
- const record={...art(9),inventory:[armor]},guardian=calculateSheet(record,catalogs);
+ const record={...art(9),inventory:[armor],trait_state_selection:{armor_model:'armor_model:guardian'}},guardian=calculateSheet(record,catalogs);
  const gauntlets=guardian.attacks.find(a=>a.id==='class_feature:thunder_gauntlets');
  assert.ok(gauntlets);assert.equal(gauntlets.on_hit_effects?.[0]?.mode,'disadvantage');
  assert.equal(gauntlets.on_hit_effects[0].target,'attack_roll');
- const infiltrator={...record,artificer_armor_model:'infiltrator'};
+ const infiltrator={...record,trait_state_selection:{armor_model:'armor_model:infiltrator'}};
  const stealth=calculateSheet(infiltrator,catalogs);
  assert.ok(stealth.trait_state_roll_modes.some(m=>m.target==='skill:stealth'&&m.mode==='advantage'));
  assert.ok(classFeatureRollSources(infiltrator,stealth,'skill:stealth').some(m=>m.mode==='advantage'));
