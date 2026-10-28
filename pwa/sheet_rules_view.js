@@ -763,7 +763,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
    // Abilities can confirm "Nessun tracker" even if their resource is spent.
    // Spells still require the normal resource check.
-   const disabled=row.kind==='spell'&&row.cost>0&&
+   const disabled=(row.kind==='spell'||row.power?.infusion_action)&&row.cost>0&&
     (!tracker||tracker.disabled||available<row.cost);
    const glyph=icon(row.kind==='spell'?'spell_cast':
      actionGlyphKey({...row.classAction,...row.power,name:row.name,type:'Capacità'}));
@@ -1129,6 +1129,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      const counters=[...node.querySelector('.infusion-overview')?.children||[]]
        .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
      const known=[...node.querySelectorAll('.infusion-entry')];
+      const itemActions=[...node.querySelectorAll('.infusion-power-row')].map(row=>row.outerHTML).join('');
      const rows=known.map(row=>{
        const index=row.dataset.infusionIndex;
        const applied=row.dataset.infusionActive==='true';
@@ -1144,7 +1145,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      html+=card('Infusioni',
        '<div class="play-magic-selection">'+
        btn('Impara infusioni','book','data-act="infusion-picker-open" data-mode="learn"','<span>Impara</span>')+'</div>'+
-       (rows||'<p class="play-empty">Nessuna infusione conosciuta.</p>'),
+       (rows||'<p class="play-empty">Nessuna infusione conosciuta.</p>')+
+       (itemActions?'<h3>Capacità degli oggetti infusi</h3>'+itemActions:''),
        counters?'<div class="play-magic-source-resources" aria-label="Riepilogo infusioni">'+counters+'</div>':'',
        'play-magic-class-card play-infusion-card');
      return;
