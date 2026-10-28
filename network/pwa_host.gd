@@ -42,6 +42,7 @@ const FILES := {
 	"/index.html": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/client.js": ["res://pwa/client.js", "text/javascript; charset=utf-8"],
 	"/share_transfer.js": ["res://pwa/share_transfer.js", "text/javascript; charset=utf-8"],
+	"/inventory_transfer.js": ["res://pwa/inventory_transfer.js", "text/javascript; charset=utf-8"],
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
 	"/source_edition.js": ["res://pwa/source_edition.js", "text/javascript; charset=utf-8"],
@@ -852,7 +853,7 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 		var byte_size := int(request.get("size", 0))
 		var encoded: Variant = request.get("data", null)
 		if not _share_valid_id(recipient) or recipient == device_id or not _share_valid_id(transfer_id) or \
-			kind not in ["creature", "homebrew"] or not title is String or (title as String).length() > 160 or \
+			kind not in ["creature", "homebrew", "inventory"] or not title is String or (title as String).length() > 160 or \
 			count < 1 or count > 128 or byte_size < 1 or byte_size > SHARE_MAX_BYTES or \
 			count != int(ceil(float(byte_size) / SHARE_CHUNK_BYTES)) or index < 0 or index >= count or \
 			not encoded is String or (encoded as String).length() > 180000:
