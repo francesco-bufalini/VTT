@@ -422,7 +422,7 @@ function battleEffectMarkup(item,attack){
  const effect=attack?.damage?
   {kind:'damage',label:String(attack.damage).trim(),type:String(attack.damage_type||'').trim(),
    glyph:DAMAGE_GLYPHS[String(attack.damage_type||'').toLowerCase()]||'weapon'}:null;
- const fallbacks=BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
+ const fallbacks=BATTLE_EFFECTS[item.action_ref]||BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
  const resolved=effect||(fallbacks?{kind:fallbacks[0],label:fallbacks[1],glyph:fallbacks[2]}:
   item.class_feature_id==='step_of_the_wind'?{kind:'movement',label:'Scattare o Disimpegnarsi',glyph:'dash'}:null);
  if(!resolved)return '';
@@ -525,7 +525,9 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    (Number(item.attack_count)>1?'<span class="play-battle-attacks-per-action" title="Attacchi per azione" aria-label="'+esc(item.attack_count)+' attacchi per azione">×'+esc(item.attack_count)+'</span>':'')+
    (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
    '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
-   source+target+resources+'</div></details>')+
+   source+target+resources+
+   (String(item.id||'').startsWith('activated:')?'<button type="button" class="btn small" data-act="battle-use-ability" data-ability-id="'+esc(item.id)+'">Usa</button>':'')+
+   '</div></details>')+
   (rolls.length||mapButton||hitButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
    '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
    esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
@@ -775,6 +777,15 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const specials=entries.filter(row=>!classIds.has(row)&&row.type!=='Incantesimo'&&
    row.type!=='Attacco'&&
    !['attack','two_weapon','opportunity','spell_cast','cast_spell'].includes(row.id));
+ // Typed racial alternatives belong to Actions as well as the source trait.
+ // Their use button re-enters the shared ability payment/effect pipeline;
+ // Hide also exposes the ordinary Stealth check without inventing a new roll.
+ for(const row of classAbilities.filter(row=>row.action_ref)){
+   if(specials.some(item=>item.id===row.id))continue;
+   specials.push({...row,
+     ...(row.action_ref==='hide'?{skill_ids:['stealth']}:{}),
+     type:'Capacità'});
+ }
  const basicInActions=actionsBase.filter(row=>row.id==='attack'||row.id==='two_weapon'||
   row.id==='opportunity'&&row.available||row.id==='spell_cast'&&row.available);
  const other=[...basicInActions,...specials];
