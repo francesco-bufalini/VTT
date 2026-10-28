@@ -1157,10 +1157,117 @@ function abilityPaymentChoice(dialog){return dialog.querySelector('[data-ability
 function classAbilityActivationPatch(c,calculated,ability,options={}){
  return classFeatureActivationPatch(c,calculated,ability.id,options);
 }
+// A granted item can offer a reusable typed power. Action economy and effects
+// are sourced from the item grant, so unrelated classes can use the same UI.
+async function openGrantedItemPowerDialog(c,calculated,ability,powers){
+ const rows=Array.isArray(powers)?powers:[];
+ const current=(await listCreatures()).map(row=>row.creature||row).filter(row=>row?.id);
+ const nameById=new Map(current.map(row=>[String(row.id),String(row.name||row.id)]));
+ if(!nameById.has(String(c.id)))nameById.set(String(c.id),String(c.name||'Sé stesso'));
+ const mod=Number(calculated.abilities?.int?.modifier)||0;
+ const prof=Number(calculated.stats?.proficiency)||2;
+ const dieFormula=power=>String(power.damage_dice||power.damage||'').replace(/\\s+/g,'');
+ const dc=8+prof+mod;
+ const label=power=>power.item_name+' · '+power.name;
+ const details=power=>power.mode==='spell_attack'?
+   'Attacco magico '+(Number(calculated.values?.['casting_hit:'+power.casting_ability])>=0?'+':'')+
+   Number(calculated.values?.['casting_hit:'+power.casting_ability]??prof+mod)+
+   ' · '+power.range_feet+' ft · '+dieFormula(power)+' '+power.damage_type:
+   power.mode==='save_area'?'TS '+String(power.save_ability||'dex').toUpperCase()+' CD '+dc+
+    ' · '+String(power.area_shape||'cone')+' '+power.area_length_feet+' ft · '+dieFormula(power)+' '+power.damage_type:
+   'Raggio '+power.radius_feet+' ft · '+power.temp_hp.replace('int_mod',String(Math.max(Number(power.minimum_modifier)||0,mod)))+' PF temporanei';
+ document.querySelector('#feature-item-power-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='feature-item-power-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
+ dialog.dataset.creatureId=String(c.id||'');
+ dialog.innerHTML=actionDialogIntro(ability.name,[
+  {label:'Azione',value:'Azione bonus'},
+  {label:'Origine',value:'Oggetto concesso · '+ability.feature_name}
+ ],'Attiva il cannone che possiedi. I tiri e la selezione dei bersagli partono dall’oggetto; controlla le distanze rispetto alla sua posizione, non a quella del personaggio.',
+ 'Privilegio legato a un oggetto','item-power-close')+
+ '<div class="magic-ability-detail">'+rows.map((power,index)=>
+   '<section class="infusion-dialog-active" data-item-power-row="'+index+'">'+
+   '<h3>'+esc(label(power))+'</h3>'+
+   '<p class="hint">'+esc(details(power))+'</p>'+
+   '<p>'+esc(power.description||'')+'</p>'+
+   (power.mode==='spell_attack'?
+    '<div class="actions"><button class="btn primary" type="button" data-item-power="hit" data-item-power-index="'+index+'">Tira per colpire</button>'+
+    '<button class="btn" type="button" data-item-power="damage" data-item-power-index="'+index+'">Tira danni (se colpisce)</button></div>':
+    power.mode==='save_area'?
+    '<div class="actions"><button class="btn primary" type="button" data-item-power="damage" data-item-power-index="'+index+'">Tira danni</button></div>'+
+    '<p class="hint">TS Destrezza: metà danni se superato; l’area origina dal cannone.</p>':
+    power.mode==='temporary_hp_area'?
+    '<details><summary>Creature entro '+esc(power.radius_feet)+' ft dal cannone</summary>'+
+    '<div class="session-condition-grid">'+[...nameById].map(([id,name])=>
+     '<label class="check"><input type="checkbox" data-item-power-recipient="'+index+'" value="'+esc(id)+'"'+
+      (id===String(c.id)?' checked':'')+'>'+esc(name)+'</label>').join('')+'</div></details>'+
+    '<div class="actions"><button class="btn primary" type="button" data-item-power="temporary_hp" data-item-power-index="'+index+'">Tira e assegna PF temporanei</button></div>':'')+
+   '</section>').join('')+'</div>'+
+ '<p class="hint" data-item-power-result role="status"></p>'+
+ '<div class="actions magic-dialog-actions"><button type="button" class="btn" data-act="item-power-close">Chiudi</button></div>';
+ dialog.addEventListener('click',async event=>{
+  const button=event.target.closest('[data-item-power]');
+  if(!button)return;
+  const power=rows[Number(button.dataset.itemPowerIndex)];
+  if(!power)return;
+  button.disabled=true;
+  try{
+   const saved=state.editor?.read();
+   if(!saved||String(saved.id)!==dialog.dataset.creatureId)throw Error('Scheda non più disponibile.');
+   const updated=await computeLocalData(saved);
+   const valid=featureItemPowers(saved,updated,ability.class_feature_id).some(row=>
+    row.grant_id===power.grant_id&&row.item_index===power.item_index&&row.id===power.id);
+   if(!valid)throw Error('Il cannone selezionato non è più presente nell’inventario.');
+   if(button.dataset.itemPower==='hit'){
+    closeDialog(dialog,{remove:true});
+    await handleAction({dataset:{act:'sheet-roll',target:'casting_hit:'+power.casting_ability,
+      label:label(power)+' · Attacco magico'}});
+   }else if(button.dataset.itemPower==='damage'){
+    closeDialog(dialog,{remove:true});
+    await handleAction({dataset:{act:'battle-damage-roll',
+      damageFormula:dieFormula(power),damageType:power.damage_type,
+      damageLabel:label(power),damageAttackId:''}});
+   }else if(button.dataset.itemPower==='temporary_hp'){
+    const ids=[...dialog.querySelectorAll('[data-item-power-recipient="'+button.dataset.itemPowerIndex+'"]:checked')]
+     .map(input=>input.value);
+    if(!ids.length)throw Error('Seleziona almeno una creatura entro il raggio.');
+    const usedMod=Math.max(Number(power.minimum_modifier)||0,Number(updated.abilities?.int?.modifier)||0);
+    const outcome=rollBattleDamage('1d8'+(usedMod>=0?'+':'')+usedMod,randomDie);
+    if(!Number.isFinite(outcome.total))throw Error('Tiro dei PF temporanei non disponibile.');
+    let applied=0;
+    for(const recipientId of ids){
+     const targetEditor=recipientId===String(saved.id)?state.editor:await openCreatureEditor(recipientId);
+     const target=targetEditor.read();
+     if(!target||String(target.id)!==recipientId)continue;
+     await targetEditor.update({temporary_hp:Math.max(Number(target.temporary_hp)||0,outcome.total)});
+     applied++;
+    }
+    // A cannon is an object with its own temporary HP, not a second creature.
+    const own=state.editor.read(),inventory=structuredClone(own.inventory||[]);
+    if(inventory[power.item_index]?.feature_item_grant_id===power.grant_id)
+      inventory[power.item_index].temporary_hp=Math.max(Number(inventory[power.item_index].temporary_hp)||0,outcome.total);
+    await state.editor.update({inventory});
+    dialog.querySelector('[data-item-power-result]').textContent=
+     'Protector: '+outcome.notation+' = '+outcome.total+' PF temporanei. Applicati a '+
+     applied+' creature selezionate e al cannone.';
+    message('Protector: '+outcome.total+' PF temporanei · '+applied+' creature.');
+   }
+  }catch(error){
+   dialog.querySelector('[data-item-power-result]').textContent=errorMessage(error);
+  }finally{button.disabled=false;}
+ });
+ dialog.querySelectorAll('[data-act="item-power-close"],[data-act="item-power-close"]')
+  .forEach(button=>button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ document.body.append(dialog);openDialog(dialog);
+}
+
 async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClosed=null}={}){
  if(ability.mode==='metamagic'){
   state.sheet='magic';await render();message('Scegli un incantesimo: la Metamagia si configura nella finestra di lancio.');return;
  }
+ const itemPowers=featureItemPowers(c,calculated,ability.class_feature_id);
+ if(itemPowers.length)return openGrantedItemPowerDialog(c,calculated,ability,itemPowers);
  const enhanced=c.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(ability.class_feature_id);
  const companion=await companionFeatureChoices(c,calculated,ability.origin_id);
  const itemGrant=(calculated.feature_item_grants||[]).find(row=>
