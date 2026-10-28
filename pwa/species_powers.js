@@ -318,3 +318,23 @@ export function racialPowerSpellDefinitions(index={},record={},originDetails={})
    area_damage_formula:form.name==='Radiant Consumption'?'proficiency':''
  }))]);
 }
+
+// These generic computations are deliberately independent of hit resolution:
+// the player chooses when to use a racial power, including for external rolls.
+export function racialAbilityEffectFormula(ability={},calculated={}){
+ const roll=ability.roll_effect;
+ const dice=String(roll?.dice||'');
+ if(!/^1d(?:4|6|8|10|12|20)$/.test(dice))return '';
+ const modifier=roll.add==='con_mod'?Number(calculated.abilities?.con?.modifier||0):
+   roll.add==='proficiency'?Number(calculated.stats?.proficiency||calculated.values?.proficiency||0):0;
+ if(!Number.isSafeInteger(modifier)||Math.abs(modifier)>100)return '';
+ return dice+(modifier?(modifier>0?'+':'')+modifier:'');
+}
+export function racialAbilityTemporaryHpPatch(record={},ability={},calculated={}){
+ const factor=ability.temp_hp==='double_proficiency'?2:ability.temp_hp==='proficiency'?1:0;
+ if(!factor)return {};
+ const amount=Math.max(0,Math.trunc(Number(calculated.stats?.proficiency||calculated.values?.proficiency)||0))*factor);
+ if(!amount)return {};
+ // 2014 temporary hit points never stack; do not discard a larger pool.
+ return {temporary_hp:Math.max(0,Number(record.temporary_hp)||0,amount)};
+}
