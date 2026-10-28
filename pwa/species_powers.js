@@ -108,7 +108,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
    const featureId='feature:'+originKey+'|'+revelation.min_level+'|'+norm(form.name);
    const feature={name:form.name,origin_id:featureId,origin_key:originKey,
      level:revelation.min_level,requirements:{scope:'character',min_level:revelation.min_level},
-     entries:[form.description],action_type:'bonus',action_kind:'Capacità'};
+     entries:[form.description],bonuses:[],action_type:'bonus',action_kind:'Capacità'};
    output.features.push(feature);
    output.trackers.push({id:revelation.tracker_id,name:revelation.trait,
      max:revelation.uses,recharge:revelation.recharge,origin_id:featureId,
