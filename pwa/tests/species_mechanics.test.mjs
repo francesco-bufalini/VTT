@@ -108,6 +108,18 @@ test('winged species with fly:true use walking speed; armor gating stays source-
    'an edition without an armor restriction must not inherit it from another book');
 });
 
+test('Wood Elf receives 35 ft from its canonical subrace metadata',()=>{
+ const parent={id:'elf',name:'Elf',source:'PHB',speed:30};
+ const subtype={id:'wood',name:'Wood',source:'PHB',raceName:'Elf',raceSource:'PHB',speed:35};
+ const character={kind:'character',species:'Elf',species_source:'PHB',species_id:'elf',
+  subrace:'Wood',subrace_source:'PHB',subrace_id:'wood',level:1,
+  rules_version:'2014',abilities,inventory:[]};
+ const result=calculateSheet(character,{classMechanics:{races:[parent],subraces:[subtype]}});
+ assert.equal(result.stats.speeds.walk,35);
+ assert.equal(calculateSheet({...character,subrace:'',subrace_source:''},
+  {classMechanics:{races:[parent],subraces:[subtype]}}).stats.speeds.walk,30);
+});
+
 test('one-stat origin choice uses existing picker, provenance and disabling gates',()=>{
  const index={race:[{name:'Birdfolk',source:'BOOK',
    ability_choices:[{choose:{from:['dex','wis'],count:1,amount:2}}]}]};
