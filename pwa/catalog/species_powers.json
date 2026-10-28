@@ -197,6 +197,46 @@
       "source": "FTD"
     },
     {
+      "name": "Dragonborn (Gem)",
+      "variant": "gem",
+      "draconic_ancestries": [
+        {
+          "name": "Amethyst",
+          "damage_type": "force"
+        },
+        {
+          "name": "Crystal",
+          "damage_type": "radiant"
+        },
+        {
+          "name": "Emerald",
+          "damage_type": "psychic"
+        },
+        {
+          "name": "Sapphire",
+          "damage_type": "thunder"
+        },
+        {
+          "name": "Topaz",
+          "damage_type": "necrotic"
+        }
+      ],
+      "breath_weapon": {
+        "shape": "cone",
+        "radius_feet": 15
+      },
+      "special": {
+        "trait": "Gem Flight",
+        "min_level": 5,
+        "mode": "temporary_flight",
+        "action_type": "bonus",
+        "duration_rounds": 10,
+        "persistent_key": "racial:dragonborn_ftd:flight",
+        "description": "Come azione bonus ottieni volo pari alla velocità di camminata e hovering per 1 minuto. Un utilizzo per riposo lungo."
+      },
+      "source": "FTD"
+    },
+    {
       "name": "Dragonborn (Metallic)",
       "variant": "metallic",
       "draconic_ancestries": [
@@ -251,46 +291,6 @@
             "description": "TS Forza: spinto di 20 ft e prono in caso di fallimento."
           }
         ]
-      },
-      "source": "FTD"
-    },
-    {
-      "name": "Dragonborn (Gem)",
-      "variant": "gem",
-      "draconic_ancestries": [
-        {
-          "name": "Amethyst",
-          "damage_type": "force"
-        },
-        {
-          "name": "Crystal",
-          "damage_type": "radiant"
-        },
-        {
-          "name": "Emerald",
-          "damage_type": "psychic"
-        },
-        {
-          "name": "Sapphire",
-          "damage_type": "thunder"
-        },
-        {
-          "name": "Topaz",
-          "damage_type": "necrotic"
-        }
-      ],
-      "breath_weapon": {
-        "shape": "cone",
-        "radius_feet": 15
-      },
-      "special": {
-        "trait": "Gem Flight",
-        "min_level": 5,
-        "mode": "temporary_flight",
-        "action_type": "bonus",
-        "duration_rounds": 10,
-        "persistent_key": "racial:dragonborn_ftd:flight",
-        "description": "Come azione bonus ottieni volo pari alla velocità di camminata e hovering per 1 minuto. Un utilizzo per riposo lungo."
       },
       "source": "FTD"
     },
@@ -354,83 +354,6 @@
           }
         ],
         "description": "Al termine della trance, scegli due nuove competenze differenti, ciascuna in un'arma o uno strumento del Manuale del Giocatore. Durano fino al prossimo riposo lungo; la stagione può essere cambiata separatamente."
-      }
-    },
-    {
-      "name": "Sea Elf",
-      "source": "MPMM",
-      "rest_training": {
-        "trait": "Trance",
-        "group": "sea_elf_training",
-        "recovery": "long_rest",
-        "picks": [
-          {
-            "label": "Prima arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          },
-          {
-            "label": "Seconda arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          }
-        ],
-        "description": "Al termine della trance scegli due competenze diverse in armi o strumenti del Manuale del Giocatore, valide fino al riposo lungo successivo."
-      }
-    },
-    {
-      "name": "Shadar-Kai",
-      "source": "MPMM",
-      "rest_training": {
-        "trait": "Trance",
-        "group": "shadar_kai_training",
-        "recovery": "long_rest",
-        "picks": [
-          {
-            "label": "Prima arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          },
-          {
-            "label": "Seconda arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          }
-        ],
-        "description": "Al termine della trance scegli due competenze diverse in armi o strumenti del Manuale del Giocatore, valide fino al riposo lungo successivo."
-      }
-    },
-    {
-      "name": "Githyanki",
-      "source": "MPMM",
-      "rest_training": {
-        "trait": "Astral Knowledge",
-        "group": "githyanki_training",
-        "recovery": "long_rest",
-        "picks": [
-          {
-            "label": "Abilità",
-            "kinds": [
-              "skill"
-            ]
-          },
-          {
-            "label": "Arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          }
-        ],
-        "description": "Dopo ogni riposo lungo scegli una competenza in un'abilità e una in un'arma o uno strumento del Manuale del Giocatore, valide fino al riposo lungo successivo."
       }
     },
     {
@@ -501,6 +424,101 @@
           "slot_alternative": true
         }
       ]
+    },
+    {
+      "name": "Githyanki",
+      "source": "MPMM",
+      "rest_training": {
+        "trait": "Astral Knowledge",
+        "group": "githyanki_training",
+        "recovery": "long_rest",
+        "picks": [
+          {
+            "label": "Abilità",
+            "kinds": [
+              "skill"
+            ]
+          },
+          {
+            "label": "Arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          }
+        ],
+        "description": "Dopo ogni riposo lungo scegli una competenza in un'abilità e una in un'arma o uno strumento del Manuale del Giocatore, valide fino al riposo lungo successivo."
+      }
+    },
+    {
+      "name": "Gnoll",
+      "source": "DMG",
+      "actions": [
+        {
+          "id": "race:dmg:gnoll:rampage",
+          "trait": "Rampage",
+          "name": "Rampage",
+          "action_type": "bonus",
+          "roll_attack": {
+            "kind": "attack",
+            "trait": "Bite",
+            "slot": "natural"
+          },
+          "description": "Come azione bonus, puoi muoverti fino a metà della velocità e sferrare un attacco con Bite. Secondo le regole, è disponibile dopo aver ridotto una creatura a 0 PF con un attacco in mischia durante il tuo turno; verifica il requisito manualmente, anche se il tiro è avvenuto fuori dall'app."
+        }
+      ]
+    },
+    {
+      "name": "Sea Elf",
+      "source": "MPMM",
+      "rest_training": {
+        "trait": "Trance",
+        "group": "sea_elf_training",
+        "recovery": "long_rest",
+        "picks": [
+          {
+            "label": "Prima arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          },
+          {
+            "label": "Seconda arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          }
+        ],
+        "description": "Al termine della trance scegli due competenze diverse in armi o strumenti del Manuale del Giocatore, valide fino al riposo lungo successivo."
+      }
+    },
+    {
+      "name": "Shadar-Kai",
+      "source": "MPMM",
+      "rest_training": {
+        "trait": "Trance",
+        "group": "shadar_kai_training",
+        "recovery": "long_rest",
+        "picks": [
+          {
+            "label": "Prima arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          },
+          {
+            "label": "Seconda arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          }
+        ],
+        "description": "Al termine della trance scegli due competenze diverse in armi o strumenti del Manuale del Giocatore, valide fino al riposo lungo successivo."
+      }
     }
   ]
 }
