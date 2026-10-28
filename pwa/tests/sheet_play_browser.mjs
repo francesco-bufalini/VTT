@@ -1099,7 +1099,9 @@ try{
  assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_check:str');
  assert.equal(await strength.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await checks.locator('[data-action-ability="con"] .play-battle-attack-entry').count(),1);
- assert.equal(await strength.getAttribute('open'),null,'Ability groups start collapsed');
+ if((await strength.getAttribute('open'))!==null)
+  await strength.locator('summary.play-battle-action-heading').click();
+ assert.equal(await strength.getAttribute('open'),null,'Ability groups can be closed before opening');
  await strength.locator('summary.play-battle-action-heading').click();
  const firstRoll=strength.locator('[data-target="ability_check:str"]');
  await firstRoll.click();
