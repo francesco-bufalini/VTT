@@ -179,3 +179,83 @@ test('Shield Master scales with equipped shield AC; power attacks require approp
  assert.match(ui,/row\.roll_mode\|\|row\.require_before_roll/);
  assert.match(ui,/featAvailable=applicableFeatRollBonuses/);
 });
+
+test('Agent of Order Stasis Strike has a PB-sized long-rest tracker and typed targeted activation',()=>{
+ const packaged=read('../catalog/ability_grants.json');
+ const base={kind:'character',rules_version:'2014',level:5,
+  abilities:{str:10,dex:10,con:10,int:16,wis:12,cha:10},
+  feats_catalog:[{name:'Agent of Order',source:'SatO'},
+    {name:'Scion of the Outer Planes',source:'SatO'}],
+  origin_spell_grants:[{origin_id:'feat|sato|scion of the outer planes',spellcasting_ability:'int'}]};
+ const projected=calculateSheet(base,{abilityGrants:packaged});
+ const tracker=projected.trackers.find(row=>row.id==='feat:sato:agent-of-order:stasis-strike');
+ assert.equal(tracker?.max,3);
+ assert.equal(tracker?.recharge,'long_rest');
+ assert.equal(projected.stats.proficiency,3);
+ const action=projected.feat_actions.find(row=>row.name==='Stasis Strike');
+ assert(action);
+ assert.equal(action.tracker_id,tracker.id);
+ assert.equal(action.resource_cost,1);
+ assert.equal(action.target_mode,'single_token');
+ assert.equal(action.target_range_feet,60);
+ assert.equal(action.damage_formula,'1d8');
+ assert.equal(action.damage_type,'force');
+ assert.equal(action.save_ability_origin,'feat|sato|scion of the outer planes');
+ assert.equal(action.effect_condition,'restrained');
+ assert.equal(action.condition_on_failed_save,true);
+ assert.equal(action.once_per_turn,true);
+ const spent=calculateSheet({...base,resource_tracker_spent:{[tracker.id]:2}},{abilityGrants:packaged});
+ assert.equal(spent.trackers.find(row=>row.id===tracker.id).spent,2);
+ const next=calculateSheet({...base,level:9},{abilityGrants:packaged});
+ assert.equal(next.trackers.find(row=>row.id===tracker.id).max,4);
+ const removed=calculateSheet({...base,feats_catalog:base.feats_catalog.slice(1)},{abilityGrants:packaged});
+ assert(!removed.trackers.some(row=>row.id===tracker.id));
+ assert(!removed.feat_actions.some(row=>row.name==='Stasis Strike'));
+});
+
+test('unlisted climb/swim speed is half walking, explicit speed is retained and Athlete climbs at walk cost',()=>{
+ const packaged=read('../catalog/ability_grants.json');
+ const base={kind:'character',rules_version:'2014',level:1,kind_name:'character',
+  speed_base:30,abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}};
+ const evaluate=(extra={})=>calculateSheet({...base,...extra},{abilityGrants:packaged});
+ const defaultWalk=evaluate();
+ assert.equal(defaultWalk.values.speed,30);
+ assert.equal(defaultWalk.values['speed:climb'],15);
+ assert.equal(defaultWalk.values['speed:swim'],15);
+ assert.equal(defaultWalk.values['speed:fly'],0);
+ const athlete=evaluate({feats_catalog:[{name:'Athlete',source:'PHB'}]});
+ assert.equal(athlete.values['speed:climb'],30);
+ assert.equal(athlete.values['speed:swim'],15);
+ assert(athlete.feat_movement_rules.some(row=>row.origin_id==='feat|phb|athlete'));
+ const explicit=evaluate({species_speed:{walk:30,climb:20,swim:40}});
+ assert.equal(explicit.values['speed:climb'],20);
+ assert.equal(explicit.values['speed:swim'],40);
+ const withAthlete=evaluate({species_speed:{walk:30,climb:20,swim:40},
+  feats_catalog:[{name:'Athlete',source:'PHB'}]});
+ assert.equal(withAthlete.values['speed:climb'],30);
+ const disabled=evaluate({feats_catalog:[{name:'Athlete',source:'PHB',disabled:true}]});
+ assert.equal(disabled.values['speed:climb'],15);
+ const sourceOff=evaluate({feats_catalog:[{name:'Athlete',source:'PHB'}],
+  origin_enabled:{'feat|phb|athlete':false}});
+ assert.equal(sourceOff.values['speed:climb'],15);
+});
+
+test('Artificer Initiate one-free-cast feat choice also accepts higher-level spell slots',()=>{
+ const entries=read('../../vtt/data/additional_spells_5etools.json').entries;
+ const supplements=read('../catalog/spell_grant_rules.json').rules;
+ const row=entries.find(r=>r.kind==='feat'&&r.name==='Artificer Initiate'&&r.source==='TCE');
+ const record={kind:'character',rules_version:'2014',level:4,
+  feats_catalog:[{name:'Artificer Initiate',source:'TCE'}]};
+ const result=structuredSpellGrants(record,[row],[],[],supplements);
+ const choice=result.choices.find(row=>row.filter.includes('level=1'));
+ assert.equal(choice.slot_alternative,true);
+ assert.equal(choice.spellcasting_ability,'int');
+ assert(result.trackers.some(row=>row.recharge==='long_rest'&&row.max===1));
+ const source=read('../catalog/ability_grants.json');
+ assert.deepEqual(source.feat_mechanics,read('../../vtt/data/feat_mechanics_2014.json').feats);
+ const battle=readFileSync(new URL('../action_economy.js',import.meta.url),'utf8');
+ assert.match(battle,/for\(const ability of arr\(calculated\.feat_actions\)\)/);
+ const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
+ assert.match(ui,/data-target-failed-save/);
+ assert.match(ui,/selectedTarget\.id\),condition_id:currentAbility\.effect_condition/);
+});
