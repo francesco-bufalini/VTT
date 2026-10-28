@@ -8,6 +8,7 @@ import {traitBenefitSources} from './trait_benefits.js';
 import {contentForRules} from './source_edition.js';
 import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants} from './ability_choice_rules.js';
 import {selectedSpeciesDefenseRules} from './species_defenses.js';
+import {classDefenseChoices} from './class_defenses.js';
 import {dragonbornFtdChoice,dragonbornFtdSaveChoice} from './dragonborn_ftd.js';
 import {canReselectPower} from './trait_state_rules.js';
 
@@ -277,6 +278,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     count:1,selected,options,remaining:selected.length?0:1});
   }
  }
+ for(const choice of classDefenseChoices(record,calculated.features))result.push(choice);
  // Class-level Ability Score Improvement has an explicit 5etools feature ID.
  // Each occurrence can grant score allocation OR an individually owned feat.
  for(const feature of arr(calculated.features)){
@@ -449,7 +451,8 @@ export function savePendingChoice(record,choice,values=[]){
  if(choice.kind==='draconic_ancestry')return dragonbornFtdSaveChoice(record,choice,selected);
  if(choice.kind==='defense'){
   if(selected.length>1||selected.some(key=>!choice.options.includes(key))||
-    !/^(race|subrace)\|[^|]+\|[^|]+$/.test(String(choice.defense_source_id||'')))
+    !/^(race|subrace)\|[^|]+\|[^|]+$/.test(String(choice.defense_source_id||''))&&
+    !/^feature:class\|[^|]+\|[^|]+\|subclass\|[^|]+\|[^|]+\|/.test(String(choice.defense_source_id||'')))
    throw Error('Tipo di danno non consentito dalla specie.');
   const current={...(record.origin_defense_choices||{})};
   if(selected.length)current[choice.defense_source_id]=selected[0];
