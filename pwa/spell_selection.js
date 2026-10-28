@@ -4,16 +4,12 @@ const arr=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??'').trim().toLowerCase();
 // Every typed subrace spell is attached to its own 5etools feature.
 export function supplementalSpeciesSpellFeatures(record={},rules=[],features=[]){
- if(!record.species)return [];
- const flat=!record.subrace;
- const owner=flat?'species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source):
-   'subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace);
+ if(!record.species||!record.subrace)return [];
+ const owner='subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace);
  const present=new Set(arr(features).filter(f=>f.origin_key===owner).map(f=>norm(f.name)));
  const output=[];
  for(const rule of arr(rules)){
-  const selected=flat?norm(rule.race_name+' ('+rule.name+')')===norm(record.species)&&
-    norm(rule.source)===norm(record.species_source):
-    norm(rule.name)===norm(record.subrace)&&
+  const selected=norm(rule.name)===norm(record.subrace)&&
     norm(rule.source)===norm(record.subrace_source)&&
     norm(rule.race_name)===norm(record.species)&&
     (!rule.race_source||norm(rule.race_source)===norm(record.species_source));
@@ -375,33 +371,13 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
   const kind=row.kind,name=norm(row.name),source=norm(row.source);
   if(['race','subrace','background'].includes(kind)){
    const field=kind==='race'?'species':kind;
-   const normal=norm(record[field])===name&&norm(record[field+'_source'])===source&&
-     (kind!=='subrace'||!row.race_name||norm(record.species)===norm(row.race_name));
-   const flat=kind==='subrace'&&!record.subrace&&
-     norm(record.species)===norm(row.race_name+' ('+row.name+')')&&
-     norm(record.species_source)===source;
-   const parentRow=kind==='race'&&!record.subrace&&
-     norm(record.species).startsWith(name+' (')&&
-     norm(record.species_source)!=='xphb'&&
-     !arr(index).some(sub=>sub.kind==='subrace'&&
-       norm(sub.race_name+' ('+sub.name+')')===norm(record.species)&&
-       norm(sub.source)===norm(record.species_source))&&
-     !arr(grantRules).some(rule=>rule.kind==='subrace'&&
-       norm(rule.race_name+' ('+rule.name+')')===norm(record.species)&&
-       norm(rule.source)===norm(record.species_source)&&
-       arr(rule.replace_parent_spell_traits).length)&&
-     (source===norm(record.species_source)||
-       ['tiefling','half-elf'].includes(name)&&source==='phb');
-   if(!normal&&!flat&&!parentRow)return [];
-   const raceSource=norm(record.species_source);
-   const root='species|'+(record.species_id||norm(record.species))+'|'+raceSource;
-   return [{id:flat||parentRow?'race|'+raceSource+'|'+norm(record.species):
-      kind+'|'+source+'|'+name,
-    name:flat||parentRow?record.species:record[field],kind,
-    source_name:row.name,source_book:row.source,
-    feature_key:flat||parentRow?root:
-      kind==='race'?'species|'+(record.species_id||norm(record.species))+'|'+source:
-       'subrace|'+source+'|'+name,spell_traits:row.spell_traits||{}}];
+   if(norm(record[field])!==name||norm(record[field+'_source'])!==source||
+     kind==='subrace'&&row.race_name&&norm(record.species)!==norm(row.race_name))return [];
+   return [{id:kind+'|'+source+'|'+name,name:record[field],kind,
+     source_name:row.name,source_book:row.source,
+     feature_key:kind==='race'?'species|'+(record.species_id||norm(record.species))+'|'+source:
+       kind==='subrace'?'subrace|'+source+'|'+name:'background|'+source+'|'+name,
+     spell_traits:row.spell_traits||{}}];
   }
   if(kind==='feat')return arr(record.feats_catalog).filter(f=>!f?.disabled&&norm(f.name)===name&&norm(f.source)===source).map(f=>({id:'feat|'+source+'|'+name,name:f.name,
    feature_key:'feat|'+(f.id||norm(f.name)+'|'+norm(f.source)),spell_traits:row.spell_traits||{}}));
