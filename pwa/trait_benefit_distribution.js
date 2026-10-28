@@ -31,15 +31,27 @@ export function distributeTraitBenefits(traits=[],record={},calculated={}){
     !claimed.has(signature(group.type,item)))
   })).filter(group=>group.items.length);
   byKey.set(summary.key,[]);
-  if(!leftovers.length)continue;
   const key='origin-benefits:'+summary.key;
+  // A separate feature identity makes manually added grants and enablement
+  // belong to this card rather than disabling the entire class or species.
+  const general={...summary,key,name:'Benefici generali',
+   entries:'',description_html:'',rank:1,action_type:'',resource_name:'',
+   feature_origin:'',proficiency_origin:'',virtual_origin_benefits:true};
+  const seen=new Set(leftovers.flatMap(group=>
+   group.items.map(item=>signature(group.type,item))));
+  for(const group of traitBenefitGroups(general,record,calculated)){
+   let target=leftovers.find(row=>row.type===group.type);
+   if(!target){target={...group,items:[]};leftovers.push(target);}
+   for(const item of group.items){
+    const id=signature(group.type,item);
+    if(!seen.has(id)){target.items.push(item);seen.add(id);}
+   }
+  }
   const hidden=new Set(list(record.trait_benefit_removed?.[key]));
+  if(!leftovers.length&&!hidden.size)continue;
   const groups=leftovers.map(group=>({
    ...group,items:group.items.filter(item=>!hidden.has(item.id))
   })).filter(group=>group.items.length);
-  const general={...summary,key,name:'Benefici generali',
-   entries:'',description_html:'',rank:0,action_type:'',resource_name:'',
-   feature_origin:'',proficiency_origin:'',virtual_origin_benefits:true};
   visible.push(general);
   byKey.set(key,groups);
  }
