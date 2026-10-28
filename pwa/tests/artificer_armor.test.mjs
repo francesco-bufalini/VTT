@@ -88,7 +88,7 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(catalog.filter(row=>row.group==='armor_model').every(row=>row.selection_recovery==='short_rest'),true);
  let next={...r,...traitStateActivationPatch(r,calculated.features,catalog,'armor_model:infiltrator',calculated.trackers)};
  assert.equal(next.resource_tracker_spent,undefined);
- assert.equal(next.rest_selection_available.armor_model,false);
+ assert.equal(next.rest_selection_available,undefined);
  calculated=calculateSheet(next,catalogs);
  assert.equal(calculated.attacks[0].id,'class_feature:lightning_launcher');
  assert.equal(calculated.values.speed,35);
@@ -101,13 +101,9 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(suppressed.trackers.some(row=>row.id==='feature:lightning_launcher:extra_damage'),false);
  assert.equal(calculated.trackers.find(row=>row.id==='feature:lightning_launcher:extra_damage')?.max,1);
  assert.equal(calculated.active_feature_effects.filter(row=>row.category==='stato').length,1);
- assert.throws(()=>traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers),/riposo breve/i);
- const rested=recoveryPatch(next,'short_rest',calculated.trackers,calculated);
- assert.equal(rested.rest_selection_available.armor_model,true);
- next={...next,...rested};
- calculated=calculateSheet(next,catalogs);
- next={...next,...traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers)};
- assert.equal(next.rest_selection_available.armor_model,false);
+ const changed=traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers);
+ assert.equal(changed.rest_selection_available,undefined);
+ next={...next,...changed};
  assert.equal(next.resource_tracker_spent?.['feature:armor_model:activation'],undefined,
   'Changing Armor Model never spends an activation tracker, even if a rest normalized the spent map');
  calculated=calculateSheet(next,catalogs);
@@ -118,18 +114,16 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(calculateSheet(disabled,catalogs).attacks.some(row=>row.id==='class_feature:thunder_gauntlets'),false);
 });
 
-test('Armor Model can be reselected after a long rest too, with no resource payment',()=>{
+test('Armor Model can be reselected before a rest with no resource payment',()=>{
  const r=sheet('Artificer',8,'TCE','Armorer');
  r.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
  r.artificer_armor_model='infiltrator'; // Existing character already has a choice.
  let calculated=calculateSheet(r,catalogs),catalog=catalogs.traitStates;
- assert.throws(()=>traitStateActivationPatch(r,calculated.features,catalog,'armor_model:guardian',calculated.trackers),/riposo breve/i);
- let next={...r,...recoveryPatch(r,'long_rest',calculated.trackers,calculated)};
- assert.equal(next.rest_selection_available.armor_model,true);
- calculated=calculateSheet(next,catalogs);
- const changes=traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers);
+ const changes=traitStateActivationPatch(r,calculated.features,catalog,'armor_model:guardian',calculated.trackers);
  assert.equal(changes.resource_tracker_spent,undefined);
- assert.equal(changes.rest_selection_available.armor_model,false);
+ assert.equal(changes.rest_selection_available,undefined);
+ const rested=recoveryPatch(r,'long_rest',calculated.trackers,calculated);
+ assert.equal(rested.rest_selection_available.armor_model,true);
 });
 test('Powers selection rests are separate from tracker recovery and enumerate available changes',()=>{
  const record={...sheet('Artificer',8,'TCE','Armorer'),
