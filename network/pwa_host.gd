@@ -56,6 +56,7 @@ const FILES := {
 	"/class_defenses.js": ["res://pwa/class_defenses.js", "text/javascript; charset=utf-8"],
 	"/armor_rules.js": ["res://pwa/armor_rules.js", "text/javascript; charset=utf-8"],
 	"/feature_item_grants.js": ["res://pwa/feature_item_grants.js", "text/javascript; charset=utf-8"],
+	"/spell_storing_item.js": ["res://pwa/spell_storing_item.js", "text/javascript; charset=utf-8"],
 	"/attack_hit_effects.js": ["res://pwa/attack_hit_effects.js", "text/javascript; charset=utf-8"],
 	"/catalog/feature_item_grants.json": ["res://pwa/catalog/feature_item_grants.json", "application/json; charset=utf-8"],
 	"/sense_rules.js": ["res://pwa/sense_rules.js", "text/javascript; charset=utf-8"],

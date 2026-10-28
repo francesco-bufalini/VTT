@@ -22,7 +22,7 @@ export const CLASS_FEATURE_RULES=[
  ["chemical_mastery_heal", "Artificer", "Chemical Mastery", "Maestria chimica · guarigione", "Chemical Mastery (Heal)", "action", "context"],
  ["chemical_mastery_restore", "Artificer", "Chemical Mastery", "Maestria chimica · ristorare superiore", "Chemical Mastery (Greater Restoration)", "action", "context"],
  ["perfected_guardian", "Artificer", "Guardian", "Armatura perfezionata · guardiano", "Perfected Armor", "reaction", "context"],
- ["spell_storing_item", "Artificer", "Spell-Storing Item", "Oggetto accumula incantesimi", "", "action", "context"],
+ ["spell_storing_item", "Artificer", "Spell-Storing Item", "Oggetto accumula incantesimi", "", "contextual", "context"],
  ["soul_of_artifice", "Artificer", "Soul of Artifice", "Anima dell'artefice", "", "reaction", "context"],
  ['rage','Barbarian','Rage','Ira','Rages','bonus','toggle'],
  ['reckless_attack','Barbarian','Reckless Attack','Attacco irruento','','free','toggle'],

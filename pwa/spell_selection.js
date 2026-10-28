@@ -490,7 +490,8 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
       ...(featureGrant?{requirements:{...origin.requirements,min_level:Math.max(origin.requirements.min_level,Number(stage)||0)},
         payment_mode:tid?'tracker':['known','prepared'].includes(mode)?'slot':'free'}:{}),
       usage:tid?'limited':'at_will',tracker_id:tid,
-      slot_alternative:!!tid&&block.slot_alternative===true});return;
+      slot_alternative:!!tid&&(block.slot_alternative===true||
+        grantRule(definition?.kind,definition?.name,definition?.source,raw.choose)?.slot_alternative===true)});return;
     }
     if(typeof raw!=='string'||!featureGrant&&(category==='will'&&mode==='prepared'||mode==='known'&&category==='will'&&!raw.includes('#c')))return;
     const id=originSpellId(raw,edition,spells);

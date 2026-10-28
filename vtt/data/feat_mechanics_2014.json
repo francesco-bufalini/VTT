@@ -193,6 +193,51 @@
           "condition_label": "Solo quando hai scelto −5 al tiro per colpire dello stesso attacco con arma a distanza"
         }
       ]
+    },
+    {
+      "name": "Athlete",
+      "source": "PHB",
+      "movement_rules": [
+        {
+          "mode": "climb_at_walking_cost",
+          "description": "Climbing does not cost extra movement; use walking speed for climbing if faster."
+        }
+      ]
+    },
+    {
+      "name": "Agent of Order",
+      "source": "SatO",
+      "trackers": [
+        {
+          "id": "feat:sato:agent-of-order:stasis-strike",
+          "name": "Stasis Strike",
+          "max": 0,
+          "max_formula": "proficiency",
+          "recharge": "long_rest"
+        }
+      ],
+      "actions": [
+        {
+          "id": "feat:sato:agent-of-order:stasis-strike-use",
+          "name": "Stasis Strike",
+          "action_type": "contextual",
+          "resource_cost": 1,
+          "tracker_id": "feat:sato:agent-of-order:stasis-strike",
+          "mode": "targeted_save_damage",
+          "target_mode": "single_token",
+          "target_range_feet": 60,
+          "exclude_self": false,
+          "damage_formula": "1d8",
+          "damage_type": "force",
+          "once_per_turn": true,
+          "save_ability": "wis",
+          "save_ability_origin": "feat|sato|scion of the outer planes",
+          "effect_condition": "restrained",
+          "condition_on_failed_save": true,
+          "effect_duration": "until_start_of_next_turn",
+          "description": "Una volta per turno, quando danneggi una creatura visibile entro 60 ft, puoi infliggere 1d8 danni da forza extra. TS Saggezza (CD 8 + competenza + caratteristica scelta per Scion of the Outer Planes); in caso di fallimento, Trattenuto fino all'inizio del tuo prossimo turno. Il bersaglio e l'esito del TS si confermano manualmente."
+        }
+      ]
     }
   ]
 }

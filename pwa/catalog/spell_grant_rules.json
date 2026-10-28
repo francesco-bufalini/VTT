@@ -3,6 +3,13 @@
   "description": "Source-qualified structured spell-grant supplements. slot_alternative permits spending an ordinary spell slot or Pact Magic slot instead of the limited-use tracker. Never infer this from prose.",
   "rules": [
     {
+      "kind": "feat",
+      "name": "Artificer Initiate",
+      "source": "TCE",
+      "spell": "level=1",
+      "slot_alternative": true
+    },
+    {
       "kind": "race",
       "name": "Aarakocra",
       "source": "MPMM",

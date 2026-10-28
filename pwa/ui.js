@@ -41,6 +41,7 @@ import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
+import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
@@ -1263,7 +1264,96 @@ async function openGrantedItemPowerDialog(c,calculated,ability,powers){
  document.body.append(dialog);openDialog(dialog);
 }
 
+// Reuse the standard item extension and tracker models; the player chooses
+// the physical copy and the full Artificer spell from the 2014 catalog.
+async function openSpellStoringItemDialog(creature,calculated,ability){
+ const candidates=eligibleSpellStoringItems(creature);
+ if(!candidates.length)throw Error('Aggiungi prima un’arma o un focus da incantatore all’inventario.');
+ let spellCatalog=state.spellCatalog||[];
+ try{spellCatalog=await loadFullSpellCatalog();}catch(error){
+  if(!spellCatalog.length)throw Error('Catalogo incantesimi non disponibile. Riprova quando è stato caricato.');
+ }
+ const spells=eligibleStoredSpells(spellsForEdition(spellCatalog,creature.rules_version||'2014'));
+ if(!spells.length)throw Error('Nessun incantesimo da Artefice di livello 1–2 con tempo di lancio 1 azione nel catalogo.');
+ const old=storedSpellExtension(creature),oldName=old?.spell_name||'';
+ document.querySelector('#spell-storing-item-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='spell-storing-item-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
+ dialog.dataset.creatureId=String(creature.id||'');
+ const uses=storedSpellMaxUses(calculated.abilities?.int?.modifier);
+ dialog.innerHTML=actionDialogIntro('Spell-Storing Item',[
+  {label:'Origine',value:'Tratto · Spell-Storing Item'},
+  {label:'Utilizzi',value:uses+' (2 × INT, minimo 2)'},
+  {label:'Disponibilità',value:'Fino al prossimo riposo lungo'}
+ ],'Scegli un’arma o un focus da incantatore che possiedi e un incantesimo da Artefice di 1° o 2° livello che richieda un’azione. Non occorre averlo preparato. Il possessore può produrre l’effetto senza spendere slot e si concentra se necessario.',
+ old?'Attualmente immagazzinato: '+oldName:'Nessun incantesimo immagazzinato',
+ 'spell-storing-close')+
+  '<label>Oggetto dell’inventario<select data-stored-item>'+
+  candidates.map(({item,index})=>'<option value="'+index+'"'+
+    (old?.target_instance_id&&item.instance_id===old.target_instance_id?' selected':'')+'>'+
+    esc(item.name||item.id||'Oggetto')+' · copia '+(index+1)+'</option>').join('')+
+  '</select></label>'+
+  '<label>Cerca incantesimo<input data-stored-query type="search" placeholder="Nome incantesimo" autocomplete="off"></label>'+
+  '<label>Incantesimo da immagazzinare<select data-stored-spell></select></label>'+
+  '<div data-stored-spell-details class="inventory-prose"></div>'+
+  '<p data-stored-error role="alert" class="warning"></p>'+
+  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-stored-confirm>'+
+    (old?'Sostituisci incantesimo':'Immagazzina incantesimo')+'</button>'+
+  '<button type="button" class="btn" data-stored-cancel>Annulla</button></div>';
+ const spellInput=dialog.querySelector('[data-stored-spell]'),
+  query=dialog.querySelector('[data-stored-query]'),details=dialog.querySelector('[data-stored-spell-details]');
+ const updateDetails=()=>{
+  const spell=spells.find(row=>String(row.id)===spellInput.value);
+  details.textContent=spell?('Livello '+spell.level+' · 1 azione\n'+
+    flattenDescription(spell)):'Nessun incantesimo corrispondente.';
+ };
+ const filter=()=>{
+  const q=query.value.trim().toLocaleLowerCase('it');
+  const current=spellInput.value;
+  const filtered=spells.filter(row=>!q||String(row.name||'').toLocaleLowerCase('it').includes(q));
+  spellInput.innerHTML=filtered.map(row=>'<option value="'+esc(row.id)+'">'+
+    esc(row.name)+' · livello '+esc(row.level)+'</option>').join('');
+  if(filtered.some(row=>String(row.id)===current))spellInput.value=current;
+  else if(!q&&old?.spell_id&&filtered.some(row=>String(row.id)===old.spell_id))
+   spellInput.value=old.spell_id;
+  dialog.querySelector('[data-stored-confirm]').disabled=!filtered.length;
+  updateDetails();
+ };
+ query.addEventListener('input',filter);
+ spellInput.addEventListener('change',updateDetails);
+ filter();
+ dialog.querySelectorAll('[data-stored-cancel],[data-act="spell-storing-close"]').forEach(button=>
+  button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.querySelector('[data-stored-confirm]').addEventListener('click',async event=>{
+  const button=event.currentTarget;
+  if(button.disabled)return;
+  button.disabled=true;
+  try{
+   const current=state.editor?.read();
+   if(!current||String(current.id)!==dialog.dataset.creatureId)throw Error('La scheda è cambiata.');
+   const index=Number(dialog.querySelector('[data-stored-item]').value);
+   const spell=spells.find(row=>String(row.id)===spellInput.value);
+   if(!spell)throw Error('Scegli un incantesimo disponibile.');
+   const fresh=await computeLocalData(current);
+   // Recheck both the item and the spell at save time. No spell slots or
+   // existing item instance are created or consumed by this operation.
+   const patchData=storeSpellInItemPatch(current,fresh,index,spell,flattenDescription(spell),
+    'pwa_instance_'+crypto.randomUUID());
+   await patch(patchData);
+   if(state.saveError)throw Error(state.saveError);
+   await state.editor.flush();
+   closeDialog(dialog,{remove:true});await render();
+   message('Spell-Storing Item: '+spell.name+' immagazzinato nell’oggetto, '+uses+' utilizzi.');
+  }catch(error){
+   button.disabled=false;dialog.querySelector('[data-stored-error]').textContent=errorMessage(error);
+  }
+ });
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ document.body.append(dialog);openDialog(dialog);
+}
 async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClosed=null}={}){
+ if(ability.class_feature_id==='spell_storing_item')
+  return openSpellStoringItemDialog(c,calculated,ability);
  if(ability.mode==='metamagic'){
   state.sheet='magic';await render();message('Scegli un incantesimo: la Metamagia si configura nella finestra di lancio.');return;
  }
@@ -1469,6 +1559,30 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    'Linea '+ability.area_length_feet+' × '+ability.area_width_feet+' ft':
    ability.area_shape==='cone'?'Cono '+ability.area_radius_feet+' ft':'';
  const saveDC=8+Number(calculated.stats?.proficiency||2)+Number(calculated.abilities?.con?.modifier||0);
+ // Source-qualified feat save DCs inherit the actual choice made for the
+ // granting spellcasting feat, never an unrelated global caster ability.
+ const sourceAbility=power=>{
+   const source=String(power?.save_ability_origin||'');
+   if(!source)return power?.save_casting_ability||'con';
+   const chosen=c.spellcasting_section_abilities?.['origin:'+source]||
+     (c.origin_spell_grants||[]).find(row=>row.origin_id===source&&!row.disabled)?.spellcasting_ability||'';
+   return ['int','wis','cha'].includes(chosen)?chosen:'';
+ };
+ const featAbility=sourceAbility(ability);
+ const featDC=featAbility?8+Number(calculated.stats?.proficiency||2)+
+   Number(calculated.abilities?.[featAbility]?.modifier||0):null;
+ const saveStat={wis:'Saggezza',con:'Costituzione',int:'Intelligenza',cha:'Carisma',dex:'Destrezza',str:'Forza'};
+ const targetedDetails=ability.mode==='targeted_save_damage'?
+   '<div class="magic-ability-area"><dl class="magic-spell-facts">'+
+   '<div class="magic-spell-fact"><dt>Danni extra</dt><dd>'+
+     esc(ability.damage_formula||'—')+' '+esc(ability.damage_type||'')+'</dd></div>'+
+   '<div class="magic-spell-fact"><dt>Tiro salvezza</dt><dd>'+
+     esc(saveStat[ability.save_ability]||ability.save_ability||'')+' · CD '+esc(featDC??'da scegliere')+'</dd></div>'+
+   '</dl>'+(featAbility?'':'<p class="hint">Seleziona prima la caratteristica da incantatore del talento che concede questa CD.</p>')+
+   (selectedTarget&&ability.condition_on_failed_save?
+     '<label class="check"><input type="checkbox" data-target-failed-save>Il bersaglio ha fallito il TS: applica '+esc(ability.effect_condition||'la condizione')+'</label>':
+     '<p class="hint">Se non sei collegato alla partita, applica manualmente la condizione al bersaglio dopo un TS fallito.</p>')+
+   '<p class="hint">Verifica che il bersaglio sia già stato danneggiato. Il tiro non deve essere stato effettuato nell’app. Un utilizzo per turno; rimuovi la condizione all’inizio del tuo turno successivo.</p></div>':'';
  const areaDetails=shape?'<div class="magic-ability-area"><dl class="magic-spell-facts">'+
    '<div class="magic-spell-fact"><dt>Area</dt><dd>'+esc(shape)+'</dd></div>'+
    '<div class="magic-spell-fact"><dt>CD</dt><dd>'+esc(saveDC)+'</dd></div>'+
@@ -1492,7 +1606,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     ability.target_mode==='single_token'?'La partita non è collegata: scegli il bersaglio manualmente.':'',
   'other-ability-close')+
   abilityPaymentField(ability,calculated)+
-  areaDetails+
+  targetedDetails+areaDetails+
   (healPower?(selectedTarget?
     '<p class="hint">Cura a contatto · '+esc(calculated.stats?.proficiency||0)+'d4. Il tiro viene effettuato alla conferma per il token selezionato.</p>':
     '<label>Creatura da curare<select data-heal-target>'+
@@ -1545,11 +1659,13 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
    const mode=currentAbility.mode||'';
-   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight','temporary_condition'].includes(mode);
+   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight','temporary_condition','targeted_save_damage'].includes(mode);
    if(mandatory&&(!spend||choice!==currentAbility.tracker_id||cost!==1))
      throw Error('La capacità richiede un utilizzo del tracker associato.');
    const selectedMode=mode==='choice_area'?(currentAbility.options||[]).find(row=>
      row.id===dialog.querySelector('[data-dragonborn-breath-mode]')?.value):null;
+   if(mode==='targeted_save_damage'&&!sourceAbility(currentAbility))
+     throw Error('Scegli la caratteristica da incantatore di Scion of the Outer Planes prima di usare la capacità.');
    if(mode==='choice_area'&&!selectedMode)throw Error('Seleziona un soffio valido.');
    if(healPower?.mode==='heal_dice'){
      if(!spend||choice!==healPower.tracker_id)
@@ -1601,15 +1717,32 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();
    if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
+   const applyFailedSave=mode==='targeted_save_damage'&&
+     dialog.querySelector('[data-target-failed-save]')?.checked===true;
+   let conditionApplied=false,conditionFailure='';
+   if(applyFailedSave&&selectedTarget?.id){
+     try{
+       const applied=await action('set_condition',{
+         token_id:String(selectedTarget.id),condition_id:currentAbility.effect_condition,enabled:true});
+       if(!applied?.ok)throw Error(applied?.error||'Condizione non applicata.');
+       conditionApplied=true;
+       state.map=await map();
+     }catch(error){conditionFailure=errorMessage(error);}
+   }
    closeDialog(dialog,{remove:true});await render();
-   const damage=mode==='save_area'&&currentAbility.damage_formula?
+   const damage=['save_area','targeted_save_damage'].includes(mode)&&currentAbility.damage_formula?
      rollBattleDamage(currentAbility.damage_formula,randomDie):null;
    if(damage){
      state.roll={...damage,label:'Danni · '+currentAbility.name,author:selectedName()};
      state.rollHistory.unshift({...state.roll});
    }
    message(currentAbility.name+': utilizzo registrato.'+
-     (damage?' Danni '+damage.notation+' = '+damage.total+' '+currentAbility.damage_type+'.':'')+
+     (damage?' Danni extra '+damage.notation+' = '+damage.total+' '+currentAbility.damage_type+'.':'')+
+     (mode==='targeted_save_damage'?' TS '+(saveStat[currentAbility.save_ability]||currentAbility.save_ability)+
+       ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.[sourceAbility(currentAbility)]?.modifier||0))+'.'+
+       (conditionApplied?' Condizione '+currentAbility.effect_condition+' applicata al token; rimuovila all’inizio del tuo prossimo turno.':
+        conditionFailure?' Impossibile applicare la condizione: '+conditionFailure:
+        ' Nessuna condizione applicata (TS riuscito o da gestire manualmente).'):'')+
      (mode==='save_area'?' TS DES CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' (metà danni con TS riuscito).':'')+
      (selectedMode?' '+selectedMode.name+' · TS '+selectedMode.save_ability.toUpperCase()+
        ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' · '+selectedMode.description:'')+
@@ -3081,6 +3214,13 @@ function inventoryItemDescription(obj,index){
        '<h3>Estensioni attive</h3><ul>'+itemExtensions.map(extension=>
        '<li><strong>'+esc(extension.origin_name||'Beneficio')+'</strong> · '+
        esc(effectExtensionLabel(extension,{cha_mod:state.calculated?.abilities?.cha?.modifier}))+
+       (extension.stored_spell_feature==='spell_storing_item'?
+        '<div class="inventory-prose">'+esc(extension.spell_description||'')+'</div>'+
+        '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'">'+
+        'Usa incantesimo · '+esc((state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id)?
+          Math.max(0,Number((state.calculated.trackers||[]).find(row=>row.id===extension.tracker_id).max)-
+            Number((state.calculated.trackers||[]).find(row=>row.id===extension.tracker_id).spent||0)):'0')+
+        ' rimasti</button></div>':'')+
        '</li>').join('')+'</ul></section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
 }
@@ -4984,7 +5124,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
        const originAttrs=' data-origin-id="'+esc(row.origin_id||'')+'"'+
          ' data-origin-trait="'+esc(row.granting_trait||'')+'"'+
          ' data-origin-key="'+esc(row.origin_key||'')+'"';
-       const traitLink=racialMode||row.passive_class_bonus||row.feat_conditional;
+       const traitLink=racialMode||row.passive_class_bonus||row.feat_conditional||!!(row.granting_trait&&row.origin_id);
        const targetTitle=traitLink?'Apri tratto · '+(row.granting_trait||row.origin_name||''):
          'Apri tracker '+trackerLabel;
        return '<div class="sheet-roll-bonus-item'+(racialMode?' sheet-roll-bonus-item--mode':'')+'">'+
@@ -6288,6 +6428,17 @@ async function handleAction(target){
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
   }
+  if(act==='spell-storing-use'){
+    const current=state.editor?.read();
+    if(!current)throw Error('Apri prima la scheda.');
+    const calculated=await computeLocalData(current);
+    const change=useStoredSpellPatch(current,calculated,Number(target.dataset.index));
+    const extension=storedSpellExtension(current);
+    await patch(change);await render();
+    message('Spell-Storing Item · '+(extension?.spell_name||'incantesimo')+
+      ': un utilizzo consumato. Risolvi gli effetti e l’eventuale concentrazione.');
+    return;
+  }
   if(act==='battle-attack-hit'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
@@ -6549,13 +6700,19 @@ async function handleAction(target){
       return;
     }
     if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
-      chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
+      chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId)||
+      row.exclusive_group&&chosenRollBonuses(dialog).some(b=>b.exclusive_group===row.exclusive_group))return;
     // A situational d20 mode and power-attack penalty must be chosen
     // before the first d20 result, never in reaction to seeing a hit.
     if((row.roll_mode||row.require_before_roll)&&dialog.rollOutcome)
       throw Error('Questo beneficio va scelto prima di tirare il d20.');
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
+    if(String(row.id||'').startsWith('racial:')){
+      const current=await computeLocalData(creature);
+      if(!(current.racial_roll_bonuses||[]).some(b=>b.id===row.id&&b.origin_id===row.origin_id))
+        throw Error('Il privilegio razziale non è più disponibile.');
+    }
     if(row.passive_class_bonus){
       // A passive conditional benefit is applied directly, without invoking
       // an ability action. Verify that its owner/level and formula still apply.
@@ -6627,6 +6784,10 @@ async function handleAction(target){
     }
     const revised=applyPostRollBonus(dialog,row);
     if(!revised)dialog.usedRollBonuses.push(row);
+    if(row.exclusive_group)for(const button of dialog.querySelectorAll('[data-roll-use]')){
+      const other=dialog.rollBonuses[Number(button.dataset.rollUse)];
+      if(other?.exclusive_group===row.exclusive_group&&other.selectionId!==row.selectionId)button.disabled=true;
+    }
     target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
     dialog.renderRollFormula?.();
     if(revised)await announcePostRollBonus(revised);
@@ -6710,8 +6871,8 @@ async function handleAction(target){
       rollType:rollCategory(key,calculated),formula:formulaMarkup(),bonuses,autoLabel,
       creatureId:creature.id||'',target:key});
     dialog.dataset.rollContext=rollContext;
-    // A confirmed on-hit debuff must know the target of the affected attack.
-    // Without an explicit target the original attacker is never penalized.
+    // A map-applied on-hit debuff must know the target of the affected attack.
+    // Without an explicit target the source's target-specific penalty is not assumed.
     if((key.startsWith('attack_hit:')||key.startsWith('casting_hit:'))&&
        (creature.applied_hit_effects?.length||targetTokenHitEffects(creature,state.map).length)){
       const selection=document.createElement('label');

@@ -4,6 +4,7 @@ import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
 import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
+import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {collectEffectExtensions} from './effect_extensions.js';
@@ -140,13 +141,18 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
  const scope=target==='initiative'||/^(ability_check:|ability_mod:|skill:)/.test(target)?'ability_check':target.startsWith('save:')?'saving_throw':/^(attack_hit:|casting_hit:)/.test(target)||target==='spell_attack'?'attack_roll':target.startsWith('attack_damage:')||target==='spell_damage'?'damage_roll':'';
  if(!scope)return [];
  const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
- const fits=row=>[target,scope].includes(row.target)||row.target==='any_d20'&&scope!=='damage_roll'||
+ const fits=row=>[target,scope].includes(row.target)||
+   row.target==='skill_check'&&target.startsWith('skill:')||
+   row.target==='tool_check'&&/^(?:ability_check:|ability_mod:)/.test(target)||
+   row.target==='any_d20'&&scope!=='damage_roll'||
    // Attack-hit damage only. A spell's saving-throw damage is not an attack roll.
    row.target==='attack_damage'&&target.startsWith('attack_damage:')||
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
- const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&validBonusDice(row.dice)&&
+ const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&
+   (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&
    (arr(row.targets).some(target=>fits({target}))||fits(row))).map(row=>({...row,target}));
- const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&fits(row))
+ const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&
+   (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&fits(row))
    .flatMap(row=>{
     const id=String(row.origin_id||'');
     const fromItem=id.startsWith('item:')||id.startsWith('feature:trait:item:');
@@ -446,7 +452,7 @@ function subclassKey(value){
 // Source-qualified feat mechanics are ordinary typed tracker/roll/action grants.
 // No talent names appear in the runtime projection logic.
 export function featMechanicGrants(record={},index={}){
- const result={trackers:[],roll_modes:[],roll_bonuses:[],actions:[]};
+ const result={trackers:[],roll_modes:[],roll_bonuses:[],movement_rules:[],actions:[]};
  for(const feat of arr(record.feats_catalog)){
   if(!feat?.name||feat.disabled)continue;
   const rule=arr(index.feat_mechanics).find(row=>same(row.name,feat.name)&&same(row.source,feat.source));
@@ -457,6 +463,8 @@ export function featMechanicGrants(record={},index={}){
   for(const raw of arr(rule.roll_modes))result.roll_modes.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,feat_name:feat.name});
   for(const raw of arr(rule.roll_bonuses))result.roll_bonuses.push({...raw,origin_id,
+    origin_name:'Talento · '+feat.name,feat_name:feat.name});
+  for(const raw of arr(rule.movement_rules))result.movement_rules.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,feat_name:feat.name});
   for(const raw of arr(rule.actions))result.actions.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,origin_key:origin_id,automatic:true,
@@ -564,7 +572,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
   if(!row||!requirementsAllow(record,row))continue;
   let max=Math.max(0,int(row.max));
   let formula_error='';
-  if(row.max_formula)try{max=Math.max(0,parseArithmetic(row.max_formula,resolve));}catch(error){formula_error=error.message;}
+  if(row.max_formula)try{max=Math.max(0,int(row.min_max),parseArithmetic(row.max_formula,resolve));}catch(error){formula_error=error.message;}
   if(row.id&&row.name)add({...row,max,formula_error,automatic:false});
  }
  return modifyFeatureTrackers(record,[...rows.values()].filter(row=>!row.disabled&&!arr(record.proficiency_origins).some(o=>o?.id===row.origin_id&&o.disabled)&&record.origin_enabled?.[row.origin_id]!==false),catalog?.feature_rules||{});
@@ -755,6 +763,7 @@ function calculateSheetValues(record={},catalogs={}){
    action_grants:arr(record.action_grants).filter(r=>!suppressed.has('action:'+r.id))
   };
   const warnings=new Set(),index=catalogs.abilityGrants,classesCatalog=catalogs.classMechanics;
+  const featMovement=featMechanicGrants(record,index).movement_rules;
   if(!index)warnings.add("Indice delle origini non caricato: i bonus automatici sono incompleti");
   if(!classesCatalog)warnings.add("Catalogo classi non caricato: dadi vita automatici non disponibili");
   if(catalogs.speciesAttacks?.load_error)warnings.add("Catalogo attacchi naturali non disponibile: gli attacchi della specie sono incompleti");
@@ -796,6 +805,7 @@ function calculateSheetValues(record={},catalogs={}){
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
+  features.push(...racialBonusFeatures(record,catalogs.speciesConditionalBonuses||{},features));
   const racialPowers=racialPowerProjection(record,catalogs.speciesPowers||{},features);
   features.push(...racialPowers.features);
   const dragonbornFlight=racialPowers.abilities.find(power=>power.mode==='temporary_flight'&&
@@ -806,6 +816,7 @@ function calculateSheetValues(record={},catalogs={}){
   features.push(...speciesRollModeFeatures(record,catalogs.speciesRollModes,features));
   features.push(...supplementalSpeciesSpellFeatures(record,catalogs.spellGrantRules,features));
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
+  const racialBonusRows=racialBonusEntries(record,catalogs.speciesConditionalBonuses||{},features,suppressed);
   const damage_defense_entries=[...arr(record.damage_defense_entries),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed),
     ...classDefenseEntries(record,features,suppressed),
@@ -1013,8 +1024,17 @@ function calculateSheetValues(record={},catalogs={}){
         return Math.max(base,resolve('speed',stack));
       if(key==="fly"&&speciesRule?.flight_no_medium_heavy_armor&&armor&&
         ['MA','HA'].includes(String(armor.type||"").split('|')[0].toUpperCase()))return 0;
-      return base>0&&String(record.rules_version)==="2024"&&!copiesWalk?
-        base+sumGrants("speed",stack):base;
+      // All creatures can climb and swim by spending an extra foot of
+      // movement per foot traveled. A declared movement speed wins over
+      // that default; a specific climbing-cost waiver can improve it.
+      const defaultBase=(key==='climb'||key==='swim')?resolve('speed',stack)/2:0;
+      const specified=base>0;
+      const effective=specified?base:defaultBase;
+      const adjusted=key==='climb'&&featMovement.some(rule=>
+        rule.mode==='climb_at_walking_cost'&&sourceEnabled(rule))?
+        Math.max(effective,resolve('speed',stack)):effective;
+      return specified&&String(record.rules_version)==="2024"&&!copiesWalk?
+        adjusted+sumGrants("speed",stack):adjusted;
     }
     if(target==="hp")return int(record.max_hp_base??record.max_hp,1);
     if(target==="second_max")return int(record.second_form_max_hp);
@@ -1242,8 +1262,16 @@ function calculateSheetValues(record={},catalogs={}){
     ...supplementalFeatureSpellGrants(record,features,catalogs.spells||[],
       catalogs.featureSpellGrants||[],classCasting,featureSpells));
   for(const warning of additional.warnings)warnings.add(warning);
+  // Feats use the same expression evaluator as other typed trackers.
+  // The proficiency-sized pool must reflect level changes without modifying saves.
+  const featTrackers=featMechanics.trackers.map(row=>{
+    if(!row.max_formula)return row;
+    try{return {...row,max:Math.max(0,parseArithmetic(row.max_formula,
+      name=>resolveSymbol(name,resolve,new Set())))};}
+    catch(error){warnings.add('Formula tracker talento '+row.name+': '+error.message);return {...row,max:0};}
+  });
   const trackerMap=new Map();
-  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featMechanics.trackers,...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2)])
+  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featTrackers,...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),...racialBonusTrackers(racialBonusRows,safe('proficiency')??2)])
     if(!trackerMap.has(row.id)&&sourceEnabled(row)&&!suppressed.has('tracker:'+row.id))trackerMap.set(row.id,row);
   for(const stateTracker of traitStateTrackers(record,features,catalogs.traitStates||[]))
     trackerMap.set(stateTracker.id,stateTracker);
@@ -1365,7 +1393,7 @@ function calculateSheetValues(record={},catalogs={}){
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
     racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
     racial_rest_choices:racialPowers.rest_choices,
-    racial_roll_bonuses:racialPowers.roll_bonuses,
+    racial_roll_bonuses:[...racialPowers.roll_bonuses,...racialBonusRows],
     racial_roll_modes:racialRollModes,
     racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{},record,catalogs.originDetails||{}),
     active_celestial_form:celestialForm||null,
@@ -1385,6 +1413,7 @@ function calculateSheetValues(record={},catalogs={}){
     feat_roll_modes:featMechanics.roll_modes.filter(row=>sourceEnabled(row)),
     feat_roll_bonuses:featMechanics.roll_bonuses.filter(row=>sourceEnabled(row)),
     feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)),
+    feat_movement_rules:featMovement.filter(row=>sourceEnabled(row)),
     active_feature_effects:[...classFeatureEffects(record,featureContext),...traitStateEffects(record,features,catalogs.traitStates||[])],
     active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id),
     state_actions:traitStateActions(record,features,catalogs.traitStates||[]),
@@ -1437,6 +1466,8 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.extensions)?data.extensions:[]),
     fetch('/catalog/species_powers.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[]}).catch(()=>({races:[]})),
+    fetch('/catalog/species_conditional_bonuses.json').then(r=>r.ok?r.json():{})
+      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[]}).catch(()=>({races:[]})),
     fetch('/catalog/spell_grant_rules.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.rules)?data.rules:[])
       .catch(()=>[]),
@@ -1448,11 +1479,11 @@ export function loadRuleCatalogs(){
       .catch(error=>{console.warn('VTT: vantaggi razziali condizionali non disponibili',error);return {races:[],load_error:true};}),
     fetch('/catalog/sense_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1?data:{}).catch(()=>({})),
     fetch('/catalog/feature_item_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1&&Array.isArray(data.grants)?data.grants:[]).catch(()=>[])
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants])=>({
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants])=>({
     abilityGrants,classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
-    featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,
+    featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;

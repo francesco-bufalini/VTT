@@ -87,7 +87,8 @@ func run() -> void:
 	assert(marks.size() == 1 and String(marks[0].get("mode", "")) == "disadvantage",
 		"On-hit effects are visible on all shared tokens, including unowned monsters")
 	# Repeated hits refresh their own mark, never stack duplicates.
-	assert(bool((await board.board_sync._handle_mobile_action("hit_attack", hit_payload)).get("ok", false)))
+	var repeated_hit: Dictionary = await board.board_sync._handle_mobile_action("hit_attack", hit_payload)
+	assert(bool(repeated_hit.get("ok", false)))
 	assert((selected.get_meta("attack_hit_effects", []) as Array).size() == 1)
 	var ordinary: Dictionary = await board.board_sync._handle_mobile_action("hit_attack",
 		{"token_id": token_id, "target_id": victim_id,

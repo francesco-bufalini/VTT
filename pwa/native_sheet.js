@@ -9,6 +9,7 @@ import {itemKind,resolveOwnedItem,armorDexterityBonus,armorDexterityLimit} from 
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 import {powerRestSelections,powerRestChoicePatch} from './trait_state_rules.js';
 import {endTemporaryConditionPatch} from './species_powers.js';
+import {clearStoredSpellPatch,storedSpellExtension} from './spell_storing_item.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["conditions","Condizioni"]];
@@ -175,7 +176,11 @@ export function recoveryPatch(c,event,trackers,calculated={}){
  const patch={resource_tracker_spent:spent,resource_recovery_ready:ready,resource_recovery_used:used};
  if(event==='short_rest'||event==='long_rest')patch.active_class_features=c.active_class_features?.wild_shape?
   {wild_shape:structuredClone(c.active_class_features.wild_shape)}:{};
- if(event==='long_rest')patch.created_spell_slots=[];
+ if(event==='long_rest'){
+  patch.created_spell_slots=[];
+  // Spell-Storing Item ends at the next long rest instead of refilling its old item.
+  Object.assign(patch,clearStoredSpellPatch(c));
+ }
  // Pact Magic and class spell slots retain their original explicit rest rules.
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
  if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
@@ -260,6 +265,8 @@ export function restRecoveryPreview(record,event,calculated={},spend={}){
   (minimum.healed===maximum.healed?String(minimum.healed):minimum.healed+'–'+maximum.healed):
   String(minimum.healed);
  add('Salute','Punti ferita',currentHp+' / '+maxHp+' PF · recupero '+healing+' PF');
+ if(event==='long_rest'&&storedSpellExtension(record))
+  add('Privilegi','Spell-Storing Item','L’incantesimo immagazzinato viene rimosso; puoi scegliere nuovamente oggetto e incantesimo');
  const pools=hitDicePools(record,calculated);
  for(const pool of pools){
   const chosen=event==='short_rest'?Number(spend?.['d'+pool.die]||0):0;
