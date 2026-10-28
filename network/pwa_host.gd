@@ -91,6 +91,7 @@ const FILES := {
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
 	"/ui_primitives.js": ["res://pwa/ui_primitives.js", "text/javascript; charset=utf-8"],
 	"/trait_benefits.js": ["res://pwa/trait_benefits.js", "text/javascript; charset=utf-8"],
+	"/trait_benefit_distribution.js": ["res://pwa/trait_benefit_distribution.js", "text/javascript; charset=utf-8"],
 	"/trait_benefit_editor.js": ["res://pwa/trait_benefit_editor.js", "text/javascript; charset=utf-8"],
 	"/effect_extensions.js": ["res://pwa/effect_extensions.js", "text/javascript; charset=utf-8"],
 	"/trait_projection.js": ["res://pwa/trait_projection.js", "text/javascript; charset=utf-8"],
