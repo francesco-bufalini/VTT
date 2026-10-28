@@ -34,7 +34,7 @@ import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
-import {healingHandsPatch,restTrainingPatch} from "./species_powers.js";
+import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch} from "./species_powers.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
@@ -1545,7 +1545,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
    const mode=currentAbility.mode||'';
-   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight'].includes(mode);
+   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight','temporary_condition'].includes(mode);
    if(mandatory&&(!spend||choice!==currentAbility.tracker_id||cost!==1))
      throw Error('La capacità richiede un utilizzo del tracker associato.');
    const selectedMode=mode==='choice_area'?(currentAbility.options||[]).find(row=>
@@ -1585,7 +1585,16 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
       [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.persistent_origin_id||currentAbility.origin_id||currentAbility.feature_id||requested,
        rules_version:record.rules_version||'2014',enhanced:false,
        duration_rounds:Math.max(0,Number(currentAbility.duration_rounds)||0),
-       damage_type:currentAbility.damage_type||''}};
+       damage_type:currentAbility.damage_type||'',
+       ...(currentAbility.effect_condition?{
+         effect_condition:currentAbility.effect_condition,
+         added_condition:!((record.conditions||[]).some(value=>String(value).toLowerCase()===String(currentAbility.effect_condition).toLowerCase())),
+         ends_on:currentAbility.ends_on||[]}: {})}};
+     if(currentAbility.effect_condition){
+       const existing=Array.isArray(record.conditions)?record.conditions:[];
+       changes.conditions=existing.some(value=>String(value).toLowerCase()===String(currentAbility.effect_condition).toLowerCase())?
+         existing:[...existing,currentAbility.effect_condition];
+     }
     }
     return changes;
    });
@@ -5853,6 +5862,8 @@ async function handleAction(target){
     if(key==='wild_shape'){
       await applyFormPatch(c,endWildShapePatch(c));await render();return;
     }
+    const temporary=endTemporaryConditionPatch(c,key);
+    if(Object.keys(temporary).length){await patch(temporary);await render();return;}
     const effects={...(c.active_class_features||{})};delete effects[key];
     await patch({active_class_features:effects});await render();return;
   }
