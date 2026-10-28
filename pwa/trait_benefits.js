@@ -556,9 +556,11 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  for(const action of rows(calculated.feat_actions)){
   if(!belongs(action))continue;
   addAbility(action.name,{
-   origin_id:action.origin_id,status:trait.inactive?'Tratto disattivato':'Attivabile',
+   origin_id:action.origin_id,status:trait.inactive?'Tratto disattivato':
+     action.descriptive_only?'Promemoria':'Attivabile',
    timing:actionTime(action.action_type||action.time),
-   cost:Number(action.resource_cost)>0?String(action.resource_cost)+' utilizzi':'Nessun costo',
+   cost:action.descriptive_only?'Nessun utilizzo in app':
+     Number(action.resource_cost)>0?String(action.resource_cost)+' utilizzi':'Nessun costo',
    description:describe(action.description),effects:[]
   });
  }
