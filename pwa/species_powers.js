@@ -1,6 +1,6 @@
 // Source-qualified racial powers. No ability is inferred from free-form prose.
 import {canReselectPower,selectionRestLabel} from './trait_state_rules.js';
-import {dragonbornFtdProjection} from './dragonborn_ftd.js';
+import {dragonbornFtdProjection,dragonbornFtdProfile} from './dragonborn_ftd.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const currentLevel=record=>rows(record.classes).length?
@@ -18,6 +18,9 @@ export function racialPowerSubraces(index={}) {
 }
 export function racialPowerProjection(record={},index={},features=[]) {
  const output=dragonbornFtdProjection(record,index,features);
+ // Fizban's Dragonborn replaces the PHB Dragonborn, including Breath Weapon.
+ // Never generate a second PHB breath tracker for the flattened subrace case.
+ if(dragonbornFtdProfile(record,index))return output;
  const race=rows(index.races).find(row=>norm(row.name)===norm(record.species)&&
    norm(row.source)===norm(record.species_source));
  if(!race||record.rules_version==='2024')return output;
