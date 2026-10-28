@@ -144,6 +144,30 @@ try{
    return (await listCreatures())[0]?.creature?.name==='Lyria, guardiana della Luna';
  });
  assert.equal((await record()).name,'Lyria, guardiana della Luna');assert.match(await page.locator('.play-identity h2').textContent(),/guardiana/);
+ await popup('identity');
+ await page.locator('#sheet-context-dialog [data-identity-kind="names"]').click();
+ const newName=page.locator('#sheet-context-dialog [data-identity-value="names"]').last();
+ assert.equal(await newName.evaluate(node=>document.activeElement===node),true,'New name receives focus');
+ await newName.fill('Lyria delle Due Lune');await newName.press('Tab');
+ await page.locator('#sheet-context-dialog [data-identity-active="names"]').last().check();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature?.name==='Lyria delle Due Lune';
+ });
+ assert.equal(await page.locator('#sheet-context-dialog [data-identity-active="names"]:checked').count(),1);
+ await page.locator('#sheet-context-dialog [data-identity-active="names"]').first().check();
+ await page.locator('#sheet-context-dialog [data-identity-kind="factions"]').click();
+ const factionInput=page.locator('#sheet-context-dialog [data-identity-value="factions"]').last();
+ assert.equal(await factionInput.evaluate(node=>document.activeElement===node),true,'New faction receives focus');
+ await factionInput.fill('Gilda degli Arcani');await factionInput.press('Tab');
+ await page.locator('#sheet-context-dialog [data-identity-active="factions"]').last().check();
+ await page.locator('#sheet-context-dialog [data-identity-kind="factions"]').click();
+ await page.locator('#sheet-context-dialog [data-identity-value="factions"]').last().press('Tab');
+ assert.equal(await page.locator('#sheet-context-dialog [data-identity-value="factions"]').count(),2,'Blank faction entry disappears');
+ await dismiss();
+ assert.equal((await record()).identity_names.length,2);
+ assert.equal((await record()).identity_factions.filter(row=>row.active).length,2);
+ assert.equal((await record()).name,'Lyria, guardiana della Luna');
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
    'No legacy ± navigation remains anywhere in the rendered sheet');
