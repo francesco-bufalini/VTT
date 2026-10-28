@@ -5,6 +5,7 @@ const CACHE = "vtt-mobile-shell-v193-" + REVISION;
 const CATALOGS = ["/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
 const SHELL = [
   "/companion_rules.js",
+  "/companion_owner_stats.js",
   "/creature_variants.js",
   "/creature_variants_view.js",
   "/concentration_rules.js",
