@@ -317,6 +317,17 @@
           "dice": "1d4",
           "condition_label": "Reazione dopo un tiro salvezza di Destrezza fallito; non se sei Prono o hai velocità 0.",
           "optional": true
+        },
+        {
+          "id": "racial:mpmm:harengon:hare_trigger",
+          "trait": "Hare-Trigger",
+          "name": "Hare-Trigger",
+          "flat_proficiency": true,
+          "automatic_apply": true,
+          "targets": [
+            "initiative"
+          ],
+          "description": "Il bonus di competenza si aggiunge automaticamente all'iniziativa, senza consumare utilizzi."
         }
       ]
     },
@@ -380,6 +391,73 @@
             "skill:history"
           ],
           "condition_label": "Solo prove di Intelligenza (Storia) su oggetti magici, alchemici o tecnologici; sostituisce la normale competenza."
+        }
+      ]
+    },
+    {
+      "name": "Giff",
+      "source": "AAG",
+      "bonuses": [
+        {
+          "id": "racial:aag:giff:astral_spark",
+          "trait": "Astral Spark",
+          "name": "Astral Spark",
+          "flat_proficiency": true,
+          "damage_type": "force",
+          "targets": [
+            "attack_damage"
+          ],
+          "weapon_requirement": "equipped_weapon",
+          "tracker_id": "racial:aag:giff:astral_spark:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "tracker_cost": 1,
+          "strict_tracker": true,
+          "once_per_turn": true,
+          "condition_label": "Una volta per turno, quando infliggi danni con un'arma semplice o da guerra. Verifica manualmente il limite per turno.",
+          "description": "Danni da forza aggiuntivi pari al bonus di competenza; utilizzi pari alla competenza per riposo lungo."
+        }
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "MPMM",
+      "bonuses": [
+        {
+          "id": "racial:mpmm:goblin:fury_of_the_small",
+          "trait": "Fury of the Small",
+          "name": "Fury of the Small",
+          "flat_proficiency": true,
+          "targets": [
+            "attack_damage",
+            "spell_damage"
+          ],
+          "tracker_id": "racial:mpmm:goblin:fury_of_the_small:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "tracker_cost": 1,
+          "strict_tracker": true,
+          "once_per_turn": true,
+          "condition_label": "Una volta per turno: solo contro una creatura di taglia superiore alla tua, se subisce danni dall'attacco o incantesimo.",
+          "description": "Danni aggiuntivi pari al bonus di competenza; utilizzi pari alla competenza per riposo lungo."
+        }
+      ]
+    },
+    {
+      "name": "Half-Orc",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "id": "racial:phb:half_orc:savage_attacks",
+          "trait": "Savage Attacks",
+          "name": "Savage Attacks",
+          "weapon_damage_die": true,
+          "melee_weapon_attack": true,
+          "targets": [
+            "attack_damage"
+          ],
+          "condition_label": "Solo su un colpo critico con un attacco con arma da mischia. Tira una volta un dado danno dell'arma.",
+          "description": "Quando realizzi un critico con un attacco con arma da mischia, aggiungi un dado di danno dell'arma."
         }
       ]
     }

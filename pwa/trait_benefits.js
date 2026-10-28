@@ -300,6 +300,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   const copies=trait.category==='oggetti'&&trait.rank===0?trait.item_active_quantity:1;
   add('bonus','Bonus',rows(row.targets).length?rows(row.targets).map(traitBenefitTargetLabel).join(' · '):traitBenefitTargetLabel(row.target),
    (row.proficiency_multiplier?'Competenza ×'+row.proficiency_multiplier+' (contestuale)':
+     row.flat_proficiency?'Bonus di competenza'+(row.damage_type?' · '+damageLabel(row.damage_type):''):
+     row.weapon_damage_die?'1 dado danno dell’arma':
      Object.hasOwn(row,'flat_bonus')?signedTraitFormula(String(row.flat_bonus)):signedTraitFormula(row.dice))+
    (row.condition_label?' · '+row.condition_label:'')+(copies>1?' ×'+copies:''),
    'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));

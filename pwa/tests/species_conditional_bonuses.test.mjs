@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {selectedRacialBonusSources,racialBonusFeatures,racialBonusEntries,racialBonusTrackers} from '../species_conditional_bonuses.js';
 import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
+import {appendRollBonus} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {rollOptionalDice} from '../sheet_roll_origin.js';
 const rules=JSON.parse(readFileSync(new URL('../catalog/species_conditional_bonuses.json',import.meta.url),'utf8'));
@@ -115,4 +116,105 @@ test('PHB Stonecunning and Rock Gnome Artificer Lore replace, never stack, profi
   }).length,0);
   assert.equal(project({...c,rules_version:'2024'}).bonuses.length,0);
  }
+});
+
+
+test('Giff Astral Spark is PB force damage on an equipped weapon, never an unarmed or spell roll',()=>{
+ const giff=character('Giff','AAG');
+ const {features,bonuses}=project(giff);
+ assert.equal(bonuses.length,1);
+ const feature=features.find(x=>x.name==='Astral Spark');
+ assert(feature);
+ const calculated={
+  racial_roll_bonuses:bonuses,values:{proficiency:4,attunement_max:3},
+  attacks:[
+   {id:'item:longsword',name:'Longsword',damage_base_formula:'1d8',melee:true},
+   {id:'item:throw:main:dagger',name:'Dagger thrown',damage_base_formula:'1d4',melee:false},
+   {id:'unarmed',name:'Unarmed Strike',damage_base_formula:'1',melee:true}
+  ],attunements:{counts:[]}
+ };
+ const available=target=>applicableDiceBonuses(giff,target,[],calculated);
+ const sword=available('attack_damage:item:longsword');
+ assert.equal(sword.length,1);
+ assert.equal(sword[0].flat_bonus,4);
+ assert.equal(sword[0].damage_type,'force');
+ assert.equal(sword[0].granting_trait,'Astral Spark');
+ assert(sword[0].condition_label.includes('Una volta per turno'));
+ assert.equal(available('attack_damage:item:throw:main:dagger').length,1);
+ assert.equal(available('attack_damage:unarmed').length,0);
+ assert.equal(available('spell_damage').length,0);
+ assert.equal(available('attack_damage:shield:improvised:main:s1').length,0);
+ const tracker=racialBonusTrackers(bonuses,4);
+ assert.equal(tracker.length,1);
+ assert.equal(tracker[0].max,4);
+ assert.equal(tracker[0].recharge,'long_rest');
+ assert.equal(rollOptionalDice(giff,{trackers:[{...tracker[0],spent:1}]},sword)[0].remaining,3);
+ assert.equal(project({...giff,trait_enabled:{[feature.key]:false}}).bonuses.length,0);
+ assert.equal(project({...giff,rules_version:'2024'}).bonuses.length,0);
+});
+test('MPMM Goblin Fury of the Small is manual PB damage on attacks or spells only',()=>{
+ const c=character('Goblin','MPMM'),{bonuses}=project(c);
+ assert.equal(bonuses.length,1);
+ assert.equal(bonuses[0].once_per_turn,true);
+ const base={racial_roll_bonuses:bonuses,values:{proficiency:3,attunement_max:3},attunements:{counts:[]}};
+ const available=target=>applicableDiceBonuses(c,target,[],base);
+ assert.equal(available('attack_damage:unarmed')[0].flat_bonus,3);
+ assert.equal(available('spell_damage')[0].flat_bonus,3);
+ assert.equal(available('skill:stealth').length,0);
+ assert.equal(available('attack_hit:item:bow').length,0);
+ assert.equal(racialBonusTrackers(bonuses,3)[0].max,3);
+ assert.match(bonuses[0].condition_label,/taglia superiore/);
+ assert.equal(project({...c,species_source:'VGM'}).bonuses.length,0);
+});
+test('PHB Half-Orc Savage Attacks derives one weapon damage die only for melee criticals',()=>{
+ const c=character('Half-Orc','PHB'),{bonuses}=project(c);
+ assert.equal(bonuses.length,1);
+ const calculated={racial_roll_bonuses:bonuses,values:{proficiency:3,attunement_max:3},
+  attunements:{counts:[]},attacks:[
+   {id:'item:longsword',damage_base_formula:'1d8',melee:true},
+   {id:'item:greatsword',damage_base_formula:'2d6',melee:true},
+   {id:'item:bow',damage_base_formula:'1d8',melee:false},
+   {id:'unarmed',damage_base_formula:'1',melee:true}
+  ]};
+ const available=id=>applicableDiceBonuses(c,'attack_damage:'+id,[],calculated);
+ assert.equal(available('item:longsword')[0].dice,'1d8');
+ assert.equal(available('item:greatsword')[0].dice,'1d6');
+ assert.equal(available('item:bow').length,0);
+ assert.equal(available('unarmed').length,0);
+ assert.equal(bonuses[0].tracker_id,undefined);
+ assert.match(bonuses[0].condition_label,/critico/);
+});
+
+
+test('MPMM Harengon Hare-Trigger adds proficiency automatically to initiative',()=>{
+ const c=character('Harengon','MPMM',{classes:[{name:'Fighter',source:'PHB',level:8}]});
+ const result=calculateSheet(c,{
+  speciesConditionalBonuses:rules,
+  classMechanics:{races:[],subraces:[]}
+ });
+ assert.equal(result.stats.proficiency,3);
+ assert.equal(result.stats.initiative,5); // Dexterity +2; Hare-Trigger +3
+ assert(result.automatic_bonuses.some(row=>row.target==='initiative'&&
+   row.granting_trait==='Hare-Trigger'&&row.expression==='proficiency'));
+ assert.equal(applicableDiceBonuses(c,'initiative',[],result)
+   .filter(row=>row.granting_trait==='Hare-Trigger').length,0);
+ const renamed={...c,species_source:'WBtW'};
+ assert.equal(project(renamed).bonuses.length,0);
+ const owner=project(c).features.find(x=>x.name==='Hare-Trigger');
+ assert(owner);
+ const disabled=calculateSheet({...c,trait_enabled:{[owner.key]:false}},{
+  speciesConditionalBonuses:rules,classMechanics:{races:[],subraces:[]}
+ });
+ assert.equal(disabled.stats.initiative,2);
+});
+
+test('Giff bonus keeps its separate force damage type in roll result parts',()=>{
+ const previous={total:6,notation:'1d8',detail:'Arma · totale 6',
+  parts:[{name:'Arma',notation:'1d8',subtotal:6,rolls:[6]}]};
+ const next=appendRollBonus(previous,{flat_bonus:4,damage_type:'force',
+  origin_name:'Tratto · Astral Spark'},()=>1);
+ assert.equal(next.total,10);
+ assert.equal(next.parts[1].damage_type,'force');
+ assert.match(next.parts[1].name,/Forza/);
+ assert.match(next.detail,/Forza/);
 });

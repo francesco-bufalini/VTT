@@ -444,6 +444,9 @@ function ensureVisibleSpells(creature,calculated){
   // spells, but the small on-demand lookup must still resolve their details.
   for(const member of calculated.casting_classes||[]){
     for(const id of creature.known_spell_overrides?.[member.id]?.added||[])ids.add(id);
+    // An expanded racial list is eligible for every owned casting class,
+    // even if the spell is not part of the class's ordinary server-side scope.
+    for(const id of member.expanded_spell_ids||[])ids.add(id);
   }
   const scopes=[];
   if(state.sheet==='magic'&&state.magicPopup==='catalog'&&state.spellKnownView==='known'&&
@@ -1362,9 +1365,9 @@ async function openSpellImprintDialog(creature,calculated,ability){
  const existing=spellImprintExtension(creature,rule);
  const already=creature.spell_imprint_prepared?.[rule.id]===true;
  const items=eligibleSpellImprintItems(creature,rule);
- if(!items.length)throw Error('Aggiungi prima una carta o un mazzo di carte all’inventario.');
+ if(!items.length&&!already)throw Error('Aggiungi prima una carta o un mazzo di carte all’inventario.');
  let catalog=state.spellCatalog||[];
- try{catalog=await loadFullSpellCatalog();}catch(error){
+ if(!already)try{catalog=await loadFullSpellCatalog();}catch(error){
   if(!catalog.length)throw Error('Catalogo degli incantesimi non disponibile.');
  }
  const spells=eligibleSpellImprintSpells(creature,calculated,
@@ -1393,7 +1396,9 @@ async function openSpellImprintDialog(creature,calculated,ability){
     '<div data-imprint-description class="inventory-prose"></div>')+
   '<p data-imprint-error class="warning" role="alert"></p>'+
   '<div class="actions magic-dialog-actions">'+
-  (already?'':'<button type="button" class="btn primary" data-imprint-confirm>Prepara la carta</button>')+
+  (already?(existing&&spellImprintActive(existing)?
+    '<button type="button" class="btn primary" data-imprint-cast>Lancia dalla carta · '+(rule.cast_action_type==='bonus'?'azione bonus':'azione')+'</button>':''):
+    '<button type="button" class="btn primary" data-imprint-confirm>Prepara la carta</button>')+
   '<button type="button" class="btn" data-imprint-close>Chiudi</button></div>';
  const selector=dialog.querySelector('[data-imprint-spell]');
  if(selector){
@@ -1415,6 +1420,30 @@ async function openSpellImprintDialog(creature,calculated,ability){
  }
  dialog.querySelectorAll('[data-imprint-close],[data-act="spell-imprint-close"]').forEach(button=>
   button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.querySelector('[data-imprint-cast]')?.addEventListener('click',async event=>{
+  const button=event.currentTarget;if(button.disabled)return;button.disabled=true;
+  try{
+   const current=state.editor?.read();
+   if(!current||String(current.id)!==dialog.dataset.creatureId)
+     throw Error('La scheda è cambiata.');
+   const fresh=await computeLocalData(current);
+   if(!(fresh.spell_imprint_rules||[]).some(r=>r.id===rule.id))
+     throw Error('Il privilegio non è più disponibile.');
+   const index=(current.inventory||[]).findIndex((item,i)=>
+     spellImprintAtItem(current,i)?.imprint_rule_id===rule.id);
+   if(index<0)throw Error('La carta è stata rimossa o sono trascorse otto ore.');
+   const active=spellImprintAtItem(current,index);
+   const update=useSpellImprintPatch(current,fresh,index);
+   await patch(update);await state.editor.flush();
+   closeDialog(dialog,{remove:true});await render();
+   message(rule.name+' · '+(active.spell_name||'incantesimo')+
+     ': lancio registrato come '+(rule.cast_action_type==='bonus'?'azione bonus':'azione')+
+     '. Nessuno slot consumato. Risolvi bersagli, effetti e concentrazione normalmente.');
+  }catch(error){
+   button.disabled=false;
+   dialog.querySelector('[data-imprint-error]').textContent=errorMessage(error);
+  }
+ });
  dialog.querySelector('[data-imprint-confirm]')?.addEventListener('click',async event=>{
   const button=event.currentTarget;if(button.disabled)return;
   button.disabled=true;
@@ -3307,12 +3336,16 @@ function inventoryItemDescription(obj,index){
        '<h3>Estensioni attive</h3><ul>'+itemExtensions.map(extension=>
        '<li><strong>'+esc(extension.origin_name||'Beneficio')+'</strong> · '+
        esc(effectExtensionLabel(extension,{cha_mod:state.calculated?.abilities?.cha?.modifier}))+
-       (extension.stored_spell_feature==='spell_storing_item'?
+       (['spell_storing_item','spell_imprint'].includes(extension.stored_spell_feature)?
         '<div class="inventory-prose">'+esc(extension.spell_description||'')+'</div>'+
         (()=>{const tracker=(state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id);
          const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
+         const imprint=extension.stored_spell_feature==='spell_imprint';
+         const valid=!imprint||spellImprintActive(extension);
          return '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'"'+
-          (remaining<1?' disabled':'')+'>Usa incantesimo · '+esc(remaining)+' rimasti</button></div>';
+          (!valid||remaining<1?' disabled':'')+'>'+
+          (imprint?'Lancia dalla carta · '+(extension.action_type==='bonus'?'azione bonus':'azione'):
+            'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
         })():'')+
        '</li>').join('')+'</ul></section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
@@ -3882,9 +3915,10 @@ function renderSpellResults(){
     (preparing?Number(spell.level)>0&&Number(spell.level)<=member.max_level&&
         (known.has(spell.id)||granted.has(spell.id)):
       learning?Number(spell.level)<=member.max_level&&
-        (state.spellLearnFilter==='all'||(Array.isArray(spell.classes)&&
-          spell.classes.some(name=>String(typeof name==='string'?name:name?.name).toLowerCase()===
-            state.spellLearnFilter.toLowerCase()))):
+        (state.spellLearnFilter==='all'||
+         (state.spellLearnFilter.toLowerCase()===member.name.toLowerCase()&&spellEligible(spell,member))||
+         (Array.isArray(spell.classes)&&spell.classes.some(name=>
+          String(typeof name==='string'?name:name?.name).toLowerCase()===state.spellLearnFilter.toLowerCase()))):
       !member||spellEligible(spell,member))&&
     (target!=='spellbook_spells'||Number(spell.level)>0||learning)&&
     matchesSearch(query,spell.name,spell.source))
@@ -6531,12 +6565,16 @@ async function handleAction(target){
   if(act==='spell-storing-use'){
     const current=state.editor?.read();
     if(!current)throw Error('Apri prima la scheda.');
-    const calculated=await computeLocalData(current);
-    const change=useStoredSpellPatch(current,calculated,Number(target.dataset.index));
-    const extension=storedSpellExtension(current);
+    const calculated=await computeLocalData(current),index=Number(target.dataset.index);
+    const imprint=spellImprintAtItem(current,index);
+    const change=imprint?useSpellImprintPatch(current,calculated,index):
+      useStoredSpellPatch(current,calculated,index);
+    const extension=imprint||storedSpellExtension(current);
     await patch(change);await render();
-    message('Spell-Storing Item · '+(extension?.spell_name||'incantesimo')+
-      ': un utilizzo consumato. Risolvi gli effetti e l’eventuale concentrazione.');
+    message((imprint?'Incantesimo dalla carta':'Spell-Storing Item')+' · '+
+      (extension?.spell_name||'incantesimo')+
+      ': lancio registrato come '+(imprint?'azione bonus':'azione')+
+      ', senza usare slot. Risolvi gli effetti e l’eventuale concentrazione.');
     return;
   }
   if(act==='battle-attack-hit'){
@@ -6696,7 +6734,7 @@ async function handleAction(target){
     const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
     const bonuses=rollOptionalDice(creature,calculated,[
-      ...applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[],calculated),
+      ...applicableDiceBonuses(creature,attackId?'attack_damage:'+attackId:'spell_damage',state.spellCatalog||[],calculated),
       ...classFeatureRollBonuses(creature,calculated,'attack_damage:'+attackId),
        ...applicableFeatRollBonuses(creature,calculated,'attack_damage:'+attackId)
      ],{kind:'damage',attackId});

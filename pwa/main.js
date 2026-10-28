@@ -80,7 +80,7 @@ const STARTUP_MODULE_PATHS = [
   "/companion_rules.js", "/creature_variants.js", "/creature_variants_view.js", "/ui.js", "/server_backups.js", "/storage.js", "/native_sheet.js", "/sheet_rules_view.js",
   "/sheet_rules.js", "/action_economy.js", "/creatures.js", "/share_transfer.js",
   "/feature_mechanics.js", "/item_controls.js", "/character_core.js",
-  "/spell_selection.js", "/structured_effects.js", "/client.js",
+  "/spell_selection.js", "/spell_imprints.js", "/structured_effects.js", "/client.js",
   "/activated_abilities.js", "/condition_catalog.js", "/documents.js",
   "/class_spells.js", "/class_trackers.js", "/quick_homebrew.js", "/character_homebrew.js",
   "/trait_benefits.js", "/trait_benefit_editor.js", "/trait_projection.js", "/spell_metadata.js", "/chat_notifications.js",
@@ -93,7 +93,7 @@ const MODULE_IMPORT_PATHS = STARTUP_MODULE_PATHS.filter(path => path !== "/main.
 // Independent modules first; then dependencies and finally the UI. Importing
 // modules sequentially is an optional fallback for connection-limited WebKit.
 const SERIAL_STARTUP_ORDER = [
-  "/storage.js", "/server_backups.js", "/companion_rules.js", "/creature_variants.js", "/creature_variants_view.js", "/creature_format.js", "/item_controls.js", "/spell_selection.js",
+  "/spell_imprints.js", "/storage.js", "/server_backups.js", "/companion_rules.js", "/creature_variants.js", "/creature_variants_view.js", "/creature_format.js", "/item_controls.js", "/spell_selection.js",
   "/structured_effects.js", "/condition_catalog.js", "/chat_notifications.js",
   "/tactical_view.js", "/session_map.js", "/spell_metadata.js", "/documents.js",
   "/character_core.js", "/client.js", "/feature_mechanics.js", "/sheet_rules.js",

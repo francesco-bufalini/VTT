@@ -4,7 +4,7 @@ import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
 import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
-import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers} from './species_conditional_bonuses.js';
+import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {collectEffectExtensions} from './effect_extensions.js';
@@ -14,14 +14,14 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,activeInfusions,armorDexterityBonus,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
-import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures} from './spell_selection.js';
+import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
 import {dragonbornFtdResistances} from './dragonborn_ftd.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects,traitStateRollModes} from './trait_state_rules.js';
-import {featureItemGrants} from './feature_item_grants.js';
+import {featureItemGrants,racialItemGrantFeatures} from './feature_item_grants.js';
 import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
@@ -148,18 +148,35 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
    // Attack-hit damage only. A spell's saving-throw damage is not an attack roll.
    row.target==='attack_damage'&&target.startsWith('attack_damage:')||
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
- const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&
+ // Damage bonuses are selected manually; the sheet does not assume a hit or
+ // infer a once-per-turn state from dice rolled outside the application.
+ const damageAttack=target.startsWith('attack_damage:')?
+   arr(calculated?.attacks).find(attack=>'attack_damage:'+attack.id===target):null;
+ const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&!row.automatic_apply&&
    !(row.exclude_initiative&&target==='initiative')&&
    (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0||
-    Number(row.proficiency_multiplier)===2)&&
-   (arr(row.targets).some(target=>fits({target}))||fits(row))).map(row=>{
+    Number(row.proficiency_multiplier)===2||row.flat_proficiency===true||
+    row.weapon_damage_die===true)&&
+   (arr(row.targets).some(key=>fits({target:key}))||fits(row))&&
+   (!row.weapon_requirement||row.weapon_requirement!=='equipped_weapon'||
+    !!damageAttack&&String(damageAttack.id).startsWith('item:'))&&
+   (!row.melee_weapon_attack||!!damageAttack&&damageAttack.melee===true&&
+    /^(?:item:|natural:)/.test(String(damageAttack.id)))).map(row=>{
+     if(row.flat_proficiency)return {...row,target,
+       flat_bonus:Math.max(0,Number(calculated?.values?.proficiency)||0)};
+     if(row.weapon_damage_die){
+       const die=String(damageAttack?.damage_base_formula||damageAttack?.damage||'')
+         .match(/(?:^|[^\d])\d+d(4|6|8|10|12)(?!\d)/i);
+       return die?{...row,target,dice:'1d'+die[1]}:null;
+     }
      if(!row.proficiency_multiplier)return {...row,target};
      const skill=target.startsWith('skill:')?target.slice(6):'';
      const owned=arr(calculated?.proficiencies);
      const rank=skill?(owned.includes('expertise:'+skill)?2:owned.includes('skill:'+skill)?1:0):0;
      const amount=Math.max(0,Math.trunc((Number(row.proficiency_multiplier)-rank)*(Number(calculated?.values?.proficiency)||0)));
      return {...row,target,flat_bonus:amount};
-   }).filter(row=>validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0);
+   }).filter(row=>row&&(validBonusDice(row.dice)||
+     Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0));
  const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&
    (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&fits(row))
    .flatMap(row=>{
@@ -826,6 +843,8 @@ function calculateSheetValues(record={},catalogs={}){
   features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
   features.push(...speciesRollModeFeatures(record,catalogs.speciesRollModes,features));
   features.push(...supplementalSpeciesSpellFeatures(record,catalogs.spellGrantRules,features));
+  features.push(...racialItemGrantFeatures(record,features,catalogs.featureItemGrants||[]));
+  features.push(...expandedOriginSpellFeatures(record,classesCatalog?.additional_spells,features));
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const racialBonusRows=racialBonusEntries(record,catalogs.speciesConditionalBonuses||{},features,suppressed);
   const damage_defense_entries=[...arr(record.damage_defense_entries),
@@ -856,7 +875,7 @@ function calculateSheetValues(record={},catalogs={}){
         'Tratto · '+feature.name,'advancement','ability:'+ability,amount)).filter(Boolean);
   });
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...advancements,...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[])];
+    ...advancements,...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
@@ -995,7 +1014,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(target==="level")return int(record.level,1);
     if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
     if(target==="proficiency")return proficiencyBase();
-    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack);
+    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack)+sumGrants("initiative",stack);
     if(prefix==="ability_check"&&ABILITIES.includes(key))
       return resolve("ability_mod:"+key,stack)+sumGrants("ability_check",stack);
     if(target==="ac"){
@@ -1252,12 +1271,16 @@ function calculateSheetValues(record={},catalogs={}){
   for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
   memo.set('pact_slot',pactTotal);
   for(const target of ['level','ac','initiative','hp','second_max','passive_perception','passive_skill:investigation'])safe(target);
+  // Racial expanded lists belong to a real spellcasting class and never
+  // grant free, known or permanently prepared spells of their own.
+  const expandedSpellIds=expandedOriginClassSpellIds(record,classesCatalog?.additional_spells,features);
   // Class spell entries retain the owning structured trait, not the class.
   const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])))
     .map(member=>{
       const trait=grantingCastingTrait(member);
       return {...member,granting_trait_id:trait?.origin_id||'',
-        granting_trait_name:trait?.name||''};
+        granting_trait_name:trait?.name||'',
+        ...(expandedSpellIds.length?{expanded_spell_ids:expandedSpellIds}: {})};
     }).filter(member=>!!member.granting_trait_id);
   for(const a of ABILITIES){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
@@ -1406,7 +1429,7 @@ function calculateSheetValues(record={},catalogs={}){
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
     racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
     racial_rest_choices:racialPowers.rest_choices,
-    racial_roll_bonuses:[...racialPowers.roll_bonuses,...racialBonusRows],
+    racial_roll_bonuses:[...racialPowers.roll_bonuses,...racialBonusRows.filter(row=>!row.automatic_apply)],
     racial_roll_modes:racialRollModes,
     racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{},record,catalogs.originDetails||{}),
     active_celestial_form:celestialForm||null,
