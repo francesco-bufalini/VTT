@@ -35,30 +35,38 @@ export function dragonbornFtdChoice(record={},catalog={}){
   selected:p.selected?[p.selected]:[],remaining:p.selected?0:1};
 }
 export function dragonbornFtdSaveChoice(record,choice,selected=[]){
- const p=dragonbornFtdProfile(record,{
-  races:[{name:'Dragonborn ('+String(choice?.variant||'')+')',source:'FTD',
-   draconic_ancestries:rows(choice?.ancestries)}]});
  // Validate against the immutable source-qualified options provided by the live choice,
  // not against data saved on a character.
- if(choice?.kind!=='draconic_ancestry'||!/^((subrace\|ftd\|(chromatic|metallic|gem))|(race\|ftd\|dragonborn \((chromatic|metallic|gem)\)))$/.test(choice.origin_id||'')||
+ const matching=norm(record.species_source)==='ftd'&&
+   choice.origin_id==='race|ftd|'+norm(record.species)||
+   norm(record.species)==='dragonborn'&&norm(record.species_source)==='phb'&&
+   choice.origin_id==='subrace|ftd|'+norm(record.subrace)&&norm(record.subrace_source)==='ftd';
+ if(!matching||choice?.kind!=='draconic_ancestry'||!/^((subrace\|ftd\|(chromatic|metallic|gem))|(race\|ftd\|dragonborn \((chromatic|metallic|gem)\)))$/.test(choice.origin_id||'')||
    selected.length>1||selected.some(name=>!rows(choice.options).includes(name)))throw Error('Ascendenza draconica non valida.');
  const values={...(record.origin_draconic_ancestry||{})};
  if(selected.length)values[choice.origin_id]=selected[0];
  else delete values[choice.origin_id];
  return {origin_draconic_ancestry:values};
 }
-export function dragonbornFtdResistances(record={},catalog={}){
+export function dragonbornFtdResistances(record={},catalog={},features=[]){
  const p=dragonbornFtdProfile(record,catalog);
  if(!p?.ancestry)return [];
- const output=[{rank:1,key:p.ancestry.damage_type,trait:'Draconic Resistance',
-  origin_id:p.origin_id,origin_parent_id:p.origin_id,
+ if(record.origin_enabled?.[p.origin_id]===false)return [];
+ const owner=name=>rows(features).find(f=>norm(f.name)===norm(name)&&f.origin_key===p.origin_key);
+ const allowed=name=>{
+  const f=owner(name);
+  return !!f&&!f.inactive&&!f.disabled&&record.origin_enabled?.[f.origin_id]!==false&&record.trait_enabled?.[f.key]!==false;
+ };
+ const output=allowed('Draconic Resistance')?[{rank:1,key:p.ancestry.damage_type,trait:'Draconic Resistance',
+  origin_id:owner('Draconic Resistance').origin_id,origin_parent_id:p.origin_id,
   origin_parent_name:p.definition.name,origin_name:'Tratto · Draconic Resistance',
   granting_trait:'Draconic Resistance',
   benefit_id:'defense:'+p.origin_id+':1:'+p.ancestry.damage_type,
-  automatic:true}];
- if(p.variant==='chromatic'&&record.active_class_features?.['racial:dragonborn_ftd:warding']?.origin_id===p.origin_id)
+  automatic:true}]:[];
+ if(p.variant==='chromatic'&&allowed('Chromatic Warding')&&
+    record.active_class_features?.['racial:dragonborn_ftd:warding']?.origin_id===owner('Chromatic Warding').origin_id)
   output.push({rank:2,key:p.ancestry.damage_type,trait:'Chromatic Warding',
-   origin_id:p.origin_id,origin_parent_id:p.origin_id,
+   origin_id:owner('Chromatic Warding').origin_id,origin_parent_id:p.origin_id,
    origin_parent_name:p.definition.name,origin_name:'Tratto · Chromatic Warding',
    granting_trait:'Chromatic Warding',
    benefit_id:'defense:'+p.origin_id+':2:'+p.ancestry.damage_type,automatic:true});
@@ -111,6 +119,7 @@ export function dragonbornFtdProjection(record={},catalog={},knownFeatures=[]){
    feature_id:owner,origin_id:owner,origin_name:'Tratto · '+special.trait,
    description:special.description,action_type:special.action_type,
    activation_mode:special.action_type,mode:special.mode,
+   attack_replacement:special.mode==='choice_area',
    resource_cost:1,tracker_id,duration_rounds:special.duration_rounds||0,
    persistent_key:special.persistent_key||'',
    damage_type:p.ancestry?.damage_type||'',options:rows(special.options),
