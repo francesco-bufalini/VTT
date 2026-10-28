@@ -150,8 +150,16 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
  const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&
    !(row.exclude_initiative&&target==='initiative')&&
-   (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&
-   (arr(row.targets).some(target=>fits({target}))||fits(row))).map(row=>({...row,target}));
+   (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0||
+    Number(row.proficiency_multiplier)===2)&&
+   (arr(row.targets).some(target=>fits({target}))||fits(row))).map(row=>{
+     if(!row.proficiency_multiplier)return {...row,target};
+     const skill=target.startsWith('skill:')?target.slice(6):'';
+     const owned=arr(calculated?.proficiencies);
+     const rank=skill?(owned.includes('expertise:'+skill)?2:owned.includes('skill:'+skill)?1:0):0;
+     const amount=Math.max(0,Math.trunc((Number(row.proficiency_multiplier)-rank)*(Number(calculated?.values?.proficiency)||0)));
+     return {...row,target,flat_bonus:amount};
+   }).filter(row=>validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0);
  const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&
    (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&fits(row))
    .flatMap(row=>{
