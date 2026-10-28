@@ -34,7 +34,7 @@ import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
-import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch} from "./species_powers.js";
+import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
@@ -1781,7 +1781,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
    const mode=currentAbility.mode||'';
-   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight','temporary_condition','targeted_save_damage'].includes(mode);
+   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight','temporary_condition','targeted_save_damage','tracked_action'].includes(mode);
    if(mandatory&&(!spend||choice!==currentAbility.tracker_id||cost!==1))
      throw Error('La capacità richiede un utilizzo del tracker associato.');
    const selectedMode=mode==='choice_area'?(currentAbility.options||[]).find(row=>
@@ -1817,6 +1817,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    }
    await patch(record=>{
     const changes=cost&&spend?spendTrackerUses(record,currentAbility.tracker_id,cost,fresh.trackers):{};
+    if(spend)Object.assign(changes,racialAbilityTemporaryHpPatch(record,currentAbility,fresh));
     if(persistentKey){
      if(record.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
      changes.active_class_features={...(record.active_class_features||{}),
@@ -1852,13 +1853,21 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      }catch(error){conditionFailure=errorMessage(error);}
    }
    closeDialog(dialog,{remove:true});await render();
+   const effectFormula=racialAbilityEffectFormula(currentAbility,fresh);
+   const effectRoll=effectFormula?rollBattleDamage(effectFormula,randomDie):null;
+   if(effectRoll){
+     state.roll={...effectRoll,label:(currentAbility.roll_effect?.label||'Tiro capacità')+' · '+currentAbility.name,author:selectedName()};
+     state.rollHistory.unshift({...state.roll});
+   }
    const damage=['save_area','targeted_save_damage'].includes(mode)&&currentAbility.damage_formula?
      rollBattleDamage(currentAbility.damage_formula,randomDie):null;
    if(damage){
      state.roll={...damage,label:'Danni · '+currentAbility.name,author:selectedName()};
      state.rollHistory.unshift({...state.roll});
    }
-   message(currentAbility.name+': utilizzo registrato.'+
+   message(currentAbility.name+': '+(cost?'utilizzo registrato.':'effetto consultato.')+
+     (effectRoll?' '+(currentAbility.roll_effect?.label||'Tiro')+': '+effectRoll.notation+' = '+(currentAbility.roll_effect?.label==='Riduzione danni'?Math.max(0,effectRoll.total):effectRoll.total)+'.':'')+
+     (currentAbility.temp_hp?' PF temporanei aggiornati (non cumulabili).':'')+
      (damage?' Danni extra '+damage.notation+' = '+damage.total+' '+currentAbility.damage_type+'.':'')+
      (mode==='targeted_save_damage'?' TS '+(saveStat[currentAbility.save_ability]||currentAbility.save_ability)+
        ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.[sourceAbility(currentAbility)]?.modifier||0))+'.'+
