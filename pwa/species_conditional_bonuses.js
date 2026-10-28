@@ -64,7 +64,7 @@ export function racialBonusEntries(record={},catalog={},features=[],removed=new 
     bonuses.push({id,origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name,
      origin_key:feature.origin_key,origin_parent_id:key,granting_trait:feature.name,
      name:bonus.name||feature.name,
-     ...(choice===null?{dice}:{flat_bonus:choice}),
+     ...(choice===null?bonus.proficiency_multiplier?{proficiency_multiplier:bonus.proficiency_multiplier}:{dice}:{flat_bonus:choice}),
      targets:bonus.targets,exclude_initiative:bonus.exclude_initiative===true,
      condition_label:bonus.condition_label||'',
      description:bonus.description||'',optional:true,automatic:true,
