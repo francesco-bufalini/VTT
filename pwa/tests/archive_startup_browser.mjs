@@ -122,7 +122,10 @@ async function updatePreservesEdits(failSave=false){
  const f=await browserFixture();
  try{
   await f.page.addInitScript(()=>{
-   const worker={postMessage(){}};
+   const worker={postMessage(message,ports){
+    if(message?.type==='VTT_SHELL_REVISION')
+      ports?.[0]?.postMessage({commit:'a'.repeat(40)});
+   }};
    Object.defineProperty(navigator,'serviceWorker',{configurable:true,value:{
     controller:worker,
     addEventListener(type,listener){if(type==='controllerchange')window.__controllerChange=listener;},
