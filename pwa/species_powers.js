@@ -196,7 +196,7 @@ export function healingHandsPatch(record={},calculated={},power={},rollDie=()=>1
  return {patch,dice,total,notation:proficiency+'d'+sides};
 }
 
-export function racialPowerSpellDefinitions(index={},record={}) {
+export function racialPowerSpellDefinitions(index={},record={},originDetails={}) {
  return rows(index.races).flatMap(race=>[
   ...(race.teleport?[{
     id:race.teleport.spell_id,name:race.teleport.trait,source:race.source,
@@ -209,7 +209,14 @@ export function racialPowerSpellDefinitions(index={},record={}) {
       (race.season_choice&&currentLevel(record)>=3&&norm(record.species)===norm(race.name)&&
        norm(record.species_source)===norm(race.source)?
         (()=>{const key=record.trait_state_selection?.[race.season_choice.group]||'';
-          const description=race.season_choice.descriptions?.[key]||'';
+          const source=originDetails?.races?.[norm(race.name)+'|'+norm(race.source)];
+          const feature=rows(source?.entries).find(row=>norm(row?.name)===norm(race.teleport.trait));
+          const seasonList=rows(feature?.entries).find(row=>row?.type==='list');
+          const sourceEntry=rows(seasonList?.items).find(row=>norm(row?.name)===key)?.entry;
+          // Prefer the original 5etools trait text when the offline source catalog
+          // is available; the short data-defined copy is only a fallback.
+          const description=String(sourceEntry||race.season_choice.descriptions?.[key]||'')
+            .replace(/\{@(?:condition|damage|dice)\s+([^}|]+)[^}]*\}/gi,'$1');
           return description?'\nStagione: '+(race.season_choice.option_labels?.[key]||key)+'. '+description:
             '\nScegli una stagione per conoscere l’effetto aggiuntivo dal livello 3.';})():'')
   }]:[]),
