@@ -14,14 +14,14 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,activeInfusions,armorDexterityBonus,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
-import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds} from './spell_selection.js';
+import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
 import {dragonbornFtdResistances} from './dragonborn_ftd.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects,traitStateRollModes} from './trait_state_rules.js';
-import {featureItemGrants} from './feature_item_grants.js';
+import {featureItemGrants,racialItemGrantFeatures} from './feature_item_grants.js';
 import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
@@ -843,6 +843,8 @@ function calculateSheetValues(record={},catalogs={}){
   features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
   features.push(...speciesRollModeFeatures(record,catalogs.speciesRollModes,features));
   features.push(...supplementalSpeciesSpellFeatures(record,catalogs.spellGrantRules,features));
+  features.push(...racialItemGrantFeatures(record,features,catalogs.featureItemGrants||[]));
+  features.push(...expandedOriginSpellFeatures(record,classesCatalog?.additional_spells,features));
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const racialBonusRows=racialBonusEntries(record,catalogs.speciesConditionalBonuses||{},features,suppressed);
   const damage_defense_entries=[...arr(record.damage_defense_entries),
