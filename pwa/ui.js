@@ -1291,7 +1291,7 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" required></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
   (itemGrant?'<label>Oggetto concesso<select data-feature-item-choice>'+itemGrant.items.map(item=>
-    '<option value="'+esc(item.id)+'"'+(item.owned&&!itemGrant.allow_duplicate_choices?' disabled':'')+'>'+esc(item.name)+(item.owned?' · posseduto ×'+item.owned:'')+'</option>').join('')+
+    '<option value="'+esc(item.id)+'"'+(item.owned&&(!itemGrant.allow_duplicate_choices||itemGrant.max_owned&&item.owned>=itemGrant.max_owned)?' disabled':'')+'>'+esc(item.name)+(item.owned?' · posseduto ×'+item.owned:'')+'</option>').join('')+
     '</select></label>':'')+
   featureCompanionFields(companion)+
    '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
@@ -6689,7 +6689,8 @@ async function handleAction(target){
     dialog.dataset.rollContext=rollContext;
     // A confirmed on-hit debuff must know the target of the affected attack.
     // Without an explicit target the original attacker is never penalized.
-    if(key.startsWith('attack_hit:')&&Array.isArray(creature.applied_hit_effects)&&
+    if((key.startsWith('attack_hit:')||key.startsWith('casting_hit:'))&&
+       Array.isArray(creature.applied_hit_effects)&&
        creature.applied_hit_effects.length){
       const selection=document.createElement('label');
       selection.className='sheet-roll-mode-control';
