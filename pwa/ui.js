@@ -8813,6 +8813,80 @@ async function handleSubmit(form){
     await fetchChat();
   }
 }
+
+let inventoryPressTimer=null,inventoryPressStart=null,inventoryClickSuppression=null;
+function clearInventoryPress(){
+  if(inventoryPressTimer!==null)clearTimeout(inventoryPressTimer);
+  inventoryPressTimer=null;inventoryPressStart=null;
+}
+function syncInventorySelectionUI(){
+  const root=app.querySelector('#sheet-play-view[data-sheet="inventory"]');
+  if(!root)return;
+  const count=state.editor?.read()?.inventory?.length||0;
+  for(const index of state.inventorySelectedIndices)
+    if(index<0||index>=count)state.inventorySelectedIndices.delete(index);
+  const selecting=state.inventorySelectedIndices.size>0;
+  if(!selecting)inventoryClickSuppression=null;
+  root.classList.toggle('is-inventory-selecting',selecting);
+  const rows=[...root.querySelectorAll('[data-inventory-item-index]')];
+  const all=root.querySelector('[data-inventory-select-all]');
+  let visibleCount=0,selectedVisible=0;
+  for(const row of rows){
+    const index=Number(row.dataset.inventoryItemIndex);
+    const checked=state.inventorySelectedIndices.has(index);
+    row.classList.toggle('is-selected',checked);
+    row.querySelector('[data-inventory-select]').checked=checked;
+    if(!row.closest('[hidden]')){
+      visibleCount++;
+      if(checked)selectedVisible++;
+    }
+  }
+  if(all){
+    all.checked=visibleCount>0&&selectedVisible===visibleCount;
+    all.indeterminate=selectedVisible>0&&selectedVisible<visibleCount;
+    all.disabled=!visibleCount;
+  }
+  const toolbar=root.querySelector('[data-inventory-bulk]');
+  if(toolbar)toolbar.hidden=!selecting;
+  const label=root.querySelector('[data-inventory-selection-count]');
+  if(label)label.textContent=state.inventorySelectedIndices.size+' '+(state.inventorySelectedIndices.size===1?'selezionato':'selezionati');
+}
+function toggleInventoryHoldSelection(index){
+  if(!state.editor||state.page!=='library'||state.libraryMode||state.sheet!=='inventory')return;
+  if(!app.querySelector('#sheet-play-view [data-inventory-item-index="'+index+'"]'))return;
+  if(state.inventorySelectedIndices.has(index))state.inventorySelectedIndices.delete(index);
+  else state.inventorySelectedIndices.add(index);
+  syncInventorySelectionUI();
+}
+function confirmInventoryDeletion(items){
+  if(!items.length)return Promise.resolve(false);
+  return new Promise(resolve=>{
+    const dialog=document.createElement('dialog');
+    dialog.id='inventory-delete-dialog';dialog.className='library-create-dialog library-delete-dialog';
+    const n=items.length;
+    dialog.innerHTML='<div class="library-create-body">'+
+      '<h2>Eliminare '+n+' '+(n===1?'oggetto':'oggetti')+'?</h2>'+
+      '<p>Gli oggetti selezionati saranno rimossi dalla scheda. L’operazione non può essere annullata.</p>'+
+      '<ul class="library-delete-list">'+items.map(item=>
+        '<li><strong>'+esc(item.name||'Oggetto')+'</strong><span>Quantità: '+Math.max(1,Number(item.quantity)||1)+'</span></li>').join('')+'</ul>'+
+      '<div class="library-create-actions"><button type="button" class="btn" data-inventory-delete-cancel>Annulla</button>'+
+      '<button type="button" class="btn danger" data-inventory-delete-confirm>Elimina</button></div></div>';
+    let settled=false;
+    const finish=value=>{
+      if(settled)return;settled=true;resolve(value);closeDialog(dialog,{remove:true});
+    };
+    dialog.addEventListener('close',()=>finish(false),{once:true});
+    dialog.querySelector('[data-inventory-delete-cancel]').addEventListener('click',event=>{
+      event.stopPropagation();finish(false);
+    });
+    dialog.querySelector('[data-inventory-delete-confirm]').addEventListener('click',event=>{
+      event.stopPropagation();finish(true);
+    });
+    document.body.append(dialog);openDialog(dialog);
+    dialog.querySelector('[data-inventory-delete-cancel]').focus();
+  });
+}
+
 let libraryPressTimer=null;
 let libraryPressStart=null;
 let libraryClickSuppression=null;
@@ -8874,6 +8948,55 @@ function listen(){
       e.preventDefault();e.stopImmediatePropagation();
     }
     libraryClickSuppression=null;
+  },true);
+
+
+  // Match the creature roster: a 520 ms hold selects, a short tap opens details.
+  document.addEventListener('pointerdown',e=>{
+    clearInventoryPress();
+    const button=e.target?.closest?.('#sheet-play-view[data-sheet="inventory"] .inventory-play-item');
+    if(!button||e.button!==0)return;
+    const row=button.closest('[data-inventory-item-index]');
+    if(!row)return;
+    const index=Number(row.dataset.inventoryItemIndex);
+    inventoryPressStart={index,x:e.clientX,y:e.clientY,pointerId:e.pointerId};
+    inventoryPressTimer=setTimeout(()=>{
+      const current=inventoryPressStart;
+      if(!current)return;
+      inventoryClickSuppression={index:current.index,until:performance.now()+900};
+      toggleInventoryHoldSelection(current.index);
+      clearInventoryPress();
+    },520);
+  },{passive:true});
+  document.addEventListener('pointermove',e=>{
+    if(!inventoryPressStart||e.pointerId!==inventoryPressStart.pointerId)return;
+    if(Math.hypot(e.clientX-inventoryPressStart.x,e.clientY-inventoryPressStart.y)>11)
+      clearInventoryPress();
+  },{passive:true});
+  document.addEventListener('pointerup',clearInventoryPress,{passive:true});
+  document.addEventListener('pointercancel',clearInventoryPress,{passive:true});
+  document.addEventListener('scroll',clearInventoryPress,true);
+  document.addEventListener('contextmenu',e=>{
+    const button=e.target?.closest?.('#sheet-play-view[data-sheet="inventory"] .inventory-play-item');
+    if(!button)return;
+    e.preventDefault();clearInventoryPress();
+    const index=Number(button.closest('[data-inventory-item-index]')?.dataset.inventoryItemIndex);
+    if(!Number.isInteger(index))return;
+    if(inventoryClickSuppression?.index===index&&performance.now()<inventoryClickSuppression.until)return;
+    inventoryClickSuppression={index,until:performance.now()+900};
+    toggleInventoryHoldSelection(index);
+  });
+  document.addEventListener('click',e=>{
+    const button=e.target?.closest?.('#sheet-play-view[data-sheet="inventory"] .inventory-play-item');
+    if(!button)return;
+    const index=Number(button.closest('[data-inventory-item-index]')?.dataset.inventoryItemIndex);
+    if(inventoryClickSuppression?.index===index&&performance.now()<inventoryClickSuppression.until){
+      e.preventDefault();e.stopImmediatePropagation();inventoryClickSuppression=null;return;
+    }
+    if(state.inventorySelectedIndices.size){
+      e.preventDefault();e.stopImmediatePropagation();
+      toggleInventoryHoldSelection(index);
+    }
   },true);
 
   window.addEventListener('popstate',event=>{void restoreBrowserScreen(event.state?.__vttMobileScreen);});
@@ -9024,6 +9147,21 @@ function listen(){
     if(target?.matches?.('[data-info-portrait-file]')){
       void saveInfoPortrait(target);
       return;
+    }
+    if(target?.matches?.('[data-inventory-select-all]')){
+      for(const row of app.querySelectorAll('#sheet-play-view [data-inventory-item-index]')){
+        if(row.closest('[hidden]'))continue;
+        const index=Number(row.dataset.inventoryItemIndex);
+        if(target.checked)state.inventorySelectedIndices.add(index);
+        else state.inventorySelectedIndices.delete(index);
+      }
+      syncInventorySelectionUI();return;
+    }
+    if(target?.matches?.('[data-inventory-select]')){
+      const index=Number(target.dataset.inventorySelect);
+      if(target.checked)state.inventorySelectedIndices.add(index);
+      else state.inventorySelectedIndices.delete(index);
+      syncInventorySelectionUI();return;
     }
     if(target?.matches?.('[data-library-select-all]')){
       for(const box of app.querySelectorAll('input[data-library-select]')){
