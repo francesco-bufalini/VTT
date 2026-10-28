@@ -639,7 +639,9 @@ test("inline spell catalog adds available and spellbook choices without divergin
   const search=document.querySelector('#spell-search');
   search.value="Shield";
   search.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
-  await until(()=>document.querySelector('[data-act="spell-pick"]'));
+  await until(()=>document.querySelector('[data-act="spell-pick"]')).catch(error=>{
+    throw Error(error.message+' — Picker: '+document.querySelector('#magic-tools-dialog')?.textContent.slice(0,1000));
+  });
   const beforeDialog=document.querySelector('#magic-tools-dialog[open]');
   beforeDialog.scrollTop=84;
   beforeDialog.querySelector('#spell-results').scrollTop=41;
@@ -705,7 +707,9 @@ test("slot popup casts inline while compact search opens the existing spell deta
   assert.equal(document.querySelector('[data-act="magic-known-filter"]'),null);
   const search=document.querySelector('#spell-search');
   search.value='Shield';search.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  await until(()=>document.querySelector('#magic-tools-dialog .magic-catalog-row .magic-catalog-name'));
+  await until(()=>document.querySelector('#magic-tools-dialog .magic-catalog-row .magic-catalog-name')).catch(error=>{
+    throw Error(error.message+' — Incantesimi: '+document.querySelector('#magic-tools-dialog')?.textContent.slice(0,1000));
+  });
   assert.equal(document.querySelectorAll('#magic-tools-dialog .magic-catalog-row .magic-catalog-action').length,1);
   click('#magic-tools-dialog .magic-catalog-row .magic-catalog-name');
   await until(()=>document.querySelector('#action-cast-dialog[open]'));
@@ -1075,8 +1079,8 @@ test("scroll creation selects a spell and casting level without opening item cat
   click('#sheet-play-view [data-subtab="scrolls"]');
   await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="scroll-create"]'));
   assert.equal(document.querySelector('#sheet-play-view [data-act="item-catalog"]'),null);
-  click('#sheet-play-view [data-sheet-context="scroll-create"]');
-  await until(()=>document.querySelector('#sheet-context-dialog #scroll-spell-query'));
+  // The scroll creator is now an inline panel inside the Pergamene section.
+  await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
   const search=document.querySelector('#scroll-spell-query');
   search.value="shi";
   search.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
@@ -1085,7 +1089,7 @@ test("scroll creation selects a spell and casting level without opening item cat
   assert.equal(document.querySelector('#scroll-spell-level').options[0].value,'1');
   assert.ok([...document.querySelector('#scroll-spell-level').options].some(opt=>opt.value==='3'));
   change('#scroll-spell-level','3');
-  click('#sheet-context-dialog [data-act="scroll-spell-add"]');
+  click('#sheet-play-view .inventory-scroll-create [data-act="scroll-spell-add"]');
   await until(async()=>{
     const rows=(await listCreatures()).find(row=>row.creature.name==="Scriba degli incantesimi")?.creature.inventory||[];
     return rows.length===1&&rows[0].spell_name==="Shield"&&rows[0].spell_level===3;
@@ -1120,7 +1124,9 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
   assert.ok(document.querySelector('[data-act="new-homebrew-item"]'),
     "Zaino's item actions remain available when Documenti is selected too");
   click('[data-act="document-add"]');
-  await until(()=>document.querySelector('[data-document-part="title"]'));
+  await until(()=>document.querySelector('[data-document-part="title"]')).catch(error=>{
+    throw Error(error.message+' — Documenti: '+document.querySelector('#sheet-play-view')?.textContent.slice(-800));
+  });
   change('[data-document-part="title"]',"Messaggio segreto");
   change('[data-document-part="body"]',"Un testo lungo e modificabile.");
   await until(async()=>{
