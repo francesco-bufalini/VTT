@@ -133,7 +133,7 @@ export function classFeatureRollResourceBonuses(record={},calculated={}){
    origin_id:ability.origin_id,origin_name:ability.origin_name,
    name:bonus.name||ability.name,description:ability.description,
    ...(Number.isFinite(flat)?{flat_bonus:flat}:{dice}),
-   targets:bonus.targets,tracker_id:ability.tracker_id,
+   targets:bonus.targets,condition_label:bonus.condition_label||'',tracker_id:ability.tracker_id,
    tracker_cost:Math.max(0,Number(ability.cost)||0),optional:true}];
  });
 }
