@@ -110,6 +110,7 @@ function symbolTarget(value){
   if(value.startsWith("skill_"))return "skill:"+value.slice(6).replaceAll("_"," ");
   return ({
     proficiency:"proficiency",prof:"proficiency",initiative:"initiative",ac:"ac",speed:"speed",
+    attuned_item_count:"attuned_item_count",attuned_items:"attuned_item_count",attunement_used:"attuned_item_count",
     climb_speed:"speed:climb",swim_speed:"speed:swim",fly_speed:"speed:fly",
     burrow_speed:"speed:burrow",max_hp:"hp",
     passive_perception:"passive_perception",passive_investigation:"passive_skill:investigation",level:"level"
@@ -1019,6 +1020,10 @@ function calculateSheetValues(record={},catalogs={}){
     if(prefix==="ability_mod"&&ABILITIES.includes(key))return mod(resolve("ability:"+key,stack));
     if(target==="level")return int(record.level,1);
     if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
+    // A first-class formula variable, not a feature-specific calculation.
+    // Use the actual active copy counts, capped by the computed attunement slots.
+    if(target==="attuned_item_count")return inventoryAttunementCounts(record.inventory,
+      Math.max(0,Math.floor(resolve("attunement_max",stack)))).reduce((sum,count)=>sum+count,0);
     if(target==="proficiency")return proficiencyBase();
     if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack);
     if(prefix==="ability_check"&&ABILITIES.includes(key))
@@ -1176,6 +1181,7 @@ function calculateSheetValues(record={},catalogs={}){
   const nativeDependencies=target=>{
     if(target.startsWith('ability_mod:'))return ['ability:'+target.slice(12)];
     if(target==='initiative')return ['ability_mod:dex'];
+    if(target==='attuned_item_count')return ['attunement_max'];
     if(target.startsWith('save:'))return ['ability_mod:'+target.slice(5),'proficiency'];
     if(target.startsWith('skill:'))return ['ability_mod:'+(SKILLS.find(([id])=>id===target.slice(6))?.[2]||'wis'),'proficiency'];
     if(target==='passive_perception')return ['skill:perception'];
@@ -1235,6 +1241,7 @@ function calculateSheetValues(record={},catalogs={}){
   const abilities=Object.fromEntries(ABILITIES.map(a=>[a,{score:safe("ability:"+a),
     modifier:safe("ability_mod:"+a)}]));
   safe("attunement_max");
+  safe("attuned_item_count");
   for(const ability of ABILITIES)safe("ability_check:"+ability);
   const saves=Object.fromEntries(ABILITIES.map(a=>[a,safe("save:"+a)]));
   const skills=Object.fromEntries(SKILLS.map(([id])=>[id,safe("skill:"+id)]));
