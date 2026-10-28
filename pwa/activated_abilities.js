@@ -62,8 +62,11 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   const timed=featureActionEntries(creature,rows(projection.trackers),
     projection.feature_rules||{},features);
 
-  const descriptiveDescriptors=classFeatureDescriptors(creature,projection)
-    .filter(row=>row.descriptive_only);
+  const classDescriptors=classFeatureDescriptors(creature,projection);
+  // A class trait may grant several distinct actions. One descriptive
+  // command must not turn its other real, executable powers into descriptions.
+  const descriptiveDescriptors=classDescriptors.filter(row=>row.descriptive_only&&
+    !classDescriptors.some(other=>other.feature_id===row.feature_id&&!other.descriptive_only));
   const descriptiveOwners=new Set(descriptiveDescriptors.map(row=>row.feature_id));
   // Class capabilities are unlocked only by an actual structured trait. The
   // preexisting IDs remain stable for saved grants and Android interoperability.
