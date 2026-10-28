@@ -3307,12 +3307,16 @@ function inventoryItemDescription(obj,index){
        '<h3>Estensioni attive</h3><ul>'+itemExtensions.map(extension=>
        '<li><strong>'+esc(extension.origin_name||'Beneficio')+'</strong> · '+
        esc(effectExtensionLabel(extension,{cha_mod:state.calculated?.abilities?.cha?.modifier}))+
-       (extension.stored_spell_feature==='spell_storing_item'?
+       (['spell_storing_item','spell_imprint'].includes(extension.stored_spell_feature)?
         '<div class="inventory-prose">'+esc(extension.spell_description||'')+'</div>'+
         (()=>{const tracker=(state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id);
          const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
+         const imprint=extension.stored_spell_feature==='spell_imprint';
+         const valid=!imprint||spellImprintActive(extension);
          return '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'"'+
-          (remaining<1?' disabled':'')+'>Usa incantesimo · '+esc(remaining)+' rimasti</button></div>';
+          (!valid||remaining<1?' disabled':'')+'>'+
+          (imprint?'Lancia dalla carta · '+(extension.action_type==='bonus'?'azione bonus':'azione'):
+            'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
         })():'')+
        '</li>').join('')+'</ul></section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
@@ -6527,12 +6531,16 @@ async function handleAction(target){
   if(act==='spell-storing-use'){
     const current=state.editor?.read();
     if(!current)throw Error('Apri prima la scheda.');
-    const calculated=await computeLocalData(current);
-    const change=useStoredSpellPatch(current,calculated,Number(target.dataset.index));
-    const extension=storedSpellExtension(current);
+    const calculated=await computeLocalData(current),index=Number(target.dataset.index);
+    const imprint=spellImprintAtItem(current,index);
+    const change=imprint?useSpellImprintPatch(current,calculated,index):
+      useStoredSpellPatch(current,calculated,index);
+    const extension=imprint||storedSpellExtension(current);
     await patch(change);await render();
-    message('Spell-Storing Item · '+(extension?.spell_name||'incantesimo')+
-      ': un utilizzo consumato. Risolvi gli effetti e l’eventuale concentrazione.');
+    message((imprint?'Incantesimo dalla carta':'Spell-Storing Item')+' · '+
+      (extension?.spell_name||'incantesimo')+
+      ': lancio registrato come '+(imprint?'azione bonus':'azione')+
+      ', senza usare slot. Risolvi gli effetti e l’eventuale concentrazione.');
     return;
   }
   if(act==='battle-attack-hit'){
