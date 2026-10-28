@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in pwa/main.js pwa/ui.js pwa/server_backups.js pwa/server_backup_core.js pwa/server_backup_worker.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/activated_abilities.js pwa/character_core.js pwa/class_spells.js pwa/class_trackers.js pwa/quick_homebrew.js pwa/sheet_rules.js pwa/feature_mechanics.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/inventory_search.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
+          for file in pwa/main.js pwa/ui.js pwa/server_backups.js pwa/server_backup_core.js pwa/server_backup_worker.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/activated_abilities.js pwa/character_core.js pwa/quick_homebrew.js pwa/species_origin_rules.js pwa/spell_item_effects.js pwa/sheet_rules.js pwa/feature_mechanics.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/inventory_search.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
             node --input-type=module --check < "$file"
           done
       - name: Test offline creature persistence with IndexedDB emulation
@@ -79,7 +79,7 @@ jobs:
           manifest = json.loads((root / "manifest.webmanifest").read_text())
           assert manifest["scope"] == "/" and manifest["start_url"] == "/"
           required = {"/", "/index.html", "/main.js", "/ui.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js",
-                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/activated_abilities.js", "/character_core.js", "/class_spells.js", "/class_trackers.js", "/quick_homebrew.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/catalog/ability_grants.json", "/catalog/activated_abilities.json", "/catalog/class_resource_overrides.json", "/catalog/class_mechanics.json", "/catalog/feature_timing_recovery_rules.json", "/catalog/proficiency_grants.json", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/activated_abilities.js", "/character_core.js", "/quick_homebrew.js", "/species_origin_rules.js", "/spell_item_effects.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/catalog/ability_grants.json", "/catalog/activated_abilities.json", "/catalog/class_resource_overrides.json", "/catalog/class_mechanics.json", "/catalog/feature_timing_recovery_rules.json", "/catalog/proficiency_grants.json", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                       "/icon-192.png", "/icon-512.png"}
           served = (root / "sw.js").read_text()
           for name in required - {"/sw.js"}:

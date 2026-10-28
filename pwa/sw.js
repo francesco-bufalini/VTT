@@ -45,6 +45,7 @@ const SHELL = [
   "/armor_rules.js",
   "/armor_class_formula.js",
   "/species_roll_modes.js",
+  "/species_origin_rules.js",
   "/species_conditional_bonuses.js",
   "/feature_mechanics.js",
   "/barbarian_2014.js",
@@ -64,8 +65,6 @@ const SHELL = [
   "/activated_abilities.js",
   "/character_core.js",
   "/character_portrait.js",
-  "/class_spells.js",
-  "/class_trackers.js",
   "/quick_homebrew.js",
   "/character_homebrew.js",
   "/sheet_rules.js",
@@ -122,6 +121,7 @@ const SHELL = [
   "/feature_item_grants.js",
   "/spell_storing_item.js",
   "/spell_imprints.js",
+  "/spell_item_effects.js",
   "/attack_hit_effects.js",
   "/catalog/feature_item_grants.json"
 ];
