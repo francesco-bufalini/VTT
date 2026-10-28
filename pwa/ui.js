@@ -4,7 +4,7 @@ import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
 import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -41,7 +41,8 @@ import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from 
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
-import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
+import {armorClassBaseFormula} from './armor_class_formula.js';
+import {traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -2761,7 +2762,6 @@ function documentRow(item,index,stored){
 
 function racialRestTrainingPanel(c,calculated){
  return (calculated.racial_rest_choices||[]).map(choice=>{
-  const available=canReselectPower(c,choice.group);
   if(choice.kind==='racial_option'){
    const key=c.trait_state_selection?.[choice.group]||'';
    return panel(choice.label||choice.trait,
@@ -2769,8 +2769,8 @@ function racialRestTrainingPanel(c,calculated){
       '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
     '<div class="infusion-dialog-item"><strong>'+esc(choice.option_labels?.[key]||'Da scegliere')+'</strong></div>'+
     '<div class="actions"><button type="button" class="btn primary" data-act="racial-option-open" data-racial-option-group="'+esc(choice.group)+'"'+
-      (available?'':' disabled')+'>'+(key?'Cambia stagione':'Scegli stagione')+'</button></div>'+
-    (available?'':'<p class="hint">Puoi cambiare stagione dopo un riposo lungo.</p>'),
+      ''+'>'+(key?'Cambia stagione':'Scegli stagione')+'</button></div>'+
+    '',
     'armor-model-panel');
   }
   const selected=(c.proficiency_choices||[]).filter(row=>row.rest_training_group===choice.group);
@@ -2784,8 +2784,8 @@ function racialRestTrainingPanel(c,calculated){
     '<div class="infusion-overview"><strong>Competenze temporanee</strong>'+
       '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
     entries+'<div class="actions"><button type="button" class="btn primary" data-act="rest-training-open" data-training-group="'+esc(choice.group)+'"'+
-    (available?'':' disabled')+'>'+(selected.length?'Cambia competenze':'Scegli competenze')+'</button></div>'+
-    (available?'':'<p class="hint">Le competenze si possono riselezionare dopo un riposo lungo.</p>'),
+    ''+'>'+(selected.length?'Cambia competenze':'Scegli competenze')+'</button></div>'+
+    '',
     'armor-model-panel');
  }).join('');
 }
@@ -2795,7 +2795,6 @@ async function openRacialRestTrainingDialog(group){
  const calculated=await computeLocalData(creature);
  const choice=(calculated.racial_rest_choices||[]).find(row=>row.group===group&&row.kind==='training');
  if(!choice)throw Error('Privilegio non disponibile.');
- if(!canReselectPower(creature,group))throw Error('Puoi riselezionare dopo un riposo lungo.');
  const selected=(creature.proficiency_choices||[]).filter(row=>row.rest_training_group===group);
  const opt=(key,label,value)=>'<option value="'+esc(key)+'"'+(key===value?' selected':'')+'>'+esc(label)+'</option>';
  const skills=SKILLS.map(([key,label])=>['skill:'+key,label]);
@@ -2860,13 +2859,11 @@ function armorModelPanel(c,calculated){
  const selected=armorModelSelection(c,rules);
  const activeRules=new Set(calculated.active_trait_state_ids||[]);
  const recovery=selectionRestLabel(rules[0].selection_recovery||'short_rest');
- const ready=canReselectPower(c,rules[0].group,rules[0].legacy_field);
- const summary='<div class="infusion-overview"><strong>Modello applicato: '+esc(rules.find(row=>row.id===selected)?.name.replace(/^Modello armatura · /,'')||'Nessuno')+
-   '</strong><span class="power-selection-rest">'+esc(recovery)+'</span></div>';
+ const summary='<div class="infusion-overview"><span class="power-selection-rest">'+esc(recovery)+'</span></div>';
  return panel('Modelli di armatura',summary+rules.map(rule=>{
    const available=(calculated.state_actions||[]).some(action=>action.state_id===rule.id);
    const active=available&&activeRules.has(rule.id);
-   const label=active?'Attivo':selected===rule.id?'Selezionato':ready?'Selezionabile':'Cambio dopo '+recovery.toLowerCase();
+   const label=active?'Attivo':selected===rule.id?'Selezionato':'Selezionabile';
    return '<div class="magic-spell-row armor-model-entry" data-armor-model-id="'+esc(rule.id)+
      '" data-armor-model-active="'+active+'" data-armor-model-available="'+available+'">'+
      '<span class="magic-spell-open">'+esc(rule.name.replace(/^Modello armatura · /,''))+
@@ -2883,7 +2880,6 @@ async function openArmorModelDialog(id){
   .some(action=>action.state_id===id);
  const active=selected===id&&available;
  const rest=selectionRestLabel(rule.selection_recovery||'short_rest');
- const canChange=canReselectPower(creature,rule.group,rule.legacy_field);
  const description=String(rule.summary||'').trim();
  const benefits=[
    ...(rule.attacks||[]).map(attack=>({name:attack.name||attack.trait,detail:attack.damage?
@@ -2905,11 +2901,10 @@ async function openArmorModelDialog(id){
  (benefits.length?'<section class="infusion-dialog-active armor-model-benefits"><h3>Benefici del modello</h3>'+
    benefits.map(row=>'<div class="infusion-dialog-item"><span>'+esc(row.name)+
      (row.detail?'<small>'+esc(row.detail)+'</small>':'')+'</span></div>').join('')+'</section>':'')+
- (!available?'<p class="hint armor-model-unavailable">Equipaggia un’armatura per utilizzare questo modello.</p>':
-   !canChange?'<p class="hint armor-model-unavailable">Potrai riselezionare il modello dopo un '+esc(rest.toLowerCase())+'.</p>':'')+
+ (!available?'<p class="hint armor-model-unavailable">Equipaggia un’armatura per utilizzare questo modello.</p>':'')+
  '<p class="hint armor-model-error" data-armor-model-error role="status" hidden></p>'+
  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="armor-model-apply"'+
-   (available&&canChange?'':' disabled')+'>'+(active?'Disattiva':'Usa')+'</button>'+
+   (available?'':' disabled')+'>'+(active?'Disattiva':'Usa')+'</button>'+
  '<button type="button" class="btn" data-act="armor-model-close">Chiudi</button></div>';
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
@@ -3194,31 +3189,7 @@ function inventoryEquipmentView(c,calculated={}){
         esc(name)+'</option>').join('')+'</select>');
     return '<div class="inventory-slot-row"><span>'+esc(label)+'</span>'+selector+size+'</div>';
   });
-  const wornRow=inventory.find(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes("body")&&itemKind(item)==="armor");
-  const armor=wornRow?resolveOwnedItem(wornRow):null;
-  const shields=inventory.filter(item=>Array.isArray(item?.equipped_slots)&&
-    item.equipped_slots.some(slot=>slot==="main"||slot==="off")&&itemKind(item)==="shield")
-    .map(resolveOwnedItem);
-  const shieldBonus=shields.reduce((value,item)=>Math.max(value,Number(item.ac)||0),0);
-  const dex=Number(calculated.values?.["ability_mod:dex"]??0);
-  const dexCap=armor?armorDexterityLimit(armor):null;
-  const armorDex=armor?armorDexterityBonus(armor,dex):0;
-  const rawMonsterAc=Array.isArray(c.stat_block?.ac)?
-    c.stat_block.ac.find(row=>typeof row==="number"||row?.ac!==undefined):c.stat_block?.ac;
-  const monsterAc=typeof rawMonsterAc==="object"?rawMonsterAc?.ac:rawMonsterAc;
-  const naturalBase=c.kind==="monster"?(monsterAc??10):(c.armor_class_base??10);
-  const naturalFormula=String(c.armor_natural_formula||
-    ((c.kind==="character"&&Number(naturalBase)===10)?"10 + dex_mod":String(naturalBase)));
-  const appliedNatural=calculated.base_override_applied?.ac_unarmored;
-  const chosenNatural=appliedNatural?.expression;
-  const displayedNatural=chosenNatural?String(chosenNatural):naturalFormula;
-  const usedNatural=Boolean(chosenNatural&&(!armor||appliedNatural.allow_armor||appliedNatural.ignore_armor));
-  const formula=armor&&!usedNatural?
-    String(Number(armor.ac)||10)+
-      (dexCap===0?' (senza DES)':' + ('+armorDex+' DES'+
-        (dexCap===null?'':', max '+(dexCap>=0?'+':'')+dexCap)+')')+
-      (shieldBonus?' + '+shieldBonus+' scudo':''):
-    displayedNatural+(shieldBonus?' + '+shieldBonus+' scudo':'');
+  const {formula,sourceLabel}=armorClassBaseFormula(c,calculated);
   const attackSettings='<div class="equipment-attack-options">'+
     '<label class="equipment-attack-ability">Caratteristica attacchi<select data-field="attack_ability">'+
       [['str','Forza'],['dex','Destrezza'],['con','Costituzione'],['int','Intelligenza'],['wis','Saggezza'],['cha','Carisma']].map(([value,label])=>
@@ -3235,7 +3206,7 @@ function inventoryEquipmentView(c,calculated={}){
   const defense='<div class="equipment-defense">'+
     '<div class="battle-defense-values"><div class="battle-stat"><span>CA totale</span>'+
       formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
-    '<div class="battle-ac-formula"><strong>'+(armor&&!usedNatural?'Formula armatura indossata':'Formula CA naturale')+
+    '<div class="battle-ac-formula"><strong>'+esc(sourceLabel)+
       '</strong><output>'+esc(formula)+'</output></div>'+
     '<label class="check equipment-armor-speed-penalty"><input type="checkbox" data-field="armor_speed_limit_enabled"'+
       (c.armor_speed_limit_enabled!==false?' checked':'')+
@@ -8166,8 +8137,7 @@ async function handleAction(target){
     const group=String(target.dataset.racialOptionGroup||'');
     const choice=(calculated.pending_choices||[]).find(row=>
       row.kind==='racial_option'&&row.group===group);
-    if(!choice||!canReselectPower(record,group))
-      throw Error('Potrai cambiare questa scelta dopo un riposo lungo.');
+    if(!choice)throw Error('Scelta razziale non disponibile.');
     await openCharacterChoice(choice);return;
   }
   if(act==='rest-training-open'){

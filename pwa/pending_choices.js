@@ -10,7 +10,6 @@ import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVaria
 import {selectedSpeciesDefenseRules} from './species_defenses.js';
 import {classDefenseChoices} from './class_defenses.js';
 import {dragonbornFtdChoice,dragonbornFtdSaveChoice} from './dragonborn_ftd.js';
-import {canReselectPower} from './trait_state_rules.js';
 
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
@@ -449,12 +448,8 @@ export function savePendingChoice(record,choice,values=[]){
      record.rules_version==='2024'||selected.length!==1||
      !['autumn','winter','spring','summer'].includes(selected[0]))
      throw Error('Stagione razziale non valida.');
-   if(!canReselectPower(record,choice.group))
-     throw Error('Puoi cambiare stagione dopo un riposo lungo.');
    return {trait_state_selection:{...(record.trait_state_selection||{}),
-     [choice.group]:selected[0]},
-     rest_selection_available:{...(record.rest_selection_available||{}),
-       [choice.group]:false}};
+     [choice.group]:selected[0]}};
  }
  if(choice.kind==='draconic_ancestry')return dragonbornFtdSaveChoice(record,choice,selected);
  if(choice.kind==='defense'){
