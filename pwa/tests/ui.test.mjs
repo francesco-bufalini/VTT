@@ -1073,8 +1073,8 @@ test("scroll creation selects a spell and casting level without opening item cat
   change('[data-field="name"]',"Scriba degli incantesimi");
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"]'));
-  if(document.querySelector('#sheet-play-view [data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
-    click('#sheet-play-view [data-subtab="scrolls"]');
+  if(document.querySelector('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
+    click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
   await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
   assert.equal(document.querySelector('#sheet-play-view [data-act="item-catalog"]'),null);
   // The scroll creator is now an inline panel inside the Pergamene section.
@@ -1094,14 +1094,13 @@ test("scroll creation selects a spell and casting level without opening item cat
   });
   assert.ok(document.querySelector('#sheet-play-view [data-sheet-context="item:0"]'));
   assert.equal(document.querySelector('#app').dataset.page,'library');
-  click('#sheet-play-view [data-sheet-context="scroll-create"]');
-  await until(()=>document.querySelector('#sheet-context-dialog #scroll-spell-query'));
+  await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
   const again=document.querySelector('#scroll-spell-query');
   again.value="shield";
   again.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
   change('#scroll-spell-select','phb2014_shield');
   change('#scroll-spell-level','3');
-  click('#sheet-context-dialog [data-act="scroll-spell-add"]');
+  click('#sheet-play-view .inventory-scroll-create [data-act="scroll-spell-add"]');
   await until(async()=>{
     const rows=(await listCreatures()).find(row=>row.creature.name==="Scriba degli incantesimi")?.creature.inventory||[];
     return rows.length===1&&rows[0].quantity===2;
