@@ -1512,17 +1512,17 @@
       "version": 1.0
     },
     {
-      "bytes": 65660708.0,
+      "bytes": 65661244,
       "footprint": 1.0,
       "id": "gilliam",
       "name": "Gilliam",
       "pck": "gilliam.pck",
       "release_tag": "characters",
       "scene": "res://remote_tokens/gilliam/gilliam_token.tscn",
-      "sha256": "3ef24387c7322eb7163b9eed555a867c0e75845d1886e1dd11e014a5166f23cc",
+      "sha256": "bb7e8e865487ba2b5969fc476eb11d82e02dd299eae0e6b025a947753057e7e9",
       "size_name": "Medium",
       "source_collection": "Gilliam/Guilliam.glb",
-      "version": 1.0
+      "version": 2
     },
     {
       "bytes": 19658684.0,
@@ -1876,17 +1876,17 @@
       "version": 1.0
     },
     {
-      "bytes": 77728636.0,
+      "bytes": 77729168,
       "footprint": 1.0,
       "id": "kaos",
       "name": "Kaos",
       "pck": "kaos.pck",
       "release_tag": "characters",
       "scene": "res://remote_tokens/kaos/kaos_token.tscn",
-      "sha256": "580ac9379000060d5138ee0165d1b1adcba1c4abd0890ee0c25fd7a9539a7239",
+      "sha256": "94a536ffc3d84386a6bb8a6e92fe49f2a6f8e4d74e48b58e9ab0a13097f6f544",
       "size_name": "Medium",
       "source_collection": "Kaos/Kaos.glb",
-      "version": 1.0
+      "version": 2
     },
     {
       "bytes": 5141340.0,
@@ -1902,17 +1902,17 @@
       "version": 1.0
     },
     {
-      "bytes": 73963516.0,
+      "bytes": 73964048,
       "footprint": 1.0,
       "id": "kryss",
       "name": "Kryss",
       "pck": "kryss.pck",
       "release_tag": "characters",
       "scene": "res://remote_tokens/kryss/kryss_token.tscn",
-      "sha256": "8af2c506f722acc85fe0abfc6ed7e5719c7d38ff92c4bc8a1f78a3735052506a",
+      "sha256": "a47fab13c023604c343a8cd69afa1f47950298ad8f6c4a59173d4cc96d7b5bdb",
       "size_name": "Medium",
       "source_collection": "Kryss/Kryss.glb",
-      "version": 1.0
+      "version": 2
     },
     {
       "bytes": 665148.0,
@@ -2448,17 +2448,17 @@
       "version": 1.0
     },
     {
-      "bytes": 83129700.0,
+      "bytes": 83130236,
       "footprint": 1.0,
       "id": "phenax",
       "name": "Phenax",
       "pck": "phenax.pck",
       "release_tag": "characters",
       "scene": "res://remote_tokens/phenax/phenax_token.tscn",
-      "sha256": "baf45c991100a146adbf35450a201c8fe5fa92d1035244dfc268a35df2145d00",
+      "sha256": "9c92e909044e7cab790981fe26d21c8ccfec8946a66e08d9297ee03c26eea7d8",
       "size_name": "Medium",
       "source_collection": "Phenax.glb",
-      "version": 1.0
+      "version": 2
     },
     {
       "bytes": 16400644.0,
@@ -2812,17 +2812,17 @@
       "version": 1.0
     },
     {
-      "bytes": 64458660.0,
+      "bytes": 64459196,
       "footprint": 1.0,
       "id": "sariel",
       "name": "Sariel",
       "pck": "sariel.pck",
       "release_tag": "characters",
       "scene": "res://remote_tokens/sariel/sariel_token.tscn",
-      "sha256": "51ce6c04b4b03e55017bf1d3c43ab04e242878035f2b8cf822d5f27a4c33601f",
+      "sha256": "e573f2f159bcdec6fed782ead841730623832112d639688d87df4a3d5879d996",
       "size_name": "Medium",
       "source_collection": "Sariel/Sariel.glb",
-      "version": 1.0
+      "version": 2
     },
     {
       "bytes": 5415852.0,
@@ -3111,17 +3111,17 @@
       "version": 1.0
     },
     {
-      "bytes": 87503852.0,
+      "bytes": 87504392,
       "footprint": 1.0,
       "id": "valandir",
       "name": "Valandir",
       "pck": "valandir.pck",
       "release_tag": "characters",
       "scene": "res://remote_tokens/valandir/valandir_token.tscn",
-      "sha256": "d40e83eae6dca1148a50c66c88635077e24ef193ccf4abb61b1438e304785d25",
+      "sha256": "c7447ef1ebb540acb8ae1829a48758fb2ea8e0d59203a2206269d288a22b6f93",
       "size_name": "Medium",
       "source_collection": "Valandir.glb",
-      "version": 1.0
+      "version": 2
     },
     {
       "bytes": 12845508.0,
@@ -3280,17 +3280,17 @@
       "version": 1.0
     },
     {
-      "bytes": 66356740.0,
+      "bytes": 66357276,
       "footprint": 1.0,
       "id": "wilfred",
       "name": "Wilfred",
       "pck": "wilfred.pck",
       "release_tag": "characters",
       "scene": "res://remote_tokens/wilfred/wilfred_token.tscn",
-      "sha256": "e647b1fbe3b883ed5c4f7afce1aeade01a4e0081c593a0b5cb09e497676da1ff",
+      "sha256": "7d658b044a3fca58c87cc0b8175f2bfa62e3eb144a204b77395f34f9cc0f0a8e",
       "size_name": "Medium",
       "source_collection": "Wilfred/Wilfred.glb",
-      "version": 1.0
+      "version": 2
     },
     {
       "bytes": 169428.0,
@@ -3384,17 +3384,17 @@
       "version": 1.0
     },
     {
-      "bytes": 59797116.0,
+      "bytes": 59797648,
       "footprint": 1.0,
       "id": "wyrda",
       "name": "Wyrda",
       "pck": "wyrda.pck",
       "release_tag": "characters",
       "scene": "res://remote_tokens/wyrda/wyrda_token.tscn",
-      "sha256": "6f18c39126175730dacf5c587a38e59c4e5182502801bc73b1a61ead1c358f5f",
+      "sha256": "ed6f6915d31506db165fe383c1d44c6b018a6ccb239efa8a54991c2e96017cdf",
       "size_name": "Medium",
       "source_collection": "Wyrda/wyrda.glb",
-      "version": 1.0
+      "version": 2
     },
     {
       "bytes": 16318788.0,
@@ -3544,11 +3544,11 @@
       "name": "Ore",
       "size_name": "Medium",
       "footprint": 1.0,
-      "version": 1,
-      "bytes": 86272276,
+      "version": 2,
+      "bytes": 86272836,
       "pck": "ore.pck",
       "scene": "res://remote_tokens/ore/ore_token.tscn",
-      "sha256": "9e126c6e2ea654a17159261e5ceec203e3594762850408f265a7ebfe3da34703",
+      "sha256": "761779683a85bab77fe00d424d0f8d4a80838045156f8d0492313b04b198c3fd",
       "source_collection": "ore.glb",
       "release_tag": "characters"
     }

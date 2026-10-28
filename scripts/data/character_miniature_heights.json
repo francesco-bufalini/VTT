@@ -1,0 +1,130 @@
+{
+  "characters": [
+    {
+      "height_m": 1.55,
+      "id": "ore",
+      "reference_camera_height_cells": 1.12511730194092,
+      "reference_head_pixel_y": 216.0,
+      "reference_note": "Scalp; exclude the raised hammer.",
+      "reference_view": "front",
+      "source_head_height_cells": 0.794815025329589,
+      "source_min_y": 0.0,
+      "source_sha256": "9e126c6e2ea654a17159261e5ceec203e3594762850408f265a7ebfe3da34703",
+      "source_total_height_cells": 1.0045690536499,
+      "source_visual_sha256": "89f2bedbf1e4a5ceb79f92cac8b2a66b936405d2a297f1bd35d4eb7996d589bf"
+    },
+    {
+      "height_m": 1.7,
+      "id": "gilliam",
+      "reference_camera_height_cells": 1.4792332649231,
+      "reference_head_pixel_y": 60.0,
+      "reference_note": "Crown of the hair; exclude loose strands.",
+      "reference_view": "back",
+      "source_head_height_cells": 1.30137310028076,
+      "source_min_y": 0.0,
+      "source_sha256": "3ef24387c7322eb7163b9eed555a867c0e75845d1886e1dd11e014a5166f23cc",
+      "source_total_height_cells": 1.32074403762817,
+      "source_visual_sha256": "bb1ed7317e30c13210f7a146bf5ddc5ad10d486af5ea4dbc9861cd8e02b77323"
+    },
+    {
+      "height_m": 2.5,
+      "id": "kaos",
+      "reference_camera_height_cells": 1.4792332649231,
+      "reference_head_pixel_y": 136.0,
+      "reference_note": "Scalp beneath the crown; exclude halo and crown spikes.",
+      "reference_view": "back",
+      "source_head_height_cells": 1.17646006902059,
+      "source_min_y": 0.0,
+      "source_sha256": "580ac9379000060d5138ee0165d1b1adcba1c4abd0890ee0c25fd7a9539a7239",
+      "source_total_height_cells": 1.32074403762817,
+      "source_visual_sha256": "0ea0b683ab0f4b196d9f509663157a2e9b711864936a4ca0132c07e0763c26f6"
+    },
+    {
+      "height_m": 1.6,
+      "id": "kryss",
+      "reference_camera_height_cells": 1.4792332649231,
+      "reference_head_pixel_y": 116.0,
+      "reference_note": "Bird cranium; exclude the tall decorative crest and staff flame.",
+      "reference_view": "back",
+      "source_head_height_cells": 1.20933191935221,
+      "source_min_y": 0.0,
+      "source_sha256": "8af2c506f722acc85fe0abfc6ed7e5719c7d38ff92c4bc8a1f78a3735052506a",
+      "source_total_height_cells": 1.32074403762817,
+      "source_visual_sha256": "63a924b73d94e8243e92a79f44164f0cd7abc005c089c881da530617732cbcde"
+    },
+    {
+      "height_m": 2.5,
+      "id": "phenax",
+      "reference_camera_height_cells": 1.4792332649231,
+      "reference_head_pixel_y": 30.0,
+      "reference_note": "Domed top of head; exclude the lateral golden projections. Refined against the fixed 1.50 m ruler after the first calibration render.",
+      "reference_view": "back",
+      "source_head_height_cells": 1.2961133683967607,
+      "source_min_y": 0.0,
+      "source_sha256": "baf45c991100a146adbf35450a201c8fe5fa92d1035244dfc268a35df2145d00",
+      "source_total_height_cells": 1.32074403762817,
+      "source_visual_sha256": "d491a7bfbfff3e65706c7e4da6f0d8e49a8abcf28b24e8be946e588e0c8a663a",
+      "ruler_refinement": {
+        "camera_height_cells": 2.4,
+        "camera_center_y_cells": 1.05,
+        "head_pixel_y": 244,
+        "applied_scale": 1.233945557796108
+      }
+    },
+    {
+      "height_m": 1.65,
+      "id": "sariel",
+      "reference_camera_height_cells": 1.4792332649231,
+      "reference_head_pixel_y": 52.0,
+      "reference_note": "Cranium beneath tied hair; exclude hair bun and weapon.",
+      "reference_view": "back",
+      "source_head_height_cells": 1.31452184041341,
+      "source_min_y": 0.0,
+      "source_sha256": "51ce6c04b4b03e55017bf1d3c43ab04e242878035f2b8cf822d5f27a4c33601f",
+      "source_total_height_cells": 1.32074403762817,
+      "source_visual_sha256": "5b7ebddb5a0a4d591bfa1f26d8444fd94659ff08ce062632e9d81e884d9c5999"
+    },
+    {
+      "height_m": 2.5,
+      "id": "valandir",
+      "reference_camera_height_cells": 1.49411606788635,
+      "reference_head_pixel_y": 107.0,
+      "reference_note": "Helmet over the cranium; exclude horns and central spike.",
+      "reference_view": "front",
+      "source_head_height_cells": 1.22979625357522,
+      "source_min_y": 0.0,
+      "source_sha256": "d40e83eae6dca1148a50c66c88635077e24ef193ccf4abb61b1438e304785d25",
+      "source_total_height_cells": 1.32074403762817,
+      "source_visual_sha256": "236ff093387f11c2236de2544630959c2489304df5c50dbbc5199ad2aed04daf"
+    },
+    {
+      "height_m": 1.8,
+      "id": "wilfred",
+      "reference_camera_height_cells": 1.4792332649231,
+      "reference_head_pixel_y": 49.0,
+      "reference_note": "Crown of hair; staff is not a height reference.",
+      "reference_view": "back",
+      "source_head_height_cells": 1.31945261796316,
+      "source_min_y": 0.0,
+      "source_sha256": "e647b1fbe3b883ed5c4f7afce1aeade01a4e0081c593a0b5cb09e497676da1ff",
+      "source_total_height_cells": 1.32074403762817,
+      "source_visual_sha256": "49fc0b1dbe7a5b50aeb76500697b0701328fcef67f11f01b167513ed895e1081"
+    },
+    {
+      "height_m": 1.75,
+      "id": "wyrda",
+      "reference_camera_height_cells": 1.4792332649231,
+      "reference_head_pixel_y": 73.0,
+      "reference_note": "Helmet over the cranium; exclude horns, crest and staff.",
+      "reference_view": "back",
+      "source_head_height_cells": 1.28000639756521,
+      "source_min_y": 0.0,
+      "source_sha256": "6f18c39126175730dacf5c587a38e59c4e5182502801bc73b1a61ead1c358f5f",
+      "source_total_height_cells": 1.32074403762817,
+      "source_visual_sha256": "97523fa9684ce8aeea9080425190cc45236db73f62b510b1e46c2c1c81ba5eaf"
+    }
+  ],
+  "measurement_note": "Curated anatomical head landmarks from front/side/back orthographic renders of the original release. Preserve the existing lowest-point grounding and uniform model proportions. Explicit heights: Ore, Gilliam, Kaos, Phenax, Valandir; remaining heights are small chosen variations.",
+  "meters_per_cell": 1.5,
+  "release_tag": "characters"
+}
