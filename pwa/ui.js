@@ -2,6 +2,7 @@ import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEX
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage,validateVariants} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
+import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
@@ -1157,7 +1158,20 @@ async function computeLocalData(record){
   catalogs={...catalogs,spells:[...new Map([...(catalogs.spells||[]),...visibleSpells]
     .map(spell=>[spell.id,spell])).values()]};
   catalogs.abilityGrants={...(catalogs.abilityGrants||{}),artificer_infusions:(inventoryModule.expandedInfusionDefinitions||((rows)=>rows))(catalogs.abilityGrants?.artificer_infusions||[])};
-  const calculated=calculateSheet(record,catalogs);
+  let linked=null;
+  if(record.parent_creature_id){
+    try{
+      const parent=await loadCreature(record.parent_creature_id);
+      if(parent?.data?.id===record.parent_creature_id&&
+         parent.data.owner_id===record.owner_id&&!parent.data.parent_creature_id){
+        const parentRecord=resolveVariant(parent.data);
+        linked=companionOwnerValues(record,parentRecord,
+          calculateSheet(parentRecord,catalogs),await companionRules());
+      }
+    }catch{ /* A missing owner must not prevent opening the saved familiar. */ }
+  }
+  const calculated=calculateSheet(linked?
+    {...record,companion_owner_values:linked}:record,catalogs);
   // Internal racial powers must remain resolvable offline, even when the
   // native host has not supplied a full/selected spell catalogue yet.
   const ownedAreaIds=new Set((calculated.origin_spells||[]).map(row=>row.spell_id));
