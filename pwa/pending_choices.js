@@ -1,4 +1,5 @@
 import {expandedSpellFeatOptions} from './feat_picker.js';
+import {FEATURE_FEAT_GRANTS} from './catalog/feature_feat_grants.js';
 // Structured, still-unresolved character choices. Mirrors the native
 // creature_pending_choices.gd and creature_proficiency_rules.gd contracts.
 // Never infer a choice from prose or assign a privilege automatically.
@@ -315,39 +316,39 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     remaining:value?0:1});
   }
  }
- // Custom Lineage (TCE) grants one qualifying feat at level 1 in BOTH
- // Darkvision and skill variants. Its existing Feat trait owns that grant.
- // Treat it as a mandatory, replaceable feat choice, not an automatic feat
- // without a chosen name or an untracked manually-added feat.
- if(norm(record.species)==='custom lineage'&&norm(record.species_source)==='tce'&&
-    String(record.rules_version||'2014')==='2014'){
+ // Source-qualified feat benefits reuse the existing advancement-feat
+ // selection and feat ownership path. No race-specific picker or save branch.
+ for(const rule of FEATURE_FEAT_GRANTS){
+  const group=rule.kind==='species'?'species':rule.kind;
+  const owner=group==='species'?norm(record.species):group==='subrace'?norm(record.subrace):'';
+  const source=group==='species'?norm(record.species_source):norm(record.subrace_source);
+  if(owner!==norm(rule.name)||source!==norm(rule.source)||
+    Number(record.level||1)<Number(rule.min_level||1))continue;
   const featTrait=arr(calculated.features).find(feature=>
-    norm(feature.name)==='feat'&&
-    String(feature.origin_key||'').startsWith('species|')&&
+    norm(feature.name)===norm(rule.feature)&&
+    String(feature.origin_key||'').startsWith(group+'|')&&
     !feature.disabled&&!feature.inactive&&enabled(record,feature.origin_id)&&
     enabled(record,feature.origin_key)&&record.trait_enabled?.[feature.key]!==false);
-  if(featTrait){
-   const sid=featTrait.origin_id;
-   const available=expandedSpellFeatOptions(
-     Object.entries(catalogs.originDetails?.feats||{}).map(([key])=>{
-       const cut=key.lastIndexOf('|');return cut<0?null:
-        {value:key.slice(cut+1)+'|'+key.slice(0,cut),
-         name:key.slice(0,cut),source:key.slice(cut+1)};
-     }).filter(Boolean).filter(f=>contentForRules([f],record.rules_version).length>0)
-       .sort((a,b)=>a.name.localeCompare(b.name)),
-     catalogs.classMechanics?.additional_spells||[])
-    .map(f=>({...f,value:f.value+(f.spell_variant?'|'+norm(f.spell_variant):'')}));
-   const owned=arr(record.feats_catalog).find(f=>f?.granted_by===sid);
-   const value=owned?norm(owned.source)+'|'+norm(owned.name)+
-     (owned.spell_variant?'|'+norm(owned.spell_variant):''):'';
-   result.push({id:'advancement-feat:'+sid,kind:'advancement_feat',origin_id:sid,
-     name:'Custom Lineage · Feat',label:'Talento concesso dalla specie',
-     count:1,selected:value?[value]:[],
-     options:available.map(f=>f.value),
-     option_labels:Object.fromEntries(available.map(f=>
-       [f.value,(f.display_name||f.name)+' ('+f.source.toUpperCase()+')'])),
-     remaining:value?0:1});
-  }
+  if(!featTrait)continue;
+  const sid=featTrait.origin_id;
+  const available=expandedSpellFeatOptions(
+    Object.entries(catalogs.originDetails?.feats||{}).map(([key])=>{
+      const cut=key.lastIndexOf('|');return cut<0?null:
+       {value:key.slice(cut+1)+'|'+key.slice(0,cut),
+        name:key.slice(0,cut),source:key.slice(cut+1)};
+    }).filter(Boolean).filter(feat=>contentForRules([feat],record.rules_version).length>0)
+      .sort((a,b)=>a.name.localeCompare(b.name)),
+    catalogs.classMechanics?.additional_spells||[])
+   .map(feat=>({...feat,value:feat.value+(feat.spell_variant?'|'+norm(feat.spell_variant):'')}));
+  const owned=arr(record.feats_catalog).filter(feat=>feat?.granted_by===sid);
+  const current=owned[0],value=current?norm(current.source)+'|'+norm(current.name)+
+    (current.spell_variant?'|'+norm(current.spell_variant):''):'';
+  result.push({id:'advancement-feat:'+sid,kind:'advancement_feat',origin_id:sid,
+    name:featTrait.name,label:rule.label||'Talento concesso',count:rule.count||1,
+    selected:value?[value]:[],options:available.map(feat=>feat.value),
+    option_labels:Object.fromEntries(available.map(feat=>
+      [feat.value,(feat.display_name||feat.name)+' ('+feat.source.toUpperCase()+')'])),
+    remaining:value?0:1});
  }
  // Casting stat selection is an owned benefit of the granting trait.
  const casterOwners=new Set();

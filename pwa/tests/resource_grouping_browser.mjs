@@ -56,7 +56,7 @@ try{
  // the creature-creation controls or consume that trait's summoning resource.
  for(const config of [
   {name:'Bard',source:'PHB',subclass:'College of Creation',command:'Comanda oggetto animato',dialog:'other-ability-dialog',confirm:'data-ability-confirm'},
-  {name:'Artificer',source:'TCE',subclass:'Battle Smith',command:"Comanda difensore d'acciaio",dialog:'class-feature-dialog',confirm:'data-feature-confirm'}
+  {name:'Artificer',source:'TCE',subclass:'Battle Smith',command:"Comanda difensore d'acciaio",descriptive:true,dialog:'class-feature-dialog',confirm:'data-feature-confirm'}
  ]){
   await page.evaluate(async config=>{
    const {listCreatures,saveCreature}=await import('/creatures.js');
@@ -74,6 +74,15 @@ try{
   if(!await disclosure.evaluate(n=>n.open))await disclosure.locator('summary.play-battle-summary').click();
   const free=page.locator('#sheet-play-view [data-resource-privilege]').filter({hasText:config.command});
   assert.equal(await free.count(),1);
+  if(config.descriptive){
+   assert.equal(await free.locator('[data-act="battle-use-ability"]').count(),0,
+    'Preserve the descriptive-only command from concurrent main');
+   await free.locator('[data-act="sheet-context"]').first().click();
+   await page.locator('#sheet-context-dialog[open]').waitFor();
+   assert.match(await page.locator('#sheet-context-dialog').innerText(),/Steel Defender|difensore/i);
+   await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
+   continue;
+  }
   await free.locator('[data-act="battle-use-ability"]').click();
   const dialog=page.locator('#'+config.dialog+'[open]');await dialog.waitFor();
   assert.equal(await dialog.locator('[data-feature-companion]').count(),0);

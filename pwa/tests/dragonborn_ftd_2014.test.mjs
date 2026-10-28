@@ -53,7 +53,7 @@ test('one source-qualified ancestry replaces both independent PHB and FTD resist
  }
 });
 test('FTD flattened race has same mechanics without a PHB parent',()=>{
- const record=chosen(build('Gem',5,true),'crystal');
+ const record={...build('Gem',5,true),subrace:'Crystal',subrace_source:'FTD'};
  assert.equal(dragonbornFtdProfile(record,powers).ancestry.damage_type,'radiant');
  assert.deepEqual(selectedSpeciesDefenseRules(record,defenses),[]);
  assert.equal(own(record).defenses[0].key,'radiant');
@@ -147,4 +147,15 @@ test('cone and line tactical previews exclude self and include only intersected 
  assert(pointInAbilityArea([200,100],cone.points));
  assert(!pointInAbilityArea([200,300],cone.points));
  assert.equal(abilityAreaPolygon([0,0],[0,0],{shape:'line',length_feet:30,width_feet:5},10).length,0);
+});
+
+
+test('FTD Dragonborn use color subraces instead of a second ancestry picker',()=>{
+ for(const [variant,color,type] of [['Chromatic','Red','fire'],['Gem','Amethyst','force'],['Metallic','Silver','cold']]){
+  const record={...build(variant,5,true),subrace:color,subrace_source:'FTD'};
+  assert.equal(dragonbornFtdChoice(record,powers),null);
+  const profile=dragonbornFtdProfile(record,powers);
+  assert.equal(profile.ancestry.damage_type,type);
+  assert.equal(own(record).abilities[0].damage_type,type);
+ }
 });

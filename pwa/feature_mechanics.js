@@ -11,7 +11,7 @@ const low=value=>String(value||'').trim().toLowerCase();
 const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school of )/,'').replace(/^the /,'');
 // Same explicit operations as vtt/class_feature_activation.gd. Descriptions
 // never determine effects, payments or eligibility.
-import {CLASS_FEATURE_RULES} from './catalog/class_feature_operations.js';
+import {CLASS_FEATURE_RULES,DESCRIPTIVE_CLASS_FEATURE_IDS} from './catalog/class_feature_operations.js';
 export {CLASS_FEATURE_RULES} from './catalog/class_feature_operations.js';
 
 const METAMAGIC_COSTS={'Careful Spell':1,'Distant Spell':1,'Empowered Spell':1,'Extended Spell':1,
@@ -53,6 +53,7 @@ export function classFeatureDescriptors(record={},calculated={}){
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)===low(resource)&&
    (!t.origin_class||low(t.origin_class)===low(owner)));
   output.push({id:'class_feature:'+key,class_feature_id:key,name:label,
+   descriptive_only:DESCRIPTIVE_CLASS_FEATURE_IDS.has(key),
    time:revised&&key==='lay_on_hands'?'bonus':baseTime,type:'Capacità',
    mode,description:feature.entries??feature.description??'',class_name:owner,
    resource_name:resource,tracker:tracker?.name||resource,tracker_id:tracker?.id||'',
@@ -432,6 +433,7 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
   throw Error('Ira non disponibile con armatura pesante o incapacità.');
  const tracker=rows(calculated.trackers).find(t=>t.id===action.tracker_id&&!t.disabled);
  // Only the associated tracker or no tracker can be chosen at confirmation.
+ if(action.descriptive_only)throw Error('Capacità descrittiva: non richiede un pulsante Usa.');
  const paymentId=options.tracker_id===undefined?action.tracker_id:String(options.tracker_id);
  if(paymentId!==''&&paymentId!==action.tracker_id)throw Error('Tracker non collegato alla capacità.');
  const spent={...(record.resource_tracker_spent||{})};

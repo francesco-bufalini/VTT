@@ -128,3 +128,28 @@ test('portable exports retain the allocated count and legacy boolean',()=>{
  assert.equal(parsed.creature.inventory[0].attuned_count,3);
  assert.equal(parsed.creature.inventory[0].attuned,true);
 });
+
+
+test('attuned_item_count is a first-class numeric bonus formula, including capacity clipping',()=>{
+ const start=creature([]),baseline=calculateSheet(start);
+ const bonus={id:'attuned-items-to-hp',target:'hp',expression:'attuned_item_count'};
+ const a=calculateSheet({...creature([stone(4)]),formula_bonuses:[bonus]});
+ assert.equal(a.values.attuned_item_count,3);
+ assert.equal(a.values.hp,baseline.values.hp+3);
+ assert.equal(a.attunements.used,3);
+ const b=calculateSheet({...creature([stone(4)]),attunement_max_base:4,formula_bonuses:[bonus]});
+ assert.equal(b.values.attuned_item_count,4);
+ assert.equal(b.values.hp,baseline.values.hp+4);
+ const c=calculateSheet({...creature([stone(0)]),formula_bonuses:[bonus]});
+ assert.equal(c.values.attuned_item_count,0);
+ assert.equal(c.values.hp,baseline.values.hp);
+});
+
+test('Soul of Artifice stores the same reusable formula instead of a snapshot number',async()=>{
+ const {structuredFeatureGrants}=await import('../structured_effects.js');
+ const owner={name:'Soul of Artifice',origin_key:'class|tce|artificer',
+  origin_id:'feature:class|tce|artificer|soul-of-artifice'};
+ const grants=structuredFeatureGrants(creature([stone(2)]),{},[owner]);
+ assert.equal(grants.filter(g=>g.target.startsWith('save:')).length,6);
+ assert(grants.every(g=>g.expression==='attuned_item_count'));
+});

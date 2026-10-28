@@ -1,6 +1,5 @@
 import {CLASS_NUMERIC_FEATURE_GRANTS} from './catalog/class_numeric_feature_grants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
-import {itemAttunementCount} from './item_controls.js';
 import {normalizeMonsterStatBlock} from './character_core.js';
 // Generic structured effects and fixed proficiency projection based on
 // creature_structured_bonuses.gd and creature_proficiency_rules.gd.
@@ -345,7 +344,7 @@ export const automaticId=(sid,field,target,suffix="")=>
   "auto|"+sid+"|"+field+"|"+target+suffix;
 export function numericGrant(sid,name,field,target,value,suffix="",allowModifier=false){
   if(!target||!validAmount(value)&&
-    !(allowModifier&&typeof value==="string"&&/^(?:str|dex|con|int|wis|cha)_mod$/.test(value.trim().toLowerCase())))return null;
+    !(allowModifier&&typeof value==="string"&&/^(?:(?:str|dex|con|int|wis|cha)_mod|attuned_item_count)$/.test(value.trim().toLowerCase())))return null;
   return {id:automaticId(sid,field,target,suffix),
     origin_id:sid,origin_name:name,target,expression:String(value),
     automatic:true,disabled:false};
@@ -498,10 +497,9 @@ export function structuredFeatureGrants(record,catalogs={},features=collectStruc
         const member=classMembers(record).find(c=>match(c.name,rule.class_name)&&match(c.source,rule.class_source));
         if(Number(member?.level||0)>rule.max_class_level)continue;
       }
-      const value=rule.formula==='attuned_item_count'?
-        array(record.inventory).reduce((sum,item)=>sum+itemAttunementCount(item),0):rule.value;
+      const value=rule.formula??rule.value;
       for(const target of array(rule.targets)){
-        const grant=numericGrant(feature.origin_id,'Tratto · '+feature.name,rule.group,target,value);
+        const grant=numericGrant(feature.origin_id,'Tratto · '+feature.name,rule.group,target,value,'',true);
         if(grant)result.push(grant);
       }
     }

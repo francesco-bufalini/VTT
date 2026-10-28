@@ -3,6 +3,7 @@
 import { listRecords, getRecord, deleteRecordIfRevision } from "./storage.js";
 import { saveHomebrewDefinition, listCreatures } from "./creatures.js";
 import {racialPowerSubraces} from "./species_powers.js";
+import {expandSpeciesVariantFamilies,selectableVariantSubraces} from "./species_variant_families.js";
 import { characterHomebrewEntries, appendSharedHomebrew } from "./character_homebrew.js";
 
 export const CATALOG_CATEGORIES = [
@@ -76,8 +77,10 @@ async function supplementalCatalog(category){
     const {loadRuleCatalogs}=await import('./sheet_rules.js');
     const rules=await loadRuleCatalogs();
     if(Array.isArray(rules.classMechanics?.races)){
-      const subraces=[...(rules.classMechanics.subraces||[]),...racialPowerSubraces(rules.speciesPowers)];
-      return customLineageRaceOptions(canonicalSpeciesReferences(rules.classMechanics.races,subraces));
+      const subraces=selectableVariantSubraces([...(rules.classMechanics.subraces||[]),
+        ...racialPowerSubraces(rules.speciesPowers)]);
+      const expanded=expandSpeciesVariantFamilies(rules.classMechanics.races,subraces,rules.speciesPowers);
+      return customLineageRaceOptions(canonicalSpeciesReferences(expanded.races,expanded.subraces));
     }
   }
   const path=(["classes","subclasses","class_features","subclass_features"].includes(category))?

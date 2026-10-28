@@ -755,12 +755,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const active=persistent&&(
     !!c.active_class_features?.[statusKey]||action.mode==='trait_state'&&action.active===true);
    const use=persistent?'Attiva':'Usa';
+   const descriptive=action.descriptive_only===true||power.descriptive_only===true;
    const useId=persistent&&action.class_feature_id&&action.id?action.id:id;
    return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
-    (active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
+    (descriptive?'':active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
     ' aria-label="Disattiva '+esc(row.name)+'">Disattiva</button>':
     '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(useId)+'"'+
     (persistent?' data-persistent-key="'+esc(statusKey)+'"':'')+

@@ -10,7 +10,7 @@ export const featureRollTarget=ability=>!ability?.roll_effect?'':
   'feature_roll:'+String(ability.ability_id||ability.id).replace(/^activated:/,''):'';
 const resolveFeatureRollFormula=(value,calculated={})=>{
  const expression=String(value??'').trim().replace(/\s+/g,'');
- if(!/^(?:[+-]?\d+|(?:proficiency|(?:str|dex|con|int|wis|cha)_mod)(?:[+-]\d+)?)$/.test(expression))return null;
+ if(!/^(?:[+-]?\d+|(?:proficiency|attuned_item_count|attuned_items|attunement_used|(?:str|dex|con|int|wis|cha)_mod)(?:[+-]\d+)?)$/.test(expression))return null;
  const values={...calculated.values};
  if(!Number.isFinite(Number(values.proficiency))&&Number.isFinite(Number(calculated.stats?.proficiency)))values.proficiency=Number(calculated.stats.proficiency);
  for(const ability of ['str','dex','con','int','wis','cha']){

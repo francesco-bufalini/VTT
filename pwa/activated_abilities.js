@@ -1,7 +1,7 @@
 // Native nonspell capabilities: eligibility comes from the same projected
 // feature/origin graph as the sheet, never from guessed class-level thresholds.
 import {companionOwnerActions} from './companion_rules.js';
-import {featureActionEntries} from "./feature_mechanics.js";
+import {featureActionEntries,classFeatureDescriptors} from "./feature_mechanics.js";
 import {activeInfusions,infusionChargeTrackerId,ownedItemDisplayName} from "./item_controls.js";
 const rows=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??"").trim().toLowerCase();
@@ -64,6 +64,12 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   const timed=featureActionEntries(creature,rows(projection.trackers),
     projection.feature_rules||{},features);
 
+  const classDescriptors=classFeatureDescriptors(creature,projection);
+  // A class trait may grant several distinct actions. One descriptive
+  // command must not turn its other real, executable powers into descriptions.
+  const descriptiveDescriptors=classDescriptors.filter(row=>row.descriptive_only&&
+    !classDescriptors.some(other=>other.feature_id===row.feature_id&&!other.descriptive_only));
+  const descriptiveOwners=new Set(descriptiveDescriptors.map(row=>row.feature_id));
   // Class capabilities are unlocked only by an actual structured trait. The
   // preexisting IDs remain stable for saved grants and Android interoperability.
   for(const feature of features){
@@ -72,7 +78,8 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
     const owner=parts[2];
     const id=nativeIds.get(owner+"|"+norm(feature.name));
     const explicit=feature.action_type||feature.activation_type||feature.activation;
-    if(!id&&!explicit)continue; // Never turn passive features into actions.
+    const descriptive=descriptiveDescriptors.find(row=>row.feature_id===feature.origin_id);
+    if(!id&&!explicit&&!descriptive)continue; // Never turn passive features into actions.
     const action=timed.find(a=>id==="vtt_wild_shape"&&a.rule_action_id==="wild_shape")||
       timed.find(a=>norm(a.feature)===norm(feature.name)&&
         (String(a.origin_id||"").startsWith("feature:"+parts.slice(0,3).join("|"))||
@@ -80,13 +87,14 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
     const tracker=trackerFor(projection,feature.name,owner);
     const definition={
       id:id||"feature:"+feature.key,name:feature.name,
+      descriptive_only:descriptiveOwners.has(feature.origin_id),
       source:feature.source||parts[1].toUpperCase(),
       feature_id:feature.origin_id,
       feature_name:feature.name,
       origin_name:'Tratto · '+feature.name,
       requirements:feature.requirements,
-      action_type:action?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"",
-      activation_mode:action?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"contextual",
+      action_type:action?.time||descriptive?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"",
+      activation_mode:action?.time||descriptive?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"contextual",
       resource_name:action?.tracker||tracker?.name||"",
       tracker_id:action?.tracker_id||tracker?.id||"",
       resource_cost:action?.cost??(tracker?1:0),

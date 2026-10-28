@@ -45,6 +45,8 @@ const SHELL = [
   "/catalog/class_defense_rules.js",
   "/catalog/class_feature_operations.js",
   "/catalog/class_numeric_feature_grants.js",
+  "/catalog/feature_feat_grants.js",
+  "/species_variant_families.js",
   "/catalog/barbarian_2014_rules.js",
   "/catalog/supplemental_rules.js",
   "/armor_rules.js",
