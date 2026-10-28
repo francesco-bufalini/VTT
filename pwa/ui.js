@@ -6205,21 +6205,6 @@ async function handleAction(target){
   }
   if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create')state.scrollSpellQuery='';state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
   if(act==='sheet-context-close'){await closeSheetContext();return;}
-  if(act==='identity-add'){
-    const kind=String(target.dataset.identityKind||'');
-    const group=target.closest('[data-identity-group]');
-    if(!['names','factions'].includes(kind)||group?.dataset.identityGroup!==kind)return;
-    const list=group.querySelector('.identity-entry-list');
-    const previous=list?.querySelector('.identity-entry');
-    if(!previous)return;
-    const row=previous.cloneNode(true);
-    const input=row.querySelector('[data-identity-value]');
-    const checkbox=row.querySelector('[data-identity-active]');
-    input.value='';input.setAttribute('aria-label',kind==='names'?'Nuovo nome':'Nuova fazione');
-    checkbox.checked=false;
-    list.append(row);input.focus();
-    return;
-  }
   if(act==='battle-competences-open'){
     if(!state.editor)throw Error('Apri prima una creatura');
     returnToBattleFromCompetences=true;
@@ -9116,6 +9101,25 @@ function listen(){
     // Modal dismissal is UI-only. Do it before any asynchronous field flush:
     // a dirty input, slow IndexedDB transaction or rerender cannot block X.
     const closeAction=button.dataset.act;
+    // Adding an identity is a local DOM operation. Focus must happen during the
+    // click, before asynchronous form flushes can let the browser refocus +.
+    if(closeAction==='identity-add'){
+      const kind=String(button.dataset.identityKind||'');
+      const group=button.closest('[data-identity-group]');
+      if(['names','factions'].includes(kind)&&group?.dataset.identityGroup===kind){
+        const list=group.querySelector('.identity-entry-list');
+        const previous=list?.querySelector('.identity-entry');
+        if(previous){
+          const row=previous.cloneNode(true),input=row.querySelector('[data-identity-value]');
+          input.value='';
+          input.setAttribute('aria-label',kind==='names'?'Nuovo nome':'Nuova fazione');
+          row.querySelector('[data-identity-active]').checked=false;
+          list.append(row);
+          input.focus();
+        }
+      }
+      return;
+    }
     // A mobile file picker must open synchronously from the user's click,
     // never after an awaited IndexedDB write or rerender.
     if(closeAction==='info-portrait-pick'){
