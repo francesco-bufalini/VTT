@@ -6,7 +6,6 @@ import {projectSpeciesAttacks} from './species_mechanics.mjs';
 import {projectSpeciesDefenses} from './species_defenses.mjs';
 import {projectSpeciesRollModes} from './species_roll_modes.mjs';
 import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
-import {projectFlattenedSpeciesAbilities} from './species_ability_variants.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
 // Project typed TCE infusion data to a URL already served by PwaHost.
 // Older native snapshots lack selectors: use source-qualified structured
@@ -193,10 +192,6 @@ for(const kind of ['race','subrace']){
   }
  }
 }
-const flatReferenceSource=await read('../../vtt/data/creature_references_5etools.json');
-const flatSpellSource=await read('../../vtt/data/additional_spells_5etools.json');
-abilityIndex.race.push(...projectFlattenedSpeciesAbilities(
- abilityIndex,flatReferenceSource.races,flatSpellSource.entries));
 // PHB feat actions, contextual roll modes and resource trackers are maintained
 // in native typed data; the browser only projects those declarations.
 const featMechanics=await read('../../vtt/data/feat_mechanics_2014.json');
@@ -264,25 +259,30 @@ await writeFile(new URL('../catalog/species_defenses.json',import.meta.url),
  JSON.stringify(projectSpeciesDefenses(references.races),null,2)+'\n');
 await writeFile(new URL('../catalog/species_roll_modes.json',import.meta.url),
  JSON.stringify(projectSpeciesRollModes(references.races),null,2)+'\n');
-mechanics.races=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));
+const allSpecies=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));
 await syncProficiencyCatalog();
 const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
 const featureCatalog=await read('../../vtt/data/subclass_features_5etools.json');
 mechanics.resource_features=[...references.class_features,...featureCatalog.subclass_features].map(row=>Object.fromEntries(['id','name','class_name','class_source','subclass_name','subclass_short_name','subclass_source','level'].filter(k=>row[k]!==undefined).map(k=>[k,row[k]])));
 const previousSubraceIdentities=(await read('../catalog/class_mechanics.json')).subraces||[];
 mechanics.subraces=proficiencies.subrace.map(row=>{
- const full=mechanics.races.find(r=>r.name.toLowerCase()===(row.raceName+' ('+row.name+')').toLowerCase()&&r.source.toLowerCase()===row.source.toLowerCase());
+ const full=allSpecies.find(r=>r.name.toLowerCase()===(row.raceName+' ('+row.name+')').toLowerCase()&&r.source.toLowerCase()===row.source.toLowerCase());
  return {name:row.name,source:row.source,raceName:row.raceName,raceSource:row.raceSource,
   id:full?.id||'subrace:'+row.raceName.toLowerCase()+'|'+row.raceSource.toLowerCase()+'|'+row.name.toLowerCase()+'|'+row.source.toLowerCase()};
 });
 // A selectable subrace can have no unconditional proficiency grant.
 for(const row of previousSubraceIdentities)if(!mechanics.subraces.some(s=>s.id===row.id)&&
- mechanics.races.some(r=>r.id===row.id))mechanics.subraces.push(row);
+ allSpecies.some(r=>r.id===row.id))mechanics.subraces.push(row);
 for(const row of additional.entries.filter(row=>row.kind==='race'&&row.blocks?.length>1))for(const block of row.blocks){
  if(!block.name||mechanics.subraces.some(s=>s.raceName===row.name&&s.raceSource===row.source&&s.name===block.name))continue;
  mechanics.subraces.push({name:block.name,source:row.source,raceName:row.name,raceSource:row.source,
   id:'subrace:'+row.name.toLowerCase()+'|'+row.source.toLowerCase()+'|'+block.name.toLowerCase()+'|'+row.source.toLowerCase()});
 }
+// Subrace records can share their native ID with a flattened race row.
+// Only the independent parent species enters the selectable race list.
+const subraceKeys=new Set(mechanics.subraces.map(row=>
+ (row.raceName+' ('+row.name+')|'+row.source).toLowerCase()));
+mechanics.races=allSpecies.filter(row=>!subraceKeys.has((row.name+'|'+row.source).toLowerCase()));
 await writeFile(new URL('../catalog/class_mechanics.json',import.meta.url),JSON.stringify(mechanics,null,2)+'\n');
 const subclassCatalog=await read('../../vtt/data/subclasses_5etools.json');
 const subclassFeatures=await read('../../vtt/data/subclass_features_5etools.json');

@@ -37,6 +37,14 @@ export function customLineageRaceOptions(races=[]){
     origin_sense_choice:option.choice}));
  });
 }
+// Only canonical species + independent subrace entries are selectable.
+// Full 5etools variant records remain the source of subtype descriptions.
+export function canonicalSpeciesReferences(races=[],subraces=[]){
+ const key=(name,source)=>String(name||'').trim().toLowerCase()+'|'+String(source||'').trim().toLowerCase();
+ const flattened=new Set(subraces.filter(row=>row?.raceName&&row?.name).map(row=>
+  key(row.raceName+' ('+row.name+')',row.source)));
+ return [...races.filter(row=>!row?.raceName&&!flattened.has(key(row.name,row.source))),...subraces];
+}
 let catalog=null;
 const details=new Map();
 export async function loadReferenceCatalog() {
@@ -56,7 +64,10 @@ async function supplementalCatalog(category){
     // Descriptive indexes omit speed and stable native race IDs.
     const {loadRuleCatalogs}=await import('./sheet_rules.js');
     const rules=await loadRuleCatalogs();
-    if(Array.isArray(rules.classMechanics?.races))return customLineageRaceOptions([...rules.classMechanics.races,...(rules.classMechanics.subraces||[]),...racialPowerSubraces(rules.speciesPowers)]);
+    if(Array.isArray(rules.classMechanics?.races)){
+      const subraces=[...(rules.classMechanics.subraces||[]),...racialPowerSubraces(rules.speciesPowers)];
+      return customLineageRaceOptions(canonicalSpeciesReferences(rules.classMechanics.races,subraces));
+    }
   }
   const path=(["classes","subclasses","class_features","subclass_features"].includes(category))?
     "/catalog/classes.json":category==="races"?"/catalog/features.json":"/catalog/backgrounds.json";

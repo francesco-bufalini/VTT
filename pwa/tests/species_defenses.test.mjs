@@ -125,7 +125,7 @@ test('2014 PHB Dwarf retains poison resistance with no subrace, Hill or Mountain
   assert.equal(effects(sheet)[0].granting_trait,'Dwarven Resilience');
   assert.equal(effects(sheet)[0].origin_parent_id,'race|phb|dwarf',
    'the inherited PHB racial benefit must remain owned by the species');
-  assert.equal(effects(sheet).length,1,'a flattened subrace must not duplicate parent defenses');
+  assert.equal(effects(sheet).length,1,'a selected subrace must not duplicate parent defenses');
  }
 });
 
