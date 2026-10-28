@@ -397,8 +397,17 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(!belongs(rule)||!['advantage','disadvantage'].includes(rule.mode))continue;
   const context=rule.context==='concentration_damage'?' · concentrazione':'';
   add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(rule.target)+context,
-   rule.mode==='advantage'?'Vantaggio':'Svantaggio',
-   'roll_mode:'+rule.origin_id+':'+rule.mode+':'+rule.target+':'+(rule.context||''));
+   (rule.mode==='advantage'?'Vantaggio':'Svantaggio')+
+     (rule.condition_label?' · '+rule.condition_label:''),
+   'roll_mode:'+rule.origin_id+':'+rule.mode+':'+rule.target+':'+
+     (rule.context||'')+':'+(rule.condition_label||''));
+ }
+ for(const rule of rows(calculated.feat_roll_bonuses)){
+  if(!belongs(rule)||!Number.isFinite(Number(rule.flat_bonus)))continue;
+  add('bonus','Bonus applicabili al tiro',traitBenefitTargetLabel(rule.target),
+   signedTraitFormula(rule.flat_bonus)+
+     (rule.condition_label?' · '+rule.condition_label:''),
+   'feat_bonus:'+rule.origin_id+':'+rule.target+':'+(rule.condition_label||''));
  }
  // User-authored mode grants carry the same stable source as other trait bonuses.
  for(const row of rows(record.roll_mode_grants)){
