@@ -348,6 +348,40 @@
           "exclude_initiative": true
         }
       ]
+    },
+    {
+      "name": "Dwarf",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "id": "racial:phb:dwarf:stonecunning",
+          "trait": "Stonecunning",
+          "name": "Stonecunning",
+          "proficiency_multiplier": 2,
+          "targets": [
+            "skill:history"
+          ],
+          "condition_label": "Solo prove di Intelligenza (Storia) sull'origine di costruzioni in pietra; sei considerato competente anche senza Storia."
+        }
+      ]
+    },
+    {
+      "name": "Gnome",
+      "source": "PHB",
+      "subrace": "Rock",
+      "subrace_source": "PHB",
+      "bonuses": [
+        {
+          "id": "racial:phb:gnome:rock:artificers_lore",
+          "trait": "Artificer's Lore",
+          "name": "Artificer's Lore",
+          "proficiency_multiplier": 2,
+          "targets": [
+            "skill:history"
+          ],
+          "condition_label": "Solo prove di Intelligenza (Storia) su oggetti magici, alchemici o tecnologici; sostituisce la normale competenza."
+        }
+      ]
     }
   ]
 }
