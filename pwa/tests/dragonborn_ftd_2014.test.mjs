@@ -101,7 +101,7 @@ test('warding grants temporary matching immunity, and reverts when removed or so
  assert.equal(special.mode,'temporary_defense');
  assert.equal(p.defenses[0].rank,1);
  const active={...record,active_class_features:{
-  [special.persistent_key]:{origin_id:special.origin_id,name:special.name}}};
+  [special.persistent_key]:{origin_id:special.persistent_origin_id,name:special.name}}};
  assert.deepEqual(own(active).defenses.map(x=>x.rank),[1,2]);
  assert.deepEqual(own(active).defenses.map(x=>x.key),['fire','fire']);
  assert.deepEqual(own(record).defenses.map(x=>x.rank),[1]);
@@ -117,7 +117,7 @@ test('Gem Flight begins at level 5, persists for 10 rounds, and matches walk spe
  const idle=calculateSheet(c,catalogs);
  assert.equal(idle.stats.speeds.fly,0);
  const active={...c,active_class_features:{
-   [flight.persistent_key]:{name:flight.name,origin_id:flight.origin_id,duration_rounds:10}}};
+   [flight.persistent_key]:{name:flight.name,origin_id:flight.persistent_origin_id,duration_rounds:10}}};
  const flying=calculateSheet(active,catalogs);
  assert.equal(flying.stats.speeds.fly,flying.stats.speeds.walk);
  assert.equal(flying.stats.hovering,true);
