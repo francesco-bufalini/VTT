@@ -5,6 +5,14 @@ export function abilityAreaPolygon(source,aim,area={},pixelsPerFoot=1){
  const [x,y]=source||[],[tx,ty]=aim||[];
  if(![x,y,tx,ty,pixelsPerFoot].every(Number.isFinite)||pixelsPerFoot<=0)return [];
  const d=Math.hypot(tx-x,ty-y);
+ if(area.shape==='circle'){
+  const radius=finite(area.radius_feet)*pixelsPerFoot;
+  if(radius<=0)return [];
+  return Array.from({length:48},(_,i)=>{
+   const angle=2*Math.PI*i/48;
+   return [x+Math.cos(angle)*radius,y+Math.sin(angle)*radius];
+  });
+ }
  if(d<1e-6||!['line','cone'].includes(area.shape))return [];
  const ux=(tx-x)/d,uy=(ty-y)/d,px=-uy,py=ux;
  const length=finite(area.length_feet||area.radius_feet)*pixelsPerFoot;
