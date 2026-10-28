@@ -169,6 +169,7 @@ export function restTrainingPatch(record={},choice={},selected=[],allowed={}){
    proficiency_choices:[
      ...rows(record.proficiency_choices).filter(row=>row?.rest_training_group!==choice.group),
      ...picks.map(row=>({...row,origin_id:choice.root_id,rest_training_group:choice.group,
+       granting_feature_origin_id:choice.origin_id,
        origin_name:'Tratto · '+choice.trait}))
    ],
    trait_state_selection:{...(record.trait_state_selection||{}),[choice.group]:'selected'},
