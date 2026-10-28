@@ -4843,7 +4843,8 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
        const originAttrs=' data-origin-id="'+esc(row.origin_id||'')+'"'+
          ' data-origin-trait="'+esc(row.granting_trait||'')+'"'+
          ' data-origin-key="'+esc(row.origin_key||'')+'"';
-       const targetTitle=racialMode?'Apri tratto · '+(row.granting_trait||row.origin_name||''):
+       const traitLink=racialMode||row.passive_class_bonus;
+       const targetTitle=traitLink?'Apri tratto · '+(row.granting_trait||row.origin_name||''):
          'Apri tracker '+trackerLabel;
        return '<div class="sheet-roll-bonus-item'+(racialMode?' sheet-roll-bonus-item--mode':'')+'">'+
          '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open"'+originAttrs+' title="Apri tratto">'+
@@ -4859,10 +4860,10 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
             '</div>':'')+
          '<div class="sheet-roll-bonus-controls">'+
            '<button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'"'+(row.strict_tracker&&Number(row.remaining)<Number(row.tracker_cost)?' disabled title="Utilizzi esauriti"':'')+'>Usa</button>'+
-           '<button type="button" class="sheet-roll-tracker-open" data-act="'+(racialMode?'roll-origin-open':'sheet-roll-open-tracker')+'"'+
-             (racialMode?originAttrs:' data-roll-tracker-button="'+i+'"')+
+           '<button type="button" class="sheet-roll-tracker-open" data-act="'+(traitLink?'roll-origin-open':'sheet-roll-open-tracker')+'"'+
+             (traitLink?originAttrs:' data-roll-tracker-button="'+i+'"')+
              ' aria-label="'+esc(targetTitle)+'" title="'+esc(targetTitle)+'"'+
-             (racialMode||row.tracker_id?'':' disabled')+'>'+
+             (traitLink||row.tracker_id?'':' disabled')+'>'+
              actionGlyph('target')+'</button>'+
          '</div></div>';
      }).join('')+'</div>':'')+'</section>';
@@ -6368,6 +6369,15 @@ async function handleAction(target){
       throw Error('Vantaggio e svantaggio vanno scelti prima del tiro.');
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
+    if(row.passive_class_bonus){
+      // A passive conditional benefit is applied directly, without invoking
+      // an ability action. Verify that its owner/level and formula still apply.
+      const fresh=await computeLocalData(creature);
+      const valid=classFeatureRollBonuses(creature,fresh,dialog.dataset.rollTarget).find(item=>
+        item.id===row.id&&item.origin_id===row.origin_id&&item.passive_class_bonus);
+      if(!valid)throw Error('Il beneficio non è più disponibile per questo tiro.');
+      row.flat_bonus=valid.flat_bonus;
+    }
     if(row.class_feature_id){
       // Uses the same feature confirmation and payment plan as Battle.
       const fresh=await computeLocalData(creature),rollTarget=dialog.dataset.rollKind==='damage'?
