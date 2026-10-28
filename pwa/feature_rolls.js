@@ -2,8 +2,11 @@
 // Extensions and optional dice reference this ID, never the translated label.
 import {effectExtensionsFor} from './effect_extensions.js';
 const rows=value=>Array.isArray(value)?value:[];
-export const featureRollTarget=ability=>ability?.roll_effect&&
- String(ability.id||'').trim()?'feature_roll:'+String(ability.id):'';
+export const featureRollTarget=ability=>!ability?.roll_effect?'':
+ String(ability.roll_effect.target||'').startsWith('feature_roll:')?
+  String(ability.roll_effect.target):
+  String(ability.ability_id||ability.id||'').trim()?
+  'feature_roll:'+String(ability.ability_id||ability.id).replace(/^activated:/,''):'';
 const formulaValue=(value,calculated={})=>{
  const text=String(value??'').trim().replace(/\s+/g,'');
  if(/^[+-]?\d+$/.test(text))return Number(text);
@@ -16,7 +19,7 @@ const formulaValue=(value,calculated={})=>{
 export function featureRollExtensionBonuses(calculated={},ability={}){
  const target=featureRollTarget(ability);
  if(!target)return [];
- return effectExtensionsFor(calculated.effect_extensions,{kind:'ability',id:ability.id,name:ability.name})
+ return effectExtensionsFor(calculated.effect_extensions,{kind:'ability',id:ability.ability_id||ability.id,name:ability.name})
   .filter(row=>row.operation==='bonus_roll').flatMap(row=>{
    const raw=String(row.value??'').trim().replace(/\s+/g,'');
    const dice=/^[1-9]\d*d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/i.test(raw);
