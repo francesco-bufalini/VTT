@@ -159,7 +159,7 @@ export function singleNewPendingChoice(before=[],after=[],completed={}){
 }
 
 export function pendingCharacterChoices(record={},calculated={},catalogs={}){
- const result=[],index=catalogs.proficiencyGrants||{};
+ const result=[],index=calculated.proficiency_catalog_overrides||catalogs.proficiencyGrants||{};
  for(const source of selectedSources(record,index,calculated.features??null)){
   if(!enabled(record,source.id))continue;
   for(const [i,req] of requirementEntries(source).entries()){

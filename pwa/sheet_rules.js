@@ -22,6 +22,7 @@ import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatur
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects,traitStateRollModes} from './trait_state_rules.js';
 import {featureItemGrants,racialItemGrantFeatures} from './feature_item_grants.js';
+import {barbarian2014Supplements,barbarian2014ProficiencyCatalog} from './barbarian_2014.js';
 import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
@@ -846,6 +847,12 @@ function calculateSheetValues(record={},catalogs={}){
   features.push(...supplementalSpeciesSpellFeatures(record,catalogs.spellGrantRules,features));
   features.push(...racialItemGrantFeatures(record,features,catalogs.featureItemGrants||[]));
   features.push(...expandedOriginSpellFeatures(record,classesCatalog?.additional_spells,features));
+  // Source-qualified 2014 Barbarian supplements. Never create a class effect from prose.
+  const barbarian=barbarian2014Supplements(record,features,2+Math.floor((Math.max(1,level)-1)/4));
+  const proficiencyIndex=barbarian2014ProficiencyCatalog(catalogs.proficiencyGrants,barbarian);
+  const instinct=features.find(row=>row.origin_id===barbarian.initiative_origin);
+  if(instinct&&!arr(instinct.roll_modes).some(row=>row.target==='initiative'&&row.mode==='advantage'))
+    instinct.roll_modes=[...arr(instinct.roll_modes),{target:'initiative',mode:'advantage'}];
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const racialBonusRows=racialBonusEntries(record,catalogs.speciesConditionalBonuses||{},features,suppressed);
   const damage_defense_entries=[...arr(record.damage_defense_entries),
@@ -876,7 +883,7 @@ function calculateSheetValues(record={},catalogs={}){
         'Tratto · '+feature.name,'advancement','ability:'+ability,amount)).filter(Boolean);
   });
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...advancements,...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows)];
+    ...advancements,...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows),...barbarian.numeric_grants];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
@@ -974,7 +981,7 @@ function calculateSheetValues(record={},catalogs={}){
   if(record.additional_traits||arr(record.stat_block?.trait).length)
     warnings.add("Tratti personalizzati: verificare i bonus non strutturati");
   // Disabled sources are handled by their identities and the parent-feature hierarchy.
-  const proficiencies=fixedProficiencies(record,catalogs.proficiencyGrants,features);
+  const proficiencies=fixedProficiencies(record,proficiencyIndex,features);
   if(!catalogs.proficiencyGrants)
     warnings.add("Competenze automatiche da origini non disponibili senza il catalogo");
   const inventory=arr(record.inventory).map(resolveOwnedItem);
@@ -1290,6 +1297,10 @@ function calculateSheetValues(record={},catalogs={}){
   const featMechanics=featMechanicGrants(record,index);
   const featureSpells=arr(classesCatalog?.feature_spells);
   const additional=structuredSpellGrants(record,[...arr(classesCatalog?.additional_spells),...featureSpells],catalogs.spells||[],features,catalogs.spellGrantRules||[],catalogs.speciesPowers?.races||[],safe('proficiency'));
+  for(const choice of barbarian.spell_choices)
+    if(!additional.choices.some(existing=>existing.origin_id===choice.origin_id&&
+      arr(existing.spell_options).some(spell=>choice.spell_options.includes(spell))))
+      additional.choices.push(choice);
   // Permanently prepared subclass spells are attached to their actual feature,
   // not to the class itself; the same source identity powers UI and calculations.
   const classCasting=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
@@ -1305,8 +1316,21 @@ function calculateSheetValues(record={},catalogs={}){
       name=>resolveSymbol(name,resolve,new Set())))};}
     catch(error){warnings.add('Formula tracker talento '+row.name+': '+error.message);return {...row,max:0};}
   });
+  // Reuse a native tracker when the same owned feature already supplies one;
+  // never show two counters for a single class capacity.
+  const baseTrackers=[...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},
+    name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featTrackers,
+    ...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
+    ...racialBonusTrackers(racialBonusRows,safe('proficiency')??2)];
+  const barbarianTrackerIds=new Map();
+  for(const extra of barbarian.trackers){
+    const native=baseTrackers.find(row=>row.origin_id===extra.origin_id&&
+      String(row.name||'').trim().toLowerCase()===String(extra.name||'').trim().toLowerCase());
+    if(native)barbarianTrackerIds.set(extra.id,native.id);
+    else baseTrackers.push(extra);
+  }
   const trackerMap=new Map();
-  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featTrackers,...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),...racialBonusTrackers(racialBonusRows,safe('proficiency')??2)])
+  for(const row of baseTrackers)
     if(!trackerMap.has(row.id)&&sourceEnabled(row)&&!suppressed.has('tracker:'+row.id))trackerMap.set(row.id,row);
   for(const stateTracker of traitStateTrackers(record,features,catalogs.traitStates||[]))
     trackerMap.set(stateTracker.id,stateTracker);
@@ -1424,7 +1448,7 @@ function calculateSheetValues(record={},catalogs={}){
     // weapons, armor, tools and languages), not only d20-linked skills/saves.
     proficiency_sources:Object.fromEntries([...proficiencies.keys()]
       .map(key=>{const [kind,...parts]=key.split(':');return [key,
-        proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'),features)];})),
+        proficiencyGrantOrigins(record,proficiencyIndex,kind,parts.join(':'),features)];})),
     casting_classes:spellClasses,trackers,attacks,damage_defense_entries,
     feature_item_grants:featureItemGrants(record,features,catalogs.featureItemGrants||catalogs.classMechanics?.feature_item_grants||[]),
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
@@ -1447,9 +1471,12 @@ function calculateSheetValues(record={},catalogs={}){
     feature_rules:catalogs.featureRules||{},
     base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
-    feat_roll_modes:featMechanics.roll_modes.filter(row=>sourceEnabled(row)),
+    feat_roll_modes:[...featMechanics.roll_modes,...barbarian.conditional_modes].filter(row=>sourceEnabled(row)),
     feat_roll_bonuses:featMechanics.roll_bonuses.filter(row=>sourceEnabled(row)),
     feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)),
+    actions:barbarian.actions.map(row=>barbarianTrackerIds.has(row.tracker_id)?
+      {...row,tracker_id:barbarianTrackerIds.get(row.tracker_id)}:row),
+    proficiency_catalog_overrides:proficiencyIndex,
     spell_imprint_rules:[...featMechanics.spell_imprints,...arr(record.spell_imprint_grants)].filter(row=>sourceEnabled(row)),
     feat_movement_rules:featMovement.filter(row=>sourceEnabled(row)),
     active_feature_effects:[...classFeatureEffects(record,featureContext),...traitStateEffects(record,features,catalogs.traitStates||[])],

@@ -103,6 +103,25 @@
         "proficiency_mode": "tool_expertise",
         "condition_label": "Quando indossi o porti un oggetto su cui è incisa la Runa del Fuoco e usi uno strumento in cui sei competente."
       }
+    },
+    {
+      "id": "barbarian_zealot_divine_fury",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "subclass_name": "Zealot",
+      "feature_name": "Divine Fury",
+      "label": "Divine Fury · 1d6 aggiuntivo",
+      "time": "contextual",
+      "mode": "context",
+      "cost": 0,
+      "bonus": {
+        "name": "Divine Fury",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice": "1d6",
+        "condition_label": "Una volta per turno, sul primo colpo durante l’Ira; aggiungi anche metà del livello da Barbaro (per difetto). Il tipo radioso o necrotico è scelto dal personaggio."
+      }
     }
   ]
 }

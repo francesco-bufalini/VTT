@@ -17,7 +17,8 @@ const owningTrait = (record, features, rule) => arr(features).find(feature =>
 function eligible(record,features,rule) {
   if (!members(record).some(m=>norm(m.name)===norm(rule.class_name) &&
     (!rule.class_source||norm(m.source)===norm(rule.class_source)) &&
-    (!rule.subclass||norm(m.subclass)===norm(rule.subclass)))) return null;
+    (!rule.subclass||norm(m.subclass)===norm(rule.subclass)||
+      norm(m.subclass).replace(/^path of (?:the )?/,'')===norm(rule.subclass)))) return null;
   const trait=owningTrait(record,features,rule);
   if(!trait)return null;
   const requirement=rule.require_equipped;
