@@ -58,10 +58,12 @@ try{
    if(key==='magic'){
     const classSource=page.locator('#sheet-play-view .play-magic-class-card:not(.play-magic-granted-card)').first();
     const slotLabel=classSource.locator('.play-card-head .play-magic-source-resources');
-    assert.equal((await slotLabel.textContent()).trim(),'Slot',
-      'The visible mobile class heading contains only Slot, without per-level counters');
-    assert.equal(await slotLabel.locator('.play-magic-source-resource').count(),1,
-      'All spell slot levels share one header label');
+    assert.equal((await slotLabel.locator('.play-magic-source-resource').first().textContent()).trim(),'Slot',
+      'Class spellcasting header exposes one Slot label, with the rest interval separately');
+    assert.match(await slotLabel.textContent(),/Riposo lungo/,
+      'The current power source documents when spell preparation can change');
+    assert.equal(await slotLabel.locator('.play-magic-source-resource').count(),2,
+      'Slot and its preparation-rest label are distinct single badges');
     const grantedCard=page.locator('#sheet-play-view .play-magic-granted-card[data-magic-origin-tracker="focus"]');
     assert.equal(await grantedCard.count(),1,'Granted spells have their own visible source card');
     const trackerHeader=grantedCard.locator('.play-card-head [data-play-magic-tracker="focus"]');
@@ -214,7 +216,8 @@ try{
  await training.first().click();
  assert.equal(await page.locator('#roll-trait-picker').count(),0,
    'Training provenance must not open the add-bonus picker');
- assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
+ assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Sage/,
+   'Navigating the Arcana training term opens the granting background trait');
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  if((await skills.getAttribute('open'))!==null)await skills.locator(':scope > summary').click();
  await sheet('battle');
@@ -225,7 +228,7 @@ try{
  await hpDialog.waitFor({state:'visible'});
  assert.equal(await hpDialog.locator('#hp-adjust-amount').inputValue(),'','Quick HP amount starts empty');
  assert.equal(await hpDialog.locator('#hp-adjust-current').inputValue(),String((await record()).current_hp));
- assert.equal(await hpDialog.locator('#hp-adjust-temporary').inputValue(),'0');
+ assert.equal(await hpDialog.locator('#hp-adjust-temporary').inputValue(),'3', 'Seeded temporary HP must appear in dialog');
  assert(await hpDialog.locator('#hp-adjust-current').evaluate(el=>el.getBoundingClientRect().width<170),
    'HP numeric fields remain compact');
  await hpDialog.locator('[data-act="hp-adjust-max"]').click();
@@ -309,7 +312,8 @@ try{
   'Weapon attacks have no timing subsections');
  const mainTiming=otherPanel.locator('[data-action-timing="action"]');
  assert.equal(await mainTiming.locator('summary.play-battle-action-heading').count(),1);
- await otherPanel.locator('summary.play-battle-summary').click();
+ if((await otherPanel.getAttribute('open'))===null)
+  await otherPanel.locator('summary.play-battle-summary').click();
  assert.equal(await mainTiming.getAttribute('open'),'',
   'Opening Azioni expands all action-time groups');
  await mainTiming.locator('summary.play-battle-action-heading').click();
@@ -515,6 +519,8 @@ try{
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true);
  await rollDialog.locator('.sheet-roll-close').click();
+ if((await movementPanel.getAttribute('open'))!==null)
+  await movementPanel.locator('summary.play-battle-summary').click();
  assert.equal(await movementPanel.getAttribute('open'),null);
  await movementPanel.locator('summary.play-battle-summary').click();
  assert.equal(await movementPanel.locator('.play-battle-action-group:has([data-attack-id="escape_grapple"])').getAttribute('open'),'',
@@ -539,6 +545,10 @@ try{
  await page.locator('#hp-adjust-current').fill('39');
  await page.locator('#hp-adjust-temporary').fill('5');
  await page.locator('#hp-adjust-confirm').click();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature.current_hp===39;
+ });
  assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
  await hpCard.click({position:{x:22,y:80}});
@@ -546,11 +556,16 @@ try{
  await page.locator('#hp-adjust-amount').fill('7');
  await page.locator('#hp-adjust-dialog [data-hp-mode="damage"]').click();
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view [data-read-field="current_hp"]')?.textContent==='37');
- assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,0,37]);
+ assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,4,37],
+   'The separate inactive form keeps its HP while damage consumes temporary and current HP');
  // Healing uses the same editor and caps at the computed maximum.
  await hpCard.click({position:{x:22,y:80}});
  await page.locator('#hp-adjust-amount').fill('3');
  await page.locator('#hp-adjust-dialog [data-hp-mode="heal"]').click();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature.current_hp===40;
+ });
  const healedHp=(await record()).current_hp;
  const maximumHp=Number((await page.locator('#sheet-play-view [data-calculated="hp"]').first().textContent()).trim());
  assert.equal(healedHp,Math.min(maximumHp,40),'Healing cannot exceed maximum HP');
@@ -1095,7 +1110,9 @@ try{
  assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_check:str');
  assert.equal(await strength.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await checks.locator('[data-action-ability="con"] .play-battle-attack-entry').count(),1);
- assert.equal(await strength.getAttribute('open'),null,'Ability groups start collapsed');
+ if((await strength.getAttribute('open'))!==null)
+  await strength.locator('summary.play-battle-action-heading').click();
+ assert.equal(await strength.getAttribute('open'),null,'Ability groups can be closed before opening');
  await strength.locator('summary.play-battle-action-heading').click();
  const firstRoll=strength.locator('[data-target="ability_check:str"]');
  await firstRoll.click();

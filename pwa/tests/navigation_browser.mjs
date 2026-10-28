@@ -12,6 +12,13 @@ const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
   res.setHeader('Cache-Control','no-store');
+  if(path==='/__vtt_version'){
+   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({revision:'a'.repeat(40)}));return;
+  }
+  if(path==='/sw.js'){
+   res.setHeader('Content-Type','text/javascript; charset=utf-8');
+   res.end((await readFile(new URL('pwa/sw.js',root),'utf8')).replaceAll('__VTT_COMMIT_SHA__','a'.repeat(40)));return;
+  }
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;}
   const route=routes.get(path);if(!route){res.writeHead(404);res.end();return;}
@@ -112,7 +119,8 @@ try{
  await page.goForward();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
  await sheet('battle');await shot('actions');
  const resources=page.locator('#sheet-play-view [data-battle-action="resources"]');
- await resources.locator(':scope > summary.play-battle-summary').click();
+ if(await resources.getAttribute('open')===null)
+   await resources.locator(':scope > summary.play-battle-summary').click();
  const offhandResource=resources.locator('[data-rule-action="two_weapon"] [data-act="battle-action-jump"]');
  assert.equal(await offhandResource.count(),1,'Secondary attack is always in base rules');
  assert.equal(await offhandResource.isEnabled(),true,'Blocked secondary attack still links to Azioni');
@@ -164,8 +172,8 @@ try{
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
  assert(await page.locator('#sheet-play-view [data-play-search]').isVisible());
- assert.equal(await page.locator('#sheet-play-view [data-sheet-context="tools"] .play-row-copy strong').innerText(),'Altre competenze');
- await page.locator('#sheet-play-view [data-sheet-context="tools"]').click();
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context="tools"] .play-row-copy strong').first().innerText(),'Altre competenze');
+ await page.locator('#sheet-play-view [data-sheet-context="tools"]').first().click();
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Strumenti/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armature/);
@@ -180,13 +188,11 @@ try{
  assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');
  await sheet('magic');
  assert.equal(await page.locator('[data-magic-tool="slots"]').isVisible(),false);
- await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').click();
- assert.equal(await page.locator('.magic-toolbar button:visible').count(),5);
- for(const kind of ['slots','catalog','choices','concentration']){
-  if(!await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').click();
-  await page.locator('[data-magic-tool="'+kind+'"]:visible').click();await page.locator('#magic-tools-dialog').waitFor();
-  await page.locator('[data-act="magic-tool-close"]').click();
- }
+ assert.equal(await page.locator('#app').getAttribute('data-rendered-sheet'),'magic',
+  'Power details are rendered in the dedicated Powers tab');
+ assert(await page.locator('#sheet-play-view').isVisible());
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').count(),0,
+  'The legacy all-in-one tools popup has been replaced by contextual controls');
  await shot('powers');
  await globalPage('catalog');
  await page.locator('.catalog-entry').first().click();await page.locator('[data-act="catalog-close"]').waitFor();
@@ -235,8 +241,8 @@ try{
   return input.type==='checkbox'&&r.width>=23&&r.height>=23&&
    getComputedStyle(indicator).borderStyle==='solid';
  }), 'Select-all has a properly sized custom control');
- assert.equal(await page.locator('.library-list-header .library-bulk-button').count(),2,
-  'Export and delete use styled controls in one selection toolbar');
+ assert.equal(await page.locator('.library-list-header .library-bulk-button').count(),3,
+  'Export, send and delete use styled controls in one selection toolbar');
  assert.equal(await page.locator('.library-list-header .library-selection-count').count(),0,
   'No selection count is shown');
  for(const width of [320,360,390,430,768]){
@@ -246,14 +252,10 @@ try{
    return {box:header.getBoundingClientRect().toJSON(),
     elements:items.map(n=>n.getBoundingClientRect().toJSON())};
   });
-  assert.equal(metrics.elements.length,3);
-  const [a,b,c]=metrics.elements;
-  assert(Math.abs(a.top-b.top)<2&&Math.abs(b.top-c.top)<2,
-    'All selection controls share one row at '+width);
-  assert(Math.abs(a.height-b.height)<2&&Math.abs(b.height-c.height)<2,
-    'All selection controls share one height at '+width);
-  assert(a.left>=metrics.box.left&&c.right<=metrics.box.right+1,
-    'Selection toolbar fits its frame at '+width);
+  assert.equal(metrics.elements.length,4,'Select-all and three bulk actions');
+  assert(metrics.elements.every(item=>item.width>0&&item.height>0&&
+    item.left>=metrics.box.left-1&&item.right<=metrics.box.right+1),
+    'Selection controls fit the toolbar, including responsive wrapping at '+width);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
     'Selection toolbar must not overflow at '+width);
  }

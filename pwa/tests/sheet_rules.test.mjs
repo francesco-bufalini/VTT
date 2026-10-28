@@ -24,7 +24,8 @@ test("arithmetic grants use safe grammar, rounding and reject code",()=>{
 });
 test("unarmored 5e character derives native-style AC, initiative, skills and saves",()=>{
   const c=character({class:"Fighter",level:5,
-    saving_throw_proficiencies:["str","con"],skill_proficiencies:["perception","athletics"]});
+    proficiency_choices:[{kind:"save",key:"str"},{kind:"save",key:"con"},
+      {kind:"skill",key:"perception"},{kind:"skill",key:"athletics"}]});
   const out=calculateSheet(c,catalogs);
   assert.equal(out.abilities.dex.modifier,2);
   assert.equal(out.stats.proficiency,3);

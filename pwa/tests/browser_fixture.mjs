@@ -16,6 +16,14 @@ export async function browserFixture({live=false,imagePolicy=false,additionalSpe
  const server=createServer(async(req,res)=>{try{
   const path=new URL(req.url,'http://localhost').pathname;res.setHeader('Cache-Control','no-store');
   if(imagePolicy)res.setHeader('Content-Security-Policy','img-src '+imageDirective);
+  const revision='a'.repeat(40);
+  if(path==='/__vtt_version'){
+   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({revision}));return;
+  }
+  if(path==='/sw.js'){
+   res.setHeader('Content-Type','text/javascript; charset=utf-8');
+   res.end((await readFile(new URL('pwa/sw.js',root),'utf8')).replaceAll('__VTT_COMMIT_SHA__',revision));return;
+  }
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
   if(path==='/catalog/spells/selected'&&req.method==='POST'){
    const chunks=[];for await(const chunk of req)chunks.push(chunk);

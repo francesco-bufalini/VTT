@@ -55,6 +55,7 @@ jobs:
             /network/board_sync.gd
             /vtt/content_catalog.gd
             /vtt/data/
+            /scripts/data/feat_spell_grants_2014.json
             /vtt/icons/
             /assets/creature_info/
       - name: Parse browser ES modules and Service Worker

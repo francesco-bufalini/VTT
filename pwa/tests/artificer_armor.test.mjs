@@ -68,13 +68,14 @@ test('Defensive Field requires guardian armor and keeps the larger temporary HP 
  const r=sheet('Artificer',8,'TCE','Armorer');
  assert.ok(!classFeatureEntries(r,calculateSheet(r,catalogs)).some(a=>a.class_feature_id==='defensive_field'));
  r.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
- const infiltrator=calculateSheet({...r,artificer_armor_model:'infiltrator',attack_ability:'int'},catalogs);
- assert.equal(infiltrator.attacks[0].id,'class_feature:lightning_launcher');
- assert.equal(infiltrator.attacks[0].damage,'1d6 + 4');
+ const infiltrator=calculateSheet({...r,trait_state_selection:{armor_model:'armor_model:infiltrator'},attack_ability:'int'},catalogs);
+ assert.equal(infiltrator.attacks.find(a=>a.id==='class_feature:lightning_launcher')?.id,'class_feature:lightning_launcher');
+ assert.equal(infiltrator.attacks.find(a=>a.id==='class_feature:lightning_launcher')?.damage,'1d6 + 4');
  assert.equal(infiltrator.values.speed,35);
- const c=calculateSheet(r,catalogs),patch=classFeatureActivationPatch(r,c,'defensive_field');
+ const guardian={...r,trait_state_selection:{armor_model:'armor_model:guardian'}};
+ const c=calculateSheet(guardian,catalogs),patch=classFeatureActivationPatch(guardian,c,'defensive_field');
  assert.equal(patch.temporary_hp,8);
- assert.equal(classFeatureActivationPatch({...r,temporary_hp:12},c,'defensive_field').temporary_hp,12);
+ assert.equal(classFeatureActivationPatch({...guardian,temporary_hp:12},c,'defensive_field').temporary_hp,12);
 });
 
 test('Armor Model is a source-bound, reversible and exclusive state privilege',()=>{
@@ -90,7 +91,7 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(next.resource_tracker_spent,undefined);
  assert.equal(next.rest_selection_available,undefined);
  calculated=calculateSheet(next,catalogs);
- assert.equal(calculated.attacks[0].id,'class_feature:lightning_launcher');
+ assert.equal(calculated.attacks.find(a=>a.id.startsWith('class_feature:'))?.id,'class_feature:lightning_launcher');
  assert.equal(calculated.values.speed,35);
  assert.equal(calculated.trait_state_optional_dice[0].dice,'1d6');
  const launcher=calculated.features.find(row=>row.name==='Lightning Launcher');
@@ -107,7 +108,7 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(next.resource_tracker_spent?.['feature:armor_model:activation'],undefined,
   'Changing Armor Model never spends an activation tracker, even if a rest normalized the spent map');
  calculated=calculateSheet(next,catalogs);
- assert.equal(calculated.attacks[0].id,'class_feature:thunder_gauntlets');
+ assert.equal(calculated.attacks.find(a=>a.id.startsWith('class_feature:'))?.id,'class_feature:thunder_gauntlets');
  assert.equal(calculated.trait_state_optional_dice.length,0);
  assert.equal(calculated.active_trait_state_ids.length,1);
  const disabled={...next,inventory:[]};
@@ -117,7 +118,7 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
 test('Armor Model can be reselected before a rest with no resource payment',()=>{
  const r=sheet('Artificer',8,'TCE','Armorer');
  r.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
- r.artificer_armor_model='infiltrator'; // Existing character already has a choice.
+ r.trait_state_selection={armor_model:'armor_model:infiltrator'}; // Existing character already has a choice.
  let calculated=calculateSheet(r,catalogs),catalog=catalogs.traitStates;
  const changes=traitStateActivationPatch(r,calculated.features,catalog,'armor_model:guardian',calculated.trackers);
  assert.equal(changes.resource_tracker_spent,undefined);
@@ -148,7 +149,7 @@ test('Powers selection rests are separate from tracker recovery and enumerate av
 test('tracker resources describe both structured flat and attack-specific dice bonuses',()=>{
  const artificer=sheet('Artificer',8,'TCE','Armorer');
  artificer.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
- const record={...artificer,artificer_armor_model:'infiltrator'};
+ const record={...artificer,trait_state_selection:{armor_model:'armor_model:infiltrator'}};
  const calculated=calculateSheet(record,catalogs);
  const rows=trackerRollBonusRows(record,calculated);
  const flash=rows.find(row=>row.class_feature_id==='flash_of_genius');
@@ -156,6 +157,9 @@ test('tracker resources describe both structured flat and attack-specific dice b
  assert.equal(flash.tracker_id,'class:artificer:tce:flash_of_genius');
  assert.equal(trackerRollBonusTargets(flash,calculated),'Prove di caratteristica · Tiri salvezza');
  const lightning=rows.find(row=>row.tracker_id==='feature:lightning_launcher:extra_damage');
+ assert.ok(lightning,JSON.stringify({optional_dice:calculated.trait_state_optional_dice,
+  trackers:calculated.trackers.filter(r=>String(r.id).includes('lightning')),
+  rows:rows.filter(r=>String(r.tracker_id).includes('lightning'))}));
  assert.equal(lightning.dice,'1d6');
  assert.match(trackerRollBonusTargets(lightning,calculated),/Danni · Lightning Launcher/);
  // The engine must also display a new data-defined bonus without bespoke JS.

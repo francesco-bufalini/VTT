@@ -50,7 +50,7 @@ test('a pre-2024 dwarf gains the racial armor-strength waiver as a benefit',()=>
 });
 test('Arcane Armor grants a per-item extension when the Armorer model is active',()=>{
  const r=base({classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
- level:8,artificer_armor_model:'infiltrator'});
+ level:8,trait_state_selection:{armor_model:'armor_model:infiltrator'}});
  const c=calculateSheet(r,catalogs);
  assert.equal(c.armor_effects.speed_penalty,0);
  assert.equal(c.armor_effects.strength_waived,true);
