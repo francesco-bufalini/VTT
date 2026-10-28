@@ -42,7 +42,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {attackHitEffectPatch,onHitRollEffects} from './attack_hit_effects.js';
-import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
+import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
@@ -4967,7 +4967,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
        const originAttrs=' data-origin-id="'+esc(row.origin_id||'')+'"'+
          ' data-origin-trait="'+esc(row.granting_trait||'')+'"'+
          ' data-origin-key="'+esc(row.origin_key||'')+'"';
-       const traitLink=racialMode||row.passive_class_bonus;
+       const traitLink=racialMode||row.passive_class_bonus||row.feat_conditional;
        const targetTitle=traitLink?'Apri tratto · '+(row.granting_trait||row.origin_name||''):
          'Apri tracker '+trackerLabel;
        return '<div class="sheet-roll-bonus-item'+(racialMode?' sheet-roll-bonus-item--mode':'')+'">'+
@@ -6434,7 +6434,8 @@ async function handleAction(target){
     const preview=damageRollTerms(formula,type,sourceAttack);
     const bonuses=rollOptionalDice(creature,calculated,[
       ...applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[],calculated),
-      ...classFeatureRollBonuses(creature,calculated,'attack_damage:'+attackId)
+      ...classFeatureRollBonuses(creature,calculated,'attack_damage:'+attackId),
+       ...applicableFeatRollBonuses(creature,calculated,'attack_damage:'+attackId)
      ],{kind:'damage',attackId});
     const dialog=openUnifiedRollDialog({kind:'damage',heading:label,modifier:preview.modifier,
       rollType:'Tiro per danni',formula:sheetRollOriginHtml(preview.segments,esc),
@@ -6666,7 +6667,8 @@ async function handleAction(target){
     const bonuses=rollOptionalDice(creature,calculated,[
        ...applicableDiceBonuses(creature,key,state.spellCatalog||[],calculated),
        ...classFeatureRollBonuses(creature,calculated,key),
-       ...applicableSpeciesRollModes(creature,calculated,key)
+       ...applicableSpeciesRollModes(creature,calculated,key),
+       ...applicableFeatRollBonuses(creature,calculated,key)
       ],{kind:'d20'});
      let autoSources=classFeatureRollSources(creature,calculated,key,rollContext);
     const automatic=resolveClassRollMode(autoSources);
