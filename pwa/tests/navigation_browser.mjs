@@ -234,8 +234,8 @@ try{
   return input.type==='checkbox'&&r.width>=23&&r.height>=23&&
    getComputedStyle(indicator).borderStyle==='solid';
  }), 'Select-all has a properly sized custom control');
- assert.equal(await page.locator('.library-list-header .library-bulk-button').count(),2,
-  'Export and delete use styled controls in one selection toolbar');
+ assert.equal(await page.locator('.library-list-header .library-bulk-button').count(),3,
+  'Export, send and delete use styled controls in one selection toolbar');
  assert.equal(await page.locator('.library-list-header .library-selection-count').count(),0,
   'No selection count is shown');
  for(const width of [320,360,390,430,768]){
