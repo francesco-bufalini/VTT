@@ -77,8 +77,9 @@ export function storeSpellInItemPatch(record={},calculated={},index,spell={},spe
  const description='L’oggetto contiene '+String(spell.name)+
   ' (livello '+spell.level+'). Una creatura che lo tiene in mano può usare un’azione per '+
   'produrre l’effetto dell’incantesimo, usando la caratteristica da incantatore dell’Artefice '+
-  '(Intelligenza) e concentrandosi personalmente quando richiesto. Non consuma slot. '+max+
-  ' utilizzi massimi, fino al prossimo riposo lungo o a una nuova applicazione.';
+  '(Intelligenza) e concentrandosi personalmente quando richiesto. Non consuma slot. '+
+  'Utilizzi: due volte il modificatore di Intelligenza (minimo 2); '+
+  'l’effetto termina al prossimo riposo lungo o a una nuova applicazione.';
  const extension=normalizeEffectExtension({
   id:extensionId,origin_id:feature.origin_id,parent_origin:feature.origin_key,
   origin_name:'Tratto · Spell-Storing Item',stored_spell_feature:'spell_storing_item',

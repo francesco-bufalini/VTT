@@ -156,3 +156,27 @@ test('existing racial training choices are projected on the character and old pe
  assert(!muted.proficiencies.includes('weapon:longsword'),
    'disabling the granting racial trait removes temporary proficiencies');
 });
+
+test('Githyanki Astral Knowledge grants exactly two temporary proficiencies, not duplicate permanent ones',()=>{
+ const r=record('Githyanki'),features=featuresFor(r),powers=projection(r);
+ const ordinary=pendingCharacterChoices(r,{features},{proficiencyGrants:grants,speciesPowers:index});
+ assert(!ordinary.some(x=>x.kind==='proficiency'&&['skill','tool'].includes(x.proficiency_kind)),
+   'Astral Knowledge must not create ordinary permanent racial skill/tool choices');
+ assert(ordinary.some(x=>x.kind==='proficiency'&&x.proficiency_kind==='language'),
+   'the unrelated MPMM language choice must remain');
+ const before=fixedProficiencies(r,grants,features);
+ assert(![...before.keys()].some(key=>key.startsWith('skill:')||key.startsWith('tool:')),
+   'no automatic permanent Astral Knowledge proficiency');
+ const choice=powers.rest_choices.find(x=>x.group==='githyanki_training');
+ assert(choice&&choice.picks.length===2);
+ const chosen={...r,...restTrainingPatch(r,choice,['skill:arcana','weapon:longsword'],
+   {skill:['arcana'],weapon:['longsword'],tool:[],unavailable:[]})};
+ const selected=fixedProficiencies(chosen,grants,features);
+ assert(selected.has('skill:arcana')&&selected.has('weapon:longsword'));
+ assert.equal([...selected.keys()].filter(k=>k.startsWith('skill:')||k.startsWith('weapon:')||k.startsWith('tool:')).length,2);
+ const restored={...chosen,...powerRestChoicePatch(chosen,'long_rest',
+   {features,racial_rest_choices:powers.rest_choices})};
+ const expired=fixedProficiencies(restored,grants,features);
+ assert(!expired.has('skill:arcana')&&!expired.has('weapon:longsword'));
+ assert.equal(restored.rest_selection_available.githyanki_training,true);
+});

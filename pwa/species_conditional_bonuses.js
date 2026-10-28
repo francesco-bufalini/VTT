@@ -58,13 +58,15 @@ export function racialBonusEntries(record={},catalog={},features=[],removed=new 
     if(seen.has(id)||removed.has('dice:'+id))continue;
     seen.add(id);
     const dice=String(bonus.dice||'').trim();
-    if(choice===null&&!/^\d+d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/.test(dice))continue;
+    if(choice===null&&!/^\d+d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/.test(dice)&&
+      Number(bonus.proficiency_multiplier)!==2)continue;
     if(choice!==null&&(!Number.isSafeInteger(choice)||choice<=0))continue;
     bonuses.push({id,origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name,
      origin_key:feature.origin_key,origin_parent_id:key,granting_trait:feature.name,
      name:bonus.name||feature.name,
-     ...(choice===null?{dice}:{flat_bonus:choice}),
-     targets:bonus.targets,condition_label:bonus.condition_label||'',
+     ...(choice===null?bonus.proficiency_multiplier?{proficiency_multiplier:bonus.proficiency_multiplier}:{dice}:{flat_bonus:choice}),
+     targets:bonus.targets,exclude_initiative:bonus.exclude_initiative===true,
+     condition_label:bonus.condition_label||'',
      description:bonus.description||'',optional:true,automatic:true,
      ...(choice!==null?{exclusive_group:bonus.id}:{}),
      ...(bonus.tracker_id?{tracker_id:bonus.tracker_id,

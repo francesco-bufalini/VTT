@@ -9,7 +9,7 @@ import {itemKind,resolveOwnedItem,armorDexterityBonus,armorDexterityLimit} from 
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 import {powerRestSelections,powerRestChoicePatch} from './trait_state_rules.js';
 import {endTemporaryConditionPatch} from './species_powers.js';
-import {clearStoredSpellPatch,storedSpellExtension} from './spell_storing_item.js';
+import {clearStoredSpellPatch,storedSpellExtension,storedSpellTrackerId} from './spell_storing_item.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["conditions","Condizioni"]];
@@ -178,8 +178,14 @@ export function recoveryPatch(c,event,trackers,calculated={}){
   {wild_shape:structuredClone(c.active_class_features.wild_shape)}:{};
  if(event==='long_rest'){
   patch.created_spell_slots=[];
-  // Spell-Storing Item ends at the next long rest instead of refilling its old item.
-  Object.assign(patch,clearStoredSpellPatch(c));
+  // Spell-Storing Item ends at the next long rest. Keep the other
+  // resources' already-recovered spent counters from this recovery pass.
+  const expired=clearStoredSpellPatch(c);
+  if(Object.keys(expired).length){
+   patch.effect_extensions=expired.effect_extensions;
+   patch.resource_trackers=expired.resource_trackers;
+   delete spent[storedSpellTrackerId(c)];
+  }
  }
  // Pact Magic and class spell slots retain their original explicit rest rules.
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
