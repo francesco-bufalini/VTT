@@ -1307,6 +1307,30 @@ async function startTargetedAbility(c,ability,persistentKey,requested){
   }
  });
 }
+// Area selection is client-side and non-destructive. The desktop remains the
+// authority for LOS, position and saving throws; the PWA merely previews targets.
+async function startAreaAbility(c,ability,persistentKey,requested){
+ if(!state.paired||!state.online)return activateOtherAbility(c,ability,persistentKey,requested);
+ const stored=await loadCreature(c.id);
+ if(!stored)throw Error('Scheda locale non trovata.');
+ state.map=await map();
+ const caster=casterToken(stored.data,state.map,await ownerId());
+ if(!caster)throw Error('Associa un token a questa creatura prima di selezionare l’area.');
+ if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+ await tacticalViewer.open(String(caster.id));
+ tacticalViewer.setAreaAbility({
+  name:ability.name,shape:ability.area_shape,
+  length_feet:Number(ability.area_length_feet||0),
+  width_feet:Number(ability.area_width_feet||0),
+  radius_feet:Number(ability.area_radius_feet||0),
+  onSelected:async targets=>{
+   await activateOtherAbility(c,ability,persistentKey,requested,{
+    name:targets.length?targets.map(t=>t.name).join(', '):'Nessun bersaglio nell’area',
+    affected_ids:targets.map(t=>t.id)
+   });
+  }
+ });
+}
 async function activateOtherAbility(c,ability,persistentKey,requested,selectedTarget=null){
  document.querySelector('#other-ability-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='other-ability-dialog';
@@ -5646,6 +5670,9 @@ async function handleAction(target){
     const persistentKey=String(target.dataset.persistentKey||ability.persistent_key||power?.persistent_key||'');
     if(ability.target_mode==='single_token'&&state.paired&&state.online){
       await startTargetedAbility(c,ability,persistentKey,requested);return;
+    }
+    if(ability.area_shape&&state.paired&&state.online){
+      await startAreaAbility(c,ability,persistentKey,requested);return;
     }
     await activateOtherAbility(c,ability,persistentKey,requested);
     return;
