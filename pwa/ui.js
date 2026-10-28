@@ -1,4 +1,5 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
+import {identityEntriesPatch} from './identity_aliases.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage,validateVariants} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
@@ -301,6 +302,58 @@ const pendingFieldTimers = new Map();
 // Input/change handlers may already be writing when a popup closes. Include
 // those commits in the flush so Escape cannot discard the last edited field.
 const pendingFieldWrites = new Set();
+let returnToBattleFromCompetences=false;
+// The multi-identity editor writes a complete group atomically, preserving
+// both the canonical legacy fields and the additional display identities.
+async function saveIdentityGroup(target){
+ const group=target.closest('[data-identity-group]');
+ if(!group||!state.editor)return;
+ const kind=group.dataset.identityGroup;
+ if(!['names','factions'].includes(kind))return;
+ const rows=[...group.querySelectorAll('.identity-entry')];
+ for(const row of rows){
+  const input=row.querySelector('[data-identity-value]');
+  if(input&&!input.value.trim()&&rows.length>1)row.remove();
+ }
+ const entries=[...group.querySelectorAll('.identity-entry')].map(row=>({
+  value:row.querySelector('[data-identity-value]')?.value||'',
+  active:Boolean(row.querySelector('[data-identity-active]')?.checked)
+ }));
+ if(kind==='names'&&!entries.some(row=>row.value.trim())){
+  const first=group.querySelector('[data-identity-value]');
+  if(first)first.value=state.editor.read().name;
+  return;
+ }
+ if(kind==='names'){
+  const selected=entries.findIndex(row=>row.active&&row.value.trim());
+  const chosen=selected>=0?selected:entries.findIndex(row=>row.value.trim());
+  for(const [index,row] of [...group.querySelectorAll('.identity-entry')].entries()){
+   const check=row.querySelector('[data-identity-active]');
+   if(check)check.checked=index===chosen;
+  }
+  entries.forEach((row,index)=>{row.active=index===chosen;});
+ }
+ const changes=identityEntriesPatch(state.editor.read(),kind,entries);
+ await patch(changes);
+ if(kind==='factions'){
+  const hero=app.querySelector('#sheet-play-view .play-identity');
+  if(hero){
+   const labels=changes.identity_factions.filter(row=>row.active).map(row=>row.value).join(' · ');
+   let note=hero.querySelector('.play-identity-factions');
+   if(labels&&!note){
+    note=document.createElement('p');note.className='play-identity-factions';
+    hero.querySelector('h2')?.after(note);
+   }
+   if(note){note.textContent=labels;note.hidden=!labels;}
+  }
+ }
+}
+function trackIdentityWrite(target){
+ const write=saveIdentityGroup(target);
+ pendingFieldWrites.add(write);
+ void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
+ return write;
+}
 function trackFieldWrite(target) {
   const write=handleField(target);
   pendingFieldWrites.add(write);
@@ -5170,7 +5223,9 @@ function organizeSheetPanels(){
 }
 async function closeSheetContext(){
   const key=state.sheetPopup;
-  await flushPendingFields();state.sheetPopup="";await render();
+  await flushPendingFields();state.sheetPopup="";
+  if(returnToBattleFromCompetences){state.sheet='battle';returnToBattleFromCompetences=false;}
+  await render();
   [...app.querySelectorAll('#sheet-play-view [data-sheet-context]')].find(node=>node.dataset.sheetContext===key)?.focus({preventScroll:true});
 }
 function rememberUtilityDisclosures(){
@@ -5306,8 +5361,8 @@ async function openRollTraitOrigin(originId,{traitName='',originKey=''}={}){
    if(isProficiency){
      // Unattributed proficiency or unavailable source metadata is not a trait.
      // Keep the real proficiency readout reachable without an add-bonus picker.
-     app.querySelector('#play-competences-heading')?.scrollIntoView?.({block:'center'});
-     message('Questa competenza è riepilogata in Info > Competenze.');
+     app.querySelector('#sheet-play-view .play-skills-disclosure')?.scrollIntoView?.({block:'center'});
+     message('Questa competenza è riepilogata in Info > Abilità.');
      return;
    }
    message('Origine non riconducibile a un tratto della creatura. Seleziona il tratto corretto.',true);
@@ -5477,46 +5532,6 @@ function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
  dialog.querySelector('input')?.focus();
  dialog.querySelector('input')?.select();
  return dialog;
-}
-function openSheetMovementDialog(calculated={}){
- document.querySelector('#sheet-movement-dialog')?.remove();
- const dialog=document.createElement('dialog');
- dialog.id='sheet-movement-dialog';
- dialog.className='sheet-context-dialog sheet-senses-dialog sheet-movement-dialog';
- const modes=[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],
-  ['speed:fly','Volo'],['speed:burrow','Scavo']];
- const values=calculated.values||{},speeds=calculated.stats?.speeds||{};
- const entries=modes.map(([key,label])=>{
-  const kind=key==='speed'?'walk':key.slice(6);
-  const raw=values[key]??speeds[kind];
-  const n=raw===null||raw===undefined||raw===''?NaN:Number(raw);
-  return {key,label,value:n};
- }).filter(row=>Number.isFinite(row.value)&&row.value>=0&&
-  (row.key==='speed'||row.value>0));
- const jumps=calculated.stats?.jumps||{};
- const jumpRows=[['In lungo · con rincorsa',jumps.long],
-  ['In lungo · da fermo',Number(jumps.long)/2],
-  ['In alto · con rincorsa',jumps.high],
-  ['In alto · da fermo',Number(jumps.high)/2]]
-  .filter(([,n])=>Number.isFinite(Number(n))&&Number(n)>=0);
- const showValue=n=>Number.isInteger(n)?String(n):String(Math.round(n*10)/10);
- dialog.innerHTML='<header class="sheet-context-head"><h2>Movimento e velocità</h2>'+
-  dialogCloseButton('sheet-movement-close','Chiudi','play-button')+'</header>'+
-  '<div class="sheet-senses-body">'+
-  '<p class="sheet-senses-note">Velocità attuali, comprensive dei benefici e delle modifiche applicabili. Tocca una velocità per vedere il calcolo e i suoi privilegi di origine.</p>'+
-  '<section class="sheet-senses-sources sheet-movement-values"><h3>Velocità</h3><ul>'+
-  entries.map(row=>'<li><button type="button" class="sheet-movement-value" data-act="sheet-score-formula" data-target="'+esc(row.key)+
-   '" data-label="Velocità · '+esc(row.label)+'"><span>'+esc(row.label)+'</span><strong>'+showValue(row.value)+' ft</strong></button></li>').join('')+
-  '</ul></section>'+
-  (calculated.stats?.hovering?'<p class="sheet-senses-note">Volo sospeso (hovering) attivo tramite capacità temporanea.</p>':'')+
-  (jumpRows.length?'<section class="sheet-senses-sources sheet-movement-jumps"><h3>Salti · distanza massima</h3><ul>'+
-   jumpRows.map(([label,n])=>'<li><span>'+esc(label)+'</span><strong>'+showValue(Number(n))+' ft</strong></li>').join('')+
-   '</ul></section>':'')+
-  '</div>';
- app.append(dialog);
- dialog.addEventListener('close',()=>dialog.remove(),{once:true});
- dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close?.();});
- openDialog(dialog);
 }
 function openSheetSensesDialog(calculated={}){
  document.querySelector('#sheet-senses-dialog')?.remove();
@@ -6186,6 +6201,32 @@ async function handleAction(target){
   }
   if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create')state.scrollSpellQuery='';state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
   if(act==='sheet-context-close'){await closeSheetContext();return;}
+  if(act==='identity-add'){
+    const kind=String(target.dataset.identityKind||'');
+    const group=target.closest('[data-identity-group]');
+    if(!['names','factions'].includes(kind)||group?.dataset.identityGroup!==kind)return;
+    const list=group.querySelector('.identity-entry-list');
+    const previous=list?.querySelector('.identity-entry');
+    if(!previous)return;
+    const row=previous.cloneNode(true);
+    const input=row.querySelector('[data-identity-value]');
+    const checkbox=row.querySelector('[data-identity-active]');
+    input.value='';input.setAttribute('aria-label',kind==='names'?'Nuovo nome':'Nuova fazione');
+    checkbox.checked=false;
+    list.append(row);input.focus();
+    return;
+  }
+  if(act==='battle-competences-open'){
+    if(!state.editor)throw Error('Apri prima una creatura');
+    returnToBattleFromCompetences=true;
+    state.sheet='info';state.sheetPopup='tools';state.sheetPopupTitle='Competenze';
+    await render();return;
+  }
+  if(act==='sheet-inspiration-toggle'){
+    if(!state.editor)throw Error('Apri prima una creatura');
+    await patch({inspiration:!Boolean(state.editor.read().inspiration)});
+    await render();return;
+  }
   if(act==='condition-remove'){
     const c=state.editor?.read(),id=String(target.dataset.conditionId||'');
     if(!c)throw Error('Creatura non disponibile.');
@@ -6929,10 +6970,6 @@ async function handleAction(target){
     state.traitPopupKey=key;state.traitPopupConfirm='';
     state.traitPopupDraftKind=kind;state.traitPopupDraftTarget=targetKey;
     mountTraitBenefitDialog();return;
-  }
-  if(act==='sheet-movement-open'){
-   if(!state.editor)throw Error('Apri prima una creatura');
-   openSheetMovementDialog(await computeLocalData(state.editor.read()));return;
   }
   if(act==='sheet-sense-choice'){
    if(!state.editor)throw Error('Apri prima una creatura');
@@ -9065,8 +9102,8 @@ function listen(){
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button){
       // An HP card is a single click target, except for its own controls.
-      const card=e.target.closest('#sheet-play-view .play-health[data-act="hp-adjust-open"]');
-      if(card&&!e.target.closest('button,input,select,textarea,a,[role="button"]:not(.play-health)')){
+      const card=e.target.closest('#sheet-play-view .play-health[data-act="hp-adjust-open"],#sheet-play-view .play-character-portrait[data-sheet-context="identity"]');
+      if(card&&!e.target.closest('button,input,select,textarea,a,[role="button"]:not(.play-health):not(.play-character-portrait)')){
         try{await flushPendingFields();await handleAction(card);}
         catch(error){message(errorMessage(error),true);}
       }
@@ -9078,7 +9115,7 @@ function listen(){
     // A mobile file picker must open synchronously from the user's click,
     // never after an awaited IndexedDB write or rerender.
     if(closeAction==='info-portrait-pick'){
-      button.closest('.play-character-portrait')?.querySelector('[data-info-portrait-file]')?.click();
+      button.closest('#sheet-context-dialog')?.querySelector('[data-info-portrait-file]')?.click();
       return;
     }
     if(closeAction==='trait-benefits-close'){
@@ -9088,9 +9125,6 @@ function listen(){
       const dialog=document.querySelector('#roll-trait-picker');
       closeDialog(dialog,{remove:true});
       return;
-    }
-    if(closeAction==='sheet-movement-close'){
-     closeDialog(document.querySelector('#sheet-movement-dialog'),{remove:true});return;
     }
     if(closeAction==='sheet-senses-close'){
      closeDialog(document.querySelector('#sheet-senses-dialog'),{remove:true});return;
@@ -9132,7 +9166,7 @@ function listen(){
     finally{if(button.isConnected&&!button.hasAttribute('data-roll-used'))button.disabled=false;}
   });
   document.addEventListener('keydown',e=>{
-    const card=e.target.closest?.('#sheet-play-view .play-health[role="button"]');
+    const card=e.target.closest?.('#sheet-play-view .play-health[role="button"],#sheet-play-view .play-character-portrait[role="button"]');
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();
   });
@@ -9144,6 +9178,20 @@ function listen(){
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
   const editable = "[data-item-container],[data-coin-code],[data-slot-weapon-size],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
+  app.addEventListener('focusout',e=>{
+    const target=e.target;
+    if(!target?.matches?.('[data-identity-value]'))return;
+    if(target.value.trim())return;
+    const group=target.closest('[data-identity-group]');
+    const rows=group?.querySelectorAll('.identity-entry')||[];
+    if(rows.length>1){
+      target.closest('.identity-entry')?.remove();
+      trackIdentityWrite(group.querySelector('[data-identity-value]')||target)
+       .catch(error=>message(errorMessage(error),true));
+    }else if(group?.dataset.identityGroup==='names'&&state.editor){
+      target.value=state.editor.read().name;
+    }
+  },true);
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==='library-miniature-search'){
@@ -9199,6 +9247,16 @@ function listen(){
     const target=e.target;
     if(target?.matches?.('[data-info-portrait-file]')){
       void saveInfoPortrait(target);
+      return;
+    }
+    if(target?.matches?.('[data-identity-value],[data-identity-active]')){
+      if(target.matches('[data-identity-active="names"]')&&target.checked){
+        for(const other of target.closest('[data-identity-group]')?.querySelectorAll('[data-identity-active="names"]')||[])
+          if(other!==target)other.checked=false;
+      }else if(target.matches('[data-identity-active="names"]')&&!target.checked){
+        target.checked=true;return;
+      }
+      trackIdentityWrite(target).catch(error=>message(errorMessage(error),true));
       return;
     }
     if(target?.matches?.('[data-inventory-select-all]')){
