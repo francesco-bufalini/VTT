@@ -4772,7 +4772,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
               row.roll_mode==='advantage'?'ADV':'DIS':Object.hasOwn(row,'flat_bonus')?
               (row.flat_bonus>=0?'+':'')+row.flat_bonus:'+'+row.dice)+'</span>'+
            (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
-           '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
+           '<span class="sheet-roll-origin-name">'+esc(racialMode?(row.granting_trait||row.origin_name||'Tratto'):(row.origin_name||'Bonus'))+'</span></button>'+
          (row.condition_label?
             '<div class="sheet-roll-bonus-condition" title="'+esc(row.condition_label)+'">'+
               '<span class="sheet-roll-bonus-condition-key">QUANDO</span>'+
