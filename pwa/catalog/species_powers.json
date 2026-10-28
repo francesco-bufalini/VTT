@@ -633,7 +633,8 @@
           "uses": "proficiency",
           "recharge": "long_rest",
           "temp_hp": "proficiency",
-          "description": "Come azione bonus puoi effettuare Scatto. Quando utilizzi questo privilegio ottieni PF temporanei pari al bonus di competenza (non si sommano a quelli già presenti: conserva il valore maggiore). Usa registra un utilizzo e applica i PF temporanei; il movimento è da effettuare manualmente. Utilizzi pari alla competenza, riposo lungo."
+          "description": "Come azione bonus puoi effettuare Scatto. Quando utilizzi questo privilegio ottieni PF temporanei pari al bonus di competenza (non si sommano a quelli già presenti: conserva il valore maggiore). Usa registra un utilizzo e applica i PF temporanei; il movimento è da effettuare manualmente. Utilizzi pari alla competenza, riposo lungo.",
+          "action_ref": "dash"
         }
       ]
     },
