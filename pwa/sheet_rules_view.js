@@ -223,6 +223,15 @@ export function appendRollBonus(outcome={},bonus={},die){
    part={name:String(bonus.origin_name||'Bonus'),notation,rolls,
      subtotal:rolls.reduce((total,value)=>total+value,flat),flat};
  }
+ // Typed bonus damage must retain its own damage type, rather than
+ // silently inheriting the underlying weapon's damage type.
+ if(bonus.damage_type){
+   part.damage_type=String(bonus.damage_type);
+   const typeName={force:'Forza',radiant:'Radiante',necrotic:'Necrotico',
+     fire:'Fuoco',cold:'Freddo',lightning:'Fulmine',acid:'Acido',
+     poison:'Veleno',psychic:'Psichico',thunder:'Tuono'}[part.damage_type]||part.damage_type;
+   part.name+=' · '+typeName;
+ }
  const total=outcome.total+part.subtotal;
  const addition=part.kind==='flat'?part.notation:'+'+part.notation;
  const note=part.kind==='flat'?
