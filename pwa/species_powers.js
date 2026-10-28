@@ -118,6 +118,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
      description:action.description||'',action_type:action.action_type,
      activation_mode:action.action_type,action_kind:'ability',
      mode:'tracked_action',tracker_id:action.tracker_id,resource_cost:1,
+     ...(action.action_ref?{action_ref:String(action.action_ref)}:{}),
      ...(action.roll_effect?{roll_effect:{...action.roll_effect,target:'feature_roll:'+action.id}}:{}),
      ...(action.temp_hp?{temp_hp:action.temp_hp}:{}),
      ...(action.persistent_key?{persistent_key:action.persistent_key}:{}),
