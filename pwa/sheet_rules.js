@@ -14,7 +14,7 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,activeInfusions,armorDexterityBonus,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
-import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures} from './spell_selection.js';
+import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
 import {dragonbornFtdResistances} from './dragonborn_ftd.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
@@ -1252,12 +1252,16 @@ function calculateSheetValues(record={},catalogs={}){
   for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
   memo.set('pact_slot',pactTotal);
   for(const target of ['level','ac','initiative','hp','second_max','passive_perception','passive_skill:investigation'])safe(target);
+  // Racial expanded lists belong to a real spellcasting class and never
+  // grant free, known or permanently prepared spells of their own.
+  const expandedSpellIds=expandedOriginClassSpellIds(record,classesCatalog?.additional_spells,features);
   // Class spell entries retain the owning structured trait, not the class.
   const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])))
     .map(member=>{
       const trait=grantingCastingTrait(member);
       return {...member,granting_trait_id:trait?.origin_id||'',
-        granting_trait_name:trait?.name||''};
+        granting_trait_name:trait?.name||'',
+        ...(expandedSpellIds.length?{expanded_spell_ids:expandedSpellIds}: {})};
     }).filter(member=>!!member.granting_trait_id);
   for(const a of ABILITIES){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
