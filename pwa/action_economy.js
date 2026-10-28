@@ -201,7 +201,10 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   if(abilitySeen.has(identity))continue;
   abilitySeen.add(identity);
   add(feature.name||feature.title,activation,feature.type||feature.action_kind||'Capacità',
-      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost??(feature.tracker_id?1:0))||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),origin_id:String(feature.origin_id||feature.origin_key||''),alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
+      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost??(feature.tracker_id?1:0))||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),origin_id:String(feature.origin_id||feature.origin_key||''),
+       ...(feature.attack_selector?{attack_selector:feature.attack_selector}:{}),
+       ...(feature.action_id?{action_id:feature.action_id}:{}),
+       alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
  }
  // Exact 5etools class/feature/source/level supplements, not prose analysis.
  const members=arr(record.classes).length?arr(record.classes):
@@ -448,6 +451,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const opportunityWeapon=null;
  // Treat the offhand choice as a generic action, not a separate weapon strike.
  const selectedAttack=attack||opportunityWeapon;
+ // A typed shove action uses the existing map-targeting combat action.
+ // It is not inferred from whether the character has used Dash.
  const actionName=item.name;
  if(item.check_target){
   const key=String(item.check_target),stat=key.split(':')[1];
@@ -458,6 +463,15 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  if(attack){
   addRoll('attack_hit:'+attack.id,'Tiro per colpire · '+actionName,
    attack.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+attack.id]??attack.hit);
+ }
+ // A feat or feature may grant a new action timing for any melee attack.
+ // It does not create another weapon, change the attack damage, or require a
+ // Dash result to have been registered in the app.
+ if(item.attack_selector==='melee'){
+  for(const available of choices.filter(row=>row.melee===true&&!row.disabled)){
+   addRoll('attack_hit:'+available.id,'Tiro per colpire · '+available.name,
+    available.name,calculated.values?.['attack_hit:'+available.id]??available.hit);
+  }
  }
  if(item.skill_ids?.length){
   for(const skill of [...new Set(item.skill_ids)]){

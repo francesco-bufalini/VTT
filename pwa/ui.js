@@ -42,6 +42,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
+import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
@@ -1346,6 +1347,98 @@ async function openSpellStoringItemDialog(creature,calculated,ability){
    message('Spell-Storing Item: '+spell.name+' immagazzinato nell’oggetto, '+uses+' utilizzi.');
   }catch(error){
    button.disabled=false;dialog.querySelector('[data-stored-error]').textContent=errorMessage(error);
+  }
+ });
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ document.body.append(dialog);openDialog(dialog);
+}
+// One dialog for any trait that grants a spell-to-item imprint. Source rules
+// determine the item type, known class list, casting action and expiration.
+// Unlike Spell-Storing Item, Hidden Ace's selection is once per long rest.
+async function openSpellImprintDialog(creature,calculated,ability){
+ const rule=(calculated.spell_imprint_rules||[]).find(row=>
+  row.id===ability.imprint_rule_id);
+ if(!rule)throw Error('Il privilegio di immagazzinamento non è disponibile.');
+ const existing=spellImprintExtension(creature,rule);
+ const already=creature.spell_imprint_prepared?.[rule.id]===true;
+ const items=eligibleSpellImprintItems(creature,rule);
+ if(!items.length)throw Error('Aggiungi prima una carta o un mazzo di carte all’inventario.');
+ let catalog=state.spellCatalog||[];
+ try{catalog=await loadFullSpellCatalog();}catch(error){
+  if(!catalog.length)throw Error('Catalogo degli incantesimi non disponibile.');
+ }
+ const spells=eligibleSpellImprintSpells(creature,calculated,
+  spellsForEdition(catalog,creature.rules_version||'2014'),rule);
+ if(!spells.length&&!already)throw Error('Nessun incantesimo della tua lista di classe rispetta i limiti di livello e tempo di lancio.');
+ document.querySelector('#spell-imprint-dialog')?.remove();
+ const dialog=document.createElement('dialog');dialog.id='spell-imprint-dialog';
+ dialog.className='sheet-roll-dialog magic-spell-dialog';
+ dialog.dataset.creatureId=String(creature.id||'');
+ dialog.innerHTML=actionDialogIntro(rule.name||'Incantesimo nella carta',[
+  {label:'Origine',value:'Tratto · '+(rule.origin_name||'')},
+  {label:'Lancio',value:rule.cast_action_type==='bonus'?'Azione bonus':'Azione'},
+  {label:'Durata',value:(rule.duration_hours||8)+' ore dalla preparazione'},
+  {label:'Preparazione',value:'Una scelta per riposo lungo'}
+ ],rule.description||'',existing?'Carta preparata: '+existing.spell_name:
+   already?'Hai già usato questa scelta. È necessario un riposo lungo.':
+   'Scegli una carta del tuo inventario e un incantesimo.',
+ 'spell-imprint-close')+
+  (already?'<p class="hint">La carta è già stata preparata in questo ciclo di riposo. '+
+    'Per cambiarla o prepararne un’altra completa un riposo lungo.</p>':
+    '<label>Oggetto da incantare<select data-imprint-item>'+
+    items.map(({item,index})=>'<option value="'+index+'">'+
+      esc(item.name||item.id)+' · copia '+(index+1)+'</option>').join('')+'</select></label>'+
+    '<label>Cerca incantesimo<input type="search" data-imprint-search autocomplete="off" placeholder="Nome incantesimo"></label>'+
+    '<label>Incantesimo<select data-imprint-spell></select></label>'+
+    '<div data-imprint-description class="inventory-prose"></div>')+
+  '<p data-imprint-error class="warning" role="alert"></p>'+
+  '<div class="actions magic-dialog-actions">'+
+  (already?'':'<button type="button" class="btn primary" data-imprint-confirm>Prepara la carta</button>')+
+  '<button type="button" class="btn" data-imprint-close>Chiudi</button></div>';
+ const selector=dialog.querySelector('[data-imprint-spell]');
+ if(selector){
+  const search=dialog.querySelector('[data-imprint-search]');
+  const refresh=()=>{
+   const q=search.value.trim().toLocaleLowerCase('it'),previous=selector.value;
+   const subset=spells.filter(spell=>!q||String(spell.name||'').toLocaleLowerCase('it').includes(q));
+   selector.innerHTML=subset.map(spell=>'<option value="'+esc(spell.id)+'">'+
+     esc(spell.name)+' · livello '+esc(spell.level)+'</option>').join('');
+   if(subset.some(row=>row.id===previous))selector.value=previous;
+   const selected=subset.find(row=>row.id===selector.value);
+   dialog.querySelector('[data-imprint-confirm]').disabled=!selected;
+   dialog.querySelector('[data-imprint-description]').textContent=selected?
+     flattenDescription(selected):'Nessun incantesimo corrispondente.';
+  };
+  search.addEventListener('input',refresh);
+  selector.addEventListener('change',refresh);
+  refresh();
+ }
+ dialog.querySelectorAll('[data-imprint-close],[data-act="spell-imprint-close"]').forEach(button=>
+  button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.querySelector('[data-imprint-confirm]')?.addEventListener('click',async event=>{
+  const button=event.currentTarget;if(button.disabled)return;
+  button.disabled=true;
+  try{
+   const current=state.editor?.read();
+   if(!current||String(current.id)!==dialog.dataset.creatureId)
+    throw Error('La scheda è cambiata.');
+   const fresh=await computeLocalData(current);
+   const selectedRule=(fresh.spell_imprint_rules||[]).find(r=>r.id===rule.id);
+   if(!selectedRule)throw Error('Privilegio non più disponibile.');
+   const index=Number(dialog.querySelector('[data-imprint-item]')?.value);
+   const spell=spells.find(row=>String(row.id)===String(selector.value));
+   if(!spell)throw Error('Seleziona un incantesimo.');
+   const update=storeSpellImprintPatch(current,fresh,rule.id,index,spell,
+      flattenDescription(spell),'pwa_instance_'+crypto.randomUUID());
+   await patch(update);
+   if(state.saveError)throw Error(state.saveError);
+   await state.editor.flush();
+   closeDialog(dialog,{remove:true});await render();
+   message(rule.name+': '+spell.name+' impresso nella carta. '+
+     'Un lancio disponibile come '+(rule.cast_action_type==='bonus'?'azione bonus':'azione')+'.');
+  }catch(error){
+   button.disabled=false;
+   dialog.querySelector('[data-imprint-error]').textContent=errorMessage(error);
   }
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -5961,6 +6054,9 @@ async function handleAction(target){
     if(!ability)throw Error('Capacità non disponibile per questa creatura.');
     // Generic typed attack abilities open the same unified d20 popup as
     // ordinary weapons. No special-case code is needed for a specific race.
+    if(ability.mode==='spell_imprint'){
+      await openSpellImprintDialog(c,calculated,ability);return;
+    }
     if(ability.roll_attack){
       const roll=abilityAttackRoll(ability,calculated);
       if(!roll)throw Error('L’attacco collegato a questa capacità non è disponibile.');

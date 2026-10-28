@@ -44,17 +44,10 @@ export function storedSpellMaxUses(modifier){
  const n=Number(modifier);
  return Math.max(2,Number.isFinite(n)?Math.trunc(n)*2:2);
 }
-export function storeSpellInItemPatch(record={},calculated={},index,spell={},spellDescription='',instanceId=''){
- if(spellStoringArtificerLevel(record)<11)throw Error('Spell-Storing Item richiede Artefice TCE di livello 11.');
- const feature=rows(calculated.features).find(f=>norm(f.name)==='spell-storing item'&&
-  !f.disabled&&!f.inactive&&String(f.origin_key||'').startsWith('class|'));
- if(!feature||record.origin_enabled?.[feature.origin_id]===false)
-  throw Error('Il privilegio Spell-Storing Item non è disponibile.');
- const available=eligibleSpellStoringItems(record);
- if(!Number.isInteger(index)||!available.some(row=>row.index===index))
-  throw Error('Seleziona un’arma o un focus da incantatore disponibile.');
- if(!eligibleStoredSpells([spell]).length)
-  throw Error('Serve un incantesimo da Artefice di 1° o 2° livello con tempo di lancio 1 azione.');
+// A physical spell-bearing item must have one stable instance, even if it
+// originated as a stack. Shared by Spell-Storing Item and feat spell imprints.
+export function isolateSpellBearingItem(record={},index,instanceId=''){
+ if(!Number.isInteger(index))throw Error('Seleziona una copia di oggetto valida.');
  const inventory=structuredClone(rows(record.inventory)),item=inventory[index];
  if(!item||Number(item.quantity??1)<1)throw Error('Oggetto non disponibile.');
  if(item.standalone_instance!==true&&Number(item.quantity??1)>1){
@@ -72,6 +65,20 @@ export function storeSpellInItemPatch(record={},calculated={},index,spell={},spe
  item.instance_id=item.instance_id||String(instanceId||'');
  if(!item.instance_id)throw Error('Identificatore fisico della copia mancante.');
  item.standalone_instance=true;
+ return {inventory,item};
+}
+export function storeSpellInItemPatch(record={},calculated={},index,spell={},spellDescription='',instanceId=''){
+ if(spellStoringArtificerLevel(record)<11)throw Error('Spell-Storing Item richiede Artefice TCE di livello 11.');
+ const feature=rows(calculated.features).find(f=>norm(f.name)==='spell-storing item'&&
+  !f.disabled&&!f.inactive&&String(f.origin_key||'').startsWith('class|'));
+ if(!feature||record.origin_enabled?.[feature.origin_id]===false)
+  throw Error('Il privilegio Spell-Storing Item non è disponibile.');
+ const available=eligibleSpellStoringItems(record);
+ if(!Number.isInteger(index)||!available.some(row=>row.index===index))
+  throw Error('Seleziona un’arma o un focus da incantatore disponibile.');
+ if(!eligibleStoredSpells([spell]).length)
+  throw Error('Serve un incantesimo da Artefice di 1° o 2° livello con tempo di lancio 1 azione.');
+ const {inventory,item}=isolateSpellBearingItem(record,index,instanceId);
  const trackerId=storedSpellTrackerId(record),extensionId=storedSpellExtensionId(record);
  const max=storedSpellMaxUses(calculated?.abilities?.int?.modifier);
  const description='L’oggetto contiene '+String(spell.name)+

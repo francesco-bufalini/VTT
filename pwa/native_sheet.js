@@ -10,6 +10,7 @@ import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 import {powerRestSelections,powerRestChoicePatch} from './trait_state_rules.js';
 import {endTemporaryConditionPatch} from './species_powers.js';
 import {clearStoredSpellPatch,storedSpellExtension,storedSpellTrackerId} from './spell_storing_item.js';
+import {clearSpellImprintsPatch} from './spell_imprints.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["conditions","Condizioni"]];
@@ -185,6 +186,16 @@ export function recoveryPatch(c,event,trackers,calculated={}){
    patch.effect_extensions=expired.effect_extensions;
    patch.resource_trackers=expired.resource_trackers;
    delete spent[storedSpellTrackerId(c)];
+  }
+  const imprintClear=clearSpellImprintsPatch({
+   ...c,effect_extensions:patch.effect_extensions||c.effect_extensions,
+   resource_trackers:patch.resource_trackers||c.resource_trackers
+  });
+  patch.effect_extensions=imprintClear.effect_extensions;
+  patch.resource_trackers=imprintClear.resource_trackers;
+  patch.spell_imprint_prepared={};
+  for(const id of Object.keys(spent)){
+   if(id.startsWith('spell-imprint:'))delete spent[id];
   }
  }
  // Pact Magic and class spell slots retain their original explicit rest rules.
