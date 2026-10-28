@@ -149,6 +149,7 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
    row.target==='attack_damage'&&target.startsWith('attack_damage:')||
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
  const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&
+   !(row.exclude_initiative&&target==='initiative')&&
    (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&
    (arr(row.targets).some(target=>fits({target}))||fits(row))).map(row=>({...row,target}));
  const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&
