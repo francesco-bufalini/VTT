@@ -32,6 +32,8 @@ jobs:
             /vtt/
             /network/
             /homebrew/
+            /pwa/icons/gold_generated/
+            /assets/creature_info/
             /tests/test_artificer_infusions.gd
             /tests/test_activated_abilities.gd
             /tests/test_origin_granted_spells.gd
