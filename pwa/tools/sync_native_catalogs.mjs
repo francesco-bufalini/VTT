@@ -7,6 +7,17 @@ import {projectSpeciesDefenses} from './species_defenses.mjs';
 import {projectSpeciesRollModes} from './species_roll_modes.mjs';
 import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
+// Bounded refresh for this independent catalog: do not replace other cached
+// native projections when their own upstream generators have not been run.
+if(process.argv.includes('--feature-spells-only')){
+ const mechanics=await read('../catalog/class_mechanics.json');
+ const spells=await read('../../vtt/data/feature_spell_grants_2014.json');
+ mechanics.feature_spells=spells.entries;
+ mechanics.feature_spells_meta=spells.meta;
+ await writeFile(new URL('../catalog/class_mechanics.json',import.meta.url),JSON.stringify(mechanics,null,2)+'\n');
+ console.log('PWA: trait-owned 2014 spell catalog refreshed.');
+ process.exit(0);
+}
 // Project typed TCE infusion data to a URL already served by PwaHost.
 // Older native snapshots lack selectors: use source-qualified structured
 // fallbacks, never English-description parsing in browser runtime.
@@ -224,6 +235,9 @@ for(const part of ['a','b','c','mm']){
 const additional=await read('../../vtt/data/additional_spells_5etools.json');
 mechanics.additional_spells=additional.entries;
 mechanics.additional_spells_meta=additional.meta;
+const featureSpells=await read('../../vtt/data/feature_spell_grants_2014.json');
+mechanics.feature_spells=featureSpells.entries;
+mechanics.feature_spells_meta=featureSpells.meta;
 const legacyText=await readFile(new URL('../../vtt/spells/spell_catalog_phb_2014.gd',import.meta.url),'utf8');
 const legacyStart=legacyText.indexOf('{',legacyText.indexOf('const SPELLS:'));
 mechanics.legacy_spells=Object.values(JSON.parse(legacyText.slice(legacyStart)));

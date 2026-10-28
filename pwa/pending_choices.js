@@ -367,6 +367,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     label:'Caratteristica da incantatore',count:1,selected,options,
     remaining:selected.length?0:1});
  }
+ result.push(...arr(calculated.origin_spell_variant_choices));
  for(const choice of arr(calculated.origin_choices)){
   if(!choice?.id||!enabled(record,choice.origin_id))continue;
   const feature=arr(calculated.features).find(row=>row.origin_id===choice.origin_id);
@@ -397,7 +398,7 @@ export function choicesForTrait(trait,record,choices=[]){
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
 export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):strip(value)));
  const prefix='__custom__:';
@@ -413,6 +414,9 @@ export function savePendingChoice(record,choice,values=[]){
        /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||
        arr(choice.excluded_options).includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
+ if(choice.kind==='spell_variant'){
+   return {origin_spell_variants:{...(record.origin_spell_variants||{}),[choice.origin_id]:selected[0]||''}};
+ }
  if(['advancement_mode','advancement_feat'].includes(choice.kind)){
   const previous=arr(record.advancement_choices).find(row=>row.origin_id===choice.origin_id);
   const advancements=arr(record.advancement_choices).filter(row=>row.origin_id!==choice.origin_id);

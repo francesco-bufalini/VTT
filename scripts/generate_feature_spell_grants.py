@@ -61,6 +61,12 @@ def gather(checkout: Path, bindings: list[dict] | None = None) -> dict:
                     target.setdefault(mode, {})[stage] = deepcopy(values)
                     if "ability" in block:
                         target["ability"] = deepcopy(block["ability"])
+                    else:
+                        parent = next((item for item in data.get("class", [])
+                                       if item["source"] == binding["class_source"]), {})
+                        ability = subclass.get("spellcastingAbility", parent.get("spellcastingAbility"))
+                        if ability:
+                            target["ability"] = ability
         entries.extend(by_owner.values())
     return {"meta": {"edition": "2014", "source": "5etools-src v2.37.0 data/class/class-*.json",
                      "ownership": "scripts/data/feature_spell_ownership_2014.json",

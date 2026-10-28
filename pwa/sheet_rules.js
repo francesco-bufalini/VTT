@@ -1233,13 +1233,14 @@ function calculateSheetValues(record={},catalogs={}){
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));
   }
   const featMechanics=featMechanicGrants(record,index);
-  const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],features,catalogs.spellGrantRules||[]);
+  const featureSpells=arr(classesCatalog?.feature_spells);
+  const additional=structuredSpellGrants(record,[...arr(classesCatalog?.additional_spells),...featureSpells],catalogs.spells||[],features,catalogs.spellGrantRules||[]);
   // Permanently prepared subclass spells are attached to their actual feature,
   // not to the class itself; the same source identity powers UI and calculations.
   const classCasting=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
-  additional.grants.push(...featureTableSpellGrants(record,features,catalogs.spells||[],classCasting),
+  additional.grants.push(...featureTableSpellGrants(record,features,catalogs.spells||[],classCasting,featureSpells),
     ...supplementalFeatureSpellGrants(record,features,catalogs.spells||[],
-      catalogs.featureSpellGrants||[],classCasting));
+      catalogs.featureSpellGrants||[],classCasting,featureSpells));
   for(const warning of additional.warnings)warnings.add(warning);
   const trackerMap=new Map();
   for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featMechanics.trackers,...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2)])
@@ -1299,6 +1300,8 @@ function calculateSheetValues(record={},catalogs={}){
   for(const feature of features)addOrigin(feature.origin_id,"Tratto · "+feature.name);
   const originSpellMap=new Map();
   const spellOwnerLive=row=>{
+    if(String(row.source_choice_id||'').startsWith('feature:class|')&&
+      !additional.choices.some(choice=>choice.id===row.source_choice_id))return false;
     const trait=features.find(feature=>feature.origin_id===(row.owner_origin_id||row.origin_id));
     return !trait||(!trait.inactive&&!trait.disabled&&
       record.trait_enabled?.[trait.key]!==false);
@@ -1392,6 +1395,7 @@ function calculateSheetValues(record={},catalogs={}){
     feature_damage_resistances:classFeatureActive(record,featureContext,'rage')?['bludgeoning','piercing','slashing']:[],
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
     origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
+    origin_spell_variant_choices:additional.variant_choices,
     automatic_bonuses:automatic.filter(row=>!suppressed.has('bonus:'+row.id)&&requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
