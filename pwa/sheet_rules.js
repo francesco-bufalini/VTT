@@ -1014,7 +1014,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(target==="level")return int(record.level,1);
     if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
     if(target==="proficiency")return proficiencyBase();
-    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack)+sumGrants("initiative",stack);
+    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack);
     if(prefix==="ability_check"&&ABILITIES.includes(key))
       return resolve("ability_mod:"+key,stack)+sumGrants("ability_check",stack);
     if(target==="ac"){
