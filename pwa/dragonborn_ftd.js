@@ -19,13 +19,16 @@ export function dragonbornFtdProfile(record={},catalog={}){
  }else return null;
  const definition=rows(catalog.races).find(row=>norm(row.name)==='dragonborn ('+variant+')'&&norm(row.source)==='ftd');
  if(!definition?.draconic_ancestries?.length)return null;
- const selected=norm(record.origin_draconic_ancestry?.[origin_id]);
+ // For new FTD species, ancestry is their color subrace. Retain a saved
+ // ancestry only for previously created flattened characters without a color.
+ const selected=norm(flattened&&norm(record.subrace_source)==='ftd'?
+   record.subrace:record.origin_draconic_ancestry?.[origin_id]);
  const ancestry=rows(definition.draconic_ancestries).find(row=>norm(row.name)===selected)||null;
  return {variant,origin_id,origin_key,definition,ancestry,selected:ancestry?selected:''};
 }
 export function dragonbornFtdChoice(record={},catalog={}){
  const p=dragonbornFtdProfile(record,catalog);
- if(!p)return null;
+ if(!p||norm(record.species_source)==='ftd')return null;
  return {id:'ancestry:'+p.origin_id,kind:'draconic_ancestry',origin_id:p.origin_id,
   name:'Dragonborn · '+p.variant[0].toUpperCase()+p.variant.slice(1),
   label:'Ascendenza draconica',count:1,
