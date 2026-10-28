@@ -6550,9 +6550,10 @@ async function handleAction(target){
     }
     if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
       chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
-    // A situational d20 mode must be chosen before the first d20 result.
-    if(row.roll_mode&&dialog.rollOutcome)
-      throw Error('Vantaggio e svantaggio vanno scelti prima del tiro.');
+    // A situational d20 mode and power-attack penalty must be chosen
+    // before the first d20 result, never in reaction to seeing a hit.
+    if((row.roll_mode||row.require_before_roll)&&dialog.rollOutcome)
+      throw Error('Questo beneficio va scelto prima di tirare il d20.');
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
     if(row.passive_class_bonus){
