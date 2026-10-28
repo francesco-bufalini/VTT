@@ -53,7 +53,7 @@ test('one source-qualified ancestry replaces both independent PHB and FTD resist
  }
 });
 test('FTD flattened race has same mechanics without a PHB parent',()=>{
- const record=chosen(build('Gem',5,true),'crystal');
+ const record={...build('Gem',5,true),subrace:'Crystal',subrace_source:'FTD'};
  assert.equal(dragonbornFtdProfile(record,powers).ancestry.damage_type,'radiant');
  assert.deepEqual(selectedSpeciesDefenseRules(record,defenses),[]);
  assert.equal(own(record).defenses[0].key,'radiant');
