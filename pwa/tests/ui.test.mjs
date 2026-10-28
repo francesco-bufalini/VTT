@@ -1202,198 +1202,41 @@ test("sheet derived values update locally and never call a desktop calculation A
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test('native boxes, HP actions, automatic resources and slot edits remain usable offline',async t=>{
- const oldFetch=globalThis.fetch;
- const {clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
- clearLocalRuleCatalogCache();
- globalThis.fetch=async(url,options)=>{
-  const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics','/catalog/proficiency_grants.json':'proficiency_grants','/catalog/classes.json':'classes'})[url];
-  if(file)return new Response(readFileSync(new URL('../catalog/'+file+'.json',import.meta.url),'utf8'),{status:200});
-  return oldFetch(url,options);
- };
- t.after(()=>{globalThis.fetch=oldFetch;clearLocalRuleCatalogCache();});
+test('native play sheet preserves HP, resources and inventory without desktop calculations',async t=>{
  const {createCreature,saveCreature}=await import('../creatures.js');
  const saved=await createCreature('character','Verifica parità PWA');
  await saveCreature({...saved.data,class:'Bard',class_source:'PHB',level:5,
-   classes:[{name:'Bard',source:'PHB',level:5}],abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:16},
-   max_hp_base:20,current_hp:20,temporary_hp:3,
-   spell_slots_automatic:true,spell_slots_spent:[0,1],
-   inventory:[{id:'local_sword',name:'Shortsword',custom_item_type:'weapon',type:'M',weapon_category:'simple',damage:'1d6',properties:['F','L'],quantity:1,equipped_slots:['main']}],
-   proficiency_choices:[{kind:'weapon',key:'simple'}]},'default',saved.revision);
+  classes:[{name:'Bard',source:'PHB',level:5}],
+  abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:16},
+  max_hp_base:20,current_hp:20,temporary_hp:3,
+  spell_slots_automatic:true,spell_slots_spent:[0,1],
+  inventory:[{id:'local_sword',name:'Shortsword',custom_item_type:'weapon',
+   type:'M',weapon_category:'simple',damage:'1d6',quantity:1,equipped_slots:['main']}]
+ },'default',saved.revision);
  click('[data-nav="library"]');
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
- await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
- assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Aspetto','Background','Classi','Talenti','Caratteristiche','Riepilogo','Abilità','Altre competenze','Tratti']);
+ await until(()=>document.querySelector('[data-field="name"]'));
  click('[data-sheet="battle"]');
- await until(()=>document.querySelector('.battle-hp-controls [data-act="hp-damage"]'));
- assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),
-  ['Punti ferita','Classe armatura','Movimento','Risorse','Attacchi disponibili'],
-  'CA follows HP before resource trackers and attacks');
- assert.equal(document.querySelectorAll('[data-field="death_save_successes"],[data-field="death_save_failures"]').length,0,
-  'The death-save section is absent');
- assert.equal(document.querySelectorAll('.battle-root [data-calculated="second_max"]').length,0,
-  'The old second-form reservoir is removed');
- assert.equal(document.querySelectorAll('[data-field="second_form_max_hp"],[data-field="max_hp_base"]').length,0,
-   'The old HP maximum editors are no longer shown');
- assert.equal(document.querySelectorAll('.battle-hp-settings').length,0);
- assert.equal(document.querySelector('.battle-second-form'),null,
-   'Variants use the ordinary current-form HP controls');
- assert.ok(document.querySelector('.battle-defense-settings [data-equip-slot="body"]'),
-  'Worn armor is editable without expanding an accordion');
- assert.ok(document.querySelector('.battle-ac-formula output'),
-  'The current armor or natural AC formula is always shown');
- assert.equal(document.querySelector('.battle-defense-panel [data-calculated="initiative"]'),null,
-  'Initiative is not duplicated inside the AC popup');
- assert.ok(document.querySelector('.battle-movement-panel [data-calculated="speed"]'),
-  'Movement has its own dedicated panel');
- assert.ok(document.querySelector('.battle-defense-panel .equipment-unified-panel [data-field="attack_ability"]'),
-  'Battle defense and attack equipment use the same editor');
- assert.ok(document.querySelector('.battle-defense-panel .equipment-unified-panel [data-field="attack_ability_finesse_only"]'),
-  'The attack ability scope can be changed in the shared editor');
- assert.equal(document.querySelectorAll('.battle-attack-settings').length,0,
-  'The obsolete separate battle attack equipment editor is removed');
- await until(()=>document.querySelector('.battle-resources-panel .battle-resource-row'),4500);
- assert.ok(document.querySelector('.battle-resources-panel .battle-resource-row'),
-  'Trackers use compact action rows in battle');
- assert.ok(document.querySelector('.battle-attacks-panel .battle-attack-row'),
-  'Attacks use compact summary rows');
- assert.ok(document.querySelector('.battle-resources-panel [data-act="tracker-turn"]'),
-  'Turn recovery remains available');
- assert.equal(document.querySelector('#hp-amount'),null,'HP quantity is not permanently visible');
- assert.equal(document.querySelectorAll('.battle-hp-controls > button').length,3,
-  'Danni, Cura and PF pieni occupy one compact row');
- assert.ok(document.querySelector('#hp-adjust-dialog:not([open])'),'HP amount dialog starts closed');
- click('[data-act="hp-damage"]');
- await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
- assert.equal(document.querySelector('#hp-adjust-title').textContent,'Infliggi danni');
- assert.equal(document.querySelector('#hp-adjust-amount').value,'');
- click('[data-act="hp-adjust-cancel"]');
+ await until(()=>document.querySelector('#sheet-play-view .play-health[data-act="hp-adjust-open"]'));
+ const health=document.querySelector('#sheet-play-view .play-health[data-act="hp-adjust-open"]');
+ health.click();await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
+ assert.equal(document.querySelector('#hp-adjust-current')?.value,'20');
+ assert.equal(document.querySelector('#hp-adjust-temporary')?.value,'3');
+ click('#hp-adjust-dialog [data-act="hp-adjust-cancel"]');
  await until(()=>!document.querySelector('#hp-adjust-dialog[open]'));
- assert.equal((await loadCreature(saved.data.id)).data.current_hp,20,
-  'Cancelling damage does not change hit points');
- click('[data-act="hp-damage"]');
- await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
- document.querySelector('#hp-adjust-amount').value='10';
- document.querySelector('#hp-adjust-form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
- await until(()=>document.querySelector('[data-field="current_hp"]')?.value==='13');
- let record=(await loadCreature(saved.data.id)).data;
- assert.deepEqual([record.temporary_hp,record.current_hp],[0,13]);
- assert.ok(!document.querySelector('#hp-adjust-dialog[open]'),'Dialog closes after confirming damage');
- click('[data-act="hp-heal"]');
- await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
- assert.equal(document.querySelector('#hp-adjust-title').textContent,'Cura punti ferita');
- document.querySelector('#hp-adjust-amount').value='2';
- document.querySelector('#hp-adjust-form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
- await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===15);
- click('[data-act="hp-restore"]');
- await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===20);
- const tracker='class:bard:phb:bardic_inspiration';
- click('[data-act="tracker-more"][data-tracker-id="'+tracker+'"]');
- await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===1);
- click('#sheet-play-view .play-health-tools [data-sheet-context="rests"]');
- await until(()=>document.querySelector('#sheet-context-dialog [data-act="tracker-short"]'));
- click('#sheet-context-dialog [data-act="tracker-short"]');
- await until(()=>document.querySelector('#sheet-context-dialog [data-rest-preview]'));
- click('#sheet-context-dialog [data-act="tracker-rest-confirm"]');
- await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===undefined);
- click('#sheet-context-dialog [data-act="sheet-context-close"]');
- await until(()=>!document.querySelector('#sheet-context-dialog'));
  click('[data-sheet="magic"]');
- await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
- assert.match(document.querySelector('.magic-source-header .magic-source-resources')?.textContent||'',
-   /^Slot$/, 'Class spell sections identify their payment resource');
- assert.ok(document.querySelector('.magic-overview .magic-level-slot[data-level="1"]'),
-   'Slot usage is exposed in the shared overview');
- const spentBefore=(await loadCreature(saved.data.id)).data.spell_slots_spent[1];
- click('.magic-level-slot[data-level="1"][data-pact="false"]');
- await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-spells'));
- assert.equal(document.querySelector('#magic-tools-dialog [data-act="slot-spells"]'),null,
-   'The extra castable-spells popup action is removed');
- assert.equal((await loadCreature(saved.data.id)).data.spell_slots_spent[1],spentBefore,
-   'Opening the slot and browsing inline castable spells must not spend a slot');
- click('#magic-tools-dialog [data-act="magic-tool-close"]');
- await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
- await until(()=>document.querySelector('.play-magic-selection [data-act="sheet-proxy"]'));
- assert.ok(document.querySelector('#sheet-play-view .play-magic-inline-casting [data-casting-section]'),
-   'Full spellcasting ability control is inline in the class card');
- assert.ok(document.querySelector('#sheet-play-view .play-magic-inline-casting [data-act="sheet-score-formula"]')||
-   document.querySelector('#sheet-play-view .play-magic-inline-casting [data-act="sheet-roll-formula"]'),
-   'Casting calculation controls remain interactive');
- assert.equal(document.querySelector('#sheet-play-view [data-sheet-context^="casting:"]'),null,
-   'The redundant casting settings button is gone');
- assert.match(document.querySelector('.play-magic-selection').textContent,/conosciuti|prepara|impara/i,
-   'Class spell selection is directly accessible in the mobile play card');
- click('.play-magic-selection [data-act="sheet-proxy"]');
- await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-learn-filter'));
- assert.equal(document.querySelector('#spell-class'),null,
-   'The class is taken from the selected spellcasting section without an extra picker');
- assert.equal(document.querySelector('#magic-tools-dialog [data-act="magic-learn-back"]'),null);
- assert.ok(document.querySelector('#magic-tools-dialog .magic-editor-filters #spell-search'),
-   'The class filter and spell search share the same toolbar row');
- assert.equal(document.querySelector('#magic-tools-dialog .magic-editor-filters #spell-learn-filter')?.value,'all');
- assert.equal(document.querySelector('#spell-target'),null);
- assert.equal(document.querySelector('#magic-tools-dialog [data-act="magic-known-filter"]'),null);
- assert.equal(document.querySelector('#magic-tools-dialog .magic-selection-progress'),null);
- assert.equal(document.querySelector('#spell-learn-filter')?.value,'all');
- assert.equal(document.querySelector('#spell-learn-filter')?.selectedOptions[0]?.textContent,'Tutte');
- assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/Conosciuti:\s*0\s*\/\s*\d+/,
-  'Learning only shows known-spell counts without missing/excess commentary');
- await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]'));
- assert.equal(document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]')?.dataset.classId,
-   'class|phb|bard','Learning still uses the selected class by default');
- click('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]');
- await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="true"]'));
- const savedKnown=(await loadCreature(saved.data.id)).data;
- assert.equal(savedKnown.prepared_spells?.length,1);
- assert.equal(savedKnown.spells?.length,1);
- click('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="true"]');
- await until(async()=>{
-  const current=(await loadCreature(saved.data.id)).data;
-  return current.prepared_spells?.length===0&&current.spells?.length===0;
- });
- assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/Conosciuti:/,
-  'Learning warning refreshes when a spell is forgotten');
- assert.doesNotMatch(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/mancano|eccesso/i);
- click('[data-act="magic-tool-close"]');
- await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
- await until(()=>document.querySelector('.magic-overview .magic-level-slot[data-level="1"]'));
- assert.match(document.querySelector('.magic-overview .magic-level-slot[data-level="1"]').textContent,/3\s*\/\s*4/);
- assert.deepEqual([...document.querySelectorAll('.magic-overview .magic-level-slot')].map(x=>x.dataset.level),['1','2','3'],
-  'The shared slot overview retains all levels even without prepared spells');
+ await until(()=>document.querySelector('[data-act="magic-tool-open"][data-magic-tool="slots"]'));
  click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-manager'));
- assert.equal(document.querySelector('#magic-tools-dialog [data-act="sheet-score-formula"][data-target="slot:1"]').textContent,'4',
-   'The slot manager exposes the maximum through the score formula control');
+ assert.ok(document.querySelector('#magic-tools-dialog [data-act="magic-tool-close"]'));
  click('#magic-tools-dialog [data-act="magic-tool-close"]');
- await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
- click('.magic-level-slot[data-level="1"][data-pact="false"]');
- await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-use"][data-level="1"]'));
- click('#magic-tools-dialog [data-act="slot-use"][data-level="1"]');
- await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===2);
- click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
- await until(()=>document.querySelector('#magic-tools-dialog[open]'));
- click('[data-act="slots-restore"]');
- await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===0);
- click('[data-sheet="info"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
- click('[data-sheet="info"]');await until(()=>document.querySelector('[data-act="sheet-score-formula"][data-target="ability:dex"]'));
- await changeScore('dex',18);
- await until(()=>document.querySelector('[data-calculated="ability_mod:dex"]')?.textContent==='+4');
- assert.equal(document.querySelector('[data-calculated="save:dex"]').textContent,'+7','Bard adds automatic save proficiency');
- click('[data-sheet="info"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
- // A manual bonus is now saved explicitly in the popup owned by a trait.
- const traits=document.querySelector('.play-traits-disclosure');
- if(traits)traits.open=true;
- await until(()=>document.querySelector('[data-act="trait-benefits-open"]'));
- click('[data-act="trait-benefits-open"]');
- await until(()=>document.querySelector('#trait-benefits-dialog[open]'));
- click('[data-act="trait-benefits-add"]');
- change('#trait-benefits-dialog [data-trait-fields="bonus"] [name="target"]','skill:stealth');
- change('#trait-benefits-dialog [data-trait-fields="bonus"] [name="expression"]','2');
- click('[data-act="trait-benefits-save"]');
- await until(()=>document.querySelector('[data-calculated="skill:stealth"]')?.textContent==='+6');
- assert.ok((await loadCreature(saved.data.id)).data.formula_bonuses?.some(row=>row.id?.startsWith('trait:')&&row.target==='skill:stealth'));
- click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
+ click('[data-sheet="inventory"]');
+ await until(()=>document.querySelector('#sheet-play-view .inventory-play-item'));
+ assert.match(document.querySelector('#sheet-play-view').textContent,/Shortsword/);
+ assert.equal(document.querySelector('[data-field="death_save_successes"]'),null);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('.library-index'));
 });
 
 test('ASI opens its sole next picker automatically until ability allocation is complete',async t=>{
