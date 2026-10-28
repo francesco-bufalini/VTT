@@ -2485,8 +2485,10 @@ async function traitsView(c){
    {includeUnavailable:true})};
  const {rows,byKey:benefitsByTrait}=distributeTraitBenefits(originalRows,c,benefitProjection);
  const groups=groupTraitRows(rows);
- if(state.creatureId===c.id&&!state.libraryMode&&state.sheet==='info')
+ if(state.creatureId===c.id&&!state.libraryMode&&state.sheet==='info'){
    state.traitRows=rows;
+   state.traitBenefitGroupsByKey=benefitsByTrait;
+ }
  const renderCard=trait=>{
   const itemQuantity=trait.item_requires_attunement?trait.item_active_quantity:trait.item_quantity;
   const description=flattenDescription({entries:trait.entries});
@@ -2567,8 +2569,8 @@ function mountTraitBenefitDialog(){
  const benefitProjection={...(state.calculated||{}),
   activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{},
    {includeUnavailable:true})};
- const groups=distributeTraitBenefits(state.traitRows,record,benefitProjection)
-  .byKey.get(trait.key)||[];
+ const groups=state.traitBenefitGroupsByKey?.get(trait.key)||
+  distributeTraitBenefits(state.traitRows,record,benefitProjection).byKey.get(trait.key)||[];
  const isOwnedItem=trait.category==='oggetti'&&trait.rank===0&&
    String(trait.origin_key||'').startsWith('item:');
  const ownedCopies=isOwnedItem?(Array.isArray(trait.item_inventory_indices)&&
@@ -7714,8 +7716,9 @@ async function handleAction(target){
        dialog.dataset.traitKey!==state.traitPopupKey)return;
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     const id=target.dataset.benefitId,type=target.dataset.benefitType;
-    const item=trait&&distributeTraitBenefits(state.traitRows,state.editor.read(),state.calculated)
-      .byKey.get(trait.key)?.find(group=>group.type===type)?.items.find(row=>row.id===id);
+    const item=trait&&(state.traitBenefitGroupsByKey?.get(trait.key)||
+      distributeTraitBenefits(state.traitRows,state.editor.read(),state.calculated).byKey.get(trait.key))
+      ?.find(group=>group.type===type)?.items.find(row=>row.id===id);
     if(!item)throw Error('Beneficio non presente');
     setTraitBenefitRemovalConfirmation({...item,type});
     return;
@@ -7728,8 +7731,9 @@ async function handleAction(target){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     const id=target.dataset.benefitId,type=target.dataset.benefitType;
     if(!trait||id!==state.traitPopupConfirm)throw Error('Eliminazione non confermata');
-    const group=distributeTraitBenefits(state.traitRows,state.editor.read(),state.calculated)
-      .byKey.get(trait.key)?.find(row=>row.type===type&&row.items.some(item=>item.id===id));
+    const group=(state.traitBenefitGroupsByKey?.get(trait.key)||
+      distributeTraitBenefits(state.traitRows,state.editor.read(),state.calculated).byKey.get(trait.key))
+      ?.find(row=>row.type===type&&row.items.some(item=>item.id===id));
     if(!group)throw Error('Beneficio non più presente');
     await patch(removeBenefitPatch(state.editor.read(),trait,{id,type}));
     await state.editor.flush();
