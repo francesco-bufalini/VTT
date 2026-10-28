@@ -6765,6 +6765,8 @@ async function handleAction(target){
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
         dialog.rollOutcome=state.roll;dialog.rollHistoryEntry=state.rollHistory[0];
+        const damageEnd=endTemporaryConditionPatch(state.editor.read());
+        if(Object.keys(damageEnd).length)await patch(damageEnd);
         // A paid class-feature modifier applies to one damage roll only.
         // Keep the existing optional weapon dice behavior unchanged.
         const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
