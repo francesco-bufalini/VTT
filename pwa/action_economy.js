@@ -176,7 +176,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const time=String(attack.id).startsWith('monster:')?(section==='bonus'||section==='reaction'?section:'action'):attack.offhand_bonus?'bonus':'action';
   const hit=attack.hit!==null&&attack.hit!==undefined&&attack.hit!==''&&Number.isFinite(Number(attack.hit))?
    'Colpire: '+(Number(attack.hit)>=0?'+':'')+attack.hit+'. ':'';
-  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+(attack.damage_explanation?attack.damage_explanation+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.','',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
+  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+(attack.damage_explanation?attack.damage_explanation+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.'+
+   (arr(attack.on_hit_effects).length?' Effetti sul colpo: '+arr(attack.on_hit_effects).map(effect=>effect.description).filter(Boolean).join(' · '):''),'',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
  }
  // Fallback for older schemas without the local computed attack projection.
  for(const attack of arr(record.attacks))if(attack?.name&&!already.has(String(attack.id))){
