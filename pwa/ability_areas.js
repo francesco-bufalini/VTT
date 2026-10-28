@@ -33,7 +33,8 @@ export function pointInAbilityArea(point,polygon,radius=0){
 export function abilityAreaPreview(snapshot={},casterId='',aim=[],area={}){
  const markers=Array.isArray(snapshot.markers)?snapshot.markers:[];
  const caster=markers.find(x=>x.id===casterId);
- const scale=Number(snapshot.width||0)/Number(snapshot.field_feet||0);
+ // Match Godot map_snapshot_view.gd's field-feet to image-height scale.
+ const scale=Number(snapshot.height||snapshot.width||0)/Number(snapshot.field_feet||0);
  if(!caster||!Number.isFinite(scale)||scale<=0)return null;
  const points=abilityAreaPolygon([caster.x,caster.y],aim,area,scale);
  if(!points.length)return null;
