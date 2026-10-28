@@ -480,11 +480,12 @@ function subclassKey(value){
 // Source-qualified feat mechanics are ordinary typed tracker/roll/action grants.
 // No talent names appear in the runtime projection logic.
 export function featMechanicGrants(record={},index={}){
- const result={trackers:[],roll_modes:[],roll_bonuses:[],movement_rules:[],spell_imprints:[],actions:[]};
+ const result={trackers:[],roll_modes:[],roll_bonuses:[],movement_rules:[],spell_imprints:[],attacks:[],actions:[]};
  for(const feat of arr(record.feats_catalog)){
   if(!feat?.name||feat.disabled)continue;
   const rule=arr(index.feat_mechanics).find(row=>same(row.name,feat.name)&&same(row.source,feat.source));
-  if(!rule)continue;
+  if(!rule||rule.required_species&&
+    !norm(record.species).startsWith(norm(rule.required_species)))continue;
   const origin_id='feat|'+norm(feat.source)+'|'+norm(feat.name);
   for(const raw of arr(rule.trackers))result.trackers.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,automatic:true});
@@ -496,6 +497,8 @@ export function featMechanicGrants(record={},index={}){
     origin_name:'Talento · '+feat.name,feat_name:feat.name});
   for(const raw of arr(rule.spell_imprints))result.spell_imprints.push({...raw,origin_id,
     origin_name:feat.name,feat_name:feat.name});
+  for(const raw of arr(rule.attacks))result.attacks.push({...raw,origin_id,
+    origin_name:'Talento · '+feat.name,feat_name:feat.name});
   for(const raw of arr(rule.actions))result.actions.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,origin_key:origin_id,automatic:true,
     cost:Math.max(0,Number(raw.resource_cost)||0),time:raw.action_type||raw.activation||'reaction'});
@@ -648,6 +651,13 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
     offhand_bonus:attack.slot==='off'||attack.slot==='shield'&&attack.hand==='off'});
  };
  for(const weapon of traitStateAttacks(record,featureContext.features,featureContext.traitStates))append(weapon,weapon.ability,true,weapon.damage);
+ // Grant a distinct natural strike from a typed feat without changing all
+ // unarmed strikes or making the weapon depend on inventory equipment.
+ for(const strike of arr(featureContext.featAttacks))if(strike?.id&&strike.damage){
+  append({...strike,slot:'natural',melee:strike.melee!==false,
+    origin_id:strike.origin_id,origin_name:strike.origin_name,
+    range_feet:Number(strike.range_feet)||5},strike.ability||'str',true,strike.damage);
+ }
  for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
   if(!action?.name)return;
   const text=JSON.stringify(action.entries||[]),hit=text.match(/\{@hit\s*([+-]?\d+)\}/)||text.match(/([+-]\d+)\s+to\s+hit/i);
@@ -1372,7 +1382,9 @@ function calculateSheetValues(record={},catalogs={}){
       {...selected,enabled_target:'attack_damage_base:'+id});
     return result;
   };
-  const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
+  const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,
+    featAttacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
+    features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const effect_extensions=equippedExtensions;
@@ -1473,7 +1485,13 @@ function calculateSheetValues(record={},catalogs={}){
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
     feat_roll_modes:[...featMechanics.roll_modes,...barbarian.conditional_modes].filter(row=>sourceEnabled(row)),
     feat_roll_bonuses:featMechanics.roll_bonuses.filter(row=>sourceEnabled(row)),
-    feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)),
+    feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)).flatMap(row=>{
+      if(row.tracker_binding!=='racial_breath_weapon')return [row];
+      const power=racialPowers.abilities.find(power=>power.name==='Breath Weapon'&&power.tracker_id);
+      const tracker=power&&trackers.find(item=>item.id===power.tracker_id&&!item.disabled);
+      return tracker?[{...row,tracker_id:tracker.id,resource_cost:1}]:[];
+    }),
+    feat_attacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
     actions:barbarian.actions.map(row=>barbarianTrackerIds.has(row.tracker_id)?
       {...row,tracker_id:barbarianTrackerIds.get(row.tracker_id)}:row),
     proficiency_catalog_overrides:proficiencyIndex,
