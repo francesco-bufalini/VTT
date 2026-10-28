@@ -26,6 +26,7 @@ import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups, rollGrantTraitRow } from "./trait_benefits.js";
+import { distributeTraitBenefits } from "./trait_benefit_distribution.js";
 import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
 import {applicableSpeciesRollModes} from './species_roll_modes.js';
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
@@ -2475,20 +2476,21 @@ async function traitsView(c){
   }
   return state.referenceCatalogs[category];
  };
- const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
+ const originalRows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument,conditionLabel,
    conditionCatalog:state.conditionCatalog,spells:state.spellCatalog||[]}),
   state.calculated?.origin_spells||[],state.spellCatalog||[]);
- const groups=groupTraitRows(rows);
  const benefitProjection={...(state.calculated||{}),
   activatable_abilities:abilitiesForCreature(c,state.abilityCatalog||[],state.calculated||{},
    {includeUnavailable:true})};
+ const {rows,byKey:benefitsByTrait}=distributeTraitBenefits(originalRows,c,benefitProjection);
+ const groups=groupTraitRows(rows);
  if(state.creatureId===c.id&&!state.libraryMode&&state.sheet==='info')
    state.traitRows=rows;
  const renderCard=trait=>{
   const itemQuantity=trait.item_requires_attunement?trait.item_active_quantity:trait.item_quantity;
   const description=flattenDescription({entries:trait.entries});
-  const benefitCount=traitBenefitGroups(trait,c,benefitProjection)
+  const benefitCount=(benefitsByTrait.get(trait.key)||[])
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
   // The icon is a separate control, not a nested button inside <summary>.
@@ -2560,7 +2562,8 @@ function mountTraitBenefitDialog(){
  const benefitProjection={...(state.calculated||{}),
   activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{},
    {includeUnavailable:true})};
- const groups=traitBenefitGroups(trait,record,benefitProjection);
+ const groups=distributeTraitBenefits(state.traitRows,record,benefitProjection)
+  .byKey.get(trait.key)||[];
  const isOwnedItem=trait.category==='oggetti'&&trait.rank===0&&
    String(trait.origin_key||'').startsWith('item:');
  const ownedCopies=isOwnedItem?(Array.isArray(trait.item_inventory_indices)&&
@@ -7701,8 +7704,8 @@ async function handleAction(target){
        dialog.dataset.traitKey!==state.traitPopupKey)return;
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     const id=target.dataset.benefitId,type=target.dataset.benefitType;
-    const item=trait&&traitBenefitGroups(trait,state.editor.read(),state.calculated)
-      .find(group=>group.type===type)?.items.find(row=>row.id===id);
+    const item=trait&&distributeTraitBenefits(state.traitRows,state.editor.read(),state.calculated)
+      .byKey.get(trait.key)?.find(group=>group.type===type)?.items.find(row=>row.id===id);
     if(!item)throw Error('Beneficio non presente');
     setTraitBenefitRemovalConfirmation({...item,type});
     return;
@@ -7715,8 +7718,8 @@ async function handleAction(target){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     const id=target.dataset.benefitId,type=target.dataset.benefitType;
     if(!trait||id!==state.traitPopupConfirm)throw Error('Eliminazione non confermata');
-    const group=traitBenefitGroups(trait,state.editor.read(),state.calculated)
-      .find(row=>row.type===type&&row.items.some(item=>item.id===id));
+    const group=distributeTraitBenefits(state.traitRows,state.editor.read(),state.calculated)
+      .byKey.get(trait.key)?.find(row=>row.type===type&&row.items.some(item=>item.id===id));
     if(!group)throw Error('Beneficio non più presente');
     await patch(removeBenefitPatch(state.editor.read(),trait,{id,type}));
     await state.editor.flush();
