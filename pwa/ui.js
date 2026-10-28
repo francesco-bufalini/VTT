@@ -1855,7 +1855,11 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    }
    closeDialog(dialog,{remove:true});await render();
    const effectFormula=racialAbilityEffectFormula(currentAbility,fresh);
-   const effectRoll=effectFormula?rollBattleDamage(effectFormula,randomDie):null;
+   const featureTarget=effectFormula?featureRollTarget(currentAbility):'';
+   // Feature rolls are no longer thrown invisibly as part of activation: after
+   // spending the reaction/use, open the shared popup so other owned traits
+   // can contribute dice specifically to this feature's stable roll ID.
+   const effectRoll=effectFormula&&!featureTarget?rollBattleDamage(effectFormula,randomDie):null;
    if(effectRoll){
      state.roll={...effectRoll,label:(currentAbility.roll_effect?.label||'Tiro capacità')+' · '+currentAbility.name,author:selectedName()};
      state.rollHistory.unshift({...state.roll});
@@ -1880,6 +1884,10 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
        ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' · '+selectedMode.description:'')+
      (shape?' Effetti da applicare ai bersagli nell’area.':'')+
      (persistentKey?(currentAbility.duration_rounds===1?' Condizione attiva fino al prossimo turno o a un attacco, tiro danni o TS imposto.':' Effetto attivo per massimo 1 minuto; termina da Condizioni.') :''));
+   if(featureTarget){
+     const live=state.editor?.read();
+     if(live?.id===current.id)openFeatureRollDialog(live,await computeLocalData(live),currentAbility,effectFormula);
+   }
   }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -5228,6 +5236,31 @@ function openConcentrationDamageDialog(check,creature,calculated){
  document.body.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
+ return dialog;
+}
+// One reusable roller for feature-owned dice, e.g. Stone's Endurance and
+// Hadozee Dodge. Its roll target and source survive in roll history and can
+// be addressed by another trait's dice bonus or ability effect extension.
+function openFeatureRollDialog(creature,calculated,ability,formula=''){
+ const target=featureRollTarget(ability);
+ if(!target||!formula)return null;
+ const preview=damageRollTerms(formula);
+ const optional=rollOptionalDice(creature,calculated,[
+   ...applicableDiceBonuses(creature,target,state.spellCatalog||[],calculated),
+   ...classFeatureRollBonuses(creature,calculated,target),
+   ...applicableFeatRollBonuses(creature,calculated,target),
+   ...featureRollExtensionBonuses(calculated,ability)
+ ],{kind:'feature'});
+ const dialog=openUnifiedRollDialog({kind:'feature',heading:ability.name,
+   rollType:ability.roll_effect?.label||'Tiro della capacità',
+   modifier:preview.modifier,formula:sheetRollOriginHtml(preview.segments,esc),
+   bonuses:optional,creatureId:creature.id||'',target,
+   damageFormula:formula,damageLabel:(ability.roll_effect?.label||'Tiro')+' · '+ability.name});
+ dialog.dataset.featureRollTarget=target;
+ dialog.dataset.featureRollOriginId=ability.origin_id||ability.feature_id||'';
+ dialog.renderRollFormula=()=>{dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
+   [...damageRollTerms(formula).segments,...[...chosenRollBonuses(dialog),
+     ...(dialog.postRollBonuses||[])].map(rollBonusTerm)],esc);};
  return dialog;
 }
 function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,formula,bonuses=[],autoLabel='',creatureId='',target='',damageFormula='',damageType='',damageLabel=''}){
