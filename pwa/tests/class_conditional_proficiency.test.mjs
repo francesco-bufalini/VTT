@@ -46,13 +46,14 @@ test('Jack of All Trades and Remarkable Athlete apply half proficiency only to u
  const b=record('Bard'),f=record('Fighter','PHB','Champion');
  assert.equal(get(b,calc([bard],[],5),'initiative')[0]?.flat_bonus,2);
  assert.equal(get(b,calc([bard],['skill:arcana'],5),'skill:arcana').length,0);
- assert.equal(get(f,calc([champ],[],5),'ability_check:str')[0]?.flat_bonus,2);
- assert.equal(get(f,calc([champ],[],5),'skill:acrobatics')[0]?.flat_bonus,2);
+ assert.equal(get(f,calc([champ],[],5),'ability_check:str')[0]?.flat_bonus,3);
+ assert.equal(get(f,calc([champ],[],5),'skill:acrobatics')[0]?.flat_bonus,3);
  assert.equal(get(f,calc([champ],[],5),'skill:arcana').length,0);
  assert.equal(get(f,calc([champ],['skill:athletics'],5),'skill:athletics').length,0);
  const mixed={...b,classes:[...b.classes,...f.classes]};
  const applicable=get(mixed,calc([bard,champ],[],5),'skill:athletics');
  assert.equal(applicable.length,1,'half proficiency is not cumulative');
+ assert.equal(applicable[0].flat_bonus,3,'the higher rounded-up Champion benefit wins');
 });
 
 test('Natural Explorer doubles trained INT/WIS skill proficiency only in its manual favored-terrain context',()=>{
