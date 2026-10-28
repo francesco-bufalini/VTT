@@ -51,7 +51,7 @@ test('Goliath and Hadozee have reaction trackers and reusable damage mitigation 
   assert.equal(p.trackers[0].recharge,'long_rest');
   assert.equal(racialAbilityEffectFormula(ability,computed),formula);
   assert.equal(rollBattleDamage(formula,()=>6).total,total);
-  const activated=abilitiesForCreature(c,[],{...p,features:[owner(c,traits[name][0])]});
+  const activated=abilitiesForCreature(c,[],{...p,racial_abilities:p.abilities,features:[owner(c,traits[name][0])]});
   assert.equal(activated.length,1);
   assert.equal(battleAbilityEntries(c,{...p,trackers:p.trackers},[],activated)
    .find(row=>row.name===ability.name)?.roll_effect?.label,'Riduzione danni');
@@ -66,7 +66,7 @@ test('Satyr jump die is usable without a tracker or hidden action cost',()=>{
  assert.equal(p.abilities[0].action_type,'movement');
  assert.equal(racialAbilityEffectFormula(p.abilities[0],computed),'1d8');
  assert.equal(rollBattleDamage('1d8',()=>5).total,5);
- const activated=abilitiesForCreature(c,[],{...p,features:[owner(c,'Mirthful Leaps')]});
+ const activated=abilitiesForCreature(c,[],{...p,racial_abilities:p.abilities,features:[owner(c,'Mirthful Leaps')]});
  assert.equal(activated.length,1);
 });
 
