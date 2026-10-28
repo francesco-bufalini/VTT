@@ -317,6 +317,17 @@
           "dice": "1d4",
           "condition_label": "Reazione dopo un tiro salvezza di Destrezza fallito; non se sei Prono o hai velocità 0.",
           "optional": true
+        },
+        {
+          "id": "racial:mpmm:harengon:hare_trigger",
+          "trait": "Hare-Trigger",
+          "name": "Hare-Trigger",
+          "flat_proficiency": true,
+          "automatic_apply": true,
+          "targets": [
+            "initiative"
+          ],
+          "description": "Il bonus di competenza si aggiunge automaticamente all'iniziativa, senza consumare utilizzi."
         }
       ]
     },
