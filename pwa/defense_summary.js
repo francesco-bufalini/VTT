@@ -3,6 +3,7 @@ const arr=value=>Array.isArray(value)?value:[];
 const low=value=>String(value??'').trim().toLowerCase();
 const DAMAGE={
  acid:'Acido',bludgeoning:'Contundenti',cold:'Freddo',fire:'Fuoco',
+ spell_damage:'Danni da incantesimi',
  force:'Forza',lightning:'Fulmine',necrotic:'Necrotici',piercing:'Perforanti',
  poison:'Veleno',psychic:'Psichici',radiant:'Radianti',slashing:'Taglienti',thunder:'Tuono'
 };
