@@ -16,6 +16,7 @@ const SHELL = [
   "/ui.js",
   "/ui_primitives.js",
   "/trait_benefits.js",
+  "/trait_benefit_distribution.js",
   "/trait_benefit_editor.js",
   "/effect_extensions.js",
   "/trait_projection.js",
