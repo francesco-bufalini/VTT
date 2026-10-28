@@ -1317,6 +1317,20 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    power.mode==='heal_dice'&&('activated:'+power.id===requested||power.id===ability.ability_id));
  const healRecipients=healPower&&!selectedTarget?(await listCreatures()).map(row=>row.creature||row)
    .filter(row=>row?.id):[];
+ const shape=ability.area_shape==='line'?
+   'Linea '+ability.area_length_feet+' × '+ability.area_width_feet+' ft':
+   ability.area_shape==='cone'?'Cono '+ability.area_radius_feet+' ft':'';
+ const saveDC=8+Number(calculated.stats?.proficiency||2)+Number(calculated.abilities?.con?.modifier||0);
+ const areaDetails=shape?'<div class="magic-ability-area"><dl class="magic-spell-facts">'+
+   '<div class="magic-spell-fact"><dt>Area</dt><dd>'+esc(shape)+'</dd></div>'+
+   '<div class="magic-spell-fact"><dt>CD</dt><dd>'+esc(saveDC)+'</dd></div>'+
+   (ability.damage_formula?'<div class="magic-spell-fact"><dt>Danni</dt><dd>'+
+     esc(ability.damage_formula)+' '+esc(ability.damage_type)+'</dd></div>':'')+
+   '</dl>'+(ability.mode==='choice_area'?'<label>Modalità del soffio<select data-dragonborn-breath-mode>'+
+     (ability.options||[]).map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+
+       ' · TS '+esc((row.save_ability||'').toUpperCase())+'</option>').join('')+
+     '</select></label>':'')+
+   '<p class="hint">Controlla i bersagli nell’area sulla mappa.</p></div>':'';
  dialog.innerHTML=actionDialogIntro(ability.name,[
   {label:'Azione',value:ability.time||'Secondo il privilegio'},
   {label:'Origine',value:ability.origin_name||ability.origin||'Tratto'},
@@ -1330,6 +1344,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     ability.target_mode==='single_token'?'La partita non è collegata: scegli il bersaglio manualmente.':'',
   'other-ability-close')+
   abilityPaymentField(ability,calculated)+
+  areaDetails+
   (healPower?(selectedTarget?
     '<p class="hint">Cura a contatto · '+esc(calculated.stats?.proficiency||0)+'d4. Il tiro viene effettuato alla conferma per il token selezionato.</p>':
     '<label>Creatura da curare<select data-heal-target>'+
@@ -1381,6 +1396,13 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
+   const mode=currentAbility.mode||'';
+   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight'].includes(mode);
+   if(mandatory&&(!spend||choice!==currentAbility.tracker_id||cost!==1))
+     throw Error('La capacità richiede un utilizzo del tracker associato.');
+   const selectedMode=mode==='choice_area'?(currentAbility.options||[]).find(row=>
+     row.id===dialog.querySelector('[data-dragonborn-breath-mode]')?.value):null;
+   if(mode==='choice_area'&&!selectedMode)throw Error('Seleziona un soffio valido.');
    if(healPower?.mode==='heal_dice'){
      if(!spend||choice!==healPower.tracker_id)
        throw Error('Healing Hands richiede un utilizzo del tracker.');
@@ -1413,7 +1435,9 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      if(record.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
      changes.active_class_features={...(record.active_class_features||{}),
       [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.origin_id||currentAbility.feature_id||requested,
-       rules_version:record.rules_version||'2014',enhanced:false}};
+       rules_version:record.rules_version||'2014',enhanced:false,
+       duration_rounds:Math.max(0,Number(currentAbility.duration_rounds)||0),
+       damage_type:currentAbility.damage_type||''}};
     }
     return changes;
    });
@@ -1421,10 +1445,19 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    await state.editor.flush();
    if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
    closeDialog(dialog,{remove:true});await render();
-   message((selectedTarget?'Bersaglio: '+selectedTarget.name+' · ':'')+
-    (cost&&spend?currentAbility.name+': '+cost+' utilizzi consumati.':
-    currentAbility.name+': utilizzo confermato senza consumo.')+
-    (selectedTarget?' Effetti da applicare secondo il privilegio.':''));
+   const damage=mode==='save_area'&&currentAbility.damage_formula?
+     rollBattleDamage(currentAbility.damage_formula,randomDie):null;
+   if(damage){
+     state.roll={...damage,label:'Danni · '+currentAbility.name,author:selectedName()};
+     state.rollHistory.unshift({...state.roll});
+   }
+   message(currentAbility.name+': utilizzo registrato.'+
+     (damage?' Danni '+damage.notation+' = '+damage.total+' '+currentAbility.damage_type+'.':'')+
+     (mode==='save_area'?' TS DES CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' (metà danni con TS riuscito).':'')+
+     (selectedMode?' '+selectedMode.name+' · TS '+selectedMode.save_ability.toUpperCase()+
+       ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' · '+selectedMode.description:'')+
+     (shape?' Effetti da applicare ai bersagli nell’area.':'')+
+     (persistentKey?' Effetto attivo per massimo 1 minuto; termina da Condizioni.':''));
   }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -5602,7 +5635,7 @@ async function handleAction(target){
     if(ability.class_feature_id){
       await activateClassAbility(c,calculated,ability);return;
     }
-    const persistentKey=String(target.dataset.persistentKey||'');
+    const persistentKey=String(target.dataset.persistentKey||ability.persistent_key||power?.persistent_key||'');
     if(ability.target_mode==='single_token'&&state.paired&&state.online){
       await startTargetedAbility(c,ability,persistentKey,requested);return;
     }
