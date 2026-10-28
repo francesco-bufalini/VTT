@@ -40,7 +40,7 @@ import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayRe
 import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
-import {claimFeatureItemPatch} from './feature_item_grants.js';
+import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
@@ -1183,7 +1183,7 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" required></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
   (itemGrant?'<label>Oggetto concesso<select data-feature-item-choice>'+itemGrant.items.map(item=>
-    '<option value="'+esc(item.id)+'"'+(item.owned?' disabled':'')+'>'+esc(item.name)+(item.owned?' · posseduto':'')+'</option>').join('')+
+    '<option value="'+esc(item.id)+'"'+(item.owned&&!itemGrant.allow_duplicate_choices?' disabled':'')+'>'+esc(item.name)+(item.owned?' · posseduto ×'+item.owned:'')+'</option>').join('')+
     '</select></label>':'')+
   featureCompanionFields(companion)+
    '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
@@ -2166,7 +2166,7 @@ function mountTraitBenefitDialog(){
     '<div class="trait-benefit-manage-row">'+
      '<div class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
       (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</div>'+
-     (group.type==='items'?'<button type="button" class="btn small" data-act="trait-feature-item-grant" data-grant-id="'+esc(item.grant_id)+'" data-item-id="'+esc(item.option_id)+'"'+(item.owned||!item.available?' disabled':'')+'>'+ (item.owned?'Posseduto':item.available?(item.requires_activation?'Usa capacità':'Aggiungi'):'Limite raggiunto')+'</button>':'')+
+     (group.type==='items'?'<button type="button" class="btn small" data-act="trait-feature-item-grant" data-grant-id="'+esc(item.grant_id)+'" data-item-id="'+esc(item.option_id)+'"'+(!item.available?' disabled':'')+'>'+ (!item.available?(item.owned?'Posseduto':'Limite raggiunto'):item.requires_activation?'Usa capacità':'Aggiungi')+'</button>':'')+
      (!trait.readonly&&!['items','attacks','armor_class','effects','granted_features'].includes(group.type)&&(group.type!=='roll_modes'||item.id.startsWith('roll_mode:trait:'))&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
     '</div>').join('')+
    '</section>').join('');
