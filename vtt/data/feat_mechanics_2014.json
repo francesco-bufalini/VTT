@@ -254,6 +254,34 @@
           "description": "Una volta per turno, quando danneggi una creatura visibile entro 60 ft, puoi infliggere 1d8 danni da forza extra. TS Saggezza (CD 8 + competenza + caratteristica scelta per Scion of the Outer Planes); in caso di fallimento, Trattenuto fino all'inizio del tuo prossimo turno. Il bersaglio e l'esito del TS si confermano manualmente."
         }
       ]
+    },
+    {
+      "name": "Cartomancer",
+      "source": "BMT",
+      "spell_imprints": [
+        {
+          "id": "feat:bmt:cartomancer:hidden-ace",
+          "name": "Hidden Ace",
+          "item_filter": "card",
+          "spell_filter": "class_action_with_slots",
+          "max_uses": 1,
+          "recharge": "long_rest",
+          "duration_hours": 8,
+          "cast_action_type": "bonus",
+          "description": "Al termine di un riposo lungo, scegli un incantesimo della lista della tua classe che richieda un'azione e per cui possiedi slot. Lo conservi in una carta per 8 ore; puoi lanciarlo una volta come azione bonus senza consumare slot."
+        }
+      ],
+      "actions": [
+        {
+          "id": "feat:bmt:cartomancer:prepare-hidden-ace",
+          "name": "Hidden Ace",
+          "action_type": "contextual",
+          "mode": "spell_imprint",
+          "imprint_rule_id": "feat:bmt:cartomancer:hidden-ace",
+          "resource_cost": 0,
+          "description": "Scegli una carta e un incantesimo della lista della tua classe dopo un riposo lungo, quindi lancialo dalla carta con un'azione bonus entro otto ore."
+        }
+      ]
     }
   ]
 }
