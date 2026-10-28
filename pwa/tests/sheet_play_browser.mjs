@@ -552,7 +552,8 @@ try{
  await page.locator('#hp-adjust-amount').fill('7');
  await page.locator('#hp-adjust-dialog [data-hp-mode="damage"]').click();
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view [data-read-field="current_hp"]')?.textContent==='37');
- assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,0,37]);
+ assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,4,37],
+   'The separate inactive form keeps its HP while damage consumes temporary and current HP');
  // Healing uses the same editor and caps at the computed maximum.
  await hpCard.click({position:{x:22,y:80}});
  await page.locator('#hp-adjust-amount').fill('3');
