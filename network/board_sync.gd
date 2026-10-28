@@ -1158,6 +1158,16 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				if not ContentCatalog.valid_effect_id(condition_id) or seen_conditions.has(condition_id):
 					return false
 				seen_conditions[condition_id] = true
+			var hit_effects_value: Variant = item.get("hit_effects", [])
+			if not hit_effects_value is Array or (hit_effects_value as Array).size() > 32:
+				return false
+			for hit_effect: Variant in hit_effects_value:
+				if not hit_effect is Dictionary or String(hit_effect.get("id", "")).length() > 256:
+					return false
+				if String(hit_effect.get("operation", "")) not in ["roll_mode", "condition"]:
+					return false
+				if String(hit_effect.get("source_token_id", "")).length() > 256 or String(hit_effect.get("attack_name", "")).length() > 160:
+					return false
 			# Token effects are persisted in map snapshots and across peers.
 			# They remain independent of the owner's private creature archive.
 			var active_spell_value: Variant = item.get("active_spell_ids", [])
@@ -1963,6 +1973,9 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_conditions")
 			else []
 		)
+		# Source-qualified effects remain on the target token across saves and
+		# across peers, independent of any private character archive.
+		data["hit_effects"] = node.get_meta("attack_hit_effects", [])
 		data["active_spell_ids"] = (
 			node.call("get_active_spell_ids")
 			if node.has_method("get_active_spell_ids") else []
@@ -2171,6 +2184,8 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				node.set_meta(field, value)
 			elif node.has_meta(field):
 				node.remove_meta(field)
+		# Snapshots from older peers omit this field and clear stale marks.
+		node.set_meta("attack_hit_effects", data.get("hit_effects", []))
 		if node.has_method("set_condition_presentations"):
 			node.call("set_condition_presentations", data.get("condition_presentations", []))
 		if node.has_method("set_active_spell_ids"):
@@ -2572,6 +2587,7 @@ func get_tactical_map_data() -> Dictionary:
 				and String(node.get_meta("creature_owner_id", "")).is_empty()
 			),
 			"conditions": node.call("get_conditions") if node.has_method("get_conditions") else [],
+			"hit_effects": node.get_meta("attack_hit_effects", []),
 			"party_id": String(node.call("get_party_id")) if node.has_method("get_party_id") else String(node.get_meta("party_id", "")),
 			"size_name": String(node.call("get_size_name")) if node.has_method("get_size_name") else "Medium",
 			"footprint_cells": float(node.call("get_footprint_cells")) if node.has_method("get_footprint_cells") else 1.0,
@@ -2693,6 +2709,73 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		# The server validates both tokens and never invents a successful die.
 		var confirmed: bool = payload.get("success_confirmed", false) is bool and bool(payload.get("success_confirmed", false))
 		return BasicCombat.execute(board_root, target, victim, mode, confirmed)
+	# This action records a declared hit directly on the shared map. No die
+	# roll, hit confirmation or damage calculation is required or implied.
+	if action == "hit_attack":
+		var actor_owner: String = String(target.get_meta("creature_owner_id", ""))
+		if actor_owner.is_empty() or String(payload.get("owner_id", "")) != actor_owner:
+			return {"ok": false, "error": "Non controlli il token che esegue l'attacco."}
+		var victim := _visible_mobile_token(String(payload.get("target_id", "")))
+		if victim == null or victim == target:
+			return {"ok": false, "error": "Seleziona un'altra creatura presente sulla mappa."}
+		var attack_id := String(payload.get("attack_id", "")).strip_edges()
+		var attack_name := String(payload.get("attack_name", "")).strip_edges()
+		var declared: Variant = payload.get("effects", [])
+		if attack_id.is_empty() or attack_id.length() > 160 or attack_name.is_empty() or attack_name.length() > 160:
+			return {"ok": false, "error": "Attacco non valido."}
+		if not declared is Array or declared.size() > 8:
+			return {"ok": false, "error": "Troppi effetti per questo attacco."}
+		var tracker := _initiative_tracker()
+		var combat: Dictionary = tracker.call("get_save_state") if tracker != null else {}
+		var round_number: int = int(combat.get("round", 0)) if bool(combat.get("active", false)) else 0
+		var existing: Variant = victim.get_meta("attack_hit_effects", [])
+		var marks: Array = existing.duplicate(true) if existing is Array else []
+		var added: int = 0
+		for effect_index in range(declared.size()):
+			var rule: Variant = declared[effect_index]
+			if not rule is Dictionary or String(rule.get("trigger", "")) != "on_hit":
+				return {"ok": false, "error": "Effetto sul colpo non valido."}
+			var operation := String(rule.get("operation", ""))
+			var duration := String(rule.get("duration", ""))
+			if duration not in ["until_start_of_next_turn", "manual", ""]:
+				return {"ok": false, "error": "Durata dell'effetto non supportata."}
+			if operation == "roll_mode":
+				if String(rule.get("mode", "")) not in ["advantage", "disadvantage"] or String(rule.get("target", "")) != "attack_roll":
+					return {"ok": false, "error": "Modificatore ai tiri non supportato."}
+			elif operation == "condition":
+				var condition_id: String = String(rule.get("condition_id", ""))
+				if duration == "until_start_of_next_turn" or not ContentCatalog.valid_effect_id(condition_id):
+					return {"ok": false, "error": "Condizione o durata non supportata."}
+			else:
+				return {"ok": false, "error": "Tipo di effetto non supportato."}
+		for effect_index in range(declared.size()):
+			var rule: Dictionary = declared[effect_index]
+			var mark_id := "hit:%s:%s:%s:%s" % [get_sync_id_for_node(target), attack_id, get_sync_id_for_node(victim), str(effect_index)]
+			var retained: Array = []
+			for old_mark: Variant in marks:
+				if old_mark is Dictionary and String(old_mark.get("id", "")) != mark_id:
+					retained.append(old_mark)
+			marks = retained
+			var record := {
+				"id": mark_id, "source_token_id": get_sync_id_for_node(target),
+				"target_token_id": get_sync_id_for_node(victim),
+				"source_name": String(target.call("get_display_name")) if target.has_method("get_display_name") else String(target.name),
+				"attack_id": attack_id, "attack_name": attack_name,
+				"operation": String(rule.get("operation", "")), "target": String(rule.get("target", "")),
+				"mode": String(rule.get("mode", "")), "condition_id": String(rule.get("condition_id", "")),
+				"condition_label": String(rule.get("condition_label", "")).substr(0, 160),
+				"duration": String(rule.get("duration", "")), "applied_round": round_number
+			}
+			marks.append(record)
+			if String(rule.get("operation", "")) == "condition":
+				board_root.call("_set_token_status", victim, String(rule.get("condition_id", "")), true)
+			added += 1
+		if marks.size() > 32:
+			marks = marks.slice(marks.size() - 32, marks.size())
+		if added > 0:
+			victim.set_meta("attack_hit_effects", marks)
+			board_root.call_deferred("_sync_explicit_token_change", victim)
+		return {"ok": true, "target_id": get_sync_id_for_node(victim), "attack_name": attack_name, "effects_applied": added}
 	if action == "set_condition":
 		var id: String = String(payload.get("condition_id", ""))
 		if not payload.get("enabled") is bool:
