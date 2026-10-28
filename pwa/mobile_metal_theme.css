@@ -5736,3 +5736,63 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 .sheet-movement-dialog .sheet-movement-value strong,.sheet-movement-dialog .sheet-movement-jumps strong{
  color:#f5dcb2;white-space:nowrap;font-size:14px}
 .sheet-movement-dialog .sheet-movement-jumps li{display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+/* Inventory selection is activated by a long hold, as in the creature archive.
+   External checkboxes never overlay the regular item-details button. */
+#sheet-play-view .inventory-bulk-bar{
+  display:flex;align-items:center;flex-wrap:wrap;gap:9px;
+  padding:10px 12px;border:1px solid #a4825799;border-radius:11px;
+  background:linear-gradient(145deg,#433229,#29221e);
+  color:#ebd0a5;font:500 12px/1.35 system-ui,sans-serif;
+}
+#sheet-play-view .inventory-bulk-bar[hidden]{display:none!important}
+#sheet-play-view .inventory-bulk-master{display:inline-flex;align-items:center;gap:7px;cursor:pointer;min-height:42px}
+#sheet-play-view .inventory-bulk-master>input{position:absolute;opacity:0;width:1px;height:1px}
+#sheet-play-view .inventory-check-graphic{
+  display:grid;place-items:center;flex:none;width:25px;height:25px;
+  background:#29201d;border:1px solid #a78a60;border-radius:7px;
+  color:transparent;font-size:15px;font-weight:750;
+}
+#sheet-play-view .inventory-bulk-master input:checked+.inventory-check-graphic,
+#sheet-play-view .inventory-item-batch-check input:checked+.inventory-check-graphic{
+  background:linear-gradient(#967049,#68482f);border-color:#e6b980;color:#fff1d1;
+}
+#sheet-play-view .inventory-bulk-master input:indeterminate+.inventory-check-graphic::after{
+  content:"";background:#ffe9c9;width:11px;height:2px;border-radius:2px;
+}
+#sheet-play-view .inventory-bulk-master input:focus-visible+.inventory-check-graphic,
+#sheet-play-view .inventory-item-batch-check input:focus-visible+.inventory-check-graphic{
+  outline:2px solid #ffdd9d;outline-offset:3px;
+}
+#sheet-play-view [data-inventory-selection-count]{font-size:12px;white-space:nowrap}
+#sheet-play-view .inventory-bulk-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-left:auto}
+#sheet-play-view .inventory-bulk-actions .library-bulk-button{
+  min-height:40px;min-width:73px;padding:8px 11px;
+  border:1px solid #9d794d;border-radius:8px;background:#5e4735;
+  color:#f4dfbf;font:600 12px/1.1 system-ui,sans-serif;cursor:pointer;
+}
+#sheet-play-view .inventory-bulk-actions .library-bulk-delete{border-color:#bc6e65;background:#633630}
+#sheet-play-view .inventory-bulk-actions .library-bulk-button:focus-visible{
+  outline:2px solid #f4cb8c;outline-offset:2px;
+}
+#sheet-play-view .inventory-selectable-item{display:flex;align-items:stretch;min-width:0;position:relative}
+#sheet-play-view .inventory-selectable-item>[data-play-filter]{flex:1;min-width:0}
+#sheet-play-view .inventory-item-batch-check{
+  display:none;align-items:center;justify-content:center;flex:0 0 42px;
+  padding:6px 7px;border-top:1px solid #ac83502b;
+  cursor:pointer;
+}
+#sheet-play-view .inventory-item-batch-check input{
+  position:absolute;left:8px;top:50%;transform:translateY(-50%);
+  width:32px;height:40px;margin:0;opacity:0;cursor:pointer;
+}
+#sheet-play-view.is-inventory-selecting .inventory-item-batch-check{display:flex}
+#sheet-play-view .inventory-selectable-item.is-selected{
+  background:#b17e3824;box-shadow:inset 3px 0 #e4b678;
+}
+#sheet-play-view.is-inventory-selecting .inventory-play-item{touch-action:pan-y}
+@media(max-width:360px){
+  #sheet-play-view .inventory-bulk-actions{width:100%;margin-left:0}
+  #sheet-play-view .inventory-bulk-actions .library-bulk-button{flex:1;min-width:0}
+  #sheet-play-view .inventory-item-batch-check{flex-basis:37px;padding:4px}
+}
