@@ -658,7 +658,16 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
     origin_id:strike.origin_id,origin_name:strike.origin_name,
     range_feet:Number(strike.range_feet)||5},strike.ability||'str',true,strike.damage);
  }
+ for(const linked of arr(featureContext.companionAttacks))if(linked.id&&Number.isFinite(linked.hit)){
+   append({id:linked.id,name:linked.name,damage_type:linked.damage_type,
+    melee:!linked.ranged,range_feet:linked.range_feet||5,
+    damage_ability_modifier:false,owner_hit_source:linked.owner_hit_source,
+    owner_damage_source:linked.owner_damage_source},
+    linked.ability||'str',true,linked.damage,linked.hit);
+ }
+ const linkedIds=new Set(arr(featureContext.companionAttacks).map(x=>x.id));
  for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
+  if(linkedIds.has('monster:'+section+':'+i))return;
   if(!action?.name)return;
   const text=JSON.stringify(action.entries||[]),hit=text.match(/\{@hit\s*([+-]?\d+)\}/)||text.match(/([+-]\d+)\s+to\s+hit/i);
   if(!hit&&!/\{@atk |weapon attack:|spell attack:/i.test(text))return;
@@ -1019,7 +1028,10 @@ function calculateSheetValues(record={},catalogs={}){
     warnings.add("Velocità della specie non disponibile nello snapshot locale");
   if(kind==="character"&&record.species&&!record.species_source&&index)
     warnings.add("Le fonti delle specie senza edizione esplicita possono essere ambigue");
+  const companionValues=record.parent_creature_id&&kind==='monster'?
+    record.companion_owner_values||{}:{};
   const proficiencyBase=()=>{
+    if(Number.isFinite(companionValues.proficiency))return companionValues.proficiency;
     if(kind!=="monster"&&!Object.hasOwn(record,"stat_block"))
       return 2+Math.floor((clamp(level,1,20)-1)/4);
     const cr=crNumber(record.stat_block?.cr)+level;
@@ -1036,6 +1048,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(prefix==="ability_check"&&ABILITIES.includes(key))
       return resolve("ability_mod:"+key,stack)+sumGrants("ability_check",stack);
     if(target==="ac"){
+      if(!armor&&Number.isFinite(companionValues.ac))return companionValues.ac+shieldBonus;
       if(!armor){
         const base=kind==="monster"?monsterArmor(record.stat_block):int(record.armor_class_base,10);
         const fallback=kind==="character"&&base===10?"10 + dex_mod":String(base);
@@ -1084,7 +1097,8 @@ function calculateSheetValues(record={},catalogs={}){
       return specified&&String(record.rules_version)==="2024"&&!copiesWalk?
         adjusted+sumGrants("speed",stack):adjusted;
     }
-    if(target==="hp")return int(record.max_hp_base??record.max_hp,1);
+    if(target==="hp")return Number.isFinite(companionValues.hp)?companionValues.hp:
+      int(record.max_hp_base??record.max_hp,1);
     if(target==="second_max")return int(record.second_form_max_hp);
     if(prefix==="save"&&ABILITIES.includes(key)){
       const legacy=record.stat_block?.save?.[key];
@@ -1280,7 +1294,8 @@ function calculateSheetValues(record={},catalogs={}){
   }
   if(kind==='monster'&&!classes.length){
     const hp=record.stat_block?.hp;
-    if(typeof hp==='number'||Number.isFinite(Number(hp?.average)))
+    if(Number.isFinite(companionValues.hp))automaticHP={available:true,value:companionValues.hp};
+    else if(typeof hp==='number'||Number.isFinite(Number(hp?.average)))
       automaticHP={available:true,value:Math.max(1,int(typeof hp==='number'?hp:hp.average))};
   }
   // Unknown class/feature effects are reported, not silently guessed or persisted.
@@ -1385,6 +1400,7 @@ function calculateSheetValues(record={},catalogs={}){
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,
     featAttacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
+  featureContext.companionAttacks=arr(companionValues.attacks);
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const effect_extensions=equippedExtensions;
@@ -1512,6 +1528,7 @@ function calculateSheetValues(record={},catalogs={}){
     origin_spell_variant_choices:additional.variant_choices,
     automatic_bonuses:automatic.filter(row=>!suppressed.has('bonus:'+row.id)&&requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
+    companion_owner_values:Object.keys(companionValues).length?companionValues:null,
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),
       passive_investigation:safe("passive_skill:investigation"),
