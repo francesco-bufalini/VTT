@@ -163,7 +163,7 @@ export function passiveClassRollBonuses(record={},calculated={},target=''){
   if(!rule?.passive||!rule?.bonus||!rule?.class_name||!rule.feature_name)continue;
   const member=members.find(row=>low(row.name)===low(rule.class_name)&&
    (!rule.class_source||!row.source||low(row.source)===low(rule.class_source))&&
-   (!rule.subclass_name||subclass(row.subclass||'')===subclass(rule.subclass_name)));
+   (!rule.subclass_name||subclass(row.subclass||(low(row.name)===low(record.class)?record.subclass:'')||'')===subclass(rule.subclass_name)));
   if(!member)continue;
   const feature=rows(calculated.features).find(row=>featureEnabled(record,row)&&
    low(row.name)===low(rule.feature_name)&&
@@ -182,7 +182,7 @@ export function passiveClassRollBonuses(record={},calculated={},target=''){
    originName='Privilegio opzionale · '+optional.name;
   }
   const mode=rule.bonus.proficiency_mode;
-  const isCheck=!!ability&&(skill||target.startsWith('ability_check:'));
+  const isCheck=!!ability&&(skill||target.startsWith('ability_check:')||target.startsWith('ability_mod:'));
   if(!isCheck&&target!=='initiative')continue;
   let amount=0;
   if(mode==='tool_expertise'){
