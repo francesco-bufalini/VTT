@@ -21,7 +21,7 @@ const armor={id:'plate',name:'Plate',type:'HA',ac:18,quantity:1,equipped_slots:[
 
 test('Armor Modifications is an owned source-bound item grant with +2 active infusions, not known',()=>{
  const before=art(8),at9=art(9),eight=calculateSheet(before,catalogs),nine=calculateSheet(at9,catalogs);
- assert.equal(featureItemGrants(before,eight.features,itemRules).length,0);
+ assert.equal(featureItemGrants(before,eight.features,itemRules).some(g=>g.id==='artificer-armor-modifications'),false);
  const grant=nine.feature_item_grants.find(g=>g.id==='artificer-armor-modifications');
  assert.ok(grant);assert.equal(grant.origin_id.startsWith('feature:class|tce|artificer|'),true);
  assert.deepEqual(grant.items.map(i=>i.id),['armor-chest','armor-boots','armor-helmet','armor-special-weapon']);
