@@ -149,7 +149,7 @@ test('Powers selection rests are separate from tracker recovery and enumerate av
 test('tracker resources describe both structured flat and attack-specific dice bonuses',()=>{
  const artificer=sheet('Artificer',8,'TCE','Armorer');
  artificer.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
- const record={...artificer,artificer_armor_model:'infiltrator'};
+ const record={...artificer,trait_state_selection:{armor_model:'armor_model:infiltrator'}};
  const calculated=calculateSheet(record,catalogs);
  const rows=trackerRollBonusRows(record,calculated);
  const flash=rows.find(row=>row.class_feature_id==='flash_of_genius');
