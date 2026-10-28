@@ -22,6 +22,11 @@ export function armorClassBaseFormula(record={},calculated={}){
    ((record.kind==='character'&&Number(naturalBase)===10)?'10 + dex_mod':String(naturalBase)));
  const appliedNatural=calculated.base_override_applied?.ac_unarmored;
  const chosenNatural=appliedNatural?.expression;
+ const ownerAc=calculated?.companion_owner_values;
+ if(!armor&&Number.isFinite(ownerAc?.ac)&&ownerAc.explanations?.ac){
+  return {formula:ownerAc.explanations.ac+(shieldBonus?' + '+shieldBonus+' scudo':''),
+   sourceLabel:'Proprietario · '+ownerAc.owner_name};
+ }
  const displayedNatural=chosenNatural?String(chosenNatural):naturalFormula;
  const usedNatural=Boolean(chosenNatural&&(!armor||appliedNatural.allow_armor||appliedNatural.ignore_armor));
  const formula=armor&&!usedNatural?
