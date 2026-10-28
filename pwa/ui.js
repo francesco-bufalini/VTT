@@ -8827,7 +8827,8 @@ function syncInventorySelectionUI(){
   for(const index of state.inventorySelectedIndices)
     if(index<0||index>=count)state.inventorySelectedIndices.delete(index);
   const selecting=state.inventorySelectedIndices.size>0;
-  if(!selecting)inventoryClickSuppression=null;
+  if(!selecting&&inventoryClickSuppression&&performance.now()>=inventoryClickSuppression.until)
+    inventoryClickSuppression=null;
   root.classList.toggle('is-inventory-selecting',selecting);
   const rows=[...root.querySelectorAll('[data-inventory-item-index]')];
   const all=root.querySelector('[data-inventory-select-all]');
