@@ -761,8 +761,15 @@ function calculateSheetValues(record={},catalogs={}){
   if(kind==='character'&&!variantOwns(record,'movement')){
     const races=arr(classesCatalog?.races);
     const race=races.find(row=>record.species_id&&row.id===record.species_id)||races.find(row=>same(row.name,record.species)&&same(row.source,record.species_source));
-    const flattened=record.subrace?races.find(row=>same(row.name,record.species+' ('+record.subrace+')')&&same(row.source,record.subrace_source)):null;
-    const speed=flattened?.speed??race?.speed;
+    const subrace=record.subrace?arr(classesCatalog?.subraces).find(row=>
+      same(row.raceName,record.species)&&same(row.name,record.subrace)&&
+      same(row.source,record.subrace_source)&&same(row.raceSource,record.species_source)):null;
+    // Bridge the still-packaged native references until regeneration copies
+    // subtype movement to the canonical subrace record.
+    const nativeSource=record.subrace&&subrace?.speed===undefined?races.find(row=>
+      same(row.name,record.species+' ('+record.subrace+')')&&
+      same(row.source,record.subrace_source)):null;
+    const speed=subrace?.speed??nativeSource?.speed??race?.speed;
     if(speed!==undefined)record={...record,species_speed:speed};
   }
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
