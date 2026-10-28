@@ -352,11 +352,17 @@ export function originSpellId(token,edition,spells){
  return edition==='2014'&&(!parts[1]||parts[1]==='phb')?legacy:slug;
 }
 const choiceSignature=choice=>[choice.mode||'',choice.stage||'',String(choice.filter||'').split('|').find(c=>c.startsWith('level='))?.slice(6)||'',choice.usage||''].join(':');
-export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[]){
+export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[],racialUsage=[]){
  const output={grants:[],trackers:[],choices:[],warnings:[]};
  if(record.kind==='monster')return output;
  const level=Number(record.level||1),edition=String(record.rules_version||'2014');
  const allAbilities=['str','dex','con','int','wis','cha'];
+ const raceUsage=arr(racialUsage).find(row=>norm(row.name)===norm(record.species)&&
+   norm(row.source)===norm(record.species_source));
+ const usageFor=raw=>arr(raceUsage?.spell_usage).find(row=>
+   norm(row.spell)===norm(String(raw).split('#')[0].split('|')[0])&&
+   (!row.subrace||norm(row.subrace)===norm(record.subrace)&&
+     norm(record.subrace_source)===norm(raceUsage.source)));
  // Source-qualified supplements can add rules absent from upstream 5etools
  // additionalSpells. Future catalogs can embed slot_alternative directly.
  const grantRule=(kind,name,source,raw)=>arr(grantRules).find(rule=>
@@ -426,6 +432,17 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
    spec.forEach((raw,i)=>{
     let tid=tracker;
     const owner=typeof raw==='string'?spellOrigin(origin,block,raw):origin;
+    // A compact packaged native catalog may lag behind a source-corrected
+    // spell usage rule. Apply the source-qualified limit only if no native
+    // daily/rest tracker already exists; never grant duplicate uses.
+    const extra=typeof raw==='string'&&!tid?usageFor(raw):null;
+    if(extra&&Number.isInteger(Number(extra.uses))&&Number(extra.uses)>0){
+      tid='5espell:'+origin.id+'|'+blockIndex+'|'+stage+'|racial:'+norm(String(raw).split('#')[0].split('|')[0]);
+      out.trackers.push({id:tid,name:owner.name+' · '+String(raw).split('#')[0].split('|')[0],
+        max:Number(extra.uses),recharge:extra.recharge||'long_rest',
+        origin_id:owner.id,origin_name:owner.name,origin_parent_id:origin.id,
+        origin_parent_name:origin.name,granting_trait:owner.granting_trait||'',automatic:true});
+    }
     if(limited&&each){
      tid+='|'+(typeof raw==='string'?raw:i);
      out.trackers.push({id:tid,name:owner.name+' · '+(typeof raw==='string'?raw:'scelta'),max:amount,
