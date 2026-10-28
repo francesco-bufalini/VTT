@@ -229,6 +229,32 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   }else if(rule.type==='condition')
    add('effects','Effetti e limitazioni',label,rule.detail||'Condizione attiva',source);
  }
+ // Passive, manually selected proficiency multipliers have no always-on
+ // numeric grant. Display their condition on the exact granting trait.
+ for(const rule of rows(calculated.roll_bonus_rules)){
+  if(!rule?.passive||!rule?.bonus)continue;
+  const feature=rows(calculated.features).find(row=>!row.disabled&&
+   norm(row.name)===norm(rule.feature_name)&&
+   classOf(row)===norm(rule.class_name)&&
+   (!rule.class_source||sourceOf(row)===norm(rule.class_source))&&
+   (!rule.subclass_name||String(row.origin_key||'').includes('|subclass|')));
+  if(!feature)continue;
+  let owner=feature.origin_id;
+  if(rule.required_optional_feature){
+   const option=rows(record.optional_features_catalog).find(row=>!row.disabled&&
+    norm(row.name)===norm(rule.required_optional_feature)&&
+    (!rule.optional_source||norm(row.source)===norm(rule.optional_source)));
+   if(!option)continue;
+   owner=option.origin_id||'optional|'+norm(option.source)+'|'+norm(option.name);
+  }
+  if(!ids.has(owner))continue;
+  const mode=rule.bonus.proficiency_mode||'';
+  const value=mode==='tool_expertise'?'Competenza ×2':
+   mode==='favored_terrain_expertise'?'Competenza ×2':'½ competenza (arrotondata per difetto)';
+  add('bonus','Bonus applicabili al tiro',rule.bonus.name||feature.name,
+   value+' · '+String(rule.bonus.condition_label||'Applica quando previsto dal privilegio'),
+   'passive_class:'+rule.id);
+ }
  const bonusSeen=new Set();
  const multipliers=new Map(Object.values(calculated.roll_components||{}).flat().map(row=>[row.id,row.multiplier]));
  for(const row of [...rows(calculated.bonuses),...rows(calculated.automatic_bonuses)]){
