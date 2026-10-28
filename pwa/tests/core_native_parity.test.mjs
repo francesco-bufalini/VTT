@@ -116,10 +116,10 @@ test("native-style Info keeps derived identity and health editors without option
  assert.ok(battle.indexOf('hp-adjust-dialog')<battle.indexOf('battle-defense-values'),
    'The armor class is displayed immediately after hit points');
  const spellCatalog=[{id:"spell_1",name:"Incantesimo",level:1,time:[{unit:"action"}]}];
- const battle=battleActionPanels({prepared_spells:spellCatalog},{attacks:[],origin_spells:[],trackers:[]},spellCatalog,[],[]);
+ const battleProjection=battleActionPanels({prepared_spells:spellCatalog},{attacks:[],origin_spells:[],trackers:[]},spellCatalog,[],[]);
  const attacks=actionEntries({},
   {attacks:[{id:"bow",name:"Arco",damage:"1d8"}]},
   spellCatalog);
- assert.equal(battle.spells,"","Battle no longer duplicates spells shown in Powers");
+ assert.equal(battleProjection.spells,"","Battle no longer duplicates spells shown in Powers");
  assert.ok(attacks.some(s=>s.name==="Arco"));
 });
