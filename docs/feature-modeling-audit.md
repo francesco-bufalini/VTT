@@ -7,6 +7,30 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-28: Monk XGE, Way of the Kensei
+
+Esaminate una per una le **7 voci** `subclassFeature` della Way of the
+Kensei in [5etools `class-monk.json`](https://github.com/5etools-mirror-3/5etools-src/blob/main/data/class/class-monk.json)
+(`2a072f176f6886f360326f9e79b7b96c320a0f38`) e confrontate con
+[FightClub5eXML `class-monk-xge.xml`](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-monk-xge.xml)
+(`9d268781fbb79d67309b203fec001d3135f02bf8`). La sottoclasse XGE
+con `classSource=PHB` non dichiara `reprintedAs`. Il record di compatibilità
+per Monk XPHB conserva l'identità distinta; non riceve queste integrazioni.
+
+| Tratto (livello) | Esito |
+| --- | --- |
+| Way of the Kensei (3) | Intestazione della sottoclasse. |
+| Path of the Kensei (3) | **Ora strutturata:** scelta di una competenza fra strumenti da calligrafo e da pittore, con origine nel tratto. Le armi kensei iniziali e successive richiedono scelte separate con filtri su tipo e proprietà. Agile Parry non fornisce +2 CA permanente. |
+| Agile Parry (3) | +2 CA solo dopo un colpo senz'armi nell'azione Attack, tenendo in mano un'arma kensei da mischia, fino al turno successivo. |
+| Kensei's Shot (3) | **Ora strutturata:** azione bonus del tratto. L'1d4 aggiuntivo dipende dai soli colpi a distanza con arma kensei nello stesso turno. |
+| One with the Blade (6) | Attacchi con armi kensei magici contro resistenze; Deft Strike spende un Ki al colpo, una volta nel turno. |
+| Sharpen the Blade (11) | Azione bonus e spesa scelta di 1–3 Ki su un'arma kensei valida per un minuto; il bonus non si applica a un'arma magica che abbia già bonus ad attacco e danni. |
+| Unerring Accuracy (17) | Rilancio soltanto dopo un attacco mancato con arma da monaco nel proprio turno, una volta per turno. |
+
+La competenza usa il normale flusso delle scelte e rimane in sospeso fino
+alla selezione del giocatore. L'azione bonus non attribuisce in anticipo
+danni, un bersaglio o un'arma; le parti contestuali sono nella lista separata.
+
 ## Lotto 2026-10-27: competenze dei tratti XGE non ristampati
 
 Verificate otto voci `subclassFeature` delle classi PHB, con fonte XGE,

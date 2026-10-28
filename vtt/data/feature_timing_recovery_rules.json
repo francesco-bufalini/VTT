@@ -5,7 +5,8 @@
     "FightClub5eXML/class-druid-phb.xml",
     "FightClub5eXML/class-bard-phb.xml",
     "FightClub5eXML/class-wizard-xge.xml",
-    "FightClub5eXML/class-warlock-xge.xml"
+    "FightClub5eXML/class-warlock-xge.xml",
+    "FightClub5eXML/class-monk-xge.xml"
   ],
   "note": "Validated class/edition/subclass activation alternatives and full/partial/limited recovery. Runtime uses exact structured identifiers; text and tags are informative only. Partial recovery is not a short-rest reset. Optional recovery requires explicit use. Attack-count benefits use their granting feature and never stack: highest active attacks_per_action wins.",
   "actions": [
@@ -708,6 +709,21 @@
       "activation": "bonus",
       "tracker_name": "Indestructible Life",
       "detail": "Usa l'azione bonus e un uso del tratto per recuperare PF; l'eventuale riattacco di una parte del corpo richiede la condizione descritta.",
+      "kind": "activation",
+      "priority": 0
+    },
+    {
+      "id": "monk_phb_xge_kensei_kenseis_shot",
+      "class_name": "Monk",
+      "class_source": "PHB",
+      "min_level": 3,
+      "subclass": "Way of the Kensei",
+      "feature": "Kensei's Shot",
+      "action_id": "kenseis_shot",
+      "name": "Tiro del kensei",
+      "activation": "bonus",
+      "tracker_name": "",
+      "detail": "Azione bonus: fino alla fine del turno, i colpi a distanza con un'arma kensei infliggono 1d4 danni aggiuntivi del tipo dell'arma. La scelta dell'arma e i colpi effettivi restano contestuali.",
       "kind": "activation",
       "priority": 0
     },

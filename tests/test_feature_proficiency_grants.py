@@ -62,6 +62,7 @@ class FeatureProficiencyTests(unittest.TestCase):
             "races.json": {}, "backgrounds.json": {}, "feats.json": {},
             "feature_proficiency_grants.json": {"entries": []},
             "proficiency_feature_ownership.json": {"entries": []},
+            "languages.json": {"languages": []},
         }
         with patch("sys.argv", ["generate_proficiency_grants.py", "fixture-root"]), \
              patch.object(generator, "read_json", side_effect=lambda path: files[path.name]), \

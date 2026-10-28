@@ -531,6 +531,24 @@
     },
     {
       "kind": "subclassFeature",
+      "name": "Path of the Kensei",
+      "source": "XGE",
+      "className": "Monk",
+      "classSource": "PHB",
+      "subclassShortName": "Kensei",
+      "subclassSource": "XGE",
+      "level": 3,
+      "toolProficiencies": [
+        {
+          "choose": {
+            "from": ["calligrapher's supplies", "painter's supplies"],
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
       "name": "Dragon Ancestor",
       "source": "PHB",
       "className": "Sorcerer",

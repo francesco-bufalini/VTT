@@ -55,6 +55,30 @@ test('unreprinted XGE training belongs to eight individual 2014 subclass traits'
  assert(choices.some(choice=>choice.proficiency_kind==='language'&&choice.count===2));
 });
 
+test('2014 Kensei offers exactly one tool from its own Path trait',()=>{
+ const sheet=(level,source='PHB',subclass='Way of the Kensei')=>({kind:'character',
+  rules_version:source==='PHB'?'2014':'2024',class:'Monk',class_source:source,
+  level,subclass,subclass_source:'XGE',classes:[{name:'Monk',source,level,subclass,subclass_source:'XGE'}],
+  abilities:{str:10,dex:16,con:10,int:10,wis:14,cha:10},inventory:[]});
+ const r=sheet(3),c=calculateSheet(r,catalogs);
+ const trait=c.features.find(f=>f.name==='Path of the Kensei');
+ assert(trait?.origin_id.includes('|subclass|'));
+ const choices=pendingCharacterChoices(r,c,catalogs).filter(choice=>choice.origin_id===trait.origin_id);
+ assert.equal(choices.length,1);
+ assert.equal(choices[0].proficiency_kind,'tool');
+ assert.equal(choices[0].remaining,1);
+ assert.deepEqual(choices[0].options,["calligrapher's supplies","painter's supplies"]);
+ assert(!c.proficiencies.includes("tool:calligrapher's supplies"));
+ assert(!c.proficiencies.includes("tool:painter's supplies"));
+ const picked={...r,...savePendingChoice(r,choices[0],["painter's supplies"])};
+ const chosen=calculateSheet(picked,catalogs);
+ assert(chosen.proficiency_sources["tool:painter's supplies"]?.some(row=>row.id===trait.origin_id));
+ assert(!calculateSheet({...picked,origin_enabled:{[trait.origin_id]:false}},catalogs).proficiencies.includes("tool:painter's supplies"));
+ assert(!calculateSheet(sheet(2),catalogs).features.some(f=>f.name==='Path of the Kensei'));
+ assert(!calculateSheet(sheet(3,'PHB','Way of the Drunken Master'),catalogs).features.some(f=>f.name==='Path of the Kensei'));
+ assert(!calculateSheet(sheet(3,'XPHB'),catalogs).proficiency_sources["tool:painter's supplies"]?.some(row=>row.id===trait.origin_id));
+});
+
 test('Armorer grants heavy armor and smith tools at level 3 on its actual trait in both editions',()=>{
  for(const source of ['TCE','EFA']){
   const before=calculateSheet(armorer(2,source),catalogs);

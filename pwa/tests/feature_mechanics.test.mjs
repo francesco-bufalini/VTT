@@ -114,6 +114,17 @@ test('XGE Hexblade uses and actions follow the granting 2014 traits',()=>{
  assert(!calculateSheet(creature('Warlock','2024',10,'The Hexblade'),catalogs).trackers.some(row=>row.name==="Hexblade's Curse"));
 });
 
+test('XGE Kensei Shot is a bonus action only for its 2014 subclass trait',()=>{
+ const own=creature('Monk','2014',3,'Way of the Kensei');
+ const matching=record=>actionsFor(record).filter(row=>row.rule_id==='monk_phb_xge_kensei_kenseis_shot');
+ assert.equal(matching(own).length,1);
+ assert.equal(matching(own)[0].time,'bonus');
+ assert(matching(own)[0].origin_id.includes('|subclass|'));
+ assert.equal(matching({...own,level:2}).length,0);
+ assert.equal(matching(creature('Monk','2014',3,'Way of the Drunken Master')).length,0);
+ assert.equal(matching(creature('Monk','2024',3,'Way of the Kensei')).length,0);
+});
+
 test('non-reprinted SCAG Monk and Paladin actions require their own 2014 subclass traits',()=>{
  const longDeath=creature('Monk','2014',6,'Long Death');
  const hour=actionsFor(longDeath,calculateSheet(longDeath,catalogs).trackers)
