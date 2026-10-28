@@ -460,7 +460,8 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
       spellcasting_ability_options:tid?abilityOptions:[],filter:String(raw.choose),
       count:Math.max(1,Number(raw.count)||1),mode,stage,
       usage:tid?'limited':'at_will',tracker_id:tid,
-      slot_alternative:!!tid&&block.slot_alternative===true});return;
+      slot_alternative:!!tid&&(block.slot_alternative===true||
+        grantRule(definition?.kind,definition?.name,definition?.source,raw.choose)?.slot_alternative===true)});return;
     }
     if(typeof raw!=='string'||category==='will'&&mode==='prepared'||mode==='known'&&category==='will'&&!raw.includes('#c'))return;
     const id=originSpellId(raw,edition,spells);
