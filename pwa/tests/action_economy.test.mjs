@@ -5,13 +5,12 @@ import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {battleResourcePowers,persistentBattleAbility,spellCastingTimeLabel} from '../sheet_rules_view.js';
-import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
+import {actionEntries as project,battleActionPanels,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants,actionGlyph} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const classFeatures=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
 const projection=record=>({feature_rules:featureRules,features:collectStructuredFeatures(record,{classFeatures,featureRules})});
 const actionEntries=(record={},calculated={},spells=[],overrides=[],rules=catalog.actions,enabled=[])=>project(record,{...projection(record),...calculated},spells,overrides,rules,enabled);
-const actionEconomyView=(record={},calculated={},spells=[],overrides=[],rules=catalog.actions,enabled=[])=>view(record,{...projection(record),...calculated},spells,overrides,rules,enabled);
 const find=(rows,id)=>rows.find(row=>row.id===id);
 const doc=html=>new JSDOM(html).window.document;
 
@@ -183,46 +182,17 @@ test('spell casting times show structured values for tracker spells instead of p
  assert.equal(spellCastingTimeLabel({}), '');
 });
 
-test('combat spells are sorted by level within action, bonus and reaction and open Magia dialog',()=>{
- const spells=[
-  {id:'action3',name:'Tempesta',level:3,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 3']},
-  {id:'action0',name:'Luce',level:0,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 0']},
-  {id:'action1',name:'Scudo arcano',level:1,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 1']},
-  {id:'bonus2',name:'Passo fatato',level:2,time:[{number:1,unit:'bonus'}],entries:['SECRET DESCRIPTION BONUS']},
-  {id:'reaction1',name:'Scudo',level:1,time:[{number:1,unit:'reaction'}],entries:['SECRET DESCRIPTION REACTION']},
-  {id:'slow',name:'Rituale lento',level:4,time:[{number:1,unit:'minute'}],entries:['SECRET DESCRIPTION SLOW']},
-  {id:'long',name:'Lancio complesso',level:5,time:[{number:2,unit:'action'}],entries:['SECRET DESCRIPTION LONG']}
- ];
- const record={rules_version:'2014',prepared_spells:spells.slice(0,3)};
- const calc={casting_classes:[],origin_spells:[
-  {id:'spellbonus',spell_id:'bonus2',payment_mode:'tracker',tracker_id:'mana'},
-  {id:'spellreact',spell_id:'reaction1',payment_mode:'free'},
-  {id:'spellslow',spell_id:'slow',payment_mode:'free'},
-  {id:'spelllong',spell_id:'long',payment_mode:'free'}
- ],trackers:[{id:'mana',name:'Mana',max:2,spent:0}]};
- const rows=spellActionEntries(record,calc,spells);
- const entries=time=>rows.filter(row=>row.time===time)
-  .sort((a,b)=>(a.level??99)-(b.level??99));
- assert.deepEqual(entries('action').map(row=>row.spell_id),['action0','action1','action3']);
- assert.deepEqual(entries('bonus').map(row=>row.spell_id),['bonus2']);
- assert.deepEqual(entries('reaction').map(row=>row.spell_id),['reaction1']);
- assert(!rows.some(row=>['slow','long'].includes(row.spell_id)));
- assert.equal(entries('bonus')[0].grant_id,'spellbonus');
- assert.equal(entries('reaction')[0].grant_id,'spellreact');
- assert.equal(entries('bonus')[0].spell_mode,'tracker');
- assert.equal(entries('reaction')[0].spell_mode,'free');
- assert.equal(battleActionPanels(record,calc,spells,[],[]).spells,'',
-  'Spellcasting has moved entirely to Powers');
-
+test('battle keeps spellcasting in Powers rather than rebuilding a second timed spell list',()=>{
+ const spell={id:'reaction',name:'Scudo',level:1,time:[{number:1,unit:'reaction'}]};
+ const record={rules_version:'2014',prepared_spells:[spell]};
+ const panels=battleActionPanels(record,{casting_classes:[],origin_spells:[],trackers:[]},[spell],[],[]);
+ assert.equal(panels.spells,'');
+ assert.equal(spellCastingTimeLabel(spell),'Reazione');
 });
 
-test('catalog casting time wins over stale saved spell data (Absorb Elements is a reaction)',()=>{
- const spell={id:'phb2014_absorb_elements',name:'Absorb Elements',level:1,time:[{number:1,unit:'reaction'}]};
- const creature={prepared_spells:[{id:spell.id,name:spell.name,level:1,time:[{number:1,unit:'action'}]}]};
- const rows=spellActionEntries(creature,{casting_classes:[],origin_spells:[]},[spell]);
- assert(!rows.some(row=>row.time==='action'&&row.spell_id===spell.id));
- const reaction=rows.find(row=>row.time==='reaction'&&row.spell_id===spell.id);
- assert(reaction,'Absorb Elements must still use its current catalog time in Powers');
+test('structured spell casting time retains reaction metadata',()=>{
+ const definition={id:'phb2014_absorb_elements',name:'Absorb Elements',level:1,time:[{number:1,unit:'reaction'}]};
+ assert.equal(spellCastingTimeLabel(definition),'Reazione');
 });
 
 test('unified battle shows every canonical skill and pure ability check grouped by ability',()=>{
@@ -275,57 +245,6 @@ test('Cunning Action moves only granted actions to bonus without duplicates',()=
  assert.equal(find(mixed,'mixed').time,'bonus');assert(find(mixed,'mixed').alternate_action);
 });
 
-test('nested weapon attacks, action checks and movement preserve stable dice targets',()=>{
- const calculated={attacks:[{id:'item:main',name:'Spada',hit:5,damage:'1d6'},
-  {id:'item:off:dagger',name:'Pugnale',hit:5,offhand_bonus:true,damage:'1d4'}],skills:{stealth:7,perception:5,athletics:4,arcana:3}};
- const roots=groupActionEntries(actionEntries({},calculated));
- assert(find(roots,'attack').children.some(row=>row.id==='item:main'));
- assert(find(roots,'attack').children.some(row=>row.id==='grapple'));
- assert(find(roots,'two_weapon').children.some(row=>row.id==='item:off:dagger'));
- const checks=find(roots,'ability_checks').children;
- assert(find(checks,'hide'));assert(find(checks,'search'));assert(!find(checks,'grapple'));
- assert(find(find(roots,'movement_options_movement').children,'stealth_movement'));
- assert(find(find(roots,'movement_options_action').children,'dash'));
- const html=actionEconomyView({},calculated),document=doc(html);
- assert.equal(document.querySelectorAll('.action-economy-section').length,5);
- assert(document.querySelector('.action-tree ol li [data-target="attack_hit:item:off:dagger"]'));
- assert(document.querySelector('[data-timing="action"] [data-action-group="skill-checks"] [data-target="skill:stealth"]'));
- assert(!document.querySelector('[data-timing="free"] .action-economy-skills'));
- assert.equal(document.querySelectorAll('.action-economy-skills').length,1);
- assert(document.querySelector('.action-dice'));
-});
-
-test('bonus movement is grouped independently and keeps alternate-cost marker by title',()=>{
- const document=doc(actionEconomyView({class:'Rogue',class_source:'PHB',level:2},{skills:{stealth:6}}));
- const bonus=document.querySelector('[data-timing="bonus"]');
- assert(bonus.textContent.includes('Spostamento'));
- assert(bonus.querySelector('.action-tree').textContent.includes('Scattare'));
- const marker=bonus.querySelector('.action-alternate');
- assert.equal(marker.previousElementSibling.tagName,'STRONG');
- assert(marker.nextElementSibling.classList.contains('action-economy-chevron'));
-});
-
-test('base projection stays separate from conditional spell groups and resource counters',()=>{
- const record={prepared_spells:['spell_a'],action_grants:[{name:'Ispirazione',action_type:'bonus',tracker_id:'bardic'}]};
- const calculated={trackers:[{id:'bardic',name:'Ispirazione bardica',max:3,spent:1}],origin_spells:[{spell_id:'spell_a',tracker_id:'bardic'}]};
- const spells=[{id:'spell_a',name:'Fulmine',level:3,time:'action',entries:['Raggio']}];
- const rows=actionEntries(record,calculated,spells),html=actionEconomyView(record,calculated,spells);
- assert(!rows.some(row=>row.type==='Incantesimo'||row.name==='Fulmine'||row.name==='Lanciare un incantesimo'));
- assert(html.includes('Incantesimi disponibili'));assert(!html.includes('action-open-spells'));
- assert(html.includes('data-spell-id="spell_a"'));
- assert(html.includes('data-act="tracker-more" data-tracker-id="bardic"'));
- assert(html.includes('data-act="tracker-less" data-tracker-id="bardic"'));assert(html.includes('2 / 3'));
-});
-
-test('passive traits stay excluded, escaping and descriptions remain safe',()=>{
- const record={action_grants:[{name:'<script>',action_type:'action',description:'<b>Hello</b>'}],selected_features:[{name:'Passive Armor',entries:['passive']}]};
- const rows=actionEntries(record),html=actionEconomyView(record);
- assert(!rows.some(row=>row.name==='Passive Armor'));
- assert(html.includes('&lt;script&gt;'));assert(!html.includes('<script>'));assert(html.includes('&lt;b&gt;Hello&lt;/b&gt;'));
- assert(html.includes('https://5e.tools/actions.html#'));
- assert.deepEqual(topSkillEntries({skills:{stealth:8,arcana:8,perception:5,athletics:4,acrobatics:2}}).map(row=>row.bonus),[8,8,5,4]);
-});
-
 test('all 98 generated golden icons are shared, discoverable and cached offline',()=>{
  const manifest=JSON.parse(readFileSync(new URL('../icons/gold_generated/manifest.json',import.meta.url),'utf8'));
  assert.equal(manifest.groups.length,4);
@@ -355,90 +274,13 @@ test('all 98 generated golden icons are shared, discoverable and cached offline'
    if(host!==null)assert(host.includes('"'+path+'"'),'Native PWA host must serve '+path);
    if(native!==null)assert(native.includes('res://pwa'+path),'Godot must use '+path);
  }
- const html=actionEconomyView({
-    rules_version:'2014',
-    action_grants:[
-      {name:'Forma selvatica',action_type:'bonus'},
-      {name:'Ispirazione bardica',action_type:'bonus'},
-      {name:'Afferrare una creatura',action_type:'action'},
-      {name:'Mandare prono',action_type:'action'}]
- },{skills:{athletics:6,stealth:5,arcana:4,perception:3}});
- assert(html.includes('vtt-action-glyph--pack-0'));
- assert(html.includes('vtt-action-glyph--pack-1'));
- assert(html.includes('vtt-action-glyph--pack-2'));
- assert(html.includes('vtt-action-glyph--pack-3'));
- assert(!html.includes('>⚔<'));
- assert(html.includes('data-target="skill:athletics"'));
-});
-
-test('multiclass spell groups preserve independent casting class choices',()=>{
- const wizard='class|phb|wizard',warlock='class|phb|warlock';
- const spell={id:'shield',name:'Shield',level:1,
-  casting_classes:[wizard,warlock]};
- const record={prepared_spells:[spell],spells:[spell]};
- const calculated={casting_classes:[
-  {id:wizard,name:'Wizard',ability:'int'},
-  {id:warlock,name:'Warlock',ability:'cha'}
- ],origin_spells:[],trackers:[]};
- const catalog=[{id:'shield',name:'Shield',level:1,classes:['Wizard','Warlock'],
-   time:[{unit:'reaction',number:1}],entries:['Protezione']}];
- const choices=sessionSpellEntries(record,calculated,catalog).filter(row=>row.id==='shield');
- assert.equal(choices.length,2);
- assert.deepEqual(choices.map(row=>row.casting_class),[wizard,warlock]);
- assert.equal(actionEntries(record,calculated,catalog).filter(row=>row.spell_id==='shield').length,0);
- const markup=actionEconomyView(record,calculated,catalog);
- assert.equal((markup.match(/data-spell-id="shield"/g)||[]).length,2);
- assert(markup.includes('data-casting-class="'+wizard+'"'));assert(markup.includes('data-casting-class="'+warlock+'"'));
-});
-
-test('only nonempty action, bonus and reaction spell groups appear with the actual payment',()=>{
- const make=(id,unit)=>({id,name:id,level:1,time:[{unit,number:1}],entries:['Testo di prova']});
- const record={prepared_spells:[make('action','action'),make('bonus','bonus'),make('reaction','reaction'),make('slow','minute')],spellbook_spells:[make('book','action')]};
- const document=doc(actionEconomyView(record));
- assert.equal(document.querySelectorAll('.action-tree').length>0,true);
- for(const key of ['action','bonus','reaction']){
-  const section=document.querySelector('[data-timing="'+key+'"]');
-  assert(section.textContent.includes('Incantesimi disponibili'));
-  assert(section.querySelector('[data-spell-id="'+key+'"]'));
-  assert(section.textContent.includes('Slot · liv. 1+'));
+ const glyphs=['action','attack_bonus','increase','proficiency'];
+ for(const [group,key] of glyphs.entries()){
+  const icon=actionGlyph(key);
+  assert(icon.includes('vtt-action-glyph--pack-'+group));
+  assert(!icon.includes('>⚔<'));
  }
- assert(!document.querySelector('[data-spell-id="slow"]'));assert(!document.querySelector('[data-spell-id="book"]'));
- assert(!actionEconomyView({}).includes('Incantesimi disponibili'));
- const rows=spellActionEntries({}, {origin_spells:[{id:'grant',spell_id:'reaction',payment_mode:'tracker',tracker_id:'wand'}],trackers:[{id:'wand',name:'Cariche',max:3}]},[make('reaction','reaction')]);
- assert.equal(rows.length,1);assert.equal(rows[0].tracker_id,'wand');assert.equal(rows[0].grant_id,'grant');assert.equal(rows[0].tracker,'Cariche');
-});
 
-test('native class activations use eligible collected features, edition and local tracker',()=>{
- const make=(name,owner)=>({name,origin_key:'class|phb|'+owner.toLowerCase(),
-  requirements:{class_name:owner},entries:[name+' description']});
- const rage=make('Rage','Barbarian');
- const calc={features:[rage,{...make('Extra Attack','Fighter'),attacks_per_action:2}],trackers:[{id:'rage-1',name:'Rages',max:3,spent:1,origin_class:'Barbarian'}]};
- const barbarian={class:'Barbarian',class_source:'PHB',level:5};
- let actions=nativeClassFeatureActions(barbarian,calc);
- assert.equal(actions.length,1);assert.equal(actions[0].name,'Ira');
- assert.equal(actions[0].tracker_id,'rage-1');assert.equal(actions[0].time,'bonus');
- assert.equal(actions[0].description,'Rage description');
- assert(!nativeClassFeatureActions(barbarian,{...calc,features:[{...rage,disabled:true}]}).length);
- const markup=actionEconomyView(barbarian,calc);
- assert(markup.includes('Ira'));assert(markup.includes('2 / 3'));
- assert(!actionEconomyView(barbarian,{features:[],trackers:[]}).includes('>Ira<'));
- const fighter={class:'Fighter',class_source:'PHB',level:5};
- assert.equal(find(actionEntries(fighter,calc),'attack').attack_count,2);
- const revised={rules_version:'2024'};
- const paladin={...make('Lay on Hands','Paladin'),origin_key:'class|xphb|paladin'};
- const ability=nativeClassFeatureActions(revised,{features:[paladin],trackers:[]});
- assert.equal(ability[0].time,'bonus');
-});
-
-test('variant healing surge bonus timing mirrors desktop and picker is visible',()=>{
- const healing=actionEntries({}, {},[],[],catalog.actions,['healing_surges_bonus_dmg']);
- assert.equal(find(healing,'healing_surge')?.time,'bonus');
- const document=doc(actionEconomyView({}));
- assert(document.querySelector('[data-act="action-variants"]').textContent.includes('Regole varianti'));
- assert(document.querySelector('[data-act="action-expand-all"]'));
- const fighter=doc(actionEconomyView({class:'Fighter',level:5},{features:[
-  {name:'Extra Attack',origin_key:'class|phb|fighter',attacks_per_action:2,requirements:{class_name:'Fighter'}}]}));
- assert(fighter.querySelector('[data-timing="action"] .action-economy-count').textContent.length>0);
 });
 
 test('load both native catalogs without duplicating, auto-enabling or dropping variants',async()=>{
@@ -456,13 +298,6 @@ test('load both native catalogs without duplicating, auto-enabling or dropping v
   assert(!actionEntries({}, {},[],[],entries).some(row=>row.id==='disarm'));
   assert(actionEntries({}, {},[],[],entries).some(row=>row.id==='wake'));
  }finally{globalThis.fetch=original;}
-});
-
-test('quick skill checks remain with the action skill group when the catalog is unavailable',()=>{
- const root=doc(actionEconomyView({}, {skills:{stealth:7,athletics:5,arcana:4,perception:3}}, [],[],[]));
- const checks=root.querySelector('[data-timing="action"] [data-action-group="skill-checks"]');
- assert(checks);assert.equal(checks.querySelectorAll('[data-target^="skill:"]').length,4);
- assert(!root.querySelector('[data-timing="free"] [data-target^="skill:"]'));
 });
 
 test('battle spells use the same timed disclosure sections without requiring slots to render',()=>{

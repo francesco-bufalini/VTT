@@ -1,12 +1,10 @@
+import {norm,same,sourceMuted,speciesOriginKey,speciesTraitOwner} from './species_origin_rules.js';
 // Reviewed, source-qualified 2014 racial bonuses to a rolled check/save/attack.
 // These are selectable in the same popup as other optional dice bonuses.
 // No bonus is inferred from feature descriptions or applied by default.
 const rows=v=>Array.isArray(v)?v:[];
-const norm=v=>String(v??'').trim().toLowerCase();
-const same=(a,b)=>norm(a)===norm(b);
 const variant=v=>norm(v).replace(/^variant;\s*/,'');
-const muted=(record,id)=>!!id&&(record.origin_enabled?.[id]===false||
- rows(record.proficiency_origins).some(row=>row?.id===id&&row.disabled));
+const muted=sourceMuted;
 
 export function selectedRacialBonusSources(record={},catalog={}){
  if(record.rules_version==='2024'||!record.species||!record.species_source)return [];
@@ -15,11 +13,8 @@ export function selectedRacialBonusSources(record={},catalog={}){
    (!race.subrace||variant(race.subrace)===variant(record.subrace)&&
      same(race.subrace_source,record.subrace_source)));
 }
-const sourceKey=(record,race)=>race.subrace?
- 'subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace):
- 'species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
-const ownerOf=(record,race,trait,features)=>rows(features).find(row=>
- same(row.name,trait)&&row.origin_key===sourceKey(record,race));
+const sourceKey=(record,race)=>speciesOriginKey(record,!!race.subrace);
+const ownerOf=(record,race,trait,features)=>speciesTraitOwner(features,trait,sourceKey(record,race));
 const permitted=(record,feature)=>!!feature&&!feature.disabled&&!feature.inactive&&
  record.trait_enabled?.[feature.key]!==false&&!muted(record,feature.origin_id)&&
  !muted(record,feature.origin_key)&&

@@ -1,11 +1,9 @@
+import {norm,same,sourceMuted,speciesOriginKey,speciesTraitOwner,flattenedSpeciesSources} from './species_origin_rules.js';
 // Non-destructive 2014 racial advantages/disadvantages. A source-qualified
 // 5etools trait supplies each mode. The condition_label is intentionally
 // *not* inferred from game state: the player confirms it on the roll popup.
 const rows=value=>Array.isArray(value)?value:[];
-const norm=value=>String(value??'').trim().toLowerCase();
-const same=(a,b)=>norm(a)===norm(b);
-const muted=(record,id)=>!!id&&(record.origin_enabled?.[id]===false||
- rows(record.proficiency_origins).some(row=>row?.id===id&&row.disabled));
+const muted=sourceMuted;
 const signature=rule=>[norm(rule.trait),rule.target,rule.mode,rule.condition_label].join('|');
 const SKILL_ABILITY={
  athletics:'str',acrobatics:'dex','sleight of hand':'dex',stealth:'dex',
@@ -15,13 +13,8 @@ const SKILL_ABILITY={
 };
 export function selectedSpeciesRollModeRules(record={},catalog={}){
  if(record.rules_version==='2024'||!record.species||!record.species_source)return [];
- const all=rows(catalog.races),parent=all.find(r=>
-  same(r.name,record.species)&&same(r.source,record.species_source));
- const complete=record.subrace?record.species+' ('+record.subrace+')':'';
- const possible=complete?all.filter(r=>same(r.name,complete)):[];
- const sub=possible.find(r=>same(r.source,record.subrace_source||record.species_source))||
-  (!record.subrace_source&&possible.length===1?possible[0]:null);
- const parentKey='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
+ const {parent,sub}=flattenedSpeciesSources(record,catalog);
+ const parentKey=speciesOriginKey(record);
  const selected=[];
  if(parent)selected.push({row:parent,source_id:'race|'+norm(parent.source)+'|'+norm(parent.name),
   origin_key:parentKey,rules:rows(parent.rules)});
@@ -36,11 +29,10 @@ export function selectedSpeciesRollModeRules(record={},catalog={}){
  return selected;
 }
 function actualFeature(record,source,trait,features){
- const parent='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
- return rows(features).find(f=>same(f.name,trait)&&f.origin_key===source.origin_key)||
-  rows(features).find(f=>same(f.name,trait)&&f.origin_key===parent)||
-  rows(features).find(f=>same(f.name,trait)&&f.origin_key==='subrace|'+
-   norm(record.subrace_source)+'|'+norm(record.subrace));
+ const parent=speciesOriginKey(record);
+ return speciesTraitOwner(features,trait,source.origin_key)||
+  speciesTraitOwner(features,trait,parent)||
+  speciesTraitOwner(features,trait,speciesOriginKey(record,true));
 }
 export function speciesRollModeFeatures(record={},catalog={},existing=[]){
  const output=[];
@@ -59,7 +51,7 @@ export function speciesRollModeFeatures(record={},catalog={},existing=[]){
 }
 export function speciesRollModeEntries(record={},catalog={},features=[],removed=new Set()){
  const base='race|'+norm(record.species_source)+'|'+norm(record.species);
- const parent='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
+ const parent=speciesOriginKey(record);
  if(muted(record,base)||muted(record,parent))return [];
  const result=[];
  for(const source of selectedSpeciesRollModeRules(record,catalog)){

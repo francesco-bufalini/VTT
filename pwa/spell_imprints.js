@@ -3,7 +3,7 @@
 // Spell eligibility, item type, uses, timing and duration live in the grant.
 import {resolveOwnedItem,targetableInventoryItems} from './item_controls.js';
 import {normalizeEffectExtension,effectExtensionsFor} from './effect_extensions.js';
-import {isolateSpellBearingItem} from './spell_storing_item.js';
+import {isolateSpellBearingItem,replaceItemSpellState,clearItemSpellState} from './spell_item_effects.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').toLowerCase().trim();
 const cards=/\b(card|cards|deck|playing cards|tarot|tarokka|carte|mazzo|carta|tarocchi)\b/i;
@@ -96,17 +96,11 @@ export function storeSpellImprintPatch(record={},calculated={},ruleId='',index,
   prepared_at:now,expires_at:now+Number(rule.duration_hours||8)*3600000
  });
  if(!extension)throw Error('Impossibile applicare l’incantesimo alla carta.');
- return {
-  inventory,
-  effect_extensions:[...rows(record.effect_extensions).filter(row=>row.id!==extension.id),extension],
-  resource_trackers:[...rows(record.resource_trackers).filter(row=>row.id!==trackerId),{
-   id:trackerId,name:(rule.name||'Incantesimo immagazzinato')+' · '+String(item.name||item.id),
-   max:Number(rule.max_uses)||1,recharge:'manual',origin_id:rule.origin_id,
-   origin_name:rule.origin_name||rule.name
-  }],
-  resource_tracker_spent:{...(record.resource_tracker_spent||{}),[trackerId]:0},
-  spell_imprint_prepared:{...(record.spell_imprint_prepared||{}),[ruleId]:true}
- };
+ const tracker={id:trackerId,name:(rule.name||'Incantesimo immagazzinato')+' · '+String(item.name||item.id),
+  max:Number(rule.max_uses)||1,recharge:'manual',origin_id:rule.origin_id,
+  origin_name:rule.origin_name||rule.name};
+ return {...replaceItemSpellState(record,inventory,extension,tracker,row=>row.id===extension.id,{zeroSpent:true}),
+  spell_imprint_prepared:{...(record.spell_imprint_prepared||{}),[ruleId]:true}};
 }
 export function useSpellImprintPatch(record={},calculated={},index,now=Date.now()){
  const extension=spellImprintAtItem(record,index,now);
@@ -114,23 +108,11 @@ export function useSpellImprintPatch(record={},calculated={},index,now=Date.now(
  const tracker=rows(calculated.trackers).find(row=>row.id===extension.tracker_id&&!row.disabled);
  if(!tracker||Number(tracker.max)-Number(tracker.spent)<1)
   throw Error('Il lancio disponibile è già stato consumato.');
- const spent={...(record.resource_tracker_spent||{})};
- delete spent[extension.tracker_id];
- return {
-  effect_extensions:rows(record.effect_extensions).filter(row=>row.id!==extension.id),
-  resource_trackers:rows(record.resource_trackers).filter(row=>row.id!==extension.tracker_id),
-  resource_tracker_spent:spent
- };
+ return clearItemSpellState(record,row=>row.id===extension.id,[extension.tracker_id]);
 }
 export function clearSpellImprintsPatch(record={}){
  const active=rows(record.effect_extensions).filter(x=>x.stored_spell_feature==='spell_imprint');
- const ids=new Set(active.map(x=>x.tracker_id).filter(Boolean));
- const spent={...(record.resource_tracker_spent||{})};
- for(const id of ids)delete spent[id];
- return {
-  effect_extensions:rows(record.effect_extensions).filter(x=>x.stored_spell_feature!=='spell_imprint'),
-  resource_trackers:rows(record.resource_trackers).filter(x=>!ids.has(x.id)),
-  resource_tracker_spent:spent,
-  spell_imprint_prepared:{}
- };
+ const ids=active.map(x=>x.tracker_id).filter(Boolean);
+ return {...clearItemSpellState(record,row=>row.stored_spell_feature==='spell_imprint',ids),
+  spell_imprint_prepared:{}};
 }

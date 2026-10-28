@@ -1,11 +1,9 @@
+import {norm,same,sourceMuted,speciesOriginKey,speciesTraitOwner,flattenedSpeciesSources} from './species_origin_rules.js';
 // Source-qualified, non-destructive projection of 5etools species defenses.
 // Species and subraces are separate origins; flattened 5etools variants repeat
 // inherited traits, which must never grant the same defense twice.
 const rows=value=>Array.isArray(value)?value:[];
-const norm=value=>String(value??'').trim().toLowerCase();
-const same=(a,b)=>norm(a)===norm(b);
-const muted=(record,id)=>Boolean(id&&(record.origin_enabled?.[id]===false||
- rows(record.proficiency_origins).some(row=>row?.id===id&&row.disabled)));
+const muted=sourceMuted;
 const effectKey=entry=>String(entry.rank)+':'+norm(entry.key);
 const choiceKey=choice=>String(choice.rank)+':'+norm(choice.trait);
 
@@ -16,20 +14,11 @@ export function selectedSpeciesDefenseRules(record={},catalog={}){
    (same(record.species,'Dragonborn')&&same(record.species_source,'PHB')&&same(record.subrace_source,'FTD')&&
     ['chromatic','metallic','gem'].includes(norm(record.subrace))))return [];
  if(!record.species||!record.species_source)return [];
- const available=rows(catalog.races).filter(row=>!same(row.source,'XPHB'));
- // Never trust a stale ID alone: changing species or editions invalidates it.
- const parent=available.find(row=>same(row.name,record.species)&&
-  same(row.source,record.species_source));
- const subName=record.subrace?record.species+' ('+record.subrace+')':'';
- // Old imported characters sometimes omitted the subrace source. Prefer
- // their parent book; never guess when several other versions exist.
- const compatible=record.subrace?available.filter(row=>same(row.name,subName)):[];
- const sub=compatible.find(row=>same(row.source,record.subrace_source||record.species_source))||
-  (!record.subrace_source&&compatible.length===1?compatible[0]:null);
+ const {parent,sub}=flattenedSpeciesSources(record,catalog,true);
  const results=[];
  if(parent)results.push({
   row:parent,source_id:'race|'+norm(parent.source)+'|'+norm(parent.name),
-  origin_key:'species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source),
+  origin_key:speciesOriginKey(record),
   entries:rows(parent.entries),choices:rows(parent.choices)
  });
  if(sub){
@@ -69,7 +58,7 @@ export function speciesDefenseFeatures(record={},catalog={},existing=[]){
 export function speciesDefenseEntries(record={},catalog={},features=[],removed=new Set()){
  const selected=selectedSpeciesDefenseRules(record,catalog);
  const parentId='race|'+norm(record.species_source)+'|'+norm(record.species);
- const parentKey='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
+ const parentKey=speciesOriginKey(record);
  if(muted(record,parentId)||muted(record,parentKey))return [];
  const result=[];
  for(const source of selected){
@@ -86,8 +75,7 @@ export function speciesDefenseEntries(record={},catalog={},features=[],removed=n
      ':'+entry.rank+':'+norm(entry.key);
    const id='defense:'+source.source_id+':'+entry.rank+':'+norm(entry.key);
    if(removed.has(id)||removed.has(legacy))continue;
-   const owner=rows(features).find(f=>same(f.name,entry.trait)&&
-    f.origin_key===source.origin_key);
+   const owner=speciesTraitOwner(features,entry.trait,source.origin_key);
    if(owner?.inactive||owner?.disabled||
       owner?.key&&record.trait_enabled?.[owner.key]===false||
       muted(record,owner?.origin_id))continue;

@@ -3,8 +3,10 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
-import {initialCreature,changeTrackerUses,spendTrackerUses,recoveryPatch} from "../character_core.js";
-import {classSpellSections,eligibleForClass,assignClassSpell,revokeClassSpell,classSpellId} from "../class_spells.js";
+import {initialCreature,changeTrackerUses,spendTrackerUses} from "../character_core.js";
+import {recoveryPatch as nativeRecoveryPatch} from "../native_sheet.js";
+import {sessionSpellEntries} from "../spell_selection.js";
+const recoveryPatch=(record,event)=>nativeRecoveryPatch(record,event,record.resource_trackers||[]);
 import {quickDefinition,createQuickHomebrew,quickGrantPatch,deleteQuickHomebrew} from "../quick_homebrew.js";
 import {createCreature,openCreatureEditor,exportCreature,loadCreature} from "../creatures.js";
 import {fixedProficiencies} from "../structured_effects.js";
@@ -68,34 +70,20 @@ test("resource operations recover only the correct rest types and keep stable ID
  assert.deepEqual(long.spell_slots_spent,Array(10).fill(0));
  assert.deepEqual(c.resource_tracker_spent,{turn:1,short:2,long:1,manual:3,missing:2},"Rest must be pure");
 });
-test("class spell selection applies per-class progressions, level limits and identities",()=>{
- const file=readFileSync(fileURLToPath(new URL("../catalog/class_mechanics.json",import.meta.url)),"utf8");
- const catalog=JSON.parse(file);
- const c={rules_version:"2014",abilities:{int:16,cha:14},
-  classes:[{name:"Wizard",source:"PHB",level:5},{name:"Bard",source:"PHB",level:3}]};
- const sections=classSpellSections(c,catalog);
- const wizard=sections.find(s=>s.name==="Wizard"),bard=sections.find(s=>s.name==="Bard");
- assert.equal(wizard.id,classSpellId("Wizard","PHB"));
- assert.equal(wizard.mode,"Preparati");
- assert.equal(wizard.limit,8);
- assert.equal(wizard.max_level,3);
- assert.equal(wizard.book,true);
- assert.equal(bard.mode,"Conosciuti");
- assert.equal(bard.limit,6);
- assert.equal(bard.max_level,2,"Overall multiclass slots must not grant third-level Bard spells");
- const spell={id:"spell:light|phb",name:"Light",source:"PHB",level:0,classes:["Wizard","Bard"]};
- assert.equal(eligibleForClass(spell,wizard),true);
- let patch=assignClassSpell(c,spell,wizard.id,"prepared_spells",sections);
- assert.deepEqual(patch.spells,patch.prepared_spells);
- assert.deepEqual(patch.spells[0].casting_classes,[wizard.id]);
- patch=assignClassSpell({...c,...patch},spell,bard.id,"prepared_spells",sections);
- assert.deepEqual(patch.spells[0].casting_classes,[wizard.id,bard.id]);
- assert.throws(()=>assignClassSpell({...c,...patch},spell,wizard.id,"prepared_spells",sections),/già presente/);
- const removed=revokeClassSpell({...c,...patch},"prepared_spells",0,wizard.id);
- assert.deepEqual(removed.spells[0].casting_classes,[bard.id]);
- assert.deepEqual(revokeClassSpell({...c,...removed},"prepared_spells",0,bard.id).spells,[]);
- assert.throws(()=>assignClassSpell(c,{id:"x",name:"Fireball",level:3,classes:["Wizard"]},bard.id,"prepared_spells",sections),/non disponibile/);
+test("multiclass spell choices keep distinct source-qualified casting classes",()=>{
+ const wizard='class|phb|wizard',bard='class|phb|bard';
+ const spell={id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Wizard','Bard'],
+  time:[{number:1,unit:'action'}],casting_classes:[wizard,bard]};
+ const record={kind:'character',rules_version:'2014',abilities:{int:16,cha:14},
+  classes:[{name:'Wizard',source:'PHB',level:5},{name:'Bard',source:'PHB',level:3}],
+  prepared_spells:[spell],spells:[spell]};
+ const calc={casting_classes:[{id:wizard,name:'Wizard',ability:'int'},
+  {id:bard,name:'Bard',ability:'cha'}],origin_spells:[],trackers:[]};
+ const choices=sessionSpellEntries(record,calc,[spell]).filter(row=>row.id===spell.id);
+ assert.deepEqual(choices.map(row=>row.casting_class),[wizard,bard]);
+ assert(choices.every(row=>row.level===0));
 });
+
 test("quick homebrew keeps native portable definitions, structured grants and safe deletion",async()=>{
  const def=quickDefinition("backgrounds","Cronista","Descrizione",
    [{kind:"skill",key:"history"},{kind:"language",key:"elvish"}],{},"local_test");

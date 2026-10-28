@@ -1,6 +1,5 @@
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
-import {sessionSpellEntries} from './spell_selection.js';
 import {SKILLS} from './sheet_rules.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
@@ -42,7 +41,6 @@ export async function loadFeatureActionOverrides(){
  return supplementsCache;
 }
 
-export const GROUPS=[["action","Azione"],["bonus","Azione bonus"],["free","Azione gratuita"],["movement","Movimento"],["reaction","Reazione"]];
 /* The actual 98 SVG icons generated for VTT. Manifest.json is canonical
    and the four matching SVG sprites are shared with the Godot client. */
 const GOLD_ICON_GROUPS=[["action","bonus","free","movement","reaction","sword","help","shove","prone","stealth","eye","object","speech","target","shield","book","spark","flag","skill","hand","acrobatics","animal_handling","arcana","armor","athletics"],["attack_bonus","bardic_inspiration","break_concentration","buff","check","coins","concentration","condition","cross","dash","debuff","deception","decrease","details","disengage","dodge","filter","fire","flight","grapple","healing","help_alt","hide","history","ice"],["increase","information","infusion","insight","interact","intimidation","inventory","investigation","invisibility","key","lightning","lock","magic_item","maneuver","map","mark_enemy","medicine","misty_step","nature","necromancy","opportunity_attack","perception","persuasion","poison","potion"],["proficiency","prone_alt","reaction_trigger","ready","religion","reset","rest_long","rest_short","save_throw","scroll","search","settings","sleight_of_hand","speed","spell_cast","spell_slot","stealth_check","summon","survival","talk","teleport","weapon","wild_shape"]];
@@ -120,12 +118,6 @@ function castingTime(spell){
  const time=arr(spell.time)[0]??spell.casting_time??spell.time??'action';
  const value=typeof time==='object'?String(time.number||1)+' '+String(time.unit||'azione'):String(time);
  return value;
-}
-export function topSkillEntries(calculated={},limit=4){
- return SKILLS.map(([id,label])=>({id,label,bonus:Number(calculated.skills?.[id])}))
-   .filter(row=>Number.isFinite(row.bonus))
-   .sort((a,b)=>b.bonus-a.bonus||a.label.localeCompare(b.label,'it')||a.id.localeCompare(b.id))
-   .slice(0,limit);
 }
 // The attack-action multiplier is shared by the legacy action list and the
 // mobile battle heading, so the same active traits control both views.
@@ -280,107 +272,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 export function nativeClassFeatureActions(record={},calculated={}){
  return [...classFeatureEntries(record,calculated),...arr(calculated.feat_actions),...arr(calculated.state_actions)].map(row=>({...row,description:details(row.description)}));
 }
-export function spellActionEntries(record={},calculated={},spells=[]){
- const output=[];
- const context={...calculated,casting_classes:arr(calculated.casting_classes),origin_spells:arr(calculated.origin_spells)};
- for(const spell of sessionSpellEntries(record,context,spells)){
-  if(spell.internal_grant||spell.disabled)continue;
-  const grant=context.origin_spells.find(row=>String(row.id)===String(spell.grant_id));
-  if(grant?.disabled)continue;
-  const mode=grant?(grant.payment_mode||(grant.tracker_id?'tracker':'free')):'class';
-  const tracker_id=mode==='tracker'?String(grant.tracker_id||''):'';
-  const tracker=arr(calculated.trackers).find(row=>String(row.id)===tracker_id);
-  const prefix=spell.casting_label&&spell.casting_label!=='Scheda'?spell.casting_label+' · ':'';
-  const resource=mode==='tracker'?tracker?.name||tracker_id:mode==='free'?'Senza consumo · '+spell.casting_label:
-   prefix+(Number(spell.level||0)===0?'Trucchetto · nessuno slot':'Slot · liv. '+spell.level+'+');
-  // A sheet can retain a stale serialized time; the current catalogue is authoritative.
-  const definition=spells.find(row=>row.id===spell.id);
-  const published=definition?.time??definition?.casting_time;
-  const values=specified(published)?published:(spell.time??spell.casting_time??[]);
-  const seen=new Set();
-  for(const raw of Array.isArray(values)?values:[values]){
-   const unit=String(typeof raw==='object'?raw?.unit:raw).trim().toLowerCase().replaceAll('_',' ').replace(/^1\s+/,'');
-   if(typeof raw==='object'&&Number(raw?.number??1)!==1)continue;
-   if(!['action','bonus','bonus action','reaction','azione','azione bonus','reazione'].includes(unit))continue;
-   const time=timing(unit);if(seen.has(time))continue;seen.add(time);
-   output.push({id:spell.id,spell_id:spell.id,name:spell.name,time,type:'Incantesimo',
-    level:Number.isFinite(Number(spell.level))?Number(spell.level):null,
-    origin:'general',casting_class:spell.casting_class||'',grant_id:spell.grant_id||'',
-    spell_mode:mode,tracker_id,tracker:resource});
-  }
- }
- return output;
-}
-// One row = one action and its resource. The rule's type remains in the
-// structured data but is not used as a repeated visual heading.
-function quickSkillMarkup(calculated){
- const skills=topSkillEntries(calculated);
- return '<div class="action-economy-skills"><h3>Skill checks · 4 migliori</h3>'+
-   (skills.length?'<div class="action-economy-skill-grid">'+skills.map(row=>
-     '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
-     '" data-label="'+esc(row.label)+'">'+actionGlyph(skillGlyphKey(row.id))+'<span class="action-skill-name">'+esc(row.label)+'</span><span class="action-skill-bonus">'+(row.bonus>=0?'+':'')+esc(row.bonus)+'</span></button>'
-    ).join('')+'</div>':'<p class="hint">Nessun bonus disponibile.</p>')+'</div>';
-}
-function actionRow(item,calculated){
- const glyph=actionGlyph(item.id?.startsWith('movement_options_')?'dash':item.id==='ability_checks'?'skill':actionGlyphKey(item));
- const tracker=String(item.tracker||'').trim();
- const resource=['Nessuno','Nessuna risorsa'].includes(tracker)?'':tracker;
- const t=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||''));
- const remaining=t?Math.max(0,Number(t.max||0)-Number(t.spent||0)):0;
- const isSpell=!!item.spell_id;
- const isClassSpell=isSpell&&item.spell_mode==='class';
- const checks=[...(item.skill_ids||[]),...(item.name==='Nascondersi'||item.name==='Movimento furtivo'?['stealth']:[])]
-   .filter((id,index,all)=>all.indexOf(id)===index);
- const actionButtons=(isSpell?
-   '<button type="button" class="btn primary small" data-act="action-cast-spell" data-spell-id="'+esc(item.spell_id)+
-     '" data-grant-id="'+esc(item.grant_id||'')+'" data-casting-class="'+esc(item.casting_class||'')+'">'+(item.type==='Incantesimo'?'Lancia':'Usa capacità')+'</button>':
-   item.name==='Lanciare un incantesimo'||item.name==='Magia'?
-     '<button type="button" class="btn small" data-act="action-open-spells">Incantesimi</button>':'')+
-  (t?'<div class="action-resource-control" title="'+esc(t.name)+'"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" '+(remaining<=0||t.disabled?'disabled':'')+'>−</button>'+
-    '<span>'+remaining+' / '+esc(t.max)+'</span>'+
-    '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" '+(Number(t.spent||0)<=0||t.disabled?'disabled':'')+'>+</button></div>':
-    !isSpell&&resource?'<span class="action-economy-tracker" title="Risorsa utilizzata">'+esc(resource)+'</span>':'');
- const subLabel=resource;
- const groupOnly=item.children?.length&&!item.description;
- return '<article class="action-economy-row" data-origin="'+(item.origin==='personal'?'personal':'general')+'"'+(item.id==='ability_checks'?' data-action-group="skill-checks"':'')+'>'+
-  '<div class="action-economy-main">'+(groupOnly?'<div class="action-economy-entry action-group-label">'+glyph+'<strong>'+esc(item.name)+'</strong></div>':'<details class="action-economy-entry"><summary>'+
-  '<span class="action-economy-type-icon" aria-hidden="true">'+glyph+'</span><strong>'+esc(item.name)+
-  '</strong>'+(item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione" aria-label="Anche con un’azione">A</span>':'')+'<span class="action-economy-chevron">›</span></summary><p>'+
-  esc(item.description||'Seleziona una delle opzioni sotto elencate.')+'</p>'+(item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'')+
-  (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
-  (item.attack_id?'<button type="button" class="btn small" data-act="sheet-roll" data-target="attack_hit:'+esc(item.attack_id)+'" data-label="'+esc(item.name)+'">'+diceGlyph()+' Tiro per colpire</button>':'')+
-  checks.map(id=>{
-   const label=SKILLS.find(([key])=>key===id)?.[1]||id;
-   return '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(id)+
-    '" data-label="'+esc(label)+'">'+diceGlyph()+' '+esc(label)+'</button>';
-  }).join('')+'</details>')+'<span class="action-economy-preview">'+
-  (item.optional?'<span class="action-economy-optional">Opzionale</span> ':'')+
-  esc((item.description||'').split('\n')[0].slice(0,92))+'</span></div>'+
-  '<div class="action-economy-controls">'+actionButtons+
-  (subLabel&&!t?'<span class="action-economy-resource-label">'+esc(subLabel)+'</span>':'')+'</div>'+
-  (item.children?.length?'<details class="action-tree"><summary>'+esc(item.children_heading||'Attacchi e manovre')+' · '+item.children.length+'</summary><ol>'+item.children.map(child=>'<li>'+actionRow(child,calculated)+'</li>').join('')+'</ol></details>':'')+(item.id==='ability_checks'?quickSkillMarkup(calculated):'')+'</article>';
-}
-
 function diceGlyph(){return '<span class="action-dice" aria-hidden="true"></span>';}
-export function groupActionEntries(entries){
- const parents=new Map(entries.filter(row=>['attack','two_weapon'].includes(row.id)).map(row=>[row.id,{...row,children:[]}]));
- const roots=[];const groups=new Map();
- for(const raw of entries){
-  const row=parents.get(raw.id)||raw;
-  if(parents.has(row.parent_action)){parents.get(row.parent_action).children.push(row);continue;}
-  let group='';
-  if(row.time==='movement'||['dash','disengage','climb_large','overrun','tumble','escape_grapple'].includes(row.id))group='movement_options_'+row.time;
-  else if(row.time==='action'&&row.skill_ids?.length&&!row.parent_action)group='ability_checks';
-  if(!group){roots.push(row);continue;}
-  if(!groups.has(group)){
-   const moving=group.startsWith('movement_options_');
-   const parent={id:group,name:moving?'Spostamento':'Prove di abilità',time:row.time,origin:'general',children:[],children_heading:moving?'Opzioni di movimento':'Prove che richiedono un’azione'};
-   roots.push(parent);groups.set(group,parent);
-  }
-  groups.get(group).children.push(row);
- }
- return roots;
-}
 // Compact battle sections use the same action projection as the Actions tab.
 // Keep attack buttons separate from description disclosures to avoid accidental dice rolls.
 const BATTLE_TIMINGS=[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Azione gratuita'],['movement','Movimento']];
@@ -821,33 +713,3 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  };
 }
 
-export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
- const entries=groupActionEntries(actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants));
- const spellGroups=new Map();
- for(const spell of spellActionEntries(record,calculated,spells)){
-  if(!spellGroups.has(spell.time)){
-   const parent={id:'spells_'+spell.time,name:'Incantesimi',time:spell.time,type:'Incantesimo',origin:'general',children:[],children_heading:'Incantesimi disponibili'};
-   spellGroups.set(spell.time,parent);entries.push(parent);
-  }
-  spellGroups.get(spell.time).children.push(spell);
- }
- // Keep quick checks in the action group even when its source catalogue is missing.
- if(!entries.some(row=>row.id==='ability_checks'))entries.push({id:'ability_checks',name:'Prove di abilità',time:'action',origin:'general',children:[]});
- return GROUPS.map(([id,title])=>{
-  const matching=entries.filter(row=>row.time===id);
-  const general=matching.filter(row=>row.origin!=='personal')
-   .sort((a,b)=>Number(a.optional===true)-Number(b.optional===true));
-  const personal=matching.filter(row=>row.origin==='personal');
-  const separated=general.length&&personal.length;
-  const visibleCount=matching.reduce((total,row)=>total+1+(row.children?.length||0),0);
-  return '<section class="panel action-economy-section" data-timing="'+esc(id)+'"><header class="action-economy-heading">'+
-    '<span class="action-economy-icon" aria-hidden="true">'+actionGlyph(HEADER_GLYPHS[id])+'</span>'+
-    '<div class="action-economy-heading-copy"><h2>'+esc(title)+'</h2></div>'+
-    '<span class="action-economy-count" aria-label="'+visibleCount+' opzioni">'+visibleCount+'</span></header>'+
-    (general.length?(separated?'<h3 class="action-economy-group-title">Generali</h3>':'')+
-      general.map(row=>actionRow(row,calculated)).join(''):'')+
-    (personal.length?(separated?'<h3 class="action-economy-group-title">Dalla scheda</h3>':'')+
-      personal.map(row=>actionRow(row,calculated)).join(''):'')+
-    (!matching.length?'<p class="hint">Nessuna azione disponibile.</p>':'')+'</section>';
- }).join('').replace(/^/,'<div class="action-toolbar"><span>Azioni e opzioni</span><div class="action-toolbar-buttons"><button type="button" class="btn small" data-act="action-expand-all" aria-expanded="false">Espandi tutto</button><button type="button" class="btn small" data-act="action-variants" aria-label="Regole varianti 2014">'+actionGlyph('settings')+'<span>Regole varianti</span></button></div></div><div class="action-economy-dashboard">')+'</div>';
-}

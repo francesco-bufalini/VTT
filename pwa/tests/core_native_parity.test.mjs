@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
 import {createCreature,loadCreature,openCreatureEditor,exportCreature} from "../creatures.js";
 import {recoveryPatch,nativeSection} from "../native_sheet.js";
-import {actionEntries,spellActionEntries} from "../action_economy.js";
+import {actionEntries,battleActionPanels} from "../action_economy.js";
 import {quickDefinition,quickGrantPatch,createQuickHomebrew,deleteQuickHomebrew} from "../catalog_data.js";
 import {validDefinition} from "../creature_format.js";
 import {fixedProficiencies} from "../structured_effects.js";
@@ -116,10 +116,10 @@ test("native-style Info keeps derived identity and health editors without option
  assert.ok(battle.indexOf('hp-adjust-dialog')<battle.indexOf('battle-defense-values'),
    'The armor class is displayed immediately after hit points');
  const spellCatalog=[{id:"spell_1",name:"Incantesimo",level:1,time:[{unit:"action"}]}];
- const spells=spellActionEntries({spells:[{id:"spell_1",name:"Incantesimo"}]},{},spellCatalog);
+ const battleProjection=battleActionPanels({prepared_spells:spellCatalog},{attacks:[],origin_spells:[],trackers:[]},spellCatalog,[],[]);
  const attacks=actionEntries({},
   {attacks:[{id:"bow",name:"Arco",damage:"1d8"}]},
   spellCatalog);
- assert.ok(spells.some(s=>s.name==="Incantesimo"));
+ assert.equal(battleProjection.spells,"","Battle no longer duplicates spells shown in Powers");
  assert.ok(attacks.some(s=>s.name==="Arco"));
 });
