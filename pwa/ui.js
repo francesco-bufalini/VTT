@@ -35,6 +35,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
+import {featureRollTarget,featureRollExtensionBonuses} from './feature_rolls.js';
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
@@ -5236,20 +5237,21 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
  dialog.dataset.rollKind=kind;dialog.dataset.creatureId=creatureId;
  dialog.rollBonuses=bonuses;dialog.usedRollBonuses=[];
  dialog.rollOutcome=null;dialog.rollHistoryEntry=null;dialog.postRollBonuses=[];dialog.appliedBonusIds=new Set();
- if(kind==='damage'){
+ if(kind==='damage'||kind==='feature'){
    dialog.dataset.damageFormula=damageFormula;dialog.dataset.damageType=damageType;
    dialog.dataset.damageLabel=damageLabel;
+   if(kind==='feature')dialog.dataset.rollTarget=target;
  }else{
    dialog.dataset.rollTarget=target;dialog.dataset.rollLabel=rollLabel;
  }
- const mode=kind==='damage'
+ const mode=(kind==='damage'||kind==='feature')
    ?'<option value="normal">Normale</option>'
    :'<option value="auto">Automatica'+esc(autoLabel)+'</option>'+
      '<option value="normal">Forza tiro normale</option>'+
      '<option value="advantage">Aggiungi vantaggio</option>'+
      '<option value="disadvantage">Aggiungi svantaggio</option>';
  const select='<label class="sheet-roll-mode-control">Modalità del tiro'+
-   '<select data-roll-mode'+(kind==='damage'?' disabled aria-label="I danni non prevedono vantaggio o svantaggio"':'')+'>'+mode+'</select></label>';
+   '<select data-roll-mode'+(kind==='damage'||kind==='feature'?' disabled aria-label="Questo tiro non prevede vantaggio o svantaggio"':'')+'>'+mode+'</select></label>';
  const bonusList='<section class="sheet-roll-math sheet-roll-formula sheet-roll-applicable">'+
    '<div class="sheet-roll-bonuses-head"><span>Bonus applicabili al tiro</span>'+
    '<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-applicable" aria-label="Aggiungi tiro applicabile" title="Aggiungi tiro applicabile">+</button></div>'+
@@ -5293,7 +5295,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
      '<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-bonus" aria-label="Aggiungi bonus alla formula" title="Aggiungi bonus alla formula">+</button></div></div>'+
    '<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+bonusList+
    '<div class="actions sheet-roll-actions">'+select+
-     btn('roll-sheet-confirm',kind==='damage'?'Tira danni':'Tira 1d20','primary')+'</div>';
+     btn('roll-sheet-confirm',kind==='damage'?'Tira danni':kind==='feature'?'Tira':'Tira 1d20','primary')+'</div>';
  document.body.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
@@ -7053,7 +7055,8 @@ async function handleAction(target){
   }
   if(act==='roll-sheet-confirm'){
     const dialog=document.querySelector('#sheet-roll-dialog');
-    if(!dialog||dialog.dataset.rolling==='true')return;
+    if(!dialog||dialog.dataset.rolling==='true'||
+      dialog.dataset.rollKind==='feature'&&dialog.rollOutcome)return;
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
     const button=dialog.querySelector('[data-act="roll-sheet-confirm"]');
@@ -7061,19 +7064,24 @@ async function handleAction(target){
     if(button)button.disabled=true;
     try{
       const result=dialog.querySelector('[data-roll-result]');
-      if(dialog.dataset.rollKind==='damage'){
+      if(dialog.dataset.rollKind==='damage'||dialog.dataset.rollKind==='feature'){
         const chosen=chosenRollBonuses(dialog);
         const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>
           Object.hasOwn(row,'flat_bonus')?(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice).join('');
         const outcome=rollBattleDamage(fullFormula,randomDie);
-        state.roll={...outcome,label:'Danni · '+dialog.dataset.damageLabel+
-          (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName()};
+        const featureTarget=dialog.dataset.featureRollTarget||'';
+        state.roll={...outcome,label:(featureTarget?'Tiro capacità · ':'Danni · ')+dialog.dataset.damageLabel+
+          (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName(),
+          ...(featureTarget?{feature_roll_target:featureTarget,
+            feature_origin_id:dialog.dataset.featureRollOriginId||''}:{})};
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
         dialog.rollOutcome=state.roll;dialog.rollHistoryEntry=state.rollHistory[0];
-        const damageEnd=endTemporaryConditionPatch(state.editor.read());
-        if(Object.keys(damageEnd).length)await patch(damageEnd);
+        if(!featureTarget){
+          const damageEnd=endTemporaryConditionPatch(state.editor.read());
+          if(Object.keys(damageEnd).length)await patch(damageEnd);
+        }
         // A paid class-feature modifier applies to one damage roll only.
         // Keep the existing optional weapon dice behavior unchanged.
         const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
@@ -7188,7 +7196,7 @@ async function handleAction(target){
       }
     }finally{
       delete dialog.dataset.rolling;
-      if(button&&button.isConnected)button.disabled=false;
+      if(button&&button.isConnected)button.disabled=dialog.dataset.rollKind==='feature'&&!!dialog.rollOutcome;
     }
     return;
   }
