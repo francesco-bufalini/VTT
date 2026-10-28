@@ -282,6 +282,60 @@
           "description": "Scegli una carta e un incantesimo della lista della tua classe dopo un riposo lungo, quindi lancialo dalla carta con un'azione bonus entro otto ore."
         }
       ]
+    },
+    {
+      "name": "Defensive Duelist",
+      "source": "PHB",
+      "actions": [
+        {
+          "id": "feat:phb:defensive-duelist:reaction",
+          "name": "Defensive Duelist",
+          "action_type": "reaction",
+          "type": "Promemoria",
+          "descriptive_only": true,
+          "description": "Reazione, quando una creatura ti colpisce con un attacco in mischia: se impugni un'arma con Finesse con cui sei competente, aggiungi il bonus di competenza alla CA contro quel solo attacco; potrebbe trasformarlo in un mancato. Richiede Destrezza 13. Nessun tiro o attivazione nell'app."
+        }
+      ]
+    },
+    {
+      "name": "Dragon Fear",
+      "source": "XGE",
+      "actions": [
+        {
+          "id": "feat:xge:dragon-fear:roar",
+          "name": "Dragon Fear · Ruggito terrificante",
+          "action_type": "action",
+          "mode": "save_area",
+          "area_shape": "circle",
+          "area_radius_feet": 30,
+          "save_ability": "wis",
+          "save_base": "cha",
+          "target_filter": "chosen_creatures",
+          "effect_condition": "frightened",
+          "condition_on_failed_save": true,
+          "duration_rounds": 10,
+          "tracker_binding": "racial_breath_weapon",
+          "resource_cost": 1,
+          "description": "In alternativa al soffio, spendi uno degli stessi utilizzi di Breath Weapon: le creature che scegli entro 30 ft e che possono vederti o sentirti effettuano un TS Saggezza (CD 8 + competenza + CAR). Chi fallisce è Spaventato da te per 1 minuto. Un bersaglio che subisce danni può ripetere il TS e terminare l'effetto se riesce. I risultati dei TS si confermano manualmente."
+        }
+      ]
+    },
+    {
+      "name": "Dragon Hide",
+      "source": "XGE",
+      "attacks": [
+        {
+          "id": "feat:xge:dragon-hide:claws",
+          "name": "Dragon Hide · Artigli",
+          "damage": "1d4",
+          "damage_type": "taglienti",
+          "ability": "str",
+          "melee": true,
+          "range_feet": 5,
+          "attack_kind": "natural",
+          "description": "Artigli retrattili come arma naturale; colpo senz'armi che infligge 1d4 + modificatore di Forza danni taglienti invece del normale danno contundente."
+        }
+      ]
     }
   ]
 }
