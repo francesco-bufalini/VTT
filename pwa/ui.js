@@ -41,7 +41,7 @@ import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
-import {attackHitEffectPatch,onHitRollEffects} from './attack_hit_effects.js';
+import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
@@ -3752,6 +3752,13 @@ function sessionTokenDetails(token) {
     const row=(state.conditionCatalog?.editions?.[edition]||[]).find(item=>item.id===id);
     return conditionLabel(id,row?.name||"");
   }):[];
+  const activeHitEffects=(Array.isArray(token.hit_effects)?token.hit_effects:[])
+    .filter(effect=>!hitEffectExpired(effect,state.map));
+  const attackEffects=activeHitEffects.map(effect=>
+    String(effect.attack_name||'Attacco')+' · '+
+    (effect.operation==='roll_mode'?effect.mode==='disadvantage'?'Svantaggio ai tiri per colpire':'Vantaggio ai tiri per colpire':
+      effect.condition_id||'Condizione')+
+    (effect.source_name?' · '+effect.source_name:''));
   const spellIds=Array.isArray(token.active_spell_ids)?[...new Set(token.active_spell_ids)]:[];
   const spellName=id=>(state.spellCatalog||[]).find(row=>row.id===id)?.name||id;
   const effects=spellIds.filter(Boolean).map(id=>spellName(id));
@@ -3763,6 +3770,7 @@ function sessionTokenDetails(token) {
     (token.free?' <small>· libero</small>':'')+'</strong>'+
     (identity.length?'<span class="session-status-line">'+esc(identity.join(" · "))+'</span>':'')+
     (conditionNames.length?'<span class="session-status-line" title="'+esc(conditionNames.join(", "))+'">Stati: '+esc(conditionNames.join(", "))+'</span>':'')+
+    (attackEffects.length?'<span class="session-status-line" title="'+esc(attackEffects.join(", "))+'">Effetti attacchi: '+esc(attackEffects.join(" · "))+'</span>':'')+
     (effects.length?'<span class="session-status-line" title="'+esc(effects.join(", "))+'">Incantesimi: '+esc(effects.join(", "))+'</span>':'')+
     '</span>';
 }
@@ -6280,7 +6288,7 @@ async function handleAction(target){
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
   }
-  if(act==='battle-attack-hit-effect'){
+  if(act==='battle-attack-hit'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
     if(!state.paired||!state.online)
@@ -6288,8 +6296,7 @@ async function handleAction(target){
     const attackId=String(target.dataset.hitAttackId||'');
     const calculated=await computeLocalData(creature);
     const attack=(calculated.attacks||[]).find(row=>String(row.id)===attackId);
-    if(!attack||!onHitRollEffects(attack).length)
-      throw Error('Questo attacco non concede effetti applicabili sul colpo.');
+    if(!attack)throw Error('Attacco non più disponibile. Aggiorna la scheda.');
     const currentMap=await map();
     state.map=currentMap;
     const attacker=casterToken(creature,currentMap,await ownerId());
@@ -6301,7 +6308,7 @@ async function handleAction(target){
       melee:!!attack.melee
     });
     tacticalViewer.setAbilityTarget({
-      name:attack.name+' · effetto sul colpo',
+      name:attack.name+' · Colpisci',
       range_feet:Number(attack.range_feet)||5,
       exclude_self:true,
       onSelected:async selected=>{
@@ -6309,23 +6316,16 @@ async function handleAction(target){
         state.map=latest;
         if(!(latest.tokens||[]).some(row=>String(row.id)===String(selected.id)))
           throw Error('Il bersaglio non è più sulla mappa.');
-        const records=(await listCreatures()).map(row=>row.creature||row);
-        const recipient=records.find(row=>String(row.linked_token_sync_id||'')===String(selected.id)||
-          String(row.id||'')===String(latest.tokens.find(t=>String(t.id)===String(selected.id))?.creature_id||''));
-        if(!recipient){
-          message('Colpo confermato su '+selected.name+
-            '. La creatura non ha una scheda locale collegata: applica lo svantaggio manualmente sul desktop.',true);
-          return;
-        }
-        const editor=await openCreatureEditor(recipient.id);
-        const changes=attackHitEffectPatch(editor.read(),attack,0,{
-          source_token_id:String(attacker.id),target_token_id:String(selected.id),
-          source_name:creature.name||attacker.name||'Artificer',
-          source_creature_id:creature.id,snapshot:latest
+        const result=await action('hit_attack',{
+          token_id:String(attacker.id),owner_id:await ownerId(),
+          target_id:String(selected.id),attack_id:attack.id,
+          attack_name:attack.name,effects:onHitEffects(attack)
         });
-        await editor.update(changes);
-        message(attack.name+': effetto registrato su '+selected.name+
-          ' fino all’inizio del prossimo turno dell’attaccante. Il tiro richiede la scelta del bersaglio.');
+        if(!result?.ok)throw Error(result?.error||'Impossibile applicare l’attacco al bersaglio.');
+        state.map=await map();
+        message(attack.name+': '+selected.name+' colpito sulla mappa'+
+          (Number(result.effects_applied)>0?' · '+result.effects_applied+' effetti applicati.':
+           ' · nessun effetto aggiuntivo dichiarato.'));
       }
     });
     return;
@@ -6666,7 +6666,7 @@ async function handleAction(target){
     const key=concentration?'save:con':String(target.dataset.target||'');
     // Conditional on-hit marks expire on the source's next combat turn.
     // Refresh the live initiative snapshot when opening a marked creature's roll.
-    if(creature.applied_hit_effects?.length&&state.paired&&state.online)
+    if((key.startsWith('attack_hit:')||key.startsWith('casting_hit:'))&&state.paired&&state.online)
       try{state.map=await map();}catch(error){console.warn('Snapshot del combattimento non aggiornato',error);}
     const calculated=await computeLocalData(creature),modifier=calculated.values[key];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
@@ -6713,8 +6713,7 @@ async function handleAction(target){
     // A confirmed on-hit debuff must know the target of the affected attack.
     // Without an explicit target the original attacker is never penalized.
     if((key.startsWith('attack_hit:')||key.startsWith('casting_hit:'))&&
-       Array.isArray(creature.applied_hit_effects)&&
-       creature.applied_hit_effects.length){
+       (creature.applied_hit_effects?.length||targetTokenHitEffects(creature,state.map).length)){
       const selection=document.createElement('label');
       selection.className='sheet-roll-mode-control';
       selection.textContent='Bersaglio dell’attacco';
