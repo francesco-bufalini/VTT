@@ -1178,6 +1178,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const selected=keys.filter(key=>requested.includes(key)||requested.includes('all'));
   const showingItems=selected.some(key=>key==='items'||key.startsWith('container:'));
   html+=inventorySectionControls(c,selected);
+  html+='<div class="inventory-bulk-bar" data-inventory-bulk hidden>'+
+    '<label class="inventory-bulk-master"><input type="checkbox" data-inventory-select-all aria-label="Seleziona tutti gli oggetti visibili"><span class="inventory-check-graphic" aria-hidden="true">✓</span><span>Seleziona tutti</span></label>'+
+    '<strong data-inventory-selection-count>0 selezionati</strong>'+
+    '<div class="inventory-bulk-actions">'+
+    '<button type="button" class="library-bulk-button" data-act="inventory-bulk-export">Esporta</button>'+
+    '<button type="button" class="library-bulk-button" data-act="inventory-bulk-send">Manda</button>'+
+    '<button type="button" class="library-bulk-button library-bulk-delete" data-act="inventory-bulk-delete">Elimina</button>'+
+    '</div></div>';
   if(showingItems){
     target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
     const coinPanel=bank.querySelector('.inventory-coins-panel');
@@ -1336,7 +1344,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     const addButton=isScrolls?edit('scroll-create','Crea pergamena','increase'):
       edit(key,isDocuments?'Aggiungi documento':'Aggiungi oggetto','increase');
     html+=card(name,
-      visible.map(row=>renderItem(row,section)).join('')+
+      visible.map(row=>'<div class="inventory-selectable-item" data-inventory-item-index="'+row.i+'">'+
+        '<label class="inventory-item-batch-check" aria-label="Seleziona '+esc(c.inventory[row.i]?.name||'oggetto')+'">'+
+        '<input type="checkbox" data-inventory-select="'+row.i+'"><span class="inventory-check-graphic" aria-hidden="true">✓</span></label>'+
+        renderItem(row,section)+'</div>').join('')+
         (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+
       controls,
       sectionMetrics?'<span class="inventory-section-head-tools">'+sectionMetrics+addButton+'</span>':addButton,
