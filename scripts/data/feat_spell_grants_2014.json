@@ -1,0 +1,755 @@
+{
+  "meta": {
+    "edition": "2014",
+    "feat_source_snapshot": "5etools v2.37.0",
+    "feats_sha256": "381d51a5444cc5dac1e5f9af673a3fabb476662ee6229bda1a372ca49033a3b5",
+    "spell_attack_sources_sha256": {
+      "spells-phb.json": "f5a0c24f2b1fd61edadf9a0756cb3902d79e6e7bbd96198c026e36d4f281aa82",
+      "spells-tce.json": "c5cec734c8d6700032313ac7117d0d9c6891e6a21b5a4933e91e47cc82356b32",
+      "spells-xge.json": "bde046ff12e662d638ac2e7db04eb32fb437e5db44d11f6f70d992bf9a2db32f"
+    },
+    "notes": "Audited latest 2014-rule printings. PSK is separately identified optional Plane Shift material. Only explicit spell grants; mentions in flavor or conditional effects do not become entitlements.",
+    "sources": [
+      "BGG",
+      "BMT",
+      "DSotDQ",
+      "ERLW",
+      "FTD",
+      "MTF",
+      "PHB",
+      "PSK",
+      "PSX",
+      "SCC",
+      "SatO",
+      "TCE",
+      "XGE"
+    ]
+  },
+  "entries": [
+    {
+      "kind": "feat",
+      "name": "Aberrant Dragonmark",
+      "source": "ERLW",
+      "entry_overrides": {
+        "audited_2014": true
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Adept of the Black Robes",
+      "source": "DSotDQ",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "spell_traits": {
+        "*choice*": "Ambitious Magic"
+      },
+      "normalize_feature_sections": true,
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Adept of the Red Robes",
+      "source": "DSotDQ",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "spell_traits": {
+        "*choice*": "Insightful Magic"
+      },
+      "normalize_feature_sections": true,
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Adept of the White Robes",
+      "source": "DSotDQ",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "spell_traits": {
+        "*choice*": "Protective Magic"
+      },
+      "normalize_feature_sections": true,
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Artificer Initiate",
+      "source": "TCE",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Cartomancer",
+      "source": "BMT",
+      "entry_overrides": {
+        "audited_2014": true
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Divinely Favored",
+      "source": "DSotDQ",
+      "entry_overrides": {
+        "audited_2014": true,
+        "require_variant": true,
+        "variant_from_alignment": true
+      },
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true
+        },
+        "1": {
+          "slot_alternative": true
+        },
+        "2": {
+          "slot_alternative": true
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Drow High Magic",
+      "source": "XGE",
+      "entry_overrides": {
+        "audited_2014": true
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Fey Teleportation",
+      "source": "XGE",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "innate": {
+            "_": {
+              "rest": {
+                "1": [
+                  "misty step"
+                ]
+              }
+            }
+          },
+          "tracker_alias_categories": {
+            "rest": [
+              "daily"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Fey Touched",
+      "source": "TCE",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true,
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "ability_from": {
+            "kind": "feat_ability"
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Gift of the Metallic Dragon",
+      "source": "FTD",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "spell_traits": {
+        "cure wounds": "Draconic Healing"
+      },
+      "normalize_feature_sections": true,
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Initiate of High Sorcery",
+      "source": "DSotDQ",
+      "entry_overrides": {
+        "audited_2014": true,
+        "require_variant": true
+      },
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true
+        },
+        "1": {
+          "slot_alternative": true
+        },
+        "2": {
+          "slot_alternative": true
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Magic Initiate",
+      "source": "PHB",
+      "entry_overrides": {
+        "audited_2014": true,
+        "require_variant": true
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Outlands Envoy",
+      "source": "SatO",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "spell_traits": {
+        "misty step": "Crossroads Emissary",
+        "tongues": "Crossroads Emissary"
+      },
+      "normalize_feature_sections": true,
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true,
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "ability_from": {
+            "kind": "feat",
+            "name": "Scion of the Outer Planes",
+            "source": "SatO"
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Quicksmithing",
+      "source": "PSK",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "innate": {
+            "_": {
+              "ritual": [
+                {
+                  "choose": "level=1|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
+            }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione lo schema e il materiale necessari al rituale di Quicksmithing."
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Ritual Caster",
+      "source": "PHB",
+      "entry_overrides": {
+        "audited_2014": true,
+        "require_variant": true
+      },
+      "block_overrides": {
+        "0": {
+          "innate": {
+            "_": {
+              "ritual": [
+                {
+                  "choose": "level=1|class=Bard|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
+            }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
+        },
+        "1": {
+          "innate": {
+            "_": {
+              "ritual": [
+                {
+                  "choose": "level=1|class=Cleric|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
+            }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
+        },
+        "2": {
+          "innate": {
+            "_": {
+              "ritual": [
+                {
+                  "choose": "level=1|class=Druid|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
+            }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
+        },
+        "3": {
+          "innate": {
+            "_": {
+              "ritual": [
+                {
+                  "choose": "level=1|class=Sorcerer|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
+            }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
+        },
+        "4": {
+          "innate": {
+            "_": {
+              "ritual": [
+                {
+                  "choose": "level=1|class=Warlock|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
+            }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
+        },
+        "5": {
+          "innate": {
+            "_": {
+              "ritual": [
+                {
+                  "choose": "level=1|class=Wizard|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
+            }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Rune Shaper",
+      "source": "BGG",
+      "entry_overrides": {
+        "audited_2014": true,
+        "blocks_mode": "cumulative",
+        "blocks": [
+          {
+            "ability": {
+              "choose": [
+                "int",
+                "wis",
+                "cha"
+              ]
+            },
+            "innate": {
+              "_": {
+                "daily": {
+                  "1e": [
+                    "comprehend languages"
+                  ]
+                }
+              }
+            },
+            "slot_alternative": true
+          },
+          {
+            "ability": {
+              "choose": [
+                "int",
+                "wis",
+                "cha"
+              ]
+            },
+            "innate": {
+              "_": {
+                "daily": {
+                  "1e": [
+                    {
+                      "choose": {
+                        "from": [
+                          "fog cloud",
+                          "inflict wounds",
+                          "chromatic orb",
+                          "disguise self",
+                          "burning hands",
+                          "speak with animals",
+                          "armor of agathys",
+                          "goodberry",
+                          "longstrider",
+                          "command",
+                          "entangle",
+                          "sanctuary",
+                          "thunderwave"
+                        ]
+                      },
+                      "count_formula": "half_proficiency"
+                    }
+                  ]
+                }
+              }
+            },
+            "slot_alternative": true,
+            "requires_context": "La runa scelta è incisa su un oggetto che indosso o trasporto.",
+            "legacy_each_spell_blocks": [
+              0
+            ]
+          }
+        ]
+      },
+      "spell_traits": {
+        "comprehend languages": "Comprehend Languages",
+        "*choice*": "Rune Magic"
+      },
+      "normalize_feature_sections": true
+    },
+    {
+      "kind": "feat",
+      "name": "Scion of the Outer Planes",
+      "source": "SatO",
+      "entry_overrides": {
+        "audited_2014": true,
+        "require_variant": true
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Servo Crafting",
+      "source": "PSK",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "ritual_only": true,
+          "casting_ability_not_required": true,
+          "requires_context": "Concludo il rituale di Find Familiar usando la forma del famiglio concessa da questo talento."
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Shadow Touched",
+      "source": "TCE",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true,
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "ability_from": {
+            "kind": "feat_ability"
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Spell Sniper",
+      "source": "PHB",
+      "entry_overrides": {
+        "audited_2014": true,
+        "require_variant": true
+      },
+      "block_overrides": {
+        "0": {
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
+        },
+        "1": {
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
+        },
+        "2": {
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
+        },
+        "3": {
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
+        },
+        "4": {
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
+        },
+        "5": {
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Strixhaven Initiate",
+      "source": "SCC",
+      "entry_overrides": {
+        "audited_2014": true,
+        "require_variant": true
+      },
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true
+        },
+        "1": {
+          "slot_alternative": true
+        },
+        "2": {
+          "slot_alternative": true
+        },
+        "3": {
+          "slot_alternative": true
+        },
+        "4": {
+          "slot_alternative": true
+        },
+        "5": {
+          "slot_alternative": true
+        },
+        "6": {
+          "slot_alternative": true
+        },
+        "7": {
+          "slot_alternative": true
+        },
+        "8": {
+          "slot_alternative": true
+        },
+        "9": {
+          "slot_alternative": true
+        },
+        "10": {
+          "slot_alternative": true
+        },
+        "11": {
+          "slot_alternative": true
+        },
+        "12": {
+          "slot_alternative": true
+        },
+        "13": {
+          "slot_alternative": true
+        },
+        "14": {
+          "slot_alternative": true
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Strixhaven Mascot",
+      "source": "SCC",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "ritual_only": true,
+          "casting_ability_not_required": true,
+          "requires_context": "Concludo il rituale di Find Familiar usando la forma del famiglio concessa da questo talento."
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Svirfneblin Magic",
+      "source": "MTF",
+      "entry_overrides": {
+        "audited_2014": true
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Telekinetic",
+      "source": "TCE",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "ability_from": {
+            "kind": "feat_ability"
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Telepathic",
+      "source": "TCE",
+      "entry_overrides": {
+        "audited_2014": true
+      },
+      "block_overrides": {
+        "0": {
+          "slot_alternative": true,
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "ability_from": {
+            "kind": "feat_ability"
+          }
+        }
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Wood Elf Magic",
+      "source": "XGE",
+      "entry_overrides": {
+        "audited_2014": true
+      }
+    }
+  ]
+}

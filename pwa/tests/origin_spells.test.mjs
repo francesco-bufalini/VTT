@@ -31,22 +31,24 @@ test('native 2014 spell IDs, character level gates and stable daily counters are
  assert.equal(originSpellId('darkness','2014',spells),'phb2014_darkness');
  assert.equal(project({...base,origin_enabled:{'race|phb|tiefling':false}}).grants.length,0);
 });
-test('multi-block feats merge alternative choices and counters instead of granting every list',()=>{
- const out=project(record({feats_catalog:[{name:'Magic Initiate',source:'PHB'}]}));
+test('audited multi-block feats require one class and keep both picks on that class list',()=>{
+ const unset=project(record({feats_catalog:[{name:'Magic Initiate',source:'PHB'}]}));
+ assert.equal(unset.choices.length,0);assert.equal(unset.variant_choices.length,1);
+ const out=project(record({feats_catalog:[{name:'Magic Initiate',source:'PHB',spell_variant:'Wizard Spells'}]}));
  assert.equal(out.grants.length,0);
  assert.equal(out.trackers.length,1);
  assert.equal(out.choices.length,2);
  const cantrips=out.choices.find(c=>c.count===2),leveled=out.choices.find(c=>c.count===1);
- assert.equal(cantrips.filters.length,6);
- assert.equal(leveled.tracker_id,'5espell:feat|phb|magic initiate|0|_|daily|1');
- assert.equal(cantrips.spellcasting_ability,'');
+ assert.equal(cantrips.filter,'level=0|class=Wizard');
+ assert.equal(leveled.tracker_id,'5espell:feat|phb|magic initiate|5|_|daily|1');
+ assert.equal(cantrips.spellcasting_ability,'int');
  assert.equal(originChoiceMatches(cantrips,spells.find(s=>s.id==='phb2014_light')).matches,true);
  assert.equal(originChoiceMatches(cantrips,spells.find(s=>s.id==='phb2014_shield')).matches,false);
 });
 test('choice writes are explicit, bounded and preserve resource consumption and unknown fields',()=>{
- const c=record({feats_catalog:[{name:'Magic Initiate',source:'PHB'}],resource_tracker_spent:{keep:2},custom:{retain:true}});
+ const c=record({feats_catalog:[{name:'Magic Initiate',source:'PHB',spell_variant:'Wizard Spells'}],resource_tracker_spent:{keep:2},custom:{retain:true}});
  const choice=project(c).choices.find(c=>c.count===2),light=spells.find(s=>s.id==='phb2014_light'),hand=spells.find(s=>s.id==='phb2014_mage_hand');
- assert.throws(()=>applyOriginSpellChoice(c,choice,light),/caratteristica/);
+ assert.equal(applyOriginSpellChoice(c,choice,light).origin_spell_grants[0].spellcasting_ability,'int');
  const first=applyOriginSpellChoice(c,choice,light,{ability:'int'});
  assert.throws(()=>applyOriginSpellChoice({...c,...first},choice,light,{ability:'int'}),/già scelto/);
  const second=applyOriginSpellChoice({...c,...first},choice,hand,{ability:'int'});

@@ -2,7 +2,7 @@ import {createServer} from 'node:http';
 import {readFile,mkdir} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
-export async function browserFixture({live=false,imagePolicy=false}={}){
+export async function browserFixture({live=false,imagePolicy=false,additionalSpells=[]}={}){
  const root=new URL('../../',import.meta.url),artifacts=new URL('../.test-artifacts/',import.meta.url);
  await mkdir(artifacts,{recursive:true});
  const nativeHost=String(await readFile(new URL('network/pwa_host.gd',root)));
@@ -12,6 +12,7 @@ export async function browserFixture({live=false,imagePolicy=false}={}){
  const imageDirective=nativeHost.match(/img-src ([^;\\]+)/)?.[1];
  if(imagePolicy&&!imageDirective)throw Error('Godot PWA host image CSP directive missing');
  const spells={version:1,spells:[{id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard'],time:[{unit:'reaction',number:1}],entries:['Protezione di prova.']},{id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Wizard'],time:[{unit:'action',number:1}],duration:[{type:'timed',duration:{type:'hour',amount:1}}],has_duration:true,entries:['Luce di prova.']},{id:'phb2014_light',name:'Light (2014)',source:'PHB',level:0,classes:['Wizard'],time:[{unit:'action',number:1}],duration:[{type:'timed',duration:{type:'hour',amount:1}}],has_duration:true,entries:['Luce di prova per le regole 2014.']}]};
+ spells.spells.push(...additionalSpells);
  const server=createServer(async(req,res)=>{try{
   const path=new URL(req.url,'http://localhost').pathname;res.setHeader('Cache-Control','no-store');
   if(imagePolicy)res.setHeader('Content-Security-Policy','img-src '+imageDirective);

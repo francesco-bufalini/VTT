@@ -63,13 +63,21 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
  }
  for(const grant of calculated.origin_spells){
   const definition=catalog.find(s=>s.id===grant.spell_id);if(!definition)continue;
+  const originalTime=definition.time?.[0]||{};
+  const parsed=String(definition.casting_time||'').match(/^(\d+)\s+(minute|hour|day)/i);
+  const unit=originalTime.unit||parsed?.[2]||'action';
+  const amount=Number(originalTime.number||parsed?.[1]||1);
+  const ritualMinutes=10+amount*(unit.startsWith('day')?1440:unit.startsWith('hour')?60:unit.startsWith('minute')?1:0);
   const stored=creature.spellcasting_section_abilities?.['origin:'+grant.origin_id];
   const permitted=arr(grant.spellcasting_ability_options);
-  const casting=(permitted.length?
+  const casting=(grant.casting_ability_from_source?grant.spellcasting_ability:permitted.length?
       permitted.includes(stored)?stored:grant.spellcasting_ability||permitted[0]:
       stored||grant.spellcasting_ability)||
     creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int';
   entries.push({...definition,grant_id:grant.id,caster_ability:casting,
+    ritual_only:grant.ritual_only===true,requires_context:grant.requires_context||'',
+    ...(grant.ritual_only?{casting_time:ritualMinutes+' minuti · rituale',
+      time:[{number:ritualMinutes,unit:'minute'}]}:{}),
     ...(grant.cast_action_type?{time:[{number:1,unit:grant.cast_action_type}],
       casting_time:grant.cast_action_type==='bonus'?'Bonus Action':grant.cast_action_type,
       action_type:grant.cast_action_type}:{}),
@@ -247,7 +255,15 @@ function featureSpellReference(token,edition,catalog){
 
 // Subclass spell tables are structured 5etools data (not description prose).
 // Each grant retains the *feature* identity so it can appear under its trait.
-export function featureTableSpellGrants(record={},features=[],catalog=[],castingClasses=[]){
+const featureSpellOwner=(feature,row)=>norm(feature.name)===norm(row.name)&&
+ norm(feature.source||feature.book||feature.subclass_source)===norm(row.source)&&
+ norm(feature.class_name||feature.requirements?.class_name)===norm(row.class_name)&&
+ norm(feature.class_source||feature.requirements?.class_source)===norm(row.class_source)&&
+ [row.subclass_name,row.subclass_short_name].some(name=>name&&
+   [feature.subclass_name,feature.subclass_short_name,
+    String(feature.origin_key||'').split('|subclass|')[1]?.split('|')[0]].some(value=>norm(value)===norm(name)))&&
+ norm(feature.subclass_source)===norm(row.subclass_source);
+export function featureTableSpellGrants(record={},features=[],catalog=[],castingClasses=[],structured=[]){
  const grants=[],seen=new Set(),edition=record.rules_version||'2014';
  const members=arr(record.classes).length?record.classes:
    record.class?[{name:record.class,source:record.class_source,level:record.level}]:[];
@@ -264,6 +280,7 @@ export function featureTableSpellGrants(record={},features=[],catalog=[],casting
    }
  };
  for(const feature of arr(features)){
+   if(arr(structured).some(row=>featureSpellOwner(feature,row)))continue;
    if(!feature?.origin_id||feature.inactive||
       !String(feature.origin_key||'').startsWith('class|')||
       !String(feature.origin_key||'').includes('|subclass|'))continue;
@@ -302,7 +319,7 @@ export function featureTableSpellGrants(record={},features=[],catalog=[],casting
 }
 
 
-export function supplementalFeatureSpellGrants(record={},features=[],catalog=[],rules=[],castingClasses=[]){
+export function supplementalFeatureSpellGrants(record={},features=[],catalog=[],rules=[],castingClasses=[],structured=[]){
  const grants=[],seen=new Set(),edition=record.rules_version||'2014';
  const members=arr(record.classes).length?record.classes:
    record.class?[{name:record.class,source:record.class_source,level:record.level,subclass:record.subclass,subclass_source:record.subclass_source}]:[];
@@ -318,6 +335,7 @@ export function supplementalFeatureSpellGrants(record={},features=[],catalog=[],
    const feature=arr(rule.feature_names).flatMap(name=>arr(features).filter(row=>
      !row.inactive&&String(row.origin_key||'').startsWith(origin)&&norm(row.name)===norm(name)))[0];
    if(!feature?.origin_id)continue;
+   if(arr(structured).some(row=>featureSpellOwner(feature,row)))continue;
    const current=Math.max(0,Number(member.level)||0);
    const ability=castingClasses.find(row=>norm(row.name)===norm(member.name))?.ability||'int';
    for(const stage of arr(rule.levels)){
@@ -420,8 +438,8 @@ export function expandedOriginClassSpellIds(record={},definitions=[],features=[]
  return [...results];
 }
 const choiceSignature=choice=>[choice.mode||'',choice.stage||'',String(choice.filter||'').split('|').find(c=>c.startsWith('level='))?.slice(6)||'',choice.usage||''].join(':');
-export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[],racialUsage=[]){
- const output={grants:[],trackers:[],choices:[],warnings:[]};
+export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[],racialUsage=[],proficiency=null){
+ const output={grants:[],trackers:[],choices:[],warnings:[],variant_choices:[],saved_grants:arr(record.origin_spell_grants)};
  if(record.kind==='monster')return output;
  const level=Number(record.level||1),edition=String(record.rules_version||'2014');
  const allAbilities=['str','dex','con','int','wis','cha'];
@@ -456,10 +474,25 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
        kind==='subrace'?'subrace|'+source+'|'+name:'background|'+source+'|'+name,
      spell_traits:row.spell_traits||{}}];
   }
-  if(kind==='feat')return arr(record.feats_catalog).filter(f=>!f?.disabled&&norm(f.name)===name&&norm(f.source)===source).map(f=>({id:'feat|'+source+'|'+name,name:f.name,
+  if(kind==='feat')return arr(record.feats_catalog).filter(f=>!f?.disabled&&norm(f.name)===name&&norm(f.source)===source).map(f=>({id:'feat|'+source+'|'+name,name:f.name,kind,feat:f,
    feature_key:'feat|'+(f.id||norm(f.name)+'|'+norm(f.source)),spell_traits:row.spell_traits||{}}));
   if(kind==='optionalfeature')return features.filter(f=>!f.inactive&&norm(f.name)===name&&norm(f.book||f.source)===source).map(f=>({id:f.origin_id||'feature:'+f.key,name:f.name,feature_key:f.origin_key,
    spell_traits:row.spell_traits||{}}));
+  if(kind==='subclassFeature'){
+   if(edition!=='2014')return [];
+   const members=arr(record.classes).length?record.classes:
+     [{name:record.class,source:record.class_source||'PHB',level:record.level}];
+   const member=members.find(member=>norm(member.name)===norm(row.class_name)&&
+     norm(member.source||'PHB')===norm(row.class_source));
+   if(!member)return [];
+   return features.filter(feature=>featureSpellOwner(feature,row)&&
+     !feature.inactive&&!feature.disabled&&record.trait_enabled?.[feature.key]!==false&&
+     active(feature.origin_id)&&active(feature.origin_key)&&
+     active('class|'+norm(row.class_source)+'|'+norm(row.class_name)))
+     .map(feature=>({id:feature.origin_id,name:feature.name,granting_trait:feature.name,feature_key:feature.origin_key,
+       class_level:Number(member.level)||0,kind,requirements:{scope:'class',
+        class_name:row.class_name,class_source:row.class_source,min_level:row.level}}));
+  }
   return [];
  };
  // Spell ownership is declared in the structured origin catalog. Never infer
@@ -478,32 +511,60 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
  const blockFor=(origin,block,blockIndex,definition)=>{
   const out={grants:[],trackers:[],choices:[]};
   if(!block||typeof block!=='object')return out;
-  const ability=allAbilities.includes(block.ability)?block.ability:'';
+  const featureGrant=origin.kind==='subclassFeature';
   const abilityOptions=castingOptions(block);
+  const abilitySource=block.ability_from;
+  const sourceFeat=abilitySource?.kind==='feat'?arr(record.feats_catalog).find(feat=>!feat.disabled&&
+    norm(feat.name)===norm(abilitySource.name)&&norm(feat.source)===norm(abilitySource.source)&&
+    active('feat|'+norm(feat.source)+'|'+norm(feat.name))):origin.feat;
+  const abilityOrigin=abilitySource?.kind==='feat'?'feat|'+norm(abilitySource.source)+'|'+norm(abilitySource.name):origin.id;
+  const sourceKey=sourceFeat?'feat|'+(sourceFeat.id||norm(sourceFeat.name)+'|'+norm(sourceFeat.source)):'';
+  const sourceIds=[abilityOrigin,...features.filter(feature=>feature.origin_key===sourceKey).map(feature=>feature.origin_id)];
+  const savedAbilities=[...sourceIds.map(id=>record.spellcasting_section_abilities?.['origin:'+id]),
+    ...arr(record.origin_spell_grants).filter(grant=>!grant.disabled&&
+      (sourceIds.includes(grant.origin_id)||grant.origin_parent_id===abilityOrigin)).map(grant=>grant.spellcasting_ability)]
+    .filter(value=>abilityOptions.includes(value));
+  const inherited=abilitySource?.kind==='feat_ability'?
+    sourceFeat?.ability_choice||arr(record.origin_ability_choices).find(row=>row.origin_id===abilityOrigin)?.ability:
+    record.spellcasting_section_abilities?.['origin:'+abilityOrigin]||
+      (new Set(savedAbilities).size===1?savedAbilities[0]:'');
+  const ability=allAbilities.includes(block.ability)?block.ability:
+    abilityOptions.includes(inherited)?inherited:'';
+  const pendingAbility=!!abilitySource&&(!ability||abilitySource.kind==='feat'&&!sourceFeat);
+  const aliases=id=>{
+    if(!definition?.audited_2014)return [];
+    const prefix='5espell:'+origin.id+'|',suffix=id.slice((prefix+blockIndex).length);
+    const values=arr(definition.blocks).map((_,i)=>prefix+i+suffix);
+    for(const [category,replaced] of Object.entries(block.tracker_alias_categories||{}))
+      for(const old of arr(replaced))values.push(...values.filter(value=>value.includes('|'+category+'|')).map(value=>value.replace('|'+category+'|','|'+old+'|')));
+    return [...new Set(values)].filter(value=>value!==id);
+  };
   const group=(spec,mode,stage,category,uses='')=>{
    if(!Array.isArray(spec))return;
    let tracker='';
-   const limited=['daily','rest'].includes(category),each=String(uses).endsWith('e'),amount=Number(String(uses).replace(/e$/,''));
+   const limited=['daily','rest'].includes(category),each=String(uses).endsWith('e');
+   const amount=featureGrant&&uses==='proficiency'?
+     Number(proficiency??2+Math.floor((level-1)/4)):Number(String(uses).replace(/e$/,''));
    if(limited){
     if(!Number.isInteger(amount)||amount<=0)return;
     tracker='5espell:'+origin.id+'|'+blockIndex+'|'+stage+'|'+category+'|'+uses;
     if(!each){
-     const owners=spec.map(raw=>typeof raw==='string'?spellOrigin(origin,block,raw):origin);
+     const owners=spec.map(raw=>spellOrigin(origin,block,raw));
      const owner=owners.length&&owners.every(row=>row.id===owners[0].id&&
        row.granting_trait===owners[0].granting_trait)?owners[0]:origin;
      out.trackers.push({id:tracker,name:owner.name+' · incantesimi',max:amount,
        recharge:category==='daily'?'long_rest':'short_rest',origin_id:owner.id,
        origin_name:owner.name,origin_parent_id:origin.id,
-       origin_parent_name:origin.name,granting_trait:owner.granting_trait||'',automatic:true});
+       origin_parent_name:origin.name,granting_trait:owner.granting_trait||'',legacy_ids:aliases(tracker),automatic:true});
     }
    }
    spec.forEach((raw,i)=>{
     let tid=tracker;
-    const owner=typeof raw==='string'?spellOrigin(origin,block,raw):origin;
+    const owner=spellOrigin(origin,block,raw);
     // A compact packaged native catalog may lag behind a source-corrected
     // spell usage rule. Apply the source-qualified limit only if no native
     // daily/rest tracker already exists; never grant duplicate uses.
-    const extra=typeof raw==='string'&&!tid?usageFor(raw):null;
+    const extra=['race','subrace'].includes(origin.kind)&&typeof raw==='string'&&!tid?usageFor(raw):null;
     if(extra&&Number.isInteger(Number(extra.uses))&&Number(extra.uses)>0){
       tid='5espell:'+origin.id+'|'+blockIndex+'|'+stage+'|racial:'+norm(String(raw).split('#')[0].split('|')[0]);
       out.trackers.push({id:tid,name:owner.name+' · '+String(raw).split('#')[0].split('|')[0],
@@ -511,56 +572,82 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
         origin_id:owner.id,origin_name:owner.name,origin_parent_id:origin.id,
         origin_parent_name:origin.name,granting_trait:owner.granting_trait||'',automatic:true});
     }
+    const from=raw?.choose&&typeof raw.choose==='object'?arr(raw.choose.from):[];
+    const count=raw?.count_formula==='half_proficiency'?Math.max(1,Math.floor(Number(proficiency??2+Math.floor((level-1)/4))/2)):
+      Math.max(1,Number(raw?.count??raw?.choose?.count)||1);
+    const perSpell=limited&&each&&(count>1||!!raw?.count_formula);
     if(limited&&each){
      tid+='|'+(typeof raw==='string'?raw:i);
-     out.trackers.push({id:tid,name:owner.name+' · '+(typeof raw==='string'?raw:'scelta'),max:amount,
+     if(!perSpell)out.trackers.push({id:tid,name:owner.name+' · '+(typeof raw==='string'?raw:'scelta'),max:amount,
       recharge:category==='daily'?'long_rest':'short_rest',origin_id:owner.id,
       origin_name:owner.name,origin_parent_id:origin.id,
-      origin_parent_name:origin.name,granting_trait:owner.granting_trait||'',automatic:true});
+      origin_parent_name:origin.name,granting_trait:owner.granting_trait||'',legacy_ids:aliases(tid),automatic:true});
     }
     if(raw&&typeof raw==='object'){
-     if(!raw.choose||!(mode==='innate'||category!=='will'||mode==='known'&&String(raw.choose).includes('level=0')))return;
+     if(!(typeof raw.choose==='string'||from.length)||!(featureGrant||mode==='innate'||category!=='will'||mode==='known'&&String(raw.choose).includes('level=0')||from.length))return;
      const owner=spellOrigin(origin,block,raw);
-     out.choices.push({id:origin.id+'|'+stage+'|'+mode+'|'+raw.choose+'|'+tid,
+     const filter=typeof raw.choose==='string'?raw.choose:'';
+     out.choices.push({id:origin.id+'|'+stage+'|'+mode+'|'+(filter||from.join(';'))+'|'+tid,
       origin_id:owner.id,origin_name:owner.name,
       origin_parent_id:origin.id,origin_parent_name:origin.name,
       granting_trait:owner.granting_trait||'',spellcasting_ability:ability,
-      spellcasting_ability_options:tid?abilityOptions:[],filter:String(raw.choose),
-      count:Math.max(1,Number(raw.count)||1),mode,stage,
+      spellcasting_ability_options:ability?[]:abilityOptions,filter,
+      ...(from.length?{spell_options:from.map(token=>originSpellId(token,edition,spells))}:{}),
+      ...(arr(block.attack_spells).length?{attack_spell_ids:block.attack_spells.map(token=>originSpellId(token,edition,spells))}:{}),
+      count,mode,stage,casting_ability_origin_id:abilityOrigin,
+      casting_ability_unresolved:pendingAbility,ritual_only:block.ritual_only===true,
+      casting_ability_choice_required:!!definition?.audited_2014&&abilityOptions.length>0&&!ability,
+      casting_ability_from_source:!!abilitySource,
+      requires_context:block.requires_context||'',
+      ...(perSpell?{tracker_per_spell:true,tracker_max:amount,tracker_recharge:category==='daily'?'long_rest':'short_rest',
+        tracker_legacy_ids:aliases(tid),spell_tokens:Object.fromEntries(from.map(token=>[originSpellId(token,edition,spells),token])),
+        tracker_legacy_spell_prefixes:arr(block.legacy_each_spell_blocks).map(index=>
+          '5espell:'+origin.id+'|'+index+'|'+stage+'|'+category+'|'+uses+'|')}:{}),
+      ...(featureGrant?{requirements:{...origin.requirements,min_level:Math.max(origin.requirements.min_level,Number(stage)||0)},
+        payment_mode:tid?'tracker':['known','prepared'].includes(mode)?'slot':'free'}:{}),
       usage:tid?'limited':'at_will',tracker_id:tid,
       slot_alternative:!!tid&&(block.slot_alternative===true||
         grantRule(definition?.kind,definition?.name,definition?.source,raw.choose)?.slot_alternative===true)});return;
     }
-    if(typeof raw!=='string'||category==='will'&&mode==='prepared'||mode==='known'&&category==='will'&&!raw.includes('#c'))return;
+    if(typeof raw!=='string'||!featureGrant&&(category==='will'&&mode==='prepared'||mode==='known'&&category==='will'&&!raw.includes('#c')))return;
     const id=originSpellId(raw,edition,spells);
     const supplement=grantRule(definition?.kind,definition?.name,definition?.source,raw);
     const fixedAbility=allAbilities.includes(supplement?.spellcasting_ability)?supplement.spellcasting_ability:ability;
     if(!id){out.warnings??=[];out.warnings.push('Incantesimo non presente nel catalogo locale: '+raw);return;}
     if(out.grants.some(g=>g.origin_id===owner.id&&g.spell_id===id&&g.tracker_id===tid))return;
-    out.grants.push({id:'5etools:'+origin.id+'|'+id+'|'+mode+'|'+stage,
+    const previousSupplement='supplemental-spell:'+origin.id+'|'+id;
+    const grantId=featureGrant?(record.origin_spell_configs?.[previousSupplement]?
+      previousSupplement:'feature-spell:'+origin.id+'|'+id):
+      '5etools:'+origin.id+'|'+id+'|'+mode+'|'+stage;
+    out.grants.push({id:grantId,
      origin_id:owner.id,origin_name:owner.name,
      origin_parent_id:origin.id,origin_parent_name:origin.name,
      granting_trait:owner.granting_trait||'',spell_id:id,tracker_id:tid,
      mode,stage,cantrip:raw.includes('#c')||Number(spells.find(spell=>spell.id===id)?.level)===0,
+     ritual_only:block.ritual_only===true,requires_context:block.requires_context||'',
+     casting_ability_unresolved:pendingAbility||!!definition?.audited_2014&&abilityOptions.length>0&&!ability&&!block.casting_ability_not_required,
+     casting_ability_from_source:!!abilitySource,casting_ability_origin_id:abilityOrigin,
      spellcasting_ability:fixedAbility,
      spellcasting_ability_options:fixedAbility?[]:abilityOptions,
+     ...(block.casting_ability_not_required?{casting_ability_not_required:true,spellcasting_ability_options:[]}:{}),
      slot_alternative:!!tid&&(
        block.slot_alternative===true||
        arr(block.slot_alternative).some(spell=>norm(spell)===norm(String(raw).split('#')[0].split('|')[0]))||
        supplement?.slot_alternative===true),
      automatic:true,
+     ...(featureGrant?{requirements:{...origin.requirements,min_level:Math.max(origin.requirements.min_level,Number(stage)||0)}}:{}),
      mechanic_source:'5etools.additionalSpells'});
    });
   };
   for(const mode of ['innate','known','prepared']){
    const progression=block[mode];if(!progression||Array.isArray(progression))continue;
    for(const [stage,values] of Object.entries(progression)){
-    if(stage!=='_'&&!/^\d+$/.test(stage)||stage!=='_'&&Number(stage)>level)continue;
+    if(stage!=='_'&&!/^\d+$/.test(stage)||stage!=='_'&&Number(stage)>(origin.class_level??level))continue;
     if(Array.isArray(values)){group(values,mode,stage,'will');continue;}
     if(!values||typeof values!=='object')continue;
-    for(const category of ['daily','rest','will','_']){
+    for(const category of ['daily','rest','will','_','ritual']){
      const scoped=values[category];
-     if(['will','_'].includes(category))group(scoped,mode,stage,'will');
+     if(['will','_','ritual'].includes(category))group(scoped,mode,stage,'will');
      else if(scoped&&typeof scoped==='object')for(const [uses,spec] of Object.entries(scoped))group(spec,mode,stage,category,uses);
     }
    }
@@ -570,6 +657,39 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
  const append=part=>{for(const key of ['grants','trackers','choices','warnings'])output[key].push(...(part[key]||[]));};
  for(const row of arr(index))for(const origin of originsFor(row).filter(o=>active(o.id))){
   const blocks=arr(row.blocks);
+  if((row.kind==='subclassFeature'||row.require_variant)&&blocks.length>1){
+   if(blocks.every(block=>!block.known&&!block.prepared&&!block.innate))continue;
+   // Identical blocks are a shared benefit, e.g. Land's bonus cantrip.
+   const unique=[...new Map(blocks.map(block=>{
+    const {name,source_block,...mechanics}=block;
+    return [JSON.stringify(mechanics),block];
+   })).values()];
+   if(unique.length===1){append(blockFor(origin,unique[0],0,row));continue;}
+   const labels=blocks.map((block,i)=>{
+    const token=['known','innate'].flatMap(mode=>Object.values(block[mode]||{}).flat())
+      .find(value=>typeof value==='string');
+    return block.name||(token?(spells.find(spell=>spell.id===originSpellId(token,edition,spells))?.name||
+      token.split('#')[0].split('|')[0]):String(i+1));
+   });
+   const options=blocks.map((block,i)=>block.name?norm(block.name):String(i+1));
+   const alignment=norm(record.alignment);
+   const affinity=row.variant_from_alignment?
+     /\bevil\b|malvagi|^(?:le|ne|ce)$/.test(alignment)?'evil':
+     /\bgood\b|buon|^(?:lg|ng|cg)$/.test(alignment)?'good':
+     /neutral|neutrale|^(?:ln|n|cn)$/.test(alignment)?'neutral':'':'';
+   const selected=affinity||norm(record.origin_spell_variants?.[origin.id]??origin.feat?.spell_variant);
+   const at=options.indexOf(selected);
+   if(!affinity)output.variant_choices.push({id:'spell-variant:'+origin.id,origin_id:origin.id,
+     name:origin.name,label:'Opzione del privilegio magico',kind:'spell_variant',count:1,
+     options,option_labels:Object.fromEntries(options.map((key,i)=>[key,labels[i]])),
+     selected:at>=0?[selected]:[],remaining:at>=0?0:1,
+     ...(row.kind==='feat'?{feat_name:row.name,feat_source:row.source}:{}),
+     ...(row.kind==='feat'?{option_labels:Object.fromEntries(options.map((key,i)=>[key,labels[i]+(arr(blocks[i].known?._).filter(value=>typeof value==='string').length?
+       ' · '+blocks[i].known._.filter(value=>typeof value==='string').map(value=>value.split('#')[0]).join(', '):'')]))}:{}),
+     variant_values:Object.fromEntries(options.map((key,i)=>[key,blocks[i].name||key]))});
+   if(at>=0)append(blockFor(origin,blocks[at],at,row));
+   continue;
+  }
   if(blocks.length>1&&row.kind==='race'){
    const chosen=blocks.find(b=>b.name&&norm(b.name)===norm(record.subrace));
    if(chosen){append(blockFor(origin,chosen,blocks.indexOf(chosen),row));continue;}
@@ -593,7 +713,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
    output.warnings.push('Scegli la discendenza di '+origin.name+' per determinarne gli incantesimi.');
    continue;
   }
-  if(blocks.length>1&&row.kind==='feat'){
+  if(blocks.length>1&&row.kind==='feat'&&row.blocks_mode!=='cumulative'){
    // A feat with a saved class-specific variant grants exactly that block.
    // Legacy unspecialized saves keep the old explicit pending choices.
    const owned=arr(record.feats_catalog).find(f=>!f?.disabled&&
@@ -649,6 +769,53 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
   output.trackers=output.trackers.filter(row=>!displaced(row));
  }
  for(const key of ['grants','trackers','choices'])output[key]=[...new Map(output[key].map(row=>[row.id,row])).values()];
+ // Reconcile saved audited-feat choices against the live source definition.
+ // Old selections remain stored; only choices legal for the explicitly
+ // selected variant are projected. Saved grant/config IDs stay stable.
+ const managed=arr(index).filter(row=>row.kind==='feat'&&row.audited_2014)
+   .map(row=>'feat|'+norm(row.source)+'|'+norm(row.name));
+ const rootOf=row=>managed.find(root=>String(row.source_choice_id||'').startsWith(root+'|')||
+   String(row.source_choice_id||'').startsWith('alternatives:'+root+':'));
+ const saved=[];
+ for(const grant of arr(record.origin_spell_grants)){
+  const root=rootOf(grant);
+  if(!root){saved.push(grant);continue;}
+  if(grant.disabled)continue;
+  const definition=spells.find(spell=>spell.id===grant.spell_id);
+  const choices=output.choices.filter(choice=>choice.origin_parent_id===root&&
+    (!definition?choice.id===grant.source_choice_id:originChoiceMatches(choice,definition).matches)&&
+    (!grant.mode||choice.mode===grant.mode));
+  const choice=choices.find(row=>row.id===grant.source_choice_id)||
+    (choices.length===1?choices[0]:null);
+  if(!choice){
+   const automatic=output.grants.find(row=>row.origin_parent_id===root&&row.spell_id===grant.spell_id);
+   if(automatic)automatic.id=grant.id||automatic.id;
+   continue;
+  }
+  if(saved.filter(row=>row.source_choice_id===choice.id).length>=choice.count)continue;
+  saved.push({...grant,source_choice_id:choice.id,origin_id:choice.origin_id,origin_name:choice.origin_name,
+    origin_parent_id:root,mode:choice.mode,tracker_id:choice.tracker_per_spell?
+      choice.tracker_id+'|'+grant.spell_id:choice.tracker_id||'',
+    slot_alternative:choice.slot_alternative===true,ritual_only:choice.ritual_only===true,
+    requires_context:choice.requires_context||'',casting_ability_origin_id:choice.casting_ability_origin_id,
+    casting_ability_unresolved:choice.casting_ability_unresolved||choice.casting_ability_choice_required,
+    casting_ability_from_source:choice.casting_ability_from_source,
+    spellcasting_ability:choice.spellcasting_ability||grant.spellcasting_ability,
+    spellcasting_ability_options:choice.spellcasting_ability_options,
+    payment_mode:choice.ritual_only?'free':choice.tracker_id?'tracker':
+      Number(definition?.level)===0?'free':choice.payment_mode||'free'});
+ }
+ output.saved_grants=saved;
+ for(const choice of output.choices){
+  choice.selected=saved.filter(row=>row.source_choice_id===choice.id&&!row.disabled);
+  if(!choice.tracker_per_spell)continue;
+  for(const grant of choice.selected)output.trackers.push({id:grant.tracker_id,
+    name:choice.origin_name+' · '+(spells.find(spell=>spell.id===grant.spell_id)?.name||grant.spell_id),
+    max:choice.tracker_max,recharge:choice.tracker_recharge,origin_id:choice.origin_id,
+    origin_name:choice.origin_name,origin_parent_id:choice.origin_parent_id,
+    legacy_ids:[...arr(choice.tracker_legacy_ids).map(id=>id+'|'+grant.spell_id),
+      ...arr(choice.tracker_legacy_spell_prefixes).map(prefix=>prefix+choice.spell_tokens[grant.spell_id])],automatic:true});
+ }
  return output;
 }
 
@@ -667,6 +834,8 @@ export function originChoiceMatches(choice,spell,{otherLists=false}={}){
    else if(key==='school')matches&&=values.includes(norm(spell.school))||values.includes(({abjuration:'a',conjuration:'c',divination:'d',enchantment:'e',evocation:'v',illusion:'i',necromancy:'n',transmutation:'t'})[norm(spell.school)]);
    else if(key==='source')matches&&=values.includes(norm(spell.source));
    else if(key==='components & miscellaneous'&&values.every(v=>v==='ritual'))matches&&=spell.ritual===true||spell.meta?.ritual===true;
+   else if(key==='spell attack')matches&&=arr(choice.attack_spell_ids).includes(spell.id)||
+     arr(spell.spellAttack||spell.spell_attack).some(value=>values.includes(norm(value)));
    else {supported=false;break;}
   }
   anySupported||=supported;if(supported&&matches)return {matches:true,supported:true};
@@ -676,7 +845,9 @@ export function originChoiceMatches(choice,spell,{otherLists=false}={}){
 export function applyOriginSpellChoice(record,choice,spell,{ability='',otherLists=false}={}){
  if(!isContentAvailableForRules(spell,record?.rules_version))throw Error('Questa fonte non è disponibile per le regole 2014.');
  if(!originChoiceMatches(choice,spell,{otherLists}).matches)throw Error('Incantesimo non ammesso da questa concessione.');
- const rows=structuredClone(arr(record.origin_spell_grants)),selected=rows.filter(g=>g.source_choice_id===choice.id&&!g.disabled);
+ if(choice.casting_ability_unresolved)throw Error('Completa prima la caratteristica magica del talento che concede questa scelta.');
+ const rows=structuredClone(arr(record.origin_spell_grants));
+ const selected=[...new Map([...arr(choice.selected),...rows.filter(g=>g.source_choice_id===choice.id&&!g.disabled)].map(row=>[row.id,row])).values()];
  if(selected.length>=choice.count)throw Error('Scelta già completa.');
  if(selected.some(g=>g.spell_id===spell.id))throw Error('Incantesimo già scelto per questa origine.');
  const casting=choice.spellcasting_ability||ability;
@@ -685,8 +856,13 @@ export function applyOriginSpellChoice(record,choice,spell,{ability='',otherList
      !choice.spellcasting_ability_options.includes(casting))
    throw Error('Scegli una caratteristica da incantatore consentita dal tratto.');
  rows.push({id:'choice:'+choice.id+'|'+spell.id,origin_id:choice.origin_id,origin_name:choice.origin_name,source_choice_id:choice.id,
-  spell_id:spell.id,tracker_id:choice.tracker_id||'',payment_mode:choice.tracker_id?'tracker':'free',tracker_cost:1,
+  spell_id:spell.id,tracker_id:choice.tracker_per_spell?choice.tracker_id+'|'+spell.id:choice.tracker_id||'',mode:choice.mode,
+  origin_parent_id:choice.origin_parent_id,ritual_only:choice.ritual_only===true,
+  requires_context:choice.requires_context||'',casting_ability_origin_id:choice.casting_ability_origin_id,
+  payment_mode:choice.tracker_id?'tracker':spell.level===0?'free':choice.payment_mode||'free',tracker_cost:1,
   slot_alternative:choice.slot_alternative===true,
-  spellcasting_ability:casting,requirements:{scope:'character',min_level:/^\d+$/.test(choice.stage)?Number(choice.stage):0},disabled:false});
- return {origin_spell_grants:rows};
+  spellcasting_ability:casting,requirements:choice.requirements||{scope:'character',min_level:/^\d+$/.test(choice.stage)?Number(choice.stage):0},disabled:false});
+ return {origin_spell_grants:rows,...(choice.casting_ability_origin_id?{
+  spellcasting_section_abilities:{...(record.spellcasting_section_abilities||{}),
+    ['origin:'+choice.casting_ability_origin_id]:casting}}:{})};
 }

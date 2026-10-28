@@ -3838,7 +3838,7 @@ function originChoicesView(calculated){
   const supported=(state.spellCatalog||[]).some(spell=>originChoiceMatches(choice,spell).supported);
   return '<article class="native-entry pending-spell-choice'+(choice.id===state.pendingSpellChoiceId?' is-target':'')+
    '" data-pending-spell-choice="'+esc(choice.id)+'"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
-   (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+groupedMagicOptions(offered)+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).filter(([key])=>!choice.spellcasting_ability_options?.length||choice.spellcasting_ability_options.includes(key)).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
+   (choice.casting_ability_unresolved?'<p class="hint">Completa prima la caratteristica magica del talento da cui dipende questa concessione.</p>':offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+groupedMagicOptions(offered)+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).filter(([key])=>!choice.spellcasting_ability_options?.length||choice.spellcasting_ability_options.includes(key)).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
      '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
  }).join(''));
 }
@@ -6456,7 +6456,7 @@ async function handleAction(target){
       const assigned=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
       const mode=assigned?.payment_mode||(assigned?.tracker_id?'tracker':level===0?'free':(['known','prepared'].includes(assigned?.mode)||!assigned)?'slot':'free');
       if(mode==='free'||level===0&&mode!=='tracker'){
-        options.push(['auto:0','Senza slot']);
+        options.push(['auto:0',assigned?.ritual_only?'Rituale · senza slot':'Senza slot']);
       }else{
         if(mode==='tracker'){
           const pool=calculated.trackers.find(t=>t.id===assigned?.tracker_id&&!t.disabled);
@@ -6484,6 +6484,8 @@ async function handleAction(target){
       (level===0?(spell.internal_grant?'Capacità':'Trucchetto'):level===null?'Livello non specificato':'Livello '+level)+
       (detailed.school?' · '+detailed.school:'')+(detailed.source?' · '+detailed.source:''),'action-cast-cancel')+
       (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
+      (entry?.requires_context?'<label><input type="checkbox" id="action-cast-context"> '+esc(entry.requires_context)+'</label>':'')+
+      (entry?.ritual_only?'<label><input type="checkbox" id="action-cast-ritual"> Ho completato il rituale, aggiungendo 10 minuti al normale tempo di lancio.</label>':'')+
       (spellExtensions.length?'<section class="magic-effect-extensions"><h3>Estensioni attive</h3><ul>'+
         spellExtensions.map(extension=>'<li><strong>'+esc(extension.origin_name||'Privilegio')+'</strong> · '+
           esc(effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}))+'</li>').join('')+
@@ -6502,7 +6504,7 @@ async function handleAction(target){
           '<option value="">Nessuna voce disponibile nel bestiario</option>')+
         '</select></label>':'')+
       '<div class="actions magic-dialog-actions">'+
-      (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
+      (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">'+(entry.ritual_only?'Concludi rituale':'Lancia')+'</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
     app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     openDialog(dialog);
@@ -6520,6 +6522,8 @@ async function handleAction(target){
       .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
          String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!selection)throw Error('Incantesimo non più disponibile.');
+    selection.context_confirmed=app.querySelector('#action-cast-context')?.checked===true;
+    selection.ritual_completed=app.querySelector('#action-cast-ritual')?.checked===true;
     const detail=await detailedEntry('spells',{...selection,_category:'spells'});
     const selector=detail.item_target_selector||selection.item_target_selector||
       detail.target_item_selector||selection.target_item_selector||null;

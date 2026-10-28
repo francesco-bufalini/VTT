@@ -12982,7 +12982,8 @@
             ]
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13033,9 +13034,19 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "*choice*": "Ambitious Magic"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13060,9 +13071,19 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "*choice*": "Insightful Magic"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13087,9 +13108,19 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "*choice*": "Protective Magic"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13307,9 +13338,11 @@
                 "choose": "level=0|class=Artificer"
               }
             ]
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13803,9 +13836,14 @@
             "_": [
               "prestidigitation#c"
             ]
-          }
+          },
+          "casting_ability_not_required": true
         }
-      ]
+      ],
+      "spell_traits": {
+        "prestidigitation": "Card Tricks"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13974,7 +14012,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Good",
@@ -14004,7 +14043,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Neutral",
@@ -14034,9 +14074,13 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true,
+      "variant_from_alignment": true
     },
     {
       "kind": "feat",
@@ -14059,7 +14103,8 @@
             }
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -14217,15 +14262,21 @@
           "ability": "int",
           "innate": {
             "_": {
-              "daily": {
+              "rest": {
                 "1": [
                   "misty step"
                 ]
               }
             }
+          },
+          "tracker_alias_categories": {
+            "rest": [
+              "daily"
+            ]
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -14233,7 +14284,13 @@
       "source": "TCE",
       "blocks": [
         {
-          "ability": "inherit",
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "innate": {
             "_": {
               "daily": {
@@ -14245,9 +14302,14 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat_ability"
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -14329,9 +14391,14 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "spell_traits": {
+        "cure wounds": "Draconic Healing"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -14398,7 +14465,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Lunitari",
@@ -14434,7 +14502,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Solinari",
@@ -14470,9 +14539,12 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -14728,7 +14800,9 @@
             ]
           }
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -15527,9 +15601,27 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "ability_from": {
+            "kind": "feat",
+            "name": "Scion of the Outer Planes",
+            "source": "SatO"
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "misty step": "Crossroads Emissary",
+        "tongues": "Crossroads Emissary"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -15540,18 +15632,19 @@
           "ability": "int",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione lo schema e il materiale necessari al rituale di Quicksmithing."
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -15563,98 +15656,100 @@
           "ability": "cha",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Bard|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Bard|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Cleric Spells",
           "ability": "wis",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Cleric|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Cleric|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Druid Spells",
           "ability": "wis",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Druid|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Druid|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Sorcerer Spells",
           "ability": "cha",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Sorcerer|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Sorcerer|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Warlock Spells",
           "ability": "cha",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Warlock|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Warlock|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Wizard Spells",
           "ability": "int",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Wizard|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Wizard|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -15703,30 +15798,73 @@
       "source": "BGG",
       "blocks": [
         {
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "innate": {
             "_": {
               "daily": {
                 "1e": [
-                  "comprehend languages",
-                  "fog cloud",
-                  "inflict wounds",
-                  "chromatic orb",
-                  "disguise self",
-                  "burning hands",
-                  "speak with animals",
-                  "armor of agathys",
-                  "goodberry",
-                  "longstrider",
-                  "command",
-                  "entangle",
-                  "sanctuary",
-                  "thunderwave"
+                  "comprehend languages"
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
+        },
+        {
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "innate": {
+            "_": {
+              "daily": {
+                "1e": [
+                  {
+                    "choose": {
+                      "from": [
+                        "fog cloud",
+                        "inflict wounds",
+                        "chromatic orb",
+                        "disguise self",
+                        "burning hands",
+                        "speak with animals",
+                        "armor of agathys",
+                        "goodberry",
+                        "longstrider",
+                        "command",
+                        "entangle",
+                        "sanctuary",
+                        "thunderwave"
+                      ]
+                    },
+                    "count_formula": "half_proficiency"
+                  }
+                ]
+              }
+            }
+          },
+          "slot_alternative": true,
+          "requires_context": "La runa scelta è incisa su un oggetto che indosso o trasporto.",
+          "legacy_each_spell_blocks": [
+            0
+          ]
         }
-      ]
+      ],
+      "spell_traits": {
+        "comprehend languages": "Comprehend Languages",
+        "*choice*": "Rune Magic"
+      },
+      "audited_2014": true,
+      "blocks_mode": "cumulative"
     },
     {
       "kind": "feat",
@@ -15808,7 +15946,9 @@
             ]
           }
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -15847,9 +15987,13 @@
                 "find familiar"
               ]
             }
-          }
+          },
+          "ritual_only": true,
+          "casting_ability_not_required": true,
+          "requires_context": "Concludo il rituale di Find Familiar usando la forma del famiglio concessa da questo talento."
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -15857,7 +16001,13 @@
       "source": "TCE",
       "blocks": [
         {
-          "ability": "inherit",
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "innate": {
             "_": {
               "daily": {
@@ -15869,9 +16019,14 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat_ability"
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -15938,7 +16093,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Cleric Spells",
@@ -15950,7 +16118,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Druid Spells",
@@ -15962,7 +16143,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Sorcerer Spells",
@@ -15974,7 +16168,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Warlock Spells",
@@ -15986,7 +16193,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Wizard Spells",
@@ -15998,9 +16218,24 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -16056,7 +16291,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Lorehold 2",
@@ -16083,7 +16319,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Lorehold 3",
@@ -16110,7 +16347,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Prismari 1",
@@ -16137,7 +16375,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Prismari 2",
@@ -16164,7 +16403,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Prismari 3",
@@ -16191,7 +16431,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Quandrix 1",
@@ -16218,7 +16459,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Quandrix 2",
@@ -16245,7 +16487,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Quandrix 3",
@@ -16272,7 +16515,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Silverquill 1",
@@ -16299,7 +16543,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Silverquill 2",
@@ -16326,7 +16571,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Silverquill 3",
@@ -16353,7 +16599,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Witherbloom 1",
@@ -16380,7 +16627,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Witherbloom 2",
@@ -16407,7 +16655,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Witherbloom 3",
@@ -16434,9 +16683,12 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -16450,9 +16702,13 @@
                 "find familiar"
               ]
             }
-          }
+          },
+          "ritual_only": true,
+          "casting_ability_not_required": true,
+          "requires_context": "Concludo il rituale di Find Familiar usando la forma del famiglio concessa da questo talento."
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -16476,7 +16732,8 @@
             }
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -16484,14 +16741,24 @@
       "source": "TCE",
       "blocks": [
         {
-          "ability": "inherit",
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "known": {
             "_": [
               "mage hand#c"
             ]
+          },
+          "ability_from": {
+            "kind": "feat_ability"
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -16517,7 +16784,13 @@
       "source": "TCE",
       "blocks": [
         {
-          "ability": "inherit",
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "innate": {
             "_": {
               "daily": {
@@ -16526,9 +16799,14 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat_ability"
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -16716,7 +16994,8 @@
             ]
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "race",
@@ -17253,10 +17532,14 @@
             ]
           },
           "innate": {
-            "1": [
-              "detect magic",
-              "disguise self"
-            ]
+            "1": {
+              "daily": {
+                "1e": [
+                  "detect magic",
+                  "disguise self"
+                ]
+              }
+            }
           }
         }
       ],
@@ -18309,9 +18592,13 @@
       "blocks": [
         {
           "innate": {
-            "5": [
-              "pass without trace"
-            ]
+            "5": {
+              "daily": {
+                "1": [
+                  "pass without trace"
+                ]
+              }
+            }
           },
           "ability": {
             "choose": [
@@ -50809,5 +51096,2837 @@
       "raceSource": "XPHB",
       "id": "subrace:tiefling|xphb|infernal|xphb"
     }
-  ]
+  ],
+  "feature_spells": [
+    {
+      "kind": "subclassFeature",
+      "name": "Alchemist Spells",
+      "source": "TCE",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass_name": "Alchemist",
+      "subclass_short_name": "Alchemist",
+      "subclass_source": "TCE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "healing word",
+              "ray of sickness"
+            ],
+            "5": [
+              "flaming sphere",
+              "melf's acid arrow"
+            ],
+            "9": [
+              "gaseous form",
+              "mass healing word"
+            ],
+            "13": [
+              "blight",
+              "death ward"
+            ],
+            "17": [
+              "cloudkill",
+              "raise dead"
+            ]
+          },
+          "ability": "int"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Armorer Spells",
+      "source": "TCE",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass_name": "Armorer",
+      "subclass_short_name": "Armorer",
+      "subclass_source": "TCE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "magic missile",
+              "thunderwave"
+            ],
+            "5": [
+              "mirror image",
+              "shatter"
+            ],
+            "9": [
+              "hypnotic pattern",
+              "lightning bolt"
+            ],
+            "13": [
+              "fire shield",
+              "greater invisibility"
+            ],
+            "17": [
+              "passwall",
+              "wall of force"
+            ]
+          },
+          "ability": "int"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Artillerist Spells",
+      "source": "TCE",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass_name": "Artillerist",
+      "subclass_short_name": "Artillerist",
+      "subclass_source": "TCE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "shield",
+              "thunderwave"
+            ],
+            "5": [
+              "scorching ray",
+              "shatter"
+            ],
+            "9": [
+              "fireball",
+              "wind wall"
+            ],
+            "13": [
+              "ice storm",
+              "wall of fire"
+            ],
+            "17": [
+              "cone of cold",
+              "wall of force"
+            ]
+          },
+          "ability": "int"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Battle Smith Spells",
+      "source": "TCE",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass_name": "Battle Smith",
+      "subclass_short_name": "Battle Smith",
+      "subclass_source": "TCE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "heroism",
+              "shield"
+            ],
+            "5": [
+              "branding smite",
+              "warding bond"
+            ],
+            "9": [
+              "aura of vitality",
+              "conjure barrage"
+            ],
+            "13": [
+              "aura of purity",
+              "fire shield"
+            ],
+            "17": [
+              "banishing smite",
+              "mass cure wounds"
+            ]
+          },
+          "ability": "int"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Knowledge Domain",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Knowledge Domain",
+      "subclass_short_name": "Knowledge",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "command",
+              "identify"
+            ],
+            "3": [
+              "augury",
+              "suggestion"
+            ],
+            "5": [
+              "nondetection",
+              "speak with dead"
+            ],
+            "7": [
+              "arcane eye",
+              "confusion"
+            ],
+            "9": [
+              "legend lore",
+              "scrying"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Life Domain",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Life Domain",
+      "subclass_short_name": "Life",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "bless",
+              "cure wounds"
+            ],
+            "3": [
+              "lesser restoration",
+              "spiritual weapon"
+            ],
+            "5": [
+              "beacon of hope",
+              "revivify"
+            ],
+            "7": [
+              "death ward",
+              "guardian of faith"
+            ],
+            "9": [
+              "mass cure wounds",
+              "raise dead"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Light Domain",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Light Domain",
+      "subclass_short_name": "Light",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "burning hands",
+              "faerie fire"
+            ],
+            "3": [
+              "flaming sphere",
+              "scorching ray"
+            ],
+            "5": [
+              "daylight",
+              "fireball"
+            ],
+            "7": [
+              "guardian of faith",
+              "wall of fire"
+            ],
+            "9": [
+              "flame strike",
+              "scrying"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Cantrip",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Light Domain",
+      "subclass_short_name": "Light",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": [
+              "light#c"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Nature Domain",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Nature Domain",
+      "subclass_short_name": "Nature",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "animal friendship",
+              "speak with animals"
+            ],
+            "3": [
+              "barkskin",
+              "spike growth"
+            ],
+            "5": [
+              "plant growth",
+              "wind wall"
+            ],
+            "7": [
+              "dominate beast",
+              "grasping vine"
+            ],
+            "9": [
+              "insect plague",
+              "tree stride"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Acolyte of Nature",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Nature Domain",
+      "subclass_short_name": "Nature",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Tempest Domain",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Tempest Domain",
+      "subclass_short_name": "Tempest",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "fog cloud",
+              "thunderwave"
+            ],
+            "3": [
+              "gust of wind",
+              "shatter"
+            ],
+            "5": [
+              "call lightning",
+              "sleet storm"
+            ],
+            "7": [
+              "control water",
+              "ice storm"
+            ],
+            "9": [
+              "destructive wave",
+              "insect plague"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Trickery Domain",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Trickery Domain",
+      "subclass_short_name": "Trickery",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "charm person",
+              "disguise self"
+            ],
+            "3": [
+              "mirror image",
+              "pass without trace"
+            ],
+            "5": [
+              "blink",
+              "dispel magic"
+            ],
+            "7": [
+              "dimension door",
+              "polymorph"
+            ],
+            "9": [
+              "dominate person",
+              "modify memory"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "War Domain",
+      "source": "PHB",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "War Domain",
+      "subclass_short_name": "War",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "divine favor",
+              "shield of faith"
+            ],
+            "3": [
+              "magic weapon",
+              "spiritual weapon"
+            ],
+            "5": [
+              "crusader's mantle",
+              "spirit guardians"
+            ],
+            "7": [
+              "freedom of movement",
+              "stoneskin"
+            ],
+            "9": [
+              "flame strike",
+              "hold monster"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Death Domain",
+      "source": "DMG",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Death Domain",
+      "subclass_short_name": "Death",
+      "subclass_source": "DMG",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "false life",
+              "ray of sickness"
+            ],
+            "3": [
+              "blindness/deafness",
+              "ray of enfeeblement"
+            ],
+            "5": [
+              "animate dead",
+              "vampiric touch"
+            ],
+            "7": [
+              "blight",
+              "death ward"
+            ],
+            "9": [
+              "antilife shell",
+              "cloudkill"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Reaper",
+      "source": "DMG",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Death Domain",
+      "subclass_short_name": "Death",
+      "subclass_source": "DMG",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|school=N",
+                  "count": 1
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Arcana Domain",
+      "source": "SCAG",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Arcana Domain",
+      "subclass_short_name": "Arcana",
+      "subclass_source": "SCAG",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "detect magic",
+              "magic missile"
+            ],
+            "3": [
+              "magic weapon",
+              "Nystul's magic aura"
+            ],
+            "5": [
+              "dispel magic",
+              "magic circle"
+            ],
+            "7": [
+              "arcane eye",
+              "Leomund's secret chest"
+            ],
+            "9": [
+              "planar binding",
+              "teleportation circle"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Arcane Mastery",
+      "source": "SCAG",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Arcana Domain",
+      "subclass_short_name": "Arcana",
+      "subclass_source": "SCAG",
+      "level": 17,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "17": [
+              {
+                "choose": "level=6|class=Wizard"
+              },
+              {
+                "choose": "level=7|class=Wizard"
+              },
+              {
+                "choose": "level=8|class=Wizard"
+              },
+              {
+                "choose": "level=9|class=Wizard"
+              }
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Arcane Initiate",
+      "source": "SCAG",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Arcana Domain",
+      "subclass_short_name": "Arcana",
+      "subclass_source": "SCAG",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Wizard",
+                  "count": 2
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Forge Domain",
+      "source": "XGE",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Forge Domain",
+      "subclass_short_name": "Forge",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "identify",
+              "searing smite"
+            ],
+            "3": [
+              "heat metal",
+              "magic weapon"
+            ],
+            "5": [
+              "elemental weapon",
+              "protection from energy"
+            ],
+            "7": [
+              "fabricate",
+              "wall of fire"
+            ],
+            "9": [
+              "animate objects",
+              "creation"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Grave Domain",
+      "source": "XGE",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Grave Domain",
+      "subclass_short_name": "Grave",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "bane",
+              "false life"
+            ],
+            "3": [
+              "gentle repose",
+              "ray of enfeeblement"
+            ],
+            "5": [
+              "revivify",
+              "vampiric touch"
+            ],
+            "7": [
+              "blight",
+              "death ward"
+            ],
+            "9": [
+              "antilife shell",
+              "raise dead"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Circle of Mortality",
+      "source": "XGE",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Grave Domain",
+      "subclass_short_name": "Grave",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": [
+              "spare the dying#c"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Order Domain",
+      "source": "TCE",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Order Domain",
+      "subclass_short_name": "Order",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "command",
+              "heroism"
+            ],
+            "3": [
+              "hold person",
+              "zone of truth"
+            ],
+            "5": [
+              "mass healing word",
+              "slow"
+            ],
+            "7": [
+              "compulsion",
+              "locate creature"
+            ],
+            "9": [
+              "commune",
+              "dominate person"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Peace Domain",
+      "source": "TCE",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Peace Domain",
+      "subclass_short_name": "Peace",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "heroism",
+              "sanctuary"
+            ],
+            "3": [
+              "aid",
+              "warding bond"
+            ],
+            "5": [
+              "beacon of hope",
+              "sending"
+            ],
+            "7": [
+              "aura of purity",
+              "Otiluke's resilient sphere"
+            ],
+            "9": [
+              "greater restoration",
+              "Rary's telepathic bond"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Twilight Domain",
+      "source": "TCE",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass_name": "Twilight Domain",
+      "subclass_short_name": "Twilight",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "1": [
+              "faerie fire",
+              "sleep"
+            ],
+            "3": [
+              "moonbeam",
+              "see invisibility"
+            ],
+            "5": [
+              "aura of vitality",
+              "Leomund's tiny hut"
+            ],
+            "7": [
+              "aura of life",
+              "greater invisibility"
+            ],
+            "9": [
+              "circle of power",
+              "mislead"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Circle Spells",
+      "source": "PHB",
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass_name": "Circle of the Land",
+      "subclass_short_name": "Land",
+      "subclass_source": "PHB",
+      "level": 2,
+      "blocks": [
+        {
+          "source_block": 0,
+          "name": "Arctic",
+          "prepared": {
+            "3": [
+              "hold person",
+              "spike growth"
+            ],
+            "5": [
+              "sleet storm",
+              "slow"
+            ],
+            "7": [
+              "freedom of movement",
+              "ice storm"
+            ],
+            "9": [
+              "commune with nature",
+              "cone of cold"
+            ]
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 1,
+          "name": "Coast",
+          "prepared": {
+            "3": [
+              "mirror image",
+              "misty step"
+            ],
+            "5": [
+              "water breathing",
+              "water walk"
+            ],
+            "7": [
+              "control water",
+              "freedom of movement"
+            ],
+            "9": [
+              "conjure elemental",
+              "scrying"
+            ]
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 2,
+          "name": "Desert",
+          "prepared": {
+            "3": [
+              "blur",
+              "silence"
+            ],
+            "5": [
+              "create food and water",
+              "protection from energy"
+            ],
+            "7": [
+              "blight",
+              "hallucinatory terrain"
+            ],
+            "9": [
+              "insect plague",
+              "wall of stone"
+            ]
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 3,
+          "name": "Forest",
+          "prepared": {
+            "3": [
+              "barkskin",
+              "spider climb"
+            ],
+            "5": [
+              "call lightning",
+              "plant growth"
+            ],
+            "7": [
+              "divination",
+              "freedom of movement"
+            ],
+            "9": [
+              "commune with nature",
+              "tree stride"
+            ]
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 4,
+          "name": "Grassland",
+          "prepared": {
+            "3": [
+              "invisibility",
+              "pass without trace"
+            ],
+            "5": [
+              "daylight",
+              "haste"
+            ],
+            "7": [
+              "divination",
+              "freedom of movement"
+            ],
+            "9": [
+              "dream",
+              "insect plague"
+            ]
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 5,
+          "name": "Mountain",
+          "prepared": {
+            "3": [
+              "spider climb",
+              "spike growth"
+            ],
+            "5": [
+              "lightning bolt",
+              "meld into stone"
+            ],
+            "7": [
+              "stone shape",
+              "stoneskin"
+            ],
+            "9": [
+              "passwall",
+              "wall of stone"
+            ]
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 6,
+          "name": "Swamp",
+          "prepared": {
+            "3": [
+              "darkness",
+              "Melf's acid arrow"
+            ],
+            "5": [
+              "water walk",
+              "stinking cloud"
+            ],
+            "7": [
+              "freedom of movement",
+              "locate creature"
+            ],
+            "9": [
+              "insect plague",
+              "scrying"
+            ]
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 7,
+          "name": "Underdark",
+          "prepared": {
+            "3": [
+              "spider climb",
+              "web"
+            ],
+            "5": [
+              "gaseous form",
+              "stinking cloud"
+            ],
+            "7": [
+              "greater invisibility",
+              "stone shape"
+            ],
+            "9": [
+              "cloudkill",
+              "insect plague"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Cantrip",
+      "source": "PHB",
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass_name": "Circle of the Land",
+      "subclass_short_name": "Land",
+      "subclass_source": "PHB",
+      "level": 2,
+      "blocks": [
+        {
+          "source_block": 0,
+          "name": "Arctic",
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 1,
+          "name": "Coast",
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 2,
+          "name": "Desert",
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 3,
+          "name": "Forest",
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 4,
+          "name": "Grassland",
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 5,
+          "name": "Mountain",
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 6,
+          "name": "Swamp",
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 7,
+          "name": "Underdark",
+          "known": {
+            "1": {
+              "_": [
+                {
+                  "choose": "level=0|class=Druid"
+                }
+              ]
+            }
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Circle Spells",
+      "source": "TCE",
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass_name": "Circle of Spores",
+      "subclass_short_name": "Spores",
+      "subclass_source": "TCE",
+      "level": 2,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "blindness/deafness",
+              "gentle repose"
+            ],
+            "5": [
+              "animate dead",
+              "gaseous form"
+            ],
+            "7": [
+              "blight",
+              "confusion"
+            ],
+            "9": [
+              "cloudkill",
+              "contagion"
+            ]
+          },
+          "ability": "wis",
+          "known": {
+            "2": [
+              "chill touch#c"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Star Map",
+      "source": "TCE",
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass_name": "Circle of Stars",
+      "subclass_short_name": "Stars",
+      "subclass_source": "TCE",
+      "level": 2,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "2": {
+              "daily": {
+                "proficiency": [
+                  "guiding bolt"
+                ]
+              }
+            }
+          },
+          "ability": "wis",
+          "known": {
+            "2": [
+              "guidance#c"
+            ]
+          },
+          "slot_alternative": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Circle Spells",
+      "source": "TCE",
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass_name": "Circle of Wildfire",
+      "subclass_short_name": "Wildfire",
+      "subclass_source": "TCE",
+      "level": 2,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "2": [
+              "burning hands",
+              "cure wounds"
+            ],
+            "3": [
+              "flaming sphere",
+              "scorching ray"
+            ],
+            "5": [
+              "plant growth",
+              "revivify"
+            ],
+            "7": [
+              "aura of life",
+              "fire shield"
+            ],
+            "9": [
+              "flame strike",
+              "mass cure wounds"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oath Spells",
+      "source": "PHB",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oath of Devotion",
+      "subclass_short_name": "Devotion",
+      "subclass_source": "PHB",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "protection from evil and good",
+              "sanctuary"
+            ],
+            "5": [
+              "lesser restoration",
+              "zone of truth"
+            ],
+            "9": [
+              "beacon of hope",
+              "dispel magic"
+            ],
+            "13": [
+              "freedom of movement",
+              "guardian of faith"
+            ],
+            "17": [
+              "commune",
+              "flame strike"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oath Spells",
+      "source": "PHB",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oath of the Ancients",
+      "subclass_short_name": "Ancients",
+      "subclass_source": "PHB",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "ensnaring strike",
+              "speak with animals"
+            ],
+            "5": [
+              "moonbeam",
+              "misty step"
+            ],
+            "9": [
+              "plant growth",
+              "protection from energy"
+            ],
+            "13": [
+              "ice storm",
+              "stoneskin"
+            ],
+            "17": [
+              "commune with nature",
+              "tree stride"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oath Spells",
+      "source": "PHB",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oath of Vengeance",
+      "subclass_short_name": "Vengeance",
+      "subclass_source": "PHB",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "bane",
+              "hunter's mark"
+            ],
+            "5": [
+              "hold person",
+              "misty step"
+            ],
+            "9": [
+              "haste",
+              "protection from energy"
+            ],
+            "13": [
+              "banishment",
+              "dimension door"
+            ],
+            "17": [
+              "hold monster",
+              "scrying"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oathbreaker Spells",
+      "source": "DMG",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oathbreaker",
+      "subclass_short_name": "Oathbreaker",
+      "subclass_source": "DMG",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "hellish rebuke",
+              "inflict wounds"
+            ],
+            "5": [
+              "crown of madness",
+              "darkness"
+            ],
+            "9": [
+              "animate dead",
+              "bestow curse"
+            ],
+            "13": [
+              "blight",
+              "confusion"
+            ],
+            "17": [
+              "contagion",
+              "dominate person"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oath Spells",
+      "source": "SCAG",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oath of the Crown",
+      "subclass_short_name": "Crown",
+      "subclass_source": "SCAG",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "command",
+              "compelled duel"
+            ],
+            "5": [
+              "warding bond",
+              "zone of truth"
+            ],
+            "9": [
+              "aura of vitality",
+              "spirit guardians"
+            ],
+            "13": [
+              "banishment",
+              "guardian of faith"
+            ],
+            "17": [
+              "circle of power",
+              "geas"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oath Spells",
+      "source": "XGE",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oath of Conquest",
+      "subclass_short_name": "Conquest",
+      "subclass_source": "XGE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "armor of Agathys",
+              "command"
+            ],
+            "5": [
+              "hold person",
+              "spiritual weapon"
+            ],
+            "9": [
+              "bestow curse",
+              "fear"
+            ],
+            "13": [
+              "dominate beast",
+              "stoneskin"
+            ],
+            "17": [
+              "cloudkill",
+              "dominate person"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oath Spells",
+      "source": "XGE",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oath of Redemption",
+      "subclass_short_name": "Redemption",
+      "subclass_source": "XGE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "sanctuary",
+              "sleep"
+            ],
+            "5": [
+              "calm emotions",
+              "hold person"
+            ],
+            "9": [
+              "counterspell",
+              "hypnotic pattern"
+            ],
+            "13": [
+              "Otiluke's Resilient Sphere",
+              "stoneskin"
+            ],
+            "17": [
+              "hold monster",
+              "wall of force"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oath Spells",
+      "source": "TCE",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oath of Glory",
+      "subclass_short_name": "Glory",
+      "subclass_source": "TCE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "guiding bolt",
+              "heroism"
+            ],
+            "5": [
+              "enhance ability",
+              "magic weapon"
+            ],
+            "9": [
+              "haste",
+              "protection from energy"
+            ],
+            "13": [
+              "compulsion",
+              "freedom of movement"
+            ],
+            "17": [
+              "commune",
+              "flame strike"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Oath Spells",
+      "source": "TCE",
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass_name": "Oath of the Watchers",
+      "subclass_short_name": "Watchers",
+      "subclass_source": "TCE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "prepared": {
+            "3": [
+              "alarm",
+              "detect magic"
+            ],
+            "5": [
+              "moonbeam",
+              "see invisibility"
+            ],
+            "9": [
+              "counterspell",
+              "nondetection"
+            ],
+            "13": [
+              "aura of purity",
+              "banishment"
+            ],
+            "17": [
+              "hold monster",
+              "scrying"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Gloom Stalker Magic",
+      "source": "XGE",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass_name": "Gloom Stalker",
+      "subclass_short_name": "Gloom Stalker",
+      "subclass_source": "XGE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "disguise self"
+            ],
+            "5": [
+              "rope trick"
+            ],
+            "9": [
+              "fear"
+            ],
+            "13": [
+              "greater invisibility"
+            ],
+            "17": [
+              "seeming"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Horizon Walker Magic",
+      "source": "XGE",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass_name": "Horizon Walker",
+      "subclass_short_name": "Horizon Walker",
+      "subclass_source": "XGE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "protection from evil and good"
+            ],
+            "5": [
+              "misty step"
+            ],
+            "9": [
+              "haste"
+            ],
+            "13": [
+              "banishment"
+            ],
+            "17": [
+              "teleportation circle"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Monster Slayer Magic",
+      "source": "XGE",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass_name": "Monster Slayer",
+      "subclass_short_name": "Monster Slayer",
+      "subclass_source": "XGE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "protection from evil and good"
+            ],
+            "5": [
+              "zone of truth"
+            ],
+            "9": [
+              "magic circle"
+            ],
+            "13": [
+              "banishment"
+            ],
+            "17": [
+              "hold monster"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Fey Wanderer Magic",
+      "source": "TCE",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass_name": "Fey Wanderer",
+      "subclass_short_name": "Fey Wanderer",
+      "subclass_source": "TCE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "charm person"
+            ],
+            "5": [
+              "misty step"
+            ],
+            "9": [
+              "dispel magic"
+            ],
+            "13": [
+              "dimension door"
+            ],
+            "17": [
+              "mislead"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Swarmkeeper Magic",
+      "source": "TCE",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass_name": "Swarmkeeper",
+      "subclass_short_name": "Swarmkeeper",
+      "subclass_source": "TCE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "mage hand#c",
+              "faerie fire"
+            ],
+            "5": [
+              "web"
+            ],
+            "9": [
+              "gaseous form"
+            ],
+            "13": [
+              "arcane eye"
+            ],
+            "17": [
+              "insect plague"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Draconic Gift",
+      "source": "FTD",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass_name": "Drakewarden",
+      "subclass_short_name": "Drakewarden",
+      "subclass_source": "FTD",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "thaumaturgy#c"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Divine Magic",
+      "source": "XGE",
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass_name": "Divine Soul",
+      "subclass_short_name": "Divine Soul",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "name": "Good",
+          "known": {
+            "1": [
+              "cure wounds"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 1,
+          "name": "Evil",
+          "known": {
+            "1": [
+              "inflict wounds"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 2,
+          "name": "Law",
+          "known": {
+            "1": [
+              "bless"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 3,
+          "name": "Chaos",
+          "known": {
+            "1": [
+              "bane"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 4,
+          "name": "Neutrality",
+          "known": {
+            "1": [
+              "protection from evil and good"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Eyes of the Dark",
+      "source": "XGE",
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass_name": "Shadow Magic",
+      "subclass_short_name": "Shadow",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "darkness"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Psionic Spells",
+      "source": "TCE",
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass_name": "Aberrant Mind",
+      "subclass_short_name": "Aberrant Mind",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": [
+              "mind sliver|tce#c",
+              "arms of Hadar",
+              "dissonant whispers"
+            ],
+            "3": [
+              "calm emotions",
+              "detect thoughts"
+            ],
+            "5": [
+              "hunger of Hadar",
+              "sending"
+            ],
+            "7": [
+              "Evard's black tentacles",
+              "summon aberration|TCE"
+            ],
+            "9": [
+              "Rary's telepathic bond",
+              "telekinesis"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Clockwork Magic",
+      "source": "TCE",
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass_name": "Clockwork Soul",
+      "subclass_short_name": "Clockwork Soul",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": [
+              "alarm",
+              "protection from evil and good"
+            ],
+            "3": [
+              "aid",
+              "lesser restoration"
+            ],
+            "5": [
+              "dispel magic",
+              "protection from energy"
+            ],
+            "7": [
+              "freedom of movement",
+              "summon construct|TCE"
+            ],
+            "9": [
+              "greater restoration",
+              "wall of force"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Lunar Embodiment",
+      "source": "DSotDQ",
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass_name": "Lunar Sorcery",
+      "subclass_short_name": "Lunar",
+      "subclass_source": "DSotDQ",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "name": "Full Moon",
+          "known": {
+            "1": [
+              "shield",
+              "ray of sickness",
+              "color spray"
+            ],
+            "3": [
+              "lesser restoration",
+              "blindness/deafness",
+              "alter self"
+            ],
+            "5": [
+              "dispel magic",
+              "vampiric touch",
+              "phantom steed"
+            ],
+            "7": [
+              "death ward",
+              "confusion",
+              "hallucinatory terrain"
+            ],
+            "9": [
+              "Rary's telepathic bond",
+              "hold monster",
+              "mislead"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Moon Fire",
+      "source": "DSotDQ",
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass_name": "Lunar Sorcery",
+      "subclass_short_name": "Lunar",
+      "subclass_source": "DSotDQ",
+      "level": 1,
+      "blocks": [
+        {
+          "known": {
+            "1": [
+              "sacred flame#c"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Among the Dead",
+      "source": "SCAG",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Undying",
+      "subclass_short_name": "Undying",
+      "subclass_source": "SCAG",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": [
+              "spare the dying#c"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Undying",
+      "source": "SCAG",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Undying",
+      "subclass_short_name": "Undying",
+      "subclass_source": "SCAG",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "false life",
+              "ray of sickness"
+            ],
+            "s2": [
+              "blindness/deafness",
+              "silence"
+            ],
+            "s3": [
+              "feign death",
+              "speak with dead"
+            ],
+            "s4": [
+              "aura of life",
+              "death ward"
+            ],
+            "s5": [
+              "contagion",
+              "legend lore"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Cantrips",
+      "source": "XGE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Celestial",
+      "subclass_short_name": "Celestial",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": [
+              "sacred flame#c",
+              "light#c"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Celestial",
+      "source": "XGE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Celestial",
+      "subclass_short_name": "Celestial",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "cure wounds",
+              "guiding bolt"
+            ],
+            "s2": [
+              "flaming sphere",
+              "lesser restoration"
+            ],
+            "s3": [
+              "daylight",
+              "revivify"
+            ],
+            "s4": [
+              "guardian of faith",
+              "wall of fire"
+            ],
+            "s5": [
+              "flame strike",
+              "greater restoration"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Grasping Tentacles",
+      "source": "TCE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Fathomless",
+      "subclass_short_name": "Fathomless",
+      "subclass_source": "TCE",
+      "level": 10,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "10": {
+              "daily": {
+                "1": [
+                  "Evard's black tentacles"
+                ]
+              }
+            }
+          },
+          "ability": "cha",
+          "slot_alternative": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Fathomless",
+      "source": "TCE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Fathomless",
+      "subclass_short_name": "Fathomless",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "create or destroy water",
+              "thunderwave"
+            ],
+            "s2": [
+              "gust of wind",
+              "silence"
+            ],
+            "s3": [
+              "lightning bolt",
+              "sleet storm"
+            ],
+            "s4": [
+              "control water",
+              "summon elemental|tce"
+            ],
+            "s5": [
+              "Bigby's hand",
+              "cone of cold"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Improved Minor Illusion",
+      "source": "PHB",
+      "class_name": "Wizard",
+      "class_source": "PHB",
+      "subclass_name": "School of Illusion",
+      "subclass_short_name": "Illusion",
+      "subclass_source": "PHB",
+      "level": 2,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "1": [
+              "minor illusion#c"
+            ]
+          },
+          "ability": "int"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Spellcasting",
+      "source": "PHB",
+      "class_name": "Rogue",
+      "class_source": "PHB",
+      "subclass_name": "Arcane Trickster",
+      "subclass_short_name": "Arcane Trickster",
+      "subclass_source": "PHB",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "mage hand#c"
+            ]
+          },
+          "ability": "int"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Shadow Arts",
+      "source": "PHB",
+      "class_name": "Monk",
+      "class_source": "PHB",
+      "subclass_name": "Way of Shadow",
+      "subclass_short_name": "Shadow",
+      "subclass_source": "PHB",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "minor illusion#c"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Arcane Archer Lore",
+      "source": "XGE",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Arcane Archer",
+      "subclass_short_name": "Arcane Archer",
+      "subclass_source": "XGE",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "prestidigitation#c"
+            ]
+          },
+          "casting_ability_not_required": true
+        },
+        {
+          "source_block": 1,
+          "known": {
+            "3": [
+              "druidcraft#c"
+            ]
+          },
+          "casting_ability_not_required": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Giant Power",
+      "source": "BGG",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "subclass_name": "Path of the Giant",
+      "subclass_short_name": "Giant",
+      "subclass_source": "BGG",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "innate": {
+            "3": [
+              "druidcraft#c"
+            ]
+          },
+          "ability": "wis"
+        },
+        {
+          "source_block": 1,
+          "innate": {
+            "3": [
+              "thaumaturgy#c"
+            ]
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Guiding Whispers",
+      "source": "VRGR",
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "subclass_name": "College of Spirits",
+      "subclass_short_name": "Spirits",
+      "subclass_source": "VRGR",
+      "level": 3,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {
+            "3": [
+              "guidance#c"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Archfey",
+      "source": "PHB",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Archfey",
+      "subclass_short_name": "Archfey",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "faerie fire",
+              "sleep"
+            ],
+            "s2": [
+              "calm emotions",
+              "phantasmal force"
+            ],
+            "s3": [
+              "blink",
+              "plant growth"
+            ],
+            "s4": [
+              "dominate beast",
+              "greater invisibility"
+            ],
+            "s5": [
+              "dominate person",
+              "seeming"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Fiend",
+      "source": "PHB",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Fiend",
+      "subclass_short_name": "Fiend",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "burning hands",
+              "command"
+            ],
+            "s2": [
+              "blindness/deafness",
+              "scorching ray"
+            ],
+            "s3": [
+              "fireball",
+              "stinking cloud"
+            ],
+            "s4": [
+              "fire shield",
+              "wall of fire"
+            ],
+            "s5": [
+              "flame strike",
+              "hallow"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Great Old One",
+      "source": "PHB",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Great Old One",
+      "subclass_short_name": "Great Old One",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "dissonant whispers",
+              "Tasha's hideous laughter"
+            ],
+            "s2": [
+              "detect thoughts",
+              "phantasmal force"
+            ],
+            "s3": [
+              "clairvoyance",
+              "sending"
+            ],
+            "s4": [
+              "dominate beast",
+              "Evard's black tentacles"
+            ],
+            "s5": [
+              "dominate person",
+              "telekinesis"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Hexblade",
+      "source": "XGE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Hexblade",
+      "subclass_short_name": "Hexblade",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "shield",
+              "wrathful smite"
+            ],
+            "s2": [
+              "blur",
+              "branding smite"
+            ],
+            "s3": [
+              "blink",
+              "elemental weapon"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "staggering smite"
+            ],
+            "s5": [
+              "banishing smite",
+              "cone of cold"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Genie",
+      "source": "TCE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Genie",
+      "subclass_short_name": "Genie",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "name": "Dao",
+          "expanded": {
+            "9": [
+              "wish"
+            ],
+            "s1": [
+              "detect evil and good",
+              "sanctuary"
+            ],
+            "s2": [
+              "phantasmal force",
+              "spike growth"
+            ],
+            "s3": [
+              "create food and water",
+              "meld into stone"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "stone shape"
+            ],
+            "s5": [
+              "creation",
+              "wall of stone"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 1,
+          "name": "Djinni",
+          "expanded": {
+            "9": [
+              "wish"
+            ],
+            "s1": [
+              "detect evil and good",
+              "thunderwave"
+            ],
+            "s2": [
+              "phantasmal force",
+              "gust of wind"
+            ],
+            "s3": [
+              "create food and water",
+              "wind wall"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "greater invisibility"
+            ],
+            "s5": [
+              "creation",
+              "seeming"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 2,
+          "name": "Efreeti",
+          "expanded": {
+            "9": [
+              "wish"
+            ],
+            "s1": [
+              "detect evil and good",
+              "burning hands"
+            ],
+            "s2": [
+              "phantasmal force",
+              "scorching ray"
+            ],
+            "s3": [
+              "create food and water",
+              "fireball"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "fire shield"
+            ],
+            "s5": [
+              "creation",
+              "flame strike"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 3,
+          "name": "Marid",
+          "expanded": {
+            "9": [
+              "wish"
+            ],
+            "s1": [
+              "detect evil and good",
+              "fog cloud"
+            ],
+            "s2": [
+              "phantasmal force",
+              "blur"
+            ],
+            "s3": [
+              "create food and water",
+              "sleet storm"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "control water"
+            ],
+            "s5": [
+              "creation",
+              "cone of cold"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Undead",
+      "source": "VRGR",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Undead",
+      "subclass_short_name": "Undead",
+      "subclass_source": "VRGR",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "bane",
+              "false life"
+            ],
+            "s2": [
+              "blindness/deafness",
+              "phantasmal force"
+            ],
+            "s3": [
+              "phantom steed",
+              "speak with dead"
+            ],
+            "s4": [
+              "death ward",
+              "greater invisibility"
+            ],
+            "s5": [
+              "antilife shell",
+              "cloudkill"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Thousand Forms",
+      "source": "PHB",
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass_name": "Circle of the Moon",
+      "subclass_short_name": "Moon",
+      "subclass_source": "PHB",
+      "level": 14,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {},
+          "ability": "wis",
+          "innate": {
+            "14": [
+              "alter self"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Consult the Spirits",
+      "source": "XGE",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "subclass_name": "Path of the Ancestral Guardian",
+      "subclass_short_name": "Ancestral Guardian",
+      "subclass_source": "XGE",
+      "level": 10,
+      "blocks": [
+        {
+          "source_block": 0,
+          "innate": {
+            "10": {
+              "rest": {
+                "1": [
+                  "augury",
+                  "clairvoyance"
+                ]
+              }
+            }
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Additional Magical Secrets",
+      "source": "PHB",
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "subclass_name": "College of Lore",
+      "subclass_short_name": "Lore",
+      "subclass_source": "PHB",
+      "level": 6,
+      "blocks": [
+        {
+          "source_block": 0,
+          "name": "Additional Magical Secrets",
+          "known": {
+            "6": [
+              {
+                "choose": "level=0;1;2;3",
+                "count": 2
+              }
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    }
+  ],
+  "feature_spells_meta": {
+    "edition": "2014",
+    "source": "5etools-src v2.37.0 data/class/class-*.json",
+    "upstream_sha256": {
+      "data/class/class-artificer.json": "49dbc64c51b58d54a6dda44105d4d67d6f65e65a67faeeef54bf19e30ab01882",
+      "data/class/class-barbarian.json": "15b090c2ede1cc5a522817bf41d83a890aa194f3d7827f98787e1b05d057f319",
+      "data/class/class-bard.json": "e5041a799e8c720db3a28539c2a25e9d6d821b6229a65fd1484f749ea3978b1d",
+      "data/class/class-cleric.json": "604d81ad5012ca92f56a5aadacdf298a04d4889443e99644d4bf2af46f5a0900",
+      "data/class/class-druid.json": "e320ecf4f19e49acbbc449fcde4f8448bfad4bfc40a56138dced312a52af13a1",
+      "data/class/class-fighter.json": "9c8a328bb03f6ee806d3d993942c2603d02bfc2c61f5306c77b15f9ba05b33ae",
+      "data/class/class-monk.json": "381b5b1a80da79b661b9656d65b266d0bca290cf83d261c5f15ce8d0ecba4ff5",
+      "data/class/class-paladin.json": "5c11179b9d410fdf10711e5f3acfec50da831ebc72adca14b3e1c50fbe3f0f22",
+      "data/class/class-ranger.json": "13ace69bc9241b22d74644caacd2b26307a9b4d32df4f0d87994c3d5ff69e154",
+      "data/class/class-rogue.json": "1db96ec24a864369de9138a9d51bdf89e09fdd79f3f2d39c25ac73191f2befa0",
+      "data/class/class-sorcerer.json": "9f17737aa137ca3979b20cdcc7e8b0120c7be293cf9849c2d27c93f2e0e87c79",
+      "data/class/class-warlock.json": "867a945c460be5925df0e6d87238b226912e7f2eb567fde0a88c05179eadbcac",
+      "data/class/class-wizard.json": "833066cec97469353092424ae9878bab1b591c0da782f81625bb3e54850393fe"
+    },
+    "ownership": "scripts/data/feature_spell_ownership_2014.json",
+    "notes": "Latest printing within 2014 rules. Class-level gates and exact trait ownership; expanded lists are not automatic grants."
+  }
 }

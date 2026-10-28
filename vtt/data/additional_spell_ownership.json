@@ -578,6 +578,20 @@
         "suggestion": "Innate Spellcasting",
         "poison spray": "Innate Spellcasting"
       }
+    },
+    {
+      "kind": "feat",
+      "name": "Cartomancer",
+      "source": "BMT",
+      "spell_traits": {
+        "prestidigitation": "Card Tricks"
+      },
+      "block_overrides": {
+        "0": {
+          "casting_ability_not_required": true
+        }
+      },
+      "normalize_feature_sections": true
     }
   ]
 }

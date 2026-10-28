@@ -99,6 +99,12 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
  const level=Number(selection.level);if(!Number.isInteger(level)||level<0||level>9)throw Error('Livello incantesimo non disponibile nel catalogo locale');
  const grant=selection.grant_id?calculated.origin_spells.find(g=>g.id===selection.grant_id&&g.spell_id===selection.id):null;
  if(selection.grant_id&&!grant)throw Error('Concessione non più disponibile');
+ if(grant?.casting_ability_unresolved)throw Error('Completa prima la caratteristica da incantatore concessa dal talento.');
+ if(grant?.requires_context&&!selection.context_confirmed)throw Error('Conferma prima le condizioni richieste dal privilegio.');
+ if(grant?.ritual_only){
+  if(payment!=='auto'||requestedLevel!==0&&requestedLevel!==level)throw Error('Questa concessione permette soltanto un rituale, senza slot o potenziamento.');
+  if(!selection.ritual_completed)throw Error('Conferma il completamento del rituale prima di risolvere l’incantesimo.');
+ }
  if(!grant&&![...list(c.prepared_spells),...list(c.spells)].some(s=>(typeof s==='string'?s:s.id)===selection.id))throw Error('Incantesimo non disponibile nella scheda');
  // Cantrips are intrinsically slot-free. The only chargeable exception
  // is an explicitly linked limited-use tracker in structured source data.
@@ -115,7 +121,7 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
    level===0?'free':payment==='pact'||payment==='auto'&&selection.pact?'pact':'slot';
  let patch={},slotLevel=0;
  if(mode==='tracker'){
-  const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1),spent=Number(c.resource_tracker_spent?.[grant.tracker_id]||0);
+  const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1),spent=Math.max(Number(c.resource_tracker_spent?.[grant.tracker_id]||0),Number(tracker?.spent)||0);
   if(!tracker||spent+cost>tracker.max)throw Error('Risorsa insufficiente per questo incantesimo');
   patch={resource_tracker_spent:{...c.resource_tracker_spent,[tracker.id]:spent+cost}};slotLevel=level;
  }else if(mode==='slot'||mode==='pact'){
@@ -131,7 +137,8 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
       spell_id:grant.spell_id,origin_id:grant.origin_id,
       duration_rounds:grant.duration_rounds||10,remaining_rounds:grant.duration_rounds||10}};
  }
- const ability=selection.caster_ability||c.spellcasting_ability||'int';
+ const ability=grant?.casting_ability_from_source?grant.spellcasting_ability:
+   selection.caster_ability||c.spellcasting_ability||'int';
  const hit=calculated.values['casting_hit:'+ability],dc=calculated.values['casting_dc:'+ability];
  if(!Number.isFinite(hit)||!Number.isFinite(dc))throw Error('Caratteristica di lancio non disponibile');
  const innate=classFeatureActive(c,calculated,'innate_sorcery')&&
@@ -161,7 +168,9 @@ export function recoveryPatch(c,event,trackers,calculated={}){
  const used={...(c.resource_recovery_used||{})};
  for(const row of trackers){
   if(row.disabled)continue;
-  if(row.recharge===event||event==='long_rest'&&row.recharge==='short_rest')delete spent[row.id];
+  if(row.recharge===event||event==='long_rest'&&row.recharge==='short_rest'){
+   delete spent[row.id];for(const id of row.legacy_ids||[])delete spent[id];
+  }
   if(event!=='short_rest')continue;
   for(const rule of row.partial_recoveries||[]){
    if(rule.event!=='short_rest')continue;

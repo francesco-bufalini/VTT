@@ -1,5 +1,13 @@
 # Privilegi 5etools ancora fuori dal modello automatico
 
+Aggiornamento 28 ottobre 2026: la PWA ora collega 71 concessioni magiche
+di 60 sottoclassi 2014 ai tratti concedenti, includendo le scelte di Nature,
+Arcana, Land e Divine Soul. Vedi [incantesimi dei privilegi 2014](feature-spell-grants-2014.md)
+per copertura e limiti. I riferimenti precedenti a questi incantesimi come
+interamente non modellati sono superati per la proiezione PWA; restano aperti
+gli effetti contestuali, le sostituzioni condizionali, i rituali esclusivi e
+i pagamenti con risorse di classe descritti in quella pagina.
+
 Questa lista riguarda soltanto i lotti già verificati nella
 [revisione per tratto](feature-modeling-audit.md). Un contatore già presente
 può rappresentare gli **usi** senza rappresentare l'effetto, il bersaglio o

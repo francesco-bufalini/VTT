@@ -1014,7 +1014,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(target==="level")return int(record.level,1);
     if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
     if(target==="proficiency")return proficiencyBase();
-    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack)+sumGrants("initiative",stack);
+    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack);
     if(prefix==="ability_check"&&ABILITIES.includes(key))
       return resolve("ability_mod:"+key,stack)+sumGrants("ability_check",stack);
     if(target==="ac"){
@@ -1287,13 +1287,14 @@ function calculateSheetValues(record={},catalogs={}){
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));
   }
   const featMechanics=featMechanicGrants(record,index);
-  const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],features,catalogs.spellGrantRules||[],catalogs.speciesPowers?.races||[]);
+  const featureSpells=arr(classesCatalog?.feature_spells);
+  const additional=structuredSpellGrants(record,[...arr(classesCatalog?.additional_spells),...featureSpells],catalogs.spells||[],features,catalogs.spellGrantRules||[],catalogs.speciesPowers?.races||[],safe('proficiency'));
   // Permanently prepared subclass spells are attached to their actual feature,
   // not to the class itself; the same source identity powers UI and calculations.
   const classCasting=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
-  additional.grants.push(...featureTableSpellGrants(record,features,catalogs.spells||[],classCasting),
+  additional.grants.push(...featureTableSpellGrants(record,features,catalogs.spells||[],classCasting,featureSpells),
     ...supplementalFeatureSpellGrants(record,features,catalogs.spells||[],
-      catalogs.featureSpellGrants||[],classCasting));
+      catalogs.featureSpellGrants||[],classCasting,featureSpells));
   for(const warning of additional.warnings)warnings.add(warning);
   // Feats use the same expression evaluator as other typed trackers.
   // The proficiency-sized pool must reflect level changes without modifying saves.
@@ -1311,7 +1312,8 @@ function calculateSheetValues(record={},catalogs={}){
   const trackers=[...trackerMap.values()].map(row=>{
     if(row.formula_error)warnings.add('Formula tracker '+row.name+': '+row.formula_error+' · mantenuto il massimo base');
     const maximum=Math.max(0,row.max+(safe('tracker:'+row.id)??0));
-    return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
+    return {...row,max:maximum,spent:clamp(Math.max(int(record.resource_tracker_spent?.[row.id]),
+      ...arr(row.legacy_ids).map(id=>int(record.resource_tracker_spent?.[id]))),0,maximum)};
   });
   for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
   const resolvedDamageBase=(id,damage)=>{
@@ -1361,16 +1363,19 @@ function calculateSheetValues(record={},catalogs={}){
   for(const feature of features)addOrigin(feature.origin_id,"Tratto · "+feature.name);
   const originSpellMap=new Map();
   const spellOwnerLive=row=>{
+    if(String(row.source_choice_id||'').startsWith('feature:class|')&&
+      !additional.choices.some(choice=>choice.id===row.source_choice_id))return false;
     const trait=features.find(feature=>feature.origin_id===(row.owner_origin_id||row.origin_id));
     return !trait||(!trait.inactive&&!trait.disabled&&
       record.trait_enabled?.[trait.key]!==false);
   };
-  for(const row of [...arr(record.origin_spell_grants),...additional.grants,...racialPowers.origin_spells])if(row?.origin_id&&row.spell_id&&!suppressed.has('spell:'+row.origin_id+':'+row.spell_id)&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)&&spellOwnerLive(row)){
+  for(const row of [...additional.saved_grants,...additional.grants,...racialPowers.origin_spells])if(row?.origin_id&&row.spell_id&&!suppressed.has('spell:'+row.origin_id+':'+row.spell_id)&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)&&spellOwnerLive(row)){
     const key=row.origin_id+'|'+row.spell_id;
     if(!originSpellMap.has(key)){
       const id=row.id||key,config=record.origin_spell_configs?.[id]||{},resolved={...row,id};
       for(const field of ['payment_mode','tracker_id','spellcasting_ability','tracker_cost','slot_alternative'])
         if(Object.hasOwn(config,field))resolved[field]=config[field];
+      if(row.casting_ability_from_source)resolved.spellcasting_ability=row.spellcasting_ability;
       // The owner-level casting choice is shared by all spells granted by
       // this trait and is validated against its structured eligibility list.
       const chosen=record.spellcasting_section_abilities?.['origin:'+row.origin_id];
@@ -1396,7 +1401,7 @@ function calculateSheetValues(record={},catalogs={}){
   }
   const originSpells=[...originSpellMap.values()];
   const originChoices=additional.choices.map(choice=>{
-    const selected=arr(record.origin_spell_grants).filter(g=>g?.source_choice_id===choice.id&&!g.disabled);
+    const selected=additional.saved_grants.filter(g=>g?.source_choice_id===choice.id&&!g.disabled);
     return {...choice,selected,remaining:Math.max(0,choice.count-selected.length)};
   });
   for(const row of [...originSpells,...originChoices])addOrigin(row.origin_id,row.origin_name||row.origin_id);
@@ -1456,6 +1461,7 @@ function calculateSheetValues(record={},catalogs={}){
     feature_damage_resistances:classFeatureActive(record,featureContext,'rage')?['bludgeoning','piercing','slashing']:[],
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
     origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
+    origin_spell_variant_choices:additional.variant_choices,
     automatic_bonuses:automatic.filter(row=>!suppressed.has('bonus:'+row.id)&&requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),

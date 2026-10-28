@@ -76,7 +76,10 @@ test('ERLW Spells of the Mark extends class spell lists, never free or prepared 
  assert.equal(owner.length,1);
  assert.equal(owner[0].origin_key,'subrace|erlw|mark of scribing');
  const expanded=expandedOriginClassSpellIds(record,additional,owner);
- assert.equal(expanded.length,10);
+ assert.deepEqual([...expanded].sort(),[
+  'phb2014_comprehend_languages','phb2014_illusory_script','phb2014_animal_messenger',
+  'phb2014_silence','phb2014_sending','phb2014_tongues','phb2014_arcane_eye',
+  'phb2014_confusion','phb2014_dream'].sort());
  assert(expanded.includes('phb2014_animal_messenger'));
  assert(expanded.includes('phb2014_dream'));
  const wizard={id:'wizard:phb',name:'Wizard',max_level:3,expanded_spell_ids:expanded};

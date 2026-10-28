@@ -353,7 +353,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  // Casting stat selection is an owned benefit of the granting trait.
  const casterOwners=new Set();
  for(const grant of arr(calculated.origin_spells)){
-  if(!grant?.origin_id||casterOwners.has(grant.origin_id)||!enabled(record,grant.origin_id))continue;
+  if(!grant?.origin_id||grant.casting_ability_not_required||grant.casting_ability_from_source&&grant.casting_ability_unresolved||casterOwners.has(grant.origin_id)||!enabled(record,grant.origin_id))continue;
   if(!grant.tracker_id&&grant.cantrip!==true)continue;
   const options=arr(grant.spellcasting_ability_options).length?
     arr(grant.spellcasting_ability_options).filter(value=>abilities.includes(value)):
@@ -363,10 +363,12 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
   const current=record.spellcasting_section_abilities?.['origin:'+grant.origin_id]||'';
   const selected=options.includes(current)?[current]:[];
   result.push({id:'casting-ability:'+grant.origin_id,kind:'casting_ability',
+    casting_ability_origin_id:grant.casting_ability_origin_id||grant.origin_id,
     origin_id:grant.origin_id,name:grant.origin_name||grant.origin_id,
     label:'Caratteristica da incantatore',count:1,selected,options,
     remaining:selected.length?0:1});
  }
+ result.push(...arr(calculated.origin_spell_variant_choices));
  for(const choice of arr(calculated.origin_choices)){
   if(!choice?.id||!enabled(record,choice.origin_id))continue;
   const feature=arr(calculated.features).find(row=>row.origin_id===choice.origin_id);
@@ -397,7 +399,7 @@ export function choicesForTrait(trait,record,choices=[]){
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
 export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):strip(value)));
  const prefix='__custom__:';
@@ -413,6 +415,12 @@ export function savePendingChoice(record,choice,values=[]){
        /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||
        arr(choice.excluded_options).includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
+ if(choice.kind==='spell_variant'){
+   return {origin_spell_variants:{...(record.origin_spell_variants||{}),[choice.origin_id]:selected[0]||''},
+     ...(choice.feat_name?{feats_catalog:arr(record.feats_catalog).map(feat=>
+       norm(feat.name)===norm(choice.feat_name)&&norm(feat.source)===norm(choice.feat_source)?
+        {...feat,spell_variant:choice.variant_values?.[selected[0]]||''}:feat)}:{})};
+ }
  if(['advancement_mode','advancement_feat'].includes(choice.kind)){
   const previous=arr(record.advancement_choices).find(row=>row.origin_id===choice.origin_id);
   const advancements=arr(record.advancement_choices).filter(row=>row.origin_id!==choice.origin_id);
@@ -463,7 +471,7 @@ export function savePendingChoice(record,choice,values=[]){
   if(selected.length!==1||!abilities.includes(selected[0])||
     !choice.options.includes(selected[0]))throw Error('Scegli una caratteristica da incantatore valida.');
   return {spellcasting_section_abilities:{...(record.spellcasting_section_abilities||{}),
-    ['origin:'+choice.origin_id]:selected[0]}};
+    ['origin:'+(choice.casting_ability_origin_id||choice.origin_id)]:selected[0]}};
  }
  if(choice.kind==='ability_mode')return saveAllocationChoice(record,choice,selected);
  if(choice.kind==='ability'){
