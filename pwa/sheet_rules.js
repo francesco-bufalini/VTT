@@ -566,7 +566,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
   if(!row||!requirementsAllow(record,row))continue;
   let max=Math.max(0,int(row.max));
   let formula_error='';
-  if(row.max_formula)try{max=Math.max(0,parseArithmetic(row.max_formula,resolve));}catch(error){formula_error=error.message;}
+  if(row.max_formula)try{max=Math.max(0,int(row.min_max),parseArithmetic(row.max_formula,resolve));}catch(error){formula_error=error.message;}
   if(row.id&&row.name)add({...row,max,formula_error,automatic:false});
  }
  return modifyFeatureTrackers(record,[...rows.values()].filter(row=>!row.disabled&&!arr(record.proficiency_origins).some(o=>o?.id===row.origin_id&&o.disabled)&&record.origin_enabled?.[row.origin_id]!==false),catalog?.feature_rules||{});
