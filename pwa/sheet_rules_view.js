@@ -1,5 +1,6 @@
 import {hitDicePools,spendTrackerUses} from './character_core.js';
 import {isPortraitDataUrl} from './character_portrait.js';
+import {identityEntries} from './identity_aliases.js';
 import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
@@ -633,6 +634,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     vital('defense','Classe armatura','shield','CA','ac')+
     roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+
     vital('movement','Movimento e velocità','dash',fastest.label,fastest.key,' ft',true)+'</div>';
+  html+='<div class="play-ability-quickstats play-battle-quickstats">'+
+   '<button type="button" class="play-quickstat" data-act="battle-competences-open" aria-label="Apri competenze">'+icon('proficiency')+'<span>Competenze</span><strong>'+output('proficiency',true)+'</strong></button>'+
+   '<button type="button" class="play-quickstat" data-act="sheet-senses-open" aria-label="Sensi e percezione passiva">'+icon('eye')+'<span>Sensi</span><strong>Passiva '+output('passive_perception')+'</strong></button>'+
+   '<button type="button" class="play-quickstat" data-act="sheet-inspiration-toggle" aria-pressed="'+Boolean(c.inspiration)+'" aria-label="Attiva o disattiva ispirazione">'+icon('spark')+'<span>Ispirazione</span><strong>'+(c.inspiration?'Attiva':'Non attiva')+'</strong></button></div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
   const statusTag=(key,label,glyph='')=>'<button type="button" class="play-status-tag" data-act="state-trait-jump" data-state-trait="'+esc('state|'+key)+'" title="'+esc(label)+'">'+glyph+esc(label)+'</button>';
@@ -914,44 +919,25 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const classMembers=localClasses(c),totalClassLevel=classMembers.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
   const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
   const portrait=isPortraitDataUrl(c.sheet_portrait_data)?c.sheet_portrait_data:'';
+  const activeFactions=identityEntries(c,'factions').filter(row=>row.active).map(row=>row.value);
   const identityMarkup='<div class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
+   (activeFactions.length?'<p class="play-identity-factions">'+esc(activeFactions.join(' · '))+'</p>':'')+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
-   (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
-   edit('identity','Modifica identità','settings')+'</div>';
-  html='<section class="play-character-portrait'+(portrait?' has-portrait':'')+'" aria-label="Identità e foto del personaggio">'+
+   (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+'</div>';
+  html='<section class="play-character-portrait'+(portrait?' has-portrait':'')+'" data-act="sheet-context" data-sheet-context="identity" role="button" tabindex="0" aria-label="Apri identità e foto del personaggio">'+
    (portrait?'<figure class="play-portrait-frame"><img src="'+esc(portrait)+'" alt="Ritratto di '+esc(c.name)+'"></figure>':'')+
    identityMarkup+
-   '<div class="play-portrait-controls"><button type="button" class="play-portrait-pick" data-act="info-portrait-pick">'+
-   icon('eye')+'<span>'+(portrait?'Cambia foto':'Aggiungi foto')+'</span></button>'+
-   (portrait?'<button type="button" class="play-portrait-remove" data-act="info-portrait-remove" aria-label="Rimuovi foto del personaggio">'+
-    icon('cross')+'<span>Rimuovi</span></button>':'')+
-   '</div><input type="file" data-info-portrait-file accept="image/*" aria-label="Seleziona la foto del personaggio" hidden>'+
+   '<div class="play-passives"><span><small>Allineamento</small>'+esc(c.alignment||'Completamente neutrale')+'</span>'+
+   '<span><small>Edizione</small>'+esc(c.rules_version||'2014')+'</span></div>'+
    '</section>';
-  html+='<div class="play-passives"><span>'+esc(c.alignment||'Completamente neutrale')+'</span><span>Regole '+esc(c.rules_version||'2014')+'</span></div>';
-  for(const node of panels.filter(n=>n!==identity)){
-   const title=heading(node),i=panels.indexOf(node);
-   if(['Caratteristiche','Riepilogo','Abilità','Altre competenze','Tratti'].includes(title))continue;
-   const sub=title==='Aspetto'?
-    ['Specie '+(c.species||'da definire'),c.subrace||'',c.size_name||'Medium'].filter(Boolean).join(' · '):
-    title==='Background'?([c.background,...(c.backgrounds_catalog||[]).filter(row=>!row.disabled).map(row=>row.name)].filter(Boolean).join(' · ')||'Nessun background assegnato'):
-    title==='Classi'?
-     [classNames||'Nessuna classe assegnata',c.subclass||'',
-      c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
-    title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
-   html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub);
-  }
   // Show the actual ability modifier, never the ability-check total, while keeping the click target as the check.
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
-  html+='<div class="play-ability-quickstats">'+
-   '<button type="button" class="play-quickstat" data-act="sheet-context" data-sheet-context="tools" aria-label="Apri altre competenze">'+icon('proficiency')+'<span>Competenza</span><strong>'+output('proficiency',true)+'</strong></button>'+
-   '<button type="button" class="play-quickstat" data-act="sheet-senses-open" aria-label="Sensi e percezione passiva">'+icon('eye')+'<span>Sensi</span><strong>Passiva '+output('passive_perception')+'</strong></button>'+
-   '<button type="button" class="play-quickstat" data-act="sheet-movement-open" aria-label="Apri velocità e movimento">'+icon('dash')+'<span>Movimento</span><strong>'+output(fastestMovement(d).key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated=')+'</strong></button></div>';
+
   // Competences are one flat, line-divided section rather than another card.
   // Skills expand inline while equipment/language proficiencies retain their
   // existing full editor, including the button for changing selections.
   const tools=panelNamed('Altre competenze');bind('tools',tools);
-  html+='<section class="play-competences" aria-labelledby="play-competences-heading">'+
-   '<h2 id="play-competences-heading" class="play-section-divider"><span>Competenze</span></h2>'+
+  html+='<section class="play-competences" aria-label="Abilità e prove">'+
    '<details class="play-skills-disclosure">'+
     '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
     '<div class="play-skills-content">'+
@@ -964,8 +950,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         (rank===2?' · Maestria':rank===1?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>';
       }).join('')+'</div>'+
     '</div></details>'+
-   '<div class="play-competence-tools">'+go('tools','Altre competenze','proficiency')+'</div>'+
+
    '</section>';
+  for(const node of panels.filter(n=>n!==identity)){
+   const title=heading(node),i=panels.indexOf(node);
+   if(['Caratteristiche','Riepilogo','Abilità','Altre competenze','Tratti'].includes(title))continue;
+   const sub=title==='Aspetto'?
+    ['Specie '+(c.species||'da definire'),c.subrace||'',c.size_name||'Medium'].filter(Boolean).join(' · '):
+    title==='Background'?([c.background,...(c.backgrounds_catalog||[]).filter(row=>!row.disabled).map(row=>row.name)].filter(Boolean).join(' · ')||'Nessun background assegnato'):
+    title==='Classi'?
+     [classNames||'Nessuna classe assegnata',c.subclass||'',
+      c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
+    title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
+   html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub);
+  }
   // Tratti is a permanent Info section like Competenze; only each trait's
   // description can be expanded. Keep all benefit controls visible.
   const traits=panelNamed('Tratti');
