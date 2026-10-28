@@ -7325,8 +7325,8 @@ async function handleAction(target){
   if(act==='hp-adjust-open'){
     const dialog=app.querySelector('#hp-adjust-dialog');
     if(!dialog)throw Error('Pannello punti ferita non disponibile.');
-    configureHpAdjustDialog(dialog);
     openSessionDialog(dialog);
+    configureHpAdjustDialog(dialog);
     dialog.querySelector('#hp-adjust-current')?.focus();
     return;
   }
