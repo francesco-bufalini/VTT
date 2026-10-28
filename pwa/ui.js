@@ -313,7 +313,7 @@ async function saveIdentityGroup(target){
  const rows=[...group.querySelectorAll('.identity-entry')];
  for(const row of rows){
   const input=row.querySelector('[data-identity-value]');
-  if(input&&!input.value.trim()&&rows.length>1)row.remove();
+  if(input&&!input.value.trim()&&(rows.length>1||kind==='factions'))row.remove();
  }
  const entries=[...group.querySelectorAll('.identity-entry')].map(row=>({
   value:row.querySelector('[data-identity-value]')?.value||'',
@@ -369,6 +369,10 @@ async function flushPendingFields() {
     if (target.isConnected && state.editor) await trackFieldWrite(target);
   }
   await Promise.all([...pendingFieldWrites]);
+  if(state.sheetPopup==='identity'){
+    for(const group of app.querySelectorAll('#sheet-context-dialog [data-identity-group]'))
+      await trackIdentityWrite(group);
+  }
   await pendingDocumentWrites;
   if (state.editor) await state.editor.flush();
 }
@@ -9184,7 +9188,7 @@ function listen(){
     if(target.value.trim())return;
     const group=target.closest('[data-identity-group]');
     const rows=group?.querySelectorAll('.identity-entry')||[];
-    if(rows.length>1){
+    if(rows.length>1||group?.dataset.identityGroup==='factions'){
       target.closest('.identity-entry')?.remove();
       trackIdentityWrite(group.querySelector('[data-identity-value]')||target)
        .catch(error=>message(errorMessage(error),true));
