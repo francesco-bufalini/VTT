@@ -496,7 +496,7 @@ export function structuredFeatureGrants(record,catalogs={},features=collectStruc
          !match(feature.name,rule.feature))continue;
       if(rule.max_class_level){
         const member=classMembers(record).find(c=>match(c.name,rule.class_name)&&match(c.source,rule.class_source));
-        if(!member||Number(member.level||0)>rule.max_class_level)continue;
+        if(Number(member?.level||0)>rule.max_class_level)continue;
       }
       const value=rule.formula==='attuned_item_count'?
         array(record.inventory).reduce((sum,item)=>sum+itemAttunementCount(item),0):rule.value;
