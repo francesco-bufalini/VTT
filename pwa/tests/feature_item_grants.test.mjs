@@ -53,8 +53,10 @@ test('Eldritch Cannon uses the generic item-grant contract and its own paid abil
  const next={...record,...claimFeatureItemPatch(record,projection,cannon.id,'force-ballista',
   {activationActionId:'eldritch_cannon'})};
  assert.equal(next.inventory[0].granted_by,cannon.origin_id);
- assert.throws(()=>claimFeatureItemPatch(next,calculateSheet(next,catalogs),cannon.id,'protector',
-  {activationActionId:'eldritch_cannon'}),/precedente oggetto/);
+ const replacement={...next,...claimFeatureItemPatch(next,calculateSheet(next,catalogs),cannon.id,'protector',
+  {activationActionId:'eldritch_cannon'})};
+ assert.equal(replacement.inventory.length,1);
+ assert.equal(replacement.inventory[0].feature_item_option_id,'protector');
  assert.equal(calculateSheet(art(2,'Artillerist'),catalogs).feature_item_grants.some(g=>g.id===cannon.id),false);
 });
 
