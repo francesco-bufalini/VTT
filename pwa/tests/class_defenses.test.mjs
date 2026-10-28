@@ -85,6 +85,8 @@ test('all curated grants use the existing defense categories and unique feature 
   const record=char(r.owner,source,20,label,subsource,[
    feature(r.feature,r.owner,source,20,label,subsource)
   ]);
+  if(r.entries.some(entry=>entry.requires_heavy_armor))
+   record.inventory=[{id:'heavy',type:'HA',quantity:1,equipped_slots:['body'],ac:16}];
   if(r.active)record.active_class_features={[r.active]:{name:r.active}};
   const grants=automatic(record);
   assert.equal(grants.length,r.entries.length,r.owner+' / '+r.feature);
@@ -182,4 +184,30 @@ test('Bear Totem cannot grant resistance before raging or when another animal is
  const eagle={...bear,...savePendingChoice(bear,choice,['eagle']),
   active_class_features:{rage:{name:'Rage'}}};
  assert.deepEqual(values(eagle),[]);
+});
+
+test('Forge fire immunity is unconditional while mundane weapon resistance needs heavy armor',()=>{
+ const base=char('Cleric','PHB',17,'Forge Domain','XGE',[
+  feature('Soul of the Forge','Cleric','PHB',6,'Forge Domain','XGE'),
+  feature('Saint of Forge and Fire','Cleric','PHB',17,'Forge Domain','XGE')
+ ]);
+ assert(values(base).includes('2:fire'));
+ assert(!values(base).includes('1:bludgeoning'));
+ const armed={...base,inventory:[{id:'armor',quantity:1,type:'HA',ac:16,equipped_slots:['body']}]};
+ assert(['1:bludgeoning','1:piercing','1:slashing'].every(v=>values(armed).includes(v)));
+ assert(automatic(armed).find(d=>d.key==='bludgeoning').condition_label.includes('non magici'));
+ assert(!values({...armed,inventory:[{...armed.inventory[0],equipped_slots:[]}]}).includes('1:slashing'));
+});
+
+test('spell-damage resistance is a specifically labeled defense, not every attack',()=>{
+ const base=char('Wizard','PHB',14,'School of Abjuration','PHB',[
+  feature('Spell Resistance','Wizard','PHB',14,'School of Abjuration','PHB')
+ ]);
+ assert.deepEqual(values(base),['1:spell_damage']);
+ assert.match(automatic(base)[0].condition_label,/incantesimi/);
+ const groups=traitBenefitGroups({name:'Spell Resistance',
+  category:'classi',rank:2,
+  feature_origin:sheet(base).features[0].origin_id,
+  origin_key:sheet(base).features[0].origin_key},base,sheet(base));
+ assert.match(groups.find(g=>g.type==='defenses')?.items[0]?.value||'',/Danni da incantesimi/);
 });
