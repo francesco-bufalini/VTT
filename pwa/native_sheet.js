@@ -1,4 +1,5 @@
 import {hitDicePools,minimumXpForCreature,experienceFloorPatch} from './character_core.js';
+import {identityEntries} from './identity_aliases.js';
 // Native-style sheet sections and mutations of the portable native schema.
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
@@ -639,6 +640,15 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         .map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])
   ]))+
   '';
+ const identityGroups=(kind,label)=>'<div class="identity-group" data-identity-group="'+kind+'">'+
+  '<div class="identity-group-heading"><strong>'+label+'</strong>'+
+  '<button type="button" class="identity-add" data-act="identity-add" data-identity-kind="'+kind+'" aria-label="Aggiungi '+label.toLowerCase()+'">+</button></div>'+
+  '<div class="identity-entry-list">'+identityEntries(c,kind).map((row,index)=>
+   '<div class="identity-entry">'+
+    '<input type="text" data-identity-value="'+kind+'" value="'+esc(row.value)+'" aria-label="'+label+' '+(index+1)+'" maxlength="160">'+
+    '<label class="identity-check" title="'+(kind==='names'?'Nome principale':'Fazione attiva')+'">'+
+     '<input type="checkbox" data-identity-active="'+kind+'" aria-label="'+(kind==='names'?'Usa questo nome':'Attiva questa fazione')+'"'+(row.active?' checked':'')+'>'+
+     '<span aria-hidden="true">✓</span></label></div>').join('')+'</div></div>';
  const statsIntro=()=>panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
    '<div class="native-abilities-header" role="row">'+
@@ -654,12 +664,17 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '</div>').join('')+'</div>','stats-abilities-panel')+
   panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>','stats-summary-panel');
  if(section==='info')return panel('Identità',cols(
-    select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
-    field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
+    identityGroups('names','Nome')+identityGroups('factions','Fazione')+
     select('Allineamento','alignment',
       c.alignment&&!ALIGNMENTS.some(([id])=>id===c.alignment)?
         [...ALIGNMENTS,[c.alignment,c.alignment+' · importato']]:ALIGNMENTS,
-      c.alignment||'Completamente neutrale')) )+
+      c.alignment||'Completamente neutrale')+
+    '<div class="identity-rules-row">'+
+      select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
+      '<div class="play-portrait-controls"><button type="button" class="play-portrait-pick" data-act="info-portrait-pick">'+
+       '<span aria-hidden="true">▧</span><span>'+(c.sheet_portrait_data?'Cambia foto':'Aggiungi foto')+'</span></button>'+
+      (c.sheet_portrait_data?'<button type="button" class="play-portrait-remove" data-act="info-portrait-remove">Rimuovi</button>':'')+
+      '</div><input type="file" data-info-portrait-file accept="image/*" aria-label="Seleziona la foto del personaggio" hidden></div>') )+
    panel('Aspetto',
     '<p class="sheet-section-description">Specie e tipo della creatura.</p>'+
     ((c.kind==='monster'||c.variant_rules_kind==='monster')?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
