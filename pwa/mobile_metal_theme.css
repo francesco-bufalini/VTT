@@ -5633,8 +5633,9 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 
 /* Tre metriche compatte sotto alle caratteristiche. */
 .play-ability-quickstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:11px 0 15px}
-.play-quickstat{display:flex;min-width:0;min-height:64px;align-items:center;justify-content:center;flex-direction:column;gap:6px;border:1px solid #a47a4f68;border-radius:11px;padding:8px 5px;background:linear-gradient(150deg,#392c28,#231d1b);color:#ecd1aa;cursor:pointer}
-.play-quickstat>span{font:600 11px system-ui;color:#bda98c}
+.play-quickstat{display:flex;min-width:0;min-height:88px;align-items:center;justify-content:center;flex-direction:column;gap:5px;border:1px solid #a47a4f68;border-radius:11px;padding:9px 5px;background:linear-gradient(150deg,#392c28,#231d1b);color:#ecd1aa;cursor:pointer}
+.play-quickstat>.vtt-action-glyph{display:block;flex:0 0 23px;width:23px;height:23px;filter:drop-shadow(0 1px 2px #0008)}
+.play-quickstat>span:not(.vtt-action-glyph){font:600 11px system-ui;color:#bda98c}
 .play-quickstat strong{font:600 16px system-ui;color:#f4d9ad}
 .play-quickstat output{font:inherit;color:inherit}
 .play-quickstat:hover,.play-quickstat:focus-visible{border-color:#ddaf70;outline-offset:2px}
@@ -5654,7 +5655,7 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 .sheet-senses-sources ul{list-style:none;margin:0;padding:0}
 .sheet-senses-sources li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #9e7f5126;font-size:12px;color:#c5b195}
 .sheet-senses-sources li strong{color:#e9c99d}
-@media(max-width:390px){.play-ability-quickstats{gap:5px}.play-quickstat{padding:6px 2px}.play-quickstat>span{font-size:10px}.play-quickstat strong{font-size:13px}}
+@media(max-width:390px){.play-ability-quickstats{gap:5px}.play-quickstat{padding:6px 2px}.play-quickstat>span:not(.vtt-action-glyph){font-size:10px}.play-quickstat>.vtt-action-glyph{width:20px;height:20px;flex-basis:20px}.play-quickstat strong{font-size:13px}}
 
 .sheet-defenses-dialog .sheet-defenses-armor{cursor:default}
 .sheet-defenses-dialog .sheet-senses-sources:first-of-type{margin-top:0;border-top:0;padding-top:0}
