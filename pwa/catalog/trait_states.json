@@ -128,7 +128,7 @@
       "legacy_field": "artificer_armor_model",
       "legacy_value": "guardian",
       "legacy_default": true,
-      "summary": "Armatura Arcana · Guardiano; guanti del tuono e Campo difensivo.",
+      "summary": "Armatura Arcana · Guardiano; guanti del tuono (svantaggio condizionale sul bersaglio colpito) e Campo difensivo.",
       "attacks": [
         {
           "id": "class_feature:thunder_gauntlets",
@@ -139,7 +139,18 @@
           "melee": true,
           "ability": "str",
           "intelligence_override": true,
-          "range_feet": 5
+          "range_feet": 5,
+          "on_hit_effects": [
+            {
+              "operation": "roll_mode",
+              "target": "attack_roll",
+              "mode": "disadvantage",
+              "trigger": "on_hit",
+              "condition_label": "Attacchi contro creature diverse dall'Artefice che ha colpito",
+              "duration": "until_start_of_next_turn",
+              "description": "Il bersaglio colpito ha svantaggio ai tiri per colpire contro creature diverse dall'Artefice fino all'inizio del prossimo turno dell'Artefice."
+            }
+          ]
         }
       ],
       "granted_features": [
@@ -164,7 +175,7 @@
       },
       "legacy_field": "artificer_armor_model",
       "legacy_value": "infiltrator",
-      "summary": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini e Passi Potenziati.",
+      "summary": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini, Passi Potenziati e vantaggio alle prove di Furtività.",
       "attacks": [
         {
           "id": "class_feature:lightning_launcher",
@@ -196,7 +207,14 @@
           "amount": 5
         }
       ],
-      "selection_recovery": "short_rest"
+      "selection_recovery": "short_rest",
+      "roll_modes": [
+        {
+          "trait": "Dampening Field",
+          "target": "skill:stealth",
+          "mode": "advantage"
+        }
+      ]
     }
   ]
 }
