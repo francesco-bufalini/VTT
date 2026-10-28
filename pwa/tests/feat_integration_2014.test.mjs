@@ -183,6 +183,7 @@ test('Shield Master scales with equipped shield AC; power attacks require approp
 test('Agent of Order Stasis Strike has a PB-sized long-rest tracker and typed targeted activation',()=>{
  const packaged=read('../catalog/ability_grants.json');
  const base={kind:'character',rules_version:'2014',level:5,
+  classes:[{name:'Fighter',source:'PHB',level:5}],
   abilities:{str:10,dex:10,con:10,int:16,wis:12,cha:10},
   feats_catalog:[{name:'Agent of Order',source:'SatO'},
     {name:'Scion of the Outer Planes',source:'SatO'}],
@@ -206,7 +207,7 @@ test('Agent of Order Stasis Strike has a PB-sized long-rest tracker and typed ta
  assert.equal(action.once_per_turn,true);
  const spent=calculateSheet({...base,resource_tracker_spent:{[tracker.id]:2}},{abilityGrants:packaged});
  assert.equal(spent.trackers.find(row=>row.id===tracker.id).spent,2);
- const next=calculateSheet({...base,level:9},{abilityGrants:packaged});
+ const next=calculateSheet({...base,level:9,classes:[{name:'Fighter',source:'PHB',level:9}]},{abilityGrants:packaged});
  assert.equal(next.trackers.find(row=>row.id===tracker.id).max,4);
  const removed=calculateSheet({...base,feats_catalog:base.feats_catalog.slice(1)},{abilityGrants:packaged});
  assert(!removed.trackers.some(row=>row.id===tracker.id));
