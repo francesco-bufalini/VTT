@@ -39,6 +39,11 @@ export function expandSpeciesVariantFamilies(races=[],subraces=[],powers={}){
 }
 // Existing flattened ability rules are migrated by projection, not copied
 // into every color: the species owns ASI, the subrace selects its damage type.
+export function selectableVariantSubraces(subraces=[]){
+ return arr(subraces).filter(row=>!SPECIES_VARIANT_FAMILIES.some(rule=>
+  norm(row.source)===norm(rule.source)&&norm(row.raceName)===norm(rule.parent_name)&&
+  row.name));
+}
 export function variantFamilyAbilityGrants(index={}){
  const race=[...arr(index.race)];
  for(const rule of SPECIES_VARIANT_FAMILIES){
