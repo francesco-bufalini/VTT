@@ -186,7 +186,7 @@ test('PHB Half-Orc Savage Attacks derives one weapon damage die only for melee c
 
 
 test('MPMM Harengon Hare-Trigger adds proficiency automatically to initiative',()=>{
- const c=character('Harengon','MPMM');
+ const c=character('Harengon','MPMM',{classes:[{name:'Fighter',source:'PHB',level:8}]});
  const result=calculateSheet(c,{
   speciesConditionalBonuses:rules,
   classMechanics:{races:[],subraces:[]}
