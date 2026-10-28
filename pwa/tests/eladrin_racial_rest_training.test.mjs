@@ -93,6 +93,7 @@ test('all five latest pre-2024 racial rest proficiencies use their exact distinc
   assert.throws(()=>restTrainingPatch(chosen,choice,two,allowed),/riposo lungo/);
   const calculated={features:featuresFor(chosen),racial_rest_choices:p.rest_choices};
   const rested={...chosen,...powerRestChoicePatch(chosen,'long_rest',calculated)};
+  assert.deepEqual(rested.proficiency_choices,[],'old trance proficiencies expire at next long rest');
   const replacement=kinds[0]==='skill'?['skill:perception','tool:weavers tools']:
     ['weapon:shortsword','tool:weavers tools'];
   const updated={...rested,...restTrainingPatch(rested,choice,replacement,allowed)};
@@ -100,6 +101,27 @@ test('all five latest pre-2024 racial rest proficiencies use their exact distinc
   assert.deepEqual(updated.proficiency_choices.map(row=>row.key),replacement.map(x=>x.split(':')[1]));
   assert.throws(()=>restTrainingPatch(rested,choice,['tool:smiths tools','tool:smiths tools'],allowed),name==='Astral Elf'||name==='Githyanki'?/non valida/:/due volte/);
  }
+});
+test('Fey Step uses the original source text for the chosen season when available',()=>{
+ const r={...record('Eladrin'),trait_state_selection:{eladrin_season:'summer'}};
+ const nativeRace=native.races.find(x=>x.name==='Eladrin'&&x.source==='MPMM');
+ const definition=racialPowerSpellDefinitions(index,r,{races:{'eladrin|mpmm':nativeRace}})
+   .find(x=>x.id==='vtt_eladrin_fey_step');
+ assert.match(definition.description,/Immediately after you use your Fey Step/);
+ assert.match(definition.description,/fire damage equal to your proficiency bonus/);
+ assert.doesNotMatch(definition.description,/\\{@damage/);
+});
+test('rest expiration preserves permanent and unrelated proficiency choices',()=>{
+ const r=record('Sea Elf'),choice=projection(r).rest_choices.find(x=>x.kind==='training');
+ const withGrant={...r,proficiency_choices:[
+   {kind:'skill',key:'arcana',origin_id:'background|phb|sage'},
+   {kind:'weapon',key:'longsword',origin_id:choice.root_id,rest_training_group:choice.group}
+ ]};
+ const calc={features:featuresFor(withGrant),racial_rest_choices:projection(withGrant).rest_choices};
+ const patch=powerRestChoicePatch(withGrant,'long_rest',calc);
+ assert.deepEqual(patch.proficiency_choices.map(x=>x.key),['arcana']);
+ assert.equal(patch.rest_selection_available[choice.group],true);
+ assert.equal(powerRestChoicePatch(withGrant,'short_rest',calc).proficiency_choices,undefined);
 });
 test('temporary choices reject previously owned proficiencies and wrong source',()=>{
  const r=record('Eladrin'),choice=projection(r).rest_choices.find(x=>x.kind==='training');
