@@ -26,6 +26,18 @@ const server = createServer(async (request, response) => {
   try {
     const path = new URL(request.url, "http://localhost").pathname;
     response.setHeader("Cache-Control", "no-store");
+    // The native host fingerprints served assets for the pairing version gate.
+    // Serve a coherent matching revision instead of letting test HTTP 404
+    // turn a reachable desktop into a misleading disabled pairing button.
+    if(path==='/__vtt_version'){
+      response.setHeader('Content-Type','application/json');
+      response.end(JSON.stringify({revision:'a'.repeat(40)}));return;
+    }
+    if(path==='/sw.js'){
+      response.setHeader('Content-Type','text/javascript; charset=utf-8');
+      response.end((await readFile(new URL('../sw.js',root),'utf8'))
+        .replaceAll('__VTT_COMMIT_SHA__','a'.repeat(40)));return;
+    }
     if (path.startsWith("/api/")) {
       response.setHeader("Content-Type", "application/json");
       if (pairingTestMode) {
