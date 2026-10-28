@@ -139,6 +139,14 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
   const spent={...(patch.resource_tracker_spent||c.resource_tracker_spent||{})};
   spent[meta.tracker.id]=Number(spent[meta.tracker.id]||0)+meta.cost;patch.resource_tracker_spent=spent;
  }
+ // A spell that forces a saving throw ends Hide/Hidden Step invisibility
+ // once it has been cast successfully. This does not affect its normal
+ // spell payment, concentration or targeting resolution.
+ const saves=selection.saving_throw??selection.savingThrow??selection.saves??[];
+ if(Array.isArray(saves)&&saves.length||typeof saves==='string'&&saves.trim()){
+   const current={...c,active_class_features:patch.active_class_features||c.active_class_features};
+   Object.assign(patch,endTemporaryConditionPatch(current));
+ }
  return {patch,slotLevel,context:{caster_name:c.name||'',spellcasting_ability:ability,spell_attack_bonus:hit,
   ...(selection.item_target?{item_target:structuredClone(selection.item_target)}:{}),
   spell_save_dc:dc+(innate?1:0),...(innate?{spell_attack_advantage:true}:{}),
