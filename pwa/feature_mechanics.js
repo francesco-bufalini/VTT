@@ -4,6 +4,7 @@ import {createVariant} from './creature_variants.js';
 import {resolveOwnedItem} from './item_controls.js';
 import {exhaustionRollModes} from './exhaustion_rules.js';
 import {speciesRollModeMatches} from './species_roll_modes.js';
+import {attackHitRollSources} from './attack_hit_effects.js';
 const rows=value=>Array.isArray(value)?value:[];
 const low=value=>String(value||'').trim().toLowerCase();
 const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school of )/,'').replace(/^the /,'');
@@ -284,6 +285,11 @@ export function classFeatureRollSources(record,calculated,target,context=''){
    const sources=rows(calculated.casting_classes).filter(c=>c.ability===target.slice('casting_hit:'.length));
    if(sources.length===1&&low(sources[0].name)==='sorcerer')activeFeature('innate_sorcery');
  }
+ // Confirmed on-hit effects apply only after the roller chooses a target.
+ // The source token is explicitly exempt; combat snapshots expire the mark
+ // at the start of the source's following turn.
+ for(const effect of attackHitRollSources(record,target,context,calculated?.combat_snapshot))
+  add(effect.mode,effect.origin_id,effect.origin_name,'effect');
  for(const rule of rows(calculated?.trait_state_roll_modes)){
   if(rule.target===target||rule.target==='ability_check'&&target.startsWith('skill:'))
    add(rule.mode,rule.origin_id,rule.origin_name,'feature');
