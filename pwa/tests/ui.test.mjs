@@ -33,6 +33,17 @@ globalThis.fetch=async (url,options={})=>{
       spell.level<=row.max_level&&spell.classes.includes(row.name)));
     return new Response(JSON.stringify({version:1,spells}),{status:200});
   }
+  // The runtime fetches its local structured-rule catalogs independently of
+  // the desktop. Test those real files rather than returning a fake 503,
+  // which otherwise prevents every character sheet from finishing startup.
+  if(typeof url==='string'&&/^\/catalog\/[a-z0-9_-]+\.json$/i.test(url)){
+    const filename=url.slice('/catalog/'.length);
+    for(const folder of ['../catalog/','../../vtt/data/']){
+      try{return new Response(readFileSync(new URL(folder+filename,import.meta.url),'utf8'),
+        {status:200,headers:{'Content-Type':'application/json'}});}
+      catch(error){if(error.code!=='ENOENT')throw error;}
+    }
+  }
   return new Response(JSON.stringify({error:"no_active_desktop_session"}),{status:503});
 };
 const referenceCatalogFetch=globalThis.fetch;
