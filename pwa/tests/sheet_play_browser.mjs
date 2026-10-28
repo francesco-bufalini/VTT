@@ -162,6 +162,10 @@ try{
  await factionInput.fill('Gilda degli Arcani');await factionInput.press('Tab');
  await page.locator('#sheet-context-dialog [data-identity-active="factions"]').last().check();
  await page.locator('#sheet-context-dialog [data-identity-kind="factions"]').click();
+ await page.locator('#sheet-context-dialog [data-identity-value="factions"]').last().fill('Compagnia della Stella');
+ await page.locator('#sheet-context-dialog [data-identity-value="factions"]').last().press('Tab');
+ await page.locator('#sheet-context-dialog [data-identity-active="factions"]').last().check();
+ await page.locator('#sheet-context-dialog [data-identity-kind="factions"]').click();
  await page.locator('#sheet-context-dialog [data-identity-value="factions"]').last().press('Tab');
  assert.equal(await page.locator('#sheet-context-dialog [data-identity-value="factions"]').count(),2,'Blank faction entry disappears');
  await dismiss();
