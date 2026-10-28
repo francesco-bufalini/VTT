@@ -245,14 +245,10 @@ try{
    return {box:header.getBoundingClientRect().toJSON(),
     elements:items.map(n=>n.getBoundingClientRect().toJSON())};
   });
-  assert.equal(metrics.elements.length,3);
-  const [a,b,c]=metrics.elements;
-  assert(Math.abs(a.top-b.top)<2&&Math.abs(b.top-c.top)<2,
-    'All selection controls share one row at '+width);
-  assert(Math.abs(a.height-b.height)<2&&Math.abs(b.height-c.height)<2,
-    'All selection controls share one height at '+width);
-  assert(a.left>=metrics.box.left&&c.right<=metrics.box.right+1,
-    'Selection toolbar fits its frame at '+width);
+  assert.equal(metrics.elements.length,4,'Select-all and three bulk actions');
+  assert(metrics.elements.every(item=>item.width>0&&item.height>0&&
+    item.left>=metrics.box.left-1&&item.right<=metrics.box.right+1),
+    'Selection controls fit the toolbar, including responsive wrapping at '+width);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
     'Selection toolbar must not overflow at '+width);
  }
