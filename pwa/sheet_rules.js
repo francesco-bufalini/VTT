@@ -1299,7 +1299,7 @@ function calculateSheetValues(record={},catalogs={}){
   for(const feature of features)addOrigin(feature.origin_id,"Tratto · "+feature.name);
   const originSpellMap=new Map();
   const spellOwnerLive=row=>{
-    const trait=features.find(feature=>feature.origin_id===row.origin_id);
+    const trait=features.find(feature=>feature.origin_id===(row.owner_origin_id||row.origin_id));
     return !trait||(!trait.inactive&&!trait.disabled&&
       record.trait_enabled?.[trait.key]!==false);
   };
