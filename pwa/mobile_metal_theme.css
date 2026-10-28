@@ -5859,9 +5859,12 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 .sheet-context-dialog[data-context="identity"] [data-info-portrait-file]{display:none!important}
 @media(max-width:390px){
  .sheet-context-dialog[data-context="identity"] .identity-rules-row{
-  grid-template-columns:minmax(0,1fr);gap:10px
+  grid-template-columns:minmax(86px,1fr) auto;gap:11px
+ }
+ .sheet-context-dialog[data-context="identity"] .identity-rules-row .play-portrait-pick{
+  padding:8px 10px
  }
  .sheet-context-dialog[data-context="identity"] .identity-rules-row .play-portrait-controls{
-  justify-content:flex-start
+  max-width:185px
  }
 }
