@@ -127,7 +127,11 @@ try {
     sessionStorage.setItem("vtt-mobile-serial-modules", "1");
   });
   await compatPage.goto(origin);
-  await compatPage.locator('[data-act="library-add"]').waitFor({ timeout: 30000 });
+  await compatPage.locator('[data-act="library-add"]').waitFor({ timeout: 30000 })
+    .catch(async error=>{throw Error('Serial module startup: '+error.message+
+      ' | startup='+await compatPage.locator('#startup-error').allTextContents()+
+      ' | app='+String(await compatPage.locator('#app').textContent()).slice(0,600)+
+      ' | errors='+errors.join('; '));});
   assert.equal(await compatPage.locator("#startup-error").count(), 0);
   await compatContext.close();
   console.log("PASS: serial compatibility startup initializes the full local archive");
