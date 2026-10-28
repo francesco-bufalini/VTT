@@ -58,12 +58,12 @@ try{
    if(key==='magic'){
     const classSource=page.locator('#sheet-play-view .play-magic-class-card:not(.play-magic-granted-card)').first();
     const slotLabel=classSource.locator('.play-card-head .play-magic-source-resources');
-    assert.equal((await slotLabel.locator('.play-magic-source-resource').textContent()).trim(),'Slot',
+    assert.equal((await slotLabel.locator('.play-magic-source-resource').first().textContent()).trim(),'Slot',
       'Class spellcasting header exposes one Slot label, with the rest interval separately');
     assert.match(await slotLabel.textContent(),/Riposo lungo/,
       'The current power source documents when spell preparation can change');
-    assert.equal(await slotLabel.locator('.play-magic-source-resource').count(),1,
-      'All spell slot levels share one header label');
+    assert.equal(await slotLabel.locator('.play-magic-source-resource').count(),2,
+      'Slot and its preparation-rest label are distinct single badges');
     const grantedCard=page.locator('#sheet-play-view .play-magic-granted-card[data-magic-origin-tracker="focus"]');
     assert.equal(await grantedCard.count(),1,'Granted spells have their own visible source card');
     const trackerHeader=grantedCard.locator('.play-card-head [data-play-magic-tracker="focus"]');
