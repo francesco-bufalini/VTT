@@ -353,6 +353,30 @@ export function originSpellId(token,edition,spells){
  // use a canonical name slug. The selected catalog is fetched lazily.
  return edition==='2014'&&(!parts[1]||parts[1]==='phb')?legacy:slug;
 }
+// The native compact feature index can omit individual Eberron mark traits.
+// Add a typed owner for the expanded list without granting any spell casts.
+export function expandedOriginSpellFeatures(record={},definitions=[],features=[]){
+ if(record.rules_version==='2024')return [];
+ const extra=[];
+ for(const source of arr(definitions)){
+  if(norm(source.kind)!=='subrace'||!arr(source.blocks).some(b=>b?.expanded))continue;
+  if(norm(record.species)!==norm(source.race_name)||
+   norm(record.species_source)!==norm(source.race_source)||
+   norm(record.subrace)!==norm(source.name)||
+   norm(record.subrace_source)!==norm(source.source))continue;
+  const trait=source.expanded_trait||'Spells of the Mark';
+  if([...arr(features),...extra].some(f=>norm(f.name)===norm(trait)&&
+   (String(f.origin_key||'').startsWith('species|')||
+    f.origin_key==='subrace|'+norm(source.source)+'|'+norm(source.name))))continue;
+  const root='subrace|'+norm(source.source)+'|'+norm(source.name);
+  const key=root+'|1|'+norm(trait);
+  extra.push({name:trait,key,origin_key:root,origin_id:'feature:'+key,
+   source:source.source,level:1,requirements:{scope:'character',min_level:1},
+   entries:['Gli incantesimi aggiuntivi della stirpe entrano nelle liste delle tue classi con Incantesimi o Magia del Patto. Devi comunque impararli o prepararli e spendere gli slot di classe per lanciarli.'],
+   bonuses:[],synthetic_expanded_spell_list:true});
+ }
+ return extra;
+}
 // Expanded origin lists extend a spellcasting class's *available list*.
 // They are neither always prepared nor free racial casts; the caster still
 // learns/prepares the spell and pays the normal class slot or Pact Magic slot.
@@ -380,8 +404,9 @@ export function expandedOriginClassSpellIds(record={},definitions=[],features=[]
   // The mark's *Spells of the Mark* trait owns the expansion; disabling it
   // must withdraw the additional list without removing normal class spells.
   const title=source.expanded_trait||'Spells of the Mark';
-  const owner=arr(features).find(feature=>feature.origin_key===ownerKey&&
-   norm(feature.name)===norm(title));
+  const owner=arr(features).find(feature=>norm(feature.name)===norm(title)&&
+   (feature.origin_key===ownerKey||kind==='subrace'&&
+    String(feature.origin_key||'').startsWith('species|')));
   if(!active(owner))continue;
   for(const block of arr(source.blocks)){
    if(!block?.expanded)continue;
