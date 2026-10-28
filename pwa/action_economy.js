@@ -600,7 +600,9 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
    damage_formula:ability.damage_formula||'',damage_type:ability.damage_type||'',
    save_ability:ability.save_ability||'',save_base:ability.save_base||'',
    half_on_save:ability.half_on_save===true,options:arr(ability.options),
-   ...(ability.roll_attack?{roll_attack:ability.roll_attack}:{})});
+   ...(ability.roll_attack?{roll_attack:ability.roll_attack}:{}),
+   ...(ability.roll_effect?{roll_effect:ability.roll_effect}:{}),
+   ...(ability.temp_hp?{temp_hp:ability.temp_hp}:{})});
   seen.add(name);
  }
  return result;
