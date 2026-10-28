@@ -432,6 +432,49 @@
         ],
         "description": "Dopo ogni riposo lungo scegli una competenza in un'abilità e una in un'arma o uno strumento del Manuale del Giocatore, valide fino al riposo lungo successivo."
       }
+    },
+    {
+      "name": "Firbolg",
+      "source": "MPMM",
+      "active_conditions": [
+        {
+          "id": "race:mpmm:firbolg:hidden_step",
+          "trait": "Hidden Step",
+          "name": "Hidden Step",
+          "action_type": "bonus",
+          "mode": "temporary_condition",
+          "condition": "invisible",
+          "persistent_key": "racial:firbolg:hidden_step",
+          "duration_rounds": 1,
+          "ends_on": [
+            "start_of_next_turn",
+            "attack",
+            "damage_roll",
+            "saving_throw_forced"
+          ],
+          "tracker_id": "race:mpmm:firbolg:hidden_step:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "description": "Come azione bonus diventi Invisibile fino all'inizio del tuo turno successivo, oppure finché effettui un attacco, tiri i danni o costringi una creatura a un tiro salvezza. Utilizzi pari alla competenza; recupero con riposo lungo."
+        }
+      ]
+    },
+    {
+      "name": "Genasi",
+      "source": "MPMM",
+      "bonus_cantrips": [
+        {
+          "id": "race:mpmm:genasi:earth:blade_ward_bonus",
+          "subrace": "Earth",
+          "trait": "Merge with Stone",
+          "spell_id": "phb2014_blade_ward",
+          "action_type": "bonus",
+          "tracker_id": "race:mpmm:genasi:earth:blade_ward_bonus:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "description": "Lancia Blade Ward come azione bonus (bonus competenza volte per riposo lungo). Puoi sempre lanciarlo anche con il suo normale tempo di lancio, senza utilizzare questo tracker."
+        }
+      ]
     }
   ]
 }
