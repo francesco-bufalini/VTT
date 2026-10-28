@@ -3360,11 +3360,19 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
          (ability.source?'<div><dt>Fonte</dt><dd>'+esc(ability.source)+'</dd></div>':'')+
          '<div><dt>Consumo</dt><dd>'+esc(cost?cost+' utilizzi'+(resource?' · '+resource:' · Risorsa non collegata'):'Nessun consumo di utilizzi')+'</dd></div></dl>'+
          '<div class="power-privilege-description"><h3>Descrizione</h3><p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></div>'+
+         (ability.area_shape?'<p class="hint">'+esc(ability.area_shape==='line'?
+           'Linea '+ability.area_length_feet+' × '+ability.area_width_feet+' ft':
+           'Cono '+ability.area_radius_feet+' ft')+
+           (ability.damage_formula?' · '+esc(ability.damage_formula)+' '+esc(ability.damage_type):'')+
+           (ability.attack_replacement?' · Sostituisce un attacco':'')+'</p>':'')+
+         (ability.persistent_key&&c.active_class_features?.[ability.persistent_key]?
+           '<div class="magic-active-form">Attivo · 1 minuto <button type="button" class="btn small" data-act="condition-remove-ability" data-ability-key="'+esc(ability.persistent_key)+'">Termina</button></div>':'')+
          (extensions.length?'<div class="magic-effect-extensions"><h3>Estensioni attive</h3><ul>'+
            extensions.map(extension=>'<li><strong>'+esc(extension.origin_name||'Privilegio')+'</strong> · '+
              esc(effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}))+'</li>').join('')+
            '</ul></div>':'')+
-         '<div class="actions"><button type="button" class="btn primary" data-act="battle-use-ability" data-ability-id="activated:'+esc(ability.id)+'">Usa</button>'+
+         '<div class="actions"><button type="button" class="btn primary" data-act="battle-use-ability" data-ability-id="activated:'+esc(ability.id)+'"'+
+         (ability.persistent_key&&c.active_class_features?.[ability.persistent_key]?' disabled':'')+'>Usa</button>'+
          '<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(ability.feature_id||ability.origin_id||'')+'">'+actionGlyph('proficiency')+'<span>Apri il tratto di origine</span></button></div></div></details>';
        }).join('')+'</div>':'';
    const activeForm=calculated.active_celestial_form;
