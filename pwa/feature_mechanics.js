@@ -1,3 +1,4 @@
+import {SKILL_ABILITY} from './skill_definitions.js';
 import {createVariant} from './creature_variants.js';
 // Offline structured class-feature mechanics shared by the PWA sheet and actions.
 // No regex matching feature prose; no network access in the evaluation path.
@@ -149,13 +150,6 @@ export function classFeatureRollResourceBonuses(record={},calculated={}){
  });
 }
 
-const ROLL_SKILL_ABILITIES={
- acrobatics:'dex','animal handling':'wis',arcana:'int',athletics:'str',
- deception:'cha',history:'int',insight:'wis',intimidation:'cha',
- investigation:'int',medicine:'wis',nature:'int',perception:'wis',
- performance:'cha',persuasion:'cha',religion:'int','sleight of hand':'dex',
- stealth:'dex',survival:'wis'
-};
 // Passive class benefits are choices in the existing roll dialog, not Battle
 // actions and not always-on numeric grants. Never infer them from prose.
 export function passiveClassRollBonuses(record={},calculated={},target=''){
@@ -166,7 +160,7 @@ export function passiveClassRollBonuses(record={},calculated={},target=''){
  const members=rows(record.classes).length?record.classes:
    [{name:record.class,source:record.class_source,subclass:record.subclass,subclass_source:record.subclass_source}];
  const skill=target.startsWith('skill:')?low(target.slice(6)):'';
- const ability=skill?ROLL_SKILL_ABILITIES[skill]:
+ const ability=skill?SKILL_ABILITY[skill]:
    target==='initiative'?'dex':/^(?:ability_check|ability_mod):(?:str|dex|con|int|wis|cha)$/.test(target)?target.split(':')[1]:'';
  const rank=skill?(known.has('expertise:'+skill)?2:known.has('skill:'+skill)?1:0):0;
  const toolKnown=[...known].some(item=>item.startsWith('tool:'));
