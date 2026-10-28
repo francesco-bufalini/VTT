@@ -88,7 +88,7 @@ export function classFeatureEntries(record={},calculated={}){
  // A trait-sourced roll bonus is an ordinary contextual class action. Its
  // mechanics, supported rolls and resource are all declared in the catalog.
  for(const rule of rows(calculated.roll_bonus_rules)){
-  if(!rule?.id||!rule.feature_name||!rule.bonus)continue;
+  if(rule?.passive||!rule?.id||!rule.feature_name||!rule.bonus)continue;
   const feature=rows(calculated.features).find(f=>featureEnabled(record,f)&&
    low(f.name).replaceAll("'",'’')===low(rule.feature_name).replaceAll("'",'’')&&
    String(f.origin_key||'').startsWith('class|')&&
@@ -136,6 +136,86 @@ export function classFeatureRollResourceBonuses(record={},calculated={}){
    tracker_cost:Math.max(0,Number(ability.cost)||0),optional:true}];
  });
 }
+
+const ROLL_SKILL_ABILITIES={
+ acrobatics:'dex','animal handling':'wis',arcana:'int',athletics:'str',
+ deception:'cha',history:'int',insight:'wis',intimidation:'cha',
+ investigation:'int',medicine:'wis',nature:'int',perception:'wis',
+ performance:'cha',persuasion:'cha',religion:'int','sleight of hand':'dex',
+ stealth:'dex',survival:'wis'
+};
+// Passive class benefits are choices in the existing roll dialog, not Battle
+// actions and not always-on numeric grants. Never infer them from prose.
+export function passiveClassRollBonuses(record={},calculated={},target=''){
+ if(record.rules_version==='2024')return [];
+ const proficiency=Math.max(0,Number(calculated.values?.proficiency)||0);
+ if(!proficiency)return [];
+ const known=new Set(rows(calculated.proficiencies).map(low));
+ const members=rows(record.classes).length?record.classes:
+   [{name:record.class,source:record.class_source,subclass:record.subclass,subclass_source:record.subclass_source}];
+ const skill=target.startsWith('skill:')?low(target.slice(6)):'';
+ const ability=skill?ROLL_SKILL_ABILITIES[skill]:
+   target==='initiative'?'dex':/^(?:ability_check|ability_mod):(?:str|dex|con|int|wis|cha)$/.test(target)?target.split(':')[1]:'';
+ const rank=skill?(known.has('expertise:'+skill)?2:known.has('skill:'+skill)?1:0):0;
+ const toolKnown=[...known].some(item=>item.startsWith('tool:'));
+ const bonuses=[];
+ for(const rule of rows(calculated.roll_bonus_rules)){
+  if(!rule?.passive||!rule?.bonus||!rule?.class_name||!rule.feature_name)continue;
+  const member=members.find(row=>low(row.name)===low(rule.class_name)&&
+   (!rule.class_source||!row.source||low(row.source)===low(rule.class_source))&&
+   (!rule.subclass_name||subclass(row.subclass||'')===subclass(rule.subclass_name)));
+  if(!member)continue;
+  const feature=rows(calculated.features).find(row=>featureEnabled(record,row)&&
+   low(row.name)===low(rule.feature_name)&&
+   low(row.requirements?.class_name||row.class_name||String(row.origin_key||'').split('|')[2])===low(rule.class_name)&&
+   (!rule.class_source||low(row.class_source||String(row.origin_key||'').split('|')[1])===low(rule.class_source))&&
+   (!rule.subclass_name||String(row.origin_key||'').includes('|subclass|')));
+  if(!feature)continue;
+  let originId=feature.origin_id,originName='Tratto · '+feature.name;
+  if(rule.required_optional_feature){
+   const optional=rows(record.optional_features_catalog).find(row=>!row.disabled&&
+    low(row.name)===low(rule.required_optional_feature)&&
+    (!rule.optional_source||low(row.source)===low(rule.optional_source)));
+   if(!optional)continue;
+   originId=optional.origin_id||'optional|'+low(optional.source)+'|'+low(optional.name);
+   if(disabledOrigin(record,originId))continue;
+   originName='Privilegio opzionale · '+optional.name;
+  }
+  const mode=rule.bonus.proficiency_mode;
+  const isCheck=!!ability&&(skill||target.startsWith('ability_check:'));
+  if(!isCheck&&target!=='initiative')continue;
+  let amount=0;
+  if(mode==='tool_expertise'){
+   // Ordinary ability checks contain no tool proficiency. Skill checks may
+   // already contain one or two proficiency bonuses; only bridge to 2x.
+   if(!isCheck||!toolKnown)continue;
+   amount=proficiency*Math.max(0,2-rank);
+  }else if(mode==='untrained_half'||mode==='untrained_half_physical'){
+   if(rank||!ability)continue;
+   if(mode==='untrained_half_physical'&&!['str','dex','con'].includes(ability))continue;
+   amount=Math.floor(proficiency/2);
+  }else if(mode==='favored_terrain_expertise'){
+   if(!skill||rank!==1||!['int','wis'].includes(ability))continue;
+   amount=proficiency;
+  }else continue;
+  if(amount<=0)continue;
+  const group=mode==='tool_expertise'?'tool_expertise':rule.bonus.stack_group||'';
+  bonuses.push({id:'passive_class:'+rule.id,origin_id:originId,origin_name:originName,
+   name:rule.bonus.name||feature.name,granting_trait:rule.required_optional_feature||feature.name,
+   condition_label:rule.bonus.condition_label||'',flat_bonus:amount,
+   passive_class_bonus:true,stack_group:group});
+ }
+ // Multiple features never multiply an identical proficiency benefit
+ // (e.g. Fire Rune + Tool Expertise, Jack of All Trades + Remarkable Athlete).
+ const selected=[],groups=new Map();
+ for(const bonus of bonuses){
+  if(!bonus.stack_group){selected.push(bonus);continue;}
+  const previous=groups.get(bonus.stack_group);
+  if(!previous||bonus.flat_bonus>previous.flat_bonus)groups.set(bonus.stack_group,bonus);
+ }
+ return [...selected,...groups.values()];
+}
+
 export function classFeatureRollBonuses(record={},calculated={},target=''){
  const applicable=targets=>rows(targets).some(value=>value===target||
   value==='ability_check'&&(target==='initiative'||/^(?:skill:|ability_check:|ability_mod:)/.test(target))||
@@ -143,8 +223,8 @@ export function classFeatureRollBonuses(record={},calculated={},target=''){
   value==='attack_roll'&&/^(?:attack_hit:|casting_hit:)/.test(target)||
   value==='damage_roll'&&/^(?:attack_damage:|spell_damage)/.test(target)||
   value==='any_d20'&&(target==='initiative'||/^(?:skill:|ability_check:|ability_mod:|save:|attack_hit:|casting_hit:)/.test(target)));
- return classFeatureRollResourceBonuses(record,calculated).filter(row=>applicable(row.targets))
-  .map(row=>({...row,target}));
+ return [...classFeatureRollResourceBonuses(record,calculated).filter(row=>applicable(row.targets))
+  .map(row=>({...row,target})),...passiveClassRollBonuses(record,calculated,target)];
 }
 export function classFeatureLevel(record,name){
  const member=rows(record.classes).find(c=>low(c.name)===low(name));
