@@ -41,7 +41,7 @@ export function claimFeatureItemPatch(record={},calculated={},grantId='',itemId=
   row.feature_item_grant_id===grant.id&&Number(row.quantity??1)>0);
  if(owned.some(row=>row.feature_item_option_id===choice.id))
   throw Error('Oggetto già concesso: modificalo o rimuovilo dall’inventario.');
- if(grant.max_owned&&owned.length>=Number(grant.max_owned))
+ if(grant.max_owned&&owned.length>=Number(grant.max_owned)&&!grant.replace_existing)
   throw Error('Rimuovi prima il precedente oggetto concesso da questo privilegio.');
  const item={id:'feature-grant:'+grant.id+':'+choice.id,
   name:choice.name,quantity:Math.max(1,Number(choice.quantity)||1),
@@ -49,5 +49,6 @@ export function claimFeatureItemPatch(record={},calculated={},grantId='',itemId=
   description:choice.description||'',source:grant.class_source||'',
   feature_item_grant_id:grant.id,feature_item_option_id:choice.id,
   granted_by:grant.origin_id};
- return {inventory:[...inventory,item]};
+ const retained=grant.replace_existing?inventory.filter(row=>row.feature_item_grant_id!==grant.id):inventory;
+ return {inventory:[...retained,item]};
 }
