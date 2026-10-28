@@ -19,7 +19,8 @@ Object.defineProperty(globalThis,"crypto",{value:webcrypto,configurable:true});
 let apiCalls=[];
 const fixtureSpells=[
   {id:"spell:shield|phb",name:"Shield",source:"PHB",level:1,classes:["Bard","Wizard"]},
-  {id:"spell:light|phb",name:"Light",source:"PHB",level:0,classes:["Bard","Wizard"]}
+  {id:"spell:light|phb",name:"Light",source:"PHB",level:0,classes:["Bard","Wizard"]},
+  {id:"phb2014_shield",name:"Shield",source:"PHB",level:1,classes:["Bard","Wizard"]}
 ];
 globalThis.fetch=async (url,options={})=>{
   apiCalls.push({url,options});
@@ -621,7 +622,7 @@ test("inline spell catalog adds available and spellbook choices without divergin
   const {createCreature}=await import('../creatures.js');
   const saved=await createCreature('character','Incantatore PWA');
   await saveCreature({...saved.data,class:'Wizard',class_source:'PHB',level:5,
-    classes:[{name:'Wizard',source:'PHB',level:5}],spellbook_spells:[{...fixtureSpells[0]}]},'default',saved.revision);
+    classes:[{name:'Wizard',source:'PHB',level:5}],spellbook_spells:[{...fixtureSpells[2]}]},'default',saved.revision);
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
@@ -642,8 +643,8 @@ test("inline spell catalog adds available and spellbook choices without divergin
   click('[data-act="spell-pick"]');
   await until(async()=>{
     const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
-    return current?.prepared_spells?.[0]?.id==="spell:shield|phb" &&
-      current?.spells?.[0]?.id==="spell:shield|phb";
+    return current?.prepared_spells?.[0]?.id==="phb2014_shield" &&
+      current?.spells?.[0]?.id==="phb2014_shield";
   });
   await until(()=>document.querySelector('#magic-tools-dialog[open]')!==beforeDialog);
   assert.equal(document.querySelector('#magic-tools-dialog[open]').scrollTop,84,
@@ -673,7 +674,7 @@ test("slot popup casts inline while compact search opens the existing spell deta
   await useCastingCatalog(t);
   const {createCreature}=await import('../creatures.js');
   const saved=await createCreature('character','Incantatore con slot');
-  const spell={...fixtureSpells[0]};
+  const spell={...fixtureSpells[2]};
   await saveCreature({...saved.data,class:'Wizard',class_source:'PHB',level:5,
     classes:[{name:'Wizard',source:'PHB',level:5}],spellbook_spells:[spell],prepared_spells:[spell],spells:[spell],
     spell_slots_manual:true,spell_slots_automatic:false,
@@ -1082,8 +1083,8 @@ test("scroll creation selects a spell and casting level without opening item cat
   const search=document.querySelector('#scroll-spell-query');
   search.value="shi";
   search.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  assert.ok([...document.querySelectorAll('#scroll-spell-select option')].some(row=>row.value==='spell:shield|phb'));
-  change('#scroll-spell-select','spell:shield|phb');
+  assert.ok([...document.querySelectorAll('#scroll-spell-select option')].some(row=>row.value==='phb2014_shield'));
+  change('#scroll-spell-select','phb2014_shield');
   assert.equal(document.querySelector('#scroll-spell-level').options[0].value,'1');
   assert.ok([...document.querySelector('#scroll-spell-level').options].some(opt=>opt.value==='3'));
   change('#scroll-spell-level','3');
@@ -1099,7 +1100,7 @@ test("scroll creation selects a spell and casting level without opening item cat
   const again=document.querySelector('#scroll-spell-query');
   again.value="shield";
   again.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  change('#scroll-spell-select','spell:shield|phb');
+  change('#scroll-spell-select','phb2014_shield');
   change('#scroll-spell-level','3');
   click('#sheet-context-dialog [data-act="scroll-spell-add"]');
   await until(async()=>{
