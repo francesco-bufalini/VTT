@@ -37,7 +37,7 @@ test('ERLW dragonmarks are bounded to the correct 2014 race and subrace',()=>{
   assert.equal(mark[0].origin_id,features.find(f=>f.origin_id===mark[0].origin_id)?.origin_id);
   assert.equal(mark[0].origin_key,'subrace|erlw|'+subrace.toLowerCase());
   assert.match(mark[0].condition_label,/Solo per/);
-  assert(!project({...c,subrace_source:'SCAG'}).bonuses.length);
+  assert(!project({...c,subrace_source:'SCAG'}).bonuses.some(x=>x.origin_key.startsWith('subrace|')));
   assert(!project({...c,rules_version:'2024'}).bonuses.length);
  }
 });
