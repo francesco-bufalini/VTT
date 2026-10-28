@@ -68,6 +68,7 @@ test("Android offline installation includes required code, icon sprites and mini
   const expected = [
     "/", "/index.html", "/main.js", "/ui.js", "/styles.css",
     "/mobile_metal_theme.css", "/catalog/class_mechanics.json",
+    "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
     "/catalog/miniatures.json", "/icons/action_controls.svg",
     "/icons/gold_generated/gold_2.svg", "/icons/info/identity.svg",
     "/icon-192.png", "/icon-512.png"
@@ -100,7 +101,7 @@ test("offline cache name follows the served Git revision without deleting saved 
   const revision = "b".repeat(40);
   const worker = await workerFixture(revision);
   await worker.dispatch("install");
-  assert((await worker.caches.keys()).includes("vtt-mobile-shell-v192-" + revision));
+  assert((await worker.caches.keys()).includes("vtt-mobile-shell-v193-" + revision));
   worker.setOffline(true);
   const cached = await worker.dispatch("fetch", new Request("https://vtt.example/ui.js"));
   assert.equal(cached.status, 200);

@@ -73,7 +73,23 @@ try{
   await missingDependency.getByText('Le creature salvate sul computer non sono state cancellate.').waitFor();
   assert(await missingDependency.getByRole('button',{name:'Riprova',exact:true}).isVisible());
   await missingDependency.close();
-  console.log('PASS: desktop startup, transitive asset serving, native archive read/write, responsive layout and recoverable module-link failure');
+  // Runtime IPC failures need the same recoverable startup UI as failed imports.
+  const failedArchive=await browser.newPage();
+  await failedArchive.addInitScript(()=>{
+    globalThis.ipc={postMessage(raw){
+      const request=JSON.parse(raw);
+      if(request.method==='owner'&&!sessionStorage.getItem('desktop-test-owner-failed')){
+        sessionStorage.setItem('desktop-test-owner-failed','1');
+        queueMicrotask(()=>globalThis.vttDesktopReceive({id:request.id,error:'Archivio temporaneamente non disponibile'}));
+      }else fetch('/__test/rpc',{method:'POST',body:raw}).then(r=>r.json()).then(reply=>globalThis.vttDesktopReceive(reply));
+    }};
+  });
+  await failedArchive.goto(origin);
+  await failedArchive.getByRole('button',{name:'Riprova',exact:true}).waitFor();
+  await failedArchive.getByRole('button',{name:'Riprova',exact:true}).click();
+  await failedArchive.waitForFunction(()=>document.querySelector('#app')?.dataset.renderedSheet==='info');
+  await failedArchive.close();
+  console.log('PASS: desktop startup, native read/write, layout, missing modules and retry after archive failure');
 }finally{
   await browser?.close();
   await fetch(origin+'/__test/stop').catch(()=>{});

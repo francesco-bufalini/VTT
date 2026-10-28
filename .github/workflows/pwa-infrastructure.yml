@@ -148,6 +148,7 @@ jobs:
           case "${{ matrix.suite }}" in
             startup)
               node tests/startup_browser.mjs
+              node tests/archive_startup_browser.mjs
               node tests/offline_browser.mjs
               ;;
             navigation)

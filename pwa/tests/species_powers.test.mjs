@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {racialPowerProjection,racialPowerSubraces,racialPowerSpellDefinitions,healingHandsPatch} from '../species_powers.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {structuredFeatureGrants} from '../structured_effects.js';
 const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
 const id='5etools:races:mpmm:aasimar';
 const base={kind:'character',rules_version:'2014',level:3,species:'Aasimar',
@@ -25,7 +26,10 @@ test('MPMM Celestial Revelation produces exactly three typed subrace options',()
  assert.equal(shroud.origin_spells[0].spellcasting_ability,'cha');
  assert.equal(shroud.origin_spells[0].casting_ability_not_required,false);
  assert(!racialPowerSpellDefinitions(index).find(x=>x.id==='vtt_aasimar_necrotic_shroud').condition_inflict.length);
- assert(racialPowerSpellDefinitions(index).every(x=>x.follow_caster&&x.target_mode==='self_emanation'));
+ const definitions=racialPowerSpellDefinitions(index);
+ const forms=index.races.find(row=>row.name==='Aasimar').revelation.subraces
+   .map(form=>definitions.find(row=>row.id===form.spell_id));
+ assert(forms.every(x=>x?.follow_caster&&x.target_mode==='self_emanation'));
  assert.equal(racialPowerProjection({...base,rules_version:'2024'},index,[healing]).trackers.length,0);
 });
 test('Healing Hands rolls exactly proficiency d4, heals self and consumes one long-rest use',()=>{
@@ -62,4 +66,10 @@ test('Radiant Soul flight follows walking speed only during its active subrace m
  const changed=calculateSheet({...selected,subrace:'Necrotic Shroud',active_class_features:{
    [form.active_key]:{spell_id:form.spell_id,name:form.name}}},catalog);
  assert.equal(changed.stats.speeds.fly,0);
+});
+
+// Native and older projected traits can omit the optional bonus collection.
+test('traits without numeric bonuses do not abort sheet calculation',()=>{
+ const feature={name:'Legacy trait',origin_id:'feature:legacy',origin_key:'race|phb|elf'};
+ assert.deepEqual(structuredFeatureGrants({}, {}, [feature,{...feature,bonuses:null},null]),[]);
 });

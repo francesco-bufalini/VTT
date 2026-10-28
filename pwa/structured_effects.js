@@ -482,7 +482,7 @@ export function collectStructuredFeatures(record,catalogs={}){
 export function structuredFeatureGrants(record,catalogs={},features=collectStructuredFeatures(record,catalogs)){
   const result=[];
   for(const feature of features){
-    if(feature.inactive)continue;
+    if(!feature||feature.inactive)continue;
     const classSource=String(feature.class_source||String(feature.origin_key||'').split('|')[1]||'').toUpperCase();
     const owner=String(feature.class_name||feature.requirements?.class_name||String(feature.origin_key||'').split('|')[2]||'').toLowerCase();
     if(owner==='artificer'&&classSource==='TCE'){
@@ -498,7 +498,7 @@ export function structuredFeatureGrants(record,catalogs={},features=collectStruc
         for(const ability of ['str','dex','con','int','wis','cha'])result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'soul','save:'+ability,count));
       }
     }
-    for(const row of feature.bonuses){
+    for(const row of array(feature.bonuses)){
       if(!row||typeof row!=="object")continue;
       const target=String(row.target||"");
       const grant=numericGrant(feature.origin_id,"Tratto · "+feature.name,

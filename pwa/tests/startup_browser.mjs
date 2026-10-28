@@ -100,7 +100,9 @@ const server = createServer(async (request, response) => {
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const origin = "http://127.0.0.1:" + server.address().port;
 const browserType = process.env.PWA_BROWSER === "webkit" ? webkit : chromium;
-const browser = await browserType.launch({ headless: true });
+const browser = await browserType.launch({ headless: true,
+  ...(process.platform === "win32" && browserType === chromium ?
+    { executablePath: process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe" } : {}) });
 try {
   // Completely new browser profile and IndexedDB, as in incognito mode.
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });

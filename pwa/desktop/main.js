@@ -84,5 +84,5 @@ try{
   await request('ready');
 }catch(error){
   await request('ready').catch(()=>{});
-  document.querySelector('#app').textContent='Impossibile aprire la scheda: '+error.message;
+  throw error; // The startup shell supplies a working retry action for runtime failures too.
 }

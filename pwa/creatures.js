@@ -28,9 +28,12 @@ export async function ownerId() {
 
 export async function listCreatures(scope = "default", {includeSubcreatures = false} = {}) {
   return (await listRecords(requiredScope(scope), CREATURE_TYPE))
-    .filter(row => includeSubcreatures || !row.data.parent_creature_id)
-    .map(row => ({ creature: row.data, revision: row.revision }))
-    .sort((a,b) => a.creature.name.localeCompare(b.creature.name));
+    // Backups can contain a legacy entry whose body is no longer readable.
+    // Keep its stable ID visible for recovery without changing the stored data.
+    .map(row => ({ creature: row.data && typeof row.data === "object" && !Array.isArray(row.data) ?
+      row.data : {id:row.id,name:"Scheda non leggibile",archive_unreadable:true},revision:row.revision }))
+    .filter(row => includeSubcreatures || !row.creature.parent_creature_id)
+    .sort((a,b) => String(a.creature.name ?? "").localeCompare(String(b.creature.name ?? "")));
 }
 
 export async function loadCreature(id, scope = "default") {
@@ -89,7 +92,7 @@ export async function createCreature(kind = "character", name = "Nuova creatura"
 
 export async function listSubcreatures(parentId, scope = "default") {
   return (await listRecords(requiredScope(scope), CREATURE_TYPE))
-    .filter(row => row.data.parent_creature_id === parentId)
+    .filter(row => row.data?.parent_creature_id === parentId)
     .map(row => ({creature: row.data, revision: row.revision}))
     .sort((a,b) => a.creature.name.localeCompare(b.creature.name));
 }
@@ -418,6 +421,8 @@ export async function editHomebrewDefinition(definition, expectedRevision) {
 export async function openCreatureEditor(id, scope = "default") {
   let stored = await loadCreature(id, scope);
   if (!stored) throw new Error("Creature not found");
+  if (!stored.data || typeof stored.data !== "object" || Array.isArray(stored.data))
+    throw new Error("Questa scheda non è leggibile. Torna alle creature per aprire le altre schede o esportare il backup.");
   // Upgrade older saves with repeated copies as soon as the creature is edited.
   // Do not rewrite records that already have canonical inventory stacks.
   if (Array.isArray(stored.data.inventory)) {

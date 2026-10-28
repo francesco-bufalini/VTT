@@ -682,7 +682,9 @@ async function navigate(page){
     state.creatureId=null;
     state.inventorySelectedTabs=['all'];state.inventorySubtab='items';
   }
-  state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
+  // The archive index does not need to resolve every creature's active form.
+  // A damaged legacy form must not prevent access to the other saved sheets.
+  state.cachedCreatures=(await listCreatures()).map(row=>page==="library"?row.creature:resolveVariant(row.creature));
   if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
 }
@@ -772,7 +774,9 @@ async function render() {
     if(ticket !== state.renderTicket) return;
     console.error("VTT Mobile: rendering della scheda fallito", {page:state.page,sheet:state.sheet}, error);
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
-      btn("refresh","Riprova","primary");
+      btn("refresh","Riprova","primary")+
+      (state.page==="library"&&!state.libraryMode?btn("back","Torna alle creature"):"");
+    app.dataset.renderedSheet='';
     app.dataset.renderViewKey='';
   }
 }
@@ -969,7 +973,7 @@ async function libraryView(){
    '<span class="library-check-graphic" aria-hidden="true">✓</span></label>'+
    '<article class="creature-card"><button type="button" class="creature-open" data-act="open" data-id="'+esc(c.id)+'" aria-label="Apri scheda di '+esc(c.name)+'">'+
    '<span class="library-creature-emblem">'+actionGlyph(monster?'shield':'proficiency')+'</span>'+
-   '<span class="creature-info"><span class="creature-category">'+(c.parent_creature_id?'Famiglio':monster?'Mostro':'Personaggio')+'</span>'+
+   '<span class="creature-info"><span class="creature-category">'+(c.archive_unreadable?'Da recuperare':c.parent_creature_id?'Famiglio':monster?'Mostro':'Personaggio')+'</span>'+
    '<span class="creature-name">'+esc(c.name)+'</span>'+
    '<span class="creature-meta"><span class="creature-details">'+esc(species)+'</span>'+
    (subline?'<span class="creature-classes">'+esc(subline)+'</span>':'')+
@@ -8300,7 +8304,7 @@ export async function mount(){
   // IndexedDB creatures FIRST: an offline desktop must never gate the editor.
   state.paired=await hasPairingCredential();
   if(qrCode){state.page="session";state.sessionPane="connection";}
-  state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
+  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
   if(typeof globalThis.vttDesktopSaveFile!=='function')
     void serverBackups.start();

@@ -570,7 +570,7 @@ async function workerCommit(controller) {
   });
 }
 
-async function installOfflineShell() {
+async function installOfflineShell(flushPendingFields) {
   if (!("serviceWorker" in navigator) || !self.isSecureContext) return;
   try {
     // Capture the previous controller before register/update, since a new
@@ -580,7 +580,26 @@ async function installOfflineShell() {
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         // A full navigation resets Safari's ES module map: do not combine a
         // graph loaded from the old worker with the new worker's modules.
-        location.reload();
+        // Commit debounced fields and in-flight writes before replacing the page.
+        // Blurring also commits a focused numeric field, which has no input timer.
+        document.activeElement?.blur?.();
+        const wasInert = app.inert;
+        app.inert = true;
+        void (async () => {
+          try {
+            await flushPendingFields();
+            location.reload();
+          } catch (error) {
+            app.inert = wasInert;
+            console.error("VTT update postponed: pending edits could not be saved", error);
+            const toast = document.querySelector("#toast");
+            if (toast) {
+              toast.textContent = "Aggiornamento rimandato: salvataggio non riuscito. " +
+                (error?.message || String(error));
+              toast.hidden = false;
+            }
+          }
+        })();
       }, { once: true });
     }
     const registration = await deadline(navigator.serviceWorker.register("/sw.js"),
@@ -610,7 +629,7 @@ async function boot() {
   try {
     showStage("Caricamento dell'interfaccia…");
     // Dynamic import ensures syntax/network/module-link errors are caught here.
-    const [{ mount }, { openStorage, requestPersistentStorage, storageEstimate }] =
+    const [{ mount, desktopSheetSession }, { openStorage, requestPersistentStorage, storageEstimate }] =
       await loadStartupModules();
     phase = "Apertura archivio locale";
     showStage("Apertura archivio locale…");
@@ -623,7 +642,7 @@ async function boot() {
     // On iOS/WebKit, precaching dozens of assets in parallel with the ESM
     // graph can exhaust connections through the desktop bridge.
     // Update the offline shell only after the local UI is usable.
-    void installOfflineShell();
+    void installOfflineShell(desktopSheetSession.flush);
     // Browser persistence requests, cache downloads and diagnostics are optional.
     // None of them may delay painting the usable character library.
     Promise.resolve().then(() => requestPersistentStorage()).catch(error =>

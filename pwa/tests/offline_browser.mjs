@@ -73,12 +73,13 @@ try {
   await page.waitForFunction(async () => {
     const ready = await navigator.serviceWorker.ready;
     if (!ready.active) return false;
-    const currentCache = (await caches.keys()).find(name => /^vtt-mobile-shell-v\d+$/.test(name));
+    const currentCache = (await caches.keys()).find(name => /^vtt-mobile-shell-v\d+(?:-.+)?$/.test(name));
     if (!currentCache) return false;
     const cache = await caches.open(currentCache);
     const paths = ["/", "/index.html", "/main.js", "/ui.js", "/storage.js",
       "/creatures.js", "/styles.css", "/catalog/class_mechanics.json",
       "/catalog/ability_grants.json", "/catalog/spells.json", "/catalog/player.json",
+      "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
       "/catalog/miniatures.json", "/catalog/species_attacks.json", "/catalog/combat_action_supplements_5etools.json",
       "/icons/action_controls.svg", "/icons/gold_generated/gold_2.svg",
       "/icons/info/identity.svg", "/icon-192.png"];

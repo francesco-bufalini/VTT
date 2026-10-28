@@ -9,6 +9,7 @@
     "test:tactical-browser": "node tests/tactical_browser.mjs",
     "test:server-backups-browser": "node tests/server_backups_browser.mjs",
     "test:offline-browser": "node tests/offline_browser.mjs",
+    "test:archive-startup-browser": "node tests/archive_startup_browser.mjs",
     "test:navigation-browser": "node tests/navigation_browser.mjs",
     "test:inventory-powers-browser": "node tests/inventory_powers_browser.mjs",
     "test:inventory-sections-browser": "node tests/inventory_sections_browser.mjs",
