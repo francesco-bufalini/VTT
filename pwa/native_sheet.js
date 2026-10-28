@@ -512,10 +512,8 @@ export function speciesCreatureType(creature,catalogs={}){
  return values.map(v=>typeof v==='string'?v:v?.type||'').filter(Boolean)
   .map(v=>names[v.toLowerCase()]||v).join(', ')||'—';
 }
-// The 5etools race index contains both "Elf (High)" and "High" with the
-// *same* ID. Keep the picker and its save handler on this exact candidate set:
-// resolving an ID from the unfiltered catalog can select the flattened race
-// in place of the subrace, then incorrectly mark the saved choice "importato".
+// Species and subraces are separate picker entries. Native flattened
+// references are not selectable as species.
 export function availableReferenceRows(c,key,category,catalogs={}){
  return contentForRules(list(catalogs[category]),c.rules_version).filter(r=>r?.name &&
    (key!=='species'||!r.raceName) &&
@@ -525,17 +523,6 @@ export function availableReferenceRows(c,key,category,catalogs={}){
        (c.classes||[]).reduce((sum,row)=>sum+Math.max(0,Number(row.level)||0),0))) &&
    (key!=='subclass'||!!c.class&&(!r.class_name||r.class_name===c.class)&&(!c.class_source||!r.class_source||r.class_source===c.class_source)) &&
    (key!=='class'||c.rules_version!=='2024'||r.source!=='PHB'));
-}
-// Repair only the specific records written by the duplicate-ID lookup bug.
-// The old picker saved "Elf (High)" as a subrace instead of "High", while
-// retaining the shared catalog ID. Do not rewrite intentional custom entries.
-export function flattenedSubraceRepairPatch(c,catalogs={}){
- if(!c?.subrace_id||!c?.subrace||!c?.species)return null;
- const row=availableReferenceRows(c,'subrace','races',catalogs).find(r=>
-   String(r.id||'')===String(c.subrace_id) &&
-   c.subrace===r.raceName+' ('+r.name+')' &&
-   (!c.subrace_source||r.source===c.subrace_source));
- return row?{subrace:row.name,subrace_id:row.id,subrace_source:row.source||''}:null;
 }
 export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,equipment='',armor='',attacks='',details='overview',catalogs={},calculated={}}){
  const cols=s=>'<div class="columns">'+s+'</div>';
