@@ -156,6 +156,20 @@
       ]
     },
     {
+      "name": "Dragonborn",
+      "source": "PHB",
+      "breath_weapon": {
+        "trait": "Breath Weapon",
+        "id": "race:phb:dragonborn:breath",
+        "tracker_id": "race:phb:dragonborn:breath",
+        "uses": 1,
+        "recharge": "short_rest",
+        "action_type": "action",
+        "mode": "tracked_action",
+        "description": "Soffio draconico PHB 2014: un utilizzo per riposo breve o lungo. Area, tipo di danno e TS dipendono dall'ascendenza draconica. Dragon Fear può spendere lo stesso utilizzo invece di soffiare."
+      }
+    },
+    {
       "name": "Dragonborn (Chromatic)",
       "variant": "chromatic",
       "draconic_ancestries": [
