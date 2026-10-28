@@ -1203,6 +1203,9 @@ function abilityPaymentField(ability,calculated){
  if(!id||cost<=0&&ability.mode!=='toggle')return '';
  const tracker=(calculated.trackers||[]).find(row=>row.id===id&&!row.disabled);
  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ if(ability.infusion_action)return '<p class="magic-ability-payment"><strong>Cariche dell’oggetto</strong> · '+
+   esc(cost)+' · '+esc(remaining)+' disponibili</p>'+
+   '<input type="hidden" data-ability-payment value="'+esc(id)+'">';
  return '<label>Tracker da consumare<select data-ability-payment>'+
   '<option value="'+esc(id)+'">'+esc(tracker?.name||ability.tracker||ability.resource_name||'Tracker associato')+
   ' · '+remaining+' disponibili</option>'+
@@ -1819,6 +1822,14 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      String(row.id||row.ability_id||row.name)===requested)||
     (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
    if(!currentAbility)throw Error('Capacità non più disponibile.');
+   if(currentAbility.infusion_action){
+     const liveId=requested.startsWith('activated:')?requested.slice('activated:'.length):requested;
+     const active=abilitiesForCreature(current,state.abilityCatalog||[],fresh)
+       .find(row=>row.infusion_action&&row.id===liveId);
+     if(!active||active.tracker_id!==currentAbility.tracker_id||
+        Number(active.resource_cost)!==Number(currentAbility.cost??currentAbility.resource_cost??0))
+       throw Error('La capacità dell’oggetto non è più disponibile.');
+   }
    const liveCompanion=companion?await companionFeatureChoices(current,fresh,
      currentAbility.origin_id||currentAbility.feature_id||''):null;
    if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
@@ -1841,6 +1852,8 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
+   if(currentAbility.infusion_action&&cost>0&&(!spend||choice!==currentAbility.tracker_id))
+     throw Error('La capacità richiede una carica del suo oggetto.');
    const mode=currentAbility.mode||'';
    const mandatory=['save_area','choice_area','temporary_defense','temporary_flight','temporary_condition','targeted_save_damage','tracked_action'].includes(mode);
    if(mandatory&&(!spend||choice!==currentAbility.tracker_id||cost!==1))
@@ -2935,10 +2948,24 @@ function infusionPanel(c,calculated){
  if(!caps.level)return "";
  const trait=infusionGrantingTrait(c,calculated.features||[]);
  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
+ const itemPowers=abilitiesForCreature(c,state.abilityCatalog||[],calculated).filter(row=>row.infusion_action);
+ const actionNames={reaction:'Reazione',bonus:'Azione bonus',action:'Azione',contextual:'Secondo il privilegio'};
  const active=(c.inventory||[]).filter(item=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
  const summary='<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+caps.known+
    '</strong><span>Applicate '+active.length+' / '+caps.active+'</span><span class="power-selection-rest">Riposo lungo</span></div>';
  const levels=[...new Set(known.map(row=>Math.max(2,Number(row.min_level)||2)))].sort((a,b)=>a-b);
+ const itemActions=itemPowers.map(power=>{
+   const tracker=(calculated.trackers||[]).find(row=>row.id===power.tracker_id);
+   const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+   const detail=(actionNames[power.action_type]||power.action_type)+
+     (power.resource_cost?' · '+power.resource_cost+' carica · '+remaining+' disponibili':'');
+   return '<div class="play-resource-power-row infusion-power-row" data-infusion-action="'+esc(power.id)+'">'+
+     '<span class="play-resource-power-open"><strong>'+esc(power.feature_name||'Oggetto')+' · '+esc(power.name)+'</strong>'+
+     '<small>'+esc(detail)+'</small></span>'+
+     '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="activated:'+esc(power.id)+'"'+
+     (power.resource_cost&&remaining<power.resource_cost?' disabled':'')+
+     ' aria-label="Usa '+esc(power.name)+'">Usa</button></div>';
+  }).join('');
  const learned=levels.map(level=>'<section class="infusion-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div>'+
    known.map((entry,index)=>({entry,index})).filter(({entry})=>Math.max(2,Number(entry.min_level)||2)===level).map(({entry,index})=>{
      const applied=active.filter(item=>item.infusion?.id===entry.id&&
@@ -2951,6 +2978,7 @@ function infusionPanel(c,calculated){
    }).join('')+'</section>').join('')||'<p class="hint">Nessuna infusione conosciuta.</p>';
  return panel('Infusioni',summary+
    (!trait?'<p class="warning">Il tratto Infuse Item non è disponibile o è disattivato.</p>':learned)+
+   (itemActions?'<section class="infusion-item-actions"><h3>Capacità degli oggetti infusi</h3>'+itemActions+'</section>':'')+
    (known.length>caps.known?'<p class="warning">Infusioni conosciute oltre il massimo: '+known.length+' / '+caps.known+'.</p>':'')+
    (!definitions.length?'<p class="warning">Indice delle infusioni non caricato.</p>':''));
 }
