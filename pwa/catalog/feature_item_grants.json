@@ -69,7 +69,83 @@
           "description": "Cannone arcano: protettore (azione bonus per attivarlo)."
         }
       ],
-      "replace_existing": true
+      "replace_existing": true,
+      "allow_duplicate_choices": true,
+      "max_owned_by_level": [
+        {
+          "min_level": 15,
+          "max_owned": 2
+        }
+      ],
+      "item_stats": {
+        "armor_class": 18,
+        "hit_points": "5 * artificer_level",
+        "damage_immunities": [
+          "poison",
+          "psychic"
+        ],
+        "duration": "1 hour",
+        "movement_feet": 15,
+        "activation_range_feet": 60
+      },
+      "powers": {
+        "flamethrower": {
+          "id": "flamethrower",
+          "name": "Flamethrower",
+          "mode": "save_area",
+          "action_type": "bonus",
+          "area_shape": "cone",
+          "area_length_feet": 15,
+          "save_ability": "dex",
+          "damage": "2d8",
+          "damage_type": "fire",
+          "extra_damage_at_level": [
+            {
+              "level": 9,
+              "dice": "1d8"
+            }
+          ],
+          "half_on_save": true,
+          "origin": "cannon",
+          "description": "Cono di 15 ft a partire dal cannone; TS Des, metà danni se superato. Gli oggetti infiammabili non indossati o trasportati prendono fuoco."
+        },
+        "force-ballista": {
+          "id": "force-ballista",
+          "name": "Force Ballista",
+          "mode": "spell_attack",
+          "action_type": "bonus",
+          "range_feet": 120,
+          "casting_ability": "int",
+          "damage": "2d8",
+          "damage_type": "force",
+          "extra_damage_at_level": [
+            {
+              "level": 9,
+              "dice": "1d8"
+            }
+          ],
+          "on_hit_effects": [
+            {
+              "operation": "push",
+              "distance_feet": 5,
+              "description": "Spinge il bersaglio di 5 ft lontano dal cannone."
+            }
+          ],
+          "origin": "cannon",
+          "description": "Attacco a distanza con incantesimo dalla posizione del cannone, fino a 120 ft."
+        },
+        "protector": {
+          "id": "protector",
+          "name": "Protector",
+          "mode": "temporary_hp_area",
+          "action_type": "bonus",
+          "radius_feet": 10,
+          "temp_hp": "1d8 + int_mod",
+          "minimum_modifier": 1,
+          "origin": "cannon",
+          "description": "Il cannone e le creature scelte entro 10 ft dal cannone ottengono PF temporanei; si usa il valore più alto, non si sommano."
+        }
+      }
     },
     {
       "id": "artificer-right-tool",
