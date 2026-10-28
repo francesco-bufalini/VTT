@@ -58,8 +58,10 @@ try{
    if(key==='magic'){
     const classSource=page.locator('#sheet-play-view .play-magic-class-card:not(.play-magic-granted-card)').first();
     const slotLabel=classSource.locator('.play-card-head .play-magic-source-resources');
-    assert.equal((await slotLabel.textContent()).trim(),'Slot',
-      'The visible mobile class heading contains only Slot, without per-level counters');
+    assert.equal((await slotLabel.locator('.play-magic-source-resource').textContent()).trim(),'Slot',
+      'Class spellcasting header exposes one Slot label, with the rest interval separately');
+    assert.match(await slotLabel.textContent(),/Riposo lungo/,
+      'The current power source documents when spell preparation can change');
     assert.equal(await slotLabel.locator('.play-magic-source-resource').count(),1,
       'All spell slot levels share one header label');
     const grantedCard=page.locator('#sheet-play-view .play-magic-granted-card[data-magic-origin-tracker="focus"]');
