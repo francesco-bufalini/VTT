@@ -2478,7 +2478,13 @@ function mountTraitBenefitDialog(){
  const formSelect=(label,name,options)=>'<label>'+esc(label)+'<select name="'+name+'">'+optionList(options)+'</select></label>';
  const formInput=(label,name,placeholder='',type='text')=>'<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" placeholder="'+esc(placeholder)+'" required></label>';
  const kinds=BENEFIT_TYPES,draftKind=state.traitPopupDraftKind||'bonus',draftTarget=state.traitPopupDraftTarget||'';
- const targets=[...BONUS_TARGETS,['attack_roll','Tiro per colpire'],['damage_roll','Tiri di danno'],['any_d20','Qualunque d20']];
+ const featureRollOptions=(benefitProjection.activatable_abilities||[])
+   .filter(row=>featureRollTarget(row)).map(row=>[featureRollTarget(row),'Tiro capacità · '+row.name]);
+ const featureRollSeen=new Set();
+ const featureRollTargets=featureRollOptions.filter(([id])=>{
+   if(featureRollSeen.has(id))return false;featureRollSeen.add(id);return true;
+ });
+ const targets=[...BONUS_TARGETS,...featureRollTargets,['attack_roll','Tiro per colpire'],['damage_roll','Tiri di danno'],['any_d20','Qualunque d20']];
  const diceTargets=[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']];
  for(const choices of [targets,diceTargets])if(draftTarget&&!choices.some(([id])=>id===draftTarget))
    choices.unshift([draftTarget,'Questo tiro · '+draftTarget]);
@@ -2530,7 +2536,9 @@ function mountTraitBenefitDialog(){
   ['effect_extensions',formSelect('Effetto modificato','target_kind',EXTENSION_TARGETS).replace('name="target_kind"','name="target_kind" data-extension-target-kind')+
      '<div data-extension-target-spell>'+
        formInput('Nome incantesimo o capacità','target_name','Es. Eldritch Blast, Bardic Inspiration')+
-       '<label>ID del bersaglio (facoltativo)<input name="target_id" placeholder="ID del catalogo"></label></div>'+
+       '<label>ID del bersaglio (facoltativo)<input name="target_id" list="trait-feature-roll-ids" placeholder="ID del catalogo"></label>'+
+       '<datalist id="trait-feature-roll-ids">'+featureRollOptions.map(([id,label])=>
+         '<option value="'+esc(id.slice('feature_roll:'.length))+'" label="'+esc(label)+'"></option>').join('')+'</datalist></div>'+
      '<div data-extension-target-item hidden>'+
        formSelect('Copia dell’oggetto','target_item_index',(record.inventory||[])
          .map((item,index)=>[index,(item.name||item.id||'Oggetto')+' · copia '+(index+1)]))+
