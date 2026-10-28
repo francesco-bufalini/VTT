@@ -135,7 +135,7 @@ export function addBenefitPatch(record,trait,kind,values={},id){
   const diceMatch=expression.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
   if(diceMatch&&Number(diceMatch[1])<=100){
    const rollable=['ability_check','saving_throw','attack_roll','damage_roll','any_d20','initiative','spell_attack'].includes(target)||
-     /^(ability_check:|skill:|save:|attack_hit:|attack_damage:|casting_hit:)/.test(target);
+     /^(ability_check:|skill:|save:|attack_hit:|attack_damage:|casting_hit:|feature_roll:)/.test(target);
    if(rollable){
     field='dice_bonuses';row={...common,target,dice:expression};
     const tracker=String(values.tracker_id||'').trim(),cost=Number(values.tracker_cost||1);
