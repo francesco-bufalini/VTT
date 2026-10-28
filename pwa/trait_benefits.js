@@ -254,7 +254,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(!ids.has(owner))continue;
   const mode=rule.bonus.proficiency_mode||'';
   const value=mode==='tool_expertise'?'Competenza ×2':
-   mode==='favored_terrain_expertise'?'Competenza ×2':'½ competenza (arrotondata per difetto)';
+   mode==='favored_terrain_expertise'?'Competenza ×2':
+   mode==='untrained_half_physical'?'½ competenza (arrotondata per eccesso)':'½ competenza (arrotondata per difetto)';
   add('bonus','Bonus applicabili al tiro',rule.bonus.name||feature.name,
    value+' · '+String(rule.bonus.condition_label||'Applica quando previsto dal privilegio'),
    'passive_class:'+rule.id);
