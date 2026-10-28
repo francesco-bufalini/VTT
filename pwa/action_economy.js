@@ -780,7 +780,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // Typed racial alternatives belong to Actions as well as the source trait.
  // Their use button re-enters the shared ability payment/effect pipeline;
  // Hide also exposes the ordinary Stealth check without inventing a new roll.
- for(const row of classAbilities.filter(row=>row.action_ref)){
+ for(const row of classAbilities.filter(row=>row.action_ref||
+   String(row.id||'').startsWith('activated:')&&row.time==='reaction')){
    if(specials.some(item=>item.id===row.id))continue;
    specials.push({...row,
      ...(row.action_ref==='hide'?{skill_ids:['stealth']}:{}),
