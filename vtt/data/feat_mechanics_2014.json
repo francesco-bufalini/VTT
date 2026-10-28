@@ -144,6 +144,53 @@
           "condition_label": "Solo ai danni di un attacco in mischia come azione bonus dopo Scattare, con almeno 10 ft di movimento rettilineo immediatamente prima"
         }
       ]
+    },
+    {
+      "name": "Shield Master",
+      "source": "PHB",
+      "roll_bonuses": [
+        {
+          "target": "save:dex",
+          "flat_bonus": "equipped_shield_ac",
+          "condition_label": "Solo se l'effetto nocivo bersaglia soltanto te, hai uno scudo equipaggiato e non sei incapacitato"
+        }
+      ]
+    },
+    {
+      "name": "Great Weapon Master",
+      "source": "PHB",
+      "roll_bonuses": [
+        {
+          "target": "attack_roll",
+          "flat_bonus": -5,
+          "attack_heavy": true,
+          "condition_label": "Facoltativo: prima del tiro per colpire in mischia con arma pesante competente; se scegli −5, un colpo infligge +10 danni"
+        },
+        {
+          "target": "damage_roll",
+          "flat_bonus": 10,
+          "attack_heavy": true,
+          "condition_label": "Solo quando hai scelto −5 al tiro per colpire dello stesso attacco con arma pesante"
+        }
+      ]
+    },
+    {
+      "name": "Sharpshooter",
+      "source": "PHB",
+      "roll_bonuses": [
+        {
+          "target": "attack_roll",
+          "flat_bonus": -5,
+          "attack_ranged_weapon": true,
+          "condition_label": "Facoltativo: prima del tiro per colpire con arma a distanza competente; se scegli −5, un colpo infligge +10 danni"
+        },
+        {
+          "target": "damage_roll",
+          "flat_bonus": 10,
+          "attack_ranged_weapon": true,
+          "condition_label": "Solo quando hai scelto −5 al tiro per colpire dello stesso attacco con arma a distanza"
+        }
+      ]
     }
   ]
 }
