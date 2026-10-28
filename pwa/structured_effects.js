@@ -403,12 +403,17 @@ export function collectStructuredFeatures(record,catalogs={}){
     };
     if(record.species){
       const full=record.subrace&&lookup("races",record.species+" ("+record.subrace+")",record.subrace_source);
+      const ftdDragonborn=match(record.species,"Dragonborn")&&match(record.species_source,"PHB")&&
+        match(record.subrace_source,"FTD")&&["chromatic","metallic","gem"].includes(norm(record.subrace));
+      // Fizban's dragonborn are complete race replacements. A flattened 5etools
+      // entry must own its traits as the chosen FTD subrace, never the PHB parent.
       const race=full||lookup("races",record.species,record.species_source);
-      const origin="species|"+(record.species_id||norm(record.species))+"|"+norm(record.species_source);
-      array(race?.entries).forEach((row,i)=>{
+      const origin=ftdDragonborn?"subrace|ftd|"+norm(record.subrace):
+        "species|"+(record.species_id||norm(record.species))+"|"+norm(record.species_source);
+      for(const [i,row] of array(ftdDragonborn?full?.entries:race?.entries).entries()){
         if(row&&typeof row==="object")append({...row,name:row.name||"Altri tratti · "+(i+1)},origin,
-          Number(row.level||1));
-      });
+          Number(row.level||row.requirements?.min_level||1));
+      }
     }
     for(const selection of effectiveBackgrounds(record)){
       const background=lookup("backgrounds",selection.name,selection.source);

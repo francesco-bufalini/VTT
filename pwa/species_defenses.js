@@ -10,6 +10,11 @@ const effectKey=entry=>String(entry.rank)+':'+norm(entry.key);
 const choiceKey=choice=>String(choice.rank)+':'+norm(choice.trait);
 
 export function selectedSpeciesDefenseRules(record={},catalog={}){
+ // Fizban variants replace the entire PHB dragonborn ancestry. Their resistance
+ // is derived from the single ancestry selection by dragonbornFtdResistances.
+ if((/^dragonborn \((chromatic|metallic|gem)\)$/i.test(record.species||'')&&same(record.species_source,'FTD'))||
+   (same(record.species,'Dragonborn')&&same(record.species_source,'PHB')&&same(record.subrace_source,'FTD')&&
+    ['chromatic','metallic','gem'].includes(norm(record.subrace))))return [];
  if(!record.species||!record.species_source)return [];
  const available=rows(catalog.races).filter(row=>!same(row.source,'XPHB'));
  // Never trust a stale ID alone: changing species or editions invalidates it.

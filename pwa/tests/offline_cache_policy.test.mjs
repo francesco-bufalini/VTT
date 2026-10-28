@@ -67,6 +67,7 @@ test("Android offline installation includes required code, icon sprites and mini
   worker.requests.length = 0;
   const expected = [
     "/", "/index.html", "/main.js", "/ui.js", "/styles.css",
+    "/dragonborn_ftd.js", "/ability_areas.js",
     "/mobile_metal_theme.css", "/catalog/class_mechanics.json",
     "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
     "/catalog/miniatures.json", "/icons/action_controls.svg",

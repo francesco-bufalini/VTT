@@ -1,5 +1,6 @@
 // Source-qualified racial powers. No ability is inferred from free-form prose.
 import {canReselectPower,selectionRestLabel} from './trait_state_rules.js';
+import {dragonbornFtdProjection} from './dragonborn_ftd.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const currentLevel=record=>rows(record.classes).length?
@@ -16,7 +17,7 @@ export function racialPowerSubraces(index={}) {
  })));
 }
 export function racialPowerProjection(record={},index={},features=[]) {
- const output={features:[],trackers:[],abilities:[],origin_spells:[],active_forms:[],rest_choices:[],roll_bonuses:[]};
+ const output=dragonbornFtdProjection(record,index,features);
  const race=rows(index.races).find(row=>norm(row.name)===norm(record.species)&&
    norm(row.source)===norm(record.species_source));
  if(!race||record.rules_version==='2024')return output;

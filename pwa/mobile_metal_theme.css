@@ -2401,13 +2401,13 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  box-shadow:inset 0 1px #f2d6ad0a;
  text-align:left;
 }
-.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-condition-key{
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-condition .sheet-roll-bonus-condition-key{
  display:block;
  color:#c8a57c;
  font:700 9px/1.2 system-ui,sans-serif;
  letter-spacing:.12em;
 }
-.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-condition-text{
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-condition .sheet-roll-bonus-condition-text{
  display:block;
  min-width:0;
  color:#e6d6bf;

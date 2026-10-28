@@ -420,7 +420,7 @@ const powerIdentity=power=>{
 // explicitly typed self/toggle powers have reversible sheet state.
 export function persistentBattleAbility(row={}){
  const power=row.power||{},action=row.classAction||{};
- if(action.mode==='trait_state'||['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)||
+ if(power.persistent_key||action.persistent_key||action.mode==='trait_state'||['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)||
    power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape')return true;
  const sources=[power,action],isSelf=field=>['self','actor','owner','caster'].includes(String(field||'').toLowerCase());
  return sources.some(source=>{
@@ -784,7 +784,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));
    const context=bind(powerDetail?.key||'battle-power:'+id,detail);
    const persistent=persistentBattleAbility(row);
-   const statusKey=power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape'?'wild_shape':action.class_feature_id||'battle:'+String(id);
+   const statusKey=power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape'?'wild_shape':
+     power.persistent_key||action.persistent_key||action.class_feature_id||'battle:'+String(id);
    const active=persistent&&(
     !!c.active_class_features?.[statusKey]||action.mode==='trait_state'&&action.active===true);
    const use=persistent?'Attiva':'Usa';

@@ -13,6 +13,7 @@ import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCount
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
+import {dragonbornFtdResistances} from './dragonborn_ftd.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
@@ -785,6 +786,8 @@ function calculateSheetValues(record={},catalogs={}){
   const features=collectStructuredFeatures(record,catalogs);
   const racialPowers=racialPowerProjection(record,catalogs.speciesPowers||{},features);
   features.push(...racialPowers.features);
+  const dragonbornFlight=racialPowers.abilities.find(power=>power.mode==='temporary_flight'&&
+    record.active_class_features?.[power.persistent_key]?.origin_id===power.persistent_origin_id);
   const celestialForm=racialPowers.active_forms.find(form=>
     record.active_class_features?.[form.active_key]?.spell_id===form.spell_id);
   features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
@@ -792,7 +795,9 @@ function calculateSheetValues(record={},catalogs={}){
   features.push(...supplementalSpeciesSpellFeatures(record,catalogs.spellGrantRules,features));
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const damage_defense_entries=[...arr(record.damage_defense_entries),
-    ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed)];
+    ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed),
+    ...dragonbornFtdResistances(record,catalogs.speciesPowers,features).filter(row=>
+      !suppressed.has(row.benefit_id)&&sourceEnabled(row))];
   const grantingCastingTrait=member=>{
     // Partial/offline catalog tables must not impersonate a real feature grant.
     if(!catalogs.classFeatures)return null;
@@ -982,7 +987,7 @@ function calculateSheetValues(record={},catalogs={}){
       const copiesWalk=raw===true&&key==="fly";
       const base=copiesWalk?resolve("speed",stack):
         Math.max(0,int(typeof raw==="string"?raw.split(" ")[0]:raw));
-      if(key==='fly'&&celestialForm?.fly_equals_walk)
+      if(key==='fly'&&(celestialForm?.fly_equals_walk||dragonbornFlight))
         return Math.max(base,resolve('speed',stack));
       if(key==="fly"&&speciesRule?.flight_no_medium_heavy_armor&&armor&&
         ['MA','HA'].includes(String(armor.type||"").split('|')[0].toUpperCase()))return 0;
@@ -1368,7 +1373,7 @@ function calculateSheetValues(record={},catalogs={}){
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),
       passive_investigation:safe("passive_skill:investigation"),
-      speeds,automatic_hp:automaticHP,hit_dice:dice.available?dice.parts.map(p=>p.count+'d'+p.die+' ('+p.name+')').join(', '):record.hit_dice||'',
+      speeds,hovering:!!dragonbornFlight,automatic_hp:automaticHP,hit_dice:dice.available?dice.parts.map(p=>p.count+'d'+p.die+' ('+p.name+')').join(', '):record.hit_dice||'',
       jumps:{long:Math.max(0,abilities.str.score??0),high:Math.max(0,3+(abilities.str.modifier??0))}},
     spell_slots:slots,pact_slots:{base:Math.max(0,useSaved?int(record.pact_slots_total):progression.pact_total),total:pactTotal,spent:Math.max(0,Math.min(pactTotal,int(record.pact_slots_spent))),
       level:useSaved?int(record.pact_slot_level,1):progression.pact_level},
