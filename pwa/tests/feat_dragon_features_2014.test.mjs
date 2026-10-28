@@ -96,3 +96,21 @@ test('self-centered circular tactical preview selects only targets within thirty
  assert.equal(preview.valid,true);
  assert.deepEqual(preview.affected_ids,['near']);
 });
+
+test('FTD subrace replaces the PHB breath and Dragon Fear spends exactly its PB tracker',()=>{
+ const record={...base(),subrace:'Chromatic',subrace_source:'FTD',
+  origin_draconic_ancestry:{'subrace|ftd|chromatic':'red'}};
+ const details={races:{...originDetails.races,'dragonborn (chromatic)|ftd':{
+  name:'Dragonborn (Chromatic)',source:'FTD',
+  entries:[{name:'Breath Weapon',entries:['Fizban breath.']},
+   {name:'Draconic Ancestry',entries:['Red ancestry.']},
+   {name:'Draconic Resistance',entries:['Fire resistance.']}]}}};
+ const sheet=calculateSheet(record,{...catalogs,originDetails:details});
+ const breath=sheet.racial_abilities.filter(x=>x.name==='Breath Weapon');
+ assert.equal(breath.length,1);
+ assert.equal(breath[0].source,'FTD');
+ assert.equal(sheet.trackers.filter(x=>x.name==='Breath Weapon').length,1);
+ const roar=sheet.feat_actions.find(x=>x.name==='Dragon Fear · Ruggito terrificante');
+ assert.equal(roar?.tracker_id,breath[0].tracker_id);
+ assert.equal(sheet.trackers.find(x=>x.id===roar.tracker_id)?.max,3);
+});
