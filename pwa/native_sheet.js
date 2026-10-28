@@ -8,6 +8,7 @@ import {featOriginLabel,featTraitOriginKey} from './feat_picker.js';
 import {itemKind,resolveOwnedItem,armorDexterityBonus,armorDexterityLimit} from './item_controls.js';
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 import {powerRestSelections,powerRestChoicePatch} from './trait_state_rules.js';
+import {endTemporaryConditionPatch} from './species_powers.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["conditions","Condizioni"]];
@@ -171,6 +172,13 @@ export function recoveryPatch(c,event,trackers,calculated={}){
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
  if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
  Object.assign(patch,powerRestChoicePatch(c,event,calculated));
+ // The user's next turn ends short-lived racial invisibility. A rest also
+ // clears its sheet condition without touching pre-existing invisibility.
+ const temporary=endTemporaryConditionPatch(c);
+ if(Object.keys(temporary).length){
+   if(temporary.conditions)patch.conditions=temporary.conditions;
+   if(event==='turn')patch.active_class_features=temporary.active_class_features;
+ }
  return patch;
 }
 
