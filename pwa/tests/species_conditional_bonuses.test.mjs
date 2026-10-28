@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {selectedRacialBonusSources,racialBonusFeatures,racialBonusEntries,racialBonusTrackers} from '../species_conditional_bonuses.js';
 import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
+import {appendRollBonus} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {rollOptionalDice} from '../sheet_roll_origin.js';
 const rules=JSON.parse(readFileSync(new URL('../catalog/species_conditional_bonuses.json',import.meta.url),'utf8'));
@@ -205,4 +206,15 @@ test('MPMM Harengon Hare-Trigger adds proficiency automatically to initiative',(
   speciesConditionalBonuses:rules,classMechanics:{races:[],subraces:[]}
  });
  assert.equal(disabled.stats.initiative,2);
+});
+
+test('Giff bonus keeps its separate force damage type in roll result parts',()=>{
+ const previous={total:6,notation:'1d8',detail:'Arma · totale 6',
+  parts:[{name:'Arma',notation:'1d8',subtotal:6,rolls:[6]}]};
+ const next=appendRollBonus(previous,{flat_bonus:4,damage_type:'force',
+  origin_name:'Tratto · Astral Spark'},()=>1);
+ assert.equal(next.total,10);
+ assert.equal(next.parts[1].damage_type,'force');
+ assert.match(next.parts[1].name,/Forza/);
+ assert.match(next.detail,/Forza/);
 });
