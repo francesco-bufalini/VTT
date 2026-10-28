@@ -1,6 +1,7 @@
 // Presentation-only attribution for the PWA trait list.
-// Never change the underlying calculated grants: multiple source IDs can
-// describe the same mechanical effect, but that does not make it stack twice.
+// The origin overview keeps its general benefits. Identical benefits already
+// present on a named sibling trait belong only to that specific trait.
+// Calculated grants, source IDs and saved creature data are not rewritten.
 import {traitBenefitGroups} from './trait_benefits.js';
 
 const list=value=>Array.isArray(value)?value:[];
@@ -8,54 +9,44 @@ const overview=row=>/^Descrizione · /.test(String(row?.name||''))&&
   ['razza','background','classi'].includes(row?.category);
 const signature=(type,item)=>JSON.stringify([type,item.label,item.value]);
 
-/**
- * A Panoramica describes its origin. A grant already shown on a concrete
- * sibling trait stays there; otherwise it goes to one dedicated origin-wide
- * benefit card instead of being lost or remaining on Panoramica.
- *
- * The returned benefit groups are used by both the list and the editor.
- * No calculated effects, source IDs or save data are rewritten.
- */
 export function distributeTraitBenefits(traits=[],record={},calculated={}){
- const original=list(traits).filter(row=>!row.virtual_origin_benefits);
- const visible=[...original];
- const byKey=new Map(original.map(row=>
+ // The separate "Benefici generali" card was introduced briefly. Keep its
+ // manually saved grants readable on Panoramica without recreating that card.
+ const rows=list(traits).filter(row=>!row.virtual_origin_benefits);
+ const byKey=new Map(rows.map(row=>
   [row.key,traitBenefitGroups(row,record,calculated)]));
- for(const summary of original.filter(overview)){
-  const siblings=original.filter(row=>row!==summary&&
+ for(const summary of rows.filter(overview)){
+  const siblings=rows.filter(row=>row!==summary&&
    row.category===summary.category&&row.origin_key===summary.origin_key);
   const claimed=new Set(siblings.flatMap(row=>list(byKey.get(row.key))
    .flatMap(group=>list(group.items).map(item=>signature(group.type,item)))));
-  const leftovers=list(byKey.get(summary.key)).map(group=>({
-   ...group,items:group.items.filter(item=>
-    !claimed.has(signature(group.type,item)))
-  })).filter(group=>group.items.length);
-  byKey.set(summary.key,[]);
-  const key='origin-benefits:'+summary.key;
-  // A separate feature identity makes manually added grants and enablement
-  // belong to this card rather than disabling the entire class or species.
-  const general={...summary,key,name:'Benefici generali',
-   entries:'',description_html:'',rank:1,action_type:'',resource_name:'',
-   feature_origin:'',proficiency_origin:'',virtual_origin_benefits:true};
-  const seen=new Set(leftovers.flatMap(group=>
-   group.items.map(item=>signature(group.type,item))));
-  for(const group of traitBenefitGroups(general,record,calculated)){
-   let target=leftovers.find(row=>row.type===group.type);
-   if(!target){target={...group,items:[]};leftovers.push(target);}
-   for(const item of group.items){
-    const id=signature(group.type,item);
-    if(!seen.has(id)){target.items.push(item);seen.add(id);}
-   }
+  const legacyKey='origin-benefits:'+summary.key;
+  const legacy={...summary,key:legacyKey,name:'Benefici generali',
+   rank:1,feature_origin:'',proficiency_origin:'',
+   action_type:'',resource_name:''};
+  // The previous version saved manual benefits using the generated card's
+  // feature:trait:<key> identity; retain them without migrating save data.
+  const groups=[...list(byKey.get(summary.key)),
+   ...traitBenefitGroups(legacy,record,calculated)];
+  const hidden=new Set([
+   ...list(record.trait_benefit_removed?.[summary.key]),
+   ...list(record.trait_benefit_removed?.[legacyKey])
+  ]);
+  const seen=new Set();
+  const filtered=[];
+  for(const group of groups){
+   const items=list(group.items).filter(item=>{
+    const sig=signature(group.type,item);
+    if(claimed.has(sig)||seen.has(sig)||hidden.has(item.id))return false;
+    seen.add(sig);
+    return true;
+   });
+   if(!items.length)continue;
+   const existing=filtered.find(row=>row.type===group.type);
+   if(existing)existing.items.push(...items);
+   else filtered.push({...group,items});
   }
-  const hidden=new Set(list(record.trait_benefit_removed?.[key]));
-  if(!leftovers.length&&!hidden.size)continue;
-  const groups=leftovers.map(group=>({
-   ...group,items:group.items.filter(item=>!hidden.has(item.id))
-  })).filter(group=>group.items.length);
-  const last=visible.findLastIndex(row=>row.category===summary.category&&
-   row.origin_key===summary.origin_key);
-  visible.splice(last+1,0,general);
-  byKey.set(key,groups);
+  byKey.set(summary.key,filtered);
  }
- return {rows:visible,byKey};
+ return {rows,byKey};
 }

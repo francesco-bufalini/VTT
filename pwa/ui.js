@@ -2495,14 +2495,9 @@ async function traitsView(c){
   const benefitCount=(benefitsByTrait.get(trait.key)||[])
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
-  const isOverview=/^Descrizione · /.test(trait.name)&&
-   ['razza','background','classi'].includes(trait.category);
-  // Panoramica is prose-only: its grants have been assigned to specific traits
-  // or to the dedicated general-benefits card.
-  const benefitButton=isOverview?
-   '<span class="trait-benefits-trigger" aria-hidden="true" style="visibility:hidden"></span>':
-   '<button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
-    (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>';
+  // Panoramica retains general origin benefits in the same editable popup.
+  const benefitButton='<button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
+   (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>';
   return '<div class="trait-row'+(active?'':' trait-row--inactive')+'" data-trait-enabled="'+String(active)+'">'+benefitButton+
     '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-key="'+esc(trait.key)+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'">'+
     '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+'</span>'+
@@ -2582,7 +2577,9 @@ function mountTraitBenefitDialog(){
  const attunedItem=isOwnedItem&&trait.item_requires_attunement;
  const itemQuantity=isOwnedItem?(attunedItem?trait.item_active_quantity:
    Math.max(1,ownedCopies.reduce((total,item)=>total+Math.max(0,Number(item.quantity??1)||0),0))):1;
- const hidden=traitRemovedIds(record,trait);
+ const hidden=[...new Set([...traitRemovedIds(record,trait),
+  ...(/^Descrizione · /.test(trait.name)?
+   (record.trait_benefit_removed?.['origin-benefits:'+trait.key]||[]):[])])];
  const ownedChoices=choicesForTrait(trait,record,state.calculated?.pending_choices||[]);
  const optionList=(options,selected='')=>options.map(([value,label])=>
   '<option value="'+esc(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join('');
@@ -2704,12 +2701,7 @@ function mountTraitBenefitDialog(){
    (attunedItem||itemQuantity>1?'<span class="trait-item-quantity">×'+itemQuantity+'</span>':'')+'</h2>'+
   dialogCloseButton('trait-benefits-close','Chiudi','trait-benefits-close')+'</header>'+
   '<div class="trait-benefits-dialog-body">'+
-   (trait.virtual_origin_benefits?
-    '<div class="trait-activation-control trait-automatic-item"><div class="trait-activation-copy">'+
-    '<span class="trait-activation-heading">Benefici dell’origine</span>'+
-    '<span class="trait-activation-description">Dipendono dalla relativa specie, classe o background.</span>'+
-    '</div></div>':
-   passiveItem?'<div class="trait-activation-control trait-automatic-item">'+
+   (passiveItem?'<div class="trait-activation-control trait-automatic-item">'+
      '<div class="trait-activation-copy"><span class="trait-activation-heading">Benefici automatici</span>'+
       '<span class="trait-activation-description">'+(attunedItem?
        (itemQuantity?'Benefici applicati a '+itemQuantity+' copie in sintonia':'Nessuna copia in sintonia'):
@@ -7734,7 +7726,14 @@ async function handleAction(target){
   if(act==='trait-benefits-restore'){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     if(!trait)throw Error('Tratto non disponibile');
-    await patch(restoreBenefitPatch(state.editor.read(),trait));
+    const record=state.editor.read();
+    const restored=restoreBenefitPatch(record,trait);
+    if(/^Descrizione · /.test(trait.name)){
+      const removed={...restored.trait_benefit_removed};
+      delete removed['origin-benefits:'+trait.key];
+      restored.trait_benefit_removed=removed;
+    }
+    await patch(restored);
     await state.editor.flush();
     state.traitPopupConfirm='';
     await render();return;
