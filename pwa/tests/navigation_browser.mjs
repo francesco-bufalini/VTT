@@ -99,7 +99,7 @@ try{
    const c=(await listCreatures())[0].creature;
    return !!c.default_miniature_id&&c.default_miniature_id===c.current_miniature_id;
  }), 'New creature starts with a saved base miniature');
- await page.locator('[data-sheet-context="identity"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
+ await page.locator('[data-sheet-context="identity"]').click();await page.locator('#sheet-context-dialog [data-identity-value="names"]').first().fill('Lyria · Sentinella delle stelle');
  // Changing destination immediately must flush the focused name field.
  await sheet('battle');
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
@@ -159,7 +159,7 @@ try{
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
- assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').textContent(),'Competenze');
+ assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').count(),0,'No duplicate Competenze heading');
  assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0,'Info contains no creature icon');
  assert.equal(await page.locator('#sheet-play-view .play-info-traits > h2.play-section-divider').textContent(),'Tratti',
@@ -172,8 +172,9 @@ try{
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
  assert(await page.locator('#sheet-play-view [data-play-search]').isVisible());
- assert.equal(await page.locator('#sheet-play-view [data-sheet-context="tools"] .play-row-copy strong').first().innerText(),'Altre competenze');
- await page.locator('#sheet-play-view [data-sheet-context="tools"]').first().click();
+ await sheet('battle');
+ assert.equal(await page.locator('#sheet-play-view [data-act="battle-competences-open"]').innerText().then(s=>s.includes('Competenze')),true);
+ await page.locator('#sheet-play-view [data-act="battle-competences-open"]').click();
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Strumenti/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armature/);
