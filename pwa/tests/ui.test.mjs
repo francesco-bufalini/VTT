@@ -1075,14 +1075,12 @@ test("scroll creation selects a spell and casting level without opening item cat
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"]'));
   if(document.querySelector('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
     click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
-  await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query')).catch(error=>{
-    const tab=document.querySelector('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
-    throw Error(error.message+' — scrolls='+tab?.getAttribute('aria-pressed')+
-      ' — inventory='+document.querySelector('#sheet-play-view')?.textContent.slice(0,750));
-  });
+  await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="scroll-create"]'));
+  click('#sheet-play-view [data-sheet-context="scroll-create"]');
+  await until(()=>document.querySelector('#sheet-context-dialog #scroll-spell-query'));
   assert.equal(document.querySelector('#sheet-play-view [data-act="item-catalog"]'),null);
-  // The scroll creator is now an inline panel inside the Pergamene section.
-  await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
+  assert.ok(document.querySelector('#sheet-context-dialog #scroll-spell-query'));
+  // In the native play sheet the creator is a contextual popup.
   const search=document.querySelector('#scroll-spell-query');
   search.value="shi";
   search.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
@@ -1091,20 +1089,21 @@ test("scroll creation selects a spell and casting level without opening item cat
   assert.equal(document.querySelector('#scroll-spell-level').options[0].value,'1');
   assert.ok([...document.querySelector('#scroll-spell-level').options].some(opt=>opt.value==='3'));
   change('#scroll-spell-level','3');
-  click('#sheet-play-view .inventory-scroll-create [data-act="scroll-spell-add"]');
+  click('#sheet-context-dialog [data-act="scroll-spell-add"]');
   await until(async()=>{
     const rows=(await listCreatures()).find(row=>row.creature.name==="Scriba degli incantesimi")?.creature.inventory||[];
     return rows.length===1&&rows[0].spell_name==="Shield"&&rows[0].spell_level===3;
   });
   assert.ok(document.querySelector('#sheet-play-view [data-sheet-context="item:0"]'));
   assert.equal(document.querySelector('#app').dataset.page,'library');
-  await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
+  click('#sheet-play-view [data-sheet-context="scroll-create"]');
+  await until(()=>document.querySelector('#sheet-context-dialog #scroll-spell-query'));
   const again=document.querySelector('#scroll-spell-query');
   again.value="shield";
   again.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
   change('#scroll-spell-select','phb2014_shield');
   change('#scroll-spell-level','3');
-  click('#sheet-play-view .inventory-scroll-create [data-act="scroll-spell-add"]');
+  click('#sheet-context-dialog [data-act="scroll-spell-add"]');
   await until(async()=>{
     const rows=(await listCreatures()).find(row=>row.creature.name==="Scriba degli incantesimi")?.creature.inventory||[];
     return rows.length===1&&rows[0].quantity===2;
