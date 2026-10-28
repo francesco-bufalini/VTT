@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {battleResourcePowers,persistentBattleAbility,spellCastingTimeLabel} from '../sheet_rules_view.js';
-import {actionEntries as project,battleActionPanels,groupActionEntries,spellActionEntries,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants,actionGlyph} from '../action_economy.js';
+import {actionEntries as project,battleActionPanels,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants,actionGlyph} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const classFeatures=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
@@ -182,46 +182,17 @@ test('spell casting times show structured values for tracker spells instead of p
  assert.equal(spellCastingTimeLabel({}), '');
 });
 
-test('combat spells are sorted by level within action, bonus and reaction and open Magia dialog',()=>{
- const spells=[
-  {id:'action3',name:'Tempesta',level:3,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 3']},
-  {id:'action0',name:'Luce',level:0,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 0']},
-  {id:'action1',name:'Scudo arcano',level:1,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 1']},
-  {id:'bonus2',name:'Passo fatato',level:2,time:[{number:1,unit:'bonus'}],entries:['SECRET DESCRIPTION BONUS']},
-  {id:'reaction1',name:'Scudo',level:1,time:[{number:1,unit:'reaction'}],entries:['SECRET DESCRIPTION REACTION']},
-  {id:'slow',name:'Rituale lento',level:4,time:[{number:1,unit:'minute'}],entries:['SECRET DESCRIPTION SLOW']},
-  {id:'long',name:'Lancio complesso',level:5,time:[{number:2,unit:'action'}],entries:['SECRET DESCRIPTION LONG']}
- ];
- const record={rules_version:'2014',prepared_spells:spells.slice(0,3)};
- const calc={casting_classes:[],origin_spells:[
-  {id:'spellbonus',spell_id:'bonus2',payment_mode:'tracker',tracker_id:'mana'},
-  {id:'spellreact',spell_id:'reaction1',payment_mode:'free'},
-  {id:'spellslow',spell_id:'slow',payment_mode:'free'},
-  {id:'spelllong',spell_id:'long',payment_mode:'free'}
- ],trackers:[{id:'mana',name:'Mana',max:2,spent:0}]};
- const rows=spellActionEntries(record,calc,spells);
- const entries=time=>rows.filter(row=>row.time===time)
-  .sort((a,b)=>(a.level??99)-(b.level??99));
- assert.deepEqual(entries('action').map(row=>row.spell_id),['action0','action1','action3']);
- assert.deepEqual(entries('bonus').map(row=>row.spell_id),['bonus2']);
- assert.deepEqual(entries('reaction').map(row=>row.spell_id),['reaction1']);
- assert(!rows.some(row=>['slow','long'].includes(row.spell_id)));
- assert.equal(entries('bonus')[0].grant_id,'spellbonus');
- assert.equal(entries('reaction')[0].grant_id,'spellreact');
- assert.equal(entries('bonus')[0].spell_mode,'tracker');
- assert.equal(entries('reaction')[0].spell_mode,'free');
- assert.equal(battleActionPanels(record,calc,spells,[],[]).spells,'',
-  'Spellcasting has moved entirely to Powers');
-
+test('battle keeps spellcasting in Powers rather than rebuilding a second timed spell list',()=>{
+ const spell={id:'reaction',name:'Scudo',level:1,time:[{number:1,unit:'reaction'}]};
+ const record={rules_version:'2014',prepared_spells:[spell]};
+ const panels=battleActionPanels(record,{casting_classes:[],origin_spells:[],trackers:[]},[spell],[],[]);
+ assert.equal(panels.spells,'');
+ assert.equal(spellCastingTimeLabel(spell),'Reazione');
 });
 
-test('catalog casting time wins over stale saved spell data (Absorb Elements is a reaction)',()=>{
- const spell={id:'phb2014_absorb_elements',name:'Absorb Elements',level:1,time:[{number:1,unit:'reaction'}]};
- const creature={prepared_spells:[{id:spell.id,name:spell.name,level:1,time:[{number:1,unit:'action'}]}]};
- const rows=spellActionEntries(creature,{casting_classes:[],origin_spells:[]},[spell]);
- assert(!rows.some(row=>row.time==='action'&&row.spell_id===spell.id));
- const reaction=rows.find(row=>row.time==='reaction'&&row.spell_id===spell.id);
- assert(reaction,'Absorb Elements must still use its current catalog time in Powers');
+test('structured spell casting time retains reaction metadata',()=>{
+ const definition={id:'phb2014_absorb_elements',name:'Absorb Elements',level:1,time:[{number:1,unit:'reaction'}]};
+ assert.equal(spellCastingTimeLabel(definition),'Reazione');
 });
 
 test('unified battle shows every canonical skill and pure ability check grouped by ability',()=>{

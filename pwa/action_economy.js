@@ -1,6 +1,5 @@
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
-import {sessionSpellEntries} from './spell_selection.js';
 import {SKILLS} from './sheet_rules.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
@@ -273,59 +272,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 export function nativeClassFeatureActions(record={},calculated={}){
  return [...classFeatureEntries(record,calculated),...arr(calculated.feat_actions),...arr(calculated.state_actions)].map(row=>({...row,description:details(row.description)}));
 }
-export function spellActionEntries(record={},calculated={},spells=[]){
- const output=[];
- const context={...calculated,casting_classes:arr(calculated.casting_classes),origin_spells:arr(calculated.origin_spells)};
- for(const spell of sessionSpellEntries(record,context,spells)){
-  if(spell.internal_grant||spell.disabled)continue;
-  const grant=context.origin_spells.find(row=>String(row.id)===String(spell.grant_id));
-  if(grant?.disabled)continue;
-  const mode=grant?(grant.payment_mode||(grant.tracker_id?'tracker':'free')):'class';
-  const tracker_id=mode==='tracker'?String(grant.tracker_id||''):'';
-  const tracker=arr(calculated.trackers).find(row=>String(row.id)===tracker_id);
-  const prefix=spell.casting_label&&spell.casting_label!=='Scheda'?spell.casting_label+' · ':'';
-  const resource=mode==='tracker'?tracker?.name||tracker_id:mode==='free'?'Senza consumo · '+spell.casting_label:
-   prefix+(Number(spell.level||0)===0?'Trucchetto · nessuno slot':'Slot · liv. '+spell.level+'+');
-  // A sheet can retain a stale serialized time; the current catalogue is authoritative.
-  const definition=spells.find(row=>row.id===spell.id);
-  const published=definition?.time??definition?.casting_time;
-  const values=specified(published)?published:(spell.time??spell.casting_time??[]);
-  const seen=new Set();
-  for(const raw of Array.isArray(values)?values:[values]){
-   const unit=String(typeof raw==='object'?raw?.unit:raw).trim().toLowerCase().replaceAll('_',' ').replace(/^1\s+/,'');
-   if(typeof raw==='object'&&Number(raw?.number??1)!==1)continue;
-   if(!['action','bonus','bonus action','reaction','azione','azione bonus','reazione'].includes(unit))continue;
-   const time=timing(unit);if(seen.has(time))continue;seen.add(time);
-   output.push({id:spell.id,spell_id:spell.id,name:spell.name,time,type:'Incantesimo',
-    level:Number.isFinite(Number(spell.level))?Number(spell.level):null,
-    origin:'general',casting_class:spell.casting_class||'',grant_id:spell.grant_id||'',
-    spell_mode:mode,tracker_id,tracker:resource});
-  }
- }
- return output;
-}
-// One row = one action and its resource. The rule's type remains in the
-// structured data but is not used as a repeated visual heading.
 function diceGlyph(){return '<span class="action-dice" aria-hidden="true"></span>';}
-export function groupActionEntries(entries){
- const parents=new Map(entries.filter(row=>['attack','two_weapon'].includes(row.id)).map(row=>[row.id,{...row,children:[]}]));
- const roots=[];const groups=new Map();
- for(const raw of entries){
-  const row=parents.get(raw.id)||raw;
-  if(parents.has(row.parent_action)){parents.get(row.parent_action).children.push(row);continue;}
-  let group='';
-  if(row.time==='movement'||['dash','disengage','climb_large','overrun','tumble','escape_grapple'].includes(row.id))group='movement_options_'+row.time;
-  else if(row.time==='action'&&row.skill_ids?.length&&!row.parent_action)group='ability_checks';
-  if(!group){roots.push(row);continue;}
-  if(!groups.has(group)){
-   const moving=group.startsWith('movement_options_');
-   const parent={id:group,name:moving?'Spostamento':'Prove di abilità',time:row.time,origin:'general',children:[],children_heading:moving?'Opzioni di movimento':'Prove che richiedono un’azione'};
-   roots.push(parent);groups.set(group,parent);
-  }
-  groups.get(group).children.push(row);
- }
- return roots;
-}
 // Compact battle sections use the same action projection as the Actions tab.
 // Keep attack buttons separate from description disclosures to avoid accidental dice rolls.
 const BATTLE_TIMINGS=[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Azione gratuita'],['movement','Movimento']];
