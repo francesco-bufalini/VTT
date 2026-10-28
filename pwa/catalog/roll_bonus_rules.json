@@ -20,6 +20,89 @@
         "ability_modifier": "int",
         "minimum": 1
       }
+    },
+    {
+      "id": "artificer_tool_expertise",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "feature_name": "Tool Expertise",
+      "passive": true,
+      "bonus": {
+        "name": "Tool Expertise",
+        "targets": [
+          "ability_check"
+        ],
+        "proficiency_mode": "tool_expertise",
+        "condition_label": "Quando la prova usa uno strumento in cui sei competente; non aggiungere due volte la competenza."
+      }
+    },
+    {
+      "id": "bard_jack_of_all_trades",
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "feature_name": "Jack of All Trades",
+      "passive": true,
+      "bonus": {
+        "name": "Jack of All Trades",
+        "targets": [
+          "ability_check",
+          "initiative"
+        ],
+        "proficiency_mode": "untrained_half",
+        "stack_group": "untrained_half",
+        "condition_label": "Solo quando la prova non include già il bonus di competenza."
+      }
+    },
+    {
+      "id": "champion_remarkable_athlete",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Champion",
+      "feature_name": "Remarkable Athlete",
+      "passive": true,
+      "bonus": {
+        "name": "Remarkable Athlete",
+        "targets": [
+          "ability_check",
+          "initiative"
+        ],
+        "proficiency_mode": "untrained_half_physical",
+        "stack_group": "untrained_half",
+        "condition_label": "Solo nelle prove di Forza, Destrezza o Costituzione che non includono già la competenza."
+      }
+    },
+    {
+      "id": "ranger_natural_explorer",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "feature_name": "Natural Explorer",
+      "passive": true,
+      "bonus": {
+        "name": "Natural Explorer",
+        "targets": [
+          "ability_check"
+        ],
+        "proficiency_mode": "favored_terrain_expertise",
+        "condition_label": "Solo per una prova di Intelligenza o Saggezza legata al terreno prescelto, usando un'abilità in cui sei competente."
+      }
+    },
+    {
+      "id": "fire_rune_tool_expertise",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Rune Knight",
+      "feature_name": "Rune Carver",
+      "required_optional_feature": "Fire Rune",
+      "optional_source": "TCE",
+      "passive": true,
+      "bonus": {
+        "name": "Fire Rune",
+        "targets": [
+          "ability_check"
+        ],
+        "proficiency_mode": "tool_expertise",
+        "condition_label": "Se conosci la Runa del Fuoco, quando usi uno strumento in cui sei competente."
+      }
     }
   ]
 }
