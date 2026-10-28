@@ -318,7 +318,8 @@
           "resource_cost": 1,
           "description": "In alternativa al soffio, spendi uno degli stessi utilizzi di Breath Weapon: le creature che scegli entro 30 ft e che possono vederti o sentirti effettuano un TS Saggezza (CD 8 + competenza + CAR). Chi fallisce è Spaventato da te per 1 minuto. Un bersaglio che subisce danni può ripetere il TS e terminare l'effetto se riesce. I risultati dei TS si confermano manualmente."
         }
-      ]
+      ],
+      "required_species": "dragonborn"
     },
     {
       "name": "Dragon Hide",
@@ -335,7 +336,8 @@
           "attack_kind": "natural",
           "description": "Artigli retrattili come arma naturale; colpo senz'armi che infligge 1d4 + modificatore di Forza danni taglienti invece del normale danno contundente."
         }
-      ]
+      ],
+      "required_species": "dragonborn"
     }
   ]
 }
