@@ -1,6 +1,5 @@
 import {CLASS_NUMERIC_FEATURE_GRANTS} from './catalog/class_numeric_feature_grants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
-import {itemAttunementCount} from './item_controls.js';
 import {normalizeMonsterStatBlock} from './character_core.js';
 // Generic structured effects and fixed proficiency projection based on
 // creature_structured_bonuses.gd and creature_proficiency_rules.gd.
@@ -345,7 +344,7 @@ export const automaticId=(sid,field,target,suffix="")=>
   "auto|"+sid+"|"+field+"|"+target+suffix;
 export function numericGrant(sid,name,field,target,value,suffix="",allowModifier=false){
   if(!target||!validAmount(value)&&
-    !(allowModifier&&typeof value==="string"&&/^(?:str|dex|con|int|wis|cha)_mod|attuned_item_count$/.test(value.trim().toLowerCase())))return null;
+    !(allowModifier&&typeof value==="string"&&/^(?:(?:str|dex|con|int|wis|cha)_mod|attuned_item_count)$/.test(value.trim().toLowerCase())))return null;
   return {id:automaticId(sid,field,target,suffix),
     origin_id:sid,origin_name:name,target,expression:String(value),
     automatic:true,disabled:false};
