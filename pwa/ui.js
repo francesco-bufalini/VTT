@@ -6600,9 +6600,13 @@ async function handleAction(target){
       }
     }
     if(row.roll_mode){
-      const current=await computeLocalData(state.editor.read());
-      if(!current.racial_roll_modes?.some(rule=>rule.benefit_id===row.benefit_id))
-        throw Error('Il tratto razziale non è più disponibile.');
+      const freshRecord=state.editor.read(),current=await computeLocalData(freshRecord);
+      const modeTarget=String(dialog.dataset.rollTarget||'');
+      const racialAvailable=(current.racial_roll_modes||[]).some(rule=>rule.benefit_id===row.benefit_id);
+      const featAvailable=applicableFeatRollBonuses(freshRecord,current,modeTarget)
+        .some(rule=>rule.roll_mode===row.roll_mode&&rule.benefit_id===row.benefit_id);
+      if(!racialAvailable&&!featAvailable)
+        throw Error('Il beneficio condizionale non è più disponibile.');
       dialog.usedRollBonuses.push(row);
       target.textContent=row.tracker_id?'Attivo':'Rimuovi';
       target.dataset.rollUsed='true';target.disabled=!!row.tracker_id;
