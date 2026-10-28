@@ -68,7 +68,8 @@
           "type": "G",
           "description": "Cannone arcano: protettore (azione bonus per attivarlo)."
         }
-      ]
+      ],
+      "replace_existing": true
     },
     {
       "id": "artificer-right-tool",
@@ -84,7 +85,8 @@
           "type": "G",
           "description": "Scegli e rinomina il tipo di strumenti creato dal privilegio."
         }
-      ]
+      ],
+      "replace_existing": true
     },
     {
       "id": "bard-performance-of-creation",
@@ -101,7 +103,8 @@
           "type": "G",
           "description": "Scegli l'oggetto non magico e adattane i dati nella scheda inventario."
         }
-      ]
+      ],
+      "replace_existing": true
     }
   ]
 }
