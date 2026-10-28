@@ -2493,10 +2493,15 @@ async function traitsView(c){
   const benefitCount=(benefitsByTrait.get(trait.key)||[])
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
-  // The icon is a separate control, not a nested button inside <summary>.
-  // A chevron belongs exclusively to expanding the description.
-  return '<div class="trait-row'+(active?'':' trait-row--inactive')+'" data-trait-enabled="'+String(active)+'"><button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
-      (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>'+
+  const isOverview=/^Descrizione · /.test(trait.name)&&
+   ['razza','background','classi'].includes(trait.category);
+  // Panoramica is prose-only: its grants have been assigned to specific traits
+  // or to the dedicated general-benefits card.
+  const benefitButton=isOverview?
+   '<span class="trait-benefits-trigger" aria-hidden="true" style="visibility:hidden"></span>':
+   '<button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
+    (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>';
+  return '<div class="trait-row'+(active?'':' trait-row--inactive')+'" data-trait-enabled="'+String(active)+'">'+benefitButton+
     '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-key="'+esc(trait.key)+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'">'+
     '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+'</span>'+
       (trait.category==='oggetti'&&trait.rank===0&&(trait.item_requires_attunement||itemQuantity>1)?
@@ -2697,7 +2702,12 @@ function mountTraitBenefitDialog(){
    (attunedItem||itemQuantity>1?'<span class="trait-item-quantity">×'+itemQuantity+'</span>':'')+'</h2>'+
   dialogCloseButton('trait-benefits-close','Chiudi','trait-benefits-close')+'</header>'+
   '<div class="trait-benefits-dialog-body">'+
-   (passiveItem?'<div class="trait-activation-control trait-automatic-item">'+
+   (trait.virtual_origin_benefits?
+    '<div class="trait-activation-control trait-automatic-item"><div class="trait-activation-copy">'+
+    '<span class="trait-activation-heading">Benefici dell’origine</span>'+
+    '<span class="trait-activation-description">Dipendono dalla relativa specie, classe o background.</span>'+
+    '</div></div>':
+   passiveItem?'<div class="trait-activation-control trait-automatic-item">'+
      '<div class="trait-activation-copy"><span class="trait-activation-heading">Benefici automatici</span>'+
       '<span class="trait-activation-description">'+(attunedItem?
        (itemQuantity?'Benefici applicati a '+itemQuantity+' copie in sintonia':'Nessuna copia in sintonia'):
