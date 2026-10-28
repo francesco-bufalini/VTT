@@ -81,13 +81,13 @@ test('damage immunity, condition immunity and vulnerability are distinct fixed g
 });
 
 test('ancestry-choice resistance is never invented before a legal selected damage type',()=>{
- const defaultCharacter=creature('Dragonborn (Chromatic)','FTD');
+ const defaultCharacter=creature('Dragonborn','PHB');
  assert.deepEqual(keys(calculate(defaultCharacter)),[]);
  const selected={...defaultCharacter,
-  origin_defense_choices:{'race|ftd|dragonborn (chromatic)':'fire'}};
+  origin_defense_choices:{'race|phb|dragonborn':'fire'}};
  assert.deepEqual(keys(calculate(selected)),['1:fire']);
  assert.deepEqual(keys(calculate({...defaultCharacter,
-  origin_defense_choices:{'race|ftd|dragonborn (chromatic)':'psychic'}})),[]);
+  origin_defense_choices:{'race|phb|dragonborn':'psychic'}})),[]);
 });
 
 test('inherited variant data remains attached to matching source and real trait',()=>{
@@ -97,21 +97,21 @@ test('inherited variant data remains attached to matching source and real trait'
  assert.deepEqual(fallen.entries.map(x=>x.key).sort(),['necrotic','radiant']);
 });
 
-test('dragonborn resistance is chosen through the ordinary pending choice UI and persists',()=>{
- const character=creature('Dragonborn (Gem)','FTD');
+test('original PHB dragonborn keeps its separate 2014 ancestry-resistance picker',()=>{
+ const character=creature('Dragonborn','PHB');
  const sheet=calculate(character);
  const choice=pendingCharacterChoices(character,sheet,{speciesDefenses:catalog})
   .find(row=>row.kind==='defense');
  assert.ok(choice,'the source-qualified damage choice must be offered');
  assert.equal(choice.remaining,1);
- assert.ok(choice.options.includes('psychic'));
- const patch=savePendingChoice(character,choice,['psychic']);
- assert.equal(patch.origin_defense_choices['race|ftd|dragonborn (gem)'],'psychic');
+ assert.ok(choice.options.includes('fire'));
+ const patch=savePendingChoice(character,choice,['fire']);
+ assert.equal(patch.origin_defense_choices['race|phb|dragonborn'],'fire');
  const saved={...character,...patch};
- assert.deepEqual(keys(calculate(saved)),['1:psychic']);
+ assert.deepEqual(keys(calculate(saved)),['1:fire']);
  const selected=pendingCharacterChoices(saved,calculate(saved),{speciesDefenses:catalog})
   .find(row=>row.kind==='defense');
- assert.deepEqual(selected.selected,['psychic']);
+ assert.deepEqual(selected.selected,['fire']);
  const cleared=savePendingChoice(saved,selected,[]);
  assert.deepEqual(keys(calculate({...saved,...cleared})),[]);
 });

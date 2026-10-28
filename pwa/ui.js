@@ -1307,6 +1307,30 @@ async function startTargetedAbility(c,ability,persistentKey,requested){
   }
  });
 }
+// Area selection is client-side and non-destructive. The desktop remains the
+// authority for LOS, position and saving throws; the PWA merely previews targets.
+async function startAreaAbility(c,ability,persistentKey,requested){
+ if(!state.paired||!state.online)return activateOtherAbility(c,ability,persistentKey,requested);
+ const stored=await loadCreature(c.id);
+ if(!stored)throw Error('Scheda locale non trovata.');
+ state.map=await map();
+ const caster=casterToken(stored.data,state.map,await ownerId());
+ if(!caster)throw Error('Associa un token a questa creatura prima di selezionare l’area.');
+ if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+ await tacticalViewer.open(String(caster.id));
+ tacticalViewer.setAreaAbility({
+  name:ability.name,shape:ability.area_shape,
+  length_feet:Number(ability.area_length_feet||0),
+  width_feet:Number(ability.area_width_feet||0),
+  radius_feet:Number(ability.area_radius_feet||0),
+  onSelected:async targets=>{
+   await activateOtherAbility(c,ability,persistentKey,requested,{
+    name:targets.length?targets.map(t=>t.name).join(', '):'Nessun bersaglio nell’area',
+    affected_ids:targets.map(t=>t.id)
+   });
+  }
+ });
+}
 async function activateOtherAbility(c,ability,persistentKey,requested,selectedTarget=null){
  document.querySelector('#other-ability-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='other-ability-dialog';
@@ -1317,6 +1341,20 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    power.mode==='heal_dice'&&('activated:'+power.id===requested||power.id===ability.ability_id));
  const healRecipients=healPower&&!selectedTarget?(await listCreatures()).map(row=>row.creature||row)
    .filter(row=>row?.id):[];
+ const shape=ability.area_shape==='line'?
+   'Linea '+ability.area_length_feet+' × '+ability.area_width_feet+' ft':
+   ability.area_shape==='cone'?'Cono '+ability.area_radius_feet+' ft':'';
+ const saveDC=8+Number(calculated.stats?.proficiency||2)+Number(calculated.abilities?.con?.modifier||0);
+ const areaDetails=shape?'<div class="magic-ability-area"><dl class="magic-spell-facts">'+
+   '<div class="magic-spell-fact"><dt>Area</dt><dd>'+esc(shape)+'</dd></div>'+
+   '<div class="magic-spell-fact"><dt>CD</dt><dd>'+esc(saveDC)+'</dd></div>'+
+   (ability.damage_formula?'<div class="magic-spell-fact"><dt>Danni</dt><dd>'+
+     esc(ability.damage_formula)+' '+esc(ability.damage_type)+'</dd></div>':'')+
+   '</dl>'+(ability.mode==='choice_area'?'<label>Modalità del soffio<select data-dragonborn-breath-mode>'+
+     (ability.options||[]).map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+
+       ' · TS '+esc((row.save_ability||'').toUpperCase())+'</option>').join('')+
+     '</select></label>':'')+
+   '<p class="hint">Controlla i bersagli nell’area sulla mappa.</p></div>':'';
  dialog.innerHTML=actionDialogIntro(ability.name,[
   {label:'Azione',value:ability.time||'Secondo il privilegio'},
   {label:'Origine',value:ability.origin_name||ability.origin||'Tratto'},
@@ -1330,6 +1368,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     ability.target_mode==='single_token'?'La partita non è collegata: scegli il bersaglio manualmente.':'',
   'other-ability-close')+
   abilityPaymentField(ability,calculated)+
+  areaDetails+
   (healPower?(selectedTarget?
     '<p class="hint">Cura a contatto · '+esc(calculated.stats?.proficiency||0)+'d4. Il tiro viene effettuato alla conferma per il token selezionato.</p>':
     '<label>Creatura da curare<select data-heal-target>'+
@@ -1381,6 +1420,13 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
+   const mode=currentAbility.mode||'';
+   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight'].includes(mode);
+   if(mandatory&&(!spend||choice!==currentAbility.tracker_id||cost!==1))
+     throw Error('La capacità richiede un utilizzo del tracker associato.');
+   const selectedMode=mode==='choice_area'?(currentAbility.options||[]).find(row=>
+     row.id===dialog.querySelector('[data-dragonborn-breath-mode]')?.value):null;
+   if(mode==='choice_area'&&!selectedMode)throw Error('Seleziona un soffio valido.');
    if(healPower?.mode==='heal_dice'){
      if(!spend||choice!==healPower.tracker_id)
        throw Error('Healing Hands richiede un utilizzo del tracker.');
@@ -1412,8 +1458,10 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     if(persistentKey){
      if(record.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
      changes.active_class_features={...(record.active_class_features||{}),
-      [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.origin_id||currentAbility.feature_id||requested,
-       rules_version:record.rules_version||'2014',enhanced:false}};
+      [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.persistent_origin_id||currentAbility.origin_id||currentAbility.feature_id||requested,
+       rules_version:record.rules_version||'2014',enhanced:false,
+       duration_rounds:Math.max(0,Number(currentAbility.duration_rounds)||0),
+       damage_type:currentAbility.damage_type||''}};
     }
     return changes;
    });
@@ -1421,10 +1469,19 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    await state.editor.flush();
    if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
    closeDialog(dialog,{remove:true});await render();
-   message((selectedTarget?'Bersaglio: '+selectedTarget.name+' · ':'')+
-    (cost&&spend?currentAbility.name+': '+cost+' utilizzi consumati.':
-    currentAbility.name+': utilizzo confermato senza consumo.')+
-    (selectedTarget?' Effetti da applicare secondo il privilegio.':''));
+   const damage=mode==='save_area'&&currentAbility.damage_formula?
+     rollBattleDamage(currentAbility.damage_formula,randomDie):null;
+   if(damage){
+     state.roll={...damage,label:'Danni · '+currentAbility.name,author:selectedName()};
+     state.rollHistory.unshift({...state.roll});
+   }
+   message(currentAbility.name+': utilizzo registrato.'+
+     (damage?' Danni '+damage.notation+' = '+damage.total+' '+currentAbility.damage_type+'.':'')+
+     (mode==='save_area'?' TS DES CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' (metà danni con TS riuscito).':'')+
+     (selectedMode?' '+selectedMode.name+' · TS '+selectedMode.save_ability.toUpperCase()+
+       ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' · '+selectedMode.description:'')+
+     (shape?' Effetti da applicare ai bersagli nell’area.':'')+
+     (persistentKey?' Effetto attivo per massimo 1 minuto; termina da Condizioni.':''));
   }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -3327,11 +3384,19 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
          (ability.source?'<div><dt>Fonte</dt><dd>'+esc(ability.source)+'</dd></div>':'')+
          '<div><dt>Consumo</dt><dd>'+esc(cost?cost+' utilizzi'+(resource?' · '+resource:' · Risorsa non collegata'):'Nessun consumo di utilizzi')+'</dd></div></dl>'+
          '<div class="power-privilege-description"><h3>Descrizione</h3><p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></div>'+
+         (ability.area_shape?'<p class="hint">'+esc(ability.area_shape==='line'?
+           'Linea '+ability.area_length_feet+' × '+ability.area_width_feet+' ft':
+           'Cono '+ability.area_radius_feet+' ft')+
+           (ability.damage_formula?' · '+esc(ability.damage_formula)+' '+esc(ability.damage_type):'')+
+           (ability.attack_replacement?' · Sostituisce un attacco':'')+'</p>':'')+
+         (ability.persistent_key&&c.active_class_features?.[ability.persistent_key]?
+           '<div class="magic-active-form">Attivo · 1 minuto <button type="button" class="btn small" data-act="condition-remove-ability" data-ability-key="'+esc(ability.persistent_key)+'">Termina</button></div>':'')+
          (extensions.length?'<div class="magic-effect-extensions"><h3>Estensioni attive</h3><ul>'+
            extensions.map(extension=>'<li><strong>'+esc(extension.origin_name||'Privilegio')+'</strong> · '+
              esc(effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}))+'</li>').join('')+
            '</ul></div>':'')+
-         '<div class="actions"><button type="button" class="btn primary" data-act="battle-use-ability" data-ability-id="activated:'+esc(ability.id)+'">Usa</button>'+
+         '<div class="actions"><button type="button" class="btn primary" data-act="battle-use-ability" data-ability-id="activated:'+esc(ability.id)+'"'+
+         (ability.persistent_key&&c.active_class_features?.[ability.persistent_key]?' disabled':'')+'>Usa</button>'+
          '<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(ability.feature_id||ability.origin_id||'')+'">'+actionGlyph('proficiency')+'<span>Apri il tratto di origine</span></button></div></div></details>';
        }).join('')+'</div>':'';
    const activeForm=calculated.active_celestial_form;
@@ -4878,6 +4943,7 @@ function openSheetMovementDialog(calculated={}){
   entries.map(row=>'<li><button type="button" class="sheet-movement-value" data-act="sheet-score-formula" data-target="'+esc(row.key)+
    '" data-label="Velocità · '+esc(row.label)+'"><span>'+esc(row.label)+'</span><strong>'+showValue(row.value)+' ft</strong></button></li>').join('')+
   '</ul></section>'+
+  (calculated.stats?.hovering?'<p class="sheet-senses-note">Volo sospeso (hovering) attivo tramite capacità temporanea.</p>':'')+
   (jumpRows.length?'<section class="sheet-senses-sources sheet-movement-jumps"><h3>Salti · distanza massima</h3><ul>'+
    jumpRows.map(([label,n])=>'<li><span>'+esc(label)+'</span><strong>'+showValue(Number(n))+' ft</strong></li>').join('')+
    '</ul></section>':'')+
@@ -5611,9 +5677,12 @@ async function handleAction(target){
     if(ability.class_feature_id){
       await activateClassAbility(c,calculated,ability);return;
     }
-    const persistentKey=String(target.dataset.persistentKey||'');
+    const persistentKey=String(target.dataset.persistentKey||ability.persistent_key||power?.persistent_key||'');
     if(ability.target_mode==='single_token'&&state.paired&&state.online){
       await startTargetedAbility(c,ability,persistentKey,requested);return;
+    }
+    if(ability.area_shape&&state.paired&&state.online){
+      await startAreaAbility(c,ability,persistentKey,requested);return;
     }
     await activateOtherAbility(c,ability,persistentKey,requested);
     return;

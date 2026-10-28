@@ -124,7 +124,10 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     baseRace?.description??selected?.description??baseRace?.entries??'';
    add({name:'Descrizione · '+record.species,entries:story,source:baseRace?.source||race.source},
     {...options,rank:0});
-   if(baseRace)named(baseRace,options,{includeUnnamed:true,requireGates:true});
+   // Fizban dragonborn variants replace PHB racial traits; only parent lore remains.
+   const ftdReplacement=same(record.species,'Dragonborn')&&same(record.species_source,'PHB')&&
+     same(record.subrace_source,'FTD')&&['chromatic','metallic','gem'].includes(norm(record.subrace));
+   if(baseRace&&!ftdReplacement)named(baseRace,options,{includeUnnamed:true,requireGates:true});
    if(record.subrace){
     const subopts={...options,origin:'Sottorazza · '+record.subrace,
      origin_key:'subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace)};

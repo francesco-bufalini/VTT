@@ -1,5 +1,6 @@
 // Source-qualified racial powers. No ability is inferred from free-form prose.
 import {canReselectPower,selectionRestLabel} from './trait_state_rules.js';
+import {dragonbornFtdProjection} from './dragonborn_ftd.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const currentLevel=record=>rows(record.classes).length?
@@ -16,7 +17,7 @@ export function racialPowerSubraces(index={}) {
  })));
 }
 export function racialPowerProjection(record={},index={},features=[]) {
- const output={features:[],trackers:[],abilities:[],origin_spells:[],active_forms:[],rest_choices:[],roll_bonuses:[]};
+ const output=dragonbornFtdProjection(record,index,features);
  const race=rows(index.races).find(row=>norm(row.name)===norm(record.species)&&
    norm(row.source)===norm(record.species_source));
  if(!race||record.rules_version==='2024')return output;
@@ -107,7 +108,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
    const featureId='feature:'+originKey+'|'+revelation.min_level+'|'+norm(form.name);
    const feature={name:form.name,origin_id:featureId,origin_key:originKey,
      level:revelation.min_level,requirements:{scope:'character',min_level:revelation.min_level},
-     entries:[form.description],action_type:'bonus',action_kind:'Capacità'};
+     entries:[form.description],bonuses:[],action_type:'bonus',action_kind:'Capacità'};
    output.features.push(feature);
    output.trackers.push({id:revelation.tracker_id,name:revelation.trait,
      max:revelation.uses,recharge:revelation.recharge,origin_id:featureId,

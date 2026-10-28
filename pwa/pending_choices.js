@@ -8,6 +8,7 @@ import {traitBenefitSources} from './trait_benefits.js';
 import {contentForRules} from './source_edition.js';
 import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants} from './ability_choice_rules.js';
 import {selectedSpeciesDefenseRules} from './species_defenses.js';
+import {dragonbornFtdChoice,dragonbornFtdSaveChoice} from './dragonborn_ftd.js';
 
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
@@ -237,6 +238,9 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
    result.push(...allocationChoiceRows(record,sid,row.name,variants));
   }
  }
+ // One Fizban ancestry choice drives resistance, breath and temporary immunity.
+ const dragonChoice=dragonbornFtdChoice(record,catalogs.speciesPowers);
+ if(dragonChoice&&enabled(record,dragonChoice.origin_id))result.push(dragonChoice);
  // The same resolved parent and subrace sources drive both the defense
  // calculation and its picker. Never offer an unrelated 5etools variant.
  for(const source of selectedSpeciesDefenseRules(record,catalogs.speciesDefenses)){
@@ -376,7 +380,7 @@ export function choicesForTrait(trait,record,choices=[]){
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
 export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):strip(value)));
  const prefix='__custom__:';
@@ -414,6 +418,7 @@ export function savePendingChoice(record,choice,values=[]){
   }else advancements.push({origin_id:choice.origin_id,mode:'feat'});
   return {advancement_choices:advancements,feats_catalog:otherFeats};
  }
+ if(choice.kind==='draconic_ancestry')return dragonbornFtdSaveChoice(record,choice,selected);
  if(choice.kind==='defense'){
   if(selected.length>1||selected.some(key=>!choice.options.includes(key))||
     !/^(race|subrace)\|[^|]+\|[^|]+$/.test(String(choice.defense_source_id||'')))
