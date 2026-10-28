@@ -201,7 +201,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    add('effects','Effetti e limitazioni','Oggetti infusi attivi','+'+grant.infusion_capacity_bonus+' (non aumenta le infusioni conosciute)');
   const total=rows(record.inventory).filter(item=>item.feature_item_grant_id===grant.id&&Number(item.quantity??1)>0).length;
   for(const option of rows(grant.items)){
-   const available=!option.owned&&(!grant.max_owned||total<Number(grant.max_owned));
+   const available=!option.owned&&(!grant.max_owned||total<Number(grant.max_owned)||grant.replace_existing);
    add('items','Oggetti concessi',option.name,option.owned?'Presente nell’inventario':option.description||'Da aggiungere','',{
     grant_id:grant.id,option_id:option.id,owned:!!option.owned,available,
     requires_activation:!!grant.activation_action_id});
