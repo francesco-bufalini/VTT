@@ -7,7 +7,7 @@ const classMembers=record=>rows(record.classes).length?record.classes:
  record.class?[{name:record.class,source:record.class_source,subclass:record.subclass,level:record.level}]:[];
 const enabled=(record,feature)=>{
  const parent=String(feature.origin_key||''),base=parent.split('|').slice(0,3).join('|');
- return !feature.inactive&&!feature.disabled&&![feature.origin_id,parent,base].some(id=>
+ return !feature.inactive&&!feature.disabled&&record.trait_enabled?.[feature.key]!==false&&![feature.origin_id,parent,base].some(id=>
   id&&(record.origin_enabled?.[id]===false||
    rows(record.proficiency_origins).some(row=>row.id===id&&row.disabled)));
 };
@@ -20,7 +20,8 @@ const sourceMatches=(record,feature,rule)=>{
     norm(record.subrace_source)===norm(rule.subrace_source))&&
    norm(feature.name)===norm(rule.feature)&&
    (subrace?
-    norm(feature.origin_key)==='subrace|'+norm(rule.subrace_source)+'|'+norm(rule.subrace):
+    norm(feature.origin_key)==='subrace|'+norm(rule.subrace_source)+'|'+norm(rule.subrace)||
+    String(feature.origin_key||'').startsWith('species|'):
     String(feature.origin_key||'').startsWith('species|'));
  }
  return classMembers(record).some(member=>
@@ -33,6 +34,30 @@ const sourceMatches=(record,feature,rule)=>{
  (!rule.subclass||String(feature.origin_key||'').includes('|subclass|')&&
   norm(String(feature.origin_key).split('|subclass|')[1].split('|')[0])===norm(rule.subclass)));
 };
+// Some offline native feature snapshots contain only the parent race, not
+// the named subrace entry. A source-qualified item grant can still expose its
+// exact trait without hardcoding a special character-sheet control.
+export function racialItemGrantFeatures(record={},features=[],catalog=[]){
+ if(record.rules_version==='2024')return [];
+ const extra=[];
+ for(const rule of rows(catalog).filter(rule=>rule.species_name&&rule.feature)){
+  if(norm(record.species)!==norm(rule.species_name)||
+   norm(record.species_source)!==norm(rule.species_source)||
+   rule.subrace&&(norm(record.subrace)!==norm(rule.subrace)||
+    norm(record.subrace_source)!==norm(rule.subrace_source)))continue;
+  if([...rows(features),...extra].some(f=>norm(f.name)===norm(rule.feature)&&
+    (String(f.origin_key||'').startsWith('species|')||
+     String(f.origin_key||'').startsWith('subrace|'))))continue;
+  const root=rule.subrace?'subrace|'+norm(rule.subrace_source)+'|'+norm(rule.subrace):
+   'species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
+  const key=root+'|1|'+norm(rule.feature);
+  extra.push({name:rule.feature,key,origin_key:root,origin_id:'feature:'+key,
+   level:1,requirements:{scope:'character',min_level:1},
+   entries:[rule.description||'Oggetti concessi dal privilegio.'],
+   bonuses:[],action_kind:'Capacità',synthetic_item_grant:true});
+ }
+ return extra;
+}
 export function featureItemGrants(record={},features=[],catalog=[]){
  if(String(record.rules_version||'2014')==='2024')return [];
  return rows(catalog).flatMap(rule=>{
