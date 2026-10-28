@@ -1,9 +1,11 @@
 // Artificer (TCE, 2014) Spell-Storing Item: one active effect on one owned
 // physical inventory copy. The item remains itself: there is no duplicate.
 // The usual effect-extension and resource-tracker pipelines own its UI and uses.
-import {itemKind,resolveOwnedItem,targetableInventoryItems,itemAttunementCount,requiresAttunement} from './item_controls.js';
+import {itemKind,resolveOwnedItem,targetableInventoryItems} from './item_controls.js';
 import {normalizeEffectExtension,effectExtensionsFor} from './effect_extensions.js';
 import {spendTrackerUses} from './character_core.js';
+import {isolateSpellBearingItem,replaceItemSpellState,clearItemSpellState} from './spell_item_effects.js';
+export {isolateSpellBearingItem} from './spell_item_effects.js';
 const rows=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??'').trim().toLowerCase();
 const PREFIX='artificer:spell_storing_item:';
@@ -44,29 +46,6 @@ export function storedSpellMaxUses(modifier){
  const n=Number(modifier);
  return Math.max(2,Number.isFinite(n)?Math.trunc(n)*2:2);
 }
-// A physical spell-bearing item must have one stable instance, even if it
-// originated as a stack. Shared by Spell-Storing Item and feat spell imprints.
-export function isolateSpellBearingItem(record={},index,instanceId=''){
- if(!Number.isInteger(index))throw Error('Seleziona una copia di oggetto valida.');
- const inventory=structuredClone(rows(record.inventory)),item=inventory[index];
- if(!item||Number(item.quantity??1)<1)throw Error('Oggetto non disponibile.');
- if(item.standalone_instance!==true&&Number(item.quantity??1)>1){
-  const rest=structuredClone(item);
-  const count=Math.trunc(Number(item.quantity));
-  rest.quantity=count-1;rest.equipped=false;rest.equipped_slots=[];
-  rest.instance_id='pwa_instance_'+String(instanceId||'').trim()+'_rest';
-  if(requiresAttunement(resolveOwnedItem(item))){
-   const attuned=itemAttunementCount(item);
-   item.attuned_count=Math.min(1,attuned);item.attuned=item.attuned_count>0;
-   rest.attuned_count=Math.max(0,attuned-1);rest.attuned=rest.attuned_count>0;
-  }
-  item.quantity=1;inventory.splice(index+1,0,rest);
- }
- item.instance_id=item.instance_id||String(instanceId||'');
- if(!item.instance_id)throw Error('Identificatore fisico della copia mancante.');
- item.standalone_instance=true;
- return {inventory,item};
-}
 export function storeSpellInItemPatch(record={},calculated={},index,spell={},spellDescription='',instanceId=''){
  if(spellStoringArtificerLevel(record)<11)throw Error('Spell-Storing Item richiede Artefice TCE di livello 11.');
  const feature=rows(calculated.features).find(f=>norm(f.name)==='spell-storing item'&&
@@ -97,22 +76,12 @@ export function storeSpellInItemPatch(record={},calculated={},index,spell={},spe
   tracker_id:trackerId,casting_ability:'int',action_type:'action'
  });
  if(!extension)throw Error('Impossibile creare l’estensione dell’oggetto.');
- const existing=rows(record.effect_extensions).filter(row=>
-  row?.id!==extensionId&&row?.stored_spell_feature!=='spell_storing_item');
- const resources=rows(record.resource_trackers).filter(row=>row?.id!==trackerId);
- const spent={...(record.resource_tracker_spent||{})};
- delete spent[trackerId];
- return {
-  inventory,
-  effect_extensions:[...existing,extension],
-  resource_trackers:[...resources,{
-   id:trackerId,name:'Spell-Storing Item · '+String(item.name||item.id),
-   max,min_max:2,max_formula:'int_mod*2',recharge:'manual',
-   origin_id:feature.origin_id,origin_name:'Tratto · Spell-Storing Item',
-   origin_class:'Artificer',origin_class_source:'TCE'
-  }],
-  resource_tracker_spent:spent
- };
+ const tracker={id:trackerId,name:'Spell-Storing Item · '+String(item.name||item.id),
+  max,min_max:2,max_formula:'int_mod*2',recharge:'manual',
+  origin_id:feature.origin_id,origin_name:'Tratto · Spell-Storing Item',
+  origin_class:'Artificer',origin_class_source:'TCE'};
+ return replaceItemSpellState(record,inventory,extension,tracker,row=>
+  row?.id===extensionId||row?.stored_spell_feature==='spell_storing_item');
 }
 export function useStoredSpellPatch(record={},calculated={},index){
  const item=rows(record.inventory)[index],extension=storedSpellExtension(record);
@@ -125,12 +94,7 @@ export function useStoredSpellPatch(record={},calculated={},index){
 export function clearStoredSpellPatch(record={}){
  const old=storedSpellExtension(record);
  if(!old)return {};
- const trackerId=storedSpellTrackerId(record),spent={...(record.resource_tracker_spent||{})};
- delete spent[trackerId];
- return {
-  effect_extensions:rows(record.effect_extensions).filter(row=>
-   row?.id!==storedSpellExtensionId(record)&&row?.stored_spell_feature!=='spell_storing_item'),
-  resource_trackers:rows(record.resource_trackers).filter(row=>row?.id!==trackerId),
-  resource_tracker_spent:spent
- };
+ return clearItemSpellState(record,row=>
+  row?.id===storedSpellExtensionId(record)||row?.stored_spell_feature==='spell_storing_item',
+  [storedSpellTrackerId(record)]);
 }
