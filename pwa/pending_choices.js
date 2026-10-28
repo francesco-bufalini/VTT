@@ -353,7 +353,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  // Casting stat selection is an owned benefit of the granting trait.
  const casterOwners=new Set();
  for(const grant of arr(calculated.origin_spells)){
-  if(!grant?.origin_id||casterOwners.has(grant.origin_id)||!enabled(record,grant.origin_id))continue;
+  if(!grant?.origin_id||grant.casting_ability_not_required||casterOwners.has(grant.origin_id)||!enabled(record,grant.origin_id))continue;
   if(!grant.tracker_id&&grant.cantrip!==true)continue;
   const options=arr(grant.spellcasting_ability_options).length?
     arr(grant.spellcasting_ability_options).filter(value=>abilities.includes(value)):

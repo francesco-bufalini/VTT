@@ -240,6 +240,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"resource_trackers": value.get("resource_trackers", []).duplicate(true) if value.get("resource_trackers", []) is Array else [],
 		"origin_spell_grants": value.get("origin_spell_grants", []).duplicate(true) if value.get("origin_spell_grants", []) is Array else [],
 		"origin_spell_configs": value.get("origin_spell_configs", {}).duplicate(true) if value.get("origin_spell_configs", {}) is Dictionary else {},
+		"origin_spell_variants": value.get("origin_spell_variants", {}).duplicate(true) if value.get("origin_spell_variants", {}) is Dictionary else {},
 		"dice_bonuses": value.get("dice_bonuses", []).duplicate(true) if value.get("dice_bonuses", []) is Array else [],
 		"active_spell_context": value.get("active_spell_context", {}).duplicate(true) if value.get("active_spell_context", {}) is Dictionary else {},
 		"xp": maxi(0, int(value.get("xp", 0))),

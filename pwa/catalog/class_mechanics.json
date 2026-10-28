@@ -52046,16 +52046,21 @@
         {
           "source_block": 0,
           "prepared": {
-            "2": [
-              "guiding bolt"
-            ]
+            "2": {
+              "daily": {
+                "proficiency": [
+                  "guiding bolt"
+                ]
+              }
+            }
           },
           "ability": "wis",
           "known": {
             "2": [
               "guidance#c"
             ]
-          }
+          },
+          "slot_alternative": true
         }
       ]
     },
@@ -52853,6 +52858,27 @@
     },
     {
       "kind": "subclassFeature",
+      "name": "Moon Fire",
+      "source": "DSotDQ",
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass_name": "Lunar Sorcery",
+      "subclass_short_name": "Lunar",
+      "subclass_source": "DSotDQ",
+      "level": 1,
+      "blocks": [
+        {
+          "known": {
+            "1": [
+              "sacred flame#c"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
       "name": "Among the Dead",
       "source": "SCAG",
       "class_name": "Warlock",
@@ -52867,6 +52893,45 @@
           "known": {
             "1": [
               "spare the dying#c"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Undying",
+      "source": "SCAG",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Undying",
+      "subclass_short_name": "Undying",
+      "subclass_source": "SCAG",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "false life",
+              "ray of sickness"
+            ],
+            "s2": [
+              "blindness/deafness",
+              "silence"
+            ],
+            "s3": [
+              "feign death",
+              "speak with dead"
+            ],
+            "s4": [
+              "aura of life",
+              "death ward"
+            ],
+            "s5": [
+              "contagion",
+              "legend lore"
             ]
           },
           "ability": "cha"
@@ -52898,6 +52963,45 @@
     },
     {
       "kind": "subclassFeature",
+      "name": "The Celestial",
+      "source": "XGE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Celestial",
+      "subclass_short_name": "Celestial",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "cure wounds",
+              "guiding bolt"
+            ],
+            "s2": [
+              "flaming sphere",
+              "lesser restoration"
+            ],
+            "s3": [
+              "daylight",
+              "revivify"
+            ],
+            "s4": [
+              "guardian of faith",
+              "wall of fire"
+            ],
+            "s5": [
+              "flame strike",
+              "greater restoration"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
       "name": "Grasping Tentacles",
       "source": "TCE",
       "class_name": "Warlock",
@@ -52917,6 +53021,46 @@
                 ]
               }
             }
+          },
+          "ability": "cha",
+          "slot_alternative": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Fathomless",
+      "source": "TCE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Fathomless",
+      "subclass_short_name": "Fathomless",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "create or destroy water",
+              "thunderwave"
+            ],
+            "s2": [
+              "gust of wind",
+              "silence"
+            ],
+            "s3": [
+              "lightning bolt",
+              "sleet storm"
+            ],
+            "s4": [
+              "control water",
+              "summon elemental|tce"
+            ],
+            "s5": [
+              "Bigby's hand",
+              "cone of cold"
+            ]
           },
           "ability": "cha"
         }
@@ -53005,7 +53149,8 @@
             "3": [
               "prestidigitation#c"
             ]
-          }
+          },
+          "casting_ability_not_required": true
         },
         {
           "source_block": 1,
@@ -53013,7 +53158,8 @@
             "3": [
               "druidcraft#c"
             ]
-          }
+          },
+          "casting_ability_not_required": true
         }
       ]
     },
@@ -53069,11 +53215,430 @@
           "ability": "cha"
         }
       ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Archfey",
+      "source": "PHB",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Archfey",
+      "subclass_short_name": "Archfey",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "faerie fire",
+              "sleep"
+            ],
+            "s2": [
+              "calm emotions",
+              "phantasmal force"
+            ],
+            "s3": [
+              "blink",
+              "plant growth"
+            ],
+            "s4": [
+              "dominate beast",
+              "greater invisibility"
+            ],
+            "s5": [
+              "dominate person",
+              "seeming"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Fiend",
+      "source": "PHB",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Fiend",
+      "subclass_short_name": "Fiend",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "burning hands",
+              "command"
+            ],
+            "s2": [
+              "blindness/deafness",
+              "scorching ray"
+            ],
+            "s3": [
+              "fireball",
+              "stinking cloud"
+            ],
+            "s4": [
+              "fire shield",
+              "wall of fire"
+            ],
+            "s5": [
+              "flame strike",
+              "hallow"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Great Old One",
+      "source": "PHB",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Great Old One",
+      "subclass_short_name": "Great Old One",
+      "subclass_source": "PHB",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "dissonant whispers",
+              "Tasha's hideous laughter"
+            ],
+            "s2": [
+              "detect thoughts",
+              "phantasmal force"
+            ],
+            "s3": [
+              "clairvoyance",
+              "sending"
+            ],
+            "s4": [
+              "dominate beast",
+              "Evard's black tentacles"
+            ],
+            "s5": [
+              "dominate person",
+              "telekinesis"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Hexblade",
+      "source": "XGE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Hexblade",
+      "subclass_short_name": "Hexblade",
+      "subclass_source": "XGE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "shield",
+              "wrathful smite"
+            ],
+            "s2": [
+              "blur",
+              "branding smite"
+            ],
+            "s3": [
+              "blink",
+              "elemental weapon"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "staggering smite"
+            ],
+            "s5": [
+              "banishing smite",
+              "cone of cold"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Genie",
+      "source": "TCE",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Genie",
+      "subclass_short_name": "Genie",
+      "subclass_source": "TCE",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "name": "Dao",
+          "expanded": {
+            "9": [
+              "wish"
+            ],
+            "s1": [
+              "detect evil and good",
+              "sanctuary"
+            ],
+            "s2": [
+              "phantasmal force",
+              "spike growth"
+            ],
+            "s3": [
+              "create food and water",
+              "meld into stone"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "stone shape"
+            ],
+            "s5": [
+              "creation",
+              "wall of stone"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 1,
+          "name": "Djinni",
+          "expanded": {
+            "9": [
+              "wish"
+            ],
+            "s1": [
+              "detect evil and good",
+              "thunderwave"
+            ],
+            "s2": [
+              "phantasmal force",
+              "gust of wind"
+            ],
+            "s3": [
+              "create food and water",
+              "wind wall"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "greater invisibility"
+            ],
+            "s5": [
+              "creation",
+              "seeming"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 2,
+          "name": "Efreeti",
+          "expanded": {
+            "9": [
+              "wish"
+            ],
+            "s1": [
+              "detect evil and good",
+              "burning hands"
+            ],
+            "s2": [
+              "phantasmal force",
+              "scorching ray"
+            ],
+            "s3": [
+              "create food and water",
+              "fireball"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "fire shield"
+            ],
+            "s5": [
+              "creation",
+              "flame strike"
+            ]
+          },
+          "ability": "cha"
+        },
+        {
+          "source_block": 3,
+          "name": "Marid",
+          "expanded": {
+            "9": [
+              "wish"
+            ],
+            "s1": [
+              "detect evil and good",
+              "fog cloud"
+            ],
+            "s2": [
+              "phantasmal force",
+              "blur"
+            ],
+            "s3": [
+              "create food and water",
+              "sleet storm"
+            ],
+            "s4": [
+              "phantasmal killer",
+              "control water"
+            ],
+            "s5": [
+              "creation",
+              "cone of cold"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "The Undead",
+      "source": "VRGR",
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass_name": "The Undead",
+      "subclass_short_name": "Undead",
+      "subclass_source": "VRGR",
+      "level": 1,
+      "blocks": [
+        {
+          "source_block": 0,
+          "expanded": {
+            "s1": [
+              "bane",
+              "false life"
+            ],
+            "s2": [
+              "blindness/deafness",
+              "phantasmal force"
+            ],
+            "s3": [
+              "phantom steed",
+              "speak with dead"
+            ],
+            "s4": [
+              "death ward",
+              "greater invisibility"
+            ],
+            "s5": [
+              "antilife shell",
+              "cloudkill"
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Thousand Forms",
+      "source": "PHB",
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass_name": "Circle of the Moon",
+      "subclass_short_name": "Moon",
+      "subclass_source": "PHB",
+      "level": 14,
+      "blocks": [
+        {
+          "source_block": 0,
+          "known": {},
+          "ability": "wis",
+          "innate": {
+            "14": [
+              "alter self"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Consult the Spirits",
+      "source": "XGE",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "subclass_name": "Path of the Ancestral Guardian",
+      "subclass_short_name": "Ancestral Guardian",
+      "subclass_source": "XGE",
+      "level": 10,
+      "blocks": [
+        {
+          "source_block": 0,
+          "innate": {
+            "10": {
+              "rest": {
+                "1": [
+                  "augury",
+                  "clairvoyance"
+                ]
+              }
+            }
+          },
+          "ability": "wis"
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Additional Magical Secrets",
+      "source": "PHB",
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "subclass_name": "College of Lore",
+      "subclass_short_name": "Lore",
+      "subclass_source": "PHB",
+      "level": 6,
+      "blocks": [
+        {
+          "source_block": 0,
+          "name": "Additional Magical Secrets",
+          "known": {
+            "6": [
+              {
+                "choose": "level=0;1;2;3",
+                "count": 2
+              }
+            ]
+          },
+          "ability": "cha"
+        }
+      ]
     }
   ],
   "feature_spells_meta": {
     "edition": "2014",
     "source": "5etools-src v2.37.0 data/class/class-*.json",
+    "upstream_sha256": {
+      "data/class/class-artificer.json": "49dbc64c51b58d54a6dda44105d4d67d6f65e65a67faeeef54bf19e30ab01882",
+      "data/class/class-barbarian.json": "15b090c2ede1cc5a522817bf41d83a890aa194f3d7827f98787e1b05d057f319",
+      "data/class/class-bard.json": "e5041a799e8c720db3a28539c2a25e9d6d821b6229a65fd1484f749ea3978b1d",
+      "data/class/class-cleric.json": "604d81ad5012ca92f56a5aadacdf298a04d4889443e99644d4bf2af46f5a0900",
+      "data/class/class-druid.json": "e320ecf4f19e49acbbc449fcde4f8448bfad4bfc40a56138dced312a52af13a1",
+      "data/class/class-fighter.json": "9c8a328bb03f6ee806d3d993942c2603d02bfc2c61f5306c77b15f9ba05b33ae",
+      "data/class/class-monk.json": "381b5b1a80da79b661b9656d65b266d0bca290cf83d261c5f15ce8d0ecba4ff5",
+      "data/class/class-paladin.json": "5c11179b9d410fdf10711e5f3acfec50da831ebc72adca14b3e1c50fbe3f0f22",
+      "data/class/class-ranger.json": "13ace69bc9241b22d74644caacd2b26307a9b4d32df4f0d87994c3d5ff69e154",
+      "data/class/class-rogue.json": "1db96ec24a864369de9138a9d51bdf89e09fdd79f3f2d39c25ac73191f2befa0",
+      "data/class/class-sorcerer.json": "9f17737aa137ca3979b20cdcc7e8b0120c7be293cf9849c2d27c93f2e0e87c79",
+      "data/class/class-warlock.json": "867a945c460be5925df0e6d87238b226912e7f2eb567fde0a88c05179eadbcac",
+      "data/class/class-wizard.json": "833066cec97469353092424ae9878bab1b591c0da782f81625bb3e54850393fe"
+    },
     "ownership": "scripts/data/feature_spell_ownership_2014.json",
     "notes": "Latest printing within 2014 rules. Class-level gates and exact trait ownership; expanded lists are not automatic grants."
   }

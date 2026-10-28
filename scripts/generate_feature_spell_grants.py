@@ -8,12 +8,31 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
+import hashlib
 from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BINDINGS = ROOT / "scripts/data/feature_spell_ownership_2014.json"
 OUTPUT = ROOT / "vtt/data/feature_spell_grants_2014.json"
+
+
+def merge_choices(value):
+    """Two identical one-spell picks are one explicit choice with count two."""
+    if isinstance(value, dict):
+        return {key: merge_choices(item) for key, item in value.items()}
+    if not isinstance(value, list):
+        return deepcopy(value)
+    result = []
+    for item in value:
+        if isinstance(item, dict) and isinstance(item.get("choose"), str):
+            previous = next((row for row in result if isinstance(row, dict)
+                             and row.get("choose") == item["choose"]), None)
+            if previous is not None:
+                previous["count"] = previous.get("count", 1) + item.get("count", 1)
+                continue
+        result.append(merge_choices(item))
+    return result
 
 
 def gather(checkout: Path, bindings: list[dict] | None = None) -> dict:
@@ -58,7 +77,7 @@ def gather(checkout: Path, bindings: list[dict] | None = None) -> dict:
                     if target is None:
                         target = {"source_block": index, **({"name": label} if label else {})}
                         row["blocks"].append(target)
-                    target.setdefault(mode, {})[stage] = deepcopy(values)
+                    target.setdefault(mode, {})[stage] = merge_choices(values)
                     if "ability" in block:
                         target["ability"] = deepcopy(block["ability"])
                     else:
@@ -67,8 +86,27 @@ def gather(checkout: Path, bindings: list[dict] | None = None) -> dict:
                         ability = subclass.get("spellcastingAbility", parent.get("spellcastingAbility"))
                         if ability:
                             target["ability"] = ability
+                    if binding.get("ability"):
+                        target["ability"] = binding["ability"]
+                    if binding.get("casting_ability_not_required"):
+                        target["casting_ability_not_required"] = True
+        for owner, overrides in binding.get("block_overrides", {}).items():
+            if owner not in by_owner or len(by_owner[owner]["blocks"]) != 1:
+                raise ValueError(f"Ambiguous block override: {owner}")
+            by_owner[owner]["blocks"][0].update(deepcopy(overrides))
+        for extra in binding.get("extra_grants", []):
+            candidates = [row for row in features if row["name"] == extra["name"]]
+            if len(candidates) != 1:
+                raise ValueError(f"Ambiguous supplemental owner: {extra['name']}")
+            feature = candidates[0]
+            by_owner[extra["name"]] = {"kind": "subclassFeature", "name": feature["name"],
+                "source": feature["source"], "class_name": name, "class_source": binding["class_source"],
+                "subclass_name": subclass["name"], "subclass_short_name": subclass.get("shortName", subclass["name"]),
+                "subclass_source": subclass["source"], "level": feature["level"], "blocks": deepcopy(extra["blocks"])}
         entries.extend(by_owner.values())
+    upstream = sorted({f"data/class/class-{binding['class_name'].lower()}.json" for binding in bindings})
     return {"meta": {"edition": "2014", "source": "5etools-src v2.37.0 data/class/class-*.json",
+                     "upstream_sha256": {path: hashlib.sha256((checkout / path).read_bytes()).hexdigest() for path in upstream},
                      "ownership": "scripts/data/feature_spell_ownership_2014.json",
                      "notes": "Latest printing within 2014 rules. Class-level gates and exact trait ownership; expanded lists are not automatic grants."},
             "entries": entries}

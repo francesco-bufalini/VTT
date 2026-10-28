@@ -206,6 +206,20 @@
       "owners": {
         "prepared": "Star Map",
         "known": "Star Map"
+      },
+      "block_overrides": {
+        "Star Map": {
+          "prepared": {
+            "2": {
+              "daily": {
+                "proficiency": [
+                  "guiding bolt"
+                ]
+              }
+            }
+          },
+          "slot_alternative": true
+        }
       }
     },
     {
@@ -396,7 +410,22 @@
       "source": "DSotDQ",
       "owners": {
         "known": "Lunar Embodiment"
-      }
+      },
+      "extra_grants": [
+        {
+          "name": "Moon Fire",
+          "blocks": [
+            {
+              "known": {
+                "1": [
+                  "sacred flame#c"
+                ]
+              },
+              "ability": "cha"
+            }
+          ]
+        }
+      ]
     },
     {
       "class_name": "Warlock",
@@ -404,7 +433,8 @@
       "subclass": "Undying",
       "source": "SCAG",
       "owners": {
-        "known": "Among the Dead"
+        "known": "Among the Dead",
+        "expanded": "The Undying"
       }
     },
     {
@@ -413,7 +443,8 @@
       "subclass": "Celestial",
       "source": "XGE",
       "owners": {
-        "known": "Bonus Cantrips"
+        "known": "Bonus Cantrips",
+        "expanded": "The Celestial"
       }
     },
     {
@@ -422,7 +453,13 @@
       "subclass": "Fathomless",
       "source": "TCE",
       "owners": {
-        "known": "Grasping Tentacles"
+        "known": "Grasping Tentacles",
+        "expanded": "The Fathomless"
+      },
+      "block_overrides": {
+        "Grasping Tentacles": {
+          "slot_alternative": true
+        }
       }
     },
     {
@@ -459,7 +496,8 @@
       "source": "XGE",
       "owners": {
         "known": "Arcane Archer Lore"
-      }
+      },
+      "casting_ability_not_required": true
     },
     {
       "class_name": "Barbarian",
@@ -468,7 +506,8 @@
       "source": "BGG",
       "owners": {
         "innate": "Giant Power"
-      }
+      },
+      "ability": "wis"
     },
     {
       "class_name": "Bard",
@@ -477,6 +516,112 @@
       "source": "VRGR",
       "owners": {
         "known": "Guiding Whispers"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Archfey",
+      "source": "PHB",
+      "owners": {
+        "expanded": "The Archfey"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Fiend",
+      "source": "PHB",
+      "owners": {
+        "expanded": "The Fiend"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Great Old One",
+      "source": "PHB",
+      "owners": {
+        "expanded": "The Great Old One"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Hexblade",
+      "source": "XGE",
+      "owners": {
+        "expanded": "The Hexblade"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Genie",
+      "source": "TCE",
+      "owners": {
+        "expanded": "The Genie"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Undead",
+      "source": "VRGR",
+      "owners": {
+        "expanded": "The Undead"
+      }
+    },
+    {
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass": "Moon",
+      "source": "PHB",
+      "owners": {
+        "known": "Thousand Forms"
+      },
+      "block_overrides": {
+        "Thousand Forms": {
+          "known": {},
+          "innate": {
+            "14": [
+              "alter self"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "subclass": "Ancestral Guardian",
+      "source": "XGE",
+      "owners": {
+        "innate": "Consult the Spirits"
+      },
+      "ability": "wis",
+      "block_overrides": {
+        "Consult the Spirits": {
+          "innate": {
+            "10": {
+              "rest": {
+                "1": [
+                  "augury",
+                  "clairvoyance"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "subclass": "Lore",
+      "source": "PHB",
+      "owners": {
+        "known": "Additional Magical Secrets"
       }
     }
   ]

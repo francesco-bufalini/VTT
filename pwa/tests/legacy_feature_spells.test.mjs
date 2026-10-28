@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {applyOriginSpellChoice} from '../spell_selection.js';
+import {spellCastPlan} from '../native_sheet.js';
+import {createVariant,applyVariantEdit,resolveVariant} from '../creature_variants.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
@@ -50,6 +52,14 @@ test('multiclass gates use the owning class level and reject revised identities'
  assert(!calculateSheet(revised,catalogs).origin_spells.some(row=>row.mechanic_source==='5etools.additionalSpells'));
 });
 
+test('existing feature spell configuration IDs survive the structured catalog migration',()=>{
+ const record=character('Artificer','Alchemist','TCE');
+ const sheet=calculateSheet(record,catalogs),grant=owned(sheet,'Alchemist Spells')[0];
+ assert.equal(grant.id,'feature-spell:'+grant.origin_id+'|'+grant.spell_id);
+ const configured=calculateSheet({...record,origin_spell_configs:{[grant.id]:{spellcasting_ability:'wis'}}},catalogs);
+ assert.equal(configured.origin_spells.find(row=>row.id===grant.id).spellcasting_ability,'wis');
+});
+
 test('Land and Divine Soul require an explicit option and never stack alternative lists',()=>{
  for(const [klass,subclass,source,trait,option,count] of [
   ['Druid','Circle of the Land','PHB','Circle Spells','Coast',4],
@@ -94,9 +104,79 @@ test('bonus cantrips absent from spell tables belong to their precise granting t
   ['Monk','Way of Shadow','PHB','Shadow Arts','phb2014_minor_illusion'],
   ['Warlock','The Undying','SCAG','Among the Dead','phb2014_spare_the_dying'],
   ['Wizard','School of Illusion','PHB','Improved Minor Illusion','phb2014_minor_illusion'],
+  ['Sorcerer','Lunar Sorcery','DSotDQ','Moon Fire','phb2014_sacred_flame'],
  ]){
   const sheet=calculateSheet(character(klass,subclass,source),catalogs);
   const grant=owned(sheet,trait).find(row=>row.spell_id===spell);
   assert(grant,`${subclass}: ${trait}`);assert.equal(grant.payment_mode,'free');
  }
+});
+
+test('Star Map and Grasping Tentacles retain both limited casts and ordinary slot access',()=>{
+ for(const [klass,subclass,source,trait,level,spell,maximum] of [
+  ['Druid','Circle of Stars','TCE','Star Map',9,'phb2014_guiding_bolt',4],
+  ['Warlock','The Fathomless','TCE','Grasping Tentacles',10,'phb2014_evard_s_black_tentacles',1],
+ ]){
+  const record=character(klass,subclass,source,level),sheet=calculateSheet(record,catalogs);
+  const grant=owned(sheet,trait).find(row=>row.spell_id===spell);
+  assert(grant,trait);assert.equal(grant.payment_mode,'tracker');assert.equal(grant.slot_alternative,true);
+  assert.equal(sheet.origin_spells.filter(row=>row.spell_id===spell&&row.origin_id===grant.origin_id).length,1);
+  const tracker=sheet.trackers.find(row=>row.id===grant.tracker_id);
+  assert.equal(tracker.max,maximum);assert.equal(tracker.recharge,'long_rest');
+  assert.equal(tracker.origin_id,feature(sheet,trait).origin_id);
+  const exhausted=calculateSheet({...record,resource_tracker_spent:{[tracker.id]:maximum}},catalogs);
+  assert.equal(exhausted.trackers.find(row=>row.id===tracker.id).spent,maximum);
+  const definition=catalogs.spells.find(row=>row.id===spell);
+  const selection={id:spell,grant_id:grant.id,level:definition.level,caster_ability:grant.spellcasting_ability};
+  assert.equal(spellCastPlan(record,selection,0,sheet,'auto').patch.resource_tracker_spent[tracker.id],1);
+  assert.equal(spellCastPlan({...record,resource_tracker_spent:{[tracker.id]:maximum}},selection,
+    definition.level,sheet,klass==='Warlock'?'pact':'slot').patch[klass==='Warlock'?'pact_slots_spent':'spell_slots_spent'] instanceof Array,klass!=='Warlock');
+ }
+});
+
+test('legacy patron expanded lists never become free known or prepared spells',()=>{
+ for(const [subclass,source] of [['The Archfey','PHB'],['The Fiend','PHB'],['The Great Old One','PHB'],
+  ['The Undying','SCAG'],['The Celestial','XGE'],['The Hexblade','XGE'],['The Fathomless','TCE'],
+  ['The Genie','TCE'],['The Undead','VRGR']]){
+  const record=character('Warlock',subclass,source,9),sheet=calculateSheet(record,catalogs);
+  assert(!sheet.origin_spells.some(row=>row.origin_name===subclass),subclass);
+ }
+});
+
+test('Giant Power uses Wisdom and Arcane Archer does not invent a casting-ability choice',()=>{
+ for(const [klass,subclass,source,ability] of [
+  ['Barbarian','Path of the Giant','BGG','wis'],['Fighter','Arcane Archer','XGE',''],
+ ]){
+  const record=character(klass,subclass,source),sheet=calculateSheet(record,catalogs);
+  const choice=sheet.origin_spell_variant_choices[0];
+  const updated={...record,...savePendingChoice(record,choice,['1'])};
+  const selected=calculateSheet(updated,catalogs);
+  const grant=selected.origin_spells.find(row=>row.origin_id===choice.origin_id);
+  assert.equal(grant.spellcasting_ability,ability);
+  assert(!pendingCharacterChoices(updated,selected,catalogs).some(row=>row.kind==='casting_ability'&&row.origin_id===choice.origin_id));
+ }
+});
+
+test('customized magic sections retain separate spell options for creature forms',()=>{
+ const base={...character('Druid','Circle of the Land','PHB'),id:'druid',owner_id:'owner',
+  origin_spell_variants:{terrain:'coast'},variants:[],current_form_id:''};
+ const form=createVariant(base,{id:'other',sections:['magic']});
+ const record={...base,variants:[form],current_form_id:'other'};
+ const changed=applyVariantEdit(record,{origin_spell_variants:{terrain:'forest'}});
+ assert.equal(changed.origin_spell_variants.terrain,'coast');
+ assert.equal(resolveVariant(changed).origin_spell_variants.terrain,'forest');
+});
+
+test('ritual-free Consult the Spirits shares one short-rest use, Thousand Forms is at will, and Lore chooses two spells',()=>{
+ const barbarian=calculateSheet(character('Barbarian','Path of the Ancestral Guardian','XGE',10),catalogs);
+ const spirits=owned(barbarian,'Consult the Spirits');
+ assert.equal(spirits.length,2);assert.equal(new Set(spirits.map(row=>row.tracker_id)).size,1);
+ const counter=barbarian.trackers.find(row=>row.id===spirits[0].tracker_id);
+ assert.equal(counter.max,1);assert.equal(counter.recharge,'short_rest');
+ assert(spirits.every(row=>row.spellcasting_ability==='wis'&&!row.slot_alternative));
+ const moon=calculateSheet(character('Druid','Circle of the Moon','PHB',14),catalogs);
+ assert.equal(owned(moon,'Thousand Forms')[0].payment_mode,'free');
+ const lore=calculateSheet(character('Bard','College of Lore','PHB',6),catalogs);
+ const choice=lore.origin_choices.find(row=>row.origin_id===feature(lore,'Additional Magical Secrets').origin_id);
+ assert.equal(choice.count,2);assert.equal(choice.payment_mode,'slot');
 });

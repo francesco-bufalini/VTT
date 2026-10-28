@@ -362,7 +362,7 @@ export function originSpellId(token,edition,spells){
  return edition==='2014'&&(!parts[1]||parts[1]==='phb')?legacy:slug;
 }
 const choiceSignature=choice=>[choice.mode||'',choice.stage||'',String(choice.filter||'').split('|').find(c=>c.startsWith('level='))?.slice(6)||'',choice.usage||''].join(':');
-export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[],racialUsage=[]){
+export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[],racialUsage=[],proficiency=null){
  const output={grants:[],trackers:[],choices:[],warnings:[],variant_choices:[]};
  if(record.kind==='monster')return output;
  const level=Number(record.level||1),edition=String(record.rules_version||'2014');
@@ -413,7 +413,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
      !feature.inactive&&!feature.disabled&&record.trait_enabled?.[feature.key]!==false&&
      active(feature.origin_id)&&active(feature.origin_key)&&
      active('class|'+norm(row.class_source)+'|'+norm(row.class_name)))
-     .map(feature=>({id:feature.origin_id,name:feature.name,feature_key:feature.origin_key,
+     .map(feature=>({id:feature.origin_id,name:feature.name,granting_trait:feature.name,feature_key:feature.origin_key,
        class_level:Number(member.level)||0,kind,requirements:{scope:'class',
         class_name:row.class_name,class_source:row.class_source,min_level:row.level}}));
   }
@@ -441,7 +441,9 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
   const group=(spec,mode,stage,category,uses='')=>{
    if(!Array.isArray(spec))return;
    let tracker='';
-   const limited=['daily','rest'].includes(category),each=String(uses).endsWith('e'),amount=Number(String(uses).replace(/e$/,''));
+   const limited=['daily','rest'].includes(category),each=String(uses).endsWith('e');
+   const amount=featureGrant&&uses==='proficiency'?
+     Number(proficiency??2+Math.floor((level-1)/4)):Number(String(uses).replace(/e$/,''));
    if(limited){
     if(!Number.isInteger(amount)||amount<=0)return;
     tracker='5espell:'+origin.id+'|'+blockIndex+'|'+stage+'|'+category+'|'+uses;
@@ -496,13 +498,18 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     const fixedAbility=allAbilities.includes(supplement?.spellcasting_ability)?supplement.spellcasting_ability:ability;
     if(!id){out.warnings??=[];out.warnings.push('Incantesimo non presente nel catalogo locale: '+raw);return;}
     if(out.grants.some(g=>g.origin_id===owner.id&&g.spell_id===id&&g.tracker_id===tid))return;
-    out.grants.push({id:'5etools:'+origin.id+'|'+id+'|'+mode+'|'+stage,
+    const previousSupplement='supplemental-spell:'+origin.id+'|'+id;
+    const grantId=featureGrant?(record.origin_spell_configs?.[previousSupplement]?
+      previousSupplement:'feature-spell:'+origin.id+'|'+id):
+      '5etools:'+origin.id+'|'+id+'|'+mode+'|'+stage;
+    out.grants.push({id:grantId,
      origin_id:owner.id,origin_name:owner.name,
      origin_parent_id:origin.id,origin_parent_name:origin.name,
      granting_trait:owner.granting_trait||'',spell_id:id,tracker_id:tid,
      mode,stage,cantrip:raw.includes('#c')||Number(spells.find(spell=>spell.id===id)?.level)===0,
      spellcasting_ability:fixedAbility,
      spellcasting_ability_options:fixedAbility?[]:abilityOptions,
+     ...(block.casting_ability_not_required?{casting_ability_not_required:true,spellcasting_ability_options:[]}:{}),
      slot_alternative:!!tid&&(
        block.slot_alternative===true||
        arr(block.slot_alternative).some(spell=>norm(spell)===norm(String(raw).split('#')[0].split('|')[0]))||
@@ -531,15 +538,21 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
  for(const row of arr(index))for(const origin of originsFor(row).filter(o=>active(o.id))){
   const blocks=arr(row.blocks);
   if(row.kind==='subclassFeature'&&blocks.length>1){
+   if(blocks.every(block=>!block.known&&!block.prepared&&!block.innate))continue;
    // Identical blocks are a shared benefit, e.g. Land's bonus cantrip.
    const unique=[...new Map(blocks.map(block=>{
     const {name,source_block,...mechanics}=block;
     return [JSON.stringify(mechanics),block];
    })).values()];
    if(unique.length===1){append(blockFor(origin,unique[0],0,row));continue;}
-   const labels=blocks.map((block,i)=>block.name||String(i+1));
-   const options=labels.map(norm);
-   const selected=record.origin_spell_variants?.[origin.id]||'';
+   const labels=blocks.map((block,i)=>{
+    const token=['known','innate'].flatMap(mode=>Object.values(block[mode]||{}).flat())
+      .find(value=>typeof value==='string');
+    return block.name||(token?(spells.find(spell=>spell.id===originSpellId(token,edition,spells))?.name||
+      token.split('#')[0].split('|')[0]):String(i+1));
+   });
+   const options=blocks.map((block,i)=>block.name?norm(block.name):String(i+1));
+   const selected=norm(record.origin_spell_variants?.[origin.id]);
    const at=options.indexOf(selected);
    output.variant_choices.push({id:'spell-variant:'+origin.id,origin_id:origin.id,
      name:origin.name,label:'Opzione del privilegio magico',kind:'spell_variant',count:1,

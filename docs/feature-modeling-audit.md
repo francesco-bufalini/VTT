@@ -1270,3 +1270,14 @@ Restano da modellare il dado e il suo destinatario, l'applicazione di Song
 of Rest nel riposo, le scelte Expertise/Magical Secrets, la performance di
 Countercharm e il recupero condizionato di Superior Inspiration. La fonte
 del tratto impedisce di trasferire un effetto 2024 alla classe PHB.
+
+## Incantesimi concessi dai privilegi 2014 — 28 ottobre 2026
+
+Revisionati 71 privilegi di 60 sottoclassi, mantenendo le ultime ristampe
+dell'edizione 2014. Il nuovo generatore conserva le progressioni `additionalSpells`,
+le lega ai tratti effettivamente posseduti e separa incantesimi conosciuti,
+sempre preparati, lanci limitati e liste ampliate. Le opzioni alternative
+richiedono una scelta salvata e i livelli sono quelli della classe concedente.
+
+Copertura, fonti, rigenerazione, compatibilità dei salvataggi e limiti
+sono in [feature-spell-grants-2014.md](feature-spell-grants-2014.md).

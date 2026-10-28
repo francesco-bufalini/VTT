@@ -3,10 +3,14 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from scripts.generate_feature_spell_grants import gather
+from scripts.generate_feature_spell_grants import gather, merge_choices
 
 
 class FeatureSpellGrantsTest(unittest.TestCase):
+    def test_repeated_filters_retain_the_total_number_of_spell_choices(self):
+        self.assertEqual(merge_choices([{"choose": "level=0;1;2;3"}, {"choose": "level=0;1;2;3"}]),
+                         [{"choose": "level=0;1;2;3", "count": 2}])
+
     def fixture(self, root):
         directory = root / "data/class"
         directory.mkdir(parents=True)
@@ -43,7 +47,7 @@ class FeatureSpellGrantsTest(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         data = json.loads((root / "vtt/data/feature_spell_grants_2014.json").read_text(encoding="utf-8"))
         rows = data["entries"]
-        self.assertGreaterEqual(len(rows), 58)
+        self.assertGreaterEqual(len(rows), 71)
         self.assertTrue(all(row["class_source"] in ("PHB", "TCE") for row in rows))
         spores = next(row for row in rows if row["subclass_short_name"] == "Spores")
         self.assertEqual(spores["subclass_source"], "TCE")
