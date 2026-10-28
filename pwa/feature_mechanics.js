@@ -318,9 +318,10 @@ export function classFeatureRollSources(record,calculated,target,context=''){
    if(rule.conditional||!speciesRollModeMatches(rule,target,calculated))continue;
    add(rule.mode,rule.origin_id,rule.origin_name||'Tratto razziale');
  }
- // Context-limited feat advantages apply only to the matching kind of save.
- // A concentration save is still save:con and inherits all Constitution bonuses.
+ // A conditional feat mode is an explicit selection in the roll popup.
+ // Only unconditioned/context-verified modes (such as War Caster) are automatic.
  for(const rule of rows(calculated?.feat_roll_modes)){
+   if(rule?.condition_label)continue;
    if(rule?.context&&rule.context!==context)continue;
    if(!applies(rule))continue;
    add(rule.mode,rule.origin_id,rule.origin_name||'Talento');
@@ -362,6 +363,37 @@ export function classFeatureRollSources(record,calculated,target,context=''){
  for(const row of exhaustionRollModes(calculated?.exhaustion_effects,target))
    add(row.mode,row.origin_id,row.origin_name,'condition',row.condition_id);
  return result;
+}
+// Situational feat effects share the same roll popup and trait navigation as
+// conditional species modes. A condition_label is never inferred as fulfilled.
+function featRollMatches(rule,target,calculated){
+ const damage=target.startsWith('attack_damage:');
+ if(rule.target==='damage_roll'){
+  if(!damage)return false;
+ }else if(!speciesRollModeMatches(rule,target,calculated))return false;
+ if(rule.attack_melee){
+  const attackId=target.slice(target.indexOf(':')+1);
+  const attack=rows(calculated?.attacks).find(row=>String(row.id)===attackId);
+  if(!attack||attack.melee!==true)return false;
+ }
+ return true;
+}
+export function applicableFeatRollBonuses(record={},calculated={},target=''){
+ const enabled=id=>record.origin_enabled?.[id]!==false&&
+   !rows(record.proficiency_origins).some(row=>row?.id===id&&row.disabled);
+ const modes=rows(calculated.feat_roll_modes)
+  .filter(row=>row.condition_label&&enabled(row.origin_id)&&featRollMatches(row,target,calculated))
+  .map(row=>({...row,id:'feat-roll:'+row.origin_id+':'+row.target+':'+row.condition_label,
+   benefit_id:'feat-roll:'+row.origin_id+':'+row.target+':'+row.condition_label,
+   roll_mode:row.mode,granting_trait:row.granting_trait||row.feat_name||row.origin_name,
+   feat_conditional:true}));
+ const bonuses=rows(calculated.feat_roll_bonuses)
+  .filter(row=>row.condition_label&&Number.isFinite(Number(row.flat_bonus))&&
+    enabled(row.origin_id)&&featRollMatches(row,target,calculated))
+  .map(row=>({...row,id:'feat-bonus:'+row.origin_id+':'+row.target+':'+row.condition_label,
+   flat_bonus:Number(row.flat_bonus),granting_trait:row.granting_trait||row.feat_name||row.origin_name,
+   feat_conditional:true}));
+ return [...modes,...bonuses];
 }
 export function resolveClassRollMode(sources=[],selection='auto'){
  if(selection==='normal')return {mode:'normal',sources:[]};
