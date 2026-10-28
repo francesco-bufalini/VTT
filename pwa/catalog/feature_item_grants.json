@@ -182,6 +182,38 @@
         }
       ],
       "replace_existing": true
+    },
+    {
+      "id": "gnome-rock-tinker",
+      "species_name": "Gnome",
+      "species_source": "PHB",
+      "subrace": "Rock",
+      "subrace_source": "PHB",
+      "feature": "Tinker",
+      "min_level": 1,
+      "max_owned": 3,
+      "allow_duplicate_choices": true,
+      "items": [
+        {
+          "id": "clockwork-toy",
+          "name": "Tinker · Giocattolo a orologeria",
+          "type": "G",
+          "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF) che percorre 5 ft sul terreno ogni turno in direzione casuale ed emette rumori. Cessa di funzionare dopo 24 ore, a meno di ripararlo impiegando 1 ora; puoi smontarlo come azione e recuperare i materiali."
+        },
+        {
+          "id": "fire-starter",
+          "name": "Tinker · Accendifuoco",
+          "type": "G",
+          "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF); usarlo richiede un'azione per accendere una candela, una torcia o un fuoco da campo. Cessa di funzionare dopo 24 ore, salvo riparazione di 1 ora; puoi smontarlo come azione."
+        },
+        {
+          "id": "music-box",
+          "name": "Tinker · Scatola musicale",
+          "type": "G",
+          "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF) che riproduce una canzone quando viene aperto e si ferma quando finisce o viene chiuso. Cessa di funzionare dopo 24 ore, salvo riparazione di 1 ora; puoi smontarlo come azione."
+        }
+      ],
+      "description": "Puoi mantenere fino a tre dispositivi costruiti con Tinker. La costruzione, il costo in materiali, la durata di 24 ore e l'eventuale riparazione sono gestiti manualmente; ciascun dispositivo viene aggiunto come oggetto separato in Inventario."
     }
   ]
 }
