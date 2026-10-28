@@ -6461,7 +6461,7 @@ async function handleAction(target){
           '<option value="">Nessuna voce disponibile nel bestiario</option>')+
         '</select></label>':'')+
       '<div class="actions magic-dialog-actions">'+
-      (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
+      (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">'+(entry.ritual_only?'Concludi rituale':'Lancia')+'</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
     app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     openDialog(dialog);

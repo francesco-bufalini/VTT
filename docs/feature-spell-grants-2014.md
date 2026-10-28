@@ -72,11 +72,14 @@ Tentacles, bersagli extra di Moon Fire o benefici dipendenti dalla forma.
 Star Map richiede ancora che il giocatore tenga attivo il tratto solo
 quando possiede e impugna la mappa.
 
-Restano nel backlog i rituali esclusivi, gli incantesimi pagati con Ki o
+Per i privilegi di classe e sottoclasse restano nel backlog i rituali esclusivi, gli incantesimi pagati con Ki o
 Sorcery Points, i lanci dipendenti da una trasformazione/fase attiva e le
 sostituzioni condizionali delle liste. Le nuove liste ampliate sono
 conservate ma non aggiungono automaticamente selezioni alla scheda:
 un incantesimo di quella lista deve essere scelto esplicitamente.
+
+I rituali e le altre concessioni dei talenti sono stati completati nella
+[revisione sistematica dei talenti 2014](feat-spell-audit-2014.md).
 
 ## Verifiche
 

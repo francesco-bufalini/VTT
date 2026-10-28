@@ -137,7 +137,8 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
       spell_id:grant.spell_id,origin_id:grant.origin_id,
       duration_rounds:grant.duration_rounds||10,remaining_rounds:grant.duration_rounds||10}};
  }
- const ability=selection.caster_ability||c.spellcasting_ability||'int';
+ const ability=grant?.casting_ability_from_source?grant.spellcasting_ability:
+   selection.caster_ability||c.spellcasting_ability||'int';
  const hit=calculated.values['casting_hit:'+ability],dc=calculated.values['casting_dc:'+ability];
  if(!Number.isFinite(hit)||!Number.isFinite(dc))throw Error('Caratteristica di lancio non disponibile');
  const innate=classFeatureActive(c,calculated,'innate_sorcery')&&
