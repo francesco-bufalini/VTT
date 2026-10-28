@@ -39,6 +39,47 @@ export function racialPowerProjection(record={},index={},features=[]) {
    String(f.origin_key||'').startsWith('species|')&&!f.disabled&&!f.inactive&&
    record.trait_enabled?.[f.key]!==false&&permitted(record,f.origin_id)&&
    permitted(record,f.origin_key)&&permitted(record,raceRoot));
+ // Source-qualified per-subrace powers retain the owning subrace trait.
+ const subraceFeatureFor=(trait,subrace)=>features.find(f=>norm(f.name)===norm(trait)&&
+   norm(record.subrace)===norm(subrace)&&norm(record.subrace_source)===norm(race.source)&&
+   f.origin_key==='subrace|'+norm(race.source)+'|'+norm(subrace)&&
+   !f.disabled&&!f.inactive&&record.trait_enabled?.[f.key]!==false&&
+   permitted(record,f.origin_id)&&permitted(record,f.origin_key)&&permitted(record,raceRoot));
+ const maximum=uses=>uses==='proficiency'?2+Math.floor((currentLevel(record)-1)/4):
+   Math.max(0,Number(uses)||0);
+ for(const power of rows(race.active_conditions)){
+   const powerOwner=featureFor(power.trait);
+   if(!powerOwner||!power.id||!power.condition||!power.tracker_id)continue;
+   output.trackers.push({id:power.tracker_id,name:power.trait,max:maximum(power.uses),
+     recharge:power.recharge||'long_rest',origin_id:powerOwner.origin_id,
+     origin_name:'Tratto · '+power.trait,automatic:true});
+   output.abilities.push({id:power.id,name:power.name||power.trait,
+     feature_id:powerOwner.origin_id,origin_id:powerOwner.origin_id,
+     origin_name:'Tratto · '+power.trait,source:race.source,
+     description:power.description||'',action_type:power.action_type||'bonus',
+     activation_mode:power.action_type||'bonus',action_kind:'ability',
+     mode:'temporary_condition',effect_condition:power.condition,
+     persistent_key:power.persistent_key,duration_rounds:power.duration_rounds||1,
+     ends_on:rows(power.ends_on),tracker_id:power.tracker_id,resource_cost:1});
+ }
+ // Keep the normal unlimited cantrip; the extra grant uses the existing
+ // spell-casting pipeline with a separate tracker and bonus-action timing.
+ for(const cast of rows(race.bonus_cantrips)){
+   const castOwner=subraceFeatureFor(cast.trait,cast.subrace);
+   if(!castOwner||!cast.tracker_id||!cast.spell_id)continue;
+   output.trackers.push({id:cast.tracker_id,name:cast.trait+' · azione bonus',
+     max:maximum(cast.uses),recharge:cast.recharge||'long_rest',
+     origin_id:castOwner.origin_id,origin_name:'Tratto · '+cast.trait,automatic:true});
+   output.origin_spells.push({id:cast.id,
+     origin_id:'racial-bonus-cast:'+castOwner.origin_id,
+     owner_origin_id:castOwner.origin_id,
+     origin_parent_id:castOwner.origin_id,origin_parent_name:cast.trait,
+     origin_name:cast.trait+' · azione bonus',granting_trait:cast.trait,
+     spell_id:cast.spell_id,mode:'innate',payment_mode:'tracker',
+     tracker_id:cast.tracker_id,tracker_cost:1,cantrip:true,
+     casting_ability_not_required:true,cast_action_type:cast.action_type||'bonus',
+     automatic:true});
+ }
  // Each racial die bonus is owned by its individual trait. A tracker is
  // optional: an unlimited situational benefit must never fabricate a resource.
  for(const bonus of [...(race.roll_bonus?[race.roll_bonus]:[]),...rows(race.roll_bonuses)]){
