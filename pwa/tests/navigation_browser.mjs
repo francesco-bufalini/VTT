@@ -181,8 +181,9 @@ try{
  assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');
  await sheet('magic');
  assert.equal(await page.locator('[data-magic-tool="slots"]').isVisible(),false);
- assert(await page.locator('#sheet-play-view .magic-panel').count()>0,
-  'Power details are rendered directly in the Powers tab');
+ assert.equal(await page.locator('#app').getAttribute('data-rendered-sheet'),'magic',
+  'Power details are rendered in the dedicated Powers tab');
+ assert(await page.locator('#sheet-play-view').isVisible());
  assert.equal(await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').count(),0,
   'The legacy all-in-one tools popup has been replaced by contextual controls');
  await shot('powers');
