@@ -403,10 +403,12 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
      (rule.context||'')+':'+(rule.condition_label||''));
  }
  for(const rule of rows(calculated.feat_roll_bonuses)){
-  if(!belongs(rule)||!Number.isFinite(Number(rule.flat_bonus)))continue;
+  if(!belongs(rule)||rule.flat_bonus!=='equipped_shield_ac'&&
+    !Number.isFinite(Number(rule.flat_bonus)))continue;
+  const amount=rule.flat_bonus==='equipped_shield_ac'?'Bonus CA dello scudo':
+    signedTraitFormula(rule.flat_bonus);
   add('bonus','Bonus applicabili al tiro',traitBenefitTargetLabel(rule.target),
-   signedTraitFormula(rule.flat_bonus)+
-     (rule.condition_label?' · '+rule.condition_label:''),
+   amount+(rule.condition_label?' · '+rule.condition_label:''),
    'feat_bonus:'+rule.origin_id+':'+rule.target+':'+(rule.condition_label||''));
  }
  // User-authored mode grants carry the same stable source as other trait bonuses.
