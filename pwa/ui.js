@@ -5124,7 +5124,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
        const originAttrs=' data-origin-id="'+esc(row.origin_id||'')+'"'+
          ' data-origin-trait="'+esc(row.granting_trait||'')+'"'+
          ' data-origin-key="'+esc(row.origin_key||'')+'"';
-       const traitLink=racialMode||row.passive_class_bonus||row.feat_conditional;
+       const traitLink=racialMode||row.passive_class_bonus||row.feat_conditional||!!(row.granting_trait&&row.origin_id);
        const targetTitle=traitLink?'Apri tratto · '+(row.granting_trait||row.origin_name||''):
          'Apri tracker '+trackerLabel;
        return '<div class="sheet-roll-bonus-item'+(racialMode?' sheet-roll-bonus-item--mode':'')+'">'+
@@ -6700,13 +6700,19 @@ async function handleAction(target){
       return;
     }
     if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
-      chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
+      chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId)||
+      row.exclusive_group&&chosenRollBonuses(dialog).some(b=>b.exclusive_group===row.exclusive_group))return;
     // A situational d20 mode and power-attack penalty must be chosen
     // before the first d20 result, never in reaction to seeing a hit.
     if((row.roll_mode||row.require_before_roll)&&dialog.rollOutcome)
       throw Error('Questo beneficio va scelto prima di tirare il d20.');
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
+    if(String(row.id||'').startsWith('racial:')){
+      const current=await computeLocalData(creature);
+      if(!(current.racial_roll_bonuses||[]).some(b=>b.id===row.id&&b.origin_id===row.origin_id))
+        throw Error('Il privilegio razziale non è più disponibile.');
+    }
     if(row.passive_class_bonus){
       // A passive conditional benefit is applied directly, without invoking
       // an ability action. Verify that its owner/level and formula still apply.
@@ -6778,6 +6784,10 @@ async function handleAction(target){
     }
     const revised=applyPostRollBonus(dialog,row);
     if(!revised)dialog.usedRollBonuses.push(row);
+    if(row.exclusive_group)for(const button of dialog.querySelectorAll('[data-roll-use]')){
+      const other=dialog.rollBonuses[Number(button.dataset.rollUse)];
+      if(other?.exclusive_group===row.exclusive_group&&other.selectionId!==row.selectionId)button.disabled=true;
+    }
     target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
     dialog.renderRollFormula?.();
     if(revised)await announcePostRollBonus(revised);
