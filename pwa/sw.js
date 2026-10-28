@@ -113,6 +113,7 @@ const SHELL = [
   "/icon-1024.png",
   "/feature_item_grants.js",
   "/spell_storing_item.js",
+  "/spell_imprints.js",
   "/attack_hit_effects.js",
   "/catalog/feature_item_grants.json"
 ];
