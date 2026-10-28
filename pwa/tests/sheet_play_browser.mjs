@@ -140,6 +140,7 @@ try{
    'No legacy ± navigation remains anywhere in the rendered sheet');
  const competenceButton=page.locator('#sheet-play-view .play-quickstat[data-sheet-context="tools"]');
  assert.equal(await competenceButton.count(),1,'Competenza opens the existing Other Competences section');
+ assert.equal(await competenceButton.locator('.vtt-action-glyph--pack-3.vtt-action-glyph--slot-0').count(),1,'Competenza uses the golden proficiency icon');
  await competenceButton.click();
  const competenceDialog=page.locator('#sheet-context-dialog');
  assert(await competenceDialog.isVisible());
@@ -148,6 +149,7 @@ try{
  await competenceDialog.waitFor({state:'detached'});
  const movementButton=page.locator('#sheet-play-view .play-quickstat[data-act="sheet-movement-open"]');
  assert.equal(await movementButton.count(),1);
+ assert.equal(await movementButton.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movimento uses the golden dash icon');
  assert.match(await movementButton.textContent(),/Movimento/);
  await movementButton.click();
  const movementDialog=page.locator('#sheet-movement-dialog');
@@ -159,6 +161,7 @@ try{
  await movementDialog.locator('[data-act="sheet-movement-close"]').click();
  const senses=page.locator('#sheet-play-view [data-act="sheet-senses-open"]');
  assert.equal(await senses.count(),1);
+ assert.equal(await senses.locator('.vtt-action-glyph--pack-0.vtt-action-glyph--slot-10').count(),1,'Sensi uses the golden eye icon');
  await senses.click();
  const sensesDialog=page.locator('#sheet-senses-dialog');
  assert(await sensesDialog.isVisible());
