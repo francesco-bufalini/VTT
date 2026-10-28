@@ -2768,9 +2768,8 @@ function racialRestTrainingPanel(c,calculated){
     '<div class="infusion-overview"><strong>Stagione attuale</strong>'+
       '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
     '<div class="infusion-dialog-item"><strong>'+esc(choice.option_labels?.[key]||'Da scegliere')+'</strong></div>'+
-    '<div class="actions"><button type="button" class="btn primary" data-act="racial-option-open" data-racial-option-group="'+esc(choice.group)+'"'+
-      ''+'>'+(key?'Cambia stagione':'Scegli stagione')+'</button></div>'+
-    '',
+    '<div class="actions"><button type="button" class="btn primary" data-act="racial-option-open" data-racial-option-group="'+esc(choice.group)+'">'+
+      (key?'Cambia stagione':'Scegli stagione')+'</button></div>',
     'armor-model-panel');
   }
   const selected=(c.proficiency_choices||[]).filter(row=>row.rest_training_group===choice.group);
@@ -2783,9 +2782,8 @@ function racialRestTrainingPanel(c,calculated){
   return panel(choice.trait,
     '<div class="infusion-overview"><strong>Competenze temporanee</strong>'+
       '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
-    entries+'<div class="actions"><button type="button" class="btn primary" data-act="rest-training-open" data-training-group="'+esc(choice.group)+'"'+
-    ''+'>'+(selected.length?'Cambia competenze':'Scegli competenze')+'</button></div>'+
-    '',
+    entries+'<div class="actions"><button type="button" class="btn primary" data-act="rest-training-open" data-training-group="'+esc(choice.group)+'">'+
+    (selected.length?'Cambia competenze':'Scegli competenze')+'</button></div>',
     'armor-model-panel');
  }).join('');
 }
