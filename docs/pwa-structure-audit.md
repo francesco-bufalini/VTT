@@ -1,5 +1,21 @@
 # PWA structure audit — 2026-10-28
 
+## Subsequent development decision: current saves only
+
+The user explicitly dropped support for earlier save formats after this audit.
+The compatibility description and validation counts below describe the earlier
+implementation and are historical. The current PWA no longer migrates legacy
+proficiency arrays, flattened saved species aliases, second-form HP, old armor
+model fields, or grants saved on the retired general-benefits card. Opening an
+editor no longer repairs old XP or inventory stacks. Explicit current state
+selection and canonical proficiency choices are required. Generated subtype
+aliases were removed. Current bestiary input conversion and D&D 2014 content
+remain supported. Legacy companion matching remains unchanged pending approval
+after an automatic review rejection. App-shell version: v195.
+
+Focused verification after removal: 29 unit checks and the dedicated browser
+action/payment/persistence regression pass; broad suites were not rerun.
+
 The structural cleanup preserves portable record identities and the 2014 rules.
 It keeps the current rule engine and UI owners rather than splitting `ui.js`
 or introducing another manager.

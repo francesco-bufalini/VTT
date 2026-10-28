@@ -59,7 +59,7 @@ test('subrace benefits stay on subrace Panoramica, not the base species',()=>{
  assert.equal(byKey.get(sub.key)[0].items[0].id,'bonus:sub');
 });
 
-test('manual grants saved on Panoramica and legacy general card remain visible there',()=>{
+test('Panoramica ignores retired general-card identities',()=>{
  const oldKey='origin-benefits:'+parent.key;
  const calculated={bonuses:[
   {id:'new',origin_id:'feature:trait:'+parent.key,target:'hp',expression:'2'},
@@ -68,22 +68,12 @@ test('manual grants saved on Panoramica and legacy general card remain visible t
  const {rows,byKey}=distributeTraitBenefits([parent],record,calculated);
  assert.equal(rows.length,1);
  assert.deepEqual(byKey.get(parent.key).flatMap(group=>group.items.map(item=>item.id)),
-  ['bonus:new','bonus:old']);
+  ['bonus:new']);
 });
 
-test('legacy manually hidden benefits stay hidden until restored, without data loss',()=>{
- const oldKey='origin-benefits:'+parent.key;
- const calculated={bonuses:[
-  {id:'hidden',origin_id:'feature:trait:'+oldKey,target:'hp',expression:'2'},
-  {id:'shown',origin_id:'feature:trait:'+oldKey,target:'speed',expression:'7'}
- ]};
- const masked={...record,trait_benefit_removed:{[oldKey]:['bonus:hidden']}};
- const {rows,byKey}=distributeTraitBenefits([parent],masked,calculated);
- assert.equal(rows.length,1);
- assert.deepEqual(byKey.get(parent.key).flatMap(group=>group.items.map(item=>item.id)),['bonus:shown']);
- assert.deepEqual(distributeTraitBenefits([parent],record,calculated)
-  .byKey.get(parent.key).flatMap(group=>group.items.map(item=>item.id)),
-  ['bonus:hidden','bonus:shown']);
+test('retired general-card grants do not appear on Panoramica',()=>{
+ const calculated={bonuses:[{id:'old',origin_id:'feature:trait:origin-benefits:'+parent.key,target:'hp',expression:'2'}]};
+ assert.deepEqual(distributeTraitBenefits([parent],record,calculated).byKey.get(parent.key),[]);
 });
 
 test('unrelated class origins and standalone feat/item cards remain unchanged',()=>{

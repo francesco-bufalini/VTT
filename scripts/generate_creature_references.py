@@ -91,7 +91,7 @@ def build(offline=False, refresh=False, races_only=False):
             subrace_rows.append({
                 'id': row['id'], 'name': raw['name'], 'source': row['source'],
                 'raceName': raw['raceName'], 'raceSource': raw['raceSource'],
-                'speed': native['speed'], 'legacy_name': native['name'],
+                'speed': native['speed'],
                 **{key: merged[key] for key in ('size', 'creatureTypes') if key in merged},
             })
     meta = {"source_url":BASE,"sha256":hashes}

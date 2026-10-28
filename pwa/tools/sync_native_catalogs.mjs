@@ -13,9 +13,9 @@ function projectSubraceMechanics(subraces,references){
  const canonical=references.subraces;
  const key=row=>[row.raceName,row.raceSource,row.name,row.source].join('|').toLowerCase();
  const selected=[...subraces,...canonical.filter(row=>!subraces.some(old=>key(old)===key(row)))];
- return selected.map(row=>{
+ return selected.map(({legacy_name,...row})=>{
   const source=canonical.find(r=>key(r)===key(row));
-  return source?{...row,legacy_name:source.legacy_name,...(source.speed!==undefined?{speed:source.speed}:{}),
+  return source?{...row,...(source.speed!==undefined?{speed:source.speed}:{}),
     ...(source.size!==undefined?{size:source.size}:{}),
     ...(source.creatureTypes!==undefined?{creatureTypes:source.creatureTypes}:{})}:row;
  });

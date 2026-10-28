@@ -10,8 +10,6 @@ const overview=row=>/^Descrizione · /.test(String(row?.name||''))&&
 const signature=(type,item)=>JSON.stringify([type,item.label,item.value]);
 
 export function distributeTraitBenefits(traits=[],record={},calculated={}){
- // The separate "Benefici generali" card was introduced briefly. Keep its
- // manually saved grants readable on Panoramica without recreating that card.
  const rows=list(traits).filter(row=>!row.virtual_origin_benefits);
  const byKey=new Map(rows.map(row=>
   [row.key,traitBenefitGroups(row,record,calculated)]));
@@ -20,18 +18,8 @@ export function distributeTraitBenefits(traits=[],record={},calculated={}){
    row.category===summary.category&&row.origin_key===summary.origin_key);
   const claimed=new Set(siblings.flatMap(row=>list(byKey.get(row.key))
    .flatMap(group=>list(group.items).map(item=>signature(group.type,item)))));
-  const legacyKey='origin-benefits:'+summary.key;
-  const legacy={...summary,key:legacyKey,name:'Benefici generali',
-   rank:1,feature_origin:'',proficiency_origin:'',
-   action_type:'',resource_name:''};
-  // The previous version saved manual benefits using the generated card's
-  // feature:trait:<key> identity; retain them without migrating save data.
-  const groups=[...list(byKey.get(summary.key)),
-   ...traitBenefitGroups(legacy,record,calculated)];
-  const hidden=new Set([
-   ...list(record.trait_benefit_removed?.[summary.key]),
-   ...list(record.trait_benefit_removed?.[legacyKey])
-  ]);
+  const groups=list(byKey.get(summary.key));
+  const hidden=new Set(list(record.trait_benefit_removed?.[summary.key]));
   const seen=new Set();
   const filtered=[];
   for(const group of groups){

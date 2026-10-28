@@ -1,11 +1,11 @@
-import {resolveVariant, applyVariantEdit, migrateSecondForm, bestiarySheet} from './creature_variants.js';
+import {resolveVariant, applyVariantEdit, bestiarySheet} from './creature_variants.js';
 // Local character/monster archive using the *same* portable JSON schema as
 // Godot's CreatureArchive, without copying Godot gameplay calculations.
 import { getRecord, listRecords, putRecord, deleteRecordIfRevision, deleteCreatureFamily, insertRecords,
   localOwnerId } from "./storage.js";
 import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
   referencedDefinitions, makeCreatureExport, MAX_CREATURE_BYTES } from "./creature_format.js";
-import { initialCreature, experienceFloorPatch, normalizeCreatureRecord } from "./character_core.js";
+import { initialCreature, experienceFloorPatch } from "./character_core.js";
 import { consolidateOwnedItems } from "./item_controls.js";
 
 const CREATURE_TYPE = "creature";
@@ -459,21 +459,6 @@ export async function openCreatureEditor(id, scope = "default") {
   if (!stored) throw new Error("Creature not found");
   if (!stored.data || typeof stored.data !== "object" || Array.isArray(stored.data))
     throw new Error("Questa scheda non è leggibile. Torna alle creature per aprire le altre schede o esportare il backup.");
-  // Upgrade older saves with repeated copies as soon as the creature is edited.
-  // Do not rewrite records that already have canonical inventory stacks.
-  if (Array.isArray(stored.data.inventory)) {
-    const inventory = consolidateOwnedItems(stored.data.inventory);
-    if (JSON.stringify(inventory) !== JSON.stringify(stored.data.inventory))
-      stored = await saveCreature({...stored.data,inventory},scope,stored.revision);
-  }
-  const migrated=normalizeCreatureRecord(migrateSecondForm(stored.data));
-  if(JSON.stringify(migrated)!==JSON.stringify(stored.data))
-    stored=await saveCreature(migrated,scope,stored.revision);
-  // Repair legacy high-level characters with insufficient XP on first open.
-  // This is local IndexedDB migration; no desktop connection is required.
-  const xpRepair=experienceFloorPatch(stored.data);
-  if(Object.keys(xpRepair).length)
-    stored=await saveCreature({...stored.data,...xpRepair},scope,stored.revision);
   let pending = Promise.resolve(), blocked = null;
   let latest = structuredClone(stored.data);
   const editor = {

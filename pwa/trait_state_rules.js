@@ -33,14 +33,10 @@ function eligible(record,features,rule) {
   return trait;
 }
 function selection(record,rule) {
-  if(Object.hasOwn(record.trait_state_selection||{},rule.group))
-    return record.trait_state_selection[rule.group];
-  const stored=record[rule.legacy_field];
-  if(stored!==undefined&&stored!==null&&stored!=='')return stored===rule.legacy_value?rule.id:null;
-  return rule.legacy_default?rule.id:null;
+  return record.trait_state_selection?.[rule.group]||null;
 }
 // Resolve the selected member even when equipment temporarily makes it inactive.
-// Both the UI and mechanical projection use the same legacy/default precedence.
+// Both the UI and mechanical projection use the canonical selection.
 export function selectedTraitState(record={},rules=[]) {
   return arr(rules).find(rule=>selection(record,rule)===rule.id)?.id||'';
 }
@@ -133,7 +129,6 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
       changes.resource_tracker_spent={...(record.resource_tracker_spent||{}),[tracker.id]:spent+cost};
     }
   }
-  if(rule.legacy_field)changes[rule.legacy_field]=rule.legacy_value;
   return changes;
 }
 // A state is not a substitute for a missing or disabled child trait.

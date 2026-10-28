@@ -22,9 +22,7 @@ try{
   const record={...saved.data,class:'Barbarian',class_source:'PHB',level:6,
    classes:[{name:'Barbarian',source:'PHB',level:6,subclass:'Wild Magic',subclass_source:'TCE'}],
    abilities:{str:16,dex:14,con:14,int:10,wis:12,cha:10},
-   skill_proficiencies:['athletics'],skill_expertise:['athletics'],
-   saving_throw_proficiencies:['str'],resource_tracker_spent:{}};
-  delete record.proficiency_choices;delete record.proficiency_origins;
+   proficiency_choices:[{kind:'skill',key:'athletics'},{kind:'expertise',key:'athletics'},{kind:'save',key:'str'}],resource_tracker_spent:{}};
   await putRecord('default','creature',record.id,record,saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
@@ -65,5 +63,5 @@ try{
  // The static test fixture omits the native host's dynamic fingerprint route.
  assert.deepEqual(f.missing.filter(url=>new URL(url).pathname!=='/__vtt_version'),[]);
  assert.deepEqual(f.writes,[]);
- console.log('PASS: legacy choices migrate on open; catalog action cancellation, payment, stable IDs and disabled trait persist in real Chrome');
+ console.log('PASS: canonical choices persist; catalog action cancellation, payment, stable IDs and disabled trait persist in real Chrome');
 }finally{await f.close();}

@@ -50208,8 +50208,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Aven (Hawk-Headed)"
+      ]
     },
     {
       "name": "Duergar",
@@ -50220,8 +50219,7 @@
       "speed": 25,
       "size": [
         "M"
-      ],
-      "legacy_name": "Dwarf (Duergar)"
+      ]
     },
     {
       "name": "Mountain",
@@ -50232,8 +50230,7 @@
       "speed": 25,
       "size": [
         "M"
-      ],
-      "legacy_name": "Dwarf (Mountain)"
+      ]
     },
     {
       "name": "Drow",
@@ -50244,8 +50241,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Drow)"
+      ]
     },
     {
       "name": "Eladrin",
@@ -50256,8 +50252,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Eladrin)"
+      ]
     },
     {
       "name": "High",
@@ -50268,8 +50263,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (High)"
+      ]
     },
     {
       "name": "Sea",
@@ -50283,8 +50277,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Sea)"
+      ]
     },
     {
       "name": "Wood",
@@ -50295,8 +50288,7 @@
       "speed": 35,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Wood)"
+      ]
     },
     {
       "name": "Joraga Nation",
@@ -50307,8 +50299,7 @@
       "speed": 35,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Zendikar) (Joraga Nation)"
+      ]
     },
     {
       "name": "Mul Daya Nation",
@@ -50319,8 +50310,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Zendikar) (Mul Daya Nation)"
+      ]
     },
     {
       "name": "Githyanki",
@@ -50331,8 +50321,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Gith (Githyanki)"
+      ]
     },
     {
       "name": "Deep",
@@ -50343,8 +50332,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Gnome (Deep)"
+      ]
     },
     {
       "name": "Deep/Svirfneblin",
@@ -50355,8 +50343,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Gnome (Deep/Svirfneblin)"
+      ]
     },
     {
       "name": "Rock",
@@ -50367,8 +50354,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Gnome (Rock)"
+      ]
     },
     {
       "name": "Zendikar; Grotag Tribe",
@@ -50379,8 +50365,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Goblin (Zendikar; Grotag Tribe)"
+      ]
     },
     {
       "name": "Zendikar; Tuktuk Tribe",
@@ -50391,8 +50376,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Goblin (Zendikar; Tuktuk Tribe)"
+      ]
     },
     {
       "name": "Variant; Mark of Detection",
@@ -50403,8 +50387,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Half-Elf (Variant; Mark of Detection)"
+      ]
     },
     {
       "name": "Variant; Mark of Storm",
@@ -50415,8 +50398,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Half-Elf (Variant; Mark of Storm)"
+      ]
     },
     {
       "name": "Variant; Mark of Finding",
@@ -50427,8 +50409,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Half-Orc (Variant; Mark of Finding)"
+      ]
     },
     {
       "name": "Keldon",
@@ -50439,8 +50420,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Keldon)"
+      ]
     },
     {
       "name": "Mark of Making",
@@ -50451,8 +50431,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Mark of Making)"
+      ]
     },
     {
       "name": "Variant",
@@ -50463,8 +50442,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Variant)"
+      ]
     },
     {
       "name": "Variant; Mark of Finding",
@@ -50475,8 +50453,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Variant; Mark of Finding)"
+      ]
     },
     {
       "name": "Kessig",
@@ -50487,8 +50464,7 @@
       "speed": 40,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Innistrad) (Kessig)"
+      ]
     },
     {
       "name": "Stensia",
@@ -50499,8 +50475,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Innistrad) (Stensia)"
+      ]
     },
     {
       "name": "Ixalan; Blue",
@@ -50514,8 +50489,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Merfolk (Ixalan; Blue)"
+      ]
     },
     {
       "name": "Ixalan; Green",
@@ -50529,8 +50503,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Merfolk (Ixalan; Green)"
+      ]
     },
     {
       "name": "Zendikar; Cosi Creed",
@@ -50544,8 +50517,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Merfolk (Zendikar; Cosi Creed)"
+      ]
     },
     {
       "name": "Zendikar; Emeria Creed",
@@ -50559,8 +50531,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Merfolk (Zendikar; Emeria Creed)"
+      ]
     },
     {
       "name": "Zendikar; Ula Creed",
@@ -50574,8 +50545,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Merfolk (Zendikar; Ula Creed)"
+      ]
     },
     {
       "name": "Beasthide",
@@ -50586,8 +50556,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Shifter (Beasthide)"
+      ]
     },
     {
       "name": "Longtooth",
@@ -50598,8 +50567,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Shifter (Longtooth)"
+      ]
     },
     {
       "name": "Swiftstride",
@@ -50610,8 +50578,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Shifter (Swiftstride)"
+      ]
     },
     {
       "name": "Wildhunt",
@@ -50622,8 +50589,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Shifter (Wildhunt)"
+      ]
     },
     {
       "name": "Variant; Drow Descent",
@@ -50634,8 +50600,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Half-Elf (Variant; Drow Descent)"
+      ]
     },
     {
       "name": "Variant; Moon Elf or Sun Elf Descent",
@@ -50646,8 +50611,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Half-Elf (Variant; Moon Elf or Sun Elf Descent)"
+      ]
     },
     {
       "name": "Variant; Wood Elf Descent",
@@ -50658,8 +50622,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Half-Elf (Variant; Wood Elf Descent)"
+      ]
     },
     {
       "name": "Lorwyn",
@@ -50726,8 +50689,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Aasimar (Fallen)"
+      ]
     },
     {
       "id": "5etools:races:vgm:aasimar%20%28protector%29",
@@ -50738,8 +50700,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Aasimar (Protector)"
+      ]
     },
     {
       "id": "5etools:races:vgm:aasimar%20%28scourge%29",
@@ -50750,8 +50711,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Aasimar (Scourge)"
+      ]
     },
     {
       "id": "5etools:races:psa:aven%20%28ibis-headed%29",
@@ -50765,8 +50725,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Aven (Ibis-Headed)"
+      ]
     },
     {
       "id": "5etools:races:egw:dragonborn%20%28draconblood%29",
@@ -50777,8 +50736,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Dragonborn (Draconblood)"
+      ]
     },
     {
       "id": "5etools:races:egw:dragonborn%20%28ravenite%29",
@@ -50789,8 +50747,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Dragonborn (Ravenite)"
+      ]
     },
     {
       "id": "5etools:races:phb:dwarf%20%28hill%29",
@@ -50801,8 +50758,7 @@
       "speed": 25,
       "size": [
         "M"
-      ],
-      "legacy_name": "Dwarf (Hill)"
+      ]
     },
     {
       "id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29",
@@ -50813,8 +50769,7 @@
       "speed": 25,
       "size": [
         "M"
-      ],
-      "legacy_name": "Dwarf (Mark of Warding)"
+      ]
     },
     {
       "id": "5etools:races:mtf:elf%20%28eladrin%29",
@@ -50825,8 +50780,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Eladrin)"
+      ]
     },
     {
       "id": "5etools:races:erlw:elf%20%28mark%20of%20shadow%29",
@@ -50837,8 +50791,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Mark of Shadow)"
+      ]
     },
     {
       "id": "5etools:races:egw:elf%20%28pallid%29",
@@ -50849,8 +50802,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Pallid)"
+      ]
     },
     {
       "id": "5etools:races:mtf:elf%20%28shadar-kai%29",
@@ -50861,8 +50813,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Shadar-kai)"
+      ]
     },
     {
       "id": "5etools:races:psk:elf%20%28kaladesh%29%20%28bishatar%20and%20tirahar%29",
@@ -50873,8 +50824,7 @@
       "speed": 35,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Kaladesh) (Bishatar and Tirahar)"
+      ]
     },
     {
       "id": "5etools:races:psk:elf%20%28kaladesh%29%20%28vahadar%29",
@@ -50885,8 +50835,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Kaladesh) (Vahadar)"
+      ]
     },
     {
       "id": "5etools:races:psz:elf%20%28zendikar%29%20%28tajuru%20nation%29",
@@ -50897,8 +50846,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Elf (Zendikar) (Tajuru Nation)"
+      ]
     },
     {
       "id": "5etools:races:eepc:genasi%20%28air%29",
@@ -50909,8 +50857,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Genasi (Air)"
+      ]
     },
     {
       "id": "5etools:races:eepc:genasi%20%28earth%29",
@@ -50921,8 +50868,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Genasi (Earth)"
+      ]
     },
     {
       "id": "5etools:races:eepc:genasi%20%28fire%29",
@@ -50933,8 +50879,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Genasi (Fire)"
+      ]
     },
     {
       "id": "5etools:races:eepc:genasi%20%28water%29",
@@ -50948,8 +50893,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Genasi (Water)"
+      ]
     },
     {
       "id": "5etools:races:mpmm:genasi%20%28air%29",
@@ -50961,8 +50905,7 @@
       "size": [
         "S",
         "M"
-      ],
-      "legacy_name": "Genasi (Air)"
+      ]
     },
     {
       "id": "5etools:races:mpmm:genasi%20%28earth%29",
@@ -50974,8 +50917,7 @@
       "size": [
         "S",
         "M"
-      ],
-      "legacy_name": "Genasi (Earth)"
+      ]
     },
     {
       "id": "5etools:races:mpmm:genasi%20%28fire%29",
@@ -50987,8 +50929,7 @@
       "size": [
         "S",
         "M"
-      ],
-      "legacy_name": "Genasi (Fire)"
+      ]
     },
     {
       "id": "5etools:races:mpmm:genasi%20%28water%29",
@@ -51003,8 +50944,7 @@
       "size": [
         "S",
         "M"
-      ],
-      "legacy_name": "Genasi (Water)"
+      ]
     },
     {
       "id": "5etools:races:mtf:gith%20%28githzerai%29",
@@ -51015,8 +50955,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Gith (Githzerai)"
+      ]
     },
     {
       "id": "5etools:races:phb:gnome%20%28forest%29",
@@ -51027,8 +50966,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Gnome (Forest)"
+      ]
     },
     {
       "id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29",
@@ -51039,8 +50977,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Gnome (Mark of Scribing)"
+      ]
     },
     {
       "id": "5etools:races:psx:goblin%20%28ixalan%29",
@@ -51051,8 +50988,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Goblin (Ixalan)"
+      ]
     },
     {
       "id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29",
@@ -51063,8 +50999,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Goblin (Zendikar; Lavastep Tribe)"
+      ]
     },
     {
       "id": "5etools:races:scag:half-elf%20%28variant%3B%20aquatic%20elf%20descent%29",
@@ -51075,8 +51010,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Half-Elf (Variant; Aquatic Elf Descent)"
+      ]
     },
     {
       "id": "5etools:races:scag:halfling%20%28ghostwise%29",
@@ -51087,8 +51021,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Halfling (Ghostwise)"
+      ]
     },
     {
       "id": "5etools:races:phb:halfling%20%28lightfoot%29",
@@ -51099,8 +51032,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Halfling (Lightfoot)"
+      ]
     },
     {
       "id": "5etools:races:egw:halfling%20%28lotusden%29",
@@ -51111,8 +51043,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Halfling (Lotusden)"
+      ]
     },
     {
       "id": "5etools:races:erlw:halfling%20%28mark%20of%20healing%29",
@@ -51123,8 +51054,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Halfling (Mark of Healing)"
+      ]
     },
     {
       "id": "5etools:races:erlw:halfling%20%28mark%20of%20hospitality%29",
@@ -51135,8 +51065,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Halfling (Mark of Hospitality)"
+      ]
     },
     {
       "id": "5etools:races:phb:halfling%20%28stout%29",
@@ -51147,8 +51076,7 @@
       "speed": 25,
       "size": [
         "S"
-      ],
-      "legacy_name": "Halfling (Stout)"
+      ]
     },
     {
       "id": "5etools:races:erlw:human%20%28mark%20of%20handling%29",
@@ -51159,8 +51087,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Mark of Handling)"
+      ]
     },
     {
       "id": "5etools:races:erlw:human%20%28mark%20of%20passage%29",
@@ -51171,8 +51098,7 @@
       "speed": 35,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Mark of Passage)"
+      ]
     },
     {
       "id": "5etools:races:erlw:human%20%28mark%20of%20sentinel%29",
@@ -51183,8 +51109,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Mark of Sentinel)"
+      ]
     },
     {
       "id": "5etools:races:psi:human%20%28innistrad%29%20%28gavony%29",
@@ -51195,8 +51120,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Innistrad) (Gavony)"
+      ]
     },
     {
       "id": "5etools:races:psi:human%20%28innistrad%29%20%28nephalia%29",
@@ -51207,8 +51131,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Human (Innistrad) (Nephalia)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28asmodeus%29",
@@ -51219,8 +51142,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Asmodeus)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28baalzebul%29",
@@ -51231,8 +51153,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Baalzebul)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28dispater%29",
@@ -51243,8 +51164,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Dispater)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28fierna%29",
@@ -51255,8 +51175,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Fierna)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28glasya%29",
@@ -51267,8 +51186,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Glasya)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28levistus%29",
@@ -51279,8 +51197,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Levistus)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28mammon%29",
@@ -51291,8 +51208,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Mammon)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28mephistopheles%29",
@@ -51303,8 +51219,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Mephistopheles)"
+      ]
     },
     {
       "id": "5etools:races:scag:tiefling%20%28variant%3B%20devil%27s%20tongue%29",
@@ -51315,8 +51230,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Variant; Devil's Tongue)"
+      ]
     },
     {
       "id": "5etools:races:scag:tiefling%20%28variant%3B%20hellfire%29",
@@ -51327,8 +51241,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Variant; Hellfire)"
+      ]
     },
     {
       "id": "5etools:races:scag:tiefling%20%28variant%3B%20infernal%20legacy%29",
@@ -51339,8 +51252,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Variant; Infernal Legacy)"
+      ]
     },
     {
       "id": "5etools:races:scag:tiefling%20%28variant%3B%20winged%29",
@@ -51354,8 +51266,7 @@
       },
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Variant; Winged)"
+      ]
     },
     {
       "id": "5etools:races:mtf:tiefling%20%28zariel%29",
@@ -51366,8 +51277,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Tiefling (Zariel)"
+      ]
     },
     {
       "id": "5etools:races:psx:vampire%20%28ixalan%29",
@@ -51378,8 +51288,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Vampire (Ixalan)"
+      ]
     },
     {
       "id": "5etools:races:psz:vampire%20%28zendikar%29",
@@ -51390,8 +51299,7 @@
       "speed": 30,
       "size": [
         "M"
-      ],
-      "legacy_name": "Vampire (Zendikar)"
+      ]
     }
   ],
   "feature_spells": [

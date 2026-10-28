@@ -2,7 +2,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createVariant,configureVariant,resolveVariant,applyVariantEdit,variantDamage,revertVariantDamage,migrateSecondForm,importVariantSections,bestiarySheet,creatureMatchesFilter,validateVariants} from '../creature_variants.js';
+import {createVariant,configureVariant,resolveVariant,applyVariantEdit,variantDamage,revertVariantDamage,importVariantSections,bestiarySheet,creatureMatchesFilter,validateVariants} from '../creature_variants.js';
 import {createCreature,openCreatureEditor,loadCreature,exportCreature,importCreatureExport} from '../creatures.js';
 const base=()=>({id:'hero',owner_id:'1234567890123456',kind:'character',name:'Lyria',current_hp:30,max_hp_base:40,temporary_hp:2,current_miniature_id:'elf',default_miniature_id:'elf',abilities:{str:10,dex:14,con:12,int:16,wis:18,cha:8},inventory:[],variants:[],current_form_id:''});
 const add=(c,options)=>({...c,variants:[...c.variants,createVariant(c,options)]});
@@ -53,12 +53,12 @@ test('full-sheet transformations isolate all fields but never IDs, owner or toke
  assert.throws(()=>validateVariants({...c,variants:[{...c.variants[0],values:{id:'other'}}]}),/identità/);
  assert.throws(()=>validateVariants({...c,current_form_id:'missing'}),/attuale/);
 });
-test('legacy second form migrates once without losing either HP pool',()=>{
- const c=migrateSecondForm({...base(),second_form_hp:7,second_form_max_hp:11,current_miniature_id:'wolf'});
- assert.equal(c.second_form_hp,undefined);assert.equal(c.current_hp,30);assert.equal(c.current_miniature_id,'elf');
- assert.equal(resolveVariant(c).current_hp,7);assert.equal(resolveVariant(c).current_miniature_id,'wolf');
- assert.deepEqual(migrateSecondForm(c),c);
+test('retired second-form fields do not create a variant',()=>{
+ const data={...base(),second_form_hp:7,second_form_max_hp:11};
+ assert.equal(resolveVariant(data).current_hp,30);
+ assert.deepEqual(data.variants,[]);
 });
+
 test('readable creature filters select IDs, types, sources, challenge and movement',()=>{
  const wolf={id:'wolf',name:'Wolf',source:'MM',type:'beast',cr:'1/4',speed:{walk:40}};
  assert(creatureMatchesFilter(wolf,{type:['beast'],max_cr:0.5,no_fly:true}));

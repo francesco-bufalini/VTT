@@ -1,4 +1,4 @@
-import {hitDicePools,minimumXpForCreature,experienceFloorPatch,normalizeCreatureRecord} from './character_core.js';
+import {hitDicePools,minimumXpForCreature,experienceFloorPatch} from './character_core.js';
 // Native-style sheet sections and mutations of the portable native schema.
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
@@ -71,7 +71,7 @@ export function requirementPatch(row,field,value){
 }
 export function rowsFor(c,key){
  if(key==='classes'&&!list(c.classes).length&&c.class)return [{name:c.class,source:c.class_source||'',id:c.class_id||'',subclass:c.subclass||'',subclass_source:c.subclass_source||'',subclass_id:c.subclass_id||'',level:c.level||1}];
- return structuredClone(list(normalizeCreatureRecord(c)[key]));
+ return structuredClone(list(c[key]));
 }
 // Same mutation contract as CreatureSheetController.change_hit_points().
 export function hitPointPatch(c,delta,calculated){

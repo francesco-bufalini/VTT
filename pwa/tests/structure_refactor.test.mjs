@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {normalizeCreatureRecord,normalizeMonsterStatBlock} from '../character_core.js';
+import {normalizeMonsterStatBlock} from '../character_core.js';
 import {fixedProficiencies,collectStructuredFeatures} from '../structured_effects.js';
 import {calculateSheet,SKILLS} from '../sheet_rules.js';
 import {SKILLS as nativeSkills,rowsFor} from '../native_sheet.js';
@@ -13,69 +13,26 @@ import {selectedTraitState} from '../trait_state_rules.js';
 
 test('skill metadata and state selection have one owner',()=>{
  assert.equal(nativeSkills,SKILLS);
- const rules=[{id:'guardian',group:'armor',legacy_field:'old',legacy_value:'g',legacy_default:true},
-  {id:'infiltrator',group:'armor',legacy_field:'old',legacy_value:'i'}];
- assert.equal(selectedTraitState({},rules),'guardian');
- assert.equal(selectedTraitState({old:'i'},rules),'infiltrator');
- assert.equal(selectedTraitState({old:'unknown'},rules),'');
- assert.equal(selectedTraitState({old:'i',trait_state_selection:{armor:''}},rules),'');
- assert.equal(selectedTraitState({old:'i',trait_state_selection:{armor:'guardian'}},rules),'guardian');
+ const rules=[{id:'guardian',group:'armor'},{id:'infiltrator',group:'armor'}];
+ assert.equal(selectedTraitState({},rules),'');
+ assert.equal(selectedTraitState({artificer_armor_model:'infiltrator'},rules),'');
+ assert.equal(selectedTraitState({trait_state_selection:{armor:'guardian'}},rules),'guardian');
+ assert.equal(selectedTraitState({trait_state_selection:{armor:''}},rules),'');
 });
 
-test('legacy choice normalization preserves calculations, exclusions and explicit removals',()=>{
- const base={kind:'character',abilities:{dex:14,wis:12},
-  skill_proficiencies:['stealth','perception'],skill_expertise:['stealth'],
-  saving_throw_proficiencies:['dex'],unknown_field:{kept:true}};
- const records=[base,{...base,proficiency_choices:[]},
-  {...base,proficiency_choices:[],proficiency_origins:[]},
-  {...base,proficiency_choices:[{kind:'skill',key:'arcana',disabled:true}]},
-  {...base,proficiency_choices:[{kind:'skill',key:'arcana',origin_id:'custom'}]},
-  {...base,proficiency_choices:[{kind:'skill',key:'arcana',origin_id:'custom'}],
-   proficiency_origins:[{id:'custom',disabled:true}]}];
- for(const record of records){
-  const before=structuredClone(record),normalized=normalizeCreatureRecord(record);
-  assert.deepEqual(record,before,'conversion never mutates its input');
-  assert.deepEqual([...fixedProficiencies(normalized)],[...fixedProficiencies(record)]);
-  const a=calculateSheet(record),b=calculateSheet(normalized);
-  assert.deepEqual(a.skills,b.skills);assert.deepEqual(a.saves,b.saves);
-  assert.deepEqual(a.proficiencies,b.proficiencies);
-  assert.deepEqual(rowsFor(normalized,'proficiency_choices'),rowsFor(record,'proficiency_choices'));
-  assert.equal(normalizeCreatureRecord(normalized),normalized,'conversion is idempotent');
-  assert.deepEqual(normalized.unknown_field,{kept:true});
- }
- assert.equal(normalizeCreatureRecord(records[2]).proficiency_choices.length,0);
+test('only canonical proficiency choices grant saved ranks',()=>{
+ const record={skill_proficiencies:['athletics'],skill_expertise:['athletics'],saving_throw_proficiencies:['str']};
+ assert.equal(fixedProficiencies(record).size,0);
+ assert.deepEqual(rowsFor(record,'proficiency_choices'),[]);
+ assert(fixedProficiencies({proficiency_choices:[{kind:'skill',key:'athletics'}]}).has('skill:athletics'));
 });
 
-test('normalization commutes with variant resolution and keeps shared origin removals',()=>{
- for(const origins of [undefined,[]]){
-  const record={id:'hero',kind:'character',name:'Hero',current_form_id:'form',
-   ...(origins?{proficiency_origins:origins}:{}),
-   variants:[{id:'form',name:'Form',sections:['proficiencies'],values:{
-    proficiency_choices:[],skill_proficiencies:['athletics']}}]};
-  assert.deepEqual(normalizeCreatureRecord(resolveVariant(record)),
-   resolveVariant(normalizeCreatureRecord(record)));
- }
-});
-
-test('untyped monster ingress preserves feature identities and typed counts take precedence',()=>{
- for(const row of [
-  {name:'Multiattack',entries:['The dragon makes three attacks: one bite and two claws.']},
-  {name:'Multiattack',description:'The beast can make two melee attacks.'},
-  {name:'Multiattack',attacks_per_action:4,entries:['The dragon makes three attacks.']},
-  {name:'Multiattack',entries:['See the encounter instructions.']},
-  {name:'Bite',entries:['The beast makes two attacks.']}
- ]){
-  const record={kind:'monster',stat_block:{action:[row]}};
-  const normalized=normalizeCreatureRecord(record);
-  assert.deepEqual(collectStructuredFeatures(normalized),collectStructuredFeatures(record));
-  assert.equal(normalizeMonsterStatBlock(normalized.stat_block),normalized.stat_block);
-  assert.deepEqual(record.stat_block.action[0],row);
- }
- const old={id:'old',kind:'monster',name:'Old',skill_proficiencies:['perception'],
-  stat_block:{action:[{name:'Multiattack',entries:['The beast makes two attacks.']}]}};
- const exported=makeCreatureExport(old),parsed=parseCreatureExport(exported).creature;
- assert.equal(parsed.stat_block.action[0].attacks_per_action,2);
- assert.equal(parsed.proficiency_choices[0].key,'perception');
+test('current bestiary imports type multiattack without migrating saved sheets',()=>{
+ const record={id:'monster',kind:'monster',name:'Monster',stat_block:{action:[{name:'Multiattack',entries:['The beast makes two attacks.']}]}};
+ const typed=normalizeMonsterStatBlock(record.stat_block);
+ assert.equal(typed.action[0].attacks_per_action,2);
+ assert.equal(normalizeMonsterStatBlock(typed),typed);
+ assert.deepEqual(parseCreatureExport(makeCreatureExport(record)).creature,record);
 });
 
 const feature=(name,owner='Monk',source='XPHB')=>({name,
@@ -128,15 +85,7 @@ test('bundled canonical subraces carry the speed of the native source',()=>{
   assert(canonical,'missing canonical identity: '+native.raceName+' · '+native.name);
   assert.deepEqual(canonical.speed,native.speed);
   assert(!mechanics.races.some(row=>row.id===native.id),'subrace is not a second independent species');
-  const legacy={kind:'character',species:native.legacy_name,species_source:native.source,
-   species_id:native.id,abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}};
-  const modern={...legacy,species:native.raceName,species_source:native.raceSource,
-   species_id:'',subrace:native.name,subrace_source:native.source};
-  const options={classMechanics:mechanics};
-  assert.deepEqual(calculateSheet(legacy,options).stats.speeds,
-   calculateSheet(modern,options).stats.speeds,'legacy movement: '+native.legacy_name);
-  const normalized=normalizeCreatureRecord(legacy,options);
-  assert.equal(normalized.species_id,legacy.species_id);assert.equal(normalized.species,legacy.species);
+
  }
  for(const subrace of mechanics.subraces){
   const native=references.races.find(row=>key(row.name)===key(subrace.raceName+' ('+subrace.name+')')&&

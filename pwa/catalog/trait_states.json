@@ -125,9 +125,6 @@
           "armor"
         ]
       },
-      "legacy_field": "artificer_armor_model",
-      "legacy_value": "guardian",
-      "legacy_default": true,
       "summary": "Armatura Arcana · Guardiano; guanti del tuono (svantaggio condizionale sul bersaglio colpito) e Campo difensivo.",
       "attacks": [
         {
@@ -173,8 +170,6 @@
           "armor"
         ]
       },
-      "legacy_field": "artificer_armor_model",
-      "legacy_value": "infiltrator",
       "summary": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini, Passi Potenziati e vantaggio alle prove di Furtività.",
       "attacks": [
         {

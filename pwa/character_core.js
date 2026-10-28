@@ -4,44 +4,7 @@ const array=value=>Array.isArray(value)?value:[];
 const integer=(value,fallback=0)=>Number.isFinite(Number(value))?Math.trunc(Number(value)):fallback;
 const zeroSlots=()=>Array(10).fill(0);
 
-// Compatibility belongs at record ingress. Keep old fields for native export,
-// but project one canonical choice list; an explicit empty list with origins
-// means the player removed the grants and must never resurrect legacy ranks.
-export function normalizeCreatureRecord(record={}, {inheritedOrigins=false,classMechanics}={}){
- let result=record;
- // Preserve old saved species identities. Canonical subtype metadata supplies
- // their movement at ingress, without recreating flattened races in the engine.
- if(!record.subrace&&classMechanics){
-  const subtype=array(classMechanics.subraces).find(row=>
-   record.species_id&&row.id===record.species_id||
-   row.legacy_name&&String(row.legacy_name).toLowerCase()===String(record.species||'').toLowerCase()&&
-    String(row.source||'').toLowerCase()===String(record.species_source||'').toLowerCase());
-  if(subtype?.speed!==undefined&&record.species_speed!==subtype.speed)
-   result={...result,species_speed:subtype.speed};
- }
- const migrate=!Object.hasOwn(record,'proficiency_choices')||
-   (!array(record.proficiency_choices).length&&!inheritedOrigins&&!Object.hasOwn(record,'proficiency_origins'));
- if(migrate){
-  const choices=[['skill','skill_proficiencies'],['expertise','skill_expertise'],
-   ['save','saving_throw_proficiencies']].flatMap(([kind,field])=>
-    array(record[field]).map(key=>({kind,key,origin_id:'',origin_name:'',disabled:false})));
-  if(choices.length)result={...result,proficiency_choices:choices};
- }
- if(record.stat_block){
-  const stat=normalizeMonsterStatBlock(record.stat_block);
-  if(stat!==record.stat_block)result={...result,stat_block:stat};
- }
- if(array(record.variants).length){
-  const variants=record.variants.map(variant=>{
-   const values=normalizeCreatureRecord(variant.values,{classMechanics,
-    inheritedOrigins:inheritedOrigins||Object.hasOwn(record,'proficiency_origins')});
-   return values===variant.values?variant:{...variant,values};
-  });
-  if(variants.some((variant,i)=>variant!==record.variants[i]))result={...result,variants};
- }
- return result;
-}
-// Old/imported monster catalogs still include untyped Multiattack records.
+// Current imported monster catalogs include untyped Multiattack records.
 // Convert once at ingress; runtime attack benefits read only the typed count.
 // Ambiguous prose remains descriptive, with exactly the previous parser scope.
 export function normalizeMonsterStatBlock(stat={}){

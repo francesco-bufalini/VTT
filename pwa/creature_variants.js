@@ -98,19 +98,6 @@ export function applyVariantEdit(record,patch){
  for(const key of ['variants','current_form_id','variant_schema_version'])if(Object.hasOwn(patch,key))next[key]=copy(patch[key]);
  return validateVariants(next);
 }
-export function migrateSecondForm(record){
- if(record.second_form_hp===undefined&&record.second_form_max_hp===undefined)return copy(record);
- const next=copy(record),hp=Number(next.second_form_hp)||0,max=Number(next.second_form_max_hp)||hp;
- delete next.second_form_hp;delete next.second_form_max_hp;
- if(max>0&&!next.variants?.some(v=>v.id==='legacy-second-form')){
-  const v=createVariant(next,{id:'legacy-second-form',name:'Forma precedente',sections:['hp','appearance']});
-  v.values.current_hp=hp;v.values.max_hp_base=max;v.values.max_hp=max;v.values.temporary_hp=0;
-  next.variants=[...(next.variants||[]),v];next.current_form_id=v.id;
-  const original=next.active_class_features?.wild_shape?.previous_miniature_id||next.default_miniature_id;
-  if(original)next.current_miniature_id=original;
- }
- next.variant_schema_version=1;return next;
-}
 export function variantDamage(record,amount){
  if(!Number.isSafeInteger(amount)||amount<1||amount>99999)throw Error('Danni non validi.');
  const c=resolveVariant(record),temporary=Math.max(0,Number(c.temporary_hp)||0),remaining=Math.max(0,amount-temporary),hp=Math.max(0,Number(c.current_hp)||0);

@@ -1,6 +1,6 @@
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {itemAttunementCount} from './item_controls.js';
-import {normalizeCreatureRecord} from './character_core.js';
+import {normalizeMonsterStatBlock} from './character_core.js';
 // Generic structured effects and fixed proficiency projection based on
 // creature_structured_bonuses.gd and creature_proficiency_rules.gd.
 // No mechanics are inferred from descriptions or HTML/prose.
@@ -257,7 +257,6 @@ function featureStoredGrantAllowed(source,row){
    array(source.source.proficiencyChoices).some(rule=>array(rule.choose?.fromKinds).includes(row.kind));
 }
 export function fixedProficiencies(record,index={},features=null){
- record=normalizeCreatureRecord(record);
  const suppressed=removedBenefitIds(record);
  const excluded=(id,kind,key)=>suppressed.has("proficiency:"+id+":"+kind+":"+norm(key));
  const owned=proficiencyFeatures(record,index,features);
@@ -353,7 +352,7 @@ export function numericGrant(sid,name,field,target,value,suffix="",allowModifier
 // Native CreatureFeatures.collect_features identity scheme. These are
 // data-driven projections, not inferred mechanics from English descriptions.
 export function collectStructuredFeatures(record,catalogs={}){
-  record=normalizeCreatureRecord(record);
+  if(record.stat_block)record={...record,stat_block:normalizeMonsterStatBlock(record.stat_block)};
   const results=[],seen=new Set();
   const attackRules=array(catalogs.featureRules?.attack_count_grants);
   const subclassKey=value=>norm(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');

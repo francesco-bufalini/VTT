@@ -1,5 +1,4 @@
 import {variantOwns} from './creature_variants.js';
-import {normalizeCreatureRecord} from './character_core.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
@@ -769,7 +768,7 @@ export function spellProgression(record,classes){
     pact_level:warlock?Math.min(5,Math.ceil(warlock/2)):1,caster_level:caster,warnings};
 }
 export function calculateSheet(record={},catalogs={}){
-  let effective=normalizeCreatureRecord(record,{classMechanics:catalogs.classMechanics});
+  let effective=record;
   // Imported or externally edited stacks can exceed the current capacity.
   // Bound their effective benefits without rewriting the owner's saved data.
   for(let pass=0;pass<8;pass++){
