@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import {classResourceTrackers} from "../class_trackers.js";
-import {changeTrackerUses,recoveryPatch} from "../character_core.js";
+import {changeTrackerUses} from "../character_core.js";
+import {recoveryPatch} from "../native_sheet.js";
 
 const index=JSON.parse(readFileSync(fileURLToPath(
   new URL("../catalog/class_mechanics.json",import.meta.url)),"utf8"));

@@ -161,22 +161,6 @@ export function spendTrackerUses(record,id,cost,trackers=record.resource_tracker
   return {resource_tracker_spent:spent};
 }
 
-// Same recovery contract as StructuredResourceTrackers.spent_after_recovery.
-// Short rest restores pact magic; long rest restores both types of spell slot.
-// Does not invent recovery for HP, hit dice, or manual/dice-recharge resources.
-export function recoveryPatch(record,event,trackers=record.resource_trackers){
-  if(!["short_rest","long_rest","turn"].includes(event))throw Error("Evento di recupero non valido.");
-  const spent={...(record.resource_tracker_spent||{})};
-  for(const row of array(trackers)){
-    if(!row?.id||row.disabled)continue;
-    const mode=String(row.recharge||"manual");
-    if(mode===event||(event==="long_rest"&&mode==="short_rest"))delete spent[row.id];
-  }
-  const patch={resource_tracker_spent:spent};
-  if(event==="short_rest"||event==="long_rest")patch.pact_slots_spent=0;
-  if(event==="long_rest")patch.spell_slots_spent=zeroSlots();
-  return patch;
-}
 
 /**
  * Hit Dice remain a portable per-die-size counter. Older desktop exports have
