@@ -42,3 +42,14 @@ test('all offline-critical racial and sense catalogs are exposed by the desktop 
   assert(existsSync(path.join(root,served.get(uri))),'Mapped source is missing: '+uri);
  }
 });
+
+// A valid HTTP route is insufficient when a cached module imports an uncached
+// dependency while the desktop is unavailable. Check the two manifests together.
+test('all Godot-served PWA modules belong to the atomic offline shell',()=>{
+ const worker=readFileSync(path.join(root,'pwa/sw.js'),'utf8');
+ const shell=worker.match(/const SHELL = \[([\s\S]*?)\];/);
+ assert(shell,'Offline shell declaration must exist');
+ const cached=new Set([...shell[1].matchAll(/['"]([^'"]+)['"]/g)].map(match=>match[1]));
+ const missing=[...served.keys()].filter(uri=>uri.endsWith('.js')&&uri!=='/sw.js'&&!cached.has(uri));
+ assert.deepEqual(missing,[],'Every served PWA module must remain available offline');
+});

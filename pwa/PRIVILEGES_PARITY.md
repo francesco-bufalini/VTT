@@ -55,3 +55,33 @@ Il confronto esegue 36 casi nelle due implementazioni e verifica costi, campi
 modificati e Metamagia. La prova Chrome usa un profilo isolato e dati sintetici:
 annullamento, attivazione, dadi con vantaggio, cure, trasformazione, riapertura,
 PF della forma esauriti, ripristino e Metamagia. Non modifica l'archivio utente.
+
+## Difese automatiche da classi e sottoclassi 2014
+
+`class_defenses.js` proietta resistenze ai danni, immunità ai danni,
+immunità alle condizioni e vulnerabilità nel formato standard
+`damage_defense_entries`. Gli effetti sono attribuiti all'ID stabile
+del **singolo privilegio** ottenuto, non genericamente alla classe; livello
+nella classe, fonte del manuale, sottoclasse, disattivazioni e benefici
+rimossi sono rispettati. Nessun testo inglese è interpretato nel browser.
+
+Chemical Mastery (Alchemist TCE, artefice 15) conferisce resistenza ad acido
+e veleno e immunità alla condizione avvelenato. Sono indicizzati anche
+privilegi permanenti di Barbaro, Chierico, Druido, Guerriero, Monaco,
+Paladino, Stregone, Warlock e Mago, con etichette per i danni da
+incantesimi e per le resistenze limitate agli attacchi non magici.
+Le condizioni in `class_defenses.js` usano la stessa presentazione
+del popup Tratti e del riepilogo difese della scheda.
+
+Fiendish Resilience, Elemental Gift, Storm Soul e Totem Spirit
+riutilizzano le selezioni difensive `origin_defense_choices`;
+senza una selezione valida non producono la resistenza. Il Totem
+dell'Orso segue l'Ira attiva e il vincolo dell'armatura non pesante.
+I privilegi che richiedono un pagamento/attivazione separata o che
+proteggono **un'altra** creatura non sono trattati come difese
+permanenti del personaggio. Le eccezioni di danno magico o
+provenienza dell'attacco sono mostrate come condizioni da verificare
+nel gioco, non applicate in automatico a un tiro dei danni
+che non fornisca il contesto dell'attacco.
+
+Regressione mirata: `node --test tests/class_defenses.test.mjs`.

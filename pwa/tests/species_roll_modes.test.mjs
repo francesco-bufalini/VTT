@@ -215,9 +215,10 @@ test('mirino opens the specific Drow trait even for flattened or split race sele
  }
 });
 
-test('roll target icon routes racial modes to trait, other bonuses to their trackers',()=>{
+test('roll target icon routes racial and passive class bonuses to their trait, other bonuses to trackers',()=>{
  const source=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
- assert.match(source,/racialMode\?'roll-origin-open':'sheet-roll-open-tracker'/);
+ assert.match(source,/const traitLink=racialMode\|\|row\.passive_class_bonus/);
+ assert.match(source,/traitLink\?'roll-origin-open':'sheet-roll-open-tracker'/);
  assert.match(source,/data-origin-trait/);
  assert.match(source,/data-origin-key/);
  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');

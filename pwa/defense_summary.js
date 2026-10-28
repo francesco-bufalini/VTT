@@ -3,12 +3,13 @@ const arr=value=>Array.isArray(value)?value:[];
 const low=value=>String(value??'').trim().toLowerCase();
 const DAMAGE={
  acid:'Acido',bludgeoning:'Contundenti',cold:'Freddo',fire:'Fuoco',
+ spell_damage:'Danni da incantesimi',
  force:'Forza',lightning:'Fulmine',necrotic:'Necrotici',piercing:'Perforanti',
  poison:'Veleno',psychic:'Psichici',radiant:'Radianti',slashing:'Taglienti',thunder:'Tuono'
 };
 const CONDITIONS={
  blinded:'Accecato',charmed:'Affascinato',deafened:'Assordato',frightened:'Spaventato',
- grappled:'Afferrato',incapacitated:'Incapacitato',invisible:'Invisibile',
+ disease:'Malattie',exhaustion:'Indebolimento',grappled:'Afferrato',incapacitated:'Incapacitato',invisible:'Invisibile',
  paralyzed:'Paralizzato',petrified:'Pietrificato',poisoned:'Avvelenato',
  prone:'Prono',restrained:'Trattenuto',stunned:'Stordito',unconscious:'Privo di sensi'
 };

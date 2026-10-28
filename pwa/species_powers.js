@@ -95,10 +95,21 @@ export function racialPowerProjection(record={},index={},features=[]) {
      tracker_cost:1,cantrip:false,casting_ability_not_required:true,automatic:true});
  }
  const training=race.rest_training,trainingOwner=training&&featureFor(training.trait);
- if(trainingOwner&&training.group&&training.recovery)
+ if(trainingOwner&&training.group&&training.recovery){
+   const picks=rows(training.picks).length?training.picks:[
+     ...Array.from({length:training.skill_count||1},()=>({label:'Abilità',kinds:['skill']})),
+     ...Array.from({length:training.weapon_tool_count||1},()=>({label:'Arma o strumento',kinds:['weapon','tool']}))
+   ];
    output.rest_choices.push({group:training.group,trait:training.trait,recovery:training.recovery,
-     root_id:raceRoot,origin_id:trainingOwner.origin_id,skill_count:training.skill_count||1,
-     weapon_tool_count:training.weapon_tool_count||1,description:training.description||''});
+     kind:'training',root_id:raceRoot,origin_id:trainingOwner.origin_id,
+     picks,description:training.description||''});
+ }
+ const season=race.season_choice,seasonOwner=season&&featureFor(season.trait);
+ if(seasonOwner&&season.group&&rows(season.options).length)
+   output.rest_choices.push({group:season.group,trait:season.trait,recovery:season.recovery,
+     kind:'racial_option',root_id:raceRoot,origin_id:seasonOwner.origin_id,
+     label:season.label||'Scelta',options:season.options,option_labels:season.option_labels||{},
+     description:'Puoi scegliere o cambiare questa opzione al termine del riposo lungo.'});
  const revelation=race.revelation;
  const form=rows(revelation?.subraces).find(row=>norm(row.name)===norm(record.subrace)&&
    norm(record.subrace_source)===norm(race.source));
@@ -136,19 +147,30 @@ export function racialPowerProjection(record={},index={},features=[]) {
 }
 // Rest training uses Armor Model's reselection lifecycle and ordinary typed
 // proficiency grants; it never writes a permanent racial proficiency.
-export function restTrainingPatch(record={},choice={},skill='',second='',allowed={}){
- if(!choice.group||!choice.root_id||!choice.origin_id||!choice.trait)
-   throw Error('Trance non disponibile.');
+// A source-defined set of proficiency slots: skill+weapon/tool or two weapon/tools.
+export function restTrainingPatch(record={},choice={},selected=[],allowed={}){
+ if(!choice.group||!choice.root_id||!choice.origin_id||!choice.trait||
+   !rows(choice.picks).length)throw Error('Competenze temporanee non disponibili.');
  if(!canReselectPower(record,choice.group))
    throw Error('Puoi riselezionare le competenze dopo un '+selectionRestLabel(choice.recovery).toLowerCase()+'.');
- const [kind,...parts]=String(second).split(':'),key=parts.join(':');
- if(!rows(allowed.skill).includes(skill)||!['weapon','tool'].includes(kind)||
-   !rows(allowed[kind]).includes(key))throw Error('Seleziona competenze valide.');
+ if(!Array.isArray(selected)||selected.length!==choice.picks.length)
+   throw Error('Scegli tutte le competenze previste dal privilegio.');
+ const picks=selected.map((value,i)=>{
+   const [kind,...parts]=String(value||'').split(':'),key=parts.join(':').toLowerCase();
+   if(!rows(choice.picks[i]?.kinds).includes(kind)||!key||
+     !rows(allowed[kind]).includes(key))throw Error('Competenza non valida per questa scelta.');
+   return {kind,key};
+ });
+ if(new Set(picks.map(row=>row.kind+':'+row.key)).size!==picks.length)
+   throw Error('Non puoi selezionare due volte la stessa competenza.');
+ if(picks.some(row=>rows(allowed.unavailable).includes(row.kind+':'+row.key)))
+   throw Error('Puoi scegliere soltanto competenze che non possiedi già.');
  return {
    proficiency_choices:[
      ...rows(record.proficiency_choices).filter(row=>row?.rest_training_group!==choice.group),
-     ...[{kind:'skill',key:skill},{kind,key}].map(row=>({...row,
-       origin_id:choice.root_id,rest_training_group:choice.group}))
+     ...picks.map(row=>({...row,origin_id:choice.root_id,rest_training_group:choice.group,
+       granting_feature_origin_id:choice.origin_id,
+       origin_name:'Tratto · '+choice.trait}))
    ],
    trait_state_selection:{...(record.trait_state_selection||{}),[choice.group]:'selected'},
    rest_selection_available:{...(record.rest_selection_available||{}),[choice.group]:false}
@@ -175,7 +197,7 @@ export function healingHandsPatch(record={},calculated={},power={},rollDie=()=>1
  return {patch,dice,total,notation:proficiency+'d'+sides};
 }
 
-export function racialPowerSpellDefinitions(index={}) {
+export function racialPowerSpellDefinitions(index={},record={},originDetails={}) {
  return rows(index.races).flatMap(race=>[
   ...(race.teleport?[{
     id:race.teleport.spell_id,name:race.teleport.trait,source:race.source,
@@ -184,7 +206,20 @@ export function racialPowerSpellDefinitions(index={}) {
     range:'Self',range_feet:race.teleport.range_feet,target_mode:race.teleport.target_mode||'teleport_self',
     teleport_range_feet:race.teleport.range_feet,
     targeting_template_spell_id:race.teleport.targeting_template_spell_id||'',
-    duration:'Instantaneous',description:race.teleport.description
+    duration:'Instantaneous',description:race.teleport.description+
+      (race.season_choice&&currentLevel(record)>=3&&norm(record.species)===norm(race.name)&&
+       norm(record.species_source)===norm(race.source)?
+        (()=>{const key=record.trait_state_selection?.[race.season_choice.group]||'';
+          const source=originDetails?.races?.[norm(race.name)+'|'+norm(race.source)];
+          const feature=rows(source?.entries).find(row=>norm(row?.name)===norm(race.teleport.trait));
+          const seasonList=rows(feature?.entries).find(row=>row?.type==='list');
+          const sourceEntry=rows(seasonList?.items).find(row=>norm(row?.name)===key)?.entry;
+          // Prefer the original 5etools trait text when the offline source catalog
+          // is available; the short data-defined copy is only a fallback.
+          const description=String(sourceEntry||race.season_choice.descriptions?.[key]||'')
+            .replace(/\{@(?:condition|damage|dice)\s+([^}|]+)[^}]*\}/gi,'$1');
+          return description?'\nStagione: '+(race.season_choice.option_labels?.[key]||key)+'. '+description:
+            '\nScegli una stagione per conoscere l’effetto aggiuntivo dal livello 3.';})():'')
   }]:[]),
   ...rows(race.revelation?.subraces).map(form=>({
    id:form.spell_id,name:form.name,source:race.source,level:0,

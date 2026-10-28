@@ -8,7 +8,9 @@ import {traitBenefitSources} from './trait_benefits.js';
 import {contentForRules} from './source_edition.js';
 import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants} from './ability_choice_rules.js';
 import {selectedSpeciesDefenseRules} from './species_defenses.js';
+import {classDefenseChoices} from './class_defenses.js';
 import {dragonbornFtdChoice,dragonbornFtdSaveChoice} from './dragonborn_ftd.js';
+import {canReselectPower} from './trait_state_rules.js';
 
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
@@ -238,6 +240,20 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
    result.push(...allocationChoiceRows(record,sid,row.name,variants));
   }
  }
+ // A source-qualified seasonal option uses the existing pending-choice dialog
+ // at creation, and can be reselected after a long rest.
+ const ownedPower=arr(catalogs.speciesPowers?.races).find(row=>
+   norm(row.name)===norm(record.species)&&norm(row.source)===norm(record.species_source));
+ const season=ownedPower?.season_choice,root=ownedPower?
+   'race|'+norm(ownedPower.source)+'|'+norm(ownedPower.name):'';
+ if(record.rules_version!=='2024'&&season?.group&&arr(season.options).length&&enabled(record,root)){
+   const value=record.trait_state_selection?.[season.group];
+   const selected=season.options.includes(value)?[value]:[];
+   result.push({id:'racial-option:'+season.group,kind:'racial_option',origin_id:root,
+     group:season.group,name:'Tratto · '+season.trait,label:season.label||'Scelta razziale',
+     options:season.options,option_labels:season.option_labels||{},
+     count:1,selected,remaining:selected.length?0:1});
+ }
  // One Fizban ancestry choice drives resistance, breath and temporary immunity.
  const dragonChoice=dragonbornFtdChoice(record,catalogs.speciesPowers);
  if(dragonChoice&&enabled(record,dragonChoice.origin_id))result.push(dragonChoice);
@@ -262,6 +278,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     count:1,selected,options,remaining:selected.length?0:1});
   }
  }
+ for(const choice of classDefenseChoices(record,calculated.features))result.push(choice);
  // Class-level Ability Score Improvement has an explicit 5etools feature ID.
  // Each occurrence can grant score allocation OR an individually owned feat.
  for(const feature of arr(calculated.features)){
@@ -380,7 +397,7 @@ export function choicesForTrait(trait,record,choices=[]){
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
 export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):strip(value)));
  const prefix='__custom__:';
@@ -418,10 +435,24 @@ export function savePendingChoice(record,choice,values=[]){
   }else advancements.push({origin_id:choice.origin_id,mode:'feat'});
   return {advancement_choices:advancements,feats_catalog:otherFeats};
  }
+ if(choice.kind==='racial_option'){
+   if(choice.group!=='eladrin_season'||choice.origin_id!=='race|mpmm|eladrin'||
+     norm(record.species)!=='eladrin'||norm(record.species_source)!=='mpmm'||
+     record.rules_version==='2024'||selected.length!==1||
+     !['autumn','winter','spring','summer'].includes(selected[0]))
+     throw Error('Stagione razziale non valida.');
+   if(!canReselectPower(record,choice.group))
+     throw Error('Puoi cambiare stagione dopo un riposo lungo.');
+   return {trait_state_selection:{...(record.trait_state_selection||{}),
+     [choice.group]:selected[0]},
+     rest_selection_available:{...(record.rest_selection_available||{}),
+       [choice.group]:false}};
+ }
  if(choice.kind==='draconic_ancestry')return dragonbornFtdSaveChoice(record,choice,selected);
  if(choice.kind==='defense'){
   if(selected.length>1||selected.some(key=>!choice.options.includes(key))||
-    !/^(race|subrace)\|[^|]+\|[^|]+$/.test(String(choice.defense_source_id||'')))
+    !/^(race|subrace)\|[^|]+\|[^|]+$/.test(String(choice.defense_source_id||''))&&
+    !/^feature:class\|[^|]+\|[^|]+\|subclass\|[^|]+\|[^|]+\|/.test(String(choice.defense_source_id||'')))
    throw Error('Tipo di danno non consentito dalla specie.');
   const current={...(record.origin_defense_choices||{})};
   if(selected.length)current[choice.defense_source_id]=selected[0];

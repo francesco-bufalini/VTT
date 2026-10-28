@@ -2295,18 +2295,31 @@ function documentRow(item,index,stored){
 
 function racialRestTrainingPanel(c,calculated){
  return (calculated.racial_rest_choices||[]).map(choice=>{
-  const selected=(c.proficiency_choices||[]).filter(row=>row.rest_training_group===choice.group);
-  const skill=selected.find(row=>row.kind==='skill')?.key||'Da scegliere';
-  const other=selected.find(row=>row.kind==='weapon'||row.kind==='tool');
-  const label=other?(other.kind==='weapon'?'Arma':'Strumento')+' · '+other.key:'Da scegliere';
   const available=canReselectPower(c,choice.group);
-  return panel(choice.trait,'<div class="infusion-overview"><strong>Competenze temporanee</strong>'+
-    '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
-    '<div class="infusion-dialog-item"><span>Abilità<small>'+esc(skill)+'</small></span></div>'+
-    '<div class="infusion-dialog-item"><span>Arma / strumento<small>'+esc(label)+'</small></span></div>'+
-    '<div class="actions"><button type="button" class="btn primary" data-act="rest-training-open" data-training-group="'+esc(choice.group)+'"'+
+  if(choice.kind==='racial_option'){
+   const key=c.trait_state_selection?.[choice.group]||'';
+   return panel(choice.label||choice.trait,
+    '<div class="infusion-overview"><strong>Stagione attuale</strong>'+
+      '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
+    '<div class="infusion-dialog-item"><strong>'+esc(choice.option_labels?.[key]||'Da scegliere')+'</strong></div>'+
+    '<div class="actions"><button type="button" class="btn primary" data-act="racial-option-open" data-racial-option-group="'+esc(choice.group)+'"'+
+      (available?'':' disabled')+'>'+(key?'Cambia stagione':'Scegli stagione')+'</button></div>'+
+    (available?'':'<p class="hint">Puoi cambiare stagione dopo un riposo lungo.</p>'),
+    'armor-model-panel');
+  }
+  const selected=(c.proficiency_choices||[]).filter(row=>row.rest_training_group===choice.group);
+  const entries=(choice.picks||[]).map((pick,i)=>{
+   const row=selected[i],value=row?(row.kind==='skill'?'Abilità':row.kind==='weapon'?'Arma':'Strumento')+
+     ' · '+row.key:'Da scegliere';
+   return '<div class="infusion-dialog-item"><span>'+esc(pick.label||'Competenza')+
+     '<small>'+esc(value)+'</small></span></div>';
+  }).join('');
+  return panel(choice.trait,
+    '<div class="infusion-overview"><strong>Competenze temporanee</strong>'+
+      '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
+    entries+'<div class="actions"><button type="button" class="btn primary" data-act="rest-training-open" data-training-group="'+esc(choice.group)+'"'+
     (available?'':' disabled')+'>'+(selected.length?'Cambia competenze':'Scegli competenze')+'</button></div>'+
-    (available?'':'<p class="hint">Puoi riselezionare le competenze dopo un riposo lungo.</p>'),
+    (available?'':'<p class="hint">Le competenze si possono riselezionare dopo un riposo lungo.</p>'),
     'armor-model-panel');
  }).join('');
 }
@@ -2314,17 +2327,24 @@ async function openRacialRestTrainingDialog(group){
  const creature=state.editor?.read();
  if(!creature)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(creature);
- const choice=(calculated.racial_rest_choices||[]).find(row=>row.group===group);
+ const choice=(calculated.racial_rest_choices||[]).find(row=>row.group===group&&row.kind==='training');
  if(!choice)throw Error('Privilegio non disponibile.');
  if(!canReselectPower(creature,group))throw Error('Puoi riselezionare dopo un riposo lungo.');
- const skillOptions=SKILLS.map(([key,label])=>[key,label]);
- const weaponOptions=trainingProficiencyOptions('weapon',creature);
- const toolOptions=trainingProficiencyOptions('tool',creature);
  const selected=(creature.proficiency_choices||[]).filter(row=>row.rest_training_group===group);
- const skill=selected.find(row=>row.kind==='skill')?.key||'';
- const second=selected.find(row=>['weapon','tool'].includes(row.kind));
- const proficiency=second?second.kind+':'+second.key:'';
- const opt=(key,label,selected)=>'<option value="'+esc(key)+'"'+(key===selected?' selected':'')+'>'+esc(label)+'</option>';
+ const opt=(key,label,value)=>'<option value="'+esc(key)+'"'+(key===value?' selected':'')+'>'+esc(label)+'</option>';
+ const skills=SKILLS.map(([key,label])=>['skill:'+key,label]);
+ const weapons=trainingProficiencyOptions('weapon',creature).map(key=>['weapon:'+key,key]);
+ const tools=trainingProficiencyOptions('tool',creature).map(key=>['tool:'+key,key]);
+ const picks=(choice.picks||[]).map((pick,i)=>{
+   const current=selected[i]?selected[i].kind+':'+selected[i].key:'';
+   const groups=(pick.kinds||[]).map(kind=>{
+     const options=kind==='skill'?skills:kind==='weapon'?weapons:tools;
+     const label=kind==='skill'?'Abilità':kind==='weapon'?'Armi':'Strumenti';
+     return '<optgroup label="'+label+'">'+options.map(([id,name])=>opt(id,name,current)).join('')+'</optgroup>';
+   }).join('');
+   return '<label>'+esc(pick.label||'Competenza')+
+     '<select data-rest-training-pick="'+i+'">'+opt('','Scegli',current)+groups+'</select></label>';
+ }).join('');
  app.querySelector('#racial-rest-training-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='racial-rest-training-dialog';
@@ -2333,15 +2353,9 @@ async function openRacialRestTrainingDialog(group){
  dialog.innerHTML=actionDialogIntro(choice.trait,[
    {label:'Cambio',value:selectionRestLabel(choice.recovery)},
    {label:'Origine',value:'Tratto · '+choice.trait},
-   {label:'Durata',value:'Fino alla prossima trance'}
+   {label:'Durata',value:'Fino al prossimo riposo lungo'}
  ],choice.description||'','Specie · '+creature.species,'rest-training-close')+
- '<div class="magic-ability-detail"><label>Competenza in abilità<select data-rest-training-skill>'+
-   opt('','Scegli abilità',skill)+skillOptions.map(([key,label])=>opt(key,label,skill)).join('')+
- '</select></label><label>Competenza in arma o strumento<select data-rest-training-other>'+
-   opt('','Scegli arma o strumento',proficiency)+
-   '<optgroup label="Armi">'+weaponOptions.map(key=>opt('weapon:'+key,key,proficiency)).join('')+'</optgroup>'+
-   '<optgroup label="Strumenti">'+toolOptions.map(key=>opt('tool:'+key,key,proficiency)).join('')+'</optgroup>'+
- '</select></label></div>'+
+ '<div class="magic-ability-detail">'+picks+'</div>'+
  '<p class="hint" data-rest-training-error role="status" hidden></p>'+
  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="rest-training-apply">Applica competenze</button>'+
  '<button type="button" class="btn" data-act="rest-training-close">Chiudi</button></div>';
@@ -2757,7 +2771,12 @@ function inventoryEquipmentView(c,calculated={}){
       formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
     '<div class="battle-ac-formula"><strong>'+(armor&&!usedNatural?'Formula armatura indossata':'Formula CA naturale')+
       '</strong><output>'+esc(formula)+'</output></div>'+
-
+    '<label class="check equipment-armor-speed-penalty"><input type="checkbox" data-field="armor_speed_limit_enabled"'+
+      (c.armor_speed_limit_enabled!==false?' checked':'')+
+      '>Applica penalità alla velocità per Forza insufficiente</label>'+
+    (calculated.armor_effects?.speed_penalty?
+      '<small class="hint">Velocità ridotta di '+calculated.armor_effects.speed_penalty+
+      ' ft · Forza richiesta '+calculated.armor_effects.strength_required+'</small>':'')+
     '</div>';
   return panel("Equipaggiamento",
     '<section class="equipment-weapons"><h3>Armi</h3>'+
@@ -4335,6 +4354,10 @@ async function handleField(target) {
       await patch({current_hp:0});await render();
       promptVariantOverflow(creature.id,creature.current_form_id,-value);return;
     }
+    if(key==='armor_speed_limit_enabled'){
+      await patch({armor_speed_limit_enabled:Boolean(value)});
+      await render();return;
+    }
     if(key==='hand_grip_two_handed'){
       const main=(creature.inventory||[]).find(item=>item.equipped_slots?.includes('main'));
       const usable=main&&itemKind(main)==='weapon'&&hasProperty(resolveOwnedItem(main),'V');
@@ -4833,7 +4856,8 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
        const originAttrs=' data-origin-id="'+esc(row.origin_id||'')+'"'+
          ' data-origin-trait="'+esc(row.granting_trait||'')+'"'+
          ' data-origin-key="'+esc(row.origin_key||'')+'"';
-       const targetTitle=racialMode?'Apri tratto · '+(row.granting_trait||row.origin_name||''):
+       const traitLink=racialMode||row.passive_class_bonus;
+       const targetTitle=traitLink?'Apri tratto · '+(row.granting_trait||row.origin_name||''):
          'Apri tracker '+trackerLabel;
        return '<div class="sheet-roll-bonus-item'+(racialMode?' sheet-roll-bonus-item--mode':'')+'">'+
          '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open"'+originAttrs+' title="Apri tratto">'+
@@ -4849,10 +4873,10 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
             '</div>':'')+
          '<div class="sheet-roll-bonus-controls">'+
            '<button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'"'+(row.strict_tracker&&Number(row.remaining)<Number(row.tracker_cost)?' disabled title="Utilizzi esauriti"':'')+'>Usa</button>'+
-           '<button type="button" class="sheet-roll-tracker-open" data-act="'+(racialMode?'roll-origin-open':'sheet-roll-open-tracker')+'"'+
-             (racialMode?originAttrs:' data-roll-tracker-button="'+i+'"')+
+           '<button type="button" class="sheet-roll-tracker-open" data-act="'+(traitLink?'roll-origin-open':'sheet-roll-open-tracker')+'"'+
+             (traitLink?originAttrs:' data-roll-tracker-button="'+i+'"')+
              ' aria-label="'+esc(targetTitle)+'" title="'+esc(targetTitle)+'"'+
-             (racialMode||row.tracker_id?'':' disabled')+'>'+
+             (traitLink||row.tracker_id?'':' disabled')+'>'+
              actionGlyph('target')+'</button>'+
          '</div></div>';
      }).join('')+'</div>':'')+'</section>';
@@ -6358,6 +6382,15 @@ async function handleAction(target){
       throw Error('Vantaggio e svantaggio vanno scelti prima del tiro.');
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
+    if(row.passive_class_bonus){
+      // A passive conditional benefit is applied directly, without invoking
+      // an ability action. Verify that its owner/level and formula still apply.
+      const fresh=await computeLocalData(creature);
+      const valid=classFeatureRollBonuses(creature,fresh,dialog.dataset.rollTarget).find(item=>
+        item.id===row.id&&item.origin_id===row.origin_id&&item.passive_class_bonus);
+      if(!valid)throw Error('Il beneficio non è più disponibile per questo tiro.');
+      row.flat_bonus=valid.flat_bonus;
+    }
     if(row.class_feature_id){
       // Uses the same feature confirmation and payment plan as Battle.
       const fresh=await computeLocalData(creature),rollTarget=dialog.dataset.rollKind==='damage'?
@@ -7460,6 +7493,17 @@ async function handleAction(target){
   }
 
 
+  if(act==='racial-option-open'){
+    const record=state.editor?.read();
+    if(!record)throw Error('Apri prima una creatura.');
+    const calculated=await computeLocalData(record);
+    const group=String(target.dataset.racialOptionGroup||'');
+    const choice=(calculated.pending_choices||[]).find(row=>
+      row.kind==='racial_option'&&row.group===group);
+    if(!choice||!canReselectPower(record,group))
+      throw Error('Potrai cambiare questa scelta dopo un riposo lungo.');
+    await openCharacterChoice(choice);return;
+  }
   if(act==='rest-training-open'){
     await openRacialRestTrainingDialog(String(target.dataset.trainingGroup||''));
     return;
@@ -7476,12 +7520,17 @@ async function handleAction(target){
     const fresh=await computeLocalData(current);
     const choice=(fresh.racial_rest_choices||[]).find(row=>row.group===dialog.dataset.trainingGroup);
     if(!choice)throw Error('Privilegio non disponibile.');
-    const skill=dialog.querySelector('[data-rest-training-skill]')?.value||'';
-    const other=dialog.querySelector('[data-rest-training-other]')?.value||'';
+    const selected=[...dialog.querySelectorAll('[data-rest-training-pick]')]
+      .sort((a,b)=>Number(a.dataset.restTrainingPick)-Number(b.dataset.restTrainingPick))
+      .map(row=>row.value||'');
+    const withoutOwn={...current,proficiency_choices:(current.proficiency_choices||[])
+      .filter(row=>row.rest_training_group!==choice.group)};
+    const outside=await computeLocalData(withoutOwn);
     const allowed={skill:SKILLS.map(([key])=>key),
       weapon:trainingProficiencyOptions('weapon',current),
-      tool:trainingProficiencyOptions('tool',current)};
-    const changes=restTrainingPatch(current,choice,skill,other,allowed);
+      tool:trainingProficiencyOptions('tool',current),
+      unavailable:outside.proficiencies||[]};
+    const changes=restTrainingPatch(current,choice,selected,allowed);
     target.disabled=true;
     try{
       await patch(changes);

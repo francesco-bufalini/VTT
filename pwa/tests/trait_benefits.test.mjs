@@ -106,7 +106,7 @@ test('resistances, immunities and vulnerabilities share one ordered section',()=
  assert.equal(groups[0].title,'Resistenze, immunità e vulnerabilità');
  assert.deepEqual(groups[0].items.map(row=>[row.label,row.value]),[
   ['Resistenza','Acido'],['Resistenza','Fuoco'],
-  ['Immunità ai danni','Freddo'],['Immunità alle condizioni','poisoned'],
+  ['Immunità ai danni','Freddo'],['Immunità alle condizioni','Avvelenato'],
   ['Vulnerabilità','Fuoco']
  ]);
 });

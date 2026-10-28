@@ -10,7 +10,8 @@ export const EXTENSION_OPERATIONS=[
  ['roll_twice','Tira due volte, usa il migliore'],['area_damage','Danni ad area'],
  ['temporary_hp','Punti ferita temporanei'],['add_effect','Effetto aggiuntivo'],
  ['grant_property','Proprietà aggiuntiva'],['grant_action','Azione concessa'],
- ['resistance','Resistenza a un danno'],['roll_mode','Modalità del tiro']
+ ['resistance','Resistenza a un danno'],['roll_mode','Modalità del tiro'],
+ ['ignore_armor_strength','Ignora Forza richiesta dall’armatura']
 ];
 export const EXTENSION_TRIGGERS=[
  ['passive','Sempre'],['on_hit','Quando colpisce'],
@@ -81,14 +82,26 @@ export function normalizeEffectExtension(row={}){
   target_aliases:rows(row.target_aliases).filter(x=>typeof x==='string'),
   description:String(row.description||'').trim()};
 }
-export function collectEffectExtensions(record={},catalog=[],features=[],infusionDefinitions=[]){
+export function collectEffectExtensions(record={},catalog=[],features=[],infusionDefinitions=[],activeStateIds=[]){
  const result=[];
  const excluded=new Set(Object.values(record.trait_benefit_removed||{}).flatMap(rows));
  for(const rule of rows(catalog)){
   if(rule.rules_version&&String(record.rules_version||'2014')!==String(rule.rules_version))continue;
   if(rule.owner?.kind==='infusion')continue;
+  if(rule.require_active_state_group&&!rows(activeStateIds).some(id=>
+    String(id).startsWith(rule.require_active_state_group+':')))continue;
   const owner=catalogOwner(record,features,rule);
   if(!owner)continue;
+  if(rule.target_kind==='item'&&rule.target_name==='@equipped_armor'){
+    for(const [index,item] of rows(record.inventory).entries()){
+      if(!rows(item?.equipped_slots).includes('body')||
+        !['HA','MA','LA'].includes(String(item.type||'').split('|')[0].toUpperCase()))continue;
+      const row=normalizeEffectExtension({...rule,...owner,target_name:item.name,
+        target_id:item.id,target_instance_id:item.instance_id||'',target_inventory_index:index});
+      if(row&&!excluded.has('effect_extension:'+row.id))result.push(row);
+    }
+    continue;
+  }
   const row=normalizeEffectExtension({...rule,...owner});
   if(row&&!excluded.has('effect_extension:'+row.id))result.push(row);
  }
@@ -169,7 +182,7 @@ export function effectExtensionLabel(row,variables={}){
   roll_twice:'Ripeti il dado (tieni il migliore)',area_damage:'Danni ad area',
   temporary_hp:'PF temporanei',add_effect:'Effetto aggiuntivo',
   grant_property:'Proprietà aggiuntiva',grant_action:'Azione concessa',
-  resistance:'Resistenza',roll_mode:'Modalità del tiro'};
+  resistance:'Resistenza',roll_mode:'Modalità del tiro',ignore_armor_strength:'Ignora Forza richiesta'};
  const times={passive:'',on_hit:'Al colpo',ability_check:'Prova di caratteristica',
   attack_roll:'Tiro per colpire',saving_throw:'Tiro salvezza',reaction:'Reazione',
   on_throw:'Al lancio',initiative:'Iniziativa',on_use:'All’uso',concentration_fail:'Concentrazione fallita'};

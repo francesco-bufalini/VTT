@@ -74,7 +74,14 @@ export function powerRestChoicePatch(record={},event='',calculated={}){
  if(!groups.length)return {};
  const ready={...(record.rest_selection_available||{})};
  for(const group of groups)ready[group.id]=true;
- return {rest_selection_available:ready};
+ const expired=new Set(arr(calculated.racial_rest_choices)
+   .filter(choice=>choice.kind==='training'&&groups.some(row=>row.id===choice.group))
+   .map(choice=>choice.group));
+ // Training grants expire after the next eligible rest; never silently
+ // retain proficiencies from a previous trance after their expiry.
+ return {rest_selection_available:ready,
+   ...(expired.size?{proficiency_choices:arr(record.proficiency_choices).filter(row=>
+     !expired.has(row?.rest_training_group))}:{})};
 }
 export function canReselectPower(record={},group='',legacyField=''){
  if(record.rest_selection_available?.[group]===true)return true;

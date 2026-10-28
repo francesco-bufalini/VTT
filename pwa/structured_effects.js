@@ -264,6 +264,8 @@ export function fixedProficiencies(record,index={},features=null){
  const stored=array(record.proficiency_choices).filter(row=>{
   if(!row||row.disabled||muted(record,String(row.origin_id||""))||
      !liveSource(record,String(row.origin_id||"")))return false;
+  if(row.granting_feature_origin_id&&!proficiencyTraitActive(record,
+    array(owned).find(f=>f.origin_id===row.granting_feature_origin_id)))return false;
   if(String(row.origin_id||'').startsWith('feature:class|')&&
     (!byId.has(row.origin_id)||
       !array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f))))return false;
@@ -322,8 +324,18 @@ export function proficiencyGrantOrigins(record={},index={},kind,key,features=nul
     (!String(row.origin_id||'').startsWith('feature:class|')||
       byId.has(row.origin_id)&&
       array(owned).some(f=>f.origin_id===row.origin_id&&proficiencyTraitActive(record,f))))
-    add(row.origin_id,row.origin_name||byId.get(row.origin_id)?.origin||row.origin_id,
-     byId.get(row.origin_id));
+    (()=>{
+      if(row.granting_feature_origin_id){
+        const feature=array(owned).find(f=>f.origin_id===row.granting_feature_origin_id);
+        if(!proficiencyTraitActive(record,feature))return;
+        if(!seen.has(feature.origin_id)){
+          seen.add(feature.origin_id);
+          sources.push({id:feature.origin_id,name:'Tratto · '+feature.name,
+            origin_parent_id:row.origin_id});
+        }
+      }else add(row.origin_id,row.origin_name||byId.get(row.origin_id)?.origin||row.origin_id,
+        byId.get(row.origin_id));
+    })();
  for(const source of selected){
   if(muted(record,source.id)||excluded(source.id))continue;
   if(!fixedGrants(source).some(grant=>grant.kind===kind&&grant.key===wanted))continue;
