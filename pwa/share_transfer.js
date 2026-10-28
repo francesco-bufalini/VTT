@@ -2,7 +2,8 @@
 // No browser has to expose a listening socket, and the desktop only keeps
 // bounded temporary chunks until the receiver accepts or rejects the offer.
 import {shareRequest} from './client.js';
-import {ownerId,importCreatureFile,importHomebrewPackage} from './creatures.js';
+import {ownerId,importCreatureFile,importHomebrewPackage,listCreatures} from './creatures.js';
+import {importInventoryItems} from './inventory_transfer.js';
 import {getOrCreateSetting} from './storage.js';
 import {openDialog,closeDialog,dialogCloseButton} from './ui_primitives.js';
 
@@ -55,7 +56,7 @@ async function send(recipient,kind,title,payload,progress){
  }
 }
 export async function openSendDialog(kind,title,makePayload,notify=()=>{}){
- if(!['creature','homebrew'].includes(kind))throw Error('Tipo di condivisione non valido.');
+ if(!['creature','homebrew','inventory'].includes(kind))throw Error('Tipo di condivisione non valido.');
  const roster=await directory(),peers=roster.devices||[];
  if(!peers.length)throw Error('Nessun altro dispositivo collegato alla partita.');
  const dialog=document.createElement('dialog');
@@ -102,20 +103,22 @@ export async function openSendDialog(kind,title,makePayload,notify=()=>{}){
  document.body.append(dialog);
  openDialog(dialog);
 }
-function incomingDialog(offer,onImported,notify){
+async function incomingDialog(offer,onImported,notify){
  if(document.querySelector('#share-receive-dialog')||document.querySelector('dialog[open]'))return;
  const dialog=document.createElement('dialog');
  dialog.id='share-receive-dialog';dialog.className='library-create-dialog';
- const kind=offer.kind==='creature'?'creatura':'contenuto homebrew';
+ const kind=offer.kind==='creature'?'creatura':offer.kind==='inventory'?'oggetti':'contenuto homebrew';
+ const targets=offer.kind==='inventory'?await listCreatures('default',{includeSubcreatures:true}):[];
  dialog.innerHTML='<div class="library-create-body">'+
    dialogCloseButton('share-later','Chiudi','library-create-close')+
    '<h2>Contenuto ricevuto</h2><p><strong>'+esc(offer.title)+'</strong></p>'+
    '<p class="hint">'+esc(offer.sender_name)+' vuole inviarti '+kind+
    '. L’importazione sarà una copia locale indipendente.</p>'+
+   (offer.kind==='inventory'?'<label>Inventario destinatario<select data-share-target '+(!targets.length?'disabled':'')+'>'+targets.map(row=>'<option value="'+esc(row.creature.id)+'">'+esc(row.creature.name||'Creatura')+'</option>').join('')+'</select></label>'+(!targets.length?'<p class="warning">Crea prima una creatura in cui importare gli oggetti.</p>':''):'')+
    '<p role="status" data-share-status></p><div class="library-create-actions">'+
    '<button type="button" class="btn" data-share-later>Più tardi</button>'+
    '<button type="button" class="btn" data-share-reject>Rifiuta</button>'+
-   '<button type="button" class="btn primary" data-share-accept>Importa</button></div></div>';
+   '<button type="button" class="btn primary" data-share-accept'+(offer.kind==='inventory'&&!targets.length?' disabled':'')+'>Importa</button></div></div>';
  let busy=false;
  const postpone=()=>{if(busy)return;postponed.set(offer.id,Date.now()+60000);closeDialog(dialog,{remove:true});};
  const dismiss=()=>{ignored.add(offer.id);closeDialog(dialog,{remove:true});};
@@ -141,7 +144,7 @@ function incomingDialog(offer,onImported,notify){
    const status=dialog.querySelector('[data-share-status]');
    let imported=false;
    try{
-     if(!['creature','homebrew'].includes(offer.kind)||
+     if(!['creature','homebrew','inventory'].includes(offer.kind)||
        !Number.isInteger(offer.size)||offer.size<1||offer.size>MAX_BYTES||
        !Number.isInteger(offer.parts)||offer.parts!==Math.ceil(offer.size/CHUNK))
        throw Error('Metadati della condivisione non validi.');
@@ -158,6 +161,7 @@ function incomingDialog(offer,onImported,notify){
      status.textContent='Importazione nell’archivio…';
      const payload=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
      if(offer.kind==='creature')await importCreatureFile(payload);
+     else if(offer.kind==='inventory')await importInventoryItems(payload,dialog.querySelector('[data-share-target]')?.value);
      else await importHomebrewPackage(payload);
      imported=true;
      ignored.add(offer.id);
@@ -187,7 +191,7 @@ export async function pollIncomingShares(connected,onImported=async()=>{},notify
    const listing=await directory();
    const next=(listing.inbox||[]).find(item=>item.id&&!ignored.has(item.id)&&
      Date.now()>=(postponed.get(item.id)||0));
-   if(next)incomingDialog(next,onImported,notify);
+   if(next)await incomingDialog(next,onImported,notify);
  }catch(error){
    // Matches nonblocking map/chat polls: temporary disconnects are expected.
  }finally{polling=false;}
