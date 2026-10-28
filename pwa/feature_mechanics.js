@@ -1,7 +1,7 @@
 import {createVariant} from './creature_variants.js';
 // Offline structured class-feature mechanics shared by the PWA sheet and actions.
 // No regex matching feature prose; no network access in the evaluation path.
-import {resolveOwnedItem} from './item_controls.js';
+import {resolveOwnedItem,hasProperty,itemKind} from './item_controls.js';
 import {exhaustionRollModes} from './exhaustion_rules.js';
 import {speciesRollModeMatches} from './species_roll_modes.js';
 import {attackHitRollSources} from './attack_hit_effects.js';
@@ -366,15 +366,28 @@ export function classFeatureRollSources(record,calculated,target,context=''){
 }
 // Situational feat effects share the same roll popup and trait navigation as
 // conditional species modes. A condition_label is never inferred as fulfilled.
-function featRollMatches(rule,target,calculated){
+function featRollMatches(rule,target,calculated,record){
  const damage=target.startsWith('attack_damage:');
  if(rule.target==='damage_roll'){
   if(!damage)return false;
  }else if(!speciesRollModeMatches(rule,target,calculated))return false;
- if(rule.attack_melee){
+ if(rule.attack_melee||rule.attack_heavy||rule.attack_ranged_weapon){
   const attackId=target.slice(target.indexOf(':')+1);
   const attack=rows(calculated?.attacks).find(row=>String(row.id)===attackId);
-  if(!attack||attack.melee!==true)return false;
+  if(!attack)return false;
+  if(rule.attack_melee&&attack.melee!==true)return false;
+  if(rule.attack_heavy||rule.attack_ranged_weapon){
+   // The power-attack option is not available to unarmed, monster, thrown
+   // melee-weapon or spell attacks. Use actual equipped weapon properties.
+   if(!attackId.startsWith('item:')||attack.proficient!==true)return false;
+   const weapon=rows(record.inventory).map(resolveOwnedItem).find(item=>
+     item?.id&&attackId.endsWith(':'+item.id)&&itemKind(item)==='weapon'&&
+     rows(item.equipped_slots).some(slot=>slot==='main'||slot==='off'));
+   if(!weapon)return false;
+   if(rule.attack_heavy&&(attack.melee!==true||!hasProperty(weapon,'H')))return false;
+   if(rule.attack_ranged_weapon&&(attack.melee!==false||
+     String(weapon.type||'').split('|')[0].toUpperCase()!=='R'))return false;
+  }
  }
  return true;
 }
@@ -382,16 +395,23 @@ export function applicableFeatRollBonuses(record={},calculated={},target=''){
  const enabled=id=>record.origin_enabled?.[id]!==false&&
    !rows(record.proficiency_origins).some(row=>row?.id===id&&row.disabled);
  const modes=rows(calculated.feat_roll_modes)
-  .filter(row=>row.condition_label&&enabled(row.origin_id)&&featRollMatches(row,target,calculated))
+  .filter(row=>row.condition_label&&enabled(row.origin_id)&&featRollMatches(row,target,calculated,record))
   .map(row=>({...row,id:'feat-roll:'+row.origin_id+':'+row.target+':'+row.condition_label,
    benefit_id:'feat-roll:'+row.origin_id+':'+row.target+':'+row.condition_label,
    roll_mode:row.mode,granting_trait:row.granting_trait||row.feat_name||row.origin_name,
    feat_conditional:true}));
+ const shieldAC=Math.max(0,...rows(record.inventory).map(resolveOwnedItem)
+  .filter(item=>item&&Number(item.quantity??1)>0&&itemKind(item)==='shield'&&
+    rows(item.equipped_slots).some(slot=>slot==='main'||slot==='off'))
+  .map(item=>Number.isFinite(Number(item.ac))?Number(item.ac):2));
+ const resolvedBonus=value=>value==='equipped_shield_ac'?shieldAC:Number(value);
  const bonuses=rows(calculated.feat_roll_bonuses)
-  .filter(row=>row.condition_label&&Number.isFinite(Number(row.flat_bonus))&&
-    enabled(row.origin_id)&&featRollMatches(row,target,calculated))
+  .filter(row=>row.condition_label&&enabled(row.origin_id)&&
+    featRollMatches(row,target,calculated,record))
+  .map(row=>({...row,flat_bonus:resolvedBonus(row.flat_bonus)}))
+  .filter(row=>Number.isFinite(row.flat_bonus)&&row.flat_bonus!==0)
   .map(row=>({...row,id:'feat-bonus:'+row.origin_id+':'+row.target+':'+row.condition_label,
-   flat_bonus:Number(row.flat_bonus),granting_trait:row.granting_trait||row.feat_name||row.origin_name,
+   granting_trait:row.granting_trait||row.feat_name||row.origin_name,
    feat_conditional:true}));
  return [...modes,...bonuses];
 }
