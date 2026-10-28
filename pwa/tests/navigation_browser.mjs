@@ -165,8 +165,8 @@ try{
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
  assert(await page.locator('#sheet-play-view [data-play-search]').isVisible());
- assert.equal(await page.locator('#sheet-play-view [data-sheet-context="tools"] .play-row-copy strong').innerText(),'Altre competenze');
- await page.locator('#sheet-play-view [data-sheet-context="tools"]').click();
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context="tools"] .play-row-copy strong').first().innerText(),'Altre competenze');
+ await page.locator('#sheet-play-view [data-sheet-context="tools"]').first().click();
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Strumenti/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armature/);
