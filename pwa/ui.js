@@ -40,6 +40,7 @@ import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayRe
 import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
+import {claimFeatureItemPatch} from './feature_item_grants.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
@@ -1125,7 +1126,7 @@ async function computeLocalData(record){
   return {...calculated,loadError,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
-    infusion_mechanics:catalogs.classMechanics||{}};
+    infusion_mechanics:{...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]}};
 }
 
 // Spells and nonspell powers share their popup header, facts and description.
@@ -2160,7 +2161,8 @@ function mountTraitBenefitDialog(){
     '<div class="trait-benefit-manage-row">'+
      '<div class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
       (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</div>'+
-     (!trait.readonly&&!['attacks','armor_class','effects','granted_features'].includes(group.type)&&(group.type!=='roll_modes'||item.id.startsWith('roll_mode:trait:'))&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
+     (group.type==='items'?'<button type="button" class="btn small" data-act="trait-feature-item-grant" data-grant-id="'+esc(item.grant_id)+'" data-item-id="'+esc(item.option_id)+'"'+(item.owned||!item.available?' disabled':'')+'>'+ (item.owned?'Posseduto':item.available?'Aggiungi':'Limite raggiunto')+'</button>':'')+
+     (!trait.readonly&&!['items','attacks','armor_class','effects','granted_features'].includes(group.type)&&(group.type!=='roll_modes'||item.id.startsWith('roll_mode:trait:'))&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
     '</div>').join('')+
    '</section>').join('');
  // Expose each structured choice only inside the popup of its granting trait.
@@ -6895,6 +6897,16 @@ async function handleAction(target){
     }else await patch(traitActivationPatch(record,trait,Boolean(trait.inactive)));
     await state.editor.flush();
     await render();return;
+  }
+  if(act==='trait-feature-item-grant'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Personaggio non disponibile.');
+    const calculated=await computeLocalData(creature);
+    const grant=calculated.feature_item_grants?.find(row=>row.id===target.dataset.grantId);
+    if(!grant||!state.traitRows.some(row=>row.key===state.traitPopupKey&&row.feature_origin===grant.origin_id))
+      throw Error('Il beneficio non appartiene al tratto selezionato.');
+    const changes=claimFeatureItemPatch(creature,calculated,target.dataset.grantId,target.dataset.itemId);
+    await patch(changes);await render();return;
   }
   if(act==='trait-benefits-close'){dismissTraitBenefitDialog();return;}
   if(act==='trait-benefits-add'||act==='trait-benefits-cancel-add'){
