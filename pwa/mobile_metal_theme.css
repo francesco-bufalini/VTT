@@ -82,13 +82,6 @@ input:not([type=checkbox]):not([type=file]),select,textarea{
  border:1px solid #ad8051;background:linear-gradient(180deg,#49392c,#251e1d);
  color:#f4d39c;box-shadow:inset 0 1px 0 #ffe6b429;
 }
-.action-economy-dashboard>.action-economy-section{
- border-top-color:#e4b477;
- background:linear-gradient(150deg,#5b3e2a35,transparent 38%),var(--vtt-bronze);
-}
-.action-economy-row{border-top-color:#c19666}
-.action-economy-heading h2{font-family:Georgia,"Palatino Linotype",serif}
-.action-economy-group-title{border:1px solid #a67a4b;border-top-color:#d2a16a}
 .action-resource-control,.slot-counter{background:#17141477;border-radius:7px}
 .native-summary>div{border-color:#a47a4977}
 :where(.panel,.creature-card,.token-card,.native-entry,.action-economy-section,.document-entry) :where(p,strong,span,button,summary){overflow-wrap:anywhere}
@@ -106,9 +99,6 @@ input:not([type=checkbox]):not([type=file]),select,textarea{
  .sections-drawer{width:min(330px,calc(100vw - 20px));max-height:calc(100dvh - 95px)}
  .brand{font-size:17px}
  .btn,.section-tabs button{min-height:44px}
- .action-economy-dashboard>.action-economy-section{padding:10px}
- .action-economy-row{padding:8px}
- .action-economy-controls{max-width:100%;width:100%}
 }
 @media(prefers-reduced-motion:reduce){
  .btn,.section-tabs button,.section-menu>summary{transition:none}
@@ -828,11 +818,6 @@ input:disabled{opacity:.75;cursor:default}
 
 /* One action category at a time, on every device using the mobile app. */
 .action-economy-dashboard{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
-.action-economy-dashboard>.disclosure-panel{margin:0!important;grid-column:auto!important;grid-row:auto!important;align-self:start}
-.action-economy-dashboard .disclosure-heading{min-height:76px}
-.disclosure-heading>.action-economy-heading{flex:1;min-width:0;margin:0;padding:0;border:0}
-.disclosure-heading .action-economy-heading h2{font-size:19px}
-.disclosure-heading .action-economy-icon{width:34px;height:34px}
 .content:has(.library-management:not([open])) .library-batch-check{display:none}
 
 /* Frequent in-play controls remain deliberate thumb targets. */
@@ -985,11 +970,7 @@ input:disabled{opacity:.75;cursor:default}
 .sheet-context-body>.panel>h2{display:none}
 .sheet-context-body .columns{grid-template-columns:1fr;gap:14px}.sheet-context-body label{font:500 12px/1.4 system-ui;color:#c2b49d}
 .sheet-context-body input,.sheet-context-body select,.sheet-context-body textarea{font-family:system-ui,sans-serif!important}
-.sheet-context-body .btn{font:550 13px/1.4 system-ui;min-height:48px}
-.sheet-context-body .action-economy-row{display:flex;flex-wrap:wrap;min-width:0;padding:9px;gap:10px}
-.sheet-context-body .action-economy-main{flex:1 1 100%}.sheet-context-body .action-economy-controls{max-width:100%}.sheet-context-body .action-economy-preview{display:none}
-.sheet-context-body .action-economy-entry summary{min-height:48px!important}.sheet-context-body .action-economy-entry p{font-size:13px;line-height:1.6;color:#cbbda6}
-.sheet-context-body .action-tree{flex-basis:100%}.sheet-context-body .trait-description{font-size:14px;line-height:1.7}
+.sheet-context-body .btn{font:550 13px/1.4 system-ui;min-height:48px}.sheet-context-body .trait-description{font-size:14px;line-height:1.7}
 .sheet-context-body .battle-resource-row{grid-template-columns:1fr}.sheet-context-body .battle-resource-actions{justify-content:flex-start;flex-wrap:wrap}
 .sheet-context-body .inventory-table-row{display:flex;flex-wrap:wrap;padding:10px;gap:12px}.sheet-context-body .inventory-col-name{order:-1;width:100%}.sheet-context-body .inventory-col-equip{min-width:50px}
 .sheet-context-body .magic-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0}
@@ -1133,9 +1114,6 @@ input:disabled{opacity:.75;cursor:default}
 .play-battle-heading-tools{position:absolute;top:8px;right:9px;z-index:1}
 .play-battle-heading-tools>.play-button{min-width:0;min-height:40px;padding:7px 9px;gap:5px;font-size:11px;border:1px solid #aa845139;background:#3a2a2480}
 .play-battle-heading-tools .vtt-action-glyph{width:17px;height:17px;flex:0 0 17px}
-.play-battle-action-rows .action-economy-chevron{display:none!important}
-.play-battle-action-rows .action-economy-entry>summary{list-style:none}
-.play-battle-action-rows .action-economy-entry>summary::-webkit-details-marker{display:none}
 .play-battle-attack-entry{flex-direction:column;align-items:stretch}
 .play-battle-attack-line{display:flex;align-items:flex-start;gap:7px;min-width:0}
 .play-battle-attack-line>.play-battle-attack-details{flex:1 1 auto;min-width:0}
@@ -1169,12 +1147,6 @@ input:disabled{opacity:.75;cursor:default}
 .play-battle-action-group>h3>.vtt-action-glyph{width:18px;height:18px;flex:0 0 18px}
 .play-battle-action-group .play-badge{font-size:10px;padding:2px 5px}
 .play-battle-action-rows{display:grid;gap:5px;min-width:0}
-.play-battle-action-rows>.action-economy-row{display:flex;flex-wrap:wrap;min-width:0;gap:5px 10px;margin:0;padding:7px 9px;border:1px solid #a6804e3e;border-radius:9px;background:#2a2220}
-.play-battle-action-rows .action-economy-main{flex:1 1 160px;min-width:0}
-.play-battle-action-rows .action-economy-main>.action-economy-entry>summary{min-height:39px;padding:3px 0;font-size:13px}
-.play-battle-action-rows .action-economy-preview{font-size:11px;color:#bbad97}
-.play-battle-action-rows .action-economy-controls{flex:0 1 auto;min-width:0}
-.play-battle-action-rows .action-economy-controls .btn{min-height:36px}
 /* One consistent, roll-aware attack row at narrow phone widths. */
 .play-battle-attack-entry{display:flex;align-items:flex-start;gap:7px;min-width:0;padding:5px 7px;border:1px solid #a6804e3e;border-radius:9px;background:#2a2220}
 .play-battle-ability-entry{min-width:0;margin:4px 8px 6px 15px;padding:5px 7px;border:1px solid #a6804e3e;border-radius:9px;background:#2a2220}
