@@ -18,6 +18,7 @@ const SKILLS={
 };
 const DAMAGE={
  acid:'Acido',bludgeoning:'Contundenti',cold:'Freddo',fire:'Fuoco',force:'Forza',
+ spell_damage:'Danni da incantesimi',
  lightning:'Fulmine',necrotic:'Necrotici',piercing:'Perforanti',poison:'Veleno',
  psychic:'Psichici',radiant:'Radianti',slashing:'Taglienti',thunder:'Tuono'
 };
@@ -409,7 +410,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   .map(row=>({
    label:defenseKinds[Number(row.rank)][0],
    order:defenseKinds[Number(row.rank)][1],
-   value:(Number(row.rank)===3?DEFENSE_CONDITIONS:DAMAGE)[norm(row.key)]||String(row.key||''),id:row.benefit_id||'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)
+   value:((Number(row.rank)===3?DEFENSE_CONDITIONS:DAMAGE)[norm(row.key)]||String(row.key||''))+
+    (row.condition_label?' · '+row.condition_label:''),id:row.benefit_id||'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)
   }))
   .sort((a,b)=>a.order-b.order||a.value.localeCompare(b.value,'it',{sensitivity:'base'}));
  for(const row of defenses)
