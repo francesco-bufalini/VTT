@@ -411,6 +411,14 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    amount+(rule.condition_label?' · '+rule.condition_label:''),
    'feat_bonus:'+rule.origin_id+':'+rule.target+':'+(rule.condition_label||''));
  }
+ // Typed movement costs remain attributable to the exact feat, not to
+ // every species or character that happens to have the resulting speed.
+ for(const rule of rows(calculated.feat_movement_rules)){
+  if(!belongs(rule))continue;
+  if(rule.mode==='climb_at_walking_cost')
+    add('bonus','Movimento','Scalata','Nessun costo aggiuntivo: puoi usare la velocità di camminata.',
+      'feat_movement:'+rule.origin_id+':'+rule.mode);
+ }
  // User-authored mode grants carry the same stable source as other trait bonuses.
  for(const row of rows(record.roll_mode_grants)){
   if(row.disabled||!belongs(row)||!['advantage','disadvantage'].includes(row.mode))continue;
