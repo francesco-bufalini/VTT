@@ -278,6 +278,15 @@ for(const row of additional.entries.filter(row=>row.kind==='race'&&row.blocks?.l
  mechanics.subraces.push({name:block.name,source:row.source,raceName:row.name,raceSource:row.source,
   id:'subrace:'+row.name.toLowerCase()+'|'+row.source.toLowerCase()+'|'+block.name.toLowerCase()+'|'+row.source.toLowerCase()});
 }
+// Carry native subtype mechanics on its own canonical reference, not on
+// a separately selectable race variant.
+mechanics.subraces=mechanics.subraces.map(row=>{
+ const source=allSpecies.find(r=>r.name.toLowerCase()===(row.raceName+' ('+row.name+')').toLowerCase()&&
+   r.source.toLowerCase()===row.source.toLowerCase());
+ return source?{...row,...(source.speed!==undefined?{speed:source.speed}:{}),
+   ...(source.size!==undefined?{size:source.size}:{}),
+   ...(source.creatureTypes!==undefined?{creatureTypes:source.creatureTypes}:{})}:row;
+});
 // Subrace records can share their native ID with a flattened race row.
 // Only the independent parent species enters the selectable race list.
 const subraceKeys=new Set(mechanics.subraces.map(row=>
