@@ -6704,7 +6704,7 @@ async function handleAction(target){
     const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
     const bonuses=rollOptionalDice(creature,calculated,[
-      ...applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[],calculated),
+      ...applicableDiceBonuses(creature,attackId?'attack_damage:'+attackId:'spell_damage',state.spellCatalog||[],calculated),
       ...classFeatureRollBonuses(creature,calculated,'attack_damage:'+attackId),
        ...applicableFeatRollBonuses(creature,calculated,'attack_damage:'+attackId)
      ],{kind:'damage',attackId});
