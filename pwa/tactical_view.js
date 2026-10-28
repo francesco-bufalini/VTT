@@ -139,11 +139,12 @@ export class TacticalViewer {
     this.updateButtons();this.draw();
   }
   setAreaAbility({name,shape,length_feet=0,width_feet=0,radius_feet=0,onSelected}={}){
-    if(!this.root||!name||!['line','cone'].includes(shape)||typeof onSelected!=='function'||
+    if(!this.root||!name||!['line','cone','circle'].includes(shape)||typeof onSelected!=='function'||
        this.targeting.active||this.abilityTarget)throw Error('Area della capacità non disponibile.');
     this.areaAbility={name,shape,length_feet,width_feet,radius_feet,onSelected};
     this.preview=null;
-    this.setStatus('Tocca una direzione sulla mappa per orientare '+name+'. Poi conferma l’area.');
+    this.setStatus(shape==='circle'?'Area centrata sul tuo token: tocca la mappa per selezionare i bersagli, poi conferma.':
+      'Tocca una direzione sulla mappa per orientare '+name+'. Poi conferma l’area.');
     this.updateButtons();this.draw();
   }
 
