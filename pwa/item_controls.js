@@ -141,6 +141,11 @@ export function armorDexterityLabel(armor={}){
  return cap===0?"DES non applicata":cap===null?"+ DES (senza limite)":
   "+ DES (max "+(cap>=0?"+":"")+cap+")";
 }
+// Presentation only: keep item catalog identity and editable base name intact.
+export function ownedItemDisplayName(item={}){
+ const base=String(item.name||item.id||'Oggetto'),extension=String(item.infusion?.name||'').trim();
+ return extension?base+' - '+extension:base;
+}
 export function resolveOwnedItem(saved={}){
   const effective={...saved},overrides=saved?.instance_overrides;
   if(overrides&&typeof overrides==="object"&&!Array.isArray(overrides))
@@ -510,7 +515,7 @@ export function applyInfusionPatch(record,known,definitions,classMechanics,index
    (item.infusion?.id===option.id?item.infusion.effect_choice?.[selection.key]:'')||''):'';
  if(selection&&(!array(selection.options).includes(selected)||!selection.key))
    throw Error('Seleziona una delle opzioni previste per l’effetto dell’infusione.');
- const old=item.infusion;
+ const old=item.infusion,oldChargeId=old?.id?infusionChargeTrackerId(item,index):'';
  if(old&&Object.keys(old).length&&old.creator_id!==record.id)throw Error("Infusione appartenente a un altro Artefice.");
  const active=items.filter(row=>Number(row?.quantity??1)>0&&row?.infusion?.creator_id===record.id).length;
  if(!old?.id&&active>=caps.active)throw Error("Limite di oggetti infusi raggiunto.");
@@ -532,13 +537,15 @@ export function applyInfusionPatch(record,known,definitions,classMechanics,index
    ...(trait?{origin_id:trait.origin_id}:{}),
    requires_attunement:Boolean(option.requires_attunement),
    ...(selection?{effect_choice:{[selection.key]:selected}}:{})};
- return {inventory:items};
+ return {inventory:items,...clearInfusionChargeSpent(record,
+   [oldChargeId,infusionChargeTrackerId(item,index)])};
 }
 export function clearInfusionPatch(record,index){
  const items=structuredClone(array(record.inventory));
  if(!items[index]?.infusion?.id)throw Error("Nessuna infusione da rimuovere.");
+ const chargeId=infusionChargeTrackerId(items[index],index);
  delete items[index].infusion;items[index].attuned=false;items[index].attuned_count=0;
- return {inventory:items};
+ return {inventory:items,...clearInfusionChargeSpent(record,[chargeId])};
 }
 export function forgetInfusionPatch(record,known){
  const current=array(record.optional_features_catalog);
@@ -546,15 +553,17 @@ export function forgetInfusionPatch(record,known){
    String(row.plan_item_id||"")===String(known.plan_item_id||""));
  if(index<0)throw Error("Infusione non trovata.");
  const updated=structuredClone(current);updated.splice(index,1);
- const inventory=structuredClone(array(record.inventory));
- for(const item of inventory){
+ const inventory=structuredClone(array(record.inventory)),removedChargeIds=[];
+ for(const [itemIndex,item] of inventory.entries()){
    const inf=item.infusion||{};
    if(inf.creator_id===record.id&&inf.id===known.id&&
      String(inf.plan_item_id||"")===String(known.plan_item_id||"")){
+     removedChargeIds.push(infusionChargeTrackerId(item,itemIndex));
      delete item.infusion;item.attuned=false;item.attuned_count=0;
    }
  }
  return {optional_features_catalog:updated,inventory,
+   ...clearInfusionChargeSpent(record,removedChargeIds),
    prepared_features:array(record.prepared_features).filter(row=>!(row?.kind==="infusion"&&row.id===known.id))};
 }
 
@@ -562,6 +571,32 @@ export const infusionInstanceOrigin=(item,index=0)=>
   "infusion:"+String(item?.infusion?.creator_id||"unknown")+"|"+
   String(item?.infusion?.id||"unknown")+"|"+
   String(item?.instance_id||item?.id||index);
+export const infusionChargeTrackerId=(item,index=0)=>
+ 'infusion-charges:'+infusionInstanceOrigin(item,index);
+function clearInfusionChargeSpent(record,ids=[]){
+ const previous=record.resource_tracker_spent||{},removed=new Set(ids.filter(Boolean));
+ if(![...removed].some(id=>Object.hasOwn(previous,id)))return {};
+ return {resource_tracker_spent:Object.fromEntries(
+   Object.entries(previous).filter(([key])=>!removed.has(key)))};
+}
+// Item-bound charges remain available in inventory even if an infused
+// shield, armor or weapon is temporarily not equipped or attuned.
+export function infusionChargeTrackers(record={},definitions=[],features=[]){
+ const source=infusionGrantingTrait(record,features);
+ return array(record.inventory).flatMap((item,index)=>{
+  const inf=item?.infusion;
+  if(!inf?.id||Number(item.quantity??1)<=0||item.disabled)return [];
+  if(inf.creator_id===record.id&&!source)return [];
+  const charge=array(definitions).find(row=>row.id===inf.id)?.charge_tracker;
+  const max=Number(charge?.max);
+  if(!charge||!Number.isSafeInteger(max)||max<1||max>1000)return [];
+  const id=infusionChargeTrackerId(item,index),name=ownedItemDisplayName(item);
+  return [{id,name:name+' · Cariche',max,recharge:'manual',
+   recharge_note:String(charge.recovery||''),automatic:true,
+   item_bound:true,infusion_id:inf.id,inventory_index:index,
+   origin_id:'tracker:auto:'+id,origin_name:'Oggetto · '+name}];
+ });
+}
 export function activeInfusions(record={},definitions=[],features=[]){
  const source=infusionGrantingTrait(record,features);
  return array(record.inventory).flatMap((owned,index)=>{

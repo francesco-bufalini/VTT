@@ -4278,7 +4278,11 @@
           "armor"
         ]
       },
-      "application_kind": "enhancement"
+      "application_kind": "enhancement",
+      "charge_tracker": {
+        "max": 6,
+        "recovery": "all'alba · 1d6 cariche spese"
+      }
     },
     {
       "id": "infusion|tce|boots of the winding path",
@@ -4412,7 +4416,11 @@
           "robe"
         ]
       },
-      "application_kind": "enhancement"
+      "application_kind": "enhancement",
+      "charge_tracker": {
+        "max": 4,
+        "recovery": "all'alba · 1d4 cariche spese"
+      }
     },
     {
       "id": "infusion|tce|radiant weapon",
@@ -4431,7 +4439,11 @@
           "weapon"
         ]
       },
-      "application_kind": "enhancement"
+      "application_kind": "enhancement",
+      "charge_tracker": {
+        "max": 4,
+        "recovery": "all'alba · 1d4 cariche spese"
+      }
     },
     {
       "id": "infusion|tce|repeating shot",
@@ -4696,7 +4708,11 @@
           "shield"
         ]
       },
-      "application_kind": "enhancement"
+      "application_kind": "enhancement",
+      "charge_tracker": {
+        "max": 4,
+        "recovery": "all'alba · 1d4 cariche spese"
+      }
     },
     {
       "id": "infusion|tce|resistant armor",
@@ -4766,7 +4782,11 @@
           "ring"
         ]
       },
-      "application_kind": "enhancement"
+      "application_kind": "enhancement",
+      "charge_tracker": {
+        "max": 1,
+        "recovery": "all'alba · 1 utilizzo"
+      }
     }
   ],
   "source_ability_choices": {
