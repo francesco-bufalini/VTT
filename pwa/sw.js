@@ -40,6 +40,7 @@ const SHELL = [
   "/species_defenses.js",
   "/class_defenses.js",
   "/armor_rules.js",
+  "/armor_class_formula.js",
   "/species_roll_modes.js",
   "/species_conditional_bonuses.js",
   "/feature_mechanics.js",
