@@ -72,9 +72,10 @@ test('Defensive Field requires guardian armor and keeps the larger temporary HP 
  assert.equal(infiltrator.attacks.find(a=>a.id==='class_feature:lightning_launcher')?.id,'class_feature:lightning_launcher');
  assert.equal(infiltrator.attacks.find(a=>a.id==='class_feature:lightning_launcher')?.damage,'1d6 + 4');
  assert.equal(infiltrator.values.speed,35);
- const c=calculateSheet(r,catalogs),patch=classFeatureActivationPatch(r,c,'defensive_field');
+ const guardian={...r,trait_state_selection:{armor_model:'armor_model:guardian'}};
+ const c=calculateSheet(guardian,catalogs),patch=classFeatureActivationPatch(guardian,c,'defensive_field');
  assert.equal(patch.temporary_hp,8);
- assert.equal(classFeatureActivationPatch({...r,temporary_hp:12},c,'defensive_field').temporary_hp,12);
+ assert.equal(classFeatureActivationPatch({...guardian,temporary_hp:12},c,'defensive_field').temporary_hp,12);
 });
 
 test('Armor Model is a source-bound, reversible and exclusive state privilege',()=>{
@@ -156,6 +157,9 @@ test('tracker resources describe both structured flat and attack-specific dice b
  assert.equal(flash.tracker_id,'class:artificer:tce:flash_of_genius');
  assert.equal(trackerRollBonusTargets(flash,calculated),'Prove di caratteristica · Tiri salvezza');
  const lightning=rows.find(row=>row.tracker_id==='feature:lightning_launcher:extra_damage');
+ assert.ok(lightning,JSON.stringify({optional_dice:calculated.trait_state_optional_dice,
+  trackers:calculated.trackers.filter(r=>String(r.id).includes('lightning')),
+  rows:rows.filter(r=>String(r.tracker_id).includes('lightning'))}));
  assert.equal(lightning.dice,'1d6');
  assert.match(trackerRollBonusTargets(lightning,calculated),/Danni · Lightning Launcher/);
  // The engine must also display a new data-defined bonus without bespoke JS.
