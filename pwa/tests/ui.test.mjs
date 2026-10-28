@@ -1075,7 +1075,11 @@ test("scroll creation selects a spell and casting level without opening item cat
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"]'));
   if(document.querySelector('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
     click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
-  await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
+  await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query')).catch(error=>{
+    const tab=document.querySelector('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
+    throw Error(error.message+' — scrolls='+tab?.getAttribute('aria-pressed')+
+      ' — inventory='+document.querySelector('#sheet-play-view')?.textContent.slice(0,750));
+  });
   assert.equal(document.querySelector('#sheet-play-view [data-act="item-catalog"]'),null);
   // The scroll creator is now an inline panel inside the Pergamene section.
   await until(()=>document.querySelector('#sheet-play-view .inventory-scroll-create #scroll-spell-query'));
