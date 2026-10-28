@@ -557,6 +557,7 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
    exclude_self:ability.exclude_self===true,
    // Preserve typed mechanics for reusable racial area and temporary effects.
    mode:ability.mode||'',persistent_key:ability.persistent_key||'',
+   persistent_origin_id:ability.persistent_origin_id||'',
    duration_rounds:ability.duration_rounds||0,
    attack_replacement:ability.attack_replacement===true,
    area_shape:ability.area_shape||'',area_length_feet:ability.area_length_feet||0,
