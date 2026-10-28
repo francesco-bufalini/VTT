@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {infusionLimits} from '../item_controls.js';
-import {featureItemGrants,claimFeatureItemPatch} from '../feature_item_grants.js';
+import {featureItemGrants,claimFeatureItemPatch,featureItemPowers} from '../feature_item_grants.js';
 import {classFeatureRollSources} from '../feature_mechanics.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
@@ -82,4 +82,43 @@ test('The Right Tool for the Job and Bard Performance of Creation reuse grants',
   abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:16},inventory:[]};
  const projection=calculateSheet(bard,catalogs);
  assert.ok(projection.feature_item_grants.some(g=>g.id==='bard-performance-of-creation'));
+});
+
+test('Fortified Position unlocks two cannon instances, including identical models, but never three',()=>{
+ const record=art(15,'Artillerist');
+ const projected=calculateSheet(record,catalogs);
+ const cannon=projected.feature_item_grants.find(g=>g.id==='artificer-eldritch-cannon');
+ assert.equal(cannon.max_owned,2);
+ let updated={...record,...claimFeatureItemPatch(record,projected,cannon.id,'force-ballista',
+  {activationActionId:'eldritch_cannon'})};
+ updated={...updated,...claimFeatureItemPatch(updated,calculateSheet(updated,catalogs),
+  cannon.id,'force-ballista',{activationActionId:'eldritch_cannon'})};
+ assert.equal(updated.inventory.length,2);
+ assert.notEqual(updated.inventory[0].id,updated.inventory[1].id);
+ const powers=featureItemPowers(updated,calculateSheet(updated,catalogs),'command_cannon');
+ assert.equal(powers.length,2);
+ assert.equal(powers[0].mode,'spell_attack');
+ assert.equal(powers[0].damage_dice,'2d8 + 1d8');
+ assert.throws(()=>claimFeatureItemPatch(updated,calculateSheet(updated,catalogs),
+  cannon.id,'protector',{activationActionId:'eldritch_cannon'}),/Rimuovi prima/i);
+});
+
+test('item-granted cannon powers scale from level 9 and vanish without the owned cannon',()=>{
+ const before=art(8,'Artillerist'),after=art(9,'Artillerist');
+ const first=calculateSheet(before,catalogs),second=calculateSheet(after,catalogs);
+ const grant=first.feature_item_grants.find(x=>x.id==='artificer-eldritch-cannon');
+ const saved1={...before,...claimFeatureItemPatch(before,first,grant.id,'flamethrower',
+  {activationActionId:'eldritch_cannon'})};
+ const saved2={...after,...claimFeatureItemPatch(after,second,grant.id,'flamethrower',
+  {activationActionId:'eldritch_cannon'})};
+ assert.equal(featureItemPowers(saved1,calculateSheet(saved1,catalogs),'command_cannon')[0].damage_dice,'2d8');
+ const flame=featureItemPowers(saved2,calculateSheet(saved2,catalogs),'command_cannon')[0];
+ assert.equal(flame.damage_dice,'2d8 + 1d8');
+ assert.equal(flame.area_length_feet,15);
+ assert.equal(featureItemPowers(after,second,'command_cannon').length,0);
+ const protector={...after,...claimFeatureItemPatch(after,second,grant.id,'protector',
+  {activationActionId:'eldritch_cannon'})};
+ const power=featureItemPowers(protector,calculateSheet(protector,catalogs),'command_cannon')[0];
+ assert.equal(power.mode,'temporary_hp_area');
+ assert.equal(power.temp_hp,'1d8 + int_mod');
 });
