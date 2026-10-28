@@ -101,7 +101,7 @@
           "ability_check"
         ],
         "proficiency_mode": "tool_expertise",
-        "condition_label": "Se conosci la Runa del Fuoco, quando usi uno strumento in cui sei competente."
+        "condition_label": "Quando indossi o porti un oggetto su cui è incisa la Runa del Fuoco e usi uno strumento in cui sei competente."
       }
     }
   ]
