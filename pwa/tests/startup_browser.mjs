@@ -35,7 +35,7 @@ const server = createServer(async (request, response) => {
     }
     if(path==='/sw.js'){
       response.setHeader('Content-Type','text/javascript; charset=utf-8');
-      response.end((await readFile(new URL('../sw.js',root),'utf8'))
+      response.end((await readFile(new URL('pwa/sw.js',root),'utf8'))
         .replaceAll('__VTT_COMMIT_SHA__','a'.repeat(40)));return;
     }
     if (path.startsWith("/api/")) {
