@@ -42,7 +42,7 @@ test('ERLW dragonmarks are bounded to the correct 2014 race and subrace',()=>{
  }
 });
 test('all 12 distinct ERLW marks exist and are not available without their selected variant',()=>{
- const markSources=rules.races.filter(r=>r.subrace);
+ const markSources=rules.races.filter(r=>r.subrace_source==='ERLW');
  assert.equal(new Set(markSources.map(r=>r.subrace.replace(/^Variant; /,''))).size,12);
  assert.equal(markSources.length,13);
  assert.equal(project(character('Elf','PHB')).bonuses.length,0);
