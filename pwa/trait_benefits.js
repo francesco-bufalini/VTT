@@ -21,6 +21,10 @@ const DAMAGE={
  lightning:'Fulmine',necrotic:'Necrotici',piercing:'Perforanti',poison:'Veleno',
  psychic:'Psichici',radiant:'Radianti',slashing:'Taglienti',thunder:'Tuono'
 };
+const DEFENSE_CONDITIONS={blinded:'Accecato',charmed:'Affascinato',deafened:'Assordato',
+ disease:'Malattie',frightened:'Spaventato',grappled:'Afferrato',incapacitated:'Incapacitato',
+ paralyzed:'Paralizzato',petrified:'Pietrificato',poisoned:'Avvelenato',restrained:'Trattenuto',
+ stunned:'Stordito',unconscious:'Privo di sensi',exhaustion:'Indebolimento'};
 const ACTION_TIMES={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento',contextual:'Contestuale'};
 const actionTime=value=>ACTION_TIMES[norm(typeof value==='object'?value?.unit||value?.type:value)]||String(value||'Contestuale');
 const describe=value=>typeof value==='string'?value:Array.isArray(value)?value.map(describe).filter(Boolean).join(' · '):
@@ -404,7 +408,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   .map(row=>({
    label:defenseKinds[Number(row.rank)][0],
    order:defenseKinds[Number(row.rank)][1],
-   value:DAMAGE[norm(row.key)]||String(row.key||''),id:row.benefit_id||'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)
+   value:(Number(row.rank)===3?DEFENSE_CONDITIONS:DAMAGE)[norm(row.key)]||String(row.key||''),id:row.benefit_id||'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)
   }))
   .sort((a,b)=>a.order-b.order||a.value.localeCompare(b.value,'it',{sensitivity:'base'}));
  for(const row of defenses)
