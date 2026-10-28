@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {concentrationDamageCheck,concentrationEndPatch} from '../concentration_rules.js';
 import {expandedSpellFeatOptions,addFeatWithOrigin} from '../feat_picker.js';
 import {featMechanicGrants,calculateSheet} from '../sheet_rules.js';
-import {classFeatureRollSources,resolveClassRollMode} from '../feature_mechanics.js';
+import {classFeatureRollSources,resolveClassRollMode,applicableFeatRollBonuses} from '../feature_mechanics.js';
 import {structuredSpellGrants,originChoiceMatches} from '../spell_selection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {nativeClassFeatureActions,actionEntries} from '../action_economy.js';
@@ -82,4 +82,61 @@ test('source-provided class-specific spell feat variants replace their generic p
  assert(effects.choices.every(x=>x.spellcasting_ability==='int'));
  assert(effects.choices.some(x=>x.count===2&&x.filter.includes('class=Wizard')));
  assert(!effects.choices.some(x=>JSON.stringify(x).includes('class=Bard')));
+});
+
+test('conditional feat advantages require explicit use, retain source and do not affect unrelated rolls',()=>{
+ const packaged=read('../catalog/ability_grants.json');
+ const record={kind:'character',rules_version:'2014',level:4,abilities:{cha:16},
+  feats_catalog:[{name:'Actor',source:'PHB'},{name:'Dungeon Delver',source:'PHB'}]};
+ const calculated=calculateSheet(record,{abilityGrants:packaged});
+ const deception=applicableFeatRollBonuses(record,calculated,'skill:deception');
+ assert.equal(deception.length,1);
+ assert.equal(deception[0].roll_mode,'advantage');
+ assert.match(deception[0].condition_label,/impersonare/);
+ assert.equal(deception[0].origin_id,'feat|phb|actor');
+ assert.equal(applicableFeatRollBonuses(record,calculated,'skill:performance').length,1);
+ assert.equal(applicableFeatRollBonuses(record,calculated,'skill:athletics').length,0);
+ assert.equal(classFeatureRollSources(record,calculated,'skill:deception').some(row=>row.origin_id==='feat|phb|actor'),false);
+ assert.equal(resolveClassRollMode(classFeatureRollSources(record,calculated,'skill:deception')).mode,'normal');
+ assert.equal(resolveClassRollMode([{mode:deception[0].roll_mode,origin_id:deception[0].origin_id}]).mode,'advantage');
+ const trap=applicableFeatRollBonuses(record,calculated,'save:wis');
+ assert.equal(trap.length,1);assert.match(trap[0].condition_label,/trappole/);
+ const card=traitBenefitGroups({name:'Actor',origin_key:'feat|actor|phb',
+  category:'talenti',rank:0},record,calculated);
+ assert(card.some(group=>group.type==='roll_modes'&&group.items.some(row=>
+  row.label.includes('Inganno')&&row.value.includes('impersonare'))));
+ const off={...record,feats_catalog:[{name:'Actor',source:'PHB',disabled:true}]};
+ assert.equal(applicableFeatRollBonuses(off,calculateSheet(off,{abilityGrants:packaged}),'skill:deception').length,0);
+ const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
+ assert.match(ui,/applicableFeatRollBonuses\(creature,calculated,key\)/);
+ assert.match(ui,/applicableFeatRollBonuses\(creature,calculated,'attack_damage:'\+attackId\)/);
+});
+
+test('other pre-2024 conditional feat roll modes and Charger damage are source- and attack-qualified',()=>{
+ const packaged=read('../catalog/ability_grants.json');
+ const record={rules_version:'2014',feats_catalog:[
+  {name:'Grappler',source:'PHB'},{name:'Mage Slayer',source:'PHB'},
+  {name:'Mounted Combatant',source:'PHB'},
+  {name:'Infernal Constitution',source:'XGE'},
+  {name:'Squat Nimbleness',source:'XGE'},
+  {name:'Charger',source:'PHB'}]};
+ const typed=featMechanicGrants(record,packaged);
+ const calculated={feat_roll_modes:typed.roll_modes,feat_roll_bonuses:typed.roll_bonuses,
+  attacks:[{id:'sword',melee:true},{id:'bow',melee:false}]};
+ const melee=applicableFeatRollBonuses(record,calculated,'attack_hit:sword');
+ assert(melee.some(x=>x.feat_name==='Mounted Combatant'));
+ assert(melee.some(x=>x.feat_name==='Grappler'));
+ const ranged=applicableFeatRollBonuses(record,calculated,'attack_hit:bow');
+ assert(!ranged.some(x=>x.feat_name==='Mounted Combatant'));
+ assert(ranged.some(x=>x.feat_name==='Grappler'));
+ const sword=applicableFeatRollBonuses(record,calculated,'attack_damage:sword');
+ assert(sword.some(x=>x.flat_bonus===5&&x.feat_name==='Charger'));
+ const bow=applicableFeatRollBonuses(record,calculated,'attack_damage:bow');
+ assert(!bow.some(x=>x.feat_name==='Charger'));
+ const save=applicableFeatRollBonuses(record,calculated,'save:wis');
+ assert(save.some(x=>x.feat_name==='Infernal Constitution'));
+ assert(save.some(x=>x.feat_name==='Mage Slayer'));
+ const skill=applicableFeatRollBonuses(record,calculated,'skill:athletics');
+ assert(skill.some(x=>x.feat_name==='Squat Nimbleness'));
+ assert.equal(applicableFeatRollBonuses(record,calculated,'skill:perception').length,0);
 });
