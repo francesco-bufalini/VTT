@@ -3,7 +3,7 @@ import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
 import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLimit, armorDexterityBonus, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
@@ -1649,16 +1649,6 @@ async function editorView() {
   await Promise.all(optionalTasks);
   const calculated=await pendingCalculation;
   if(state.creatureId!==creatureId||state.libraryMode)return '';
-  if(state.sheet==='info'){
-    // Earlier picker versions could save a flattened race (e.g. "Elf (High)")
-    // where only a subrace name ("High") belongs. Fix this specific case once
-    // the catalog is loaded, without altering custom or disallowed choices.
-    const repair=flattenedSubraceRepairPatch(c,state.referenceCatalogs);
-    if(repair){
-      try{await state.editor.update(repair);return editorView();}
-      catch(error){message('Sottorazza salvata non corretta: '+errorMessage(error),true);}
-    }
-  }
   state.calculated=calculated;
   if(['battle','magic','conditions','info'].includes(state.sheet)||
       state.sheet==='inventory'&&inventoryVisibleSections(c).includes('scrolls')){
