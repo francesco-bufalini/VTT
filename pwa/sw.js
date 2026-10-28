@@ -85,6 +85,7 @@ const SHELL = [
   "/mobile_metal_theme.css",
   "/client.js",
   "/share_transfer.js",
+  "/inventory_transfer.js",
   "/storage.js",
   "/server_backups.js",
   "/server_backup_core.js",
