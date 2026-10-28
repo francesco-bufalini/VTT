@@ -34,6 +34,10 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(sword.querySelector('[data-act="battle-damage-roll"]'));
  assert.equal(sword.querySelector('.play-battle-attack-range').textContent,'Portata 5 ft');
  assert.equal(sword.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:sword');
+ assert.equal(sword.querySelector('[data-act="battle-attack-hit"]').dataset.hitAttackId,'item:sword',
+  'Colpisci exists even when the attack has no on-hit mechanics');
+ assert.equal(sword.querySelector('[data-act="battle-attack-hit-effect"]'),null,
+  'No post-roll success-confirmation button remains');
  assert.equal(sword.querySelector('[data-damage-formula]').dataset.damageFormula,'1d8');
  assert.equal(sword.querySelectorAll('.play-battle-effect').length,1);
  assert(!sword.querySelector('.play-battle-attack-chevron'));
@@ -100,6 +104,8 @@ test('flat Attacks retain unarmed and equipped weapons; the basic actions are ti
   features:[{name:'Extra Attack',attacks_per_action:2}]},[],[],catalog.actions,[],[],true);
  const attacks=doc(projected.attacks),others=doc(projected.others);
  assert(attacks.querySelector('[data-attack-id="unarmed"]'));
+ assert.equal(attacks.querySelector('[data-attack-id="unarmed"] [data-act="battle-attack-hit"]')?.dataset.hitAttackId,
+  'unarmed','Unarmed strikes can target a map creature independently of a roll');
  assert(!attacks.querySelector('[data-action-timing]'));
  assert(!attacks.querySelector('[data-attack-id="opportunity"]'));
  assert(!attacks.querySelector('[data-attack-id="unarmed:off"]'));
