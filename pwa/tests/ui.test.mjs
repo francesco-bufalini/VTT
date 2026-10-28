@@ -60,17 +60,17 @@ async function until(fn,limit=3000) {
   }
   throw new Error("Timed out waiting for PWA UI update");
 }
-// These tests share an IndexedDB fixture, but each interaction begins from the
-// archive instead of accidentally depending on the previous test's open tab.
-let uiMounted=false;
-test.beforeEach(async()=>{
-  if(!uiMounted)return;
+// Open the archive only when a test explicitly creates a new creature.
+// Other tests intentionally inspect the currently selected sheet or session.
+async function clickLibraryAdd(){
+ if(!document.querySelector('[data-act="library-add"]')){
   const library=document.querySelector('#nav [data-nav="library"]');
-  if(library&&!document.querySelector('.library-index')){
-    library.click();
-    await until(()=>document.querySelector('.library-index'),5000);
-  }
-});
+  assert.ok(library,'Archive navigation must be available');
+  library.click();
+  await until(()=>document.querySelector('[data-act="library-add"]'),5000);
+ }
+ document.querySelector('[data-act="library-add"]').click();
+}
 function click(selector){
   const elem=document.querySelector(selector);
   assert.ok(elem,"Missing clickable "+selector);
@@ -119,12 +119,12 @@ async function changeScore(ability,value){
   await until(()=>!document.querySelector('#sheet-score-formula-dialog'));
 }
 test("mobile navigation and local creature editing persist through tabs",async()=>{
-  await mount();uiMounted=true;
+  await mount();
   assert.ok(document.querySelector(".library-index"));
   assert.equal(document.querySelector("#section-menu"),null);
   assert.equal(document.querySelectorAll('#nav [data-nav]').length,3);
   assert.ok([...document.querySelectorAll('#sheet-navigation button')].every(button=>button.disabled));
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]')).catch(error=>{
     throw Error(error.message+" — "+document.querySelector("#app")?.textContent.slice(0,650));
   });
@@ -499,7 +499,7 @@ test("successful one-time pairing survives an initial transient map error",async
 });
 
 test("grouped smartphone navigation retains every editable sheet section",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
   assert.deepEqual(sections,["Info","Azioni","Poteri","Zaino"]);
@@ -555,7 +555,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
 });
 
 test("alignment defaults to true neutral and derived fields are non-editable",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="alignment"]'));
   const picker=document.querySelector('[data-field="alignment"]');
   assert.equal(picker.tagName,"SELECT");
@@ -721,7 +721,7 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
   click('[data-nav="library"]');
   await until(()=>document.querySelector('#app .library-index')&&
     !document.querySelector('[data-nav="library"]').disabled);
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Poteri tracker condivisi");
   await until(async()=>(await listCreatures()).some(row=>row.creature.name==="Poteri tracker condivisi"));
@@ -785,7 +785,7 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
 });
 
 test("native-like inventory shows read-only catalog attributes and mutable custom item state",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="new-homebrew-item"]'));
@@ -826,7 +826,7 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
 });
 
 test("mobile inventory actions persist equipment, quantity zero removal and attunement",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="new-homebrew-item"]'));
@@ -846,7 +846,7 @@ test("mobile inventory actions persist equipment, quantity zero removal and attu
 
 
 test("PWA coins persist across inventory subtabs and reopening a creature",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const name="Tesoriere mobile";
   change('[data-field="name"]',name);
@@ -886,7 +886,7 @@ test("inventory section switches keep their order and can all be disabled",async
     click('[data-nav="library"]');
     await until(()=>document.querySelector('[data-act="library-add"]'));
   }
-  click('[data-act="library-add"]');
+  await clickLibraryAdd();
   await until(()=>document.querySelector('#library-create-dialog[open]'));
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
@@ -1008,7 +1008,7 @@ test("custom section deletion confirms transfers and preserves inventory on canc
 });
 
 test("magic scrolls use a dedicated inventory tab and keep quantities across section changes",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Arcanista delle pergamene");
   click('[data-nav="library"]');
@@ -1064,7 +1064,7 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
 });
 
 test("scroll creation selects a spell and casting level without opening item catalog",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Scriba degli incantesimi");
   click('[data-sheet="inventory"]');
@@ -1107,7 +1107,7 @@ test("scroll creation selects a spell and casting level without opening item cat
 });
 
 test("PWA document editor autosaves homebrew text and retains per-copy style",async()=>{
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Scriba locale");
   click('[data-sheet="inventory"]');
@@ -1173,7 +1173,7 @@ test("sheet derived values update locally and never call a desktop calculation A
   };
   t.after(()=>{globalThis.fetch=previousFetch;});
   assert.ok(document.querySelector('[data-act="create"]'));
-  click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
+  await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-local-sheet-calculations]'));
   const initial=document.querySelector('[data-local-sheet-calculations]').textContent;
   assert.doesNotMatch(initial,/Calcoli e copertura della scheda/);
