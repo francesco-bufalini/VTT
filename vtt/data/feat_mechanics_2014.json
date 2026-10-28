@@ -143,6 +143,22 @@
           "attack_melee": true,
           "condition_label": "Solo ai danni di un attacco in mischia come azione bonus dopo Scattare, con almeno 10 ft di movimento rettilineo immediatamente prima"
         }
+      ],
+      "actions": [
+        {
+          "id": "feat:phb:charger:bonus-melee",
+          "name": "Charger · Attacco in mischia",
+          "action_type": "bonus",
+          "attack_selector": "melee",
+          "description": "Un attacco in mischia come azione bonus con un attacco disponibile; nessun requisito preliminare di Scattare."
+        },
+        {
+          "id": "feat:phb:charger:bonus-shove",
+          "name": "Charger · Spinta",
+          "action_type": "bonus",
+          "action_id": "shove",
+          "description": "Una Spinta come azione bonus; nessun requisito preliminare di Scattare."
+        }
       ]
     },
     {
