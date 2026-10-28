@@ -1,5 +1,6 @@
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {itemAttunementCount} from './item_controls.js';
+import {normalizeCreatureRecord} from './character_core.js';
 // Generic structured effects and fixed proficiency projection based on
 // creature_structured_bonuses.gd and creature_proficiency_rules.gd.
 // No mechanics are inferred from descriptions or HTML/prose.
@@ -13,7 +14,6 @@ const kinds=["weapon","armor","skill","expertise","save","tool","language"];
 const fields={weapon:"weaponProficiencies",armor:"armorProficiencies",
   skill:"skillProficiencies",expertise:"expertise",tool:"toolProficiencies",
   language:"languageProficiencies",save:"saveProficiencies"};
-const legacy={skill:"skill_proficiencies",expertise:"skill_expertise",save:"saving_throw_proficiencies"};
 const classMembers=record=>array(record.classes).length?array(record.classes):
   record.class?[{name:record.class,source:record.class_source||"",level:record.level||1}]:[];
 // Treat older single-background characters as having a first background.
@@ -257,6 +257,7 @@ function featureStoredGrantAllowed(source,row){
    array(source.source.proficiencyChoices).some(rule=>array(rule.choose?.fromKinds).includes(row.kind));
 }
 export function fixedProficiencies(record,index={},features=null){
+ record=normalizeCreatureRecord(record);
  const suppressed=removedBenefitIds(record);
  const excluded=(id,kind,key)=>suppressed.has("proficiency:"+id+":"+kind+":"+norm(key));
  const owned=proficiencyFeatures(record,index,features);
@@ -279,11 +280,6 @@ export function fixedProficiencies(record,index={},features=null){
  const result=new Map(),add=(kind,key)=>result.set(kind+":"+norm(key),true);
  for(const row of stored)if(kinds.includes(row.kind)&&row.key&&
    !excluded(row.origin_id||'',row.kind,row.key))add(row.kind,row.key);
- const migrate=!Object.hasOwn(record,"proficiency_choices")||
-   (!stored.length&&!array(record.proficiency_choices).length&&
-     !Object.hasOwn(record,"proficiency_origins"));
- if(migrate)for(const [kind,field] of Object.entries(legacy))
-   for(const item of array(record[field]))add(kind,item);
  for(const source of selected){
   if(muted(record,source.id))continue;
   for(const grant of fixedGrants(source)){
@@ -357,22 +353,14 @@ export function numericGrant(sid,name,field,target,value,suffix="",allowModifier
 // Native CreatureFeatures.collect_features identity scheme. These are
 // data-driven projections, not inferred mechanics from English descriptions.
 export function collectStructuredFeatures(record,catalogs={}){
+  record=normalizeCreatureRecord(record);
   const results=[],seen=new Set();
   const attackRules=array(catalogs.featureRules?.attack_count_grants);
   const subclassKey=value=>norm(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');
-  const legacyMonsterAttacks=row=>{
-   // Compatibility with older 5etools monster records lacking typed counts.
-   // Isolated at the catalog-projection boundary; gameplay consumes a benefit.
-   if(!/^multiattack$/i.test(String(row.name||'').trim()))return 0;
-   const prose=JSON.stringify(row.entries||row.description||'');
-   const match=prose.match(/\b(?:makes?|can make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*attacks?\b/i);
-   const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
-   return match?Number(match[1])||words[match[1].toLowerCase()]||0:0;
-  };
   const attackCount=(row,origin,level,className,classSource)=>{
    const direct=Number(row.attacks_per_action);
    if(Number.isSafeInteger(direct)&&direct>=2)return direct;
-   if(origin.startsWith('monster|action'))return legacyMonsterAttacks(row);
+   if(origin.startsWith('monster|action'))return 0;
    const originSubclass=origin.includes('|subclass|')?
      origin.split('|subclass|')[1].split('|')[0]:'';
    const found=attackRules.find(rule=>match(rule.class_name,className)&&

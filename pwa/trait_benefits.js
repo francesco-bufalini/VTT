@@ -1,6 +1,6 @@
 // Read-only, source-bound summaries for the PWA's trait cards.
 // Use structured grants only; never extract mechanics from free-form descriptions.
-import {CLASS_FEATURE_RULES,classFeatureRollSources} from './feature_mechanics.js';
+import {contextualFeatureDescriptors,classFeatureDescriptors,classFeatureRollSources} from './feature_mechanics.js';
 import {SENSE_NAMES,senseRange} from './sense_rules.js';
 import {resolveOwnedItem} from './item_controls.js';
 import {attackCountBenefits} from './attack_count_benefits.js';
@@ -584,6 +584,17 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    effects:abilityDetails(rule)
   });
  }
+ for(const ability of contextualFeatureDescriptors(record,calculated.features,
+   calculated.feature_rules,calculated.values?.proficiency)){
+  if(!ownFeatureIds.has(ability.origin_id))continue;
+  const resource=ability.resource_tracker?.name||'';
+  addAbility(ability.name,{
+   origin_id:ability.origin_id,
+   status:trait.inactive||!ability.available?'Tratto disattivato':statusFor(null,resource),
+   timing:actionTime(ability.action_type),cost:resourceCost(resource,ability.tracker_cost),
+   description:describe(ability.description),effects:[]
+  });
+ }
  // Data-driven feature actions, including unavailable choices. Read from the
  // same structured timing catalog as the native action economy; these entries
  // remain tied to an exact class feature rather than the whole class.
@@ -606,22 +617,14 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    effects:[]
   });
  }
- for(const [key,owner,featureName,label,resource,time,mode] of CLASS_FEATURE_RULES){
-  const source=ownerFeatures.find(feature=>norm(feature.name)===norm(featureName)&&
-    classOf(feature)===norm(owner)&&
-    (norm(owner)!=='artificer'||sourceOf(feature)==='tce'));
-  if(!source)continue;
-  const requirement=rows(calculated.trait_state_catalog).find(rule=>
-   rows(rule.granted_features).some(name=>norm(name)===norm(source.name))&&
-   norm(rule.class_name)===norm(owner));
-  const gated=!!requirement&&!rows(calculated.active_trait_state_ids).includes(requirement.id);
-  const active=mode==='toggle'&&!!record.active_class_features?.[key]&&!trait.inactive&&!source.disabled&&!gated;
-  addAbility(label,{
-   origin_id:source.origin_id,status:active?'Attiva':trait.inactive||source.disabled?'Tratto disattivato':
-    gated?'Modello richiesto':'Attivabile',
-   timing:actionTime(time),cost:resource?'1 utilizzo · '+resource:'Nessun costo',
-   description:describe(source.entries??source.description),
-   requirements:requirement?'Richiede '+requirement.name:'',
+ for(const ability of classFeatureDescriptors(record,calculated)){
+  if(!ownFeatureIds.has(ability.origin_id))continue;
+  addAbility(ability.name,{
+   origin_id:ability.origin_id,status:trait.inactive||ability.unavailable_reason==='disabled'?'Tratto disattivato':
+    ability.unavailable_reason==='state'?'Modello richiesto':ability.active?'Attiva':'Attivabile',
+   timing:actionTime(ability.time),cost:resourceCost(ability.resource_name,ability.cost),
+   description:describe(ability.description),
+   requirements:ability.required_states.length?'Richiede '+ability.required_states.map(rule=>rule.name).join(' / '):'',
    effects:[]
   });
  }

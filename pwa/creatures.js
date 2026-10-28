@@ -5,7 +5,7 @@ import { getRecord, listRecords, putRecord, deleteRecordIfRevision, deleteCreatu
   localOwnerId } from "./storage.js";
 import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
   referencedDefinitions, makeCreatureExport, MAX_CREATURE_BYTES } from "./creature_format.js";
-import { initialCreature, experienceFloorPatch } from "./character_core.js";
+import { initialCreature, experienceFloorPatch, normalizeCreatureRecord } from "./character_core.js";
 import { consolidateOwnedItems } from "./item_controls.js";
 
 const CREATURE_TYPE = "creature";
@@ -466,7 +466,7 @@ export async function openCreatureEditor(id, scope = "default") {
     if (JSON.stringify(inventory) !== JSON.stringify(stored.data.inventory))
       stored = await saveCreature({...stored.data,inventory},scope,stored.revision);
   }
-  const migrated=migrateSecondForm(stored.data);
+  const migrated=normalizeCreatureRecord(migrateSecondForm(stored.data));
   if(JSON.stringify(migrated)!==JSON.stringify(stored.data))
     stored=await saveCreature(migrated,scope,stored.revision);
   // Repair legacy high-level characters with insufficient XP on first open.

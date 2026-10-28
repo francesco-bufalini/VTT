@@ -74,9 +74,12 @@ test('Earth Genasi Pass Without Trace consumes a daily counter and allows slots'
 });
 
 test('typed swim true inherits Genasi walking speed',()=>{
- const native=rawRaces.filter(row=>row.source==='MPMM'&&(row.name==='Genasi'||row.name==='Genasi (Water)'));
+ const mechanics=read('../catalog/class_mechanics.json');
+ const native=rawRaces.find(row=>row.source==='MPMM'&&row.name==='Genasi (Water)');
+ const subrace=mechanics.subraces.find(row=>row.raceName==='Genasi'&&row.name==='Water'&&row.source==='MPMM');
+ assert.deepEqual(subrace.speed,native.speed,'the generator carries typed movement onto the canonical subrace');
  const water={...genasi,subrace:'Water'};
- const result=calculateSheet(water,{classMechanics:{races:native,subraces:[]}});
+ const result=calculateSheet(water,{classMechanics:mechanics});
  assert.equal(result.stats.speeds.walk,30);
  assert.equal(result.stats.speeds.swim,30);
 });

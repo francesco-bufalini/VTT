@@ -6,7 +6,7 @@ from pathlib import Path
 from generate_effects_catalog import ROOT, normalize
 BASE = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/"
 
-def build(offline=False, refresh=False):
+def build(offline=False, refresh=False, races_only=False):
     hashes = {}
     def read(name):
         cache = ROOT / ".5etools-cache" / name
@@ -32,8 +32,11 @@ def build(offline=False, refresh=False):
                 if field in raw:
                     row[field] = raw[field]
         return row
-    classes, features = [], []
-    index = read('class/index.json')
+    target = ROOT / 'vtt/data/creature_references_5etools.json'
+    previous = json.loads(target.read_text(encoding='utf-8')) if races_only else {}
+    classes = previous.get('classes', [])
+    features = previous.get('class_features', [])
+    index = {} if races_only else read('class/index.json')
     for key, filename in sorted(index.items()):
         if key in ('mystic','sidekick'):
             continue
@@ -52,7 +55,7 @@ def build(offline=False, refresh=False):
             row['id'] += ':' + quote(raw['className'].lower(),safe='') + ':' + str(raw['level'])
             features.append(row)
     races = read('races.json')
-    race_rows = []
+    race_rows, subrace_rows = [], []
     for raw in races.get('race', []):
         if '_copy' in raw:
             continue
@@ -78,8 +81,28 @@ def build(offline=False, refresh=False):
                 row.pop(field, None)
         row['speed'] = merged.get('speed', 30)
         race_rows.append(row)
-    output = {"meta":{"source_url":BASE,"sha256":hashes},"classes":classes,"races":race_rows,"class_features":features}
-    (ROOT/'vtt/data/creature_references_5etools.json').write_text(json.dumps(output,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+        # Canonical identity is known here, before flattening for native legacy
+        # consumers. Subraces without proficiency grants must remain selectable.
+        if raw.get('name'):
+            native = next((saved for saved in previous.get('races', [])
+                           if saved['id'] == row['id']), None) if races_only else row
+            if native is None:
+                continue
+            subrace_rows.append({
+                'id': row['id'], 'name': raw['name'], 'source': row['source'],
+                'raceName': raw['raceName'], 'raceSource': raw['raceSource'],
+                'speed': native['speed'], 'legacy_name': native['name'],
+                **{key: merged[key] for key in ('size', 'creatureTypes') if key in merged},
+            })
+    meta = {"source_url":BASE,"sha256":hashes}
+    if races_only:
+        # A bounded refresh adds typed identities to the existing snapshot;
+        # do not silently refresh native descriptions or other mechanics.
+        race_rows = previous['races']
+        meta = {**previous['meta'], 'subrace_identity_sha256': hashes['races.json']}
+    output = {"meta":meta,"classes":classes,"races":race_rows,
+              "subraces":subrace_rows,"class_features":features}
+    target.write_text(json.dumps(output,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
     print(f"Generated {len(classes)} classes, {len(race_rows)} races and {len(features)} source-qualified features")
 if __name__=='__main__':
-    p=argparse.ArgumentParser(); p.add_argument('--offline',action='store_true'); p.add_argument('--refresh',action='store_true'); a=p.parse_args(); build(a.offline,a.refresh)
+    p=argparse.ArgumentParser(); p.add_argument('--offline',action='store_true'); p.add_argument('--refresh',action='store_true'); p.add_argument('--races-only',action='store_true'); a=p.parse_args(); build(a.offline,a.refresh,a.races_only)

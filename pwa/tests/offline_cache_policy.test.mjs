@@ -105,7 +105,7 @@ test("offline cache name follows the served asset fingerprint without deleting s
   const revision = "b".repeat(64);
   const worker = await workerFixture(revision);
   await worker.dispatch("install");
-  assert((await worker.caches.keys()).includes("vtt-mobile-shell-v193-" + revision));
+  assert((await worker.caches.keys()).includes("vtt-mobile-shell-v194-" + revision));
   worker.setOffline(true);
   const cached = await worker.dispatch("fetch", new Request("https://vtt.example/ui.js"));
   assert.equal(cached.status, 200);

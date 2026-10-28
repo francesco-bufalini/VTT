@@ -59,20 +59,24 @@ export function featureEnabled(record,feature){
  return !!feature&&!feature.inactive&&!feature.disabled&&
   ![feature.origin_id,parent,base].some(id=>id&&disabledOrigin(record,id));
 }
-export function classFeatureEntries(record={},calculated={}){
+// One descriptor per owned operation, including disabled/state-gated ones for
+// trait previews. Battle actions consume only descriptors marked available.
+export function classFeatureDescriptors(record={},calculated={}){
  const revised=record.rules_version==='2024',output=[];
  for(const [key,owner,sourceName,label,baseResource,baseTime,mode] of CLASS_FEATURE_RULES){
   const parent=revised&&sourceName==='Ki'?'Monk’s Focus':sourceName;
-  const feature=rows(calculated.features).find(f=>featureEnabled(record,f)&&
+  const candidates=rows(calculated.features).filter(f=>
    low(f.name).replaceAll("'",'’')===low(parent)&&String(f.origin_key||'').startsWith('class|')&&
-   low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(owner));
+   low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(owner)&&
+   (owner!=='Artificer'||low(f.class_source||String(f.origin_key).split('|')[1])==='tce'));
+  const feature=candidates.find(f=>featureEnabled(record,f))||candidates[0];
   if(!feature)continue;
-  if(owner==='Artificer'&&low(feature.class_source||String(feature.origin_key).split('|')[1])!=='tce')continue;
   // State-dependent privileges are declared in the trait state catalog.
-  const rules=rows(calculated.trait_state_catalog);
-  if(rules.some(rule=>rows(rule.granted_features).includes(feature.name))&&
-    !rows(calculated.active_trait_state_ids).some(stateId=>
-      rules.some(rule=>rule.id===stateId&&rows(rule.granted_features).includes(feature.name))))continue;
+  const requiredStates=rows(calculated.trait_state_catalog).filter(rule=>
+    low(rule.class_name)===low(owner)&&rows(rule.granted_features).includes(feature.name));
+  const gated=requiredStates.length>0&&!requiredStates.some(rule=>
+    rows(calculated.active_trait_state_ids).includes(rule.id));
+  const available=featureEnabled(record,feature)&&!gated;
   let resource=revised&&baseResource==='Ki Points'?'Focus Points':baseResource;
   if(revised&&key==='divine_sense')resource='Channel Divinity';
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)===low(resource)&&
@@ -84,8 +88,15 @@ export function classFeatureEntries(record={},calculated={}){
    cost:revised&&['patient_defense','step_of_the_wind'].includes(key)?0:resource?1:0,
    origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
    feature_name:feature.name,origin_name:'Tratto · '+feature.name,
-   active:mode==='toggle'&&!!record.active_class_features?.[key]});
+   available,unavailable_reason:!featureEnabled(record,feature)?'disabled':gated?'state':'',
+   required_states:requiredStates.map(({id,name})=>({id,name})),
+   active:available&&mode==='toggle'&&!!record.active_class_features?.[key]});
  }
+ return output;
+}
+export function classFeatureEntries(record={},calculated={}){
+ const revised=record.rules_version==='2024';
+ const output=classFeatureDescriptors(record,calculated).filter(row=>row.available);
  // A trait-sourced roll bonus is an ordinary contextual class action. Its
  // mechanics, supported rolls and resource are all declared in the catalog.
  for(const rule of rows(calculated.roll_bonus_rules)){
@@ -630,6 +641,48 @@ function trackerFor(member,rule,trackers){
  const prefix='class:'+low(rule.class_name)+':'+low(rule.class_source)+':';
  return rows(trackers).find(t=>String(t.id||'').startsWith(prefix)&&
    low(t.name)===low(rule.resource_name||rule.tracker_name))||null;
+}
+// Simple trait-owned contextual actions and counters use the shared timing
+// catalog. IDs are declared by data so moving a definition cannot reset uses.
+export function contextualFeatureDescriptors(record={},features=[],catalog={},proficiency=2){
+ const key=value=>subclass(value).replace(/^path of (?:the )?/,'');
+ return rows(catalog.contextual_actions).flatMap(rule=>{
+  if(rule.rules_version&&rule.rules_version!==(record.rules_version||'2014'))return [];
+  const member=featureMember(record,{...rule,subclass:''});
+  if(!member)return [];
+  const primary=low(member.name)===low(record.class);
+  const selected=member.subclass||(primary?record.subclass:'');
+  if(rule.subclass&&key(rule.subclass)!==key(selected))return [];
+  const base='class|'+low(rule.class_source)+'|'+low(rule.class_name);
+  const matches=rows(features).filter(f=>{
+   if(low(f.name)!==low(rule.feature))return false;
+   const origin=String(f.origin_key||'');
+   if(origin!==base&&!origin.startsWith(base+'|'))return false;
+   const sub=origin.split('|subclass|')[1];
+   if(!rule.subclass)return !sub;
+   return !!sub&&key(sub.split('|')[0])===key(rule.subclass)&&
+    (!member.subclass_source||!f.subclass_source||low(member.subclass_source)===low(f.subclass_source));
+  });
+  const available=f=>featureEnabled(record,f)&&record.trait_enabled?.[f.key]!==false;
+  const feature=matches.find(available)||matches[0];
+  if(!feature||feature.action_type||feature.activation_type||feature.activation)return [];
+  const resource=rule.resource,trackerId=resource?rule.id:'';
+  return [{id:rule.id,name:rule.name,action_type:rule.activation,type:'Capacità',
+   description:rule.detail||'',origin_id:feature.origin_id,feature_id:feature.origin_id,
+   feature_name:feature.name,tracker_id:trackerId,tracker_cost:resource?1:0,
+   ...(rule.attack_selector?{attack_selector:rule.attack_selector}:{}),automatic:true,
+   available:available(feature),
+   resource_tracker:resource?{id:trackerId,name:resource.name,
+    max:resource.max==='proficiency'?Math.max(1,Number(proficiency)||2):resource.max,
+    recharge:resource.recharge,automatic:true,origin_id:feature.origin_id,
+    origin_name:'Tratto · '+feature.name}:null}];
+ });
+}
+export function contextualFeatureGrants(record={},features=[],catalog={},proficiency=2){
+ const descriptors=contextualFeatureDescriptors(record,features,catalog,proficiency)
+  .filter(row=>row.available);
+ return {actions:descriptors.map(({available,resource_tracker,...action})=>action),
+  trackers:descriptors.flatMap(row=>row.resource_tracker?[row.resource_tracker]:[])};
 }
 // Respect native feature origin switches before selecting action overrides.
 // In particular, disabling Combat Wild Shape must restore the base Wild Shape

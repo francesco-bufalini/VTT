@@ -1,5 +1,368 @@
 {
   "version": 1,
+  "contextual_actions": [
+    {
+      "id": "barbarian:2014:instinctive-pounce",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Instinctive Pounce",
+      "subclass": "",
+      "name": "Instinctive Pounce",
+      "activation": "free",
+      "detail": "Quando entri in Ira, puoi muoverti fino a metà della tua velocità come parte dell’azione bonus; verifica manualmente posizione e movimento."
+    },
+    {
+      "id": "barbarian:2014:relentless-rage",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Relentless Rage",
+      "subclass": "",
+      "name": "Relentless Rage",
+      "activation": "free",
+      "detail": "Quando i PF scendono a 0 senza morte immediata: TS Costituzione CD 10; aumenta la CD di 5 per ogni uso successivo e azzerala al riposo breve o lungo."
+    },
+    {
+      "id": "barbarian:2014:frenzy-entra-in-frenesia",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Frenzy",
+      "subclass": "Berserker",
+      "name": "Frenzy · entra in frenesia",
+      "activation": "free",
+      "detail": "Scegli Frenzy quando entri in Ira (non è un’altra azione bonus): puoi poi fare un attacco in mischia come azione bonus nei turni successivi. Alla fine dell’Ira aggiungi un livello di indebolimento. Non attivare una seconda Ira."
+    },
+    {
+      "id": "barbarian:2014:intimidating-presence",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Intimidating Presence",
+      "subclass": "Berserker",
+      "name": "Intimidating Presence",
+      "activation": "action",
+      "detail": "Scegli una creatura entro 30 ft che ti vede o sente; TS Saggezza contro CD 8 + competenza + modificatore di Carisma. Se fallisce, spaventata. Le estensioni e l’immunità di 24 ore sono manuali."
+    },
+    {
+      "id": "barbarian:2014:retaliation-attacco-in-mischia",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Retaliation",
+      "subclass": "Berserker",
+      "name": "Retaliation · attacco in mischia",
+      "activation": "reaction",
+      "detail": "Quando una creatura entro 5 ft ti infligge danni puoi effettuare un attacco in mischia contro di lei; scegli un attacco disponibile.",
+      "attack_selector": "melee"
+    },
+    {
+      "id": "barbarian:2014:spirit-seeker-beast-sense-rituale-",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Spirit Seeker",
+      "subclass": "Totem Warrior",
+      "name": "Spirit Seeker · Beast Sense (rituale)",
+      "activation": "free",
+      "detail": "Lancia Beast Sense esclusivamente come rituale, senza spendere slot. Tempo rituale da verificare manualmente."
+    },
+    {
+      "id": "barbarian:2014:spirit-seeker-speak-with-animals-rituale-",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Spirit Seeker",
+      "subclass": "Totem Warrior",
+      "name": "Spirit Seeker · Speak with Animals (rituale)",
+      "activation": "free",
+      "detail": "Lancia Speak with Animals esclusivamente come rituale, senza spendere slot. Tempo rituale da verificare manualmente."
+    },
+    {
+      "id": "barbarian:2014:spirit-walker-commune-with-nature-rituale-",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Spirit Walker",
+      "subclass": "Totem Warrior",
+      "name": "Spirit Walker · Commune with Nature (rituale)",
+      "activation": "free",
+      "detail": "Lancia Commune with Nature esclusivamente come rituale, senza spendere slot."
+    },
+    {
+      "id": "barbarian:2014:battlerager-armor-punte",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Battlerager Armor",
+      "subclass": "Battlerager",
+      "name": "Battlerager Armor · punte",
+      "activation": "bonus",
+      "detail": "In Ira con armatura chiodata: attacco con le punte come azione bonus. I 3 danni perforanti quando afferri una creatura si applicano manualmente."
+    },
+    {
+      "id": "barbarian:2014:reckless-abandon-pf-temporanei",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Reckless Abandon",
+      "subclass": "Battlerager",
+      "name": "Reckless Abandon · PF temporanei",
+      "activation": "free",
+      "detail": "Quando utilizzi Reckless Attack durante l’Ira, applica PF temporanei pari al modificatore di Costituzione (minimo 1)."
+    },
+    {
+      "id": "barbarian:2014:battlerager-charge-scatto",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Battlerager Charge",
+      "subclass": "Battlerager",
+      "name": "Battlerager Charge · Scatto",
+      "activation": "bonus",
+      "detail": "Durante l’Ira puoi eseguire Scatto come azione bonus. Verifica manualmente che l’Ira sia attiva."
+    },
+    {
+      "id": "barbarian:2014:spiked-retribution",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Spiked Retribution",
+      "subclass": "Battlerager",
+      "name": "Spiked Retribution",
+      "activation": "free",
+      "detail": "Quando un attacco in mischia ti colpisce mentre sei in Ira e indossi armatura chiodata, infliggi 3 danni perforanti all’attaccante."
+    },
+    {
+      "id": "barbarian:2014:ancestral-protectors-protezione",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Ancestral Protectors",
+      "subclass": "Ancestral Guardian",
+      "name": "Ancestral Protectors · protezione",
+      "activation": "free",
+      "detail": "Durante l’Ira applica al primo bersaglio colpito lo svantaggio agli attacchi contro altri, e la resistenza ai danni delle altre vittime. Da applicare manualmente al token se il colpo non ha un effetto strutturato."
+    },
+    {
+      "id": "barbarian:2014:spirit-shield",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Spirit Shield",
+      "subclass": "Ancestral Guardian",
+      "name": "Spirit Shield",
+      "activation": "reaction",
+      "detail": "Riduci i danni subiti da un’altra creatura entro 30 ft di 2d6 (3d6 al livello 10, 4d6 al 14). L’ammontare prevenuto si gestisce manualmente; dal 14° livello con Vengeful Ancestors infliggi all’attaccante danni da forza pari a quelli prevenuti."
+    },
+    {
+      "id": "barbarian:2014:consult-the-spirits-augury-clairvoyance",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Consult the Spirits",
+      "subclass": "Ancestral Guardian",
+      "name": "Consult the Spirits · Augury / Clairvoyance",
+      "activation": "free",
+      "detail": "Usa Augury o Clairvoyance senza slot e senza componenti materiali, con un utilizzo condiviso che si recupera al riposo breve o lungo.",
+      "resource": {
+        "name": "Consult the Spirits",
+        "max": 1,
+        "recharge": "short_rest"
+      }
+    },
+    {
+      "id": "barbarian:2014:storm-aura-attiva-riattiva",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Storm Aura",
+      "subclass": "Storm Herald",
+      "name": "Storm Aura · attiva/riattiva",
+      "activation": "bonus",
+      "detail": "Quando entri in Ira e nei turni seguenti come azione bonus, applica l’effetto dell’ambiente scelto entro l’aura di 10 ft. L’aura segue il token; gestisci manualmente bersagli, danni e PF temporanei."
+    },
+    {
+      "id": "barbarian:2014:raging-storm-reazione",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Raging Storm",
+      "subclass": "Storm Herald",
+      "name": "Raging Storm · reazione",
+      "activation": "reaction",
+      "detail": "Durante l’Ira applica la reazione propria di Deserto, Mare o Tundra: danni, prono o velocità ridotta a zero secondo il tratto."
+    },
+    {
+      "id": "barbarian:2014:fanatical-focus-ripeti-ts",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Fanatical Focus",
+      "subclass": "Zealot",
+      "name": "Fanatical Focus · ripeti TS",
+      "activation": "free",
+      "detail": "Una volta per Ira puoi ripetere un tiro salvezza fallito, utilizzando il nuovo risultato. Reimposta manualmente il contatore a ogni nuova Ira."
+    },
+    {
+      "id": "barbarian:2014:zealous-presence",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Zealous Presence",
+      "subclass": "Zealot",
+      "name": "Zealous Presence",
+      "activation": "bonus",
+      "detail": "Scegli fino a 10 creature entro 60 ft, che ottengono vantaggio ai tiri per colpire e ai tiri salvezza fino all’inizio del tuo turno successivo.",
+      "resource": {
+        "name": "Zealous Presence",
+        "max": 1,
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "barbarian:2014:form-of-the-beast-scegli-forma",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Form of the Beast",
+      "subclass": "Beast",
+      "name": "Form of the Beast · scegli forma",
+      "activation": "free",
+      "detail": "Quando entri in Ira seleziona nello stato Form of the Beast morso, artigli o coda; disattivalo quando termina l’Ira. Cura del morso, artiglio aggiuntivo e difesa della coda restano da gestire manualmente."
+    },
+    {
+      "id": "barbarian:2014:bestial-soul-adattamento",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Bestial Soul",
+      "subclass": "Beast",
+      "name": "Bestial Soul · adattamento",
+      "activation": "free",
+      "detail": "Dopo riposo breve o lungo scegli nuoto con respirazione subacquea, scalata oppure salto potenziato. Le armi naturali di Form of the Beast sono magiche."
+    },
+    {
+      "id": "barbarian:2014:infectious-fury",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Infectious Fury",
+      "subclass": "Beast",
+      "name": "Infectious Fury",
+      "activation": "free",
+      "detail": "Su un colpo delle armi naturali scegli un bersaglio per il TS Saggezza: 2d12 danni psichici o attacco provocato a un’altra creatura. Applica manualmente la scelta.",
+      "resource": {
+        "name": "Infectious Fury",
+        "max": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "barbarian:2014:call-the-hunt",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Call the Hunt",
+      "subclass": "Beast",
+      "name": "Call the Hunt",
+      "activation": "bonus",
+      "detail": "Scegli gli alleati che ti accompagnano nell’Ira; applica i PF temporanei e il bonus 1d6 ai loro danni secondo il tratto.",
+      "resource": {
+        "name": "Call the Hunt",
+        "max": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "barbarian:2014:magic-awareness",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Magic Awareness",
+      "subclass": "Wild Magic",
+      "name": "Magic Awareness",
+      "activation": "action",
+      "detail": "Individua incantesimi e oggetti magici entro 60 ft che non siano dietro copertura totale; scuola e posizione si verificano manualmente.",
+      "resource": {
+        "name": "Magic Awareness",
+        "max": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "barbarian:2014:wild-surge-tira-d8",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Wild Surge",
+      "subclass": "Wild Magic",
+      "name": "Wild Surge · tira d8",
+      "activation": "free",
+      "detail": "Quando entri in Ira tira 1d8 sulla tabella del tratto; applica manualmente il risultato e la sua durata."
+    },
+    {
+      "id": "barbarian:2014:bolstering-magic",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Bolstering Magic",
+      "subclass": "Wild Magic",
+      "name": "Bolstering Magic",
+      "activation": "action",
+      "detail": "Tocca una creatura e scegli: bonus d3 ai tiri appropriati oppure recupero di uno slot incantesimo secondo il tratto.",
+      "resource": {
+        "name": "Bolstering Magic",
+        "max": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "barbarian:2014:unstable-backlash",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Unstable Backlash",
+      "subclass": "Wild Magic",
+      "name": "Unstable Backlash",
+      "activation": "reaction",
+      "detail": "Durante l’Ira, dopo danni subiti o un tiro salvezza fallito, tira un nuovo effetto Wild Surge e sostituisci manualmente il precedente."
+    },
+    {
+      "id": "barbarian:2014:controlled-surge-scelta",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Controlled Surge",
+      "subclass": "Wild Magic",
+      "name": "Controlled Surge · scelta",
+      "activation": "free",
+      "detail": "Tira due volte sulla tabella Wild Surge, scegli l’effetto preferito; se sono uguali puoi sceglierne uno qualsiasi."
+    },
+    {
+      "id": "barbarian:2014:elemental-cleaver-potenzia-arma",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Elemental Cleaver",
+      "subclass": "Giant",
+      "name": "Elemental Cleaver · potenzia arma",
+      "activation": "free",
+      "detail": "Scegli l’arma e il tipo di danno, poi applica l’estensione oggetto: +1d6 danni, gittata da lancio 20/60 ft e ritorno in mano. L’estensione viene rimossa quando termina l’Ira."
+    },
+    {
+      "id": "barbarian:2014:mighty-impel",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Mighty Impel",
+      "subclass": "Giant",
+      "name": "Mighty Impel",
+      "activation": "bonus",
+      "detail": "Seleziona una creatura entro portata, TS Forza se non consenziente, poi spostala fino a 30 ft verso una casella valida. I danni da caduta sono manuali."
+    }
+  ],
   "sources": [
     "5etools-src/data/class/class-*.json",
     "FightClub5eXML/class-druid-phb.xml",

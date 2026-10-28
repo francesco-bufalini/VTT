@@ -1,7 +1,7 @@
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
 import {sessionSpellEntries} from './spell_selection.js';
-import {SKILLS} from './native_sheet.js';
+import {SKILLS} from './sheet_rules.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {resolveOwnedItem,hasProperty,itemKind} from './item_controls.js';

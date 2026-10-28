@@ -45,7 +45,7 @@ import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayRe
 import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
-import {traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
+import {selectedTraitState,traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -2892,19 +2892,10 @@ function armorModels(c,calculated){
      match(feature.class_name||String(feature.origin_key||'').split('|')[2],row.class_name)&&
      c.origin_enabled?.[feature.origin_id]!==false&&c.origin_enabled?.[feature.origin_key]!==false));
 }
-function armorModelSelection(c,rules){
- const group=rules[0]?.group;
- if(!group)return '';
- if(Object.hasOwn(c.trait_state_selection||{},group))return c.trait_state_selection[group]||'';
- const legacyField=rules[0]?.legacy_field,legacy=legacyField?c[legacyField]:undefined;
- if(legacy!==undefined&&legacy!==null&&legacy!=='')
-   return rules.find(row=>row.legacy_value===legacy)?.id||'';
- return rules.find(row=>row.legacy_default)?.id||'';
-}
 function armorModelPanel(c,calculated){
  const rules=armorModels(c,calculated);
  if(!rules.length)return '';
- const selected=armorModelSelection(c,rules);
+ const selected=selectedTraitState(c,rules);
  const activeRules=new Set(calculated.active_trait_state_ids||[]);
  const recovery=selectionRestLabel(rules[0].selection_recovery||'short_rest');
  const summary='<div class="infusion-overview"><span class="power-selection-rest">'+esc(recovery)+'</span></div>';
@@ -2924,7 +2915,7 @@ async function openArmorModelDialog(id){
  const calculated=await computeLocalData(creature),rules=armorModels(creature,calculated);
  const rule=rules.find(row=>row.id===id);
  if(!rule)throw Error('Modello di armatura non disponibile.');
- const selected=armorModelSelection(creature,rules),available=(calculated.state_actions||[])
+ const selected=selectedTraitState(creature,rules),available=(calculated.state_actions||[])
   .some(action=>action.state_id===id);
  const active=selected===id&&available;
  const rest=selectionRestLabel(rule.selection_recovery||'short_rest');

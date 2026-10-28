@@ -7,6 +7,29 @@ import {projectSpeciesDefenses} from './species_defenses.mjs';
 import {projectSpeciesRollModes} from './species_roll_modes.mjs';
 import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
+function projectSubraceMechanics(subraces,references){
+ if(!Array.isArray(references.subraces))
+  throw Error('Canonical subraces missing: run python scripts/generate_creature_references.py --races-only first.');
+ const canonical=references.subraces;
+ const key=row=>[row.raceName,row.raceSource,row.name,row.source].join('|').toLowerCase();
+ const selected=[...subraces,...canonical.filter(row=>!subraces.some(old=>key(old)===key(row)))];
+ return selected.map(row=>{
+  const source=canonical.find(r=>key(r)===key(row));
+  return source?{...row,legacy_name:source.legacy_name,...(source.speed!==undefined?{speed:source.speed}:{}),
+    ...(source.size!==undefined?{size:source.size}:{}),
+    ...(source.creatureTypes!==undefined?{creatureTypes:source.creatureTypes}:{})}:row;
+ });
+}
+if(process.argv.includes('--species-movement-only')){
+ const mechanics=await read('../catalog/class_mechanics.json');
+ const references=await read('../../vtt/data/creature_references_5etools.json');
+ mechanics.subraces=projectSubraceMechanics(mechanics.subraces,references);
+ const flattenedIds=new Set(mechanics.subraces.map(row=>row.id));
+ mechanics.races=mechanics.races.filter(row=>!flattenedIds.has(row.id));
+ await writeFile(new URL('../catalog/class_mechanics.json',import.meta.url),JSON.stringify(mechanics,null,2)+'\n');
+ console.log('PWA: canonical subrace mechanics refreshed.');
+ process.exit(0);
+}
 if(process.argv.includes('--feat-mechanics-only')){
  const ability=await read('../catalog/ability_grants.json');
  ability.feat_mechanics=(await read('../../vtt/data/feat_mechanics_2014.json')).feats;
@@ -310,18 +333,13 @@ for(const row of additional.entries.filter(row=>row.kind==='race'&&row.blocks?.l
 }
 // Carry native subtype mechanics on its own canonical reference, not on
 // a separately selectable race variant.
-mechanics.subraces=mechanics.subraces.map(row=>{
- const source=allSpecies.find(r=>r.name.toLowerCase()===(row.raceName+' ('+row.name+')').toLowerCase()&&
-   r.source.toLowerCase()===row.source.toLowerCase());
- return source?{...row,...(source.speed!==undefined?{speed:source.speed}:{}),
-   ...(source.size!==undefined?{size:source.size}:{}),
-   ...(source.creatureTypes!==undefined?{creatureTypes:source.creatureTypes}:{})}:row;
-});
+mechanics.subraces=projectSubraceMechanics(mechanics.subraces,references);
 // Subrace records can share their native ID with a flattened race row.
 // Only the independent parent species enters the selectable race list.
 const subraceKeys=new Set(mechanics.subraces.map(row=>
  (row.raceName+' ('+row.name+')|'+row.source).toLowerCase()));
-mechanics.races=allSpecies.filter(row=>!subraceKeys.has((row.name+'|'+row.source).toLowerCase()));
+const subraceIds=new Set(mechanics.subraces.map(row=>row.id));
+mechanics.races=allSpecies.filter(row=>!subraceIds.has(row.id)&&!subraceKeys.has((row.name+'|'+row.source).toLowerCase()));
 await writeFile(new URL('../catalog/class_mechanics.json',import.meta.url),JSON.stringify(mechanics,null,2)+'\n');
 const subclassCatalog=await read('../../vtt/data/subclasses_5etools.json');
 const subclassFeatures=await read('../../vtt/data/subclass_features_5etools.json');

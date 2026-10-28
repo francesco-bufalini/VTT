@@ -1,4 +1,5 @@
 import {variantOwns} from './creature_variants.js';
+import {normalizeCreatureRecord} from './character_core.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
@@ -18,7 +19,7 @@ import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGr
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
 import {dragonbornFtdResistances} from './dragonborn_ftd.js';
 import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
-import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
+import {contextualFeatureGrants,modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects,traitStateRollModes} from './trait_state_rules.js';
 import {featureItemGrants,racialItemGrantFeatures} from './feature_item_grants.js';
@@ -411,17 +412,7 @@ function itemRows(record,warnings,infusionCatalog=[],features=[],itemGrants=[]){
   return rows;
 }
 function hasProficiency(record,type,id,computed){
-  if(computed)return computed.has(type+":"+String(id).toLowerCase());
-  const rows=arr(record.proficiency_choices);
-  const matches=rows.filter(row=>row?.kind===type&&same(row.key,id));
-  if(matches.length)return matches.some(row=>!row.disabled&&
-    !arr(record.proficiency_origins).some(origin=>origin.id===row.origin_id&&origin.disabled));
-  const fields={skill:"skill_proficiencies",expertise:"skill_expertise",save:"saving_throw_proficiencies"};
-  const legacy=record[fields[type]];
-  // Native restores legacy ranks only while the new origin choice model is absent.
-  const migrate=!Object.hasOwn(record,"proficiency_choices")||
-    (rows.length===0&&!Object.hasOwn(record,"proficiency_origins"));
-  return migrate&&arr(legacy).some(value=>same(value,id));
+  return computed.has(type+":"+String(id).toLowerCase());
 }
 function crNumber(raw){
   const value=typeof raw==="object"&&raw!==null?raw.cr:raw;
@@ -778,7 +769,7 @@ export function spellProgression(record,classes){
     pact_level:warlock?Math.min(5,Math.ceil(warlock/2)):1,caster_level:caster,warnings};
 }
 export function calculateSheet(record={},catalogs={}){
-  let effective=record;
+  let effective=normalizeCreatureRecord(record,{classMechanics:catalogs.classMechanics});
   // Imported or externally edited stacks can exceed the current capacity.
   // Bound their effective benefits without rewriting the owner's saved data.
   for(let pass=0;pass<8;pass++){
@@ -824,12 +815,7 @@ function calculateSheetValues(record={},catalogs={}){
     const subrace=record.subrace?arr(classesCatalog?.subraces).find(row=>
       same(row.raceName,record.species)&&same(row.name,record.subrace)&&
       same(row.source,record.subrace_source)&&same(row.raceSource,record.species_source)):null;
-    // Bridge the still-packaged native references until regeneration copies
-    // subtype movement to the canonical subrace record.
-    const nativeSource=record.subrace&&subrace?.speed===undefined?races.find(row=>
-      same(row.name,record.species+' ('+record.subrace+')')&&
-      same(row.source,record.subrace_source)):null;
-    const speed=subrace?.speed??nativeSource?.speed??race?.speed;
+    const speed=subrace?.speed??race?.speed;
     if(speed!==undefined)record={...record,species_speed:speed};
   }
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
@@ -867,7 +853,9 @@ function calculateSheetValues(record={},catalogs={}){
   features.push(...racialItemGrantFeatures(record,features,catalogs.featureItemGrants||[]));
   features.push(...expandedOriginSpellFeatures(record,classesCatalog?.additional_spells,features));
   // Source-qualified 2014 Barbarian supplements. Never create a class effect from prose.
-  const barbarian=barbarian2014Supplements(record,features,2+Math.floor((Math.max(1,level)-1)/4));
+  const barbarian=barbarian2014Supplements(record,features);
+  const contextual=contextualFeatureGrants(record,features,catalogs.featureRules,
+    2+Math.floor((Math.max(1,level)-1)/4));
   const proficiencyIndex=barbarian2014ProficiencyCatalog(catalogs.proficiencyGrants,barbarian);
   const instinct=features.find(row=>row.origin_id===barbarian.initiative_origin);
   if(instinct&&!arr(instinct.roll_modes).some(row=>row.target==='initiative'&&row.mode==='advantage'))
@@ -1348,11 +1336,11 @@ function calculateSheetValues(record={},catalogs={}){
     ...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
     ...racialBonusTrackers(racialBonusRows,safe('proficiency')??2),
     ...infusionChargeTrackers(record,index?.artificer_infusions||[],features)];
-  const barbarianTrackerIds=new Map();
-  for(const extra of barbarian.trackers){
+  const contextualTrackerIds=new Map();
+  for(const extra of contextual.trackers){
     const native=baseTrackers.find(row=>row.origin_id===extra.origin_id&&
       String(row.name||'').trim().toLowerCase()===String(extra.name||'').trim().toLowerCase());
-    if(native)barbarianTrackerIds.set(extra.id,native.id);
+    if(native)contextualTrackerIds.set(extra.id,native.id);
     else baseTrackers.push(extra);
   }
   const trackerMap=new Map();
@@ -1511,8 +1499,8 @@ function calculateSheetValues(record={},catalogs={}){
       return tracker?[{...row,tracker_id:tracker.id,resource_cost:1}]:[];
     }),
     feat_attacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
-    actions:barbarian.actions.map(row=>barbarianTrackerIds.has(row.tracker_id)?
-      {...row,tracker_id:barbarianTrackerIds.get(row.tracker_id)}:row),
+    actions:[...barbarian.actions,...contextual.actions].map(row=>contextualTrackerIds.has(row.tracker_id)?
+      {...row,tracker_id:contextualTrackerIds.get(row.tracker_id)}:row),
     proficiency_catalog_overrides:proficiencyIndex,
     spell_imprint_rules:[...featMechanics.spell_imprints,...arr(record.spell_imprint_grants)].filter(row=>sourceEnabled(row)),
     feat_movement_rules:featMovement.filter(row=>sourceEnabled(row)),

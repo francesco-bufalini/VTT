@@ -1,8 +1,8 @@
-import {hitDicePools,minimumXpForCreature,experienceFloorPatch} from './character_core.js';
+import {hitDicePools,minimumXpForCreature,experienceFloorPatch,normalizeCreatureRecord} from './character_core.js';
 // Native-style sheet sections and mutations of the portable native schema.
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
-import {formulaValue} from './sheet_rules.js';
+import {formulaValue,SKILLS} from './sheet_rules.js';
 import {contentForRules} from './source_edition.js';
 import {featOriginLabel,featTraitOriginKey} from './feat_picker.js';
 import {itemKind,resolveOwnedItem,armorDexterityBonus,armorDexterityLimit} from './item_controls.js';
@@ -31,7 +31,7 @@ export function miniaturePatch(creature,profile,kind){
 export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Competenze"],
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
-export const SKILLS = [["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],["arcana","Arcano","int"],["athletics","Atletica","str"],["deception","Inganno","cha"],["history","Storia","int"],["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],["investigation","Indagare","int"],["medicine","Medicina","wis"],["nature","Natura","int"],["perception","Percezione","wis"],["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]];
+export {SKILLS} from './sheet_rules.js';
 export const BONUS_TARGETS=[['ability_check','Tutte le prove di caratteristica (incl. iniziativa)'],['saving_throw','Tutti i tiri salvezza'],['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['attunement_max','Sintonie massime'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['passive_skill:investigation','Indagare passivo'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_attack','Attacco incantesimi'],
  ...['str','dex','con','int','wis','cha'].flatMap(a=>[['ability:'+a,'Punteggio '+a.toUpperCase()],['ability_mod:'+a,'Modificatore '+a.toUpperCase()],['save:'+a,'TS '+a.toUpperCase()]]),
  ...SKILLS.map(([id,label])=>['skill:'+id,label]),...['climb','swim','fly','burrow'].map((id,i)=>['speed:'+id,['Scalata','Nuoto','Volo','Scavo'][i]]),
@@ -71,8 +71,7 @@ export function requirementPatch(row,field,value){
 }
 export function rowsFor(c,key){
  if(key==='classes'&&!list(c.classes).length&&c.class)return [{name:c.class,source:c.class_source||'',id:c.class_id||'',subclass:c.subclass||'',subclass_source:c.subclass_source||'',subclass_id:c.subclass_id||'',level:c.level||1}];
- if(key!=="proficiency_choices" || Array.isArray(c.proficiency_choices))return structuredClone(list(c[key]));
- return [['skill','skill_proficiencies'],['expertise','skill_expertise'],['save','saving_throw_proficiencies']].flatMap(([kind,field])=>list(c[field]).map(key=>({kind,key,origin_id:'',origin_name:'',disabled:false})));
+ return structuredClone(list(normalizeCreatureRecord(c)[key]));
 }
 // Same mutation contract as CreatureSheetController.change_hit_points().
 export function hitPointPatch(c,delta,calculated){
@@ -752,54 +751,4 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    '</div>';
  }
  return null;
-}
-
-// Action overview lives in an existing server-served module so the PWA needs no native route changes.
-// Structured action economy overview; all computations remain local.
-export const ACTION_GROUPS=[["action","Azione"],["bonus","Azione bonus"],["free","Azione gratuita"],["movement","Movimento"],["reaction","Reazione"]];
-const defaults=[
-["Attaccare","action","attacco","Effettua un attacco."],
-["Scattare","action","generale","Ottieni movimento aggiuntivo pari alla tua velocità."],
-["Disimpegnarsi","action","generale","Eviti gli attacchi di opportunità provocati dal movimento."],
-["Schivare","action","generale","Ti concentri sulla difesa fino al turno successivo."],
-["Aiutare","action","generale","Aiuta una creatura in una prova o in un attacco."],
-["Nascondersi","action","prova","Effettua una prova di Furtività."],
-["Cercare","action","prova","Effettua una prova di Percezione o Indagare."],
-["Preparare","action","generale","Prepara un'azione da eseguire con la reazione."],
-["Usare un oggetto","action","generale","Utilizza un oggetto che richiede un'azione."],
-["Interagire con un oggetto","free","generale","Interazione semplice con un oggetto."],
-["Muoversi","movement","movimento","Utilizza il movimento disponibile."],
-["Attacco di opportunità","reaction","attacco","Attacco in mischia come reazione, quando consentito."]
-];
-const actionEsc=v=>String(v??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-function timing(value){
- const s=String(value||"").toLowerCase();
- if(/reaction|reazione/.test(s))return "reaction";
- if(/bonus/.test(s))return "bonus";
- if(/free|gratuit|interact/.test(s))return "free";
- if(/move|movimento/.test(s))return "movement";
- return "action";
-}
-export function actionEntries(record,calculated={},spells=[]){
- const entries=defaults.map(([name,time,type,description])=>({name,time,type,description,tracker:""}));
- const add=(name,time,type,description,tracker)=>entries.push({name:String(name||type),time:timing(time),type,description:String(description||""),tracker:String(tracker||"")});
- for(const a of calculated.attacks||[])add(a.name,"action","attacco",a.description||a.damage,a.tracker_id);
- const known=new Set([...(record.prepared_spells||[]),...(record.known_spells||[]),...(record.spells||[])].map(x=>typeof x==="string"?x:String(x.id||x.spell_id||"")));
- for(const grant of [...(calculated.origin_spells||[]),...(record.origin_spell_grants||[])])
-  if(!grant.disabled)known.add(String(grant.spell_id||""));
- for(const spell of spells){
-  if(!known.has(String(spell.id||"")))continue;
-  const time=Array.isArray(spell.time)?spell.time[0]?.unit:spell.casting_time||spell.time;
-  const grant=[...(calculated.origin_spells||[]),...(record.origin_spell_grants||[])].find(g=>g.spell_id===spell.id&&!g.disabled);
-  add(spell.name||spell.id,time,"incantesimo",spell.description||"",grant?.tracker_id||(Number(spell.level)>0?"Slot incantesimo":""));
- }
- for(const feature of [...(record.action_grants||[]),...(calculated.actions||[])])
-  if(feature&&!feature.disabled)add(feature.name||feature.title,feature.action_type||feature.activation||feature.time,"capacità",feature.description||feature.text,feature.tracker_id);
- return entries;
-}
-export function actionEconomyView(record,calculated,spells=[]){
- const entries=actionEntries(record,calculated,spells);
- return ACTION_GROUPS.map(([id,title])=>'<section class="panel"><h2>'+title+'</h2>'+
-  entries.filter(e=>e.time===id).map(e=>'<details class="native-entry"><summary><strong>'+actionEsc(e.name)+'</strong> · '+actionEsc(e.type)+(e.tracker?' · '+actionEsc(e.tracker):'')+'</summary><p>'+actionEsc(e.description)+'</p></details>').join('')+
-  (!entries.some(e=>e.time===id)?'<p class="hint">Nessuna azione.</p>':'')+'</section>').join('');
 }

@@ -39,6 +39,11 @@ function selection(record,rule) {
   if(stored!==undefined&&stored!==null&&stored!=='')return stored===rule.legacy_value?rule.id:null;
   return rule.legacy_default?rule.id:null;
 }
+// Resolve the selected member even when equipment temporarily makes it inactive.
+// Both the UI and mechanical projection use the same legacy/default precedence.
+export function selectedTraitState(record={},rules=[]) {
+  return arr(rules).find(rule=>selection(record,rule)===rule.id)?.id||'';
+}
 // Power choice rest intervals are descriptive; the PWA does not enforce them.
 export const selectionRestLabel = event=>event==='short_rest'?'Riposo breve':
   event==='long_rest'?'Riposo lungo':'Nessun riposo';

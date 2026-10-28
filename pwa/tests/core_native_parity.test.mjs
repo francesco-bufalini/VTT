@@ -3,7 +3,8 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
 import {createCreature,loadCreature,openCreatureEditor,exportCreature} from "../creatures.js";
-import {recoveryPatch,actionEntries,nativeSection} from "../native_sheet.js";
+import {recoveryPatch,nativeSection} from "../native_sheet.js";
+import {actionEntries,spellActionEntries} from "../action_economy.js";
 import {quickDefinition,quickGrantPatch,createQuickHomebrew,deleteQuickHomebrew} from "../catalog_data.js";
 import {validDefinition} from "../creature_format.js";
 import {fixedProficiencies} from "../structured_effects.js";
@@ -110,13 +111,15 @@ test("native-style Info keeps derived identity and health editors without option
  assert.doesNotMatch(info,/Aspetto, identità e personalità/);
  assert.doesNotMatch(battle,/data-field="death_save_successes"/);
  assert.doesNotMatch(battle,/data-field="death_save_failures"/);
- assert.match(battle,/class="battle-hp-grid"/);
+ assert.match(battle,/id="hp-adjust-dialog"/);
  assert.doesNotMatch(battle,/data-act="hp-restore-second"/);
- assert.ok(battle.indexOf('battle-hp-controls')<battle.indexOf('battle-defense-values'),
+ assert.ok(battle.indexOf('hp-adjust-dialog')<battle.indexOf('battle-defense-values'),
    'The armor class is displayed immediately after hit points');
- const spells=actionEntries({spells:[{id:"spell_1"}]},
+ const spellCatalog=[{id:"spell_1",name:"Incantesimo",level:1,time:[{unit:"action"}]}];
+ const spells=spellActionEntries({spells:[{id:"spell_1",name:"Incantesimo"}]},{},spellCatalog);
+ const attacks=actionEntries({},
   {attacks:[{id:"bow",name:"Arco",damage:"1d8"}]},
-  [{id:"spell_1",name:"Incantesimo",level:1,time:[{unit:"action"}]}]);
+  spellCatalog);
  assert.ok(spells.some(s=>s.name==="Incantesimo"));
- assert.ok(spells.some(s=>s.name==="Arco"));
+ assert.ok(attacks.some(s=>s.name==="Arco"));
 });

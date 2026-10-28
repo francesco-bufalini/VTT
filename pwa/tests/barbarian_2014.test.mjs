@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {barbarian2014Supplements,barbarian2014ProficiencyCatalog} from '../barbarian_2014.js';
+import {contextualFeatureGrants} from '../feature_mechanics.js';
+const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 
 const feature=(name,sub='',level=3)=>({
  id:'5etools:'+name+':'+sub+':'+level,
@@ -59,11 +61,11 @@ test('Giant Power cantrip selection has two options and Wisdom spellcasting',()=
 test('Subclass trackers attach to the owning feature and use the existing recharge modes',()=>{
  const awareness=feature('Magic Awareness','Wild Magic');
  const bolstering=feature('Bolstering Magic','Wild Magic',6);
- const r=barbarian2014Supplements(barbarian('Wild Magic'),[awareness,bolstering],5);
+ const r=contextualFeatureGrants(barbarian('Wild Magic'),[awareness,bolstering],featureRules,5);
  assert.equal(r.trackers.length,2);
  assert(r.trackers.every(row=>row.max===5&&row.recharge==='long_rest'));
  assert(r.actions.every(row=>r.trackers.some(t=>t.id===row.tracker_id)));
- const other=barbarian2014Supplements(barbarian('Zealot'),[awareness,bolstering],5);
+ const other=contextualFeatureGrants(barbarian('Zealot'),[awareness,bolstering],featureRules,5);
  assert.equal(other.trackers.length,0,'do not grant powers of an unowned subclass');
 });
 

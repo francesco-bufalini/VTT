@@ -4,6 +4,61 @@ const array=value=>Array.isArray(value)?value:[];
 const integer=(value,fallback=0)=>Number.isFinite(Number(value))?Math.trunc(Number(value)):fallback;
 const zeroSlots=()=>Array(10).fill(0);
 
+// Compatibility belongs at record ingress. Keep old fields for native export,
+// but project one canonical choice list; an explicit empty list with origins
+// means the player removed the grants and must never resurrect legacy ranks.
+export function normalizeCreatureRecord(record={}, {inheritedOrigins=false,classMechanics}={}){
+ let result=record;
+ // Preserve old saved species identities. Canonical subtype metadata supplies
+ // their movement at ingress, without recreating flattened races in the engine.
+ if(!record.subrace&&classMechanics){
+  const subtype=array(classMechanics.subraces).find(row=>
+   record.species_id&&row.id===record.species_id||
+   row.legacy_name&&String(row.legacy_name).toLowerCase()===String(record.species||'').toLowerCase()&&
+    String(row.source||'').toLowerCase()===String(record.species_source||'').toLowerCase());
+  if(subtype?.speed!==undefined&&record.species_speed!==subtype.speed)
+   result={...result,species_speed:subtype.speed};
+ }
+ const migrate=!Object.hasOwn(record,'proficiency_choices')||
+   (!array(record.proficiency_choices).length&&!inheritedOrigins&&!Object.hasOwn(record,'proficiency_origins'));
+ if(migrate){
+  const choices=[['skill','skill_proficiencies'],['expertise','skill_expertise'],
+   ['save','saving_throw_proficiencies']].flatMap(([kind,field])=>
+    array(record[field]).map(key=>({kind,key,origin_id:'',origin_name:'',disabled:false})));
+  if(choices.length)result={...result,proficiency_choices:choices};
+ }
+ if(record.stat_block){
+  const stat=normalizeMonsterStatBlock(record.stat_block);
+  if(stat!==record.stat_block)result={...result,stat_block:stat};
+ }
+ if(array(record.variants).length){
+  const variants=record.variants.map(variant=>{
+   const values=normalizeCreatureRecord(variant.values,{classMechanics,
+    inheritedOrigins:inheritedOrigins||Object.hasOwn(record,'proficiency_origins')});
+   return values===variant.values?variant:{...variant,values};
+  });
+  if(variants.some((variant,i)=>variant!==record.variants[i]))result={...result,variants};
+ }
+ return result;
+}
+// Old/imported monster catalogs still include untyped Multiattack records.
+// Convert once at ingress; runtime attack benefits read only the typed count.
+// Ambiguous prose remains descriptive, with exactly the previous parser scope.
+export function normalizeMonsterStatBlock(stat={}){
+ let changed=false;
+ const action=array(stat.action).map(row=>{
+  if(!row||!/^multiattack$/i.test(String(row.name||'').trim()))return row;
+  const direct=Number(row.attacks_per_action);
+  if(Number.isSafeInteger(direct)&&direct>=2)return row;
+  const match=JSON.stringify(row.entries||row.description||'').match(/\b(?:makes?|can make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*attacks?\b/i);
+  const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
+  const count=match?(Number(match[1])||words[match[1].toLowerCase()]||0):0;
+  if(count<2)return row;
+  changed=true;return {...row,attacks_per_action:count};
+ });
+ return changed?{...stat,action}:stat;
+}
+
 /** Cumulative XP needed to reach each character level (D&D 5e, 2014/2024). */
 export const XP_THRESHOLDS=Object.freeze([
  0,0,300,900,2700,6500,14000,23000,34000,48000,64000,
