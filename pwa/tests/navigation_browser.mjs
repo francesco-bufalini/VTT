@@ -181,13 +181,10 @@ try{
  assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');
  await sheet('magic');
  assert.equal(await page.locator('[data-magic-tool="slots"]').isVisible(),false);
- await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').click();
- assert.equal(await page.locator('.magic-toolbar button:visible').count(),5);
- for(const kind of ['slots','catalog','choices','concentration']){
-  if(!await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').click();
-  await page.locator('[data-magic-tool="'+kind+'"]:visible').click();await page.locator('#magic-tools-dialog').waitFor();
-  await page.locator('[data-act="magic-tool-close"]').click();
- }
+ assert(await page.locator('#sheet-play-view .magic-panel').count()>0,
+  'Power details are rendered directly in the Powers tab');
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').count(),0,
+  'The legacy all-in-one tools popup has been replaced by contextual controls');
  await shot('powers');
  await globalPage('catalog');
  await page.locator('.catalog-entry').first().click();await page.locator('[data-act="catalog-close"]').waitFor();
