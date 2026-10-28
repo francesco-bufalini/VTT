@@ -35,7 +35,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
-import {featureRollTarget,featureRollExtensionBonuses} from './feature_rolls.js';
+import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} from './feature_rolls.js';
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
@@ -5255,6 +5255,7 @@ function openFeatureRollDialog(creature,calculated,ability,formula=''){
  const preview=damageRollTerms(formula);
  const optional=rollOptionalDice(creature,calculated,[
    ...applicableDiceBonuses(creature,target,state.spellCatalog||[],calculated),
+   ...featureRollFlatBonuses(creature,calculated,ability),
    ...classFeatureRollBonuses(creature,calculated,target),
    ...applicableFeatRollBonuses(creature,calculated,target),
    ...featureRollExtensionBonuses(calculated,ability)
