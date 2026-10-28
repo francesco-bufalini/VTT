@@ -59,13 +59,17 @@ export function racialBonusEntries(record={},catalog={},features=[],removed=new 
     seen.add(id);
     const dice=String(bonus.dice||'').trim();
     if(choice===null&&!/^\d+d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/.test(dice)&&
-      Number(bonus.proficiency_multiplier)!==2)continue;
+      Number(bonus.proficiency_multiplier)!==2&&bonus.flat_proficiency!==true&&bonus.weapon_damage_die!==true)continue;
     if(choice!==null&&(!Number.isSafeInteger(choice)||choice<=0))continue;
     bonuses.push({id,origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name,
      origin_key:feature.origin_key,origin_parent_id:key,granting_trait:feature.name,
      name:bonus.name||feature.name,
-     ...(choice===null?bonus.proficiency_multiplier?{proficiency_multiplier:bonus.proficiency_multiplier}:{dice}:{flat_bonus:choice}),
+     ...(choice===null?bonus.proficiency_multiplier?{proficiency_multiplier:bonus.proficiency_multiplier}:bonus.flat_proficiency?{flat_proficiency:true}:bonus.weapon_damage_die?{weapon_damage_die:true}:{dice}:{flat_bonus:choice}),
      targets:bonus.targets,exclude_initiative:bonus.exclude_initiative===true,
+     ...(bonus.weapon_requirement?{weapon_requirement:bonus.weapon_requirement}:{}),
+     ...(bonus.melee_weapon_attack?{melee_weapon_attack:true}:{}),
+     ...(bonus.damage_type?{damage_type:bonus.damage_type}:{}),
+     ...(bonus.once_per_turn?{once_per_turn:true}:{}),
      condition_label:bonus.condition_label||'',
      description:bonus.description||'',optional:true,automatic:true,
      ...(choice!==null?{exclusive_group:bonus.id}:{}),
