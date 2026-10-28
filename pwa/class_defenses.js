@@ -1,3 +1,4 @@
+import {resolveOwnedItem} from './item_controls.js';
 // Source-qualified class and subclass defenses for the pre-2024 (2014) rules.
 // A feature must actually belong to the character. Never infer effects from prose.
 // Ranks: 1 resistance, 2 damage immunity, 3 condition immunity, -1 vulnerability.
@@ -94,6 +95,17 @@ const muted = (record,id) => Boolean(id && (
 function hasCondition(record,name) {
  return rows(record.conditions).some(c=>same(typeof c==='string'?c:c?.id||c?.name,name));
 }
+function wearingHeavyArmor(record) {
+ return rows(record.inventory).map(resolveOwnedItem).some(item=>{
+  const slots=rows(item?.equipped_slots);
+  return Number(item?.quantity??1)>0&&item.active!==false&&slots.includes('body')&&
+   String(item?.type||'').split('|')[0].toUpperCase()==='HA';
+ });
+}
+function usableRage(record) {
+ return Boolean(record.active_class_features?.rage)&&!wearingHeavyArmor(record)&&
+  !hasCondition(record,'unconscious')&&!hasCondition(record,'incapacitated');
+}
 function ruleMatchesFeature(rule,feature) {
  const key=norm(feature.origin_key);
  if(!key.startsWith('class|'))return false;
@@ -141,7 +153,8 @@ export function classDefenseEntries(record={},features=[],removed=new Set()) {
   if(muted(record,classParent))continue;
   if(rule.conscious&&(hasCondition(record,'unconscious')||
     hasCondition(record,'incapacitated')))continue;
-  if(rule.active&&!record.active_class_features?.[rule.active])continue;
+  if(rule.active==='rage'?!usableRage(record):
+     rule.active&&!record.active_class_features?.[rule.active])continue;
   const chosen=norm(record.origin_defense_choices?.[feature.origin_id]);
   const chosenValid=rule.choice?.options.includes(chosen);
   const entries=[...rule.entries];
@@ -150,11 +163,7 @@ export function classDefenseEntries(record={},features=[],removed=new Set()) {
   if(rule.choice?.grant_only && chosen!==rule.choice.grant_only)continue;
   if(rule.choice && !chosenValid)continue;
   for(const {rank,key,condition_label,requires_heavy_armor} of entries){
-   if(requires_heavy_armor&&!rows(record.inventory).some(item=>{
-    const slots=rows(item?.equipped_slots);
-    return Number(item?.quantity??1)>0&&slots.includes('body')&&
-     String(item?.type||'').split('|')[0].toUpperCase()==='HA';
-   }))continue;
+   if(requires_heavy_armor&&!wearingHeavyArmor(record))continue;
    const id='defense:class:'+feature.origin_id+':'+rank+':'+key;
    if(removed.has(id))continue;
    out.push({id:'auto|'+id,benefit_id:id,rank,key,automatic:true,
