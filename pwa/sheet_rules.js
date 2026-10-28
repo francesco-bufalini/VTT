@@ -787,7 +787,7 @@ function calculateSheetValues(record={},catalogs={}){
   const racialPowers=racialPowerProjection(record,catalogs.speciesPowers||{},features);
   features.push(...racialPowers.features);
   const dragonbornFlight=racialPowers.abilities.find(power=>power.mode==='temporary_flight'&&
-    record.active_class_features?.[power.persistent_key]?.origin_id===power.origin_id);
+    record.active_class_features?.[power.persistent_key]?.origin_id===power.persistent_origin_id);
   const celestialForm=racialPowers.active_forms.find(form=>
     record.active_class_features?.[form.active_key]?.spell_id===form.spell_id);
   features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
