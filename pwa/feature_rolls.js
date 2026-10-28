@@ -16,6 +16,23 @@ const formulaValue=(value,calculated={})=>{
   Number(calculated.abilities?.[match[1].slice(0,3)]?.modifier);
  return Number.isFinite(base)?base+Number(match[2]||0):null;
 };
+// Numeric trait bonuses use formula_bonuses elsewhere in the sheet. Feature
+// rolls have no permanent score to mutate, so resolve the same typed source
+// only while displaying the matching ability's roll.
+export function featureRollFlatBonuses(record={},calculated={},ability={}){
+ const target=featureRollTarget(ability);
+ if(!target)return [];
+ return rows(record.formula_bonuses).filter(row=>row?.target===target&&!row.disabled&&
+   record.origin_enabled?.[row.origin_id]!==false&&
+   !rows(record.proficiency_origins).some(origin=>origin.id===row.origin_id&&origin.disabled))
+  .flatMap(row=>{
+   const amount=formulaValue(row.expression,calculated);
+   if(amount===null||!amount)return [];
+   return [{id:'feature-formula:'+row.id,origin_id:row.origin_id||'',
+    origin_name:row.origin_name||'Bonus al tiro della capacità',target,
+    flat_bonus:amount,optional:true,automatic:false}];
+  });
+}
 export function featureRollExtensionBonuses(calculated={},ability={}){
  const target=featureRollTarget(ability);
  if(!target)return [];
