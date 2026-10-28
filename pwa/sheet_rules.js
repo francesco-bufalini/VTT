@@ -1253,8 +1253,16 @@ function calculateSheetValues(record={},catalogs={}){
     ...supplementalFeatureSpellGrants(record,features,catalogs.spells||[],
       catalogs.featureSpellGrants||[],classCasting));
   for(const warning of additional.warnings)warnings.add(warning);
+  // Feats use the same expression evaluator as other typed trackers.
+  // The proficiency-sized pool must reflect level changes without modifying saves.
+  const featTrackers=featMechanics.trackers.map(row=>{
+    if(!row.max_formula)return row;
+    try{return {...row,max:Math.max(0,parseArithmetic(row.max_formula,
+      name=>resolveSymbol(name,resolve,new Set())))};}
+    catch(error){warnings.add('Formula tracker talento '+row.name+': '+error.message);return {...row,max:0};}
+  });
   const trackerMap=new Map();
-  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featMechanics.trackers,...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2)])
+  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featTrackers,...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2)])
     if(!trackerMap.has(row.id)&&sourceEnabled(row)&&!suppressed.has('tracker:'+row.id))trackerMap.set(row.id,row);
   for(const stateTracker of traitStateTrackers(record,features,catalogs.traitStates||[]))
     trackerMap.set(stateTracker.id,stateTracker);
