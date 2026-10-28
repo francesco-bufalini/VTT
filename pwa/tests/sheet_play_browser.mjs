@@ -216,7 +216,8 @@ try{
  await training.first().click();
  assert.equal(await page.locator('#roll-trait-picker').count(),0,
    'Training provenance must not open the add-bonus picker');
- assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
+ assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Sage/,
+   'Navigating the Arcana training term opens the granting background trait');
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  if((await skills.getAttribute('open'))!==null)await skills.locator(':scope > summary').click();
  await sheet('battle');
