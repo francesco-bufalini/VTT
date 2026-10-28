@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
  artificerLevel,infusionLimits,learnedInfusions,infusionEligible,infusionNumericBonuses,
- infusionGrantingTrait,activeInfusions,
+ infusionGrantingTrait,activeInfusions,infusionChargeTrackers,infusionChargeTrackerId,ownedItemDisplayName,
  targetableInventoryItems,compatibleInfusionTargets,
  learnInfusionPatch,applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch,expandedInfusionDefinitions
 } from "../item_controls.js";
@@ -240,4 +240,45 @@ test("infusion descriptions are sourced from the packaged 5etools optional featu
  }
  const variants=expandedInfusionDefinitions(definitions).filter(row=>row.application_kind==="replicate_variant");
  assert(variants.every(row=>row.description_source_name==="Replicate Magic Item"));
+});
+
+test("charge-bearing infusions grant one item-bound tracker, without requiring equip/attunement",()=>{
+ const shield={id:"shield:plain",name:"Shield",type:"S",ac:2,quantity:1,
+  rarity:"none",equipped_slots:[],attuned:false};
+ let record=make(10);
+ record.inventory=[shield];
+ const option=byName("Repulsion Shield");
+ record={...record,...learnInfusionPatch(record,option,definitions,mechanics,-1,[infusionTrait])};
+ record={...record,...applyInfusionPatch(record,learnedInfusions(record,definitions)[0],
+  definitions,mechanics,0,[infusionTrait])};
+ const item=record.inventory[0],id=infusionChargeTrackerId(item,0);
+ assert.equal(ownedItemDisplayName(item),"Shield - Repulsion Shield");
+ const projected=infusionChargeTrackers(record,definitions,[infusionTrait]);
+ assert.equal(projected.length,1);
+ assert.equal(projected[0].id,id);
+ assert.equal(projected[0].name,"Shield - Repulsion Shield · Cariche");
+ assert.equal(projected[0].max,4);
+ assert.match(projected[0].recharge_note,/1d4/);
+ assert.equal(projected[0].recharge,"manual");
+ const calculated=calculateSheet(record,sheetCatalogs);
+ assert.equal(calculated.trackers.find(x=>x.id===id)?.max,4);
+ record={...record,resource_tracker_spent:{[id]:2,"unrelated":1}};
+ assert.equal(calculateSheet(record,sheetCatalogs).trackers.find(x=>x.id===id)?.spent,2);
+ const uninfused={...record,...clearInfusionPatch(record,0)};
+ assert.equal(uninfused.resource_tracker_spent[id],undefined);
+ assert.equal(uninfused.resource_tracker_spent.unrelated,1);
+ assert.equal(calculateSheet(uninfused,sheetCatalogs).trackers.some(x=>x.id===id),false);
+ const reapplied={...uninfused,...applyInfusionPatch(uninfused,
+  learnedInfusions(uninfused,definitions)[0],definitions,mechanics,0,[infusionTrait])};
+ assert.equal(calculateSheet(reapplied,sheetCatalogs).trackers.find(x=>x.id===id)?.spent,0);
+ const consumed={...reapplied,resource_tracker_spent:{[id]:3}};
+ const removed={...consumed,...forgetInfusionPatch(consumed,learnedInfusions(consumed,definitions)[0])};
+ assert.equal(removed.resource_tracker_spent[id],undefined);
+});
+test("all five charge-bearing infusion definitions specify their own counters",()=>{
+ const expected={
+  "Repulsion Shield":4,"Radiant Weapon":4,"Mind Sharpener":4,
+  "Armor of Magical Strength":6,"Spell-Refueling Ring":1};
+ assert.deepEqual(Object.fromEntries(definitions.filter(x=>x.charge_tracker).map(x=>[x.name,x.charge_tracker.max])),expected);
+ assert.equal(infusionChargeTrackers(make(10),definitions,[infusionTrait]).length,0);
 });

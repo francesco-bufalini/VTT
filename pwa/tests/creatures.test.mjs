@@ -325,3 +325,21 @@ test("old companions with source-qualified bestiary refs migrate without resetti
  assert.equal(restored.data.notes,'Legacy');
  assert.equal(restored.data.companion_origin_name,'Find Familiar');
 });
+
+test("bulk Monster selection can delete a familiar without removing its owner",async()=>{
+ const scope="selected_familiar_delete_"+Date.now();
+ const owner=await createCreature("character","Artefice",scope);
+ const familiar=await createSubcreature(owner.id,{name:"Homunculus Servant",hp:{average:4},ac:[13]},
+  {name:"Homunculus Servant",source:"TCE"},scope);
+ const second=await createSubcreature(owner.id,{name:"Falco",hp:{average:1},ac:[13]},
+  {name:"Hawk",source:"MM"},scope);
+ const chosen=new Set([familiar.id]);
+ const selected=(await listCreatures(scope,{includeSubcreatures:true}))
+  .filter(row=>chosen.has(row.creature.id));
+ assert.equal(selected.length,1);
+ assert.equal(selected[0].creature.parent_creature_id,owner.id);
+ assert.equal(await removeCreature(selected[0].creature.id,scope,selected[0].revision),true);
+ assert.equal(await loadCreature(familiar.id,scope),null);
+ assert.ok(await loadCreature(second.id,scope));
+ assert.ok(await loadCreature(owner.id,scope));
+});

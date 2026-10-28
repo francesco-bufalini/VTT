@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {inventoryReadout} from '../sheet_rules_view.js';
-import {addSpellScroll,isSpellScroll,spellScrollName,spellScrollLevel,armorDexterityLimit,armorDexterityBonus,armorDexterityLabel} from '../item_controls.js';
+import {addSpellScroll,isSpellScroll,spellScrollName,spellScrollLevel,ownedItemDisplayName,armorDexterityLimit,armorDexterityBonus,armorDexterityLabel} from '../item_controls.js';
 import {calculateSheet} from '../sheet_rules.js';
 
 test('inventory summaries resolve each owned copy and multiply only recorded unit data',()=>{
@@ -112,4 +112,14 @@ test('armor class appears once as a structured fact, not again in the properties
  assert.equal(armor.properties,'');
  const sword=inventoryReadout({id:'weapon:test',name:'Sword',type:'M',damage:'1d8'},'Versatile');
  assert.equal(sword.properties,'Versatile');
+});
+
+test('infused inventory titles append the infusion without modifying the saved item name',()=>{
+ const item={id:'shield:one',name:'Scudo',type:'S',infusion:{name:'Repulsion Shield'}};
+ const original=structuredClone(item);
+ assert.equal(ownedItemDisplayName(item),'Scudo - Repulsion Shield');
+ assert.equal(inventoryReadout(item).displayName,'Scudo - Repulsion Shield');
+ assert.deepEqual(item,original);
+ assert.equal(ownedItemDisplayName({...item,infusion:undefined}),'Scudo');
+ assert.equal(ownedItemDisplayName({...item,infusion:{id:'infusion',name:''}}),'Scudo');
 });
