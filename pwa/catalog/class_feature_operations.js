@@ -5,7 +5,7 @@
 // Other class actions retain their existing rolls, trackers and effects.
 export const DESCRIPTIVE_CLASS_FEATURE_IDS=new Set([
  'magical_tinkering','command_cannon','command_defender',
- 'soul_of_artifice','uncanny_dodge'
+ 'soul_of_artifice','uncanny_dodge','deflect_missiles','deflect_attacks'
 ]);
 export const CLASS_FEATURE_RULES=[
  ["magical_tinkering", "Artificer", "Magical Tinkering", "Congegni magici", "", "action", "context"],
