@@ -1,5 +1,6 @@
 // The browser viewer consumes exactly the same public mobile snapshot projection
 // as Android's map_snapshot_view.gd; gameplay/LOS/range remain native Godot.
+import {abilityAreaPreview} from './ability_areas.js';
 const AIM_PHASES = new Set(["point", "direction_point", "multi_target_points",
   "wall_start", "wall_segment", "wall_center", "wall_radius", "wall_arc_start",
   "wall_arc_end", "summon_point", "teleport_destination"]);
@@ -66,7 +67,7 @@ export class TacticalViewer {
     this.send=send;this.ownerId=ownerId;this.notify=notify;this.onCastAccepted=onCastAccepted;
     this.tokenId="";this.attack={};this.image=null;this.snapshot=null;
     this.targeting={};this.preview=null;this.aimPixel=null;this.selectedId="";
-    this.basicAction=null;this.abilityTarget=null;
+    this.basicAction=null;this.abilityTarget=null;this.areaAbility=null;
     this.zoom=1;this.panX=0;this.panY=0;this.pointers=new Map();
     this.touchMoved=false;this.busy=false;this.root=null;this.onResize=()=>this.draw();
     this.imgUrl="";
@@ -74,7 +75,7 @@ export class TacticalViewer {
   }
   async open(tokenId, attack={}) {
     if(!tokenId)throw new Error("Scegli prima un token.");
-    if(this.root&&(this.targeting.active||this.abilityTarget))
+    if(this.root&&(this.targeting.active||this.abilityTarget||this.areaAbility))
       throw new Error("Completa o annulla prima la selezione in corso.");
     this.close();
     this.tokenId=tokenId;this.attack=structuredClone(attack);this.basicAction=null;
@@ -92,7 +93,8 @@ export class TacticalViewer {
       '<div class="tactical-status" role="status" aria-live="polite">Un dito seleziona; trascina per spostarti. Due dita per ingrandire.</div>'+
       '<div class="row tactical-controls"><button class="btn small" type="button" data-tactical="cancel">Annulla incantesimo</button>'+
       '<button class="btn small primary" type="button" data-tactical="finish">Conferma bersagli</button>'+
-      '<button class="btn small primary" type="button" data-tactical="confirm-point">Conferma punto</button></div></section>';
+      '<button class="btn small primary" type="button" data-tactical="confirm-point">Conferma punto</button>'+ 
+      '<button class="btn small primary" type="button" data-tactical="confirm-area">Conferma area</button></div></section>';
     document.body.append(this.root);
     document.body.classList.add("tactical-open");
     this.canvas=this.root.querySelector("canvas");
@@ -136,12 +138,21 @@ export class TacticalViewer {
       (range_feet?' (portata '+range_feet+' ft)':'')+'. Annulla chiudendo la vista.');
     this.updateButtons();this.draw();
   }
+  setAreaAbility({name,shape,length_feet=0,width_feet=0,radius_feet=0,onSelected}={}){
+    if(!this.root||!name||!['line','cone'].includes(shape)||typeof onSelected!=='function'||
+       this.targeting.active||this.abilityTarget)throw Error('Area della capacità non disponibile.');
+    this.areaAbility={name,shape,length_feet,width_feet,radius_feet,onSelected};
+    this.preview=null;
+    this.setStatus('Tocca una direzione sulla mappa per orientare '+name+'. Poi conferma l’area.');
+    this.updateButtons();this.draw();
+  }
+
   close() {
     ++this.generation;clearTimeout(this.pollTimer);this.pollTimer=null;
     this.resizeObserver?.disconnect();this.resizeObserver=null;
     if(this.onKey)window.removeEventListener("keydown",this.onKey);
     window.removeEventListener("resize",this.onResize);
-    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;this.basicAction=null;this.abilityTarget=null;
+    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;this.basicAction=null;this.abilityTarget=null;this.areaAbility=null;
     if(this.imgUrl){URL.revokeObjectURL(this.imgUrl);this.imgUrl="";}
     document.body.classList.remove("tactical-open");
     this.pointers.clear();
@@ -164,8 +175,10 @@ export class TacticalViewer {
             (aim&&this.targeting.can_finish!==true)):false);
         b.disabled=this.busy || (key==="confirm-point"&&!this.aimPixel);}
     }
+    const confirmArea=this.root.querySelector('[data-tactical="confirm-area"]');
+    if(confirmArea){confirmArea.hidden=!this.areaAbility;confirmArea.disabled=this.busy||!this.preview?.valid;}
     for(const b of this.root.querySelectorAll("[data-tactical]")){
-      if(["cancel","finish","confirm-point"].includes(b.dataset.tactical))continue;
+      if(["cancel","finish","confirm-point","confirm-area"].includes(b.dataset.tactical))continue;
       b.disabled=this.busy;
     }
   }
@@ -232,6 +245,7 @@ export class TacticalViewer {
     this.caption.textContent=String(data.title||"Mappa")+" · "+Math.round(data.field_feet||60)+" ft";
     this.setStatus(this.targeting.active ?
       (this.targeting.instruction||"Scegli un bersaglio sulla mappa.") :
+      this.areaAbility?'Scegli una direzione per '+this.areaAbility.name:
       this.abilityTarget?'Seleziona un token per '+this.abilityTarget.name+
         (this.abilityTarget.range_feet?' · portata '+this.abilityTarget.range_feet+' ft':'') :
       this.attack?.range_feet?"Tocca un bersaglio per verificarne gittata e distanza." :
@@ -363,6 +377,14 @@ export class TacticalViewer {
     this.selectedId=marker?.id||"";
     const payload={token_id:this.tokenId,owner_id:await this.ownerId(),
       target_id:marker?.id||"",snapshot_id:this.snapshot.snapshot_id,pixel};
+    if(this.areaAbility){
+      const preview=abilityAreaPreview(this.snapshot,this.tokenId,pixel,this.areaAbility);
+      if(!preview){this.setStatus('Impossibile orientare l’area: token o scala non disponibili.');return;}
+      this.preview=preview;
+      const names=(this.snapshot.markers||[]).filter(row=>preview.affected_ids.includes(row.id)).map(row=>row.name||row.id);
+      this.setStatus('Area indicativa · '+names.length+' bersagli: '+(names.join(', ')||'nessuno')+'. Conferma prima di consumare utilizzi.');
+      this.updateButtons();this.draw();return;
+    }
     if(this.abilityTarget){
       if(!marker){this.setStatus('Seleziona un token, non uno spazio vuoto.');return;}
       const selection=this.abilityTarget;
@@ -448,6 +470,13 @@ export class TacticalViewer {
     if(name==="zoom-in"){this.zoomAt(1.25,this.transform().viewW/2,this.transform().viewH/2);return;}
     if(name==="zoom-out"){this.zoomAt(0.8,this.transform().viewW/2,this.transform().viewH/2);return;}
     if(name==="refresh"){await this.refresh();return;}
+    if(name==='confirm-area'&&this.areaAbility){
+      if(!this.preview?.valid)throw Error('Scegli prima una direzione sulla mappa.');
+      const selected=this.areaAbility,ids=this.preview.affected_ids;
+      const targets=(this.snapshot?.markers||[]).filter(row=>ids.includes(row.id))
+        .map(row=>({id:row.id,name:row.name||row.id}));
+      this.close();await selected.onSelected(targets);return;
+    }
     if(!this.targeting.active)throw new Error("Nessun incantesimo in selezione.");
     const payload={token_id:this.tokenId,owner_id:await this.ownerId()};
     if(name==="cancel"||name==="finish"){
