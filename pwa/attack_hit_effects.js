@@ -1,6 +1,6 @@
 // Reusable on-hit combat debuffs from structured attack metadata.
-// A hit is confirmed by the player; never assume a d20 roll hit a target.
-// Debuffs on linked local sheets are scoped to the actual target of a later
+// A map hit is an explicit player action, independent of all dice rolls.
+// Debuffs on the shared token and older local sheets are scoped to the target of a later
 // attack. An explicit target is required, because Thunder Gauntlets excludes
 // attacks against its original wielder.
 const rows=value=>Array.isArray(value)?value:[];
