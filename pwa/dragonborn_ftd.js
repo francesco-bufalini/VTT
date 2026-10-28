@@ -87,7 +87,7 @@ export function dragonbornFtdProjection(record={},catalog={},knownFeatures=[]){
   if(original?.inactive||original?.disabled||record.origin_enabled?.[id]===false||record.trait_enabled?.[key]===false)return null;
   if(!original)output.features.push({name,origin_key:p.origin_key,origin_id:id,key,
    level:minLevel,source:'FTD',requirements:{scope:'character',min_level:minLevel},
-   entries:[name+' · '+p.definition.name],action_kind:'Capacità'});
+   entries:[name+' · '+p.definition.name],bonuses:[],action_kind:'Capacità'});
   return id;
  };
  // Expose missing source traits without relying on free-form text parsing.
