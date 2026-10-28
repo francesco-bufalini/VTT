@@ -12,6 +12,13 @@ const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
   res.setHeader('Cache-Control','no-store');
+  if(path==='/__vtt_version'){
+   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({revision:'a'.repeat(40)}));return;
+  }
+  if(path==='/sw.js'){
+   res.setHeader('Content-Type','text/javascript; charset=utf-8');
+   res.end((await readFile(new URL('pwa/sw.js',root),'utf8')).replaceAll('__VTT_COMMIT_SHA__','a'.repeat(40)));return;
+  }
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;}
   const route=routes.get(path);if(!route){res.writeHead(404);res.end();return;}
