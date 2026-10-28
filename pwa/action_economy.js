@@ -555,6 +555,15 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
    cost:Math.max(0,Number(ability.resource_cost??(ability.tracker_id?1:0))||0),
    target_mode:ability.target_mode||'',target_range_feet:ability.target_range_feet||0,
    exclude_self:ability.exclude_self===true,
+   // Preserve typed mechanics for reusable racial area and temporary effects.
+   mode:ability.mode||'',persistent_key:ability.persistent_key||'',
+   duration_rounds:ability.duration_rounds||0,
+   attack_replacement:ability.attack_replacement===true,
+   area_shape:ability.area_shape||'',area_length_feet:ability.area_length_feet||0,
+   area_width_feet:ability.area_width_feet||0,area_radius_feet:ability.area_radius_feet||0,
+   damage_formula:ability.damage_formula||'',damage_type:ability.damage_type||'',
+   save_ability:ability.save_ability||'',save_base:ability.save_base||'',
+   half_on_save:ability.half_on_save===true,options:arr(ability.options),
    ...(ability.roll_attack?{roll_attack:ability.roll_attack}:{})});
   seen.add(name);
  }
