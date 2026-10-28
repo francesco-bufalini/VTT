@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "grants": [
+    {
+      "id": "artificer-armor-modifications",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass": "Armorer",
+      "feature": "Armor Modifications",
+      "min_level": 9,
+      "infusion_capacity_bonus": 2,
+      "items": [
+        {
+          "id": "armor-chest",
+          "name": "Arcane Armor · Armatura toracica",
+          "type": "MA",
+          "quantity": 1,
+          "description": "Parte della tua Armatura Arcana. Non applica CA finché non viene equipaggiata."
+        },
+        {
+          "id": "armor-boots",
+          "name": "Arcane Armor · Stivali",
+          "type": "G",
+          "quantity": 1,
+          "description": "Stivali dell'Armatura Arcana."
+        },
+        {
+          "id": "armor-helmet",
+          "name": "Arcane Armor · Elmo",
+          "type": "G",
+          "quantity": 1,
+          "description": "Elmo dell'Armatura Arcana."
+        },
+        {
+          "id": "armor-special-weapon",
+          "name": "Arcane Armor · Arma speciale",
+          "type": "G",
+          "quantity": 1,
+          "description": "Arma speciale del modello di armatura, i cui attacchi sono già gestiti dal modello."
+        }
+      ]
+    },
+    {
+      "id": "artificer-eldritch-cannon",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass": "Artillerist",
+      "feature": "Eldritch Cannon",
+      "min_level": 3,
+      "max_owned": 1,
+      "items": [
+        {
+          "id": "flamethrower",
+          "name": "Eldritch Cannon · Flamethrower",
+          "type": "G",
+          "description": "Cannone arcano: lanciafiamme (azione bonus per attivarlo)."
+        },
+        {
+          "id": "force-ballista",
+          "name": "Eldritch Cannon · Force Ballista",
+          "type": "G",
+          "description": "Cannone arcano: balista di forza (azione bonus per attivarlo)."
+        },
+        {
+          "id": "protector",
+          "name": "Eldritch Cannon · Protector",
+          "type": "G",
+          "description": "Cannone arcano: protettore (azione bonus per attivarlo)."
+        }
+      ]
+    },
+    {
+      "id": "artificer-right-tool",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "feature": "The Right Tool for the Job",
+      "min_level": 3,
+      "max_owned": 1,
+      "items": [
+        {
+          "id": "artisan-tools",
+          "name": "Strumenti da artigiano creati",
+          "type": "G",
+          "description": "Scegli e rinomina il tipo di strumenti creato dal privilegio."
+        }
+      ]
+    },
+    {
+      "id": "bard-performance-of-creation",
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "subclass": "College of Creation",
+      "feature": "Performance of Creation",
+      "min_level": 3,
+      "max_owned": 1,
+      "items": [
+        {
+          "id": "created-object",
+          "name": "Oggetto creato · Performance of Creation",
+          "type": "G",
+          "description": "Scegli l'oggetto non magico e adattane i dati nella scheda inventario."
+        }
+      ]
+    }
+  ]
+}
