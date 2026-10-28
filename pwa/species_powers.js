@@ -39,6 +39,27 @@ export function racialPowerProjection(record={},index={},features=[]) {
    String(f.origin_key||'').startsWith('species|')&&!f.disabled&&!f.inactive&&
    record.trait_enabled?.[f.key]!==false&&permitted(record,f.origin_id)&&
    permitted(record,f.origin_key)&&permitted(record,raceRoot));
+ // Species-level resource grants are declared by the same structured owner
+ // as their ordinary powers. Dragon Fear binds to this Breath Weapon tracker,
+ // rather than creating a second pool for the feat.
+ if(race.breath_weapon?.tracker_id){
+   const raw=race.breath_weapon,owner=featureFor(raw.trait||'Breath Weapon');
+   if(owner){
+     const already=rows(record.resource_trackers).find(row=>
+       norm(row.name)===norm(raw.trait||'Breath Weapon')&&
+       !row.disabled&&(!row.origin_id||permitted(record,row.origin_id)));
+     const trackerId=already?.id||raw.tracker_id;
+     if(!already)output.trackers.push({id:trackerId,name:raw.trait||'Breath Weapon',
+       max:maximum(raw.uses),recharge:raw.recharge||'short_rest',
+       origin_id:owner.origin_id,origin_name:'Tratto · '+(raw.trait||'Breath Weapon'),automatic:true});
+     output.abilities.push({id:raw.id||trackerId,name:raw.trait||'Breath Weapon',
+       feature_id:owner.origin_id,origin_id:owner.origin_id,
+       origin_name:'Tratto · '+(raw.trait||'Breath Weapon'),source:race.source,
+       description:raw.description||'',action_type:raw.action_type||'action',
+       activation_mode:raw.action_type||'action',mode:raw.mode||'tracked_action',
+       resource_cost:1,tracker_id:trackerId});
+   }
+ }
  // Source-qualified per-subrace powers retain the owning subrace trait.
  const subraceFeatureFor=(trait,subrace)=>features.find(f=>norm(f.name)===norm(trait)&&
    norm(record.subrace)===norm(subrace)&&norm(record.subrace_source)===norm(race.source)&&
