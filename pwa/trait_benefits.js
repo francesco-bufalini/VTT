@@ -77,18 +77,7 @@ export function traitBenefitSources(trait={},record={}){
    ids.add('subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace));
  }
  if(trait.rank===0&&trait.category==='talenti'){
-  for(const grant of rows(calculated.feature_item_grants)){
-  if(!ids.has(grant.origin_id))continue;
-  if(Number(grant.infusion_capacity_bonus)>0)
-   add('effects','Effetti e limitazioni','Oggetti infusi attivi','+'+grant.infusion_capacity_bonus+' (non aumenta le infusioni conosciute)');
-  const total=rows(record.inventory).filter(item=>item.feature_item_grant_id===grant.id&&Number(item.quantity??1)>0).length;
-  for(const option of rows(grant.items)){
-   const available=!option.owned&&(!grant.max_owned||total<Number(grant.max_owned));
-   add('items','Oggetti concessi',option.name,option.owned?'Presente nell’inventario':option.description||'Da aggiungere','',{
-    grant_id:grant.id,option_id:option.id,owned:!!option.owned,available});
-  }
- }
- for(const feat of rows(record.feats_catalog)){
+  for(const feat of rows(record.feats_catalog)){
    if(!feat?.name)continue;
    if('feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source))===trait.origin_key)
     ids.add('feat|'+norm(feat.source)+'|'+norm(feat.name));
@@ -204,6 +193,18 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    if(!definition?.companion?.rule_id)continue;
    add('companions','Sottocreature','Creatura concessa',definition.name,
     'companion:'+String(definition.companion.rule_id));
+  }
+ }
+ for(const grant of rows(calculated.feature_item_grants)){
+  if(!ids.has(grant.origin_id))continue;
+  if(Number(grant.infusion_capacity_bonus)>0)
+   add('effects','Effetti e limitazioni','Oggetti infusi attivi','+'+grant.infusion_capacity_bonus+' (non aumenta le infusioni conosciute)');
+  const total=rows(record.inventory).filter(item=>item.feature_item_grant_id===grant.id&&Number(item.quantity??1)>0).length;
+  for(const option of rows(grant.items)){
+   const available=!option.owned&&(!grant.max_owned||total<Number(grant.max_owned));
+   add('items','Oggetti concessi',option.name,option.owned?'Presente nell’inventario':option.description||'Da aggiungere','',{
+    grant_id:grant.id,option_id:option.id,owned:!!option.owned,available,
+    requires_activation:!!grant.activation_action_id});
   }
  }
  // A chosen feat is an owned trait whose granting class-level ASI remains

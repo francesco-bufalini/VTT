@@ -57,7 +57,7 @@ test('legacy class becomes editable without losing primary class or subclass ref
 test('Info derives species creature type from references, including implicit Humanoid and subraces',()=>{
  const races=[{id:'elf',name:'Elf',source:'PHB'},
   {id:'hybrid',name:'Changeling',source:'ERLW',creatureTypes:['fey']},
-  {id:'variant',name:'Elf (Other)',source:'PHB',creatureTypes:['fey','humanoid']}];
+  {id:'variant',name:'Other',raceName:'Elf',raceSource:'PHB',source:'PHB',creatureTypes:['fey','humanoid']}];
  assert.equal(speciesCreatureType({kind:'character',species:'Elf',species_source:'PHB'}, {races}),'Umanoide');
  assert.equal(speciesCreatureType({kind:'character',species:'Changeling',species_source:'ERLW'}, {races}),'Folletto');
  assert.equal(speciesCreatureType({kind:'character',species:'Elf',species_source:'PHB',subrace:'Other',subrace_source:'PHB'}, {races}),'Folletto, Umanoide');
@@ -73,9 +73,19 @@ test('2014 species picker excludes flattened variants and uses canonical subrace
  const character={kind:'character',rules_version:'2014',species:'Elf',species_source:'PHB',species_id:elf.id};
  const choices=availableReferenceRows(character,'subrace','races',{races});
  assert.equal(choices.find(row=>row.id===high.id)?.name,'High');
+ assert.ok(!availableReferenceRows(character,'species','races',{races}).some(row=>row.name==='Elf (High)'));
  assert.ok(!choices.some(row=>row.source==='XPHB'));
  const saved=referencePatch(character,'subrace',choices.find(row=>row.id===high.id));
  assert.deepEqual([saved.subrace,saved.subrace_source,saved.subrace_id],['High','PHB',high.id]);
+});
+
+test('canonical subrace reference preserves movement and creature types from source',()=>{
+ const old=[{id:'elf',name:'Elf',source:'PHB',speed:30},
+  {id:'wood',name:'Elf (Wood)',source:'PHB',speed:35,creatureTypes:['fey']}];
+ const canonical=canonicalSpeciesReferences(old,[{id:'wood',name:'Wood',source:'PHB',raceName:'Elf',raceSource:'PHB'}]);
+ assert.equal(canonical.length,2);
+ assert.equal(canonical.find(x=>x.name==='Wood')?.speed,35);
+ assert.equal(speciesCreatureType({species:'Elf',species_source:'PHB',subrace:'Wood',subrace_source:'PHB'}, {races:canonical}),'Folletto');
 });
 
 test('secondary classes show only non-primary entries, with source from selected catalog',()=>{

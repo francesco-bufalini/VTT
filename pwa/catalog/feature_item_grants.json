@@ -42,6 +42,7 @@
     },
     {
       "id": "artificer-eldritch-cannon",
+      "activation_action_id": "eldritch_cannon",
       "class_name": "Artificer",
       "class_source": "TCE",
       "subclass": "Artillerist",

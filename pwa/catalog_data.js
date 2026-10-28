@@ -43,7 +43,18 @@ export function canonicalSpeciesReferences(races=[],subraces=[]){
  const key=(name,source)=>String(name||'').trim().toLowerCase()+'|'+String(source||'').trim().toLowerCase();
  const flattened=new Set(subraces.filter(row=>row?.raceName&&row?.name).map(row=>
   key(row.raceName+' ('+row.name+')',row.source)));
- return [...races.filter(row=>!row?.raceName&&!flattened.has(key(row.name,row.source))),...subraces];
+ // Transfer still-packaged subtype metadata to the canonical reference.
+ const canonicalSubraces=subraces.map(subrace=>{
+  if(!subrace?.raceName)return subrace;
+  const native=races.find(row=>key(row.name,row.source)===
+   key(subrace.raceName+' ('+subrace.name+')',subrace.source));
+  return native?{...subrace,
+   ...(subrace.speed===undefined&&native.speed!==undefined?{speed:native.speed}:{}),
+   ...(subrace.size===undefined&&native.size!==undefined?{size:native.size}:{}),
+   ...(subrace.creatureTypes===undefined&&native.creatureTypes!==undefined?
+    {creatureTypes:native.creatureTypes}:{})}:subrace;
+ });
+ return [...races.filter(row=>!row?.raceName&&!flattened.has(key(row.name,row.source))),...canonicalSubraces];
 }
 let catalog=null;
 const details=new Map();

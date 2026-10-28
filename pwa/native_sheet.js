@@ -501,10 +501,10 @@ export function speciesCreatureType(creature,catalogs={}){
  const parent=races.find(r=>creature.species_id&&r.id===creature.species_id&&!r.raceName)||
   races.find(r=>!r.raceName&&same(r.name,species)&&(!source||same(r.source,source)));
  const subrace=String(creature?.subrace||''),subsource=String(creature?.subrace_source||'');
- const flattened=subrace?races.find(r=>same(r.name,species+' ('+subrace+')')&&
+ const selected=subrace?races.find(r=>same(r.raceName,species)&&same(r.name,subrace)&&
   (!subsource||same(r.source,subsource))):null;
  // In 5etools the omitted creatureTypes property means Humanoid.
- const raw=flattened?.creatureTypes??parent?.creatureTypes;
+ const raw=selected?.creatureTypes??parent?.creatureTypes;
  const values=Array.isArray(raw)?(raw.length?raw:['humanoid']):raw?[raw]:parent?['humanoid']:[];
  const names={aberration:'Aberrazione',beast:'Bestia',celestial:'Celestiale',construct:'Costrutto',
   dragon:'Drago',elemental:'Elementale',fey:'Folletto',fiend:'Immondo',giant:'Gigante',

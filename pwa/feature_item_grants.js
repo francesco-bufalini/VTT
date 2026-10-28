@@ -30,9 +30,11 @@ export function featureItemGrants(record={},features=[],catalog=[]){
      row.feature_item_option_id===item.id&&Number(row.quantity??1)>0).length}))}]:[];
  });
 }
-export function claimFeatureItemPatch(record={},calculated={},grantId='',itemId=''){
+export function claimFeatureItemPatch(record={},calculated={},grantId='',itemId='',{activationActionId=''}={}){
  const grant=rows(calculated.feature_item_grants).find(row=>row.id===grantId);
  if(!grant)throw Error('Il privilegio non concede questo oggetto.');
+ if(grant.activation_action_id&&grant.activation_action_id!==activationActionId)
+  throw Error('Questo oggetto viene creato usando la capacità associata.');
  const choice=rows(grant.items).find(row=>row.id===itemId);
  if(!choice)throw Error('Oggetto non concesso dal privilegio.');
  const inventory=rows(record.inventory),owned=inventory.filter(row=>
