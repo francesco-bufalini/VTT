@@ -1663,7 +1663,7 @@ async function startAreaAbility(c,ability,persistentKey,requested){
   onSelected:async targets=>{
    await activateOtherAbility(c,ability,persistentKey,requested,{
     name:targets.length?targets.map(t=>t.name).join(', '):'Nessun bersaglio nell’area',
-    affected_ids:targets.map(t=>t.id)
+    affected_ids:targets.map(t=>t.id),affected:targets
    });
   }
  });
@@ -1680,8 +1680,10 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    .filter(row=>row?.id):[];
  const shape=ability.area_shape==='line'?
    'Linea '+ability.area_length_feet+' × '+ability.area_width_feet+' ft':
-   ability.area_shape==='cone'?'Cono '+ability.area_radius_feet+' ft':'';
- const saveDC=8+Number(calculated.stats?.proficiency||2)+Number(calculated.abilities?.con?.modifier||0);
+   ability.area_shape==='cone'?'Cono '+ability.area_radius_feet+' ft':
+   ability.area_shape==='circle'?'Raggio '+ability.area_radius_feet+' ft centrato su di te':'';
+ const saveBase=ability.save_base||'con';
+ const saveDC=8+Number(calculated.stats?.proficiency||2)+Number(calculated.abilities?.[saveBase]?.modifier||0);
  // Source-qualified feat save DCs inherit the actual choice made for the
  // granting spellcasting feat, never an unrelated global caster ability.
  const sourceAbility=power=>{
@@ -1708,13 +1710,17 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    '<p class="hint">Verifica che il bersaglio sia già stato danneggiato. Il tiro non deve essere stato effettuato nell’app. Un utilizzo per turno; rimuovi la condizione all’inizio del tuo turno successivo.</p></div>':'';
  const areaDetails=shape?'<div class="magic-ability-area"><dl class="magic-spell-facts">'+
    '<div class="magic-spell-fact"><dt>Area</dt><dd>'+esc(shape)+'</dd></div>'+
-   '<div class="magic-spell-fact"><dt>CD</dt><dd>'+esc(saveDC)+'</dd></div>'+
+   '<div class="magic-spell-fact"><dt>Tiro salvezza</dt><dd>'+esc(saveStat[ability.save_ability]||ability.save_ability||'—')+' · CD '+esc(saveDC)+'</dd></div>'+
    (ability.damage_formula?'<div class="magic-spell-fact"><dt>Danni</dt><dd>'+
      esc(ability.damage_formula)+' '+esc(ability.damage_type)+'</dd></div>':'')+
    '</dl>'+(ability.mode==='choice_area'?'<label>Modalità del soffio<select data-dragonborn-breath-mode>'+
      (ability.options||[]).map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+
        ' · TS '+esc((row.save_ability||'').toUpperCase())+'</option>').join('')+
      '</select></label>':'')+
+   (ability.condition_on_failed_save&&ability.effect_condition?
+      '<p class="hint">Scegli i bersagli che falliscono il TS e possono vederti o sentirti. La condizione dura '+
+      esc(Number(ability.duration_rounds||0)>0?ability.duration_rounds+' round':'quanto indicato dal privilegio')+
+      '; quando un bersaglio subisce danni può ripetere il TS. Gestisci manualmente la fine dell’effetto.</p>':'' )+
    '<p class="hint">Controlla i bersagli nell’area sulla mappa.</p></div>':'';
  dialog.innerHTML=actionDialogIntro(ability.name,[
   {label:'Azione',value:ability.time||'Secondo il privilegio'},
@@ -1730,6 +1736,11 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
   'other-ability-close')+
   abilityPaymentField(ability,calculated)+
   targetedDetails+areaDetails+
+  (ability.condition_on_failed_save&&ability.area_shape&&selectedTarget?.affected_ids?.length?
+    '<fieldset class="magic-ability-area"><legend>Bersagli che hanno fallito il tiro salvezza</legend>'+
+    (selectedTarget.affected||selectedTarget.affected_ids.map(id=>({id,name:id}))).map(row=>
+     '<label class="check"><input type="checkbox" data-area-failed-target="'+esc(row.id)+'">'+
+       esc(row.name||row.id)+'</label>').join('')+'</fieldset>':'')+
   (healPower?(selectedTarget?
     '<p class="hint">Cura a contatto · '+esc(calculated.stats?.proficiency||0)+'d4. Il tiro viene effettuato alla conferma per il token selezionato.</p>':
     '<label>Creatura da curare<select data-heal-target>'+
@@ -1843,6 +1854,9 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
    const applyFailedSave=mode==='targeted_save_damage'&&
      dialog.querySelector('[data-target-failed-save]')?.checked===true;
+   const areaFailedIds=mode==='save_area'&&currentAbility.condition_on_failed_save?
+     [...dialog.querySelectorAll('[data-area-failed-target]:checked')].map(row=>row.dataset.areaFailedTarget)
+       .filter(id=>selectedTarget?.affected_ids?.includes(id)):[];
    let conditionApplied=false,conditionFailure='';
    if(applyFailedSave&&selectedTarget?.id){
      try{
@@ -1852,6 +1866,21 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
        conditionApplied=true;
        state.map=await map();
      }catch(error){conditionFailure=errorMessage(error);}
+   }
+   let areaConditionApplied=0,areaConditionFailure='';
+   if(areaFailedIds.length&&state.paired&&state.online){
+     const latest=await map();
+     for(const id of areaFailedIds){
+       try{
+         if(!(latest.tokens||[]).some(token=>String(token.id)===String(id)))
+           throw Error('Bersaglio non più presente in partita.');
+         const applied=await action('set_condition',{
+           token_id:String(id),condition_id:currentAbility.effect_condition,enabled:true});
+         if(!applied?.ok)throw Error(applied?.error||'Condizione non applicata.');
+         areaConditionApplied++;
+       }catch(error){areaConditionFailure=errorMessage(error);}
+     }
+     state.map=await map();
    }
    closeDialog(dialog,{remove:true});await render();
    const effectFormula=racialAbilityEffectFormula(currentAbility,fresh);
@@ -1879,7 +1908,11 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
        (conditionApplied?' Condizione '+currentAbility.effect_condition+' applicata al token; rimuovila all’inizio del tuo prossimo turno.':
         conditionFailure?' Impossibile applicare la condizione: '+conditionFailure:
         ' Nessuna condizione applicata (TS riuscito o da gestire manualmente).'):'')+
-     (mode==='save_area'?' TS DES CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' (metà danni con TS riuscito).':'')+
+     (mode==='save_area'?' TS '+(saveStat[currentAbility.save_ability]||currentAbility.save_ability||'—')+
+       ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.[currentAbility.save_base||'con']?.modifier||0))+
+       (currentAbility.half_on_save?' (metà danni con TS riuscito).':'.')+
+       (areaConditionApplied?' Spaventato applicato a '+areaConditionApplied+' bersagli.':'')+
+       (areaConditionFailure?' Condizioni non completamente applicate: '+areaConditionFailure: currentAbility.condition_on_failed_save&&!areaConditionApplied?' Applica manualmente Spaventato ai bersagli che hanno fallito.':''):'')+
      (selectedMode?' '+selectedMode.name+' · TS '+selectedMode.save_ability.toUpperCase()+
        ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' · '+selectedMode.description:'')+
      (shape?' Effetti da applicare ai bersagli nell’area.':'')+
