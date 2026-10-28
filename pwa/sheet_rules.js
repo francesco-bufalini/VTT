@@ -1427,7 +1427,7 @@ function calculateSheetValues(record={},catalogs={}){
     casting_classes:spellClasses,trackers,attacks,damage_defense_entries,
     feature_item_grants:featureItemGrants(record,features,catalogs.featureItemGrants||catalogs.classMechanics?.feature_item_grants||[]),
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
-    racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
+    racial_abilities:racialPowers.abilities,racial_passive_notes:racialPowers.passive_notes||[],celestial_forms:racialPowers.active_forms,
     racial_rest_choices:racialPowers.rest_choices,
     racial_roll_bonuses:[...racialPowers.roll_bonuses,...racialBonusRows.filter(row=>!row.automatic_apply)],
     racial_roll_modes:racialRollModes,

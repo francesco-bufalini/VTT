@@ -256,6 +256,13 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   }else if(rule.type==='condition')
    add('effects','Effetti e limitazioni',label,rule.detail||'Condizione attiva',source);
  }
+ // Passive species rules belong to their 5etools trait. Show reminders
+ // without manufacturing an action or an expendable tracker.
+ for(const note of rows(calculated.racial_passive_notes)){
+   if(!belongs(note))continue;
+   add('effects','Effetti e limitazioni',note.name||note.trait,
+     note.description||'',String(note.id||'racial-passive'));
+ }
  // Passive, manually selected proficiency multipliers have no always-on
  // numeric grant. Display their condition on the exact granting trait.
  for(const rule of rows(calculated.roll_bonus_rules)){

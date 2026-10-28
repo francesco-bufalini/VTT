@@ -102,6 +102,34 @@ export function racialPowerProjection(record={},index={},features=[]) {
        strict_tracker:bonus.strict_tracker===true}:{}),
      automatic:true,optional:true});
  }
+ // Source-qualified generic racial actions with trackers. The action is
+ // intentionally confirmed by the player: external rolls and hit outcomes
+ // cannot be inferred from the PWA. Common rolls and temporary hit points
+ // reuse the existing ability confirmation and resource interfaces.
+ for(const action of rows(race.tracked_actions)){
+   const owner=featureFor(action.trait);
+   if(!owner||!action.id||!action.tracker_id||!action.action_type)continue;
+   output.trackers.push({id:action.tracker_id,name:action.trait,
+     max:maximum(action.uses),recharge:action.recharge||'long_rest',
+     origin_id:owner.origin_id,origin_name:'Tratto · '+action.trait,automatic:true});
+   output.abilities.push({id:action.id,name:action.name||action.trait,
+     feature_id:owner.origin_id,origin_id:owner.origin_id,
+     origin_name:'Tratto · '+action.trait,source:race.source,
+     description:action.description||'',action_type:action.action_type,
+     activation_mode:action.action_type,action_kind:'ability',
+     mode:'tracked_action',tracker_id:action.tracker_id,resource_cost:1,
+     ...(action.roll_effect?{roll_effect:action.roll_effect}:{}),
+     ...(action.temp_hp?{temp_hp:action.temp_hp}:{}),
+     ...(action.persistent_key?{persistent_key:action.persistent_key}:{}),
+     ...(action.duration_rounds?{duration_rounds:action.duration_rounds}:{})});
+ }
+ // Passive reminders are shown on their granting trait only; they are never
+ // presented as consumable powers in Battle or Resources.
+ output.passive_notes=rows(race.passive_notes).flatMap(note=>{
+   const owner=featureFor(note.trait);
+   return owner&&note.id?[{...note,origin_id:owner.origin_id,
+     origin_name:'Tratto · '+note.trait}]:[];
+ });
  // Racial actions are trait-owned, source-qualified and do not need a
  // tracker. An attack reference reuses an existing computed attack roll.
  for(const action of rows(race.actions)){
@@ -117,6 +145,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
      source:race.source,description:action.description||'',
      action_type:action.action_type,activation_mode:action.action_type,
      action_kind:'ability',resource_cost:0,
+     ...(action.roll_effect?{roll_effect:action.roll_effect}:{}),
      ...(roll?{roll_attack:{kind:'attack',
        ...(roll.id?{id:String(roll.id)}:{}),
        ...(roll.trait?{trait:String(roll.trait)}:{}),
@@ -288,4 +317,24 @@ export function racialPowerSpellDefinitions(index={},record={},originDetails={})
    area_damage_end_of_caster_turn:form.name==='Radiant Consumption',
    area_damage_formula:form.name==='Radiant Consumption'?'proficiency':''
  }))]);
+}
+
+// These generic computations are deliberately independent of hit resolution:
+// the player chooses when to use a racial power, including for external rolls.
+export function racialAbilityEffectFormula(ability={},calculated={}){
+ const roll=ability.roll_effect;
+ const dice=String(roll?.dice||'');
+ if(!/^1d(?:4|6|8|10|12|20)$/.test(dice))return '';
+ const modifier=roll.add==='con_mod'?Number(calculated.abilities?.con?.modifier||0):
+   roll.add==='proficiency'?Number(calculated.stats?.proficiency||calculated.values?.proficiency||0):0;
+ if(!Number.isSafeInteger(modifier)||Math.abs(modifier)>100)return '';
+ return dice+(modifier?(modifier>0?'+':'')+modifier:'');
+}
+export function racialAbilityTemporaryHpPatch(record={},ability={},calculated={}){
+ const factor=ability.temp_hp==='double_proficiency'?2:ability.temp_hp==='proficiency'?1:0;
+ if(!factor)return {};
+ const amount=Math.max(0,Math.trunc(Number(calculated.stats?.proficiency??calculated.values?.proficiency??0)))*factor;
+ if(!amount)return {};
+ // 2014 temporary hit points never stack; do not discard a larger pool.
+ return {temporary_hp:Math.max(0,Number(record.temporary_hp)||0,amount)};
 }
