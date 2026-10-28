@@ -178,7 +178,8 @@
         "duration_rounds": 10,
         "persistent_key": "racial:dragonborn_ftd:warding",
         "description": "Come azione ottieni immunità al danno della tua ascendenza draconica per 1 minuto. Un utilizzo per riposo lungo."
-      }
+      },
+      "source": "FTD"
     },
     {
       "name": "Dragonborn (Metallic)",
@@ -235,7 +236,8 @@
             "description": "TS Forza: spinto di 20 ft e prono in caso di fallimento."
           }
         ]
-      }
+      },
+      "source": "FTD"
     },
     {
       "name": "Dragonborn (Gem)",
@@ -274,7 +276,8 @@
         "duration_rounds": 10,
         "persistent_key": "racial:dragonborn_ftd:flight",
         "description": "Come azione bonus ottieni volo pari alla velocità di camminata e hovering per 1 minuto. Un utilizzo per riposo lungo."
-      }
+      },
+      "source": "FTD"
     }
   ]
 }
