@@ -6295,6 +6295,7 @@ async function handleAction(target){
       exclude_self:true,
       onSelected:async selected=>{
         const latest=await map();
+        state.map=latest;
         if(!(latest.tokens||[]).some(row=>String(row.id)===String(selected.id)))
           throw Error('Il bersaglio non è più sulla mappa.');
         const records=(await listCreatures()).map(row=>row.creature||row);
@@ -6647,6 +6648,10 @@ async function handleAction(target){
     if(concentration)closeDialog(document.querySelector('#concentration-damage-dialog'),{remove:true});
     const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
     const key=concentration?'save:con':String(target.dataset.target||'');
+    // Conditional on-hit marks expire on the source's next combat turn.
+    // Refresh the live initiative snapshot when opening a marked creature's roll.
+    if(creature.applied_hit_effects?.length&&state.paired&&state.online)
+      try{state.map=await map();}catch(error){console.warn('Snapshot del combattimento non aggiornato',error);}
     const calculated=await computeLocalData(creature),modifier=calculated.values[key];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
     const label=concentration?'TS Costituzione · concentrazione':target.dataset.label||'Tiro';
