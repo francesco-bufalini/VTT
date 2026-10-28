@@ -2357,6 +2357,67 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  min-width:100%;
  max-width:100%;
 }
+/* Compact contextual d20 grants reuse the bronze roll-card language.
+   The full condition stays readable without unstyled text between buttons. */
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-item--mode .sheet-roll-bonus-term{
+ min-height:73px;
+ justify-content:center;
+ border-color:#a88a65;
+ background:linear-gradient(150deg,#342e2a,#292625);
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-item--mode .sheet-roll-mode-symbol{
+ display:inline-block;
+ align-self:center;
+ width:auto;
+ max-width:100%;
+ padding:3px 9px;
+ border:1px solid #9f865f;
+ border-radius:6px;
+ background:#564632;
+ color:#ffe0a9;
+ font:750 11px/1.2 system-ui,sans-serif;
+ letter-spacing:.08em;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-item--mode .sheet-roll-mode-symbol--disadvantage{
+ border-color:#a96d59;
+ background:#54352f;
+ color:#f2b59b;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-condition{
+ display:flex;
+ flex-direction:column;
+ gap:4px;
+ flex:1 0 auto;
+ box-sizing:border-box;
+ width:100%;
+ min-width:0;
+ min-height:60px;
+ margin:0;
+ padding:8px 9px;
+ border:1px solid #a184584a;
+ border-left:2px solid #c59d67;
+ border-radius:8px;
+ background:linear-gradient(135deg,#4c362932,#1f1a18ab);
+ box-shadow:inset 0 1px #f2d6ad0a;
+ text-align:left;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-condition-key{
+ display:block;
+ color:#c8a57c;
+ font:700 9px/1.2 system-ui,sans-serif;
+ letter-spacing:.12em;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-condition-text{
+ display:block;
+ min-width:0;
+ color:#e6d6bf;
+ font:450 11.5px/1.38 system-ui,sans-serif;
+ overflow-wrap:break-word;
+ hyphens:auto;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-item--mode .sheet-roll-bonus-controls{
+ margin-top:auto;
+}
 .sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-controls{
  display:grid;
  grid-template-columns:minmax(0,1fr) 36px;
