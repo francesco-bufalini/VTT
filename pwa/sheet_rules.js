@@ -446,7 +446,7 @@ function subclassKey(value){
 // Source-qualified feat mechanics are ordinary typed tracker/roll/action grants.
 // No talent names appear in the runtime projection logic.
 export function featMechanicGrants(record={},index={}){
- const result={trackers:[],roll_modes:[],actions:[]};
+ const result={trackers:[],roll_modes:[],roll_bonuses:[],actions:[]};
  for(const feat of arr(record.feats_catalog)){
   if(!feat?.name||feat.disabled)continue;
   const rule=arr(index.feat_mechanics).find(row=>same(row.name,feat.name)&&same(row.source,feat.source));
@@ -455,7 +455,9 @@ export function featMechanicGrants(record={},index={}){
   for(const raw of arr(rule.trackers))result.trackers.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,automatic:true});
   for(const raw of arr(rule.roll_modes))result.roll_modes.push({...raw,origin_id,
-    origin_name:'Talento · '+feat.name});
+    origin_name:'Talento · '+feat.name,feat_name:feat.name});
+  for(const raw of arr(rule.roll_bonuses))result.roll_bonuses.push({...raw,origin_id,
+    origin_name:'Talento · '+feat.name,feat_name:feat.name});
   for(const raw of arr(rule.actions))result.actions.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,origin_key:origin_id,automatic:true,
     cost:Math.max(0,Number(raw.resource_cost)||0),time:raw.action_type||raw.activation||'reaction'});
@@ -1378,6 +1380,7 @@ function calculateSheetValues(record={},catalogs={}){
     base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
     feat_roll_modes:featMechanics.roll_modes.filter(row=>sourceEnabled(row)),
+    feat_roll_bonuses:featMechanics.roll_bonuses.filter(row=>sourceEnabled(row)),
     feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)),
     active_feature_effects:[...classFeatureEffects(record,featureContext),...traitStateEffects(record,features,catalogs.traitStates||[])],
     active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id),
