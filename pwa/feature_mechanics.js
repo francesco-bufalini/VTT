@@ -284,6 +284,10 @@ export function classFeatureRollSources(record,calculated,target,context=''){
    const sources=rows(calculated.casting_classes).filter(c=>c.ability===target.slice('casting_hit:'.length));
    if(sources.length===1&&low(sources[0].name)==='sorcerer')activeFeature('innate_sorcery');
  }
+ for(const rule of rows(calculated?.trait_state_roll_modes)){
+  if(rule.target===target||rule.target==='ability_check'&&target.startsWith('skill:'))
+   add(rule.mode,rule.origin_id,rule.origin_name,'feature');
+ }
  // Additional structured traits can supply explicit, data-driven roll-mode
  // effects. Text descriptions are never parsed to infer mechanical effects.
  const applies=(rule)=>{

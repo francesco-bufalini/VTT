@@ -77,7 +77,18 @@ export function traitBenefitSources(trait={},record={}){
    ids.add('subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace));
  }
  if(trait.rank===0&&trait.category==='talenti'){
-  for(const feat of rows(record.feats_catalog)){
+  for(const grant of rows(calculated.feature_item_grants)){
+  if(!ids.has(grant.origin_id))continue;
+  if(Number(grant.infusion_capacity_bonus)>0)
+   add('effects','Effetti e limitazioni','Oggetti infusi attivi','+'+grant.infusion_capacity_bonus+' (non aumenta le infusioni conosciute)');
+  const total=rows(record.inventory).filter(item=>item.feature_item_grant_id===grant.id&&Number(item.quantity??1)>0).length;
+  for(const option of rows(grant.items)){
+   const available=!option.owned&&(!grant.max_owned||total<Number(grant.max_owned));
+   add('items','Oggetti concessi',option.name,option.owned?'Presente nell’inventario':option.description||'Da aggiungere','',{
+    grant_id:grant.id,option_id:option.id,owned:!!option.owned,available});
+  }
+ }
+ for(const feat of rows(record.feats_catalog)){
    if(!feat?.name)continue;
    if('feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source))===trait.origin_key)
     ids.add('feat|'+norm(feat.source)+'|'+norm(feat.name));
@@ -344,6 +355,11 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(target),
     source.mode==='advantage'?'Vantaggio':'Svantaggio','roll_mode:'+source.origin_id+':'+source.mode+':'+target);
   }
+ }
+ for(const rule of rows(calculated.trait_state_roll_modes)){
+  if(!belongs(rule))continue;
+  add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(rule.target),
+   rule.mode==='advantage'?'Vantaggio':'Svantaggio','roll_mode:'+rule.origin_id+':'+rule.mode+':'+rule.target);
  }
  for(const feature of rows(calculated.features)){
   if(feature.disabled||!ids.has(feature.origin_id))continue;

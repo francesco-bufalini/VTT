@@ -4,7 +4,6 @@ import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {pendingCharacterChoices} from '../pending_choices.js';
 import {projectSpeciesSpellBindings} from '../tools/species_spell_bindings.mjs';
-import {projectFlattenedSpeciesAbilities} from '../tools/species_ability_variants.mjs';
 import {structuredSpellGrants,supplementalSpeciesSpellFeatures,originSpellId} from '../spell_selection.js';
 
 const json=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
@@ -152,40 +151,27 @@ test('turning off a granting subrace trait suspends spells without deleting the 
  assert.ok(restored.origin_spells.some(row=>row.origin_id===feature.origin_id));
 });
 
-test('flat race selection retains the same PHB, MTF and EEPC racial scores',()=>{
- assert.equal(result(character('Dwarf (Mountain)','PHB')).con,12);
- assert.equal(result(character('Dwarf (Mountain)','PHB')).str,12);
- assert.equal(result(character('Genasi (Fire)','EEPC')).con,12);
- assert.equal(result(character('Genasi (Fire)','EEPC')).int,11);
- assert.equal(result(character('Tiefling (Baalzebul)','MTF')).cha,12);
- assert.equal(result(character('Tiefling (Baalzebul)','MTF')).int,11);
- assert.equal(result(character("Tiefling (Variant; Hellfire)",'SCAG')).int,11);
- assert.equal(result(character('Human (Variant)','PHB')).str,10);
- const pending=pendingCharacterChoices(character('Human (Variant)','PHB'),
-  sheet(character('Human (Variant)','PHB')),catalog);
- assert.ok(pending.some(row=>row.kind==='ability'&&row.count===2));
+test('canonical species and subraces retain their own typed 2014 ASIs',()=>{
+ assert.equal(result(character('Dwarf','PHB','Mountain','PHB')).con,12);
+ assert.equal(result(character('Dwarf','PHB','Mountain','PHB')).str,12);
+ assert.equal(result(character('Genasi','EEPC','Fire','EEPC')).con,12);
+ assert.equal(result(character('Genasi','EEPC','Fire','EEPC')).int,11);
+ assert.equal(result(character('Tiefling','PHB','Baalzebul','MTF')).cha,12);
+ assert.equal(result(character('Tiefling','PHB','Baalzebul','MTF')).int,11);
 });
 
-test('flat subrace selections retain their real spell-granting traits',()=>{
- for(const [race,book,names] of [
-  ['Genasi (Fire)','MPMM',['phb2014_produce_flame','phb2014_burning_hands','phb2014_flame_blade']],
-  ['Tiefling (Baalzebul)','MTF',['phb2014_thaumaturgy','phb2014_ray_of_sickness','phb2014_crown_of_madness']],
-  ['Tiefling (Asmodeus)','MTF',['phb2014_thaumaturgy','phb2014_hellish_rebuke','phb2014_darkness']],
-  ['Aasimar (Fallen)','VGM',['phb2014_light']],
-  ['Elf (Drow)','PHB',['phb2014_dancing_lights','phb2014_faerie_fire','phb2014_darkness']]
+test('canonical selected subraces retain feature-owned spells',()=>{
+ for(const [race,source,subrace,book,names] of [
+  ['Genasi','MPMM','Fire','MPMM',['phb2014_produce_flame','phb2014_burning_hands','phb2014_flame_blade']],
+  ['Tiefling','PHB','Baalzebul','MTF',['phb2014_thaumaturgy','phb2014_ray_of_sickness','phb2014_crown_of_madness']],
+  ['Elf','PHB','Drow','PHB',['phb2014_dancing_lights','phb2014_faerie_fire','phb2014_darkness']]
  ]){
-  const projected=spellResult(character(race,book));
-  assert.deepEqual(projected.grants.map(g=>g.spell_id).sort(),[...names].sort(),
-   race+' '+book);
+  const projected=spellResult(character(race,source,subrace,book));
+  assert.deepEqual(projected.grants.map(g=>g.spell_id).sort(),[...names].sort(),race+' '+subrace);
  }
- assert.deepEqual(spellResult(character('Tiefling (Variant; Winged)','SCAG')).grants,[]);
 });
 
-test('flattened ASI rows are reproducible from verified 2014 native sources',()=>{
- const projected=ability.race.filter(row=>row.projected_flattened_species);
- const base={...ability,race:ability.race.filter(row=>!row.projected_flattened_species)};
- const regenerated=projectFlattenedSpeciesAbilities(base,source.races,sourceSpells.entries);
- assert.deepEqual(projected,regenerated);
- assert.ok(projected.length>=80);
- assert.ok(!projected.some(row=>['XPHB','EFA','LFL','RHW'].includes(row.source)));
+test('there are no generated flattened-species ability records',()=>{
+ assert.equal(ability.race.filter(row=>row.projected_flattened_species).length,0);
+ assert.ok(!ability.race.some(row=>row.name==='Elf (High)'&&row.source==='PHB'));
 });

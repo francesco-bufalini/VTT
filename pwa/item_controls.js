@@ -1,3 +1,4 @@
+import {featureItemGrants} from "./feature_item_grants.js";
 // Native-compatible inventory item instance helpers.
 // Keep the mobile spell-scroll inventory in parity with the desktop table.
 // These are display helpers: scrolls remain ordinary owned inventory instances.
@@ -364,8 +365,12 @@ export function infusionLimits(record={},classMechanics={},features=[]){
  const cls=array(classMechanics?.classes).find(c=>sameText(c.name,"Artificer")&&sameText(c.source,"TCE"));
  const column=array(cls?.columns).find(c=>sameText(c.name,"Infused Items"));
  const enabled=!!infusionGrantingTrait(record,features);
- const active=level<2||!enabled?0:Math.max(0,Number(array(column?.levels)[level-1])||0);
- return {level,active,known:active*2};
+ const base=level<2||!enabled?0:Math.max(0,Number(array(column?.levels)[level-1])||0);
+ // Extra infusion capacity comes from an owned, enabled feature benefit.
+ // It never grants extra infusions known and imposes no armor-part restriction.
+ const extra=enabled?featureItemGrants(record,features,classMechanics?.feature_item_grants||[])
+  .reduce((sum,grant)=>sum+Math.max(0,Number(grant.infusion_capacity_bonus)||0),0):0;
+ return {level,active:base+extra,known:base*2};
 }
 
 /** One selectable infusion per Replicate Magic Item catalog choice.

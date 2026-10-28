@@ -42,7 +42,7 @@ test('native pre-2024 racial roll modes regenerate exactly from reviewed traits'
 });
 
 test('Drow daylight disadvantages are manual, apply to all attacks and sight-based Perception',()=>{
- const c=character('Elf (Drow)','PHB');
+ const c=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'});
  const {entries}=project(c),sun=entries.filter(x=>x.granting_trait==='Sunlight Sensitivity');
  assert.equal(sun.length,2);
  assert.ok(sun.every(x=>x.mode==='disadvantage'&&x.conditional&&x.condition_label.includes('solare diretta')));
@@ -67,15 +67,13 @@ test('Kuo-Toa and Troglodyte sunlight penalties require self exposure',()=>{
  }
 });
 
-test('Elf plus selected Drow, and flattened Elf (Drow), both retain race and subrace modes',()=>{
- const flat=character('Elf (Drow)','PHB');
- const nested=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'});
- const f=project(flat).entries,n=project(nested).entries;
- assert.equal(f.filter(x=>x.granting_trait==='Fey Ancestry').length,1);
- assert.equal(n.filter(x=>x.granting_trait==='Fey Ancestry').length,1);
- assert.equal(f.filter(x=>x.granting_trait==='Sunlight Sensitivity').length,2);
- assert.equal(n.filter(x=>x.granting_trait==='Sunlight Sensitivity').length,2);
- assert.deepEqual(new Set(f.map(x=>x.target)),new Set(n.map(x=>x.target)));
+test('Drow subrace inherits Fey Ancestry once and adds only its own daylight modes',()=>{
+ const c=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'});
+ const modes=project(c).entries;
+ assert.equal(modes.filter(x=>x.granting_trait==='Fey Ancestry').length,1);
+ assert.equal(modes.filter(x=>x.granting_trait==='Sunlight Sensitivity').length,2);
+ assert.ok(modes.filter(x=>x.granting_trait==='Sunlight Sensitivity')
+  .every(x=>x.origin_key==='subrace|phb|drow'));
 });
 
 test('Dwarf, gnome, halfling and aasimar inherit only actual source-qualified benefits',()=>{
@@ -105,7 +103,7 @@ test('unconditional Giff strength advantages are automatic but sunlight is not',
 });
 
 test('disabling a named trait suppresses its modes and leaves the species intact',()=>{
- const c=character('Elf (Drow)','PHB');
+ const c=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'});
  const original=project(c);
  const sunlight=original.features.find(x=>x.name==='Sunlight Sensitivity');
  assert.ok(sunlight);
@@ -139,7 +137,7 @@ test('limited-use racial check advantages get a stable per-trait tracker',()=>{
 });
 
 test('racial modes appear as attributed benefits, with conditions, on their own traits',()=>{
- const c=character('Elf (Drow)','PHB'),rules=project(c);
+ const c=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'}),rules=project(c);
  const feature=rules.features.find(x=>x.name==='Sunlight Sensitivity');
  const summary=traitBenefitGroups({name:feature.name,feature_origin:feature.origin_id,
   origin_key:feature.origin_key,category:'razza',rank:2},c,{features:rules.features,
@@ -155,10 +153,10 @@ test('racial modes appear as attributed benefits, with conditions, on their own 
 });
 
 test('calculated PWA sheets expose racial modes and real uses without custom roll toggles',()=>{
- const drow=character('Elf (Drow)','PHB');
+ const drow=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'});
  const original=find('Elf (Drow)','PHB');
  const calculated=calculateSheet(drow,{speciesRollModes:catalog,
-  originDetails:{races:{'elf (drow)|phb':original}}});
+  originDetails:{races:{'elf|phb':find('Elf','PHB'),'elf (drow)|phb':original}}});
  assert.equal(calculated.racial_roll_modes.filter(x=>x.granting_trait==='Sunlight Sensitivity').length,2);
  assert.ok(calculated.features.some(x=>x.name==='Sunlight Sensitivity'));
  assert.ok(!classFeatureRollSources(drow,calculated,'attack_hit:test').some(x=>x.mode==='disadvantage'));
@@ -174,7 +172,7 @@ test('calculated PWA sheets expose racial modes and real uses without custom rol
 });
 
 test('confirming a situational racial disadvantage rolls two d20, not a numeric bonus',()=>{
- const c=character('Elf (Drow)','PHB'),projected=project(c).entries;
+ const c=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'}),projected=project(c).entries;
  const chosen=applicableSpeciesRollModes(c,{racial_roll_modes:projected},'attack_hit:blade')
   .map(row=>({mode:row.roll_mode,origin_id:row.origin_id,origin_name:row.origin_name}));
  assert.equal(chosen.length,1);
@@ -188,31 +186,25 @@ test('confirming a situational racial disadvantage rolls two d20, not a numeric 
  assert.equal(resolveClassRollMode([{mode:'advantage'},...chosen]).mode,'normal');
 });
 
-test('mirino opens the specific Drow trait even for flattened or split race selections',async()=>{
- for(const record of [
-  character('Elf (Drow)','PHB'),
-  character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'})
- ]){
-  const mode=project(record);
-  const row=mode.entries.find(x=>x.granting_trait==='Sunlight Sensitivity');
-  const traits=await collectTraitRows(record,{features:mode.features,origins:[]},{
-   entries:async category=>category==='races'?
-    [find('Elf','PHB'),find('Elf (Drow)','PHB')]:[],
-   detail:async(_category,entry)=>entry
-  });
-  const exact=rollGrantTraitRow(traits,record,row.origin_id,{
-   traitName:row.granting_trait,originKey:row.origin_key
-  });
-  assert.equal(exact?.name,'Sunlight Sensitivity');
-  assert.equal(exact?.origin_key,row.origin_key);
-  // A stale or differently projected feature id must still find the right
-  // origin-qualified card, without falling back to the broad species header.
-  const stale=rollGrantTraitRow(traits,record,'feature:legacy:stale',{
-   traitName:row.granting_trait,originKey:row.origin_key
-  });
-  assert.equal(stale?.key,exact?.key);
-  assert.notEqual(exact?.rank,0);
- }
+test('mirino opens the subrace-specific Drow trait',async()=>{
+ const record=character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'});
+ const mode=project(record);
+ const row=mode.entries.find(x=>x.granting_trait==='Sunlight Sensitivity');
+ const traits=await collectTraitRows(record,{features:mode.features,origins:[]},{
+  entries:async category=>category==='races'?
+   [find('Elf','PHB'),find('Elf (Drow)','PHB')]:[],
+  detail:async(_category,entry)=>entry
+ });
+ const exact=rollGrantTraitRow(traits,record,row.origin_id,{
+  traitName:row.granting_trait,originKey:row.origin_key
+ });
+ assert.equal(exact?.name,'Sunlight Sensitivity');
+ assert.equal(exact?.origin_key,row.origin_key);
+ const stale=rollGrantTraitRow(traits,record,'feature:legacy:stale',{
+  traitName:row.granting_trait,originKey:row.origin_key
+ });
+ assert.equal(stale?.key,exact?.key);
+ assert.notEqual(exact?.rank,0);
 });
 
 test('roll target icon routes racial and passive class bonuses to their trait, other bonuses to trackers',()=>{

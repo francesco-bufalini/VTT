@@ -53,3 +53,13 @@ test('all Godot-served PWA modules belong to the atomic offline shell',()=>{
  const missing=[...served.keys()].filter(uri=>uri.endsWith('.js')&&uri!=='/sw.js'&&!cached.has(uri));
  assert.deepEqual(missing,[],'Every served PWA module must remain available offline');
 });
+
+// Catalogs referenced by the shell must also be downloadable through Godot.
+test('every offline catalog has a Godot route',()=>{
+ const worker=readFileSync(path.join(root,'pwa/sw.js'),'utf8');
+ const shell=worker.match(/const SHELL = \[([\s\S]*?)\];/);
+ assert(shell,'Offline shell declaration must exist');
+ const catalogs=[...shell[1].matchAll(/['"]([^'"]+\.json)['"]/g)].map(match=>match[1]);
+ assert.deepEqual(catalogs.filter(uri=>uri!=='/catalog/spells.json'&&!served.has(uri)),[],
+  'Offline catalogs must be downloadable before installing the shell');
+});
