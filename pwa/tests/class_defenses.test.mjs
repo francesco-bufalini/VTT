@@ -181,6 +181,10 @@ test('Bear Totem cannot grant resistance before raging or when another animal is
  const bear={...base,...savePendingChoice(base,choice,['bear'])};
  assert.deepEqual(values(bear),[]);
  assert.equal(values({...bear,active_class_features:{rage:{name:'Rage'}}}).length,12);
+ assert.deepEqual(values({...bear,active_class_features:{rage:{name:'Rage'}},
+  inventory:[{id:'plate',type:'HA',quantity:1,equipped_slots:['body']}]}),[]);
+ assert.deepEqual(values({...bear,active_class_features:{rage:{name:'Rage'}},
+  conditions:['unconscious']}),[]);
  const eagle={...bear,...savePendingChoice(bear,choice,['eagle']),
   active_class_features:{rage:{name:'Rage'}}};
  assert.deepEqual(values(eagle),[]);
