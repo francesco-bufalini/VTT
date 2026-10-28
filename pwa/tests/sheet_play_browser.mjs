@@ -123,9 +123,16 @@ try{
   }
  }
  await page.setViewportSize({width:390,height:844});
- await sheet('info');await popup('identity');await page.locator('#sheet-context-dialog [data-field="name"]').fill('Lyria, guardiana della Luna');
+ await sheet('info');
+ assert.equal(await page.locator('#sheet-play-view .play-identity [data-sheet-context="identity"]').count(),0,'No separate identity gear');
+ assert.equal(await page.locator('#sheet-play-view [data-act="info-portrait-pick"]').count(),0,'Portrait actions belong to the identity dialog');
+ assert.equal(await page.locator('#sheet-play-view .play-passives').count(),1,'Alignment and edition replace the portrait action');
+ await popup('identity');
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="info-portrait-pick"]').count(),1);
+ const canonicalName=page.locator('#sheet-context-dialog [data-identity-value="names"]').first();
+ await canonicalName.fill('Lyria, guardiana della Luna');
  // Commit on blur before closing the modal, avoiding an input/change/Escape race.
- await page.locator('#sheet-context-dialog [data-field="name"]').press('Tab');
+ await canonicalName.press('Tab');
  await page.waitForFunction(async()=>{
    const {listCreatures}=await import('/creatures.js');
    return (await listCreatures())[0]?.creature?.name==='Lyria, guardiana della Luna';
@@ -140,27 +147,26 @@ try{
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
    'No legacy ± navigation remains anywhere in the rendered sheet');
- const competenceButton=page.locator('#sheet-play-view .play-quickstat[data-sheet-context="tools"]');
- assert.equal(await competenceButton.count(),1,'Competenza opens the existing Other Competences section');
- assert.equal(await competenceButton.locator('.vtt-action-glyph--pack-3.vtt-action-glyph--slot-0').count(),1,'Competenza uses the golden proficiency icon');
+ assert.equal(await page.locator('#sheet-play-view .play-competences .play-section-divider').count(),0,'Redundant Competenze heading is removed');
+ assert.equal(await page.locator('#sheet-play-view .play-competence-tools').count(),0,'Redundant Altre competenze action is removed');
+ assert.equal(await page.locator('#sheet-play-view .play-quickstat').count(),0,'Quickstats live in Actions only');
+ await sheet('battle');
+ const competenceButton=page.locator('#sheet-play-view .play-quickstat[data-act="battle-competences-open"]');
+ assert.equal(await competenceButton.count(),1,'Competenze opens the existing complete proficiency summary');
+ assert.equal(await competenceButton.locator('.vtt-action-glyph--pack-3.vtt-action-glyph--slot-0').count(),1);
  await competenceButton.click();
  const competenceDialog=page.locator('#sheet-context-dialog');
  assert(await competenceDialog.isVisible());
  assert.match(await competenceDialog.textContent(),/Altre competenze/);
  await competenceDialog.locator('[data-act="sheet-context-close"]').click();
  await competenceDialog.waitFor({state:'detached'});
- const movementButton=page.locator('#sheet-play-view .play-quickstat[data-act="sheet-movement-open"]');
- assert.equal(await movementButton.count(),1);
- assert.equal(await movementButton.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movimento uses the golden dash icon');
- assert.match(await movementButton.textContent(),/Movimento/);
- await movementButton.click();
- const movementDialog=page.locator('#sheet-movement-dialog');
- assert(await movementDialog.isVisible());
- assert.match(await movementDialog.textContent(),/Camminata/);
- await movementDialog.locator('[data-target="speed"][data-act="sheet-score-formula"]').click();
- assert(await page.locator('#sheet-score-formula-dialog').isVisible());
- await page.locator('#sheet-score-formula-dialog [data-act="close-score-formula"]').click();
- await movementDialog.locator('[data-act="sheet-movement-close"]').click();
+ assert.equal(await page.locator('#sheet-play-view[data-sheet="battle"]').count(),1,'Closing proficiency summary returns to Actions');
+ const inspiration=page.locator('#sheet-play-view [data-act="sheet-inspiration-toggle"]');
+ assert.equal(await inspiration.count(),1);
+ const wasInspired=await inspiration.getAttribute('aria-pressed')==='true';
+ await inspiration.click();
+ assert.equal((await record()).inspiration,!wasInspired,'Inspiration is persisted without a popup');
+ assert.equal(await page.locator('#sheet-movement-dialog').count(),0,'Legacy movement popup is removed');
  const senses=page.locator('#sheet-play-view [data-act="sheet-senses-open"]');
  assert.equal(await senses.count(),1);
  assert.equal(await senses.locator('.vtt-action-glyph--pack-0.vtt-action-glyph--slot-10').count(),1,'Sensi uses the golden eye icon');
@@ -179,6 +185,7 @@ try{
    'Computed scores have no dice controls');
  await scoreFormula.locator('[data-act="close-score-formula"]').click();
  await sensesDialog.locator('[data-act="sheet-senses-close"]').click();
+ await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-ability header [data-act="sheet-proxy"]').count(),0,
    'The six ability edit gears are removed from the info cards');
  await page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:str"]').click();
