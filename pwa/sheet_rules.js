@@ -138,13 +138,14 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
   calculated?.values?.attunement_max??record.attunement_max_base??3);
  record={...record,inventory:arr(record.inventory).map((item,i)=>
   requiresAttunement(resolveOwnedItem(item))?{...item,attuned_count:attunements[i]||0}:item)};
- const scope=target==='initiative'||/^(ability_check:|ability_mod:|skill:)/.test(target)?'ability_check':target.startsWith('save:')?'saving_throw':/^(attack_hit:|casting_hit:)/.test(target)||target==='spell_attack'?'attack_roll':target.startsWith('attack_damage:')||target==='spell_damage'?'damage_roll':'';
+ const scope=target==='initiative'||/^(ability_check:|ability_mod:|skill:)/.test(target)?'ability_check':target.startsWith('save:')?'saving_throw':/^(attack_hit:|casting_hit:)/.test(target)||target==='spell_attack'?'attack_roll':target.startsWith('attack_damage:')||target==='spell_damage'?'damage_roll':target.startsWith('feature_roll:')?'feature_roll':'';
  if(!scope)return [];
  const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
  const fits=row=>[target,scope].includes(row.target)||
    row.target==='skill_check'&&target.startsWith('skill:')||
    row.target==='tool_check'&&/^(?:ability_check:|ability_mod:)/.test(target)||
-   row.target==='any_d20'&&scope!=='damage_roll'||
+   row.target==='any_d20'&&scope!=='damage_roll'&&scope!=='feature_roll'||
+   row.target==='feature_roll'&&target.startsWith('feature_roll:')||
    // Attack-hit damage only. A spell's saving-throw damage is not an attack roll.
    row.target==='attack_damage'&&target.startsWith('attack_damage:')||
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
