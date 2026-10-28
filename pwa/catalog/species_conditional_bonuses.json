@@ -344,7 +344,8 @@
           "uses": "proficiency",
           "recharge": "long_rest",
           "tracker_cost": 1,
-          "strict_tracker": true
+          "strict_tracker": true,
+          "exclude_initiative": true
         }
       ]
     }
