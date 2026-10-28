@@ -75,6 +75,7 @@ export function speciesRollModeEntries(record={},catalog={},features=[],removed=
    const origin_id=owner?.origin_id||source.source_id;
    const tracker_id=rule.uses?'species-roll:'+origin_id:'';
    result.push({...rule,id,benefit_id:id,roll_mode:rule.mode,origin_id,
+    origin_key:owner?.origin_key||source.origin_key,
     origin_name:owner?'Tratto · '+owner.name:'Specie · '+source.row.name,
     origin_parent_id:source.source_id,origin_parent_name:source.row.name,
     granting_trait:rule.trait,tracker_id,
