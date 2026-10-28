@@ -426,6 +426,18 @@
       ]
     },
     {
+      "name": "Giff",
+      "source": "AAG",
+      "passive_notes": [
+        {
+          "id": "race:aag:giff:firearms_mastery",
+          "trait": "Firearms Mastery",
+          "name": "Armi da fuoco",
+          "description": "Competenza con tutte le armi da fuoco. Ignori la proprietà Ricarica (Loading) delle armi da fuoco; quando attacchi con un'arma da fuoco a gittata lunga non subisci svantaggio soltanto per la gittata. Ricorda queste eccezioni quando tiri l'attacco: non sono attivazioni e non consumano risorse."
+        }
+      ]
+    },
+    {
       "name": "Githyanki",
       "source": "MPMM",
       "rest_training": {
@@ -465,6 +477,180 @@
             "slot": "natural"
           },
           "description": "Come azione bonus, puoi muoverti fino a metà della velocità e sferrare un attacco con Bite. Secondo le regole, è disponibile dopo aver ridotto una creatura a 0 PF con un attacco in mischia durante il tuo turno; verifica il requisito manualmente, anche se il tiro è avvenuto fuori dall'app."
+        }
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "DMG",
+      "actions": [
+        {
+          "id": "race:dmg:goblin:nimble_escape:disengage",
+          "trait": "Nimble Escape",
+          "name": "Disimpegnarsi · Nimble Escape",
+          "action_type": "bonus",
+          "action_ref": "disengage",
+          "description": "Nimble Escape: puoi effettuare Disimpegnarsi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+        },
+        {
+          "id": "race:dmg:goblin:nimble_escape:hide",
+          "trait": "Nimble Escape",
+          "name": "Nascondersi · Nimble Escape",
+          "action_type": "bonus",
+          "action_ref": "hide",
+          "description": "Nimble Escape: puoi effettuare Nascondersi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+        }
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "MPMM",
+      "actions": [
+        {
+          "id": "race:mpmm:goblin:nimble_escape:disengage",
+          "trait": "Nimble Escape",
+          "name": "Disimpegnarsi · Nimble Escape",
+          "action_type": "bonus",
+          "action_ref": "disengage",
+          "description": "Nimble Escape: puoi effettuare Disimpegnarsi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+        },
+        {
+          "id": "race:mpmm:goblin:nimble_escape:hide",
+          "trait": "Nimble Escape",
+          "name": "Nascondersi · Nimble Escape",
+          "action_type": "bonus",
+          "action_ref": "hide",
+          "description": "Nimble Escape: puoi effettuare Nascondersi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+        }
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "VGM",
+      "actions": [
+        {
+          "id": "race:vgm:goblin:nimble_escape:disengage",
+          "trait": "Nimble Escape",
+          "name": "Disimpegnarsi · Nimble Escape",
+          "action_type": "bonus",
+          "action_ref": "disengage",
+          "description": "Nimble Escape: puoi effettuare Disimpegnarsi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+        },
+        {
+          "id": "race:vgm:goblin:nimble_escape:hide",
+          "trait": "Nimble Escape",
+          "name": "Nascondersi · Nimble Escape",
+          "action_type": "bonus",
+          "action_ref": "hide",
+          "description": "Nimble Escape: puoi effettuare Nascondersi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+        }
+      ]
+    },
+    {
+      "name": "Goliath",
+      "source": "MPMM",
+      "tracked_actions": [
+        {
+          "id": "race:mpmm:goliath:stones_endurance",
+          "trait": "Stone's Endurance",
+          "name": "Stone's Endurance",
+          "action_type": "reaction",
+          "tracker_id": "race:mpmm:goliath:stones_endurance:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "roll_effect": {
+            "dice": "1d12",
+            "add": "con_mod",
+            "label": "Riduzione danni"
+          },
+          "description": "Reazione quando subisci danni: tira 1d12 + modificatore di Costituzione e riduci quei danni di tale quantità (minimo 0). Il pulsante Usa registra un utilizzo e tira la riduzione; applica manualmente il risultato ai PF. Utilizzi pari alla competenza, riposo lungo."
+        }
+      ]
+    },
+    {
+      "name": "Hadozee",
+      "source": "AAG",
+      "tracked_actions": [
+        {
+          "id": "race:aag:hadozee:hadozee_dodge",
+          "trait": "Hadozee Dodge",
+          "name": "Hadozee Dodge",
+          "action_type": "reaction",
+          "tracker_id": "race:aag:hadozee:hadozee_dodge:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "roll_effect": {
+            "dice": "1d6",
+            "add": "proficiency",
+            "label": "Riduzione danni"
+          },
+          "description": "Reazione quando subisci danni: tira 1d6 + bonus di competenza e riduci quei danni del totale (minimo 0). Usa registra l'utilizzo e tira la riduzione; applicala manualmente ai PF. Utilizzi pari alla competenza, riposo lungo."
+        }
+      ]
+    },
+    {
+      "name": "Harengon",
+      "source": "MPMM",
+      "tracked_actions": [
+        {
+          "id": "race:mpmm:harengon:rabbit_hop",
+          "trait": "Rabbit Hop",
+          "name": "Rabbit Hop",
+          "action_type": "bonus",
+          "tracker_id": "race:mpmm:harengon:rabbit_hop:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "description": "Come azione bonus puoi saltare di 5 × il bonus di competenza piedi senza provocare attacchi di opportunità. Richiede una velocità maggiore di 0. Usa registra un utilizzo; sposta il token manualmente. Utilizzi pari alla competenza, riposo lungo."
+        }
+      ]
+    },
+    {
+      "name": "Lizardfolk",
+      "source": "MPMM",
+      "tracked_actions": [
+        {
+          "id": "race:mpmm:lizardfolk:hungry_jaws",
+          "trait": "Hungry Jaws",
+          "name": "Hungry Jaws",
+          "action_type": "bonus",
+          "tracker_id": "race:mpmm:lizardfolk:hungry_jaws:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "description": "Come azione bonus effettui un attacco speciale con Bite (Morso), che infligge i danni normali del morso. Se colpisce, ottieni PF temporanei pari al bonus di competenza. Usa registra un utilizzo; tira l'attacco del morso dalla scheda Attacchi e assegna manualmente i PF temporanei solo se necessario. Utilizzi pari alla competenza, riposo lungo."
+        }
+      ]
+    },
+    {
+      "name": "Orc",
+      "source": "MPMM",
+      "tracked_actions": [
+        {
+          "id": "race:mpmm:orc:adrenaline_rush",
+          "trait": "Adrenaline Rush",
+          "name": "Adrenaline Rush",
+          "action_type": "bonus",
+          "tracker_id": "race:mpmm:orc:adrenaline_rush:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "temp_hp": "proficiency",
+          "description": "Come azione bonus puoi effettuare Scatto. Quando utilizzi questo privilegio ottieni PF temporanei pari al bonus di competenza (non si sommano a quelli già presenti: conserva il valore maggiore). Usa registra un utilizzo e applica i PF temporanei; il movimento è da effettuare manualmente. Utilizzi pari alla competenza, riposo lungo."
+        }
+      ]
+    },
+    {
+      "name": "Satyr",
+      "source": "MPMM",
+      "actions": [
+        {
+          "id": "race:mpmm:satyr:mirthful_leaps",
+          "trait": "Mirthful Leaps",
+          "name": "Mirthful Leaps",
+          "action_type": "movement",
+          "roll_effect": {
+            "dice": "1d8",
+            "label": "Piedi aggiuntivi del salto"
+          },
+          "description": "Ogni volta che effettui un salto in lungo o in alto, anche da fermo, aggiungi 1d8 piedi alla distanza percorsa. Il movimento extra consuma normalmente la tua velocità; usa il pulsante per tirare il dado, senza tracker."
         }
       ]
     },
@@ -521,98 +707,6 @@
       }
     },
     {
-      "name": "Goliath",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:goliath:stones_endurance",
-          "trait": "Stone's Endurance",
-          "name": "Stone's Endurance",
-          "action_type": "reaction",
-          "tracker_id": "race:mpmm:goliath:stones_endurance:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "roll_effect": {
-            "dice": "1d12",
-            "add": "con_mod",
-            "label": "Riduzione danni"
-          },
-          "description": "Reazione quando subisci danni: tira 1d12 + modificatore di Costituzione e riduci quei danni di tale quantità (minimo 0). Il pulsante Usa registra un utilizzo e tira la riduzione; applica manualmente il risultato ai PF. Utilizzi pari alla competenza, riposo lungo."
-        }
-      ]
-    },
-    {
-      "name": "Hadozee",
-      "source": "AAG",
-      "tracked_actions": [
-        {
-          "id": "race:aag:hadozee:hadozee_dodge",
-          "trait": "Hadozee Dodge",
-          "name": "Hadozee Dodge",
-          "action_type": "reaction",
-          "tracker_id": "race:aag:hadozee:hadozee_dodge:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "roll_effect": {
-            "dice": "1d6",
-            "add": "proficiency",
-            "label": "Riduzione danni"
-          },
-          "description": "Reazione quando subisci danni: tira 1d6 + bonus di competenza e riduci quei danni del totale (minimo 0). Usa registra l'utilizzo e tira la riduzione; applicala manualmente ai PF. Utilizzi pari alla competenza, riposo lungo."
-        }
-      ]
-    },
-    {
-      "name": "Satyr",
-      "source": "MPMM",
-      "actions": [
-        {
-          "id": "race:mpmm:satyr:mirthful_leaps",
-          "trait": "Mirthful Leaps",
-          "name": "Mirthful Leaps",
-          "action_type": "movement",
-          "roll_effect": {
-            "dice": "1d8",
-            "label": "Piedi aggiuntivi del salto"
-          },
-          "description": "Ogni volta che effettui un salto in lungo o in alto, anche da fermo, aggiungi 1d8 piedi alla distanza percorsa. Il movimento extra consuma normalmente la tua velocità; usa il pulsante per tirare il dado, senza tracker."
-        }
-      ]
-    },
-    {
-      "name": "Lizardfolk",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:lizardfolk:hungry_jaws",
-          "trait": "Hungry Jaws",
-          "name": "Hungry Jaws",
-          "action_type": "bonus",
-          "tracker_id": "race:mpmm:lizardfolk:hungry_jaws:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "description": "Come azione bonus effettui un attacco speciale con Bite (Morso), che infligge i danni normali del morso. Se colpisce, ottieni PF temporanei pari al bonus di competenza. Usa registra un utilizzo; tira l'attacco del morso dalla scheda Attacchi e assegna manualmente i PF temporanei solo se necessario. Utilizzi pari alla competenza, riposo lungo."
-        }
-      ]
-    },
-    {
-      "name": "Orc",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:orc:adrenaline_rush",
-          "trait": "Adrenaline Rush",
-          "name": "Adrenaline Rush",
-          "action_type": "bonus",
-          "tracker_id": "race:mpmm:orc:adrenaline_rush:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "temp_hp": "proficiency",
-          "description": "Come azione bonus puoi effettuare Scatto. Quando utilizzi questo privilegio ottieni PF temporanei pari al bonus di competenza (non si sommano a quelli già presenti: conserva il valore maggiore). Usa registra un utilizzo e applica i PF temporanei; il movimento è da effettuare manualmente. Utilizzi pari alla competenza, riposo lungo."
-        }
-      ]
-    },
-    {
       "name": "Shifter",
       "source": "MPMM",
       "tracked_actions": [
@@ -628,34 +722,6 @@
           "duration_rounds": 10,
           "temp_hp": "double_proficiency",
           "description": "Come azione bonus entri in mutazione per 1 minuto, finché muori o termini la forma come azione bonus. Ottieni PF temporanei pari a 2 × competenza (non cumulabili). Variante scelta alla creazione: Beasthide +1d6 PF temporanei e +1 CA; Longtooth morso 1d6 + FOR come azione bonus in mutazione; Swiftstride +10 ft velocità e reazione di spostamento 10 ft; Wildhunt vantaggio alle prove di SAG e protezione dal vantaggio dei nemici vicini. Usa attiva lo stato e il tracker; applica manualmente gli effetti della variante. Utilizzi pari alla competenza, riposo lungo."
-        }
-      ]
-    },
-    {
-      "name": "Harengon",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:harengon:rabbit_hop",
-          "trait": "Rabbit Hop",
-          "name": "Rabbit Hop",
-          "action_type": "bonus",
-          "tracker_id": "race:mpmm:harengon:rabbit_hop:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "description": "Come azione bonus puoi saltare di 5 × il bonus di competenza piedi senza provocare attacchi di opportunità. Richiede una velocità maggiore di 0. Usa registra un utilizzo; sposta il token manualmente. Utilizzi pari alla competenza, riposo lungo."
-        }
-      ]
-    },
-    {
-      "name": "Giff",
-      "source": "AAG",
-      "passive_notes": [
-        {
-          "id": "race:aag:giff:firearms_mastery",
-          "trait": "Firearms Mastery",
-          "name": "Armi da fuoco",
-          "description": "Competenza con tutte le armi da fuoco. Ignori la proprietà Ricarica (Loading) delle armi da fuoco; quando attacchi con un'arma da fuoco a gittata lunga non subisci svantaggio soltanto per la gittata. Ricorda queste eccezioni quando tiri l'attacco: non sono attivazioni e non consumano risorse."
         }
       ]
     }
