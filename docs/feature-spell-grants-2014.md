@@ -5,6 +5,13 @@ Revisione del 28 ottobre 2026: 71 privilegi di 60 sottoclassi dell'edizione
 2024 restano separate; le ristampe TCE di Artificer, Spores, Order e Glory
 sono preferite alle precedenti pubblicazioni della stessa edizione.
 
+La verifica successiva include anche il talento **Cartomancer (BMT)**:
+Prestidigitation è un trucchetto conosciuto gratuito con origine **Card Tricks**,
+senza slot, contatori o scelta superflua della caratteristica da incantatore.
+Il collegamento e le sezioni nominate del talento sono normalizzati dal
+generatore `generate_additional_spells_5etools.py`; Hidden Ace resta un beneficio
+separato e non viene dedotto dalla concessione del trucchetto.
+
 ## Dati e rigenerazione
 
 `scripts/data/feature_spell_ownership_2014.json` contiene i collegamenti

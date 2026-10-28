@@ -13307,7 +13307,8 @@
                 "choose": "level=0|class=Artificer"
               }
             ]
-          }
+          },
+          "slot_alternative": true
         }
       ]
     },
@@ -13803,9 +13804,13 @@
             "_": [
               "prestidigitation#c"
             ]
-          }
+          },
+          "casting_ability_not_required": true
         }
-      ]
+      ],
+      "spell_traits": {
+        "prestidigitation": "Card Tricks"
+      }
     },
     {
       "kind": "feat",
@@ -17253,10 +17258,14 @@
             ]
           },
           "innate": {
-            "1": [
-              "detect magic",
-              "disguise self"
-            ]
+            "1": {
+              "daily": {
+                "1e": [
+                  "detect magic",
+                  "disguise self"
+                ]
+              }
+            }
           }
         }
       ],
@@ -18309,9 +18318,13 @@
       "blocks": [
         {
           "innate": {
-            "5": [
-              "pass without trace"
-            ]
+            "5": {
+              "daily": {
+                "1": [
+                  "pass without trace"
+                ]
+              }
+            }
           },
           "ability": {
             "choose": [

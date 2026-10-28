@@ -7,6 +7,15 @@ import {projectSpeciesDefenses} from './species_defenses.mjs';
 import {projectSpeciesRollModes} from './species_roll_modes.mjs';
 import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
+if(process.argv.includes('--origin-spells-only')){
+ const mechanics=await read('../catalog/class_mechanics.json');
+ const additional=await read('../../vtt/data/additional_spells_5etools.json');
+ mechanics.additional_spells=additional.entries;
+ mechanics.additional_spells_meta=additional.meta;
+ await writeFile(new URL('../catalog/class_mechanics.json',import.meta.url),JSON.stringify(mechanics,null,2)+'\n');
+ console.log('PWA: structured origin spell catalog refreshed.');
+ process.exit(0);
+}
 // Bounded refresh for this independent catalog: do not replace other cached
 // native projections when their own upstream generators have not been run.
 if(process.argv.includes('--feature-spells-only')){
