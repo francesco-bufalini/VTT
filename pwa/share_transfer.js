@@ -167,10 +167,15 @@ function incomingDialog(offer,onImported,notify){
      await onImported(offer.kind);
      notify('Contenuto ricevuto e importato in locale.');
    }catch(error){
-     status.textContent=(imported?'Importato, ma aggiornamento della schermata fallito: ':
-       'Importazione non riuscita: ')+errorText(error);
-     status.classList.add('warning');
-     if(!imported)buttons.forEach(b=>b.disabled=false);
+     if(imported){
+       // The import is durable and its dialog is already closed. Report refresh
+       // failures through the visible app notification, without offering a retry.
+       notify('Importato, ma aggiornamento della schermata fallito: '+errorText(error));
+     }else{
+       status.textContent='Importazione non riuscita: '+errorText(error);
+       status.classList.add('warning');
+       buttons.forEach(b=>b.disabled=false);
+     }
    }finally{busy=false;}
  });
  document.body.append(dialog);openDialog(dialog);

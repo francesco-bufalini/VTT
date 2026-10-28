@@ -1,5 +1,4 @@
 // Source-qualified racial powers. No ability is inferred from free-form prose.
-import {canReselectPower,selectionRestLabel} from './trait_state_rules.js';
 import {dragonbornFtdProjection,dragonbornFtdProfile} from './dragonborn_ftd.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
@@ -256,14 +255,11 @@ export function endTemporaryConditionPatch(record={},key='racial:firbolg:hidden_
    patch.conditions=rows(record.conditions).filter(value=>norm(value)!==norm(current.effect_condition));
  return patch;
 }
-// Rest training uses Armor Model's reselection lifecycle and ordinary typed
-// proficiency grants; it never writes a permanent racial proficiency.
+// Temporary training stays a typed proficiency grant; the rest label is descriptive.
 // A source-defined set of proficiency slots: skill+weapon/tool or two weapon/tools.
 export function restTrainingPatch(record={},choice={},selected=[],allowed={}){
  if(!choice.group||!choice.root_id||!choice.origin_id||!choice.trait||
    !rows(choice.picks).length)throw Error('Competenze temporanee non disponibili.');
- if(!canReselectPower(record,choice.group))
-   throw Error('Puoi riselezionare le competenze dopo un '+selectionRestLabel(choice.recovery).toLowerCase()+'.');
  if(!Array.isArray(selected)||selected.length!==choice.picks.length)
    throw Error('Scegli tutte le competenze previste dal privilegio.');
  const picks=selected.map((value,i)=>{
@@ -283,8 +279,7 @@ export function restTrainingPatch(record={},choice={},selected=[],allowed={}){
        granting_feature_origin_id:choice.origin_id,
        origin_name:'Tratto · '+choice.trait}))
    ],
-   trait_state_selection:{...(record.trait_state_selection||{}),[choice.group]:'selected'},
-   rest_selection_available:{...(record.rest_selection_available||{}),[choice.group]:false}
+   trait_state_selection:{...(record.trait_state_selection||{}),[choice.group]:'selected'}
  };
 }
 export function healingHandsPatch(record={},calculated={},power={},rollDie=()=>1,target=null) {

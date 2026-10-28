@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {racialPowerProjection,racialPowerSpellDefinitions,restTrainingPatch} from '../species_powers.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
-import {powerRestSelections,powerRestChoicePatch,canReselectPower} from '../trait_state_rules.js';
+import {powerRestSelections,powerRestChoicePatch} from '../trait_state_rules.js';
 import {fixedProficiencies} from '../structured_effects.js';
 import {calculateSheet} from '../sheet_rules.js';
 const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
@@ -36,7 +36,7 @@ test('Eladrin Fey Step reuses the Starlight Step teleport engine, PB uses and bo
  assert.equal(definition.condition_inflict,undefined);
  assert.equal(projection({...r,rules_version:'2024'}).origin_spells.length,0);
 });
-test('season is a real racial picker, source qualified and locked until long rest',()=>{
+test('season is a real racial picker, source qualified with descriptive rest guidance',()=>{
  const r=record('Eladrin'),catalogs={speciesPowers:index,proficiencyGrants:grants};
  const first=pendingCharacterChoices(r,{},catalogs).find(x=>x.kind==='racial_option');
  assert.equal(first.label,'Stagione');
@@ -46,8 +46,7 @@ test('season is a real racial picker, source qualified and locked until long res
  const after=pendingCharacterChoices(selected,{},catalogs).find(x=>x.kind==='racial_option');
  assert.deepEqual(after.selected,['winter']);
  assert.equal(after.remaining,0);
- assert.equal(canReselectPower(selected,'eladrin_season'),false);
- assert.throws(()=>savePendingChoice(selected,after,['summer']),/riposo lungo/);
+ assert.equal(savePendingChoice(selected,after,['summer']).trait_state_selection.eladrin_season,'summer');
  const calculated={features:featuresFor(selected),racial_rest_choices:projection(selected).rest_choices};
  const choices=powerRestSelections(selected,calculated);
  assert(choices.some(x=>x.id==='eladrin_season'));
@@ -55,7 +54,7 @@ test('season is a real racial picker, source qualified and locked until long res
  const rested={...selected,...powerRestChoicePatch(selected,'long_rest',calculated)};
  const summer={...rested,...savePendingChoice(rested,after,['summer'])};
  assert.equal(summer.trait_state_selection.eladrin_season,'summer');
- assert.equal(summer.rest_selection_available.eladrin_season,false);
+ assert.equal(summer.rest_selection_available.eladrin_season,true);
  assert.equal(summer.rest_selection_available.eladrin_training,true,'changing season does not consume training');
  assert.throws(()=>savePendingChoice({...r,species:'Shadar-Kai'},first,['winter']),/Stagione/);
 });
@@ -89,8 +88,7 @@ test('all five latest pre-2024 racial rest proficiencies use their exact distinc
   const chosen={...r,...restTrainingPatch(r,choice,two,allowed)};
   assert.deepEqual(chosen.proficiency_choices.map(row=>row.kind),two.map(x=>x.split(':')[0]));
   assert(chosen.proficiency_choices.every(x=>x.rest_training_group===choice.group&&x.origin_id===choice.root_id));
-  assert.equal(canReselectPower(chosen,choice.group),false);
-  assert.throws(()=>restTrainingPatch(chosen,choice,two,allowed),/riposo lungo/);
+  assert.equal(restTrainingPatch(chosen,choice,two,allowed).proficiency_choices.length,2);
   const calculated={features:featuresFor(chosen),racial_rest_choices:p.rest_choices};
   const rested={...chosen,...powerRestChoicePatch(chosen,'long_rest',calculated)};
   assert.deepEqual(rested.proficiency_choices,[],'old trance proficiencies expire at next long rest');

@@ -2,6 +2,7 @@
 // Every applied formula grant comes from calculateSheet.roll_components; it has
 // already passed origin, requirements and circular-dependency checks.
 import {SKILLS,validBonusDice} from './sheet_rules.js';
+import {armorClassBaseFormula} from './armor_class_formula.js';
 
 const list = value => Array.isArray(value) ? value : [];
 const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -335,7 +336,11 @@ export function sheetScoreOriginSegments(record,calculated,target){
      baseName=target==='hp'?'Creatura':target==='proficiency'?'Progressione':target==='attunement_max'?'Sintonia':'Seconda forma';
    }else{
      base=total-list(all[target]).reduce((sum,row)=>sum+num(row.value),0);
-     formula=target==='ac'?'Armatura, scudo e regole':target.startsWith('speed')?'Velocità di base':'Valore di base';
+     if(target==='ac'){
+       const armorFormula=armorClassBaseFormula(record,calculated);
+       formula=armorFormula.formula;
+       baseName=armorFormula.sourceLabel;
+      }else formula=target.startsWith('speed')?'Velocità di base':'Valore di base';
    }
    sourceRows=[{kind:'base',formula,expanded:String(base),value:base,
      originId:'',originName:baseName,key:'base'}];

@@ -36,17 +36,9 @@ try{
   'roll bonuses are listed under trackers instead of duplicated as ability buttons');
  const lightningResource=page.locator('#sheet-play-view [data-resource-tracker="feature:lightning_launcher:extra_damage"]');
  assert.match(await lightningResource.locator('.play-resource-bonus-row').innerText(),/\+1d6[\s\S]*Danni/);
- // Rest unlocks a fresh model selection without any Armor Model tracker.
- assert.equal(await page.locator('#sheet-play-view [data-resource-tracker="feature:armor_model:activation"]').count(),0);
- await page.locator('#sheet-play-view [data-act="sheet-context"][data-sheet-context="rests"]').click();
- const restDialog=page.locator('#sheet-context-dialog');
- await restDialog.locator('[data-act="tracker-short"]').click();
- assert.match(await restDialog.locator('[data-rest-recoveries]').innerText(),/Scelte modificabili[\s\S]*Armor Model/i);
- await restDialog.locator('[data-act="tracker-rest-confirm"]').click();
- assert.match(await restDialog.locator('.play-rest-confirm').innerText(),/Scelte modificabili[\s\S]*Armor Model/i);
- await restDialog.locator('[data-act="sheet-context-close"]').click();
- assert.equal((await record()).rest_selection_available.armor_model,true);
- // Armor Models are displayed and activated from their dedicated Powers card.
+ // The rest label does not block an immediate model switch.
+  assert.equal(await page.locator('#sheet-play-view [data-resource-tracker="feature:armor_model:activation"]').count(),0);
+  // Armor Models are displayed and activated from their dedicated Powers card.
  await sheet('magic');
  const modelCard=page.locator('#sheet-play-view .play-armor-model-card');
  assert.equal(await modelCard.locator('[data-act="armor-model-open"]').count(),2);
@@ -62,11 +54,13 @@ try{
  assert.equal(await modelDialog.locator('.armor-model-benefits .infusion-dialog-item').count(),2);
  assert.equal(await modelDialog.locator('[data-ability-payment]').count(),0,'No activation tracker is offered');
  assert.match(await modelCard.innerText(),/Riposo breve/i);
+  assert.doesNotMatch(await modelCard.innerText(),/Modello applicato/i);
+  assert.equal(await modelDialog.locator('[data-act="armor-model-apply"]').isEnabled(),true);
  await modelDialog.locator('[data-act="armor-model-apply"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
    return (await listCreatures())[0].creature.artificer_armor_model==='guardian';});
  assert.equal((await record()).resource_tracker_spent?.['feature:armor_model:activation'],undefined);
- assert.equal((await record()).rest_selection_available.armor_model,false);
+ assert.equal((await record()).rest_selection_available?.armor_model,undefined);
  assert.equal(await guardian.locator('.play-infusion-state').getAttribute('title'),'Attivo');
  assert.equal(await infiltrator.locator('.play-infusion-state').getAttribute('title'),'Non attivo');
  await sheet('battle');

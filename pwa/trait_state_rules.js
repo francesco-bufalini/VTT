@@ -39,8 +39,7 @@ function selection(record,rule) {
   if(stored!==undefined&&stored!==null&&stored!=='')return stored===rule.legacy_value?rule.id:null;
   return rule.legacy_default?rule.id:null;
 }
-// Rest-gated power choices are not trackers. The source rules supply the
-// recovery event and the same group identity used by trait-state exclusivity.
+// Power choice rest intervals are descriptive; the PWA does not enforce them.
 export const selectionRestLabel = event=>event==='short_rest'?'Riposo breve':
   event==='long_rest'?'Riposo lungo':'Nessun riposo';
 export function powerRestSelections(record={},calculated={}){
@@ -84,13 +83,6 @@ export function powerRestChoicePatch(record={},event='',calculated={}){
    ...(expired.size?{proficiency_choices:arr(record.proficiency_choices).filter(row=>
      !expired.has(row?.rest_training_group))}:{})};
 }
-export function canReselectPower(record={},group='',legacyField=''){
- if(record.rest_selection_available?.[group]===true)return true;
- // A character creating its first choice has no rest to wait for.
- return !Object.hasOwn(record.trait_state_selection||{},group)&&
-   (!legacyField||!record[legacyField]);
-}
-
 export function traitStateActions(record={},features=[],catalog=[]) {
   return arr(catalog).flatMap(rule=>{
     const trait=eligible(record,features,rule);
@@ -114,9 +106,6 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   const rule=arr(catalog).find(row=>row.id===id);
   if(!rule||!eligible(record,features,rule))throw Error('Privilegio o armatura non disponibili.');
   const current=selection(record,rule)===rule.id;
-  const rest=rule.selection_recovery||'';
-  if(rest&&!canReselectPower(record,rule.group,rule.legacy_field))
-    throw Error('Puoi riselezionare il modello dopo un '+selectionRestLabel(rest).toLowerCase()+'.');
   const active={...(record.active_class_features||{})};
   // An exclusive group changes atomically and cannot leave two states applied.
   for(const sibling of arr(catalog).filter(row=>row.group===rule.group))delete active['trait_state:'+sibling.id];
@@ -124,7 +113,6 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   if(!current)active['trait_state:'+rule.id]={
     name:rule.name,origin_id:owningTrait(record,features,rule)?.origin_id||'',category:rule.category||'stato'};
   const changes={trait_state_selection:selected,active_class_features:active};
-  if(rest)changes.rest_selection_available={...(record.rest_selection_available||{}),[rule.group]:false};
   // This cost is bound to the originating trait and only paid on activation.
   // Deselecting an active state is free, and payment is atomic with selection.
   const payment=rule.activation_tracker;

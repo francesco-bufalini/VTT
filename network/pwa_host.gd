@@ -55,6 +55,7 @@ const FILES := {
 	"/species_defenses.js": ["res://pwa/species_defenses.js", "text/javascript; charset=utf-8"],
 	"/class_defenses.js": ["res://pwa/class_defenses.js", "text/javascript; charset=utf-8"],
 	"/armor_rules.js": ["res://pwa/armor_rules.js", "text/javascript; charset=utf-8"],
+	"/armor_class_formula.js": ["res://pwa/armor_class_formula.js", "text/javascript; charset=utf-8"],
 	"/feature_item_grants.js": ["res://pwa/feature_item_grants.js", "text/javascript; charset=utf-8"],
 	"/spell_storing_item.js": ["res://pwa/spell_storing_item.js", "text/javascript; charset=utf-8"],
 	"/spell_imprints.js": ["res://pwa/spell_imprints.js", "text/javascript; charset=utf-8"],
