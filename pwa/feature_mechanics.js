@@ -193,7 +193,7 @@ export function passiveClassRollBonuses(record={},calculated={},target=''){
   }else if(mode==='untrained_half'||mode==='untrained_half_physical'){
    if(rank||!ability)continue;
    if(mode==='untrained_half_physical'&&!['str','dex','con'].includes(ability))continue;
-   amount=Math.floor(proficiency/2);
+   amount=mode==='untrained_half_physical'?Math.ceil(proficiency/2):Math.floor(proficiency/2);
   }else if(mode==='favored_terrain_expertise'){
    if(!skill||rank!==1||!['int','wis'].includes(ability))continue;
    amount=proficiency;
