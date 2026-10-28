@@ -4934,6 +4934,7 @@ function openSheetMovementDialog(calculated={}){
   entries.map(row=>'<li><button type="button" class="sheet-movement-value" data-act="sheet-score-formula" data-target="'+esc(row.key)+
    '" data-label="Velocità · '+esc(row.label)+'"><span>'+esc(row.label)+'</span><strong>'+showValue(row.value)+' ft</strong></button></li>').join('')+
   '</ul></section>'+
+  (calculated.stats?.hovering?'<p class="sheet-senses-note">Volo sospeso (hovering) attivo tramite capacità temporanea.</p>':'')+
   (jumpRows.length?'<section class="sheet-senses-sources sheet-movement-jumps"><h3>Salti · distanza massima</h3><ul>'+
    jumpRows.map(([label,n])=>'<li><span>'+esc(label)+'</span><strong>'+showValue(Number(n))+' ft</strong></li>').join('')+
    '</ul></section>':'')+
