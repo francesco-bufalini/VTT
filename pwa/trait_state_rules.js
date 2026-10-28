@@ -157,7 +157,9 @@ export function traitStateAttacks(record={},features=[],catalog=[]) {
      source:'trait_state',proficient:true,melee:!!attack.melee,
      damage:attack.damage,damage_type:attack.damage_type,
      ability:attack.intelligence_override&&record.attack_ability==='int'?'int':attack.ability,
-     range_feet:attack.range_feet,long_range_feet:attack.long_range_feet||0
+     range_feet:attack.range_feet,long_range_feet:attack.long_range_feet||0,
+     on_hit_effects:arr(attack.on_hit_effects).map(effect=>({...effect})),
+     description:arr(attack.on_hit_effects).map(effect=>effect.description).filter(Boolean).join(' · ')
    }]:[];
  }));
 }
@@ -168,6 +170,15 @@ export function traitStateNumericGrants(record={},features=[],catalog=[]) {
      id:'trait_state:'+rule.id+':'+grant.id,target:grant.target,expression:String(grant.amount),
      origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name,automatic:true
    }]:[];
+ }));
+}
+export function traitStateRollModes(record={},features=[],catalog=[]){
+ return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.roll_modes).flatMap(mode=>{
+  const feature=source(record,features,rule,mode.trait);
+  return feature&&['advantage','disadvantage'].includes(mode.mode)&&mode.target?[{
+   ...mode,origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name,
+   state_id:rule.id
+  }]:[];
  }));
 }
 export function traitStateTrackers(record={},features=[],catalog=[]) {
