@@ -1614,7 +1614,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      (selectedMode?' '+selectedMode.name+' · TS '+selectedMode.save_ability.toUpperCase()+
        ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' · '+selectedMode.description:'')+
      (shape?' Effetti da applicare ai bersagli nell’area.':'')+
-     (persistentKey?' Effetto attivo per massimo 1 minuto; termina da Condizioni.':''));
+     (persistentKey?(currentAbility.duration_rounds===1?' Condizione attiva fino al prossimo turno o a un attacco, tiro danni o TS imposto.':' Effetto attivo per massimo 1 minuto; termina da Condizioni.') :''));
   }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -3533,7 +3533,7 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
            (ability.damage_formula?' · '+esc(ability.damage_formula)+' '+esc(ability.damage_type):'')+
            (ability.attack_replacement?' · Sostituisce un attacco':'')+'</p>':'')+
          (ability.persistent_key&&c.active_class_features?.[ability.persistent_key]?
-           '<div class="magic-active-form">Attivo · 1 minuto <button type="button" class="btn small" data-act="condition-remove-ability" data-ability-key="'+esc(ability.persistent_key)+'">Termina</button></div>':'')+
+           '<div class="magic-active-form">'+(ability.duration_rounds===1?'Attivo · fino al prossimo turno':'Attivo · 1 minuto')+' <button type="button" class="btn small" data-act="condition-remove-ability" data-ability-key="'+esc(ability.persistent_key)+'">Termina</button></div>':'')+
          (extensions.length?'<div class="magic-effect-extensions"><h3>Estensioni attive</h3><ul>'+
            extensions.map(extension=>'<li><strong>'+esc(extension.origin_name||'Privilegio')+'</strong> · '+
              esc(effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}))+'</li>').join('')+
@@ -6806,6 +6806,10 @@ async function handleAction(target){
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
         dialog.rollOutcome=state.roll;dialog.rollHistoryEntry=state.rollHistory[0];
+        if(key.startsWith('attack_hit:')||key.startsWith('casting_hit:')){
+          const attackEnd=endTemporaryConditionPatch(state.editor.read());
+          if(Object.keys(attackEnd).length)await patch(attackEnd);
+        }
         // Tracker uses were spent at selection time, never again on rerolls.
         // A reaction modifies one roll only, even when the same dialog rerolls.
          const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
