@@ -79,6 +79,7 @@ try{
  const addedName=(await result.locator('strong').textContent()).trim();
  await result.click();
  await page.locator('#inventory-search-add-dialog[open]').waitFor();
+ assert.equal(await page.locator('#inventory-search-add-quantity').inputValue(),'1','Catalog additions default to one item');
  await page.locator('#inventory-search-add-section').selectOption('chest');
  await page.locator('#inventory-search-add-quantity').fill('4');
  await page.locator('[data-act="inventory-search-add-confirm"]').click();

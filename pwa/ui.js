@@ -2069,7 +2069,7 @@ function openInventorySearchAddDialog(catalogIndex){
     dialogCloseButton('inventory-search-add-close','Chiudi','play-button')+'</header>'+
     '<div class="sheet-context-body inventory-search-add-fields">'+
     '<label>Sezione<select id="inventory-search-add-section">'+options+'</select></label>'+
-    '<label>Quantità<input type="number" id="inventory-search-add-quantity" min="1" max="99999" step="1" required></label></div>'+
+    '<label>Quantità<input type="number" id="inventory-search-add-quantity" value="1" min="1" max="99999" step="1" required></label></div>'+
     '<footer class="pending-choice-actions"><button type="button" data-act="inventory-search-add-close">Annulla</button>'+
     '<button type="button" data-act="inventory-search-add-confirm">Aggiungi oggetto</button></footer>';
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -8035,10 +8035,11 @@ async function handleAction(target){
     extra.querySelector('.play-rest-choices')?.setAttribute('hidden','');
     extra.querySelector('[data-rest-preview]')?.remove();
     const pools=event==='short_rest'?hitDicePools(record,calculated):[];
+    const defaultPool=pools.find(pool=>pool.available>0);
     const diceControls=pools.map(pool=>'<label class="play-rest-die">'+
       '<span>d'+pool.die+' · '+pool.available+' / '+pool.total+' disponibili</span>'+
       '<input type="number" inputmode="numeric" data-rest-die="'+pool.die+
-      '" min="0" max="'+pool.available+'" step="1" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
+      '" min="0" max="'+pool.available+'" step="1" value="'+(pool===defaultPool?1:0)+'" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
     const preview=document.createElement('section');
     preview.className='play-rest-confirm';preview.dataset.restPreview=event;
     preview.innerHTML='<h3>Conferma '+(event==='long_rest'?'riposo lungo':'riposo breve')+'</h3>'+

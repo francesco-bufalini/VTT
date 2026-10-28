@@ -775,8 +775,8 @@ try{
  assert.match(await page.locator('#sheet-context-dialog [data-rest-recoveries]').textContent(),/Superiority Die/);
  assert.match(await page.locator('#sheet-context-dialog [data-rest-recoveries]').textContent(),/0 utilizzi recuperati/,
   'Resources with no spent uses still appear in rest forecast');
- assert.equal(await page.locator('#sheet-context-dialog [data-rest-roll-controls]').isVisible(),false,
-  'Roll details stay hidden until Hit Dice are selected');
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-roll-controls]').isVisible(),true,
+  'Roll details are visible for the default Hit Die');
  await shortRestDice.fill('2');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-roll-controls]').isVisible(),true);
  assert.match(await page.locator('#sheet-context-dialog [data-rest-recoveries]').textContent(),/2 da spendere/);

@@ -57,7 +57,7 @@ test('dialog lifecycle supports native modal and fallback open state',()=>{
   assert.equal(fallback.open,false);
 });
 
-test('numeric popup fields start empty and preserve a value while already open',()=>{
+test('dialogs preserve view-owned numeric defaults and edited values',()=>{
   const amount={value:'1',disabled:false,readOnly:false};
   const oldScore={value:'12',disabled:false,readOnly:false};
   const disabled={value:'5',disabled:true,readOnly:false};
@@ -71,11 +71,11 @@ test('numeric popup fields start empty and preserve a value while already open',
     close(){this.open=false;}
   };
   openDialog(dialog);
-  assert.deepEqual([amount.value,oldScore.value,disabled.value,readOnly.value],['','','5','2']);
+  assert.deepEqual([amount.value,oldScore.value,disabled.value,readOnly.value],['1','12','5','2']);
   amount.value='7';
   openDialog(dialog);
   assert.equal(amount.value,'7','Opening an already-visible popup cannot discard typed input');
   dialog.close();
   openDialog(dialog);
-  assert.equal(amount.value,'','Reopening starts with a fresh empty numeric value');
+  assert.equal(amount.value,'7','Reopening must not erase the view-owned numeric value');
 });

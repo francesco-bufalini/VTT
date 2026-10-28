@@ -86,7 +86,7 @@ try{
  assert.match(await formula.locator('[data-score-formula]').textContent(),/Sintonie di base/);
  await formula.locator('[data-act="sheet-score-edit-base"]').click();
  const score=page.locator('#sheet-score-dialog');
- assert.equal(await score.locator('#sheet-score-input').inputValue(),'','Numeric base-score popups should start empty');
+ assert.equal(await score.locator('#sheet-score-input').inputValue(),'3','Numeric base-score popups retain the current value');
  await score.locator('#sheet-score-input').fill('1');
  await score.locator('[data-act="save-score"]').click();
  assert.equal((await record()).attunement_max_base,3,'Occupied slots prevent lowering the base below actual capacity');
