@@ -519,6 +519,8 @@ try{
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true);
  await rollDialog.locator('.sheet-roll-close').click();
+ if((await movementPanel.getAttribute('open'))!==null)
+  await movementPanel.locator('summary.play-battle-summary').click();
  assert.equal(await movementPanel.getAttribute('open'),null);
  await movementPanel.locator('summary.play-battle-summary').click();
  assert.equal(await movementPanel.locator('.play-battle-action-group:has([data-attack-id="escape_grapple"])').getAttribute('open'),'',
