@@ -64,7 +64,7 @@ export function dragonbornFtdResistances(record={},catalog={},features=[]){
   benefit_id:'defense:'+p.origin_id+':1:'+p.ancestry.damage_type,
   automatic:true}]:[];
  if(p.variant==='chromatic'&&allowed('Chromatic Warding')&&
-    record.active_class_features?.['racial:dragonborn_ftd:warding']?.origin_id===owner('Chromatic Warding').origin_id)
+    record.active_class_features?.['racial:dragonborn_ftd:warding']?.origin_id===p.origin_id)
   output.push({rank:2,key:p.ancestry.damage_type,trait:'Chromatic Warding',
    origin_id:owner('Chromatic Warding').origin_id,origin_parent_id:p.origin_id,
    origin_parent_name:p.definition.name,origin_name:'Tratto · Chromatic Warding',
@@ -121,7 +121,7 @@ export function dragonbornFtdProjection(record={},catalog={},knownFeatures=[]){
    activation_mode:special.action_type,mode:special.mode,
    attack_replacement:special.mode==='choice_area',
    resource_cost:1,tracker_id,duration_rounds:special.duration_rounds||0,
-   persistent_key:special.persistent_key||'',
+   persistent_key:special.persistent_key||'',persistent_origin_id:p.origin_id,
    damage_type:p.ancestry?.damage_type||'',options:rows(special.options),
    area_shape:special.shape||'',area_radius_feet:special.radius_feet||0,
    save_base:'constitution',half_on_save:false});
