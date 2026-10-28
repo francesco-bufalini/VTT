@@ -1,9 +1,19 @@
 import unittest
 
 from scripts.generate_additional_spells_5etools import apply_ownership, normalize_feat_sections
+from scripts.audit_feat_spells_2014 import audit
 
 
 class AdditionalSpellOwnershipTest(unittest.TestCase):
+    def test_inventory_rejects_an_unreviewed_grant_and_skips_new_edition_reprints(self):
+        manifest = {"meta": {"sources": ["PHB", "TCE"], "feat_source_snapshot": "fixture"},
+                    "entries": [{"name": "Reviewed", "source": "TCE"}]}
+        rows = [{"name": "Reviewed", "source": "TCE", "additionalSpells": [{}], "reprintedAs": ["Reviewed|XPHB"]},
+                {"name": "Ordinary", "source": "PHB"}]
+        self.assertEqual(audit(rows, manifest)["spell_grant_feats"], 1)
+        with self.assertRaisesRegex(ValueError, "missing"):
+            audit(rows + [{"name": "Missing", "source": "PHB", "additionalSpells": [{}]}], manifest)
+
     def test_declared_feat_sections_are_normalized_from_named_source_items(self):
         rule = {"kind": "feat", "name": "Cartomancer", "source": "BMT",
                 "spell_traits": {"prestidigitation": "Card Tricks"},

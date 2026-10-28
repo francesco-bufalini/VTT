@@ -1289,7 +1289,8 @@ function calculateSheetValues(record={},catalogs={}){
   const trackers=[...trackerMap.values()].map(row=>{
     if(row.formula_error)warnings.add('Formula tracker '+row.name+': '+row.formula_error+' · mantenuto il massimo base');
     const maximum=Math.max(0,row.max+(safe('tracker:'+row.id)??0));
-    return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
+    return {...row,max:maximum,spent:clamp(Math.max(int(record.resource_tracker_spent?.[row.id]),
+      ...arr(row.legacy_ids).map(id=>int(record.resource_tracker_spent?.[id]))),0,maximum)};
   });
   for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
   const resolvedDamageBase=(id,damage)=>{
@@ -1345,12 +1346,13 @@ function calculateSheetValues(record={},catalogs={}){
     return !trait||(!trait.inactive&&!trait.disabled&&
       record.trait_enabled?.[trait.key]!==false);
   };
-  for(const row of [...arr(record.origin_spell_grants),...additional.grants,...racialPowers.origin_spells])if(row?.origin_id&&row.spell_id&&!suppressed.has('spell:'+row.origin_id+':'+row.spell_id)&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)&&spellOwnerLive(row)){
+  for(const row of [...additional.saved_grants,...additional.grants,...racialPowers.origin_spells])if(row?.origin_id&&row.spell_id&&!suppressed.has('spell:'+row.origin_id+':'+row.spell_id)&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)&&spellOwnerLive(row)){
     const key=row.origin_id+'|'+row.spell_id;
     if(!originSpellMap.has(key)){
       const id=row.id||key,config=record.origin_spell_configs?.[id]||{},resolved={...row,id};
       for(const field of ['payment_mode','tracker_id','spellcasting_ability','tracker_cost','slot_alternative'])
         if(Object.hasOwn(config,field))resolved[field]=config[field];
+      if(row.casting_ability_from_source)resolved.spellcasting_ability=row.spellcasting_ability;
       // The owner-level casting choice is shared by all spells granted by
       // this trait and is validated against its structured eligibility list.
       const chosen=record.spellcasting_section_abilities?.['origin:'+row.origin_id];
@@ -1376,7 +1378,7 @@ function calculateSheetValues(record={},catalogs={}){
   }
   const originSpells=[...originSpellMap.values()];
   const originChoices=additional.choices.map(choice=>{
-    const selected=arr(record.origin_spell_grants).filter(g=>g?.source_choice_id===choice.id&&!g.disabled);
+    const selected=additional.saved_grants.filter(g=>g?.source_choice_id===choice.id&&!g.disabled);
     return {...choice,selected,remaining:Math.max(0,choice.count-selected.length)};
   });
   for(const row of [...originSpells,...originChoices])addOrigin(row.origin_id,row.origin_name||row.origin_id);

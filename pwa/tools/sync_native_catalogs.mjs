@@ -7,6 +7,13 @@ import {projectSpeciesDefenses} from './species_defenses.mjs';
 import {projectSpeciesRollModes} from './species_roll_modes.mjs';
 import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
+if(process.argv.includes('--feat-mechanics-only')){
+ const ability=await read('../catalog/ability_grants.json');
+ ability.feat_mechanics=(await read('../../vtt/data/feat_mechanics_2014.json')).feats;
+ await writeFile(new URL('../catalog/ability_grants.json',import.meta.url),JSON.stringify(ability,null,2)+'\n');
+ console.log('PWA: typed feat mechanics refreshed.');
+ process.exit(0);
+}
 if(process.argv.includes('--origin-spells-only')){
  const mechanics=await read('../catalog/class_mechanics.json');
  const additional=await read('../../vtt/data/additional_spells_5etools.json');

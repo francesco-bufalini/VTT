@@ -12982,7 +12982,8 @@
             ]
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13033,9 +13034,19 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "*choice*": "Ambitious Magic"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13060,9 +13071,19 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "*choice*": "Insightful Magic"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13087,9 +13108,19 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat",
+            "name": "Initiate of High Sorcery",
+            "source": "DSotDQ"
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "*choice*": "Protective Magic"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13310,7 +13341,8 @@
           },
           "slot_alternative": true
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13810,7 +13842,8 @@
       ],
       "spell_traits": {
         "prestidigitation": "Card Tricks"
-      }
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -13979,7 +14012,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Good",
@@ -14009,7 +14043,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Neutral",
@@ -14039,9 +14074,13 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true,
+      "variant_from_alignment": true
     },
     {
       "kind": "feat",
@@ -14064,7 +14103,8 @@
             }
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -14222,15 +14262,21 @@
           "ability": "int",
           "innate": {
             "_": {
-              "daily": {
+              "rest": {
                 "1": [
                   "misty step"
                 ]
               }
             }
+          },
+          "tracker_alias_categories": {
+            "rest": [
+              "daily"
+            ]
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -14238,7 +14284,13 @@
       "source": "TCE",
       "blocks": [
         {
-          "ability": "inherit",
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "innate": {
             "_": {
               "daily": {
@@ -14250,9 +14302,14 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat_ability"
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -14334,9 +14391,14 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "spell_traits": {
+        "cure wounds": "Draconic Healing"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -14403,7 +14465,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Lunitari",
@@ -14439,7 +14502,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Solinari",
@@ -14475,9 +14539,12 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -14733,7 +14800,9 @@
             ]
           }
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -15532,9 +15601,27 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "ability_from": {
+            "kind": "feat",
+            "name": "Scion of the Outer Planes",
+            "source": "SatO"
           }
         }
-      ]
+      ],
+      "spell_traits": {
+        "misty step": "Crossroads Emissary",
+        "tongues": "Crossroads Emissary"
+      },
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -15545,18 +15632,19 @@
           "ability": "int",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione lo schema e il materiale necessari al rituale di Quicksmithing."
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -15568,98 +15656,100 @@
           "ability": "cha",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Bard|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Bard|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Cleric Spells",
           "ability": "wis",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Cleric|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Cleric|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Druid Spells",
           "ability": "wis",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Druid|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Druid|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Sorcerer Spells",
           "ability": "cha",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Sorcerer|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Sorcerer|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Warlock Spells",
           "ability": "cha",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Warlock|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Warlock|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         },
         {
           "name": "Wizard Spells",
           "ability": "int",
           "innate": {
             "_": {
-              "daily": {
-                "1": [
-                  {
-                    "choose": "level=1|class=Wizard|components & miscellaneous=ritual",
-                    "count": 2
-                  }
-                ]
-              }
+              "ritual": [
+                {
+                  "choose": "level=1|class=Wizard|components & miscellaneous=ritual",
+                  "count": 2
+                }
+              ]
             }
-          }
+          },
+          "ritual_only": true,
+          "requires_context": "Ho a disposizione il libro rituale richiesto."
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -15708,30 +15798,73 @@
       "source": "BGG",
       "blocks": [
         {
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "innate": {
             "_": {
               "daily": {
                 "1e": [
-                  "comprehend languages",
-                  "fog cloud",
-                  "inflict wounds",
-                  "chromatic orb",
-                  "disguise self",
-                  "burning hands",
-                  "speak with animals",
-                  "armor of agathys",
-                  "goodberry",
-                  "longstrider",
-                  "command",
-                  "entangle",
-                  "sanctuary",
-                  "thunderwave"
+                  "comprehend languages"
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
+        },
+        {
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
+          "innate": {
+            "_": {
+              "daily": {
+                "1e": [
+                  {
+                    "choose": {
+                      "from": [
+                        "fog cloud",
+                        "inflict wounds",
+                        "chromatic orb",
+                        "disguise self",
+                        "burning hands",
+                        "speak with animals",
+                        "armor of agathys",
+                        "goodberry",
+                        "longstrider",
+                        "command",
+                        "entangle",
+                        "sanctuary",
+                        "thunderwave"
+                      ]
+                    },
+                    "count_formula": "half_proficiency"
+                  }
+                ]
+              }
+            }
+          },
+          "slot_alternative": true,
+          "requires_context": "La runa scelta è incisa su un oggetto che indosso o trasporto.",
+          "legacy_each_spell_blocks": [
+            0
+          ]
         }
-      ]
+      ],
+      "spell_traits": {
+        "comprehend languages": "Comprehend Languages",
+        "*choice*": "Rune Magic"
+      },
+      "audited_2014": true,
+      "blocks_mode": "cumulative"
     },
     {
       "kind": "feat",
@@ -15813,7 +15946,9 @@
             ]
           }
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -15852,9 +15987,13 @@
                 "find familiar"
               ]
             }
-          }
+          },
+          "ritual_only": true,
+          "casting_ability_not_required": true,
+          "requires_context": "Concludo il rituale di Find Familiar usando la forma del famiglio concessa da questo talento."
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -15862,7 +16001,13 @@
       "source": "TCE",
       "blocks": [
         {
-          "ability": "inherit",
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "innate": {
             "_": {
               "daily": {
@@ -15874,9 +16019,14 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat_ability"
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -15943,7 +16093,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Cleric Spells",
@@ -15955,7 +16118,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Druid Spells",
@@ -15967,7 +16143,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Sorcerer Spells",
@@ -15979,7 +16168,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Warlock Spells",
@@ -15991,7 +16193,20 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         },
         {
           "name": "Wizard Spells",
@@ -16003,9 +16218,24 @@
                 "count": 1
               }
             ]
-          }
+          },
+          "attack_spells": [
+            "booming blade|tce",
+            "chill touch|phb",
+            "eldritch blast|phb",
+            "fire bolt|phb",
+            "green-flame blade|tce",
+            "magic stone|xge",
+            "primal savagery|xge",
+            "produce flame|phb",
+            "ray of frost|phb",
+            "shocking grasp|phb",
+            "thorn whip|phb"
+          ]
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -16061,7 +16291,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Lorehold 2",
@@ -16088,7 +16319,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Lorehold 3",
@@ -16115,7 +16347,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Prismari 1",
@@ -16142,7 +16375,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Prismari 2",
@@ -16169,7 +16403,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Prismari 3",
@@ -16196,7 +16431,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Quandrix 1",
@@ -16223,7 +16459,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Quandrix 2",
@@ -16250,7 +16487,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Quandrix 3",
@@ -16277,7 +16515,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Silverquill 1",
@@ -16304,7 +16543,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Silverquill 2",
@@ -16331,7 +16571,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Silverquill 3",
@@ -16358,7 +16599,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Witherbloom 1",
@@ -16385,7 +16627,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Witherbloom 2",
@@ -16412,7 +16655,8 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         },
         {
           "name": "Witherbloom 3",
@@ -16439,9 +16683,12 @@
                 ]
               }
             }
-          }
+          },
+          "slot_alternative": true
         }
-      ]
+      ],
+      "audited_2014": true,
+      "require_variant": true
     },
     {
       "kind": "feat",
@@ -16455,9 +16702,13 @@
                 "find familiar"
               ]
             }
-          }
+          },
+          "ritual_only": true,
+          "casting_ability_not_required": true,
+          "requires_context": "Concludo il rituale di Find Familiar usando la forma del famiglio concessa da questo talento."
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -16481,7 +16732,8 @@
             }
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -16489,14 +16741,24 @@
       "source": "TCE",
       "blocks": [
         {
-          "ability": "inherit",
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "known": {
             "_": [
               "mage hand#c"
             ]
+          },
+          "ability_from": {
+            "kind": "feat_ability"
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -16522,7 +16784,13 @@
       "source": "TCE",
       "blocks": [
         {
-          "ability": "inherit",
+          "ability": {
+            "choose": [
+              "int",
+              "wis",
+              "cha"
+            ]
+          },
           "innate": {
             "_": {
               "daily": {
@@ -16531,9 +16799,14 @@
                 ]
               }
             }
+          },
+          "slot_alternative": true,
+          "ability_from": {
+            "kind": "feat_ability"
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "feat",
@@ -16721,7 +16994,8 @@
             ]
           }
         }
-      ]
+      ],
+      "audited_2014": true
     },
     {
       "kind": "race",

@@ -1,0 +1,306 @@
+{
+  "meta": {
+    "edition": "2014",
+    "scope": "latest printing within the selected legacy sources",
+    "source_snapshot": "5etools v2.37.0",
+    "rules": "scripts\\data\\feat_spell_grants_2014.json",
+    "sources": [
+      "BGG",
+      "BMT",
+      "DSotDQ",
+      "ERLW",
+      "FTD",
+      "MTF",
+      "PHB",
+      "PSK",
+      "PSX",
+      "SCC",
+      "SatO",
+      "TCE",
+      "XGE"
+    ],
+    "feats_sha256": "381d51a5444cc5dac1e5f9af673a3fabb476662ee6229bda1a372ca49033a3b5"
+  },
+  "latest_feats_checked": 108,
+  "spell_grant_feats": 27,
+  "official_spell_grant_feats": 25,
+  "optional_plane_shift_spell_grant_feats": 2,
+  "missing": [],
+  "stale": [],
+  "entries": [
+    {
+      "name": "Aberrant Dragonmark",
+      "source": "ERLW",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Adept of the Black Robes",
+      "source": "DSotDQ",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides",
+        "normalize_feature_sections",
+        "spell_traits"
+      ]
+    },
+    {
+      "name": "Adept of the Red Robes",
+      "source": "DSotDQ",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides",
+        "normalize_feature_sections",
+        "spell_traits"
+      ]
+    },
+    {
+      "name": "Adept of the White Robes",
+      "source": "DSotDQ",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides",
+        "normalize_feature_sections",
+        "spell_traits"
+      ]
+    },
+    {
+      "name": "Artificer Initiate",
+      "source": "TCE",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Cartomancer",
+      "source": "BMT",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Divinely Favored",
+      "source": "DSotDQ",
+      "optional_plane_shift": false,
+      "upstream_blocks": 3,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Drow High Magic",
+      "source": "XGE",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Fey Teleportation",
+      "source": "XGE",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Fey Touched",
+      "source": "TCE",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Gift of the Metallic Dragon",
+      "source": "FTD",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides",
+        "normalize_feature_sections",
+        "spell_traits"
+      ]
+    },
+    {
+      "name": "Initiate of High Sorcery",
+      "source": "DSotDQ",
+      "optional_plane_shift": false,
+      "upstream_blocks": 3,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Magic Initiate",
+      "source": "PHB",
+      "optional_plane_shift": false,
+      "upstream_blocks": 6,
+      "corrections": [
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Outlands Envoy",
+      "source": "SatO",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides",
+        "normalize_feature_sections",
+        "spell_traits"
+      ]
+    },
+    {
+      "name": "Quicksmithing",
+      "source": "PSK",
+      "optional_plane_shift": true,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Ritual Caster",
+      "source": "PHB",
+      "optional_plane_shift": false,
+      "upstream_blocks": 6,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Rune Shaper",
+      "source": "BGG",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "entry_overrides",
+        "normalize_feature_sections",
+        "spell_traits"
+      ]
+    },
+    {
+      "name": "Scion of the Outer Planes",
+      "source": "SatO",
+      "optional_plane_shift": false,
+      "upstream_blocks": 5,
+      "corrections": [
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Servo Crafting",
+      "source": "PSK",
+      "optional_plane_shift": true,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Shadow Touched",
+      "source": "TCE",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Spell Sniper",
+      "source": "PHB",
+      "optional_plane_shift": false,
+      "upstream_blocks": 6,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Strixhaven Initiate",
+      "source": "SCC",
+      "optional_plane_shift": false,
+      "upstream_blocks": 15,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Strixhaven Mascot",
+      "source": "SCC",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Svirfneblin Magic",
+      "source": "MTF",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Telekinetic",
+      "source": "TCE",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Telepathic",
+      "source": "TCE",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "block_overrides",
+        "entry_overrides"
+      ]
+    },
+    {
+      "name": "Wood Elf Magic",
+      "source": "XGE",
+      "optional_plane_shift": false,
+      "upstream_blocks": 1,
+      "corrections": [
+        "entry_overrides"
+      ]
+    }
+  ]
+}
