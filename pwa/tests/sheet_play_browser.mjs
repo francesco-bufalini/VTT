@@ -312,7 +312,8 @@ try{
   'Weapon attacks have no timing subsections');
  const mainTiming=otherPanel.locator('[data-action-timing="action"]');
  assert.equal(await mainTiming.locator('summary.play-battle-action-heading').count(),1);
- await otherPanel.locator('summary.play-battle-summary').click();
+ if((await otherPanel.getAttribute('open'))===null)
+  await otherPanel.locator('summary.play-battle-summary').click();
  assert.equal(await mainTiming.getAttribute('open'),'',
   'Opening Azioni expands all action-time groups');
  await mainTiming.locator('summary.play-battle-action-heading').click();
