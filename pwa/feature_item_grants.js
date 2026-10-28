@@ -24,10 +24,17 @@ export function featureItemGrants(record={},features=[],catalog=[]){
  if(String(record.rules_version||'2014')==='2024')return [];
  return rows(catalog).flatMap(rule=>{
   const feature=rows(features).find(f=>f?.origin_id&&enabled(record,f)&&sourceMatches(record,f,rule));
-  return feature?[{...rule,origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name,
+  if(!feature)return [];
+  const member=classMembers(record).find(m=>norm(m.name)===norm(rule.class_name)&&
+   norm(m.source||record.class_source)===norm(rule.class_source));
+  const level=Number(member?.level)||0;
+  const maxOwned=[...rows(rule.max_owned_by_level)].filter(cap=>level>=Number(cap.min_level||1))
+   .reduce((value,cap)=>Number(cap.max_owned)||value,Number(rule.max_owned)||0);
+  return [{...rule,max_owned:maxOwned,owner_level:level,origin_id:feature.origin_id,
+   origin_name:'Tratto · '+feature.name,
    items:rows(rule.items).filter(item=>item.id&&item.name).map(item=>({...item,
     owned:rows(record.inventory).filter(row=>row.feature_item_grant_id===rule.id&&
-     row.feature_item_option_id===item.id&&Number(row.quantity??1)>0).length}))}]:[];
+     row.feature_item_option_id===item.id&&Number(row.quantity??1)>0).length}))}];
  });
 }
 export function claimFeatureItemPatch(record={},calculated={},grantId='',itemId='',{activationActionId=''}={}){
@@ -39,16 +46,20 @@ export function claimFeatureItemPatch(record={},calculated={},grantId='',itemId=
  if(!choice)throw Error('Oggetto non concesso dal privilegio.');
  const inventory=rows(record.inventory),owned=inventory.filter(row=>
   row.feature_item_grant_id===grant.id&&Number(row.quantity??1)>0);
- if(owned.some(row=>row.feature_item_option_id===choice.id))
+ const limit=Math.max(0,Number(grant.max_owned)||0);
+ const sameOption=owned.some(row=>row.feature_item_option_id===choice.id);
+ if(sameOption&&(!grant.allow_duplicate_choices||!limit||Number(choice.owned)>=limit))
   throw Error('Oggetto già concesso: modificalo o rimuovilo dall’inventario.');
- if(grant.max_owned&&owned.length>=Number(grant.max_owned)&&!grant.replace_existing)
+ if(limit&&owned.length>=limit&&!grant.replace_existing)
   throw Error('Rimuovi prima il precedente oggetto concesso da questo privilegio.');
- const item={id:'feature-grant:'+grant.id+':'+choice.id,
+ const copy=owned.length+1;
+ const item={id:'feature-grant:'+grant.id+':'+choice.id+(grant.allow_duplicate_choices?':'+copy:''),
   name:choice.name,quantity:Math.max(1,Number(choice.quantity)||1),
   type:choice.type||'G',rarity:'none',active:true,equipped:false,
   description:choice.description||'',source:grant.class_source||'',
   feature_item_grant_id:grant.id,feature_item_option_id:choice.id,
   granted_by:grant.origin_id};
- const retained=grant.replace_existing?inventory.filter(row=>row.feature_item_grant_id!==grant.id):inventory;
+ const retained=grant.replace_existing&&limit&&owned.length>=limit?
+  inventory.filter(row=>row.feature_item_grant_id!==grant.id):inventory;
  return {inventory:[...retained,item]};
 }
