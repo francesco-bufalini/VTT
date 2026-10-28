@@ -224,7 +224,7 @@
             "save_ability": "con",
             "effect": "incapacitated",
             "duration_rounds": 1,
-            "description": "TS Costituzione: incapacitado fino all'inizio del tuo prossimo turno."
+            "description": "TS Costituzione: incapacitato fino all'inizio del tuo prossimo turno."
           },
           {
             "id": "repulsion",
