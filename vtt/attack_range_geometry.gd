@@ -80,7 +80,7 @@ static func dimension_radii_mesh(geometry: Dictionary) -> ArrayMesh:
 static func dimension_radii_points(geometry: Dictionary) -> PackedVector3Array:
 	var shape: String = String(geometry.get("shape", "sphere"))
 	var extents := Vector3.ONE * float(geometry.get("radius", 0.5))
-	if shape in ["cube", "flat_square"]:
+	if shape in ["cube", "flat_square", "parallelepiped"]:
 		extents = (geometry.get("size", Vector3.ONE) as Vector3) * 0.5
 	elif shape in ["cone", "cylinder", "line"]:
 		extents.y = float(geometry.get("height", 1.0)) * 0.5

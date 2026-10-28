@@ -145,6 +145,7 @@ $fastTests = @(
     "test_spell_targeting_lifecycle.gd",
     "test_pwa_backup_store.gd",
     "test_area_dimensions.gd",
+    "test_map_box_drawing.gd",
     "test_token_context_conditions.gd",
     "test_token_catalog_merge.gd",
     "test_scene_token_pack_recovery.gd",

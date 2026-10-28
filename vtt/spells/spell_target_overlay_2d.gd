@@ -1,4 +1,5 @@
 extends Control
+const MapBoxGeometry = preload("res://vtt/map_box_geometry.gd")
 const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
 # Screen-space spell targeting HUD for Godot's top-down view.
 # Draw in the board UI layer above the 2D token portraits but below
@@ -84,7 +85,15 @@ func _circle_polygon(center: Vector3, radius: float) -> PackedVector2Array:
 	return result
 
 
-func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: float = -1.0, style: String = "") -> PackedVector2Array:
+func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: float = -1.0, style: String = "", box_points: Array = []) -> PackedVector2Array:
+	if shape == "parallelepiped":
+		if box_points.size() != 4:
+			return PackedVector2Array()
+		var origin: Vector3 = _array_vector3(box_points[0])
+		var length: Vector3 = _array_vector3(box_points[1]) - origin
+		var width: Vector3 = _array_vector3(box_points[2]) - origin
+		return PackedVector2Array([_world_point(origin), _world_point(origin + length),
+			_world_point(origin + length + width), _world_point(origin + width)])
 	var radius: float = maxf(Vector2(end.x - start.x, end.z - start.z).length(), 0.01)
 	var geometry: Dictionary = {}
 	if measure.has_method("_aoe_geometry"):
@@ -183,7 +192,7 @@ func _collect_post_cast_areas() -> void:
 		if not entries[index] is Dictionary or not roots[index] is Node3D:
 			continue
 		var data: Dictionary = entries[index] as Dictionary
-		if String(data.get("shape", "")) not in ["sphere", "cube", "cone", "line", "cylinder", "flat_square"]:
+		if String(data.get("shape", "")) not in ["sphere", "cube", "cone", "line", "cylinder", "flat_square", "parallelepiped"]:
 			continue
 		var root: Node3D = roots[index] as Node3D
 		if not is_instance_valid(root) or root.is_queued_for_deletion():
@@ -194,6 +203,7 @@ func _collect_post_cast_areas() -> void:
 			"start": _array_vector3(data.get("start")) + preview_offset,
 			"end": _array_vector3(data.get("end")) + preview_offset,
 			"shape": String(data.get("shape", "sphere")),
+			"box_points": MapBoxGeometry.translated(data.get("box_points", []), preview_offset),
 			"width": float(data.get("line_width_world", -1.0)),
 			"style": String(data.get("style", "")),
 			"color": measure.call("_deserialize_aoe_color", data.get("color", {})),
@@ -414,12 +424,12 @@ func _draw() -> void:
 			var points: PackedVector2Array = _shape_polygon(
 				data.get("start", Vector3.ZERO), data.get("end", Vector3.ZERO),
 				String(data.get("shape", "sphere")), float(data.get("width", -1.0)),
-				String(data.get("style", ""))
+				String(data.get("style", "")), data.get("box_points", [])
 			)
 			_draw_area(points, _area_color(data))
 			_draw_dimension_radii(data.get("start", Vector3.ZERO), data.get("end", Vector3.ZERO),
 				String(data.get("shape", "sphere")), _area_color(data),
-				float(data.get("width", -1.0)), String(data.get("style", "")))
+				float(data.get("width", -1.0)), String(data.get("style", "")), data.get("box_points", []))
 		hover_area = data
 	# Keep confirmed Magic Missile rays visible between successive picks.
 	# The hovered ray is drawn from the 3D spell preview below.
@@ -440,8 +450,9 @@ func _draw() -> void:
 		var end: Vector3 = measure.get("_end_center")
 		var shape: String = String(measure.get("aoe_shape"))
 		if _is_2d_view():
-			_draw_area(_shape_polygon(start, end, shape), manual.material_override.albedo_color)
-			_draw_dimension_radii(start, end, shape, manual.material_override.albedo_color)
+			var box_points: Array = measure.drawing_box_points() if shape == "parallelepiped" else []
+			_draw_area(_shape_polygon(start, end, shape, -1.0, "", box_points), manual.material_override.albedo_color)
+			_draw_dimension_radii(start, end, shape, manual.material_override.albedo_color, -1.0, "", box_points)
 	var preview: MeshInstance3D = measure.get("_spell_preview") as MeshInstance3D
 	var casting: bool = spell != null and is_instance_valid(spell) and bool(spell.call("is_targeting"))
 	var range_list: Array[String] = _range_names_for_hud(active_range)
@@ -587,6 +598,8 @@ func _sidebar_entries() -> Array[Dictionary]:
 			"shape": String(measure.get(spec["shape"])), "preview": true,
 			"color": (visual.material_override as StandardMaterial3D).albedo_color,
 			"spell_preview": not bool(spec["manual"])}
+		if bool(spec["manual"]) and data.shape == "parallelepiped":
+			data["box_points"] = measure.drawing_box_points()
 		if not bool(spec["manual"]):
 			data["style"] = String(measure.get("_spell_preview_style"))
 			data["width"] = float(measure.get("_spell_preview_line_width"))
@@ -600,7 +613,7 @@ func _area_target_names(data: Dictionary) -> Array[String]:
 			float(data.get("width", -1.0)), String(data.get("style", "")))
 	var result: Array[String] = []
 	var tokens: Array = measure.call("area_affected_tokens", data["start"], data["end"],
-		String(data["shape"]), String(data.get("style", "")), float(data.get("width", -1.0)))
+		String(data["shape"]), String(data.get("style", "")), float(data.get("width", -1.0)), data.get("box_points", []))
 	for token: Node3D in tokens:
 		result.append(_target_display_name(token))
 	return result
@@ -680,7 +693,7 @@ func _refresh_area_sidebar() -> void:
 		var title := Label.new()
 		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var shape_name: String = {"sphere": "Sfera", "cube": "Cubo", "cone": "Cono",
-			"line": "Linea", "cylinder": "Cilindro", "flat_square": "Quadrato"}.get(shape, shape)
+			"line": "Linea", "cylinder": "Cilindro", "flat_square": "Quadrato", "parallelepiped": "Parallelepipedo"}.get(shape, shape)
 		title.text = "● %s %d%s" % [shape_name, counts[shape], " · anteprima" if bool(data.get("preview", false)) else ""]
 		title.add_theme_color_override("font_color", _area_color(data))
 		header.add_child(title)
@@ -704,7 +717,7 @@ func _refresh_area_sidebar() -> void:
 		var dimensions := Label.new()
 		dimensions.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		dimensions.text = measure.call("aoe_dimensions_description", data["start"], data["end"],
-			shape, String(data.get("style", "")), float(data.get("width", -1.0)))
+			shape, String(data.get("style", "")), float(data.get("width", -1.0)), data.get("box_points", []))
 		_area_rows.add_child(dimensions)
 		var names: Array[String] = _area_target_names(data)
 		var targets := Label.new()
@@ -718,10 +731,10 @@ func _refresh_area_sidebar() -> void:
 	scroll.set_deferred("scroll_vertical", previous_scroll)
 
 
-func _draw_dimension_radii(start: Vector3, end: Vector3, shape: String, tint: Color, width: float = -1.0, style: String = "") -> void:
+func _draw_dimension_radii(start: Vector3, end: Vector3, shape: String, tint: Color, width: float = -1.0, style: String = "", box_points: Array = []) -> void:
 	if not measure.has_method("_aoe_geometry"):
 		return
-	var geometry: Dictionary = measure.call("_aoe_geometry", start, end, shape, style, width)
+	var geometry: Dictionary = measure.call("_aoe_geometry", start, end, shape, style, width, box_points)
 	var points: PackedVector3Array = RangeGeometry.dimension_radii_points(geometry)
 	var transform := Transform3D(geometry.get("basis", Basis.IDENTITY), geometry.get("position", start))
 	var color: Color = tint
@@ -740,11 +753,11 @@ func mobile_map_areas(projection: Dictionary) -> Array:
 	for area: Dictionary in _areas:
 		var points: Array = []
 		for point: Vector2 in _shape_polygon(area.start, area.end, area.shape,
-			float(area.get("width", -1.0)), String(area.get("style", ""))):
+			float(area.get("width", -1.0)), String(area.get("style", "")), area.get("box_points", [])):
 			points.append([point.x, point.y])
 		var affected: Array[String] = []
 		for token: Node3D in measure.call("area_affected_tokens", area.start, area.end,
-			area.shape, String(area.get("style", "")), float(area.get("width", -1.0))):
+			area.shape, String(area.get("style", "")), float(area.get("width", -1.0)), area.get("box_points", [])):
 			if board.is_ancestor_of(token) and token.is_visible_in_tree() and token.has_method("get_token_id"):
 				affected.append(String(token.call("get_token_id")))
 		result.append({"points": points, "shape": area.shape,

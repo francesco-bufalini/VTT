@@ -19,6 +19,7 @@ const CONTEXT_RESTORE_TRANSFORMATION := 15
 const CONTEXT_COMPENDIUM := 17
 const CONTEXT_TOKEN_LIST := 18
 const CONTEXT_MEASURE_RULER := 19
+const CONTEXT_DRAW_BOX := 47
 const CONTEXT_AOE_SPHERE := 20
 const CONTEXT_AOE_CUBE := 21
 const CONTEXT_AOE_CONE := 22
@@ -1657,6 +1658,7 @@ func _input(event: InputEvent) -> void:
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
 		and not _ui_owns_mouse
+		and not measurement_tool.is_box_drawing_mode()
 		and not _is_pointer_over_area_sidebar(event.position)
 		# Repositioning takes priority over the usual click-to-dismiss AoE.
 		and not bool(measurement_tool.call("is_movable_aoe_dragging"))
@@ -2328,6 +2330,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			or event is InputEventMouseMotion
 		)
 	):
+		get_viewport().set_input_as_handled()
+		return
+
+	if not _ui_owns_mouse and not measurement_tool.is_movable_aoe_dragging() and measurement_tool.handle_box_drawing_input(event):
+		if not measurement_tool.is_box_drawing_mode():
+			measurement_mode_label.hide()
+			_capture_mouse()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -3689,6 +3698,8 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_measure_menu.add_item("AoE: cubo", CONTEXT_AOE_CUBE)
 	context_measure_menu.add_item("AoE: cono", CONTEXT_AOE_CONE)
 	context_measure_menu.add_item("AoE: linea", CONTEXT_AOE_LINE)
+	context_measure_menu.add_separator("Disegno sulla mappa")
+	context_measure_menu.add_item("Disegno: parallelepipedo (4 vertici)", CONTEXT_DRAW_BOX)
 	context_measure_menu.add_separator()
 	context_measure_menu.add_item("Cancella tutte le AoE", CONTEXT_CLEAR_AOES)
 	context_measure_menu.set_item_tooltip(context_measure_menu.get_item_index(CONTEXT_MEASURE_RULER), "Misura le distanze sulla mappa; premi R per uscire.")
@@ -3934,6 +3945,13 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			["sphere", "cube", "cone", "line"][id - CONTEXT_AOE_SPHERE]
 		)
 		measurement_mode_label.text = "AoE: trascina clic sinistro | R per uscire"
+		measurement_mode_label.show()
+		_close_context_menu_to_game()
+		return
+	if id == CONTEXT_DRAW_BOX:
+		measurement_tool.set_measurement_mode(true)
+		measurement_tool.set_aoe_mode("parallelepiped")
+		measurement_mode_label.text = "DISEGNO: 3 vertici di base + altezza | Esc / R: esci\nRotellina: altezza o colore | Ctrl+rotellina: colore | Destro: annulla"
 		measurement_mode_label.show()
 		_close_context_menu_to_game()
 		return
@@ -5902,7 +5920,7 @@ func _capture_mouse() -> void:
 		_ui_owns_mouse = true
 		_release_mouse()
 		return
-	if _view_2d_enabled:
+	if _view_2d_enabled or measurement_tool.is_box_drawing_mode():
 		Input.set_default_cursor_shape(Input.CURSOR_CROSS)
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		return

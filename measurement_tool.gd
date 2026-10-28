@@ -18,6 +18,7 @@ const AOE_COLORS: Array[Color] = [
 const DamageAreaParticles = preload("res://vtt/spells/damage_area_particles.gd")
 const SpellVFX = preload("res://vtt/spells/spell_vfx.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
+const MapBoxGeometry = preload("res://vtt/map_box_geometry.gd")
 const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
 
 @export var cell_size: float = 1.0
@@ -33,6 +34,11 @@ var persistent_aoes: Array = []
 var _aoe_nodes: Array[Node3D] = []
 var _aoe_preview: MeshInstance3D
 var _aoe_color_index: int = 0
+var _drawing_points: Array[Vector3] = []
+var _drawing_candidate: Vector3 = Vector3.ZERO
+var _drawing_target_valid: bool = false
+var _drawing_height_anchor: float = 0.0
+var _drawing_height_offset: float = 0.0
 var _movable_aoe_drag_index: int = -1
 var _movable_aoe_drag_root_origin: Vector3 = Vector3.ZERO
 var _movable_aoe_drag_delta: Vector3 = Vector3.ZERO
@@ -155,18 +161,15 @@ func _cell_intersects_aoe(
 	end: Vector3,
 	shape: String,
 	style: String = "",
-	line_width_world: float = -1.0
+	line_width_world: float = -1.0,
+	box_points: Array = []
 ) -> bool:
-	var geometry: Dictionary = _aoe_geometry(
-		start,
-		end,
-		shape,
-		style,
-		line_width_world
-	)
+	var geometry: Dictionary = _aoe_geometry(start, end, shape, style, line_width_world, box_points)
 	var tolerance: float = cell_size * 0.52
 
 	match shape:
+		"parallelepiped":
+			return MapBoxGeometry.intersects_cell(geometry, point, tolerance)
 		"sphere":
 			return point.distance_to(start) <= (
 				float(geometry.get("radius", cell_size * 0.5))
@@ -273,16 +276,17 @@ func _persistent_aoe_hits_token(
 			end,
 			shape,
 			style,
-			line_width_world
+			line_width_world,
+			data.get("box_points", [])
 		):
 			return true
 	return false
 
 
-func area_affected_tokens(start: Vector3, end: Vector3, shape: String, style: String = "", width: float = -1.0) -> Array[Node3D]:
+func area_affected_tokens(start: Vector3, end: Vector3, shape: String, style: String = "", width: float = -1.0, box_points: Array = []) -> Array[Node3D]:
 	var result: Array[Node3D] = []
 	var data := {"start": [start.x, start.y, start.z], "end": [end.x, end.y, end.z],
-		"shape": shape, "style": style, "line_width_world": width}
+		"shape": shape, "style": style, "line_width_world": width, "box_points": box_points}
 	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if node is Node3D and is_instance_valid(node) and get_parent().is_ancestor_of(node):
 			if _persistent_aoe_hits_token(data, node as Node3D):
@@ -483,7 +487,7 @@ func _token_touched_by_current_geometry(token: Node3D) -> bool:
 			):
 				return true
 
-	if aoe_mode and _dragging:
+	if aoe_mode and _dragging and (aoe_shape != "parallelepiped" or _drawing_target_valid):
 		for center: Vector3 in _token_occupied_cell_centers(token):
 			if _cell_intersects_aoe(
 				center,
@@ -491,7 +495,8 @@ func _token_touched_by_current_geometry(token: Node3D) -> bool:
 				_end_center,
 				aoe_shape,
 				"",
-				-1.0
+				-1.0,
+				drawing_box_points() if aoe_shape == "parallelepiped" else []
 			):
 				return true
 
@@ -522,6 +527,8 @@ func _refresh_affected_token_highlight() -> void:
 	var tokens: Array[Node] = get_tree().get_nodes_in_group("dnd_token")
 	var signature_parts: PackedStringArray = PackedStringArray()
 	signature_parts.append(JSON.stringify(persistent_aoes))
+	if is_box_drawing_mode():
+		signature_parts.append(str(_drawing_target_valid) + JSON.stringify(drawing_box_points()))
 	signature_parts.append(JSON.stringify(_transient_spell_aoes))
 	signature_parts.append(
 		"%s|%s|%s" % [
@@ -628,7 +635,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _measurement_mode and _dragging:
+	if _measurement_mode and _dragging and not is_box_drawing_mode():
 		_update_target_from_camera()
 	_update_following_aoes()
 	_refresh_affected_token_highlight()
@@ -693,6 +700,8 @@ func _update_following_aoes() -> void:
 					shifted_point.y,
 					shifted_point.z
 				]
+			if data.get("shape", "") == "parallelepiped":
+				data["box_points"] = MapBoxGeometry.translated(data.box_points, movement_delta)
 			persistent_aoes[index] = data
 
 		root.set_meta("follow_last_position", current_position)
@@ -788,8 +797,14 @@ func _format_area_dimension(distance_world: float) -> String:
 	]
 
 
-func aoe_dimensions_description(start: Vector3, end: Vector3, shape: String, style: String = "", width: float = -1.0) -> String:
-	var geometry: Dictionary = _aoe_geometry(start, end, shape, style, width)
+func aoe_dimensions_description(start: Vector3, end: Vector3, shape: String, style: String = "", width: float = -1.0, box_points: Array = []) -> String:
+	var geometry: Dictionary = _aoe_geometry(start, end, shape, style, width, box_points)
+	if shape == "parallelepiped":
+		if geometry.is_empty():
+			return "Definisci i quattro vertici"
+		var size: Vector3 = geometry.size
+		return "Lunghezza %s\nLarghezza %s\nAltezza %s" % [
+			_format_area_dimension(size.x), _format_area_dimension(size.z), _format_area_dimension(size.y)]
 	if shape in ["sphere", "cylinder"]:
 		var label: String = "Raggio " + _format_area_dimension(float(geometry.get("radius", 0.5)))
 		if shape == "cylinder":
@@ -815,7 +830,7 @@ func _current_aoe_color() -> Color:
 
 
 func begin_measurement() -> bool:
-	if not _measurement_mode:
+	if not _measurement_mode or is_box_drawing_mode():
 		return false
 
 	var cell: Dictionary = _looked_cell()
@@ -853,7 +868,7 @@ func begin_measurement() -> bool:
 
 
 func end_measurement() -> void:
-	if not _dragging:
+	if not _dragging or is_box_drawing_mode():
 		return
 
 	if aoe_mode:
@@ -880,6 +895,8 @@ func end_measurement() -> void:
 
 
 func cancel_measurement() -> void:
+	_drawing_points.clear()
+	_drawing_target_valid = false
 	_dragging = false
 	_start_token = null
 	_hide_measurement()
@@ -1199,7 +1216,7 @@ func _ruler_token_under_mouse(
 	}
 
 
-func _looked_cell() -> Dictionary:
+func _looked_cell(screen_position: Vector2 = Vector2.INF) -> Dictionary:
 	if _camera == null or not is_instance_valid(_camera):
 		return {"valid": false}
 
@@ -1209,6 +1226,8 @@ func _looked_cell() -> Dictionary:
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		screen_point = _camera.get_viewport().get_mouse_position()
 
+	if screen_position.is_finite():
+		screen_point = screen_position
 	var origin: Vector3 = _camera.project_ray_origin(screen_point)
 	var direction: Vector3 = _camera.project_ray_normal(screen_point)
 	var ray_end: Vector3 = origin + direction * max_ray_distance
@@ -1402,6 +1421,9 @@ func _build_visuals() -> void:
 
 
 func _update_visuals() -> void:
+	if is_box_drawing_mode():
+		_update_box_drawing_visuals()
+		return
 	if aoe_mode:
 		if not is_instance_valid(_aoe_preview):
 			_aoe_preview = MeshInstance3D.new()
@@ -1524,12 +1546,151 @@ func _hide_measurement() -> void:
 func set_aoe_mode(shape: String) -> void:
 	if not _measurement_mode:
 		return
-	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder", "parallelepiped"]:
 		return
 
 	cancel_measurement()
 	aoe_mode = true
 	aoe_shape = shape
+
+func is_box_drawing_mode() -> bool:
+	return _measurement_mode and aoe_mode and aoe_shape == "parallelepiped"
+
+
+func drawing_box_points() -> Array:
+	if _drawing_points.size() < 2:
+		return []
+	var points: Array[Vector3] = _drawing_points.duplicate()
+	if points.size() == 2:
+		points.append(_drawing_candidate)
+		points.append(points[0] + Vector3.UP * cell_size)
+	elif points.size() == 3:
+		points.append(_drawing_candidate)
+	return WallGeometry.serialize_points(points)
+
+
+func accept_box_drawing_point(point: Vector3) -> bool:
+	if not is_box_drawing_mode() or not point.is_finite():
+		return false
+	var candidate: Vector3 = point
+	if _drawing_points.size() > 0:
+		var origin: Vector3 = _drawing_points[0]
+		match _drawing_points.size():
+			1:
+				candidate.y = origin.y
+				if candidate.distance_to(origin) < 0.001:
+					return false
+			2:
+				var width_axis: Vector3 = (_drawing_points[1] - origin).normalized().cross(Vector3.UP)
+				candidate = origin + width_axis * (candidate - origin).dot(width_axis)
+				if candidate.distance_to(origin) < 0.001:
+					return false
+			3:
+				candidate = Vector3(origin.x, candidate.y, origin.z)
+				var points: Array[Vector3] = _drawing_points.duplicate()
+				points.append(candidate)
+				var serialized: Array = WallGeometry.serialize_points(points)
+				if MapBoxGeometry.geometry(serialized).is_empty() or persistent_aoes.size() >= 256:
+					return false
+				add_aoe(origin, _drawing_points[1], "parallelepiped", "", _current_aoe_color(), -1.0, 0.0, "free", Vector3.INF, null, serialized)
+				cancel_measurement()
+				return true
+	_drawing_points.append(candidate)
+	_start_center = _drawing_points[0]
+	_drawing_candidate = candidate
+	_dragging = true
+	return true
+
+
+func _update_box_drawing_target(screen: Vector2) -> void:
+	_drawing_target_valid = false
+	if _camera == null or not is_instance_valid(_camera):
+		return
+	if _drawing_points.size() == 3:
+		# Screen-space height also works when looking straight down in 2D.
+		var height: float = cell_size + (_drawing_height_anchor - screen.y) * cell_size / 60.0 + _drawing_height_offset
+		height = clampf(height, cell_size * 0.01, 10000.0 - absf(_drawing_points[0].y))
+		_drawing_candidate = _drawing_points[0] + Vector3.UP * height
+		_drawing_target_valid = true
+	elif _drawing_points.is_empty():
+		var cell: Dictionary = _looked_cell(screen)
+		if bool(cell.get("valid", false)):
+			_drawing_candidate = cell.get("raw", cell.get("center", Vector3.ZERO))
+			_drawing_target_valid = true
+	else:
+		var origin: Vector3 = _camera.project_ray_origin(screen)
+		var direction: Vector3 = _camera.project_ray_normal(screen)
+		var hit: Variant = Plane(Vector3.UP, _drawing_points[0].y).intersects_ray(origin, direction)
+		if hit is Vector3 and origin.distance_to(hit) <= max_ray_distance:
+			_drawing_candidate = hit
+			if _drawing_points.size() == 2:
+				var width_axis: Vector3 = (_drawing_points[1] - _drawing_points[0]).normalized().cross(Vector3.UP)
+				_drawing_candidate = _drawing_points[0] + width_axis * (Vector3(hit) - _drawing_points[0]).dot(width_axis)
+			_drawing_target_valid = true
+	_end_center = _drawing_candidate
+	_update_box_drawing_visuals()
+
+
+func handle_box_drawing_input(event: InputEvent) -> bool:
+	if not is_box_drawing_mode():
+		return false
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_R]:
+		set_measurement_mode(false)
+		return true
+	if event is InputEventMouseMotion:
+		_update_box_drawing_target(event.position)
+		return true
+	if not event is InputEventMouseButton:
+		return false
+	if not event.pressed:
+		return true
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		cancel_measurement()
+		return true
+	if event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		var step: int = 1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -1
+		if _drawing_points.size() == 3 and not event.ctrl_pressed:
+			_drawing_height_offset += step * cell_size
+		else:
+			_aoe_color_index = posmod(_aoe_color_index + step, AOE_COLORS.size())
+		_update_box_drawing_target(event.position)
+		return true
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		_update_box_drawing_target(event.position)
+		if _drawing_target_valid and accept_box_drawing_point(_drawing_candidate):
+			if _drawing_points.size() == 3:
+				_drawing_height_anchor = event.position.y
+				_drawing_height_offset = 0.0
+			_update_box_drawing_target(event.position)
+		return true
+	return false
+
+
+func _update_box_drawing_visuals() -> void:
+	_hide_measurement()
+	if _drawing_points.is_empty():
+		return
+	_start_cube.global_position = _drawing_points[0]
+	_start_cube.show()
+	_end_cube.global_position = _drawing_candidate
+	_end_cube.visible = _drawing_target_valid
+	if _drawing_target_valid and _drawing_points.size() == 1:
+		var delta: Vector3 = _drawing_candidate - _drawing_points[0]
+		if delta.length() > 0.0001:
+			_line.global_transform = Transform3D(Basis(Quaternion(Vector3.UP, delta.normalized())), (_drawing_candidate + _drawing_points[0]) * 0.5)
+			_line.scale = Vector3(1.0, delta.length(), 1.0)
+			_line.show()
+	var points: Array = drawing_box_points()
+	if _drawing_target_valid and not MapBoxGeometry.geometry(points).is_empty():
+		if not is_instance_valid(_aoe_preview):
+			_aoe_preview = MeshInstance3D.new()
+			add_child(_aoe_preview)
+		_draw_aoe(_aoe_preview, _start_center, _drawing_candidate, "parallelepiped", "", _next_aoe_color("parallelepiped", _current_aoe_color()), -1.0, points)
+		_aoe_preview.show()
+	var prompts: Array[String] = ["Primo vertice", "Secondo vertice: lunghezza", "Terzo vertice: larghezza", "Quarto vertice: altezza (mouse / rotellina)"]
+	_distance_label.text = prompts[_drawing_points.size()] + "\n" + aoe_dimensions_description(_start_center, _drawing_candidate, "parallelepiped", "", -1.0, points)
+	_distance_label.show()
+
 
 func _spell_style_color(style: String) -> Color:
 	match style:
@@ -2636,9 +2797,12 @@ func add_aoe(
 	movable_aoe_feet: float = 0.0,
 	movable_aoe_mode: String = "free",
 	caster_origin: Vector3 = Vector3(INF, INF, INF),
-	follow_target: Node3D = null
+	follow_target: Node3D = null,
+	box_points: Array = []
 ) -> void:
 	if persistent_aoes.size() >= 256:
+		return
+	if shape == "parallelepiped" and MapBoxGeometry.geometry(box_points).is_empty():
 		return
 
 	_record_undo_state()
@@ -2655,6 +2819,8 @@ func add_aoe(
 		"end": [end.x, end.y, end.z],
 		"shape": shape
 	}
+	if shape == "parallelepiped":
+		data["box_points"] = box_points.duplicate(true)
 	if not style.is_empty():
 		data["style"] = style
 	if selected_color.a >= 0.0:
@@ -2693,7 +2859,8 @@ func add_aoe(
 		shape,
 		style,
 		selected_color,
-		line_width_world
+		line_width_world,
+		box_points
 	)
 	DamageAreaParticles.attach_area(
 		root, start, end, shape, style, cell_size
@@ -2705,7 +2872,8 @@ func add_aoe(
 		end,
 		shape,
 		style,
-		line_width_world
+		line_width_world,
+		box_points
 	)
 	_aoe_nodes.append(root)
 
@@ -2775,8 +2943,11 @@ func _aoe_geometry(
 	end: Vector3,
 	shape: String,
 	style: String = "",
-	line_width_world: float = -1.0
+	line_width_world: float = -1.0,
+	box_points: Array = []
 ) -> Dictionary:
+	if shape == "parallelepiped":
+		return MapBoxGeometry.geometry(box_points)
 	var base_cells: int = _dnd_grid_distance_cells(end - start)
 	var reach_world: float = maxf(
 		cell_size * 0.5,
@@ -2867,14 +3038,16 @@ func _draw_aoe(
 	shape: String,
 	style: String = "",
 	color: Color = Color(0.0, 0.0, 0.0, -1.0),
-	line_width_world: float = -1.0
+	line_width_world: float = -1.0,
+	box_points: Array = []
 ) -> void:
 	var geometry: Dictionary = _aoe_geometry(
 		start,
 		end,
 		shape,
 		style,
-		line_width_world
+		line_width_world,
+		box_points
 	)
 
 	var geometry_basis: Basis = geometry.get(
@@ -2920,7 +3093,7 @@ func _draw_aoe(
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 	match shape:
-		"cube", "flat_square":
+		"cube", "flat_square", "parallelepiped":
 			var box_mesh: BoxMesh = BoxMesh.new()
 			box_mesh.size = geometry.get(
 				"size",
@@ -2961,6 +3134,19 @@ func _draw_aoe(
 			node.mesh = sphere_mesh
 
 	node.material_override = material
+	var outline: MeshInstance3D = node.get_node_or_null("BoxOutline") as MeshInstance3D
+	if shape == "parallelepiped":
+		if outline == null:
+			outline = MeshInstance3D.new()
+			outline.name = "BoxOutline"
+			node.add_child(outline)
+		outline.mesh = MapBoxGeometry.outline_mesh(geometry.size)
+		var edge_material := material.duplicate() as StandardMaterial3D
+		edge_material.albedo_color.a = 0.95
+		outline.material_override = edge_material
+		outline.show()
+	elif outline != null:
+		outline.hide()
 	var radii: MeshInstance3D = node.get_node_or_null("DimensionRadii") as MeshInstance3D
 	if radii == null:
 		radii = MeshInstance3D.new()
@@ -3196,6 +3382,8 @@ func finish_movable_aoe_drag(commit: bool) -> bool:
 						float(point_data[2])
 					) + _movable_aoe_drag_delta
 					data[key] = [point.x, point.y, point.z]
+			if data.get("shape", "") == "parallelepiped":
+				data["box_points"] = MapBoxGeometry.translated(data.box_points, _movable_aoe_drag_delta)
 			persistent_aoes[index] = data
 		elif root != null and is_instance_valid(root):
 			var held_data: Dictionary = root.get_meta("spell_overlay_2d", {}).duplicate()
@@ -3243,14 +3431,16 @@ func _add_aoe_pick_area(
 	end: Vector3,
 	shape_name: String,
 	style: String = "",
-	line_width_world: float = -1.0
+	line_width_world: float = -1.0,
+	box_points: Array = []
 ) -> void:
 	var geometry: Dictionary = _aoe_geometry(
 		start,
 		end,
 		shape_name,
 		style,
-		line_width_world
+		line_width_world,
+		box_points
 	)
 
 	var area: Area3D = Area3D.new()
@@ -3283,7 +3473,7 @@ func _add_aoe_pick_area(
 			)
 			collision.shape = sphere
 
-		"cube", "flat_square":
+		"cube", "flat_square", "parallelepiped":
 			var box: BoxShape3D = BoxShape3D.new()
 			box.size = geometry.get(
 				"size",
@@ -3440,6 +3630,13 @@ func valid_aoes(data: Variant) -> bool:
 			if item.has("hemisphere") and not item.get("hemisphere") is bool:
 				return false
 
+		elif shape == "parallelepiped":
+			var points_value: Variant = item.get("box_points", [])
+			if not points_value is Array or MapBoxGeometry.geometry(points_value).is_empty():
+				return false
+			for key: String in ["start", "end"]:
+				if not _valid_serialized_point(item.get(key, [])):
+					return false
 		elif shape in [
 			"sphere",
 			"cube",
@@ -3610,7 +3807,9 @@ func apply_persistent_aoes(data: Array) -> void:
 			float(item_data.get("line_width_world", -1.0)),
 			float(item_data.get("movable_aoe_feet", 0.0)),
 			String(item_data.get("movable_aoe_mode", "free")),
-			caster_origin
+			caster_origin,
+			null,
+			item_data.get("box_points", [])
 		)
 		if bool(item_data.get("spell_click_to_remove", false)):
 			_mark_persistent_aoe_as_spell(_aoe_nodes.size() - 1)
