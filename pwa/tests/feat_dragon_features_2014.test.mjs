@@ -75,7 +75,7 @@ test('Dragon Hide adds a natural slashing 1d4 STR attack without changing other 
  assert.equal(claws.ability,'str');
  assert.equal(claws.damage_base_formula,'1d4');
  assert.match(claws.damage,/1d4/);
- assert.match(claws.damage,/3/);
+ assert.equal(claws.damage,'1d4 + '+sheet.abilities.str.modifier);
  assert(sheet.attacks.some(a=>a.id==='unarmed'&&a.damage_type==='contundente'));
  const without=calculateSheet({...record,feats_catalog:record.feats_catalog.filter(f=>f.name!=='Dragon Hide')},catalogs);
  assert(!without.attacks.some(a=>a.id===claws.id));
