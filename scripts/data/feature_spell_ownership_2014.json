@@ -1,0 +1,483 @@
+{
+  "meta": {
+    "edition": "2014",
+    "selection": "Latest official printing within the 2014 rules; 2024 reprints are separate identities.",
+    "upstream": "5etools-src v2.37.0 data/class/class-*.json",
+    "notes": "Typed feature owners only. Spell identities and progressions are read from upstream additionalSpells. No prose parsing at runtime."
+  },
+  "bindings": [
+    {
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass": "Alchemist",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Alchemist Spells"
+      }
+    },
+    {
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass": "Armorer",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Armorer Spells"
+      }
+    },
+    {
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass": "Artillerist",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Artillerist Spells"
+      }
+    },
+    {
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass": "Battle Smith",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Battle Smith Spells"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Knowledge",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Knowledge Domain"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Life",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Life Domain"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Light",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Light Domain",
+        "known": "Bonus Cantrip"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Nature",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Nature Domain",
+        "known": "Acolyte of Nature"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Tempest",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Tempest Domain"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Trickery",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Trickery Domain"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "War",
+      "source": "PHB",
+      "owners": {
+        "prepared": "War Domain"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Death",
+      "source": "DMG",
+      "owners": {
+        "prepared": "Death Domain",
+        "known": "Reaper"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Arcana",
+      "source": "SCAG",
+      "owners": {
+        "prepared": "Arcana Domain",
+        "known": "Arcane Initiate"
+      },
+      "stage_owners": {
+        "prepared": {
+          "17": "Arcane Mastery"
+        }
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Forge",
+      "source": "XGE",
+      "owners": {
+        "prepared": "Forge Domain"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Grave",
+      "source": "XGE",
+      "owners": {
+        "prepared": "Grave Domain",
+        "known": "Circle of Mortality"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Order",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Order Domain"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Peace",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Peace Domain"
+      }
+    },
+    {
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "subclass": "Twilight",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Twilight Domain"
+      }
+    },
+    {
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass": "Land",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Circle Spells",
+        "known": "Bonus Cantrip"
+      }
+    },
+    {
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass": "Spores",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Circle Spells",
+        "known": "Circle Spells"
+      }
+    },
+    {
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass": "Stars",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Star Map",
+        "known": "Star Map"
+      }
+    },
+    {
+      "class_name": "Druid",
+      "class_source": "PHB",
+      "subclass": "Wildfire",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Circle Spells",
+        "known": "Circle Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Devotion",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Oath Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Ancients",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Oath Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Vengeance",
+      "source": "PHB",
+      "owners": {
+        "prepared": "Oath Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Oathbreaker",
+      "source": "DMG",
+      "owners": {
+        "prepared": "Oathbreaker Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Crown",
+      "source": "SCAG",
+      "owners": {
+        "prepared": "Oath Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Conquest",
+      "source": "XGE",
+      "owners": {
+        "prepared": "Oath Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Redemption",
+      "source": "XGE",
+      "owners": {
+        "prepared": "Oath Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Glory",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Oath Spells"
+      }
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "subclass": "Watchers",
+      "source": "TCE",
+      "owners": {
+        "prepared": "Oath Spells"
+      }
+    },
+    {
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass": "Gloom Stalker",
+      "source": "XGE",
+      "owners": {
+        "known": "Gloom Stalker Magic"
+      }
+    },
+    {
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass": "Horizon Walker",
+      "source": "XGE",
+      "owners": {
+        "known": "Horizon Walker Magic"
+      }
+    },
+    {
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass": "Monster Slayer",
+      "source": "XGE",
+      "owners": {
+        "known": "Monster Slayer Magic"
+      }
+    },
+    {
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass": "Fey Wanderer",
+      "source": "TCE",
+      "owners": {
+        "known": "Fey Wanderer Magic"
+      }
+    },
+    {
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass": "Swarmkeeper",
+      "source": "TCE",
+      "owners": {
+        "known": "Swarmkeeper Magic"
+      }
+    },
+    {
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "subclass": "Drakewarden",
+      "source": "FTD",
+      "owners": {
+        "known": "Draconic Gift"
+      }
+    },
+    {
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass": "Divine Soul",
+      "source": "XGE",
+      "owners": {
+        "known": "Divine Magic"
+      }
+    },
+    {
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass": "Shadow",
+      "source": "XGE",
+      "owners": {
+        "known": "Eyes of the Dark"
+      }
+    },
+    {
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass": "Aberrant Mind",
+      "source": "TCE",
+      "owners": {
+        "known": "Psionic Spells"
+      }
+    },
+    {
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass": "Clockwork Soul",
+      "source": "TCE",
+      "owners": {
+        "known": "Clockwork Magic"
+      }
+    },
+    {
+      "class_name": "Sorcerer",
+      "class_source": "PHB",
+      "subclass": "Lunar Sorcery",
+      "source": "DSotDQ",
+      "owners": {
+        "known": "Lunar Embodiment"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Undying",
+      "source": "SCAG",
+      "owners": {
+        "known": "Among the Dead"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Celestial",
+      "source": "XGE",
+      "owners": {
+        "known": "Bonus Cantrips"
+      }
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "subclass": "Fathomless",
+      "source": "TCE",
+      "owners": {
+        "known": "Grasping Tentacles"
+      }
+    },
+    {
+      "class_name": "Wizard",
+      "class_source": "PHB",
+      "subclass": "Illusion",
+      "source": "PHB",
+      "owners": {
+        "known": "Improved Minor Illusion"
+      }
+    },
+    {
+      "class_name": "Rogue",
+      "class_source": "PHB",
+      "subclass": "Arcane Trickster",
+      "source": "PHB",
+      "owners": {
+        "known": "Spellcasting"
+      }
+    },
+    {
+      "class_name": "Monk",
+      "class_source": "PHB",
+      "subclass": "Shadow",
+      "source": "PHB",
+      "owners": {
+        "known": "Shadow Arts"
+      }
+    },
+    {
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass": "Arcane Archer",
+      "source": "XGE",
+      "owners": {
+        "known": "Arcane Archer Lore"
+      }
+    },
+    {
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "subclass": "Giant",
+      "source": "BGG",
+      "owners": {
+        "innate": "Giant Power"
+      }
+    },
+    {
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "subclass": "Spirits",
+      "source": "VRGR",
+      "owners": {
+        "known": "Guiding Whispers"
+      }
+    }
+  ]
+}
