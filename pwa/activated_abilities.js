@@ -1,5 +1,6 @@
 // Native nonspell capabilities: eligibility comes from the same projected
 // feature/origin graph as the sheet, never from guessed class-level thresholds.
+import {companionOwnerActions} from './companion_rules.js';
 import {featureActionEntries} from "./feature_mechanics.js";
 import {activeInfusions,infusionChargeTrackerId,ownedItemDisplayName} from "./item_controls.js";
 const rows=v=>Array.isArray(v)?v:[];
@@ -22,6 +23,7 @@ const inactive=(creature,id)=>!!id&&(creature.origin_enabled?.[id]===false||
 const trackerFor=(projection,name,owner="")=>rows(projection.trackers).find(row=>
   norm(row.name)===norm(name)&&(!owner||norm(row.origin_class)===norm(owner)))||null;
 const attachTracker=(power,projection,owner="")=>{
+  if(!power.tracker_id&&!power.resource_name)return power;
   const tracker=power.tracker_id?rows(projection.trackers).find(t=>t.id===power.tracker_id):
     trackerFor(projection,power.resource_name,owner);
   if(!tracker)return power;
@@ -154,6 +156,21 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
       },'Oggetto · '+display,trait);
     }
   }
+  // Trait-granted attacks are independent, unlimited capabilities. Their optional
+  // damage dice have their own counters and never pay for the attack itself.
+  for(const attack of rows(projection.attacks)){
+    const feature=features.find(row=>row.origin_id===attack.origin_id);
+    if(!feature||!String(feature.origin_id||'').startsWith('feature:'))continue;
+    if(result.some(row=>row.roll_attack?.id===attack.id))continue;
+    add({id:'trait-attack:'+attack.id,name:attack.name,feature_id:feature.origin_id,
+      feature_name:feature.name,origin_name:'Tratto · '+feature.name,
+      action_type:attack.action_type||'action',activation_mode:attack.action_type||'action',
+      tracker_id:'',resource_name:'',resource_cost:0,
+      roll_attack:{kind:'attack',id:attack.id},description:attack.description||text(feature.entries)
+    },'Tratto · '+feature.name,feature.origin_id);
+  }
+  for(const power of companionOwnerActions(creature,projection,projection.companion_rules))
+    add(power,power.origin_name,power.feature_id);
   // Explicit typed species grants use the same activation and tracker path
   // as class features, without guessing action timing from descriptions.
   for(const power of rows(projection.racial_abilities))

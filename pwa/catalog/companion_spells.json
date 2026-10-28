@@ -111,7 +111,17 @@
         "Large"
       ],
       "duration": "1 hour",
-      "tracker_cost": 1
+      "tracker_cost": 1,
+      "class_source": "PHB",
+      "subclass_source": "TCE",
+      "owner_actions": [
+        {
+          "id": "command",
+          "name": "Comanda oggetto animato",
+          "action_type": "bonus",
+          "description": "Comandi all’oggetto animato di compiere un’azione. Senza comando usa Schivare. Puoi impartire il comando come parte dell’azione bonus con cui usi Ispirazione Bardica."
+        }
+      ]
     },
     {
       "id": "summon_wildfire_spirit_2014",
@@ -129,7 +139,17 @@
       "tracker_name": "Wild Shape",
       "limit_per_owner_rule": 1,
       "duration": "1 hour",
-      "tracker_cost": 1
+      "tracker_cost": 1,
+      "class_source": "PHB",
+      "subclass_source": "TCE",
+      "owner_actions": [
+        {
+          "id": "command",
+          "name": "Comanda spirito del fuoco",
+          "action_type": "bonus",
+          "description": "Comandi allo spirito di compiere un’azione del suo blocco statistiche o Scatto, Disimpegno, Aiutare, Nascondersi o Preparare. Senza comando usa Schivare."
+        }
+      ]
     },
     {
       "id": "steel_defender_2014",
@@ -161,7 +181,17 @@
       "template": "drake_companion",
       "activation": "manual",
       "limit_per_owner_rule": 1,
-      "duration": "PB hours"
+      "duration": "PB hours",
+      "class_source": "PHB",
+      "subclass_source": "FTD",
+      "owner_actions": [
+        {
+          "id": "command",
+          "name": "Comanda draco",
+          "action_type": "bonus",
+          "description": "Comandi al draco di compiere un’azione diversa da Schivare, dal suo blocco statistiche o un’altra azione."
+        }
+      ]
     },
     {
       "id": "rangers_companion_2014",
@@ -186,7 +216,17 @@
         ]
       },
       "activation": "manual",
-      "limit_per_owner_rule": 1
+      "limit_per_owner_rule": 1,
+      "class_source": "PHB",
+      "subclass_source": "PHB",
+      "owner_actions": [
+        {
+          "id": "command",
+          "name": "Comanda compagno animale",
+          "action_type": "action",
+          "description": "Comandi alla bestia di Attaccare, Scattare, Disimpegnarsi o Aiutare. Puoi dirigerne il movimento senza usare un’azione; senza comando usa Schivare. Attacco Extra consente un tuo attacco quando le ordini di Attaccare."
+        }
+      ]
     },
     {
       "id": "hound_of_ill_omen_2014",
@@ -219,7 +259,16 @@
       ],
       "template": "homunculus_servant",
       "activation": "item",
-      "limit_per_owner_rule": 1
+      "limit_per_owner_rule": 1,
+      "class_source": "TCE",
+      "owner_actions": [
+        {
+          "id": "command",
+          "name": "Comanda homunculus",
+          "action_type": "bonus",
+          "description": "Comandi al tuo Homunculus Servant di compiere un’azione dal suo blocco statistiche o un’altra azione. Senza comando usa Schivare; movimento e reazione sono autonomi."
+        }
+      ]
     }
   ],
   "templates": {

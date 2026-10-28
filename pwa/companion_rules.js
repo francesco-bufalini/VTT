@@ -1,6 +1,7 @@
 // Structured companion rules shared by spells, feature buttons, and the
 // familiar picker. No feature is detected from its description text.
 import {creatureMatchesFilter} from './creature_variants.js';
+import {activeInfusions} from './item_controls.js';
 
 const normal=value=>String(value??'').toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
@@ -24,6 +25,9 @@ export function matchesCompanionFeature(owner,projection,rule,feature){
  if(!origin.startsWith('class|')&&!(rule.requires_optional_feature&&
      rows(owner.optional_features_catalog).some(row=>normal(row.name)===name&&!row.disabled)))return false;
  if(origin.startsWith('class|')&&!origin.toLowerCase().includes('|'+normal(rule.class_name).replaceAll(' ','_')))return false;
+ const classSource=feature.class_source||origin.split('|')[1];
+ if(rule.class_source&&classSource&&normal(classSource)!==normal(rule.class_source))return false;
+ if(rule.subclass_source&&feature.source&&normal(feature.source)!==normal(rule.subclass_source))return false;
  if(feature.disabled||feature.inactive||owner.origin_enabled?.[feature.origin_id]===false)return false;
  return true;
 }
@@ -53,6 +57,35 @@ export function infusionCompanionRule(data,definitions=[],id='',owner={}){
  const ruleId=definition?.companion?.rule_id;
  return ruleId?rows(data?.features).find(rule=>rule.id===ruleId&&
   rows(rule.editions).includes(String(owner.rules_version||'2014')))||null:null;
+}
+// Creator commands are explicit data, separate from summoning/payment. A
+// transferred infused object cannot grant its original creator's commands.
+export function companionOwnerActions(owner={},projection={},data={}){
+ const result=[];
+ const append=(rule,originId,sourceName)=>{
+  if(!originId||owner.origin_enabled?.[originId]===false||
+    rows(owner.proficiency_origins).some(row=>row.id===originId&&row.disabled))return;
+  for(const action of rows(rule.owner_actions)){
+   if(!action.id||!action.name||!action.action_type)continue;
+   result.push({...action,id:'companion-owner:'+rule.id+':'+originId+':'+action.id,
+    feature_id:originId,feature_name:sourceName,origin_name:'Tratto · '+sourceName,
+    companion_command:true,companion_rule_id:rule.id,
+    activation_mode:action.action_type,tracker_id:'',resource_name:'',resource_cost:0});
+  }
+ };
+ for(const rule of rows(data?.features)){
+  if(!rows(rule.editions).includes(String(owner.rules_version||'2014')))continue;
+  if(rule.activation==='item'){
+   for(const applied of activeInfusions(owner,projection.infusion_catalog||[],projection.features||[])){
+    if(applied.infusion.creator_id!==owner.id||applied.definition.companion?.rule_id!==rule.id)continue;
+    append(rule,'item:'+String(applied.item.id)+'|'+applied.id,applied.definition.name);
+   }
+  }else{
+   const feature=rows(projection.features).find(row=>matchesCompanionFeature(owner,projection,rule,row));
+   if(feature)append(rule,feature.origin_id,feature.name);
+  }
+ }
+ return result;
 }
 export function companionSpellEffectPatch(owner={},rule={},spellId=''){
  if(rule.grant_kind!=='spell_effect')return {};

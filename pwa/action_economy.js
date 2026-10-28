@@ -497,6 +497,7 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
    half_on_save:ability.half_on_save===true,options:arr(ability.options),
    ...(ability.action_ref?{action_ref:ability.action_ref}:{}),
    ...(ability.roll_attack?{roll_attack:ability.roll_attack}:{}),
+   ...(ability.companion_command?{companion_command:true}:{}),
    ...(ability.roll_effect?{roll_effect:ability.roll_effect}:{}),
    ...(ability.temp_hp?{temp_hp:ability.temp_hp}:{})});
   seen.add(name);

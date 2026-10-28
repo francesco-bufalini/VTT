@@ -1161,6 +1161,13 @@ async function computeLocalData(record){
   catalogs={...catalogs,spells:[...new Map([...(catalogs.spells||[]),...visibleSpells]
     .map(spell=>[spell.id,spell])).values()]};
   catalogs.abilityGrants={...(catalogs.abilityGrants||{}),artificer_infusions:(inventoryModule.expandedInfusionDefinitions||((rows)=>rows))(catalogs.abilityGrants?.artificer_infusions||[])};
+  let companionData={};
+  const companionRequest=companionRules();
+  try{companionData=await sheetLoadingDeadline(companionRequest,3000,'dei compagni');}
+  catch(error){
+    loadError=[loadError,'Comandi dei compagni non disponibili: '+errorMessage(error)].filter(Boolean).join(' · ');
+    if(error.code==='SHEET_LOADING_TIMEOUT')refreshSheetAfterLateLoad(companionRequest,record.id,state.sheet);
+  }
   let linked=null;
   if(record.parent_creature_id){
     try{
@@ -1184,7 +1191,7 @@ async function computeLocalData(record){
     for(const definition of embedded)spellMap.set(definition.id,{...definition,...spellMap.get(definition.id)});
     state.spellCatalog=[...spellMap.values()];
   }
-  return {...calculated,loadError,combat_snapshot:state.map||null,
+  return {...calculated,loadError,companion_rules:companionData,combat_snapshot:state.map||null,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
     infusion_mechanics:{...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]}};
@@ -1536,7 +1543,8 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
  const itemPowers=featureItemPowers(c,calculated,ability.class_feature_id);
  if(itemPowers.length)return openGrantedItemPowerDialog(c,calculated,ability,itemPowers);
  const enhanced=c.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(ability.class_feature_id);
- const companion=await companionFeatureChoices(c,calculated,ability.origin_id);
+ const companionChoice=await companionFeatureChoices(c,calculated,ability.origin_id);
+ const companion=companionChoice?.rule.activation==='resource'&&Number(ability.cost)>0?companionChoice:null;
  const itemGrant=(calculated.feature_item_grants||[]).find(row=>
   row.activation_action_id===ability.class_feature_id&&row.origin_id===ability.origin_id);
   document.querySelector('#class-feature-dialog')?.remove();
@@ -1612,7 +1620,7 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
 // apply to every subclass, including variable-size resource pools.
 async function activateSubclassTracker(c,calculated,trackerId,originId){
  const tracker=(calculated.trackers||[]).find(t=>t.id===trackerId&&!t.disabled);
- const linked=tracker&&resourceLinkedSubclassTrait(tracker,calculated.features||[]);
+ const linked=tracker&&resourceLinkedSubclassTrait(tracker,calculated.features||[],[],calculated);
  if(!linked||linked.origin_id!==originId||c.rules_version==='2024')
   throw Error('Capacità della sottoclasse non disponibile.');
  const available=Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0));
@@ -1726,7 +1734,8 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
  const dialog=document.createElement('dialog');dialog.id='other-ability-dialog';
  dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.dataset.creatureId=c.id;
  const calculated=await computeLocalData(c);
- const companion=await companionFeatureChoices(c,calculated,ability.origin_id||ability.feature_id||'');
+ const companion=ability.companion_command?null:
+   await companionFeatureChoices(c,calculated,ability.origin_id||ability.feature_id||'');
  const healPower=(calculated.racial_abilities||[]).find(power=>
    power.mode==='heal_dice'&&('activated:'+power.id===requested||power.id===ability.ability_id));
  const healRecipients=healPower&&!selectedTarget?(await listCreatures()).map(row=>row.creature||row)
@@ -2946,24 +2955,10 @@ function infusionPanel(c,calculated){
  if(!caps.level)return "";
  const trait=infusionGrantingTrait(c,calculated.features||[]);
  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
- const itemPowers=abilitiesForCreature(c,state.abilityCatalog||[],calculated).filter(row=>row.infusion_action);
- const actionNames={reaction:'Reazione',bonus:'Azione bonus',action:'Azione',contextual:'Secondo il privilegio'};
  const active=(c.inventory||[]).filter(item=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
  const summary='<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+caps.known+
    '</strong><span>Applicate '+active.length+' / '+caps.active+'</span><span class="power-selection-rest">Riposo lungo</span></div>';
  const levels=[...new Set(known.map(row=>Math.max(2,Number(row.min_level)||2)))].sort((a,b)=>a-b);
- const itemActions=itemPowers.map(power=>{
-   const tracker=(calculated.trackers||[]).find(row=>row.id===power.tracker_id);
-   const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
-   const detail=(actionNames[power.action_type]||power.action_type)+
-     (power.resource_cost?' · '+power.resource_cost+' carica · '+remaining+' disponibili':'');
-   return '<div class="play-resource-power-row infusion-power-row" data-infusion-action="'+esc(power.id)+'">'+
-     '<span class="play-resource-power-open"><strong>'+esc(power.feature_name||'Oggetto')+' · '+esc(power.name)+'</strong>'+
-     '<small>'+esc(detail)+'</small></span>'+
-     '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="activated:'+esc(power.id)+'"'+
-     (power.resource_cost&&remaining<power.resource_cost?' disabled':'')+
-     ' aria-label="Usa '+esc(power.name)+'">Usa</button></div>';
-  }).join('');
  const learned=levels.map(level=>'<section class="infusion-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div>'+
    known.map((entry,index)=>({entry,index})).filter(({entry})=>Math.max(2,Number(entry.min_level)||2)===level).map(({entry,index})=>{
      const applied=active.filter(item=>item.infusion?.id===entry.id&&
@@ -2976,7 +2971,6 @@ function infusionPanel(c,calculated){
    }).join('')+'</section>').join('')||'<p class="hint">Nessuna infusione conosciuta.</p>';
  return panel('Infusioni',summary+
    (!trait?'<p class="warning">Il tratto Infuse Item non è disponibile o è disattivato.</p>':learned)+
-   (itemActions?'<section class="infusion-item-actions"><h3>Capacità degli oggetti infusi</h3>'+itemActions+'</section>':'')+
    (known.length>caps.known?'<p class="warning">Infusioni conosciute oltre il massimo: '+known.length+' / '+caps.known+'.</p>':'')+
    (!definitions.length?'<p class="warning">Indice delle infusioni non caricato.</p>':''));
 }

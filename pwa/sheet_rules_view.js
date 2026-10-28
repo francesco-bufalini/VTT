@@ -499,19 +499,22 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
   // generic combat-action resources. Their mechanics remain native/data-driven.
   if(action.mode==='trait_state'&&String(action.state_id||'').startsWith('armor_model:'))continue;
   const id=String(action.id||action.ability_id||action.name||'');
+  const cost=Math.max(0,Number(action.cost??0)||0);
   // The native action projector can describe a granted class action twice
   // (once as an action grant and once as its structured feature).
   const repeated=rows.some(row=>row.source==='class'&&(
    row.id===id||(powerIdentity(row.classAction)===powerIdentity(action)&&
-    String(row.tracker_id||'')===String(action.tracker_id||''))));
+    String(row.tracker_id||'')===String(action.tracker_id||'')&&
+    row.key===keyFor(cost,action.tracker_id))));
   if(repeated)continue;
-  const cost=Math.max(0,Number(action.cost??0)||0);
   const identity=powerIdentity(action);
   const same=action.mode==='trait_state'?null:rows.find(row=>row.kind==='ability'&&row.source==='activated'&&(
    (identity==='wild_shape'&&powerIdentity(row.power)==='wild_shape')||
-   (action.origin_id&&row.power.feature_id===action.origin_id)||
+   (action.origin_id&&row.power.feature_id===action.origin_id&&
+    powerName(row.name)===powerName(action.name)&&row.key===keyFor(cost,action.tracker_id))||
    (identity&&identity===powerIdentity(row.power)&&
-    String(row.tracker_id||'')===String(action.tracker_id||''))));
+    String(row.tracker_id||'')===String(action.tracker_id||'')&&
+    row.key===keyFor(cost,action.tracker_id))));
   if(same){
    // When the action has more accurate resource metadata, keep one catalog
    // detail row, but use the native power's resolved cost and tracker.
@@ -545,10 +548,13 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
 // A subclass trait that owns a tracker is usable even if its effects are not
 // automated. Its payment is user-confirmed, allowing pooled/variable costs.
 // No tracker and no modeled action means no Resources entry.
-export function resourceLinkedSubclassTrait(tracker={},features=[],powers=[]){
+export function resourceLinkedSubclassTrait(tracker={},features=[],powers=[],calculated={}){
  const id=String(tracker.origin_id||'');
  if(tracker.disabled||!id.startsWith('feature:class|')||!id.includes('|subclass|'))return null;
- if(powers.some(row=>row.kind==='ability'&&row.tracker_id===tracker.id))return null;
+ if(powers.some(row=>row.kind==='ability'&&row.cost>0&&row.tracker_id===tracker.id))return null;
+ // Optional damage counters never turn their source attack into a paid use.
+ if((calculated.trait_state_optional_dice||[]).some(row=>row.tracker_id===tracker.id)||
+   (calculated.attacks||[]).some(row=>row.origin_id===id))return null;
  const feature=features.find(row=>row.origin_id===id&&!row.disabled&&!row.inactive);
  return feature?{origin_id:id,name:feature.name,tracker_id:tracker.id}:null;
 }
@@ -557,7 +563,7 @@ export function resourceLinkedSubclassTrait(tracker={},features=[],powers=[]){
 // the DOM's tracker ID or its previously rendered available uses.
 export function subclassTrackerUsePatch(record={},calculated={},trackerId='',originId='',amount=1){
  const tracker=(calculated.trackers||[]).find(t=>String(t.id)===String(trackerId));
- const linked=tracker&&resourceLinkedSubclassTrait(tracker,calculated.features||[]);
+ const linked=tracker&&resourceLinkedSubclassTrait(tracker,calculated.features||[],[],calculated);
  if(!linked||linked.origin_id!==originId||record.rules_version==='2024')
   throw Error('Capacità della sottoclasse non disponibile.');
  return spendTrackerUses(record,tracker.id,amount,calculated.trackers);
@@ -765,7 +771,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);
    bind('resource:'+t.id,source);
    const context=powerGroups.has(key)?'power-resource:'+key:'resource:'+t.id;
-   const linked=resourceLinkedSubclassTrait(t,d.features||[],powerRows);
+   const linked=resourceLinkedSubclassTrait(t,d.features||[],powerRows,d);
    const reference=linked?'<div class="play-resource-power-row" data-linked-subclass-resource="'+esc(t.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(linked.origin_id)+'"'+
     ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon('proficiency')+
@@ -789,7 +795,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const trait=featureFor([originId],action.feature_name||row.name);
    const key=trait?.origin_id||originId||'unattributed:'+row.id;
    if(!freeByTrait.has(key))freeByTrait.set(key,{
-    id:key,name:trait?.name||grant.origin_name||power.origin_name||
+    id:key,name:trait?.name||grant.origin_name||power.feature_name||power.origin_name||
      action.feature_name||row.name,rows:[]});
    freeByTrait.get(key).rows.push(row);
   }
@@ -1078,7 +1084,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      const counters=[...node.querySelector('.infusion-overview')?.children||[]]
        .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
      const known=[...node.querySelectorAll('.infusion-entry')];
-      const itemActions=[...node.querySelectorAll('.infusion-power-row')].map(row=>row.outerHTML).join('');
      const rows=known.map(row=>{
        const index=row.dataset.infusionIndex;
        const applied=row.dataset.infusionActive==='true';
@@ -1094,8 +1099,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      html+=card('Infusioni',
        '<div class="play-magic-selection">'+
        btn('Impara infusioni','book','data-act="infusion-picker-open" data-mode="learn"','<span>Impara</span>')+'</div>'+
-       (rows||'<p class="play-empty">Nessuna infusione conosciuta.</p>')+
-       (itemActions?'<h3>Capacità degli oggetti infusi</h3>'+itemActions:''),
+       (rows||'<p class="play-empty">Nessuna infusione conosciuta.</p>'),
        counters?'<div class="play-magic-source-resources" aria-label="Riepilogo infusioni">'+counters+'</div>':'',
        'play-magic-class-card play-infusion-card');
      return;
