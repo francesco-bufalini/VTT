@@ -4,7 +4,7 @@ import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
 import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
-import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers} from './species_conditional_bonuses.js';
+import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {collectEffectExtensions} from './effect_extensions.js';
@@ -152,7 +152,7 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
  // infer a once-per-turn state from dice rolled outside the application.
  const damageAttack=target.startsWith('attack_damage:')?
    arr(calculated?.attacks).find(attack=>'attack_damage:'+attack.id===target):null;
- const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&
+ const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&!row.automatic_apply&&
    !(row.exclude_initiative&&target==='initiative')&&
    (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0||
     Number(row.proficiency_multiplier)===2||row.flat_proficiency===true||
@@ -875,7 +875,7 @@ function calculateSheetValues(record={},catalogs={}){
         'Tratto · '+feature.name,'advancement','ability:'+ability,amount)).filter(Boolean);
   });
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...advancements,...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[])];
+    ...advancements,...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
@@ -1014,7 +1014,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(target==="level")return int(record.level,1);
     if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
     if(target==="proficiency")return proficiencyBase();
-    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack);
+    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack)+sumGrants("initiative",stack);
     if(prefix==="ability_check"&&ABILITIES.includes(key))
       return resolve("ability_mod:"+key,stack)+sumGrants("ability_check",stack);
     if(target==="ac"){
@@ -1424,7 +1424,7 @@ function calculateSheetValues(record={},catalogs={}){
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
     racial_abilities:racialPowers.abilities,celestial_forms:racialPowers.active_forms,
     racial_rest_choices:racialPowers.rest_choices,
-    racial_roll_bonuses:[...racialPowers.roll_bonuses,...racialBonusRows],
+    racial_roll_bonuses:[...racialPowers.roll_bonuses,...racialBonusRows.filter(row=>!row.automatic_apply)],
     racial_roll_modes:racialRollModes,
     racial_spell_definitions:racialPowerSpellDefinitions(catalogs.speciesPowers||{},record,catalogs.originDetails||{}),
     active_celestial_form:celestialForm||null,
