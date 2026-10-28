@@ -1458,7 +1458,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     if(persistentKey){
      if(record.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
      changes.active_class_features={...(record.active_class_features||{}),
-      [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.origin_id||currentAbility.feature_id||requested,
+      [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.persistent_origin_id||currentAbility.origin_id||currentAbility.feature_id||requested,
        rules_version:record.rules_version||'2014',enhanced:false,
        duration_rounds:Math.max(0,Number(currentAbility.duration_rounds)||0),
        damage_type:currentAbility.damage_type||''}};
