@@ -63,3 +63,24 @@ export function claimFeatureItemPatch(record={},calculated={},grantId='',itemId=
   inventory.filter(row=>row.feature_item_grant_id!==grant.id):inventory;
  return {inventory:[...retained,item]};
 }
+
+// Ordinary owned item instances unlock typed powers. The effect comes from
+// the granting trait's catalog, never from an item's editable name or prose.
+export function featureItemPowers(record={},calculated={},actionId=''){
+ const grants=rows(calculated.feature_item_grants);
+ return grants.flatMap(grant=>{
+  if(!grant.command_action_id||actionId&&grant.command_action_id!==actionId)return [];
+  const level=Number(grant.owner_level)||0;
+  return rows(record.inventory).flatMap((item,index)=>{
+   if(item.feature_item_grant_id!==grant.id||Number(item.quantity??1)<=0||
+      item.disabled)return [];
+   const power=grant.powers?.[item.feature_item_option_id];
+   if(!power)return [];
+   const extra=rows(power.extra_damage_at_level)
+    .filter(row=>level>=Number(row.level||1)).map(row=>row.dice).filter(Boolean);
+   return [{...power,grant_id:grant.id,origin_id:grant.origin_id,origin_name:grant.origin_name,
+    item_index:index,item_name:item.name,item_id:item.id,owner_level:level,
+    damage_dice:[power.damage,...extra].filter(Boolean).join(' + ')}];
+  });
+ });
+}
