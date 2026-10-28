@@ -39,6 +39,8 @@ export function racialPowerProjection(record={},index={},features=[]) {
    String(f.origin_key||'').startsWith('species|')&&!f.disabled&&!f.inactive&&
    record.trait_enabled?.[f.key]!==false&&permitted(record,f.origin_id)&&
    permitted(record,f.origin_key)&&permitted(record,raceRoot));
+ const maximum=uses=>uses==='proficiency'?2+Math.floor((currentLevel(record)-1)/4):
+   Math.max(0,Number(uses)||0);
  // Species-level resource grants are declared by the same structured owner
  // as their ordinary powers. Dragon Fear binds to this Breath Weapon tracker,
  // rather than creating a second pool for the feat.
@@ -66,8 +68,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
    f.origin_key==='subrace|'+norm(race.source)+'|'+norm(subrace)&&
    !f.disabled&&!f.inactive&&record.trait_enabled?.[f.key]!==false&&
    permitted(record,f.origin_id)&&permitted(record,f.origin_key)&&permitted(record,raceRoot));
- const maximum=uses=>uses==='proficiency'?2+Math.floor((currentLevel(record)-1)/4):
-   Math.max(0,Number(uses)||0);
+
  for(const power of rows(race.active_conditions)){
    const powerOwner=featureFor(power.trait);
    if(!powerOwner||!power.id||!power.condition||!power.tracker_id)continue;
