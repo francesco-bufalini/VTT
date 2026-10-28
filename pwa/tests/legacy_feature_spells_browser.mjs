@@ -55,4 +55,6 @@ try{
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  assert.deepEqual(errors,[]);
  console.log('PASS: mobile trait option picker persists one terrain and correct slot-paid spells across reload');
+}catch(error){
+ console.error(JSON.stringify({errors,missing:f.missing}));throw error;
 }finally{await f.close();}

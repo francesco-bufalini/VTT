@@ -246,7 +246,7 @@ function featureSpellReference(token,edition,catalog){
 // Subclass spell tables are structured 5etools data (not description prose).
 // Each grant retains the *feature* identity so it can appear under its trait.
 const featureSpellOwner=(feature,row)=>norm(feature.name)===norm(row.name)&&
- norm(feature.source||feature.book)===norm(row.source)&&
+ norm(feature.source||feature.book||feature.subclass_source)===norm(row.source)&&
  norm(feature.class_name||feature.requirements?.class_name)===norm(row.class_name)&&
  norm(feature.class_source||feature.requirements?.class_source)===norm(row.class_source)&&
  [row.subclass_name,row.subclass_short_name].some(name=>name&&

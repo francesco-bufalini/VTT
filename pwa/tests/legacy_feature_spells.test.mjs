@@ -60,6 +60,12 @@ test('existing feature spell configuration IDs survive the structured catalog mi
  assert.equal(configured.origin_spells.find(row=>row.id===grant.id).spellcasting_ability,'wis');
 });
 
+test('the compact offline trait index can project spells without the description catalog',()=>{
+ const record=character('Ranger','Horizon Walker','XGE');
+ const sheet=calculateSheet(record,{...catalogs,classFeatures:null});
+ assert.equal(owned(sheet,'Horizon Walker Magic').length,2);
+});
+
 test('Land and Divine Soul require an explicit option and never stack alternative lists',()=>{
  for(const [klass,subclass,source,trait,option,count] of [
   ['Druid','Circle of the Land','PHB','Circle Spells','Coast',4],
