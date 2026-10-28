@@ -3216,11 +3216,11 @@ function inventoryItemDescription(obj,index){
        esc(effectExtensionLabel(extension,{cha_mod:state.calculated?.abilities?.cha?.modifier}))+
        (extension.stored_spell_feature==='spell_storing_item'?
         '<div class="inventory-prose">'+esc(extension.spell_description||'')+'</div>'+
-        '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'">'+
-        'Usa incantesimo · '+esc((state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id)?
-          Math.max(0,Number((state.calculated.trackers||[]).find(row=>row.id===extension.tracker_id).max)-
-            Number((state.calculated.trackers||[]).find(row=>row.id===extension.tracker_id).spent||0)):'0')+
-        ' rimasti</button></div>':'')+
+        (()=>{const tracker=(state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id);
+         const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
+         return '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'"'+
+          (remaining<1?' disabled':'')+'>Usa incantesimo · '+esc(remaining)+' rimasti</button></div>';
+        })():'')+
        '</li>').join('')+'</ul></section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
 }
