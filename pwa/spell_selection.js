@@ -70,6 +70,9 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
       stored||grant.spellcasting_ability)||
     creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int';
   entries.push({...definition,grant_id:grant.id,caster_ability:casting,
+    ...(grant.cast_action_type?{time:[{number:1,unit:grant.cast_action_type}],
+      casting_time:grant.cast_action_type==='bonus'?'Bonus Action':grant.cast_action_type,
+      action_type:grant.cast_action_type}:{}),
     casting_label:grant.origin_name||'Origine'});
  }
  return entries;
