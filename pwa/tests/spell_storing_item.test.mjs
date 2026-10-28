@@ -99,4 +99,11 @@ test('long rest removes the enchantment and tracker; short rest preserves charge
  assert.equal(long.resource_trackers.some(row=>row.id===storedSpellTrackerId(owner)),false);
  assert.equal(long.resource_tracker_spent[storedSpellTrackerId(owner)],undefined);
  assert.equal(long.inventory,undefined,'A long rest must never remove the physical item');
+ const withOthers={...owner,
+  resource_trackers:[...owner.resource_trackers,{id:'other-power',name:'Other Power',max:4,recharge:'long_rest'}],
+  resource_tracker_spent:{...owner.resource_tracker_spent,'other-power':3}};
+ const otherCalculation=calculateSheet(withOthers,catalogs);
+ const recovered=recoveryPatch(withOthers,'long_rest',otherCalculation.trackers,otherCalculation);
+ assert.equal(recovered.resource_tracker_spent['other-power'],undefined,
+  'Clearing the stored spell must not undo other tracker recoveries');
 });
