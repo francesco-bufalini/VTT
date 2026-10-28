@@ -9,9 +9,9 @@ try{
  await portrait.waitFor();
  const order=await page.locator('#sheet-play-view').evaluate(root=>
   [...root.children].map(node=>node.className||''));
- assert(order.indexOf('play-identity')!==-1);
- assert(order.indexOf('play-character-portrait')>order.indexOf('play-identity'),
-  'The photo controls sit immediately below the character identity');
+ assert(order.includes('play-character-portrait'));
+ assert.equal(await portrait.locator(':scope > .play-identity').count(),1,
+  'Character identity and portrait share the same responsive card');
  if(order.includes('pending-choices-notice')){
   assert(order.indexOf('pending-choices-notice')>order.indexOf('play-character-portrait'),
    'Unresolved character choices must be below the portrait button');
