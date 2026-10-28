@@ -80,7 +80,22 @@
         "recovery": "long_rest",
         "skill_count": 1,
         "weapon_tool_count": 1,
-        "description": "Dopo una trance scegli una competenza in un'abilità e una in un'arma o uno strumento. Mantieni le competenze fino al prossimo riposo lungo e puoi riselezionarle al termine di ogni riposo lungo."
+        "description": "Dopo una trance scegli una competenza in un'abilità e una in un'arma o uno strumento. Mantieni le competenze fino al prossimo riposo lungo e puoi riselezionarle al termine di ogni riposo lungo.",
+        "picks": [
+          {
+            "label": "Abilità",
+            "kinds": [
+              "skill"
+            ]
+          },
+          {
+            "label": "Arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          }
+        ]
       }
     },
     {
@@ -278,6 +293,145 @@
         "description": "Come azione bonus ottieni volo pari alla velocità di camminata e hovering per 1 minuto. Un utilizzo per riposo lungo."
       },
       "source": "FTD"
+    },
+    {
+      "name": "Eladrin",
+      "source": "MPMM",
+      "teleport": {
+        "trait": "Fey Step",
+        "spell_id": "vtt_eladrin_fey_step",
+        "targeting_template_spell_id": "phb2014_misty_step",
+        "tracker_id": "race:mpmm:eladrin:fey_step:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest",
+        "action_type": "bonus",
+        "target_mode": "teleport_self",
+        "range_feet": 30,
+        "description": "Come azione bonus, ti teletrasporti fino a 30 ft in uno spazio libero visibile. Utilizzi pari alla competenza, recuperati dopo un riposo lungo. Dal livello 3 il teletrasporto ha un effetto aggiuntivo, descritto dalla stagione scelta (senza automatismi)."
+      },
+      "season_choice": {
+        "trait": "Fey Step",
+        "group": "eladrin_season",
+        "recovery": "long_rest",
+        "label": "Stagione",
+        "options": [
+          "autumn",
+          "winter",
+          "spring",
+          "summer"
+        ],
+        "option_labels": {
+          "autumn": "Autunno",
+          "winter": "Inverno",
+          "spring": "Primavera",
+          "summer": "Estate"
+        },
+        "descriptions": {
+          "autumn": "Dal livello 3: dopo Fey Step, fino a due creature a scelta visibili entro 10 ft devono superare un TS Saggezza o restano Affascinate per 1 minuto, finché tu o i tuoi alleati non infliggete loro danni.",
+          "winter": "Dal livello 3: prima del teletrasporto, una creatura visibile entro 5 ft deve superare un TS Saggezza o diventa Spaventata da te fino alla fine del tuo prossimo turno.",
+          "spring": "Dal livello 3: puoi toccare una creatura consenziente entro 5 ft e teletrasportarla al tuo posto fino a 30 ft in uno spazio libero che puoi vedere. L'effetto resta da risolvere manualmente.",
+          "summer": "Dal livello 3: dopo Fey Step, ogni creatura a scelta visibile entro 5 ft subisce danni da fuoco pari al tuo bonus di competenza. L'effetto resta da risolvere manualmente."
+        }
+      },
+      "rest_training": {
+        "trait": "Trance",
+        "group": "eladrin_training",
+        "recovery": "long_rest",
+        "picks": [
+          {
+            "label": "Prima arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          },
+          {
+            "label": "Seconda arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          }
+        ],
+        "description": "Al termine della trance, scegli due nuove competenze differenti, ciascuna in un'arma o uno strumento del Manuale del Giocatore. Durano fino al prossimo riposo lungo; la stagione può essere cambiata separatamente."
+      }
+    },
+    {
+      "name": "Sea Elf",
+      "source": "MPMM",
+      "rest_training": {
+        "trait": "Trance",
+        "group": "sea_elf_training",
+        "recovery": "long_rest",
+        "picks": [
+          {
+            "label": "Prima arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          },
+          {
+            "label": "Seconda arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          }
+        ],
+        "description": "Al termine della trance scegli due competenze diverse in armi o strumenti del Manuale del Giocatore, valide fino al riposo lungo successivo."
+      }
+    },
+    {
+      "name": "Shadar-Kai",
+      "source": "MPMM",
+      "rest_training": {
+        "trait": "Trance",
+        "group": "shadar_kai_training",
+        "recovery": "long_rest",
+        "picks": [
+          {
+            "label": "Prima arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          },
+          {
+            "label": "Seconda arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          }
+        ],
+        "description": "Al termine della trance scegli due competenze diverse in armi o strumenti del Manuale del Giocatore, valide fino al riposo lungo successivo."
+      }
+    },
+    {
+      "name": "Githyanki",
+      "source": "MPMM",
+      "rest_training": {
+        "trait": "Astral Knowledge",
+        "group": "githyanki_training",
+        "recovery": "long_rest",
+        "picks": [
+          {
+            "label": "Abilità",
+            "kinds": [
+              "skill"
+            ]
+          },
+          {
+            "label": "Arma o strumento",
+            "kinds": [
+              "weapon",
+              "tool"
+            ]
+          }
+        ],
+        "description": "Dopo ogni riposo lungo scegli una competenza in un'abilità e una in un'arma o uno strumento del Manuale del Giocatore, valide fino al riposo lungo successivo."
+      }
     }
   ]
 }
