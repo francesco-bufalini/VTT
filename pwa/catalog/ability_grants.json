@@ -4282,7 +4282,23 @@
       "charge_tracker": {
         "max": 6,
         "recovery": "all'alba · 1d6 cariche spese"
-      }
+      },
+      "item_abilities": [
+        {
+          "id": "strength_boost",
+          "name": "Forza arcana",
+          "action_type": "contextual",
+          "resource_cost": 1,
+          "description": "Quando effettui una prova o un tiro salvezza di Forza, spendi 1 carica per aggiungere il modificatore di Intelligenza al tiro."
+        },
+        {
+          "id": "prevent_prone",
+          "name": "Resistere alla caduta",
+          "action_type": "reaction",
+          "resource_cost": 1,
+          "description": "Quando stai per cadere prono, puoi spendere 1 carica e usare la reazione per evitare di cadere prono."
+        }
+      ]
     },
     {
       "id": "infusion|tce|boots of the winding path",
@@ -4298,7 +4314,16 @@
           "boot"
         ]
       },
-      "application_kind": "enhancement"
+      "application_kind": "enhancement",
+      "item_abilities": [
+        {
+          "id": "return_step",
+          "name": "Passo tortuoso",
+          "action_type": "bonus",
+          "resource_cost": 0,
+          "description": "Teletrasportati fino a 15 piedi in uno spazio libero che puoi vedere e che hai occupato durante il turno corrente."
+        }
+      ]
     },
     {
       "id": "infusion|tce|enhanced arcane focus",
@@ -4420,7 +4445,16 @@
       "charge_tracker": {
         "max": 4,
         "recovery": "all'alba · 1d4 cariche spese"
-      }
+      },
+      "item_abilities": [
+        {
+          "id": "refocus",
+          "name": "Ritrovare la concentrazione",
+          "action_type": "reaction",
+          "resource_cost": 1,
+          "description": "Quando fallisci un tiro salvezza di Costituzione per mantenere la concentrazione su un incantesimo, usa la reazione e 1 carica per trasformarlo in successo."
+        }
+      ]
     },
     {
       "id": "infusion|tce|radiant weapon",
@@ -4443,7 +4477,23 @@
       "charge_tracker": {
         "max": 4,
         "recovery": "all'alba · 1d4 cariche spese"
-      }
+      },
+      "item_abilities": [
+        {
+          "id": "radiance",
+          "name": "Accendere o spegnere la luce",
+          "action_type": "bonus",
+          "resource_cost": 0,
+          "description": "Con un'azione bonus puoi accendere o spegnere la luce dell'arma: luce intensa entro 30 piedi e luce fioca per altri 30 piedi."
+        },
+        {
+          "id": "blinding_flash",
+          "name": "Lampo accecante",
+          "action_type": "reaction",
+          "resource_cost": 1,
+          "description": "Subito dopo essere stato colpito da un attacco, usa la reazione e spendi 1 carica: l'attaccante deve superare un TS di Costituzione contro la CD degli incantesimi, altrimenti è accecato fino alla fine del suo prossimo turno."
+        }
+      ]
     },
     {
       "id": "infusion|tce|repeating shot",
@@ -4712,7 +4762,19 @@
       "charge_tracker": {
         "max": 4,
         "recovery": "all'alba · 1d4 cariche spese"
-      }
+      },
+      "item_abilities": [
+        {
+          "id": "repel",
+          "name": "Repulsione",
+          "action_type": "reaction",
+          "resource_cost": 1,
+          "target_mode": "single_token",
+          "target_range_feet": 5,
+          "exclude_self": true,
+          "description": "Subito dopo aver subito un attacco in mischia che ti colpisce, usa la reazione e spendi 1 carica per spingere l'attaccante fino a 15 piedi lontano da te. Lo spostamento va applicato manualmente."
+        }
+      ]
     },
     {
       "id": "infusion|tce|resistant armor",
@@ -4786,7 +4848,16 @@
       "charge_tracker": {
         "max": 1,
         "recovery": "all'alba · 1 utilizzo"
-      }
+      },
+      "item_abilities": [
+        {
+          "id": "restore_slot",
+          "name": "Recuperare uno slot",
+          "action_type": "action",
+          "resource_cost": 1,
+          "description": "Come azione recuperi uno slot incantesimo speso di 3° livello o inferiore. Il recupero dello slot va registrato manualmente."
+        }
+      ]
     }
   ],
   "source_ability_choices": {

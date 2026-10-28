@@ -1,6 +1,7 @@
 // Native nonspell capabilities: eligibility comes from the same projected
 // feature/origin graph as the sheet, never from guessed class-level thresholds.
 import {featureActionEntries} from "./feature_mechanics.js";
+import {activeInfusions,infusionChargeTrackerId,ownedItemDisplayName} from "./item_controls.js";
 const rows=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??"").trim().toLowerCase();
 
@@ -98,6 +99,8 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   const defs=new Map(rows(manifest).map(a=>[norm(a.name)+"|"+norm(a.source),a]));
   const ids=new Map(rows(manifest).map(a=>[a.id,a]));
   for(const feature of rows(creature.optional_features_catalog)){
+    // Infusions are choices attached to inventory items, not free optional powers.
+    if(String(feature?.id||'').startsWith('infusion|'))continue;
     if(!feature||(!includeUnavailable&&(feature.disabled||inactive(creature,feature.origin_id))))continue;
     const key=norm(feature.name)+"|"+norm(feature.source);
     let ability=defs.get(key);
@@ -126,6 +129,29 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
         tracker_id:grant.tracker_id,resource_cost:grant.tracker_cost,
         action_kind:"ability",activation_mode:grant.activation_mode||"contextual"},
       grant.origin_name||"Origine",grant.origin_id);
+    }
+  }
+  // Activate only real, equipped/attuned item copies. Infusion actions reuse
+  // the same ability + tracker pipeline as class powers and other abilities.
+  for(const applied of activeInfusions(creature,projection.infusion_catalog||[],projection.features||[])){
+    const {item,definition,index}=applied;
+    const trait='item:'+String(item.id)+'|'+applied.id;
+    const display=ownedItemDisplayName(item);
+    for(const action of rows(definition.item_abilities)){
+      if(!action?.id||!action.name||!action.action_type||action.action_type==='passive')continue;
+      const cost=Math.max(0,Number(action.resource_cost)||0);
+      const trackerId=cost?infusionChargeTrackerId(item,index):'';
+      if(cost&&!rows(projection.trackers).some(t=>t.id===trackerId&&!t.disabled))continue;
+      add({id:'infusion-action:'+applied.id+':'+action.id,name:action.name,
+        source:definition.source||'TCE',feature_id:trait,feature_name:display,
+        origin_name:'Oggetto · '+display,action_type:action.action_type,
+        activation_mode:action.action_type,tracker_id:trackerId,resource_cost:cost,
+        resource_name:cost?display+' · Cariche':'',infusion_action:true,
+        infusion_id:definition.id,infusion_inventory_index:index,
+        description:action.description||'',target_mode:action.target_mode||'',
+        target_range_feet:Math.max(0,Number(action.target_range_feet)||0),
+        exclude_self:action.exclude_self===true
+      },'Oggetto · '+display,trait);
     }
   }
   // Explicit typed species grants use the same activation and tracker path
