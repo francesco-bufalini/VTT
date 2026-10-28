@@ -6710,8 +6710,8 @@ async function handleAction(target){
       rollType:rollCategory(key,calculated),formula:formulaMarkup(),bonuses,autoLabel,
       creatureId:creature.id||'',target:key});
     dialog.dataset.rollContext=rollContext;
-    // A confirmed on-hit debuff must know the target of the affected attack.
-    // Without an explicit target the original attacker is never penalized.
+    // A map-applied on-hit debuff must know the target of the affected attack.
+    // Without an explicit target the source's target-specific penalty is not assumed.
     if((key.startsWith('attack_hit:')||key.startsWith('casting_hit:'))&&
        (creature.applied_hit_effects?.length||targetTokenHitEffects(creature,state.map).length)){
       const selection=document.createElement('label');
