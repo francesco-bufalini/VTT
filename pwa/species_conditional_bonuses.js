@@ -65,7 +65,8 @@ export function racialBonusEntries(record={},catalog={},features=[],removed=new 
      origin_key:feature.origin_key,origin_parent_id:key,granting_trait:feature.name,
      name:bonus.name||feature.name,
      ...(choice===null?bonus.proficiency_multiplier?{proficiency_multiplier:bonus.proficiency_multiplier}:bonus.flat_proficiency?{flat_proficiency:true}:bonus.weapon_damage_die?{weapon_damage_die:true}:{dice}:{flat_bonus:choice}),
-     targets:bonus.targets,exclude_initiative:bonus.exclude_initiative===true,
+     targets:bonus.targets,automatic_apply:bonus.automatic_apply===true,
+     exclude_initiative:bonus.exclude_initiative===true,
      ...(bonus.weapon_requirement?{weapon_requirement:bonus.weapon_requirement}:{}),
      ...(bonus.melee_weapon_attack?{melee_weapon_attack:true}:{}),
      ...(bonus.damage_type?{damage_type:bonus.damage_type}:{}),
@@ -93,4 +94,14 @@ export function racialBonusTrackers(bonuses=[],proficiency=2){
    origin_name:bonus.origin_name,automatic:true});
  }
  return [...trackers.values()];
+}
+
+export function racialAutomaticBonusGrants(bonuses=[]){
+ return rows(bonuses).filter(row=>row.automatic_apply===true&&row.flat_proficiency===true&&
+   rows(row.targets).includes('initiative')).map(row=>({
+  id:'auto|'+row.id+'|initiative',origin_id:row.origin_id,
+  origin_name:'Tratto · '+row.granting_trait,
+  granting_trait:row.granting_trait,target:'initiative',
+  expression:'proficiency',automatic:true,disabled:false
+ }));
 }
