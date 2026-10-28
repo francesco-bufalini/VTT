@@ -5258,6 +5258,116 @@
           "recharge": "long_rest"
         }
       ]
+    },
+    {
+      "name": "Actor",
+      "source": "PHB",
+      "roll_modes": [
+        {
+          "target": "skill:deception",
+          "mode": "advantage",
+          "condition_label": "Quando tenti di impersonare un’altra persona"
+        },
+        {
+          "target": "skill:performance",
+          "mode": "advantage",
+          "condition_label": "Quando tenti di impersonare un’altra persona"
+        }
+      ]
+    },
+    {
+      "name": "Dungeon Delver",
+      "source": "PHB",
+      "roll_modes": [
+        {
+          "target": "skill:perception",
+          "mode": "advantage",
+          "condition_label": "Per individuare porte segrete"
+        },
+        {
+          "target": "skill:investigation",
+          "mode": "advantage",
+          "condition_label": "Per individuare porte segrete"
+        },
+        {
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Per evitare o resistere agli effetti delle trappole"
+        }
+      ]
+    },
+    {
+      "name": "Grappler",
+      "source": "PHB",
+      "roll_modes": [
+        {
+          "target": "attack_roll",
+          "mode": "advantage",
+          "condition_label": "Contro una creatura che stai afferrando (grappled)"
+        }
+      ]
+    },
+    {
+      "name": "Mage Slayer",
+      "source": "PHB",
+      "roll_modes": [
+        {
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro un incantesimo lanciato da una creatura entro 5 ft da te"
+        }
+      ]
+    },
+    {
+      "name": "Mounted Combatant",
+      "source": "PHB",
+      "roll_modes": [
+        {
+          "target": "attack_roll",
+          "mode": "advantage",
+          "condition_label": "In mischia, dalla cavalcatura, contro creatura non montata più piccola della cavalcatura",
+          "attack_melee": true
+        }
+      ]
+    },
+    {
+      "name": "Infernal Constitution",
+      "source": "XGE",
+      "roll_modes": [
+        {
+          "target": "saving_throw",
+          "mode": "advantage",
+          "condition_label": "Contro la condizione Avvelenato"
+        }
+      ]
+    },
+    {
+      "name": "Squat Nimbleness",
+      "source": "XGE",
+      "roll_modes": [
+        {
+          "target": "skill:athletics",
+          "mode": "advantage",
+          "condition_label": "Per liberarti dalla condizione Afferrato (grappled)"
+        },
+        {
+          "target": "skill:acrobatics",
+          "mode": "advantage",
+          "condition_label": "Per liberarti dalla condizione Afferrato (grappled)"
+        }
+      ]
+    },
+    {
+      "name": "Charger",
+      "source": "PHB",
+      "roll_bonuses": [
+        {
+          "target": "damage_roll",
+          "flat_bonus": 5,
+          "attack_melee": true,
+          "condition_label": "Solo ai danni di un attacco in mischia come azione bonus dopo Scattare, con almeno 10 ft di movimento rettilineo immediatamente prima"
+        }
+      ]
     }
   ],
   "base_value_overrides": {
