@@ -377,6 +377,25 @@
       "trigger": "on_use",
       "frequency": "each",
       "description": "Una volta all'alba: con un'azione, recupera uno slot incantesimo speso di livello massimo 3"
+    },
+    {
+      "id": "armorer-arcane-armor-ignore-strength-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "feature",
+        "name": "Arcane Armor",
+        "class_name": "Artificer",
+        "subclass": "Armorer",
+        "min_level": 3
+      },
+      "target_kind": "item",
+      "target_name": "@equipped_armor",
+      "require_active_state_group": "armor_model",
+      "operation": "ignore_armor_strength",
+      "trigger": "passive",
+      "frequency": "each",
+      "value": "",
+      "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza."
     }
   ]
 }

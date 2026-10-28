@@ -265,6 +265,10 @@ export function classFeatureRollSources(record,calculated,target,context=''){
    const row=actions.find(a=>a.class_feature_id===key);
    if(row)add('advantage',row.origin_id||'',nameToLabel[key]||row.name);
  };
+ if(target==='skill:stealth'&&calculated?.armor_effects?.stealth_disadvantage){
+   const worn=calculated.armor_effects;
+   add('disadvantage','item:'+worn.item_id,'Oggetto · '+worn.item_name,'item');
+ }
  if(['ability_mod:str','ability_check:str','save:str','skill:athletics'].includes(target))activeFeature('rage');
  if(target==='save:dex'&&
    !rows(record.conditions).includes('incapacitated')&&

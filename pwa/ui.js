@@ -2767,7 +2767,12 @@ function inventoryEquipmentView(c,calculated={}){
       formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
     '<div class="battle-ac-formula"><strong>'+(armor&&!usedNatural?'Formula armatura indossata':'Formula CA naturale')+
       '</strong><output>'+esc(formula)+'</output></div>'+
-
+    '<label class="check equipment-armor-speed-penalty"><input type="checkbox" data-field="armor_speed_limit_enabled"'+
+      (c.armor_speed_limit_enabled!==false?' checked':'')+
+      '>Applica penalità alla velocità per Forza insufficiente</label>'+
+    (calculated.armor_effects?.speed_penalty?
+      '<small class="hint">Velocità ridotta di '+calculated.armor_effects.speed_penalty+
+      ' ft · Forza richiesta '+calculated.armor_effects.strength_required+'</small>':'')+
     '</div>';
   return panel("Equipaggiamento",
     '<section class="equipment-weapons"><h3>Armi</h3>'+
@@ -4344,6 +4349,10 @@ async function handleField(target) {
     if(key==='current_hp'&&value<0&&variantOwns(state.editor.readBase(),'hp')){
       await patch({current_hp:0});await render();
       promptVariantOverflow(creature.id,creature.current_form_id,-value);return;
+    }
+    if(key==='armor_speed_limit_enabled'){
+      await patch({armor_speed_limit_enabled:Boolean(value)});
+      await render();return;
     }
     if(key==='hand_grip_two_handed'){
       const main=(creature.inventory||[]).find(item=>item.equipped_slots?.includes('main'));

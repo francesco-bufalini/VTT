@@ -178,6 +178,11 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   add('senses','Sensi',SENSE_NAMES[sense.type]||sense.type,
    senseRange(sense.range_feet),'sense:'+String(sense.id||''));
  }
+ for(const waiver of rows(calculated.armor_strength_waivers)){
+   if(waiver.scope!=='all'||!belongs(waiver))continue;
+   add('effects','Effetti e limitazioni','Armature pesanti',
+     'Ignora la penalità di velocità per Forza insufficiente','armor_waiver:'+waiver.id);
+ }
  // An infused item's structured companion grant is displayed on that exact
  // object's benefit card. Mere knowledge of an infusion never grants a pet.
  if(trait.category==='oggetti'&&trait.rank===0){

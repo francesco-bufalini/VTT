@@ -7,6 +7,7 @@ import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} 
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {collectEffectExtensions} from './effect_extensions.js';
+import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
@@ -928,6 +929,14 @@ function calculateSheetValues(record={},catalogs={}){
   const equipped=slot=>inventory.find(it=>int(it?.quantity,1)>0&&arr(it?.equipped_slots).includes(slot));
   const currentArmor=equipped("body");
   const armor=currentArmor&&itemKind(currentArmor)==="armor"?currentArmor:null;
+  const armorIndex=arr(record.inventory).findIndex(item=>
+    arr(item?.equipped_slots).includes('body')&&itemKind(resolveOwnedItem(item))==='armor');
+  const armorForRules=armor?{...armor,inventory_index:armorIndex}:null;
+  // Item-targeted Arcane Armor extensions must be resolved before speed.
+  const activeArmorStates=activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id);
+  const equippedExtensions=collectEffectExtensions(record,catalogs.effectExtensions||[],
+    features,index?.artificer_infusions||[],activeArmorStates).filter(row=>sourceEnabled(row));
+  const strengthWaivers=armorStrengthWaivers(record,equippedExtensions);
   const speciesRule=arr(catalogs.speciesAttacks?.races).find(row=>
     record.species_id&&row.id===record.species_id)||
     arr(catalogs.speciesAttacks?.races).find(row=>same(row.name,record.species)&&
@@ -979,7 +988,8 @@ function calculateSheetValues(record={},catalogs={}){
       return overrideNumeric('ac_unarmored',equippedAc,resolve,stack,'alternative',
         row=>row.allow_armor===true)+shieldBonus;
     }
-    if(target==="speed")return simpleSpeed();
+    if(target==="speed")return Math.max(0,simpleSpeed()-
+      armorRuleEffects(record,armorForRules,resolve('ability:str',stack),strengthWaivers).speed_penalty);
     if(prefix==="speed"){
       const from=kind==="monster"?record.stat_block?.speed:record.species_speed;
       const source=record.movement_speeds?.[key]??from?.[key];
@@ -1153,6 +1163,7 @@ function calculateSheetValues(record={},catalogs={}){
   function safe(target){
     try{return resolve(target);}catch(error){warnings.add(error.message);return null;}
   }
+  const armor_effects=armorRuleEffects(record,armorForRules,safe('ability:str'),strengthWaivers);
   const abilities=Object.fromEntries(ABILITIES.map(a=>[a,{score:safe("ability:"+a),
     modifier:safe("ability_mod:"+a)}]));
   safe("attunement_max");
@@ -1265,9 +1276,7 @@ function calculateSheetValues(record={},catalogs={}){
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
-  const effect_extensions=collectEffectExtensions(record,catalogs.effectExtensions||[],featureContext.features,
-    index?.artificer_infusions||[])
-    .filter(row=>sourceEnabled(row));
+  const effect_extensions=equippedExtensions;
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
   for(const cls of classes)addOrigin('class|'+String(cls.source||'').toLowerCase()+'|'+cls.name.toLowerCase(),cls.name);
@@ -1350,7 +1359,7 @@ function calculateSheetValues(record={},catalogs={}){
       damage_type:celestialForm.damage_type,
       amount:safe('proficiency'),once_per_turn:true}:null,
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
-    effect_extensions,
+    effect_extensions,armor_effects,armor_strength_waivers:strengthWaivers,
     item_damage_resistances:effect_extensions.filter(row=>row.operation==='resistance'&&row.target_kind==='item')
       .map(row=>({damage_type:row.value,origin_id:row.origin_id,origin_name:row.origin_name,
         target_id:row.target_id,target_instance_id:row.target_instance_id,
