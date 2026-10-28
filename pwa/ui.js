@@ -4084,7 +4084,7 @@ function diceResult(){
 }
 function diceView(){
   return '<h2 id="chat-dice-title">Lancia i dadi</h2><div class="columns">'+
-    '<label>Numero dadi<input id="die-count" type="number" min="1" max="20" required></label>'+
+    '<label>Numero dadi<input id="die-count" type="number" min="1" max="20" value="1" required></label>'+
     '<label>Modificatore<input id="die-mod" type="number" min="-999" max="999"></label></div>'+
     '<div class="dice-options">'+[4,6,8,10,12,20,100].map(n=>
     '<button class="btn" type="button" data-act="select-die" data-sides="'+n+'" aria-pressed="'+(state.diceSides===n)+'">d'+n+'</button>').join("")+'</div>'+
@@ -4547,7 +4547,7 @@ function randomDie(sides) {
   return 1+(values[0]%sides);
 }
 async function roll(sides) {
-  const count=number(document.querySelector("#die-count")?.value,1);
+  const count=number(document.querySelector("#die-count")?.value||1,1);
   const modifier=number(document.querySelector("#die-mod")?.value,0);
   if(!Number.isInteger(count)||count<1||count>20||!Number.isInteger(modifier)||
      modifier < -999 || modifier > 999) throw new Error("Controlla il numero di dadi e il modificatore.");
