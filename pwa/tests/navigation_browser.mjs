@@ -112,7 +112,8 @@ try{
  await page.goForward();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
  await sheet('battle');await shot('actions');
  const resources=page.locator('#sheet-play-view [data-battle-action="resources"]');
- await resources.locator(':scope > summary.play-battle-summary').click();
+ if(await resources.getAttribute('open')===null)
+   await resources.locator(':scope > summary.play-battle-summary').click();
  const offhandResource=resources.locator('[data-rule-action="two_weapon"] [data-act="battle-action-jump"]');
  assert.equal(await offhandResource.count(),1,'Secondary attack is always in base rules');
  assert.equal(await offhandResource.isEnabled(),true,'Blocked secondary attack still links to Azioni');
