@@ -63,6 +63,7 @@ const FILES := {
 	"/sense_rules.js": ["res://pwa/sense_rules.js", "text/javascript; charset=utf-8"],
 	"/species_powers.js": ["res://pwa/species_powers.js", "text/javascript; charset=utf-8"],
 	"/feature_rolls.js": ["res://pwa/feature_rolls.js", "text/javascript; charset=utf-8"],
+	"/barbarian_2014.js": ["res://pwa/barbarian_2014.js", "text/javascript; charset=utf-8"],
 	"/dragonborn_ftd.js": ["res://pwa/dragonborn_ftd.js", "text/javascript; charset=utf-8"],
 	"/ability_areas.js": ["res://pwa/ability_areas.js", "text/javascript; charset=utf-8"],
 	"/species_roll_modes.js": ["res://pwa/species_roll_modes.js", "text/javascript; charset=utf-8"],
