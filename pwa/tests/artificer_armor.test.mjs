@@ -108,7 +108,8 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  calculated=calculateSheet(next,catalogs);
  next={...next,...traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers)};
  assert.equal(next.rest_selection_available.armor_model,false);
- assert.equal(next.resource_tracker_spent,undefined);
+ assert.equal(next.resource_tracker_spent?.['feature:armor_model:activation'],undefined,
+  'Changing Armor Model never spends an activation tracker, even if a rest normalized the spent map');
  calculated=calculateSheet(next,catalogs);
  assert.equal(calculated.attacks[0].id,'class_feature:thunder_gauntlets');
  assert.equal(calculated.trait_state_optional_dice.length,0);
