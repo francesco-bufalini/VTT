@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import {calculateSheet,parseArithmetic,spellProgression,requirementsAllow,localClasses}
   from "../sheet_rules.js";
-import {localSheetView,rollBattleDamage,sheetRollChatFields} from "../sheet_rules_view.js";
+import {rollBattleDamage,sheetRollChatFields} from "../sheet_rules_view.js";
 import {fixedProficiencies,structuredFeatureGrants,automaticId} from "../structured_effects.js";
 
 const load=file=>JSON.parse(readFileSync(fileURLToPath(new URL("../catalog/"+file+".json",import.meta.url)),"utf8"));
@@ -157,21 +157,16 @@ test("automatic HP uses native hit die table with constitution and first-level m
   assert.equal(out.stats.automatic_hp.available,true);
   assert.equal(out.stats.automatic_hp.value,32);
 });
-test("all derived output stays on device and UI marks unsupported features",()=>{
-  const c=character({name:"<script>bad</script>",class:"Wizard",level:5});
-  const out=calculateSheet(c,catalogs);
-  assert.equal(out.source,"local");
-  assert.equal(out.complete,false);
-  const stat=localSheetView("stats",out);
-  assert.match(stat,/data-local-sheet-calculations/);
-  assert.match(stat,/localmente sul dispositivo/);
-  assert.match(stat,/Tiri salvezza/);
-  assert.doesNotMatch(stat,/<script>/);
-  assert.match(localSheetView("battle",out),/Classe armatura/);
-  assert.match(localSheetView("magic",out),/Nessuno slot presente/);
-  const withTraits=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
-  assert.match(localSheetView("magic",withTraits),/Slot livello/);
-  assert.equal(localSheetView("inventory",out),"");
+test("local derived values remain available offline without the obsolete summary renderer",()=>{
+ const c=character({name:"<script>bad</script>",class:"Wizard",level:5});
+ const out=calculateSheet(c,catalogs);
+ assert.equal(out.source,"local");
+ assert.equal(out.complete,false);
+ assert.equal(typeof out.stats.armor_class,"number");
+ assert.equal(typeof out.stats.proficiency,"number");
+ assert.ok(Array.isArray(out.spell_slots));
+ const withTraits=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
+ assert.ok(withTraits.spell_slots.some(slot=>slot.total>0));
 });
 
 test("disabling a saved origin withdraws its ability and skill bonuses offline",()=>{
