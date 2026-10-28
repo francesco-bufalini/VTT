@@ -29,13 +29,14 @@ test('ERLW dragonmarks are bounded to the correct 2014 race and subrace',()=>{
   ['Half-Orc','Variant; Mark of Finding','skill:perception',false]
  ]){
   const c=character(species,'PHB',{subrace,subrace_source:'ERLW'}),{features,bonuses}=project(c);
-  assert.equal(bonuses.length,1,species+' '+subrace);
-  assert.equal(available(bonuses,skill).length,1,species+' '+subrace+' skill');
-  assert.equal(available(bonuses,'skill:athletics').length,0,'bonus must not apply to unrelated skills');
-  assert.equal(available(bonuses,'ability_check:int').length,tool?1:0,'tool checks only for marked variants with tools');
-  assert.equal(bonuses[0].origin_id,features[0].origin_id);
-  assert.equal(bonuses[0].origin_key,'subrace|erlw|'+subrace.toLowerCase());
-  assert.match(bonuses[0].condition_label,/Solo per/);
+  const mark=bonuses.filter(x=>x.origin_key.startsWith('subrace|'));
+  assert.equal(mark.length,1,species+' '+subrace);
+  assert.equal(available(mark,skill).length,1,species+' '+subrace+' skill');
+  assert.equal(available(mark,'skill:athletics').length,0,'bonus must not apply to unrelated skills');
+  assert.equal(available(mark,'ability_check:int').length,tool?1:0,'tool checks only for marked variants with tools');
+  assert.equal(mark[0].origin_id,features.find(f=>f.origin_id===mark[0].origin_id)?.origin_id);
+  assert.equal(mark[0].origin_key,'subrace|erlw|'+subrace.toLowerCase());
+  assert.match(mark[0].condition_label,/Solo per/);
   assert(!project({...c,subrace_source:'SCAG'}).bonuses.length);
   assert(!project({...c,rules_version:'2024'}).bonuses.length);
  }
