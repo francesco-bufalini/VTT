@@ -18,7 +18,10 @@ try{
     inventory:[sword,...creature.inventory.slice(1),copy]},'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');
- await page.locator('[data-act="inventory-toggle-all"]').click();
+ const toggleAll=page.locator('[data-act="inventory-toggle-all"]');
+ if((await toggleAll.textContent()).includes('Mostra tutti gli oggetti'))await toggleAll.click();
+ // The all-items view may already be active because the inventory remembers
+ // previously selected sections; never toggle it off while asserting subtotals.
  const sections=page.locator('#sheet-play-view .play-inventory-section');
  assert(await sections.count()>=2,'Backpack and custom section must be visible');
  const totals=page.locator('#sheet-play-view .inventory-overview');
