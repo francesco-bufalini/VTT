@@ -1,5 +1,5 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
-import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
+import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage,validateVariants} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
 import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
@@ -16,7 +16,7 @@ import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_COND
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import {openSendDialog,pollIncomingShares} from './share_transfer.js';
-import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
+import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportCreatureArchive, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -254,7 +254,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, sessionPane:"", disclosureState:new Map(),
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
-  castCreatureId:"", castSpellIndex:0, castLevel:1,
+  castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -679,6 +679,37 @@ function stopSubscriptions() {
   state.stopMap?.(); state.stopMap = null;
   if(state.pollChat) { clearInterval(state.pollChat); state.pollChat = null; }
 }
+function archiveCreatureView(creature){
+  if(creature.archive_unreadable||typeof creature.id!=="string"||
+     typeof creature.name!=="string"||!creature.name.trim())
+    throw new Error("Dati della scheda non leggibili.");
+  validateVariants(creature);
+  return resolveVariant(creature);
+}
+function readableArchiveCreatures(rows){
+  return rows.flatMap(({creature})=>{
+    try{return [archiveCreatureView(creature)];}catch{return [];}
+  });
+}
+async function refreshSessionCreatures(){
+  const rows=await listCreatures();
+  const results=await Promise.all(rows.map(async({creature})=>{
+    try{
+      const record=archiveCreatureView(creature);
+      return {record,calculated:await computeLocalData(record)};
+    }catch(error){
+      return {error:{id:creature.id,name:creature.name||"Creatura senza nome",message:errorMessage(error)}};
+    }
+  }));
+  const available=results.filter(row=>row.record);
+  state.cachedCreatures=available.map(row=>row.record);
+  state.castSheets=new Map(available.map(row=>[row.record.id,row.calculated]));
+  state.sessionCreatureErrors=results.filter(row=>row.error).map(row=>row.error);
+  if(!state.cachedCreatures.some(row=>row.id===state.castCreatureId)){
+    state.castCreatureId=state.cachedCreatures[0]?.id||"";
+    state.castSpellIndex=0;
+  }
+}
 async function navigate(page){
   if(!sections.has(page))return;
   if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';state.catalogAssignCreatureId='';}
@@ -693,7 +724,8 @@ async function navigate(page){
   }
   // The archive index does not need to resolve every creature's active form.
   // A damaged legacy form must not prevent access to the other saved sheets.
-  state.cachedCreatures=(await listCreatures()).map(row=>page==="library"?row.creature:resolveVariant(row.creature));
+  const archiveRows=await listCreatures();
+  state.cachedCreatures=page==="library"?archiveRows.map(row=>row.creature):readableArchiveCreatures(archiveRows);
   if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
 }
@@ -720,9 +752,8 @@ async function render() {
     if (state.page === "library") html = await libraryView();
     else if (state.page === "catalog") html = await catalogView();
     else if (state.page === "session") {
-      state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
-      // Session navigation must never await the entire spell compendium.
-      state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async creature=>[creature.id,await computeLocalData(creature)])));
+      // A bad sheet must not prevent pairing, chat, or the other local casters.
+      await refreshSessionCreatures();
       html=sessionView();
     }
     if(ticket !== state.renderTicket) return;
@@ -4122,7 +4153,10 @@ function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
 function sessionLayout(table,desktop){
   const pane=state.sessionPane||(state.paired&&state.online?'table':'connection');
   const choices=[['table','Mappa'],['chat','Chat e dadi'],['connection','Collegamento']];
-  return header('Al tavolo','La tua partita','Il tavolo condiviso, sempre a portata di mano.')+
+  const unavailable=state.sessionCreatureErrors.length?
+    '<p class="warning" role="status" data-session-creature-errors>Schede non disponibili in Partita: '+
+      esc(state.sessionCreatureErrors.map(row=>row.name).join(', '))+'. Le altre creature restano utilizzabili.</p>':'';
+  return header('Al tavolo','La tua partita','Il tavolo condiviso, sempre a portata di mano.')+unavailable+
     '<div class="session-switcher" role="group" aria-label="Sezioni della partita">'+choices.map(([key,title])=>'<button type="button" class="btn" data-act="session-pane" data-session-pane="'+key+'" aria-pressed="'+(pane===key)+'">'+title+'</button>').join('')+'</div>'+
     '<div data-session-content="connection"'+(pane==='connection'?'':' hidden')+'>'+desktop+'</div>'+
     '<div data-session-content="table"'+(pane==='table'?'':' hidden')+'>'+table+'</div>'+
@@ -4382,8 +4416,7 @@ function startMap() {
         tokenStatusFingerprint=fingerprint;
         if(changed.length){
           if(state.page==='session'){
-            state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
-            state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async c=>[c.id,await computeLocalData(c)])));
+            await refreshSessionCreatures();
           }else if(state.page==='library'&&!state.libraryMode&&
             changed.includes(state.creatureId)){
             if(!state.editor||!app.querySelector('#sheet-play-view')){
@@ -4471,7 +4504,7 @@ async function fetchChat() {
   }
 }
 async function refreshSharedCatalog(kind){
-  state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
+  state.cachedCreatures=readableArchiveCreatures(await listCreatures());
   await refreshCharacterHomebrewOptions();
   if(state.page==='catalog'){
     state.catalogSelected=-1;
@@ -4967,7 +5000,7 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
       }catch(error){message('Evocazione registrata, ma scheda famiglio non creata: '+errorMessage(error),true);}
     }
     if(state.page==='session'){
-      state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
+      state.cachedCreatures=readableArchiveCreatures(await listCreatures());
       state.castSheets?.set(casterId,await computeLocalData(editor.read()));
     }else if(state.editor===editor)state.calculated=await computeLocalData(editor.read());
   };
@@ -7749,7 +7782,7 @@ async function handleAction(target){
     }else if(category==="races"){
       await editor.update(referencePatch(sheet,'species',entry));
     }else throw new Error("Categoria non assegnabile alla scheda.");
-    state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
+    state.cachedCreatures=readableArchiveCreatures(await listCreatures());
     if(state.pendingItemOwner&&category!=='feats'){
        state.page='library';state.libraryMode=false;state.creatureId=cId;state.editor=editor;
        state.sheet='inventory';
@@ -8554,7 +8587,7 @@ async function handleAction(target){
     if(!result.ok)throw new Error(result.error||"Impossibile piazzare la creatura.");
     const editor=await openCreatureEditor(selectedId);
     await editor.update({linked_token_sync_id:result.token_id,linked_token_name:result.name||sheet.name});
-    state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
+    state.cachedCreatures=readableArchiveCreatures(await listCreatures());
     tokenStatusFingerprint="";
     message("Token aggiornato: "+(result.name||sheet.name));
     closeSessionDialog(app.querySelector("#session-place-dialog"));
@@ -9112,7 +9145,7 @@ export const desktopSheetSession={
   flush:flushPendingFields,
   notify:message,
   showLibrary:()=>navigate('library'),
-  async exportArchive(){await flushPendingFields();return exportCreatureBatch((await listCreatures()).map(row=>row.creature.id));},
+  async exportArchive(){await flushPendingFields();return exportCreatureArchive();},
   async open(id){await flushPendingFields();state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await refreshCharacterHomebrewOptions();await render();}
 };
 export async function mount(){

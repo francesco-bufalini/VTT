@@ -39,7 +39,10 @@ The macOS preset retains its universal binary and Retina settings.
   report both the actual imported count and failed filenames.
   Advanced native operations remain available through `Strumenti nativi`.
   Desktop archive export/import uses the native portable creature format, not the
-  mobile IndexedDB backup format. File results appear in the web sheet; exports
+  mobile IndexedDB backup format. Whole-archive exports read one snapshot and may
+  exceed 200 creatures; portable imports and exports retain the 16 MiB file bound.
+  Manual selected batches keep their 200-creature limit.
+  File results appear in the web sheet; exports
   are confirmed only after the file was written successfully.
 - Spell casts hand off to the existing native casting confirmation and targeting
   flow. The web view does not spend resources before that flow accepts a cast.

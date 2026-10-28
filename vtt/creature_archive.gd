@@ -188,7 +188,11 @@ func import_export_batch(payload: Dictionary) -> Error:
 	if payload.get("format") != "vtt_creature_batch_export_v1" or payload.get("version") != 1:
 		return ERR_INVALID_DATA
 	var entries: Variant = payload.get("entries", [])
-	if not entries is Array or entries.is_empty() or entries.size() > 200:
+	if not entries is Array or entries.is_empty():
+		return ERR_INVALID_DATA
+	# Full portable archives may exceed the manual 200-creature selection limit.
+	# Keep the same 16 MiB bound used by the native file picker and the PWA.
+	if JSON.stringify(payload).to_utf8_buffer().size() > 16 * 1024 * 1024:
 		return ERR_INVALID_DATA
 	for item: Variant in entries:
 		if not item is Dictionary:

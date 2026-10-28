@@ -94,7 +94,7 @@ export async function listSubcreatures(parentId, scope = "default") {
   return (await listRecords(requiredScope(scope), CREATURE_TYPE))
     .filter(row => row.data?.parent_creature_id === parentId)
     .map(row => ({creature: row.data, revision: row.revision}))
-    .sort((a,b) => a.creature.name.localeCompare(b.creature.name));
+    .sort((a,b) => String(a.creature.name ?? "").localeCompare(String(b.creature.name ?? "")));
 }
 
 // Permanent identity is the granting rule + typed source + original bestiary
@@ -248,8 +248,12 @@ export async function importCreatureFile(file, scope = "default") {
   }
   if (payload?.format === "vtt_creature_batch_export_v1") {
     const entries=payload.entries;
-    if(payload.version!==1 || !Array.isArray(entries) || entries.length<1 || entries.length>200)
+    if(payload.version!==1 || !Array.isArray(entries) || entries.length<1)
       throw new Error("Archivio creature multiplo non valido.");
+    // Whole-archive exports can contain more than 200 roots. The portable byte
+    // limit still bounds parsing and atomic restoration, including object inputs.
+    if(new TextEncoder().encode(JSON.stringify(payload)).length>MAX_CREATURE_BYTES)
+      throw new Error("VTT creature file exceeds 16 MiB");
     // Import one portable package in ONE IndexedDB transaction. A failure
     // (quota, collision, malformed dependency) must not leave half the
     // selected characters behind on the phone.
@@ -314,8 +318,7 @@ export async function exportCreature(id, scope = "default") {
   if (row.data.parent_creature_id)
     throw new Error("Esporta la sottocreatura insieme al suo proprietario.");
   const children = (await listSubcreatures(id, scope)).map(row => row.creature);
-  const dependencies = referencedDefinitions([row.data,...children], byId);
-  const payload = makeCreatureExport(row.data, dependencies, children);
+  const payload = creatureEnvelope(row.data,children,byId);
   return new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
 }
 
@@ -330,6 +333,39 @@ export async function exportCreatureBatch(ids, scope = "default") {
     roots.add(row.data.parent_creature_id || id);
   }
   for (const id of roots) entries.push(JSON.parse(await (await exportCreature(id,scope)).text()));
+  return creatureBatchBlob(entries);
+}
+
+function creatureEnvelope(creature,children,definitions){
+  return makeCreatureExport(creature,referencedDefinitions([creature,...children],definitions),children);
+}
+
+// Snapshot the archive once: portable export must not issue hundreds of native
+// IPC reads or inherit the selection limit used by manual batch exports.
+export async function exportCreatureArchive(scope = "default") {
+  const rows=await listRecords(requiredScope(scope),CREATURE_TYPE);
+  if(!rows.length)throw new Error("Non ci sono creature da esportare.");
+  const records=rows.map(row=>{
+    if(!row.data||typeof row.data!=="object"||Array.isArray(row.data)||row.data.id!==row.id)
+      throw new Error("L'archivio contiene una scheda non leggibile: "+row.id);
+    return row.data;
+  });
+  const byId=new Map(records.map(record=>[record.id,record]));
+  const children=new Map();
+  for(const record of records){
+    if(!record.parent_creature_id)continue;
+    const parent=byId.get(record.parent_creature_id);
+    if(!parent||parent.parent_creature_id)throw new Error("Proprietario della sottocreatura non disponibile.");
+    if(!children.has(parent.id))children.set(parent.id,[]);
+    children.get(parent.id).push(record);
+  }
+  const definitions=new Map((await listRecords(HOMEBREW_SCOPE,HOMEBREW_TYPE)).map(row=>[row.id,row.data]));
+  const roots=records.filter(record=>!record.parent_creature_id)
+    .sort((a,b)=>String(a.name??"").localeCompare(String(b.name??"")));
+  return creatureBatchBlob(roots.map(record=>creatureEnvelope(record,children.get(record.id)||[],definitions)));
+}
+
+function creatureBatchBlob(entries){
   const data=JSON.stringify({format:"vtt_creature_batch_export_v1",version:1,entries},null,2);
   if(new TextEncoder().encode(data).length>MAX_CREATURE_BYTES)
     throw new Error("Esportazione troppo grande per il formato portatile.");

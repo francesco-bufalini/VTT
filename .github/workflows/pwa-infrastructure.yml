@@ -242,6 +242,9 @@ jobs:
           timeout 90s "$GODOT" --headless --path . --script res://tests/test_pwa_host.gd 2>&1 | tee /tmp/pwa-godot.log
           ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-godot.log
           grep -q 'PASS: desktop PWA' /tmp/pwa-godot.log
+          timeout 30s "$GODOT" --headless --path . --script res://tests/test_large_creature_batch.gd 2>&1 | tee /tmp/pwa-large-archive.log
+          ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-large-archive.log
+          grep -q 'PASS: full portable archives' /tmp/pwa-large-archive.log
       - name: Assemble standalone offline prototype
         shell: bash
         run: |

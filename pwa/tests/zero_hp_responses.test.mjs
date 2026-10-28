@@ -32,7 +32,10 @@ test('Goliath and Hadozee prevent lethal damage before reducing temporary/curren
   assert.equal(result.patch.resource_tracker_spent[ability.tracker_id],1);
   const fully=resolveZeroHpDamage(record,calculated,12,ability.id,40);
   assert.equal(fully.damage,0);
-  assert.equal(fully.patch.temporary_hp,3);
+  const unchangedHp={...record,...fully.patch};
+  assert.equal(unchangedHp.temporary_hp,3);
+  assert.equal(unchangedHp.current_hp,8);
+  assert.equal(fully.patch.resource_tracker_spent[ability.tracker_id],1);
   const exhausted={...record,resource_tracker_spent:{[ability.tracker_id]:projection.trackers[0].max}};
   assert.equal(availableZeroHpResponses(exhausted,calculated,12).length,0);
   assert.throws(()=>resolveZeroHpDamage(exhausted,calculated,12,ability.id,4),/esauriti/);

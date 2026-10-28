@@ -60,6 +60,39 @@ try{
   });
   assert.equal(native.data.name,'Lyria modificata nel desktop');
   assert.equal(native.data.additional_traits,'Nota campagna da conservare');
+  // Use the real desktop adapter and native save bridge with a large snapshot.
+  // Synthetic list responses keep all personal and fixture records untouched.
+  const largeArchive=await browser.newPage();
+  const largeRows=Array.from({length:201},(_,index)=>{
+    const id=index?'desktop_large_'+index:native.id;
+    return {scope:'default',type:'creature',id,revision:1,
+      data:{...native.data,id,name:'Archivio intero '+index}};
+  });
+  await largeArchive.addInitScript(()=>{
+    globalThis.ipc={postMessage(raw){
+      fetch('/__test/rpc',{method:'POST',body:raw}).then(r=>r.json()).then(reply=>globalThis.vttDesktopReceive(reply));
+    }};
+  });
+  await largeArchive.route('**/__test/rpc',route=>{
+    const request=route.request().postDataJSON();
+    if(request.method==='list'&&request.args.scope==='default'&&request.args.type==='creature')
+      return route.fulfill({contentType:'application/json',body:JSON.stringify({id:request.id,value:largeRows})});
+    return route.continue();
+  });
+  await largeArchive.goto(origin);
+  await largeArchive.waitForFunction(()=>document.querySelector('#app')?.dataset.renderedSheet==='info');
+  await largeArchive.evaluate(async()=>{await (await import('/ui.js')).desktopSheetSession.showLibrary();});
+  await largeArchive.locator('.library-backup > summary').click();
+  await largeArchive.getByRole('button',{name:'Esporta archivio',exact:true}).click();
+  await largeArchive.waitForFunction(()=>document.querySelector('#toast')?.textContent.startsWith('Esportazione completata:'));
+  const full=await largeArchive.evaluate(async()=>{
+    const {calls}=await fetch('/__test/calls').then(r=>r.json());
+    return JSON.parse(calls.filter(row=>row.method==='download').at(-1).args.text);
+  });
+  assert.equal(full.entries.length,201);
+  assert(full.entries.every(row=>row.creature.additional_traits==='Nota campagna da conservare'));
+  await largeArchive.close();
+  console.log('PASS: full desktop archive with 201 creatures reaches the native save bridge');
   const broken=await browser.newPage();
   await broken.route('**/desktop/main.js',route=>route.fulfill({status:200,contentType:'text/javascript',body:'import { missing } from "/desktop/storage.js";'}));
   await broken.goto(origin);

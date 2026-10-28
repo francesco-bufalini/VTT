@@ -41,8 +41,51 @@ async function archiveRecoversFromOneBadSheet(){
   assert.equal(await f.page.evaluate(async()=>{
    const {getRecord}=await import('/storage.js');return (await getRecord('default','creature','legacy_missing_body')).data;
   }),null);
+  await f.page.locator('#creature-back').click();
+  await f.page.locator('[data-act="library-add"]').waitFor();
+  await f.page.locator('[data-nav="session"]').first().click();
+  await f.page.locator('#pair-form').waitFor();
+  await f.page.locator('[data-session-creature-errors]').waitFor();
+  assert.equal(await f.page.locator('#app').getAttribute('data-page'),'session');
+  assert.match(await f.page.locator('[data-session-creature-errors]').textContent(),/Vecchia variante/);
+  // Bring up an isolated simulated table after testing the offline pairing screen.
+  await f.page.route('**/api/**',route=>{
+   const path=new URL(route.request().url()).pathname;
+   const body=path==='/api/pair'?{token:'a'.repeat(64)}:
+    path==='/api/session'?{protocol:1,session:'archive-recovery-test',mobile_protocol:3}:
+    path==='/api/conditions'?{editions:{'2014':[],'2024':[]}}:
+    path==='/api/action'?{ok:true,token_id:'placed_readable',name:'Scheda leggibile'}:
+    {protocol:1,desktop_online:true,tokens:[{id:'reference',name:'Riferimento',conditions:[]}],
+     combat:{active:false},devices:[],inbox:[],messages:[],events:[]};
+   return route.fulfill({contentType:'application/json',body:JSON.stringify(body)});
+  });
+  await f.page.locator('[data-act="check"]').click();
+  await f.page.locator('#pair-form button[type="submit"]').waitFor({state:'visible'});
+  await f.page.locator('#pair-secret').fill('0123456789ABCDEF');
+  await f.page.locator('#pair-form button[type="submit"]').click();
+  await f.page.waitForFunction(id=>!!document.querySelector('#place-creature option[value="'+id+'"]'),ids.good);
+  assert.equal(await f.page.locator('#place-creature option[value="'+ids.bad+'"]').count(),0);
+  assert.equal(await f.page.locator('#place-creature option[value="legacy_missing_body"]').count(),0);
+  assert.equal(await f.page.locator('#place-creature option[value="'+ids.unnamed+'"]').count(),0);
+  await f.page.locator('[data-session-creature-errors]').waitFor();
+  await f.page.locator('[data-session-pane="table"]').click();
+  await f.page.locator('[data-act="open-place-token"]').click();
+  await f.page.locator('#place-creature').selectOption(ids.good);
+  await f.page.locator('[data-act="place-creature"]').click();
+  await f.page.waitForFunction(()=>!document.querySelector('#session-place-dialog')?.open);
+  assert.match(await f.page.locator('#toast').textContent(),/Token aggiornato: Scheda leggibile/);
+  assert.equal(await f.page.evaluate(async id=>{
+   const {getRecord}=await import('/storage.js');return (await getRecord('default','creature',id)).data.linked_token_sync_id;
+  },ids.good),'placed_readable');
+  await f.page.locator('[data-nav="library"]').first().click();
+  await f.page.locator('[data-act="library-add"]').waitFor();
+  assert.equal(await f.page.locator('[data-act="open"]').count(),4);
+  const unchanged=await f.page.evaluate(async id=>{
+   const {getRecord}=await import('/storage.js');return (await getRecord('default','creature',id)).data;
+  },ids.bad);
+  assert.deepEqual(unchanged,raw);
   assert.deepEqual(f.errors,[]);
-  console.log('PASS: one unreadable legacy sheet cannot block the archive, backups or other creatures');
+  console.log('PASS: unreadable sheets cannot block archive, pairing, placement, refresh or valid session creatures');
  }finally{await f.close();}
 }
 
@@ -129,7 +172,26 @@ async function updatePreservesEdits(failSave=false){
  }finally{await f.close();}
 }
 
+async function desktopExportOver200(){
+ const f=await browserFixture();
+ try{
+  await f.page.goto(f.origin);await f.page.locator('[data-act="library-add"]').waitFor();
+  const result=await f.page.evaluate(async()=>{
+   const {initialCreature}=await import('/character_core.js');const {ownerId}=await import('/creatures.js');
+   const {insertRecords}=await import('/storage.js');const owner=await ownerId();
+   await insertRecords(Array.from({length:201},(_,i)=>({scope:'default',type:'creature',id:'whole_'+i,
+    data:initialCreature('character','Intero '+i,'whole_'+i,owner)})));
+   const {desktopSheetSession}=await import('/ui.js');const blob=await desktopSheetSession.exportArchive();
+   return {count:JSON.parse(await blob.text()).entries.length};
+  });
+  assert.equal(result.count,201);
+  assert.deepEqual(f.errors,[]);
+  console.log('PASS: desktop export entry point includes an entire archive with over 200 creatures');
+ }finally{await f.close();}
+}
+
 await archiveRecoversFromOneBadSheet();
+await desktopExportOver200();
 await aasimarSheetsOpen();
 await updatePreservesEdits();
 await updatePreservesEdits(true);

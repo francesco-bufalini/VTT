@@ -54,6 +54,7 @@ const SHELL = [
   "/spell_selection.js",
   "/species_powers.js",
   "/feature_rolls.js",
+  "/zero_hp_responses.js",
   "/dragonborn_ftd.js",
   "/ability_areas.js",
   "/activated_abilities.js",
