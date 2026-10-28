@@ -1166,7 +1166,7 @@ async function openGrantedItemPowerDialog(c,calculated,ability,powers){
  if(!nameById.has(String(c.id)))nameById.set(String(c.id),String(c.name||'Sé stesso'));
  const mod=Number(calculated.abilities?.int?.modifier)||0;
  const prof=Number(calculated.stats?.proficiency)||2;
- const dieFormula=power=>String(power.damage_dice||power.damage||'').replace(/\\s+/g,'');
+ const dieFormula=power=>String(power.damage_dice||power.damage||'').replace(/\s+/g,'');
  const dc=8+prof+mod;
  const label=power=>power.item_name+' · '+power.name;
  const details=power=>power.mode==='spell_attack'?
