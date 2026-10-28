@@ -366,7 +366,8 @@ async function flushPendingFields() {
   for (const target of targets) {
     clearTimeout(pendingFieldTimers.get(target));
     pendingFieldTimers.delete(target);
-    if (target.isConnected && state.editor) await trackFieldWrite(target);
+    if (target.isConnected && state.editor)
+      await (target.matches('[data-identity-value]')?trackIdentityWrite(target):trackFieldWrite(target));
   }
   await Promise.all([...pendingFieldWrites]);
   if(state.sheetPopup==='identity'){
@@ -9207,6 +9208,16 @@ function listen(){
       paintLibraryMiniatures();
       const area=app.querySelector('#library-create-dialog .library-miniature-choices');
       if(area)area.scrollTop=0;
+      return;
+    }
+    if(target?.matches('[data-identity-value]')){
+      clearTimeout(pendingFieldTimers.get(target));
+      const editor=state.editor;
+      pendingFieldTimers.set(target,setTimeout(()=>{
+        pendingFieldTimers.delete(target);
+        if(target.isConnected&&state.editor===editor)
+          trackIdentityWrite(target).catch(error=>message(errorMessage(error),true));
+      },400));
       return;
     }
     if(target?.matches('[data-play-search]')){
