@@ -333,7 +333,7 @@ export function racialAbilityEffectFormula(ability={},calculated={}){
 export function racialAbilityTemporaryHpPatch(record={},ability={},calculated={}){
  const factor=ability.temp_hp==='double_proficiency'?2:ability.temp_hp==='proficiency'?1:0;
  if(!factor)return {};
- const amount=Math.max(0,Math.trunc(Number(calculated.stats?.proficiency||calculated.values?.proficiency)||0))*factor);
+ const amount=Math.max(0,Math.trunc(Number(calculated.stats?.proficiency??calculated.values?.proficiency??0)))*factor;
  if(!amount)return {};
  // 2014 temporary hit points never stack; do not discard a larger pool.
  return {temporary_hp:Math.max(0,Number(record.temporary_hp)||0,amount)};
