@@ -8,7 +8,7 @@ const DAMAGE={
 };
 const CONDITIONS={
  blinded:'Accecato',charmed:'Affascinato',deafened:'Assordato',frightened:'Spaventato',
- grappled:'Afferrato',incapacitated:'Incapacitato',invisible:'Invisibile',
+ disease:'Malattie',exhaustion:'Indebolimento',grappled:'Afferrato',incapacitated:'Incapacitato',invisible:'Invisibile',
  paralyzed:'Paralizzato',petrified:'Pietrificato',poisoned:'Avvelenato',
  prone:'Prono',restrained:'Trattenuto',stunned:'Stordito',unconscious:'Privo di sensi'
 };
