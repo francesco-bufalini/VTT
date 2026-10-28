@@ -120,6 +120,13 @@ test('Spell Sniper accepts attack-roll cantrips and rejects save-only or utility
  assert(!originChoiceMatches(choice,byName('Prestidigitation')).matches);
 });
 
+test('a racial daily use never charges the same spell cast as a feat-granted ritual',()=>{
+ let record=variant({...character('Ritual Caster','PHB'),species:'Firbolg',species_source:'MPMM'},'wizard spells');
+ record=pick(record,sheet(record).origin_choices[0],byName('Detect Magic'));
+ const calculated=sheet(record),ritual=calculated.origin_spells.find(row=>row.ritual_only);
+ assert(ritual);assert.equal(ritual.tracker_id,'');assert.equal(ritual.payment_mode,'free');
+});
+
 test('casting abilities inherit the chosen feat increase or prerequisite feat instead of an arbitrary score',()=>{
  for(const name of ['Fey Touched','Shadow Touched','Telekinetic','Telepathic']){
   const record=character(name,'TCE'),calculated=sheet(record);

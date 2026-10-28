@@ -564,7 +564,7 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     // A compact packaged native catalog may lag behind a source-corrected
     // spell usage rule. Apply the source-qualified limit only if no native
     // daily/rest tracker already exists; never grant duplicate uses.
-    const extra=typeof raw==='string'&&!tid?usageFor(raw):null;
+    const extra=['race','subrace'].includes(origin.kind)&&typeof raw==='string'&&!tid?usageFor(raw):null;
     if(extra&&Number.isInteger(Number(extra.uses))&&Number(extra.uses)>0){
       tid='5espell:'+origin.id+'|'+blockIndex+'|'+stage+'|racial:'+norm(String(raw).split('#')[0].split('|')[0]);
       out.trackers.push({id:tid,name:owner.name+' · '+String(raw).split('#')[0].split('|')[0],
