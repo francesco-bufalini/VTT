@@ -2,6 +2,7 @@ import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
+import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
@@ -796,6 +797,7 @@ function calculateSheetValues(record={},catalogs={}){
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const damage_defense_entries=[...arr(record.damage_defense_entries),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed),
+    ...classDefenseEntries(record,features,suppressed),
     ...dragonbornFtdResistances(record,catalogs.speciesPowers,features).filter(row=>
       !suppressed.has(row.benefit_id)&&sourceEnabled(row))];
   const grantingCastingTrait=member=>{
