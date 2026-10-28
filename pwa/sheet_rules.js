@@ -1,4 +1,5 @@
 import {SKILLS} from './skill_definitions.js';
+import {variantFamilyAbilityGrants} from './species_variant_families.js';
 import {offhandAttackAllowed} from './offhand_rules.js';
 import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
@@ -1566,7 +1567,8 @@ export function loadRuleCatalogs(){
     fetch('/catalog/sense_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1?data:{}).catch(()=>({})),
     fetch('/catalog/feature_item_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1&&Array.isArray(data.grants)?data.grants:[]).catch(()=>[])
   ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants])=>({
-    abilityGrants,classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
+    abilityGrants:variantFamilyAbilityGrants(abilityGrants),
+    classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
