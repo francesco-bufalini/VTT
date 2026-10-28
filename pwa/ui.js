@@ -1365,9 +1365,9 @@ async function openSpellImprintDialog(creature,calculated,ability){
  const existing=spellImprintExtension(creature,rule);
  const already=creature.spell_imprint_prepared?.[rule.id]===true;
  const items=eligibleSpellImprintItems(creature,rule);
- if(!items.length)throw Error('Aggiungi prima una carta o un mazzo di carte all’inventario.');
+ if(!items.length&&!already)throw Error('Aggiungi prima una carta o un mazzo di carte all’inventario.');
  let catalog=state.spellCatalog||[];
- try{catalog=await loadFullSpellCatalog();}catch(error){
+ if(!already)try{catalog=await loadFullSpellCatalog();}catch(error){
   if(!catalog.length)throw Error('Catalogo degli incantesimi non disponibile.');
  }
  const spells=eligibleSpellImprintSpells(creature,calculated,
@@ -1396,7 +1396,9 @@ async function openSpellImprintDialog(creature,calculated,ability){
     '<div data-imprint-description class="inventory-prose"></div>')+
   '<p data-imprint-error class="warning" role="alert"></p>'+
   '<div class="actions magic-dialog-actions">'+
-  (already?'':'<button type="button" class="btn primary" data-imprint-confirm>Prepara la carta</button>')+
+  (already?(existing&&spellImprintActive(existing)?
+    '<button type="button" class="btn primary" data-imprint-cast>Lancia dalla carta · '+(rule.cast_action_type==='bonus'?'azione bonus':'azione')+'</button>':''):
+    '<button type="button" class="btn primary" data-imprint-confirm>Prepara la carta</button>')+
   '<button type="button" class="btn" data-imprint-close>Chiudi</button></div>';
  const selector=dialog.querySelector('[data-imprint-spell]');
  if(selector){
@@ -1418,6 +1420,30 @@ async function openSpellImprintDialog(creature,calculated,ability){
  }
  dialog.querySelectorAll('[data-imprint-close],[data-act="spell-imprint-close"]').forEach(button=>
   button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.querySelector('[data-imprint-cast]')?.addEventListener('click',async event=>{
+  const button=event.currentTarget;if(button.disabled)return;button.disabled=true;
+  try{
+   const current=state.editor?.read();
+   if(!current||String(current.id)!==dialog.dataset.creatureId)
+     throw Error('La scheda è cambiata.');
+   const fresh=await computeLocalData(current);
+   if(!(fresh.spell_imprint_rules||[]).some(r=>r.id===rule.id))
+     throw Error('Il privilegio non è più disponibile.');
+   const index=(current.inventory||[]).findIndex((item,i)=>
+     spellImprintAtItem(current,i)?.imprint_rule_id===rule.id);
+   if(index<0)throw Error('La carta è stata rimossa o sono trascorse otto ore.');
+   const active=spellImprintAtItem(current,index);
+   const update=useSpellImprintPatch(current,fresh,index);
+   await patch(update);await state.editor.flush();
+   closeDialog(dialog,{remove:true});await render();
+   message(rule.name+' · '+(active.spell_name||'incantesimo')+
+     ': lancio registrato come '+(rule.cast_action_type==='bonus'?'azione bonus':'azione')+
+     '. Nessuno slot consumato. Risolvi bersagli, effetti e concentrazione normalmente.');
+  }catch(error){
+   button.disabled=false;
+   dialog.querySelector('[data-imprint-error]').textContent=errorMessage(error);
+  }
+ });
  dialog.querySelector('[data-imprint-confirm]')?.addEventListener('click',async event=>{
   const button=event.currentTarget;if(button.disabled)return;
   button.disabled=true;
