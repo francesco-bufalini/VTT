@@ -1,6 +1,6 @@
 // Native nonspell capabilities: eligibility comes from the same projected
 // feature/origin graph as the sheet, never from guessed class-level thresholds.
-import {featureActionEntries} from "./feature_mechanics.js";
+import {featureActionEntries,classFeatureDescriptors} from "./feature_mechanics.js";
 import {activeInfusions,infusionChargeTrackerId,ownedItemDisplayName} from "./item_controls.js";
 const rows=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??"").trim().toLowerCase();
@@ -62,6 +62,8 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   const timed=featureActionEntries(creature,rows(projection.trackers),
     projection.feature_rules||{},features);
 
+  const descriptiveOwners=new Set(classFeatureDescriptors(creature,projection)
+    .filter(row=>row.descriptive_only).map(row=>row.feature_id));
   // Class capabilities are unlocked only by an actual structured trait. The
   // preexisting IDs remain stable for saved grants and Android interoperability.
   for(const feature of features){
@@ -78,6 +80,7 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
     const tracker=trackerFor(projection,feature.name,owner);
     const definition={
       id:id||"feature:"+feature.key,name:feature.name,
+      descriptive_only:descriptiveOwners.has(feature.origin_id),
       source:feature.source||parts[1].toUpperCase(),
       feature_id:feature.origin_id,
       feature_name:feature.name,
