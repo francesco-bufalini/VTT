@@ -17,8 +17,10 @@ materials and textures. Tactical size and the one-cell footprint stay unchanged.
 | Valandir | 2.50 m | 1.6667 |
 | Wilfred | 1.80 m | 1.2000 |
 | Wyrda | 1.75 m | 1.1667 |
+| Nazaryl | 1.85 m | 1.2333 |
+| Tiabald | 1.80 m | 1.2000 |
 
-Ore, Gilliam, Kaos, Phenax and Valandir use the heights supplied by the user.
+Ore, Gilliam, Kaos, Phenax, Valandir and Tiabald use the heights supplied by the user.
 The remaining heights are small chosen variations for the specified ancestries.
 These are miniature presentation settings, not new creature rules.
 
@@ -57,3 +59,18 @@ Publish packs before catalogs so clients never receive checksums for unavailable
 assets. Existing installations recognize changed checksums through the ordinary
 token cache verification; a token already mounted in an open application needs
 a fresh application session to mount the new pack.
+
+Nazaryl (elf) and Tiabald (human) are additional user-provided GLB imports.
+Their curated source identities, hashes, optimization budgets and scale factors
+live in `scripts/data/character_miniature_imports.json`. Original files stay
+unchanged; the reusable GLBs retain materials, with 2048 px maps and 249,999
+triangles each instead of approximately 1.5 million. They were exported with
+Blender 5.2.2 LTS, then visually checked and imported through Godot 4.7.2.
+Tiabald's helmet spike is excluded from the head reference; the small sculpted
+base remains part of his miniature. Nazaryl uses a chosen 1.85 m head reference.
+
+Pass `--additions scripts/data/character_miniature_imports.json` to the catalog
+generator when publishing their `nazaryl.pck` and `tiabald.pck` with the original
+nine calibrated packs. Newly imported packs start at version 1, while the
+recalibrated original packs retain version 2. Both use the established visual
+paths, one-cell footprints and ordinary token pack loading.

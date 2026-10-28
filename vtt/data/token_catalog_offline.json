@@ -3551,6 +3551,32 @@
       "sha256": "761779683a85bab77fe00d424d0f8d4a80838045156f8d0492313b04b198c3fd",
       "source_collection": "ore.glb",
       "release_tag": "characters"
+    },
+    {
+      "id": "nazaryl",
+      "name": "Nazaryl",
+      "size_name": "Medium",
+      "footprint": 1.0,
+      "version": 1,
+      "source_collection": "Nazaryl.glb",
+      "pck": "nazaryl.pck",
+      "scene": "res://remote_tokens/nazaryl/nazaryl_token.tscn",
+      "sha256": "61ba929ec63aeb6110ef39e540b803991eb89e3bcab1afdc074c31f27eecf4c4",
+      "bytes": 23090308,
+      "release_tag": "characters"
+    },
+    {
+      "id": "tiabald",
+      "name": "Tiabald",
+      "size_name": "Medium",
+      "footprint": 1.0,
+      "version": 1,
+      "source_collection": "Tiabald.glb",
+      "pck": "tiabald.pck",
+      "scene": "res://remote_tokens/tiabald/tiabald_token.tscn",
+      "sha256": "387f7494543769934f11202da8f2dec7752b301788d309aa5af4f4a6e9d6eb61",
+      "bytes": 28325956,
+      "release_tag": "characters"
     }
   ],
   "version": 1,

@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def read_json(path):
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
-def update_catalogs(pack_dir, source_catalog, spec_path, unified_path):
+def update_catalogs(pack_dir, source_catalog, spec_path, unified_path, additions_path=None):
     spec = read_json(spec_path)
     release = read_json(source_catalog)
     unified = read_json(unified_path)
@@ -40,10 +40,34 @@ def update_catalogs(pack_dir, source_catalog, spec_path, unified_path):
             entry.update(updates[token_id])
             seen.add(token_id)
     assert seen == set(profiles), "A character is missing from the unified catalog"
+    if additions_path is not None:
+        additions = read_json(additions_path)
+        assert additions["release_tag"] == spec["release_tag"]
+        for profile in additions["tokens"]:
+            token_id = profile["id"]
+            assert token_id not in profiles, f"Duplicate calibrated/imported character: {token_id}"
+            pack = pack_dir / (token_id + ".pck")
+            with pack.open("rb") as stream:
+                digest = hashlib.file_digest(stream, "sha256").hexdigest()
+            entry = {key: profile[key] for key in ("id", "name", "size_name", "footprint", "version", "source_collection")}
+            entry.update({
+                "pck": pack.name,
+                "scene": f"res://remote_tokens/{token_id}/{token_id}_token.tscn",
+                "sha256": digest,
+                "bytes": pack.stat().st_size,
+            })
+            release["tokens"].append(entry)
+            existing = next((p for p in unified["tokens"] if p["id"] == token_id), None)
+            if existing is not None:
+                assert existing["release_tag"] == spec["release_tag"]
+                assert int(existing["version"]) <= int(entry["version"]), f"Newer imported character exists: {token_id}"
+                existing.update(entry)
+            else:
+                unified["tokens"].append({**entry, "release_tag": spec["release_tag"]})
     release["generated_at"] = datetime.now(timezone.utc).isoformat()
     (pack_dir / "token_catalog.json").write_text(json.dumps(release, indent=2) + "\n", encoding="utf-8")
     unified_path.write_text(json.dumps(unified, indent=2) + "\n", encoding="utf-8")
-    print(f"Updated {len(updates)} character packs in both catalogs")
+    print(f"Generated {len(release['tokens'])} character entries in both catalogs")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -51,5 +75,6 @@ if __name__ == "__main__":
     parser.add_argument("--source-catalog", type=Path, required=True)
     parser.add_argument("--spec", type=Path, default=ROOT / "scripts/data/character_miniature_heights.json")
     parser.add_argument("--unified-catalog", type=Path, default=ROOT / "vtt/data/token_catalog_offline.json")
+    parser.add_argument("--additions", type=Path, help="Curated new character imports to include in both catalogs")
     args = parser.parse_args()
-    update_catalogs(args.pack_dir, args.source_catalog, args.spec, args.unified_catalog)
+    update_catalogs(args.pack_dir, args.source_catalog, args.spec, args.unified_catalog, args.additions)
