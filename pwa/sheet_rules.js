@@ -148,18 +148,35 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
    // Attack-hit damage only. A spell's saving-throw damage is not an attack roll.
    row.target==='attack_damage'&&target.startsWith('attack_damage:')||
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
+ // Damage bonuses are selected manually; the sheet does not assume a hit or
+ // infer a once-per-turn state from dice rolled outside the application.
+ const damageAttack=target.startsWith('attack_damage:')?
+   arr(calculated?.attacks).find(attack=>'attack_damage:'+attack.id===target):null;
  const racial=arr(calculated?.racial_roll_bonuses).filter(row=>!row.disabled&&
    !(row.exclude_initiative&&target==='initiative')&&
    (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0||
-    Number(row.proficiency_multiplier)===2)&&
-   (arr(row.targets).some(target=>fits({target}))||fits(row))).map(row=>{
+    Number(row.proficiency_multiplier)===2||row.flat_proficiency===true||
+    row.weapon_damage_die===true)&&
+   (arr(row.targets).some(key=>fits({target:key}))||fits(row))&&
+   (!row.weapon_requirement||row.weapon_requirement!=='equipped_weapon'||
+    !!damageAttack&&String(damageAttack.id).startsWith('item:'))&&
+   (!row.melee_weapon_attack||!!damageAttack&&damageAttack.melee===true&&
+    /^(?:item:|natural:)/.test(String(damageAttack.id)))).map(row=>{
+     if(row.flat_proficiency)return {...row,target,
+       flat_bonus:Math.max(0,Number(calculated?.values?.proficiency)||0)};
+     if(row.weapon_damage_die){
+       const die=String(damageAttack?.damage_base_formula||damageAttack?.damage||'')
+         .match(/(?:^|[^\d])\d+d(4|6|8|10|12)(?!\d)/i);
+       return die?{...row,target,dice:'1d'+die[1]}:null;
+     }
      if(!row.proficiency_multiplier)return {...row,target};
      const skill=target.startsWith('skill:')?target.slice(6):'';
      const owned=arr(calculated?.proficiencies);
      const rank=skill?(owned.includes('expertise:'+skill)?2:owned.includes('skill:'+skill)?1:0):0;
      const amount=Math.max(0,Math.trunc((Number(row.proficiency_multiplier)-rank)*(Number(calculated?.values?.proficiency)||0)));
      return {...row,target,flat_bonus:amount};
-   }).filter(row=>validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0);
+   }).filter(row=>row&&(validBonusDice(row.dice)||
+     Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0));
  const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&
    (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&fits(row))
    .flatMap(row=>{
