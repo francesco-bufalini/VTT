@@ -8,8 +8,7 @@ const path=value=>norm(value).replace(/^path of (?:the )?/,'').replace(/^the /,'
 const classMembers=record=>rows(record.classes).length?record.classes:
   record.class?[{name:record.class,source:record.class_source,subclass:record.subclass,
     subclass_source:record.subclass_source,level:record.level}]:[];
-const SKILLS=['animal handling','athletics','intimidation','nature','perception','survival'];
-
+import {BARBARIAN_2014_GRANTS} from './catalog/barbarian_2014_rules.js';
 
 export function barbarian2014Supplements(record={},features=[]){
  const empty={actions:[],trackers:[],numeric_grants:[],conditional_modes:[],
@@ -19,69 +18,66 @@ export function barbarian2014Supplements(record={},features=[]){
    (!row.source||norm(row.source)==='phb'));
  if(!member)return empty;
  const level=Math.max(0,Number(member.level)||0);
- const owned=(name,sub='')=>rows(features).find(f=>{
-  if(norm(f.name)!==norm(name)||f.inactive||f.disabled||
-     !String(f.origin_key||'').startsWith('class|phb|barbarian'))return false;
-  const origin=String(f.origin_key||'');
-  if(!sub)return !origin.includes('|subclass|');
-  const source=origin.split('|subclass|')[1];
-  return !!source&&path(source.split('|')[0])===path(sub)&&
-    path(member.subclass||record.subclass)===path(sub)&&
-    (!member.subclass_source||!f.subclass_source||norm(member.subclass_source)===norm(f.subclass_source));
- });
- const available=f=>!!f&&record.origin_enabled?.[f.origin_id]!==false&&
-   record.trait_enabled?.[f.key]!==false&&
-   !rows(record.proficiency_origins).some(o=>o?.id===f.origin_id&&o.disabled);
- const actions=[],trackers=[],numeric_grants=[],conditional_modes=[],proficiency_rows=[],spell_choices=[];
- const active=(name,sub='')=>{const f=owned(name,sub);return available(f)?f:null;};
- const fast=active('Fast Movement');
- const armored=rows(record.inventory).map(resolveOwnedItem).some(item=>rows(item?.equipped_slots).includes('body')&&
+ const available=feature=>!!feature&&!feature.inactive&&!feature.disabled&&
+   record.origin_enabled?.[feature.origin_id]!==false&&
+   record.trait_enabled?.[feature.key]!==false&&
+   !rows(record.proficiency_origins).some(o=>o?.id===feature.origin_id&&o.disabled);
+ const matches=(feature,rule)=>{
+   if(norm(feature?.name)!==norm(rule.feature)||
+      !String(feature.origin_key||'').startsWith('class|phb|barbarian'))return false;
+   const origin=String(feature.origin_key||'');
+   if(!rule.subclass)return !origin.includes('|subclass|');
+   const source=origin.split('|subclass|')[1];
+   return !!source&&path(source.split('|')[0])===path(rule.subclass)&&
+     path(member.subclass||record.subclass)===path(rule.subclass)&&
+     (!member.subclass_source||!feature.subclass_source||
+       norm(member.subclass_source)===norm(feature.subclass_source));
+ };
+ const armored=rows(record.inventory).map(resolveOwnedItem).some(item=>
+   rows(item?.equipped_slots).includes('body')&&
    String(item?.type||'').split('|')[0].toUpperCase()==='HA'&&
    Number(item?.quantity??1)>0);
- if(fast&&!armored)numeric_grants.push({id:'barbarian:2014:fast-movement',target:'speed',expression:'10',
-   origin_id:fast.origin_id,origin_name:'Tratto · Fast Movement',automatic:true});
- const totem=active('Totem Spirit','Totem Warrior');
- if(totem){
-  const animal=norm(record.origin_defense_choices?.[totem.origin_id]);
-  if(animal==='elk'&&!!record.active_class_features?.rage&&!armored&&
-     !rows(record.conditions).includes('unconscious'))
-   numeric_grants.push({id:'barbarian:2014:totem-elk-speed',target:'speed',
-    expression:'15',origin_id:totem.origin_id,origin_name:'Tratto · Totem Spirit (Elk)',automatic:true});
-  if(animal==='eagle')
-   actions.push({id:'barbarian:2014:totem-eagle-dash',
-    name:'Totem Spirit · Aquila · Scatto',action_type:'bonus',type:'Capacità',
-    description:'Durante l’Ira puoi effettuare Scatto come azione bonus. Gli attacchi di opportunità contro di te hanno svantaggio; applicalo manualmente.',
-    origin_id:totem.origin_id,feature_id:totem.origin_id,feature_name:totem.name,automatic:true});
+ const requirements={no_heavy_armor:!armored,
+   rage:!!record.active_class_features?.rage,
+   conscious:!rows(record.conditions).includes('unconscious')};
+ const result={...empty};
+ for(const rule of BARBARIAN_2014_GRANTS){
+   const matching=rows(features).filter(feature=>matches(feature,rule)&&available(feature));
+   if(!matching.length||(rule.requires||[]).some(name=>!requirements[name]))continue;
+   for(const feature of rule.repeat_per_feature?matching:[matching[0]]){
+     if(rule.defense_choice&&norm(record.origin_defense_choices?.[feature.origin_id])!==rule.defense_choice)continue;
+     if(rule.state_choice&&record.trait_state_selection?.[rule.state_choice.group]!==rule.state_choice.value)continue;
+     if(rule.kind==='numeric')result.numeric_grants.push({id:rule.id,target:rule.target,
+       expression:rule.expression,origin_id:feature.origin_id,
+       origin_name:'Tratto · '+feature.name+(rule.origin_suffix||''),automatic:true});
+     else if(rule.kind==='action')result.actions.push({id:rule.id,name:rule.name,
+       action_type:rule.action_type,type:'Capacità',description:rule.description,
+       origin_id:feature.origin_id,feature_id:feature.origin_id,
+       feature_name:feature.name,automatic:true});
+     else if(rule.kind==='roll_mode')result.conditional_modes.push({id:rule.id,
+       target:rule.target,mode:rule.mode,origin_id:feature.origin_id,
+       origin_name:'Tratto · '+feature.name,granting_trait:feature.name,
+       condition_label:rule.condition_label});
+     else if(rule.kind==='initiative')result.initiative_origin=feature.origin_id;
+     else if(rule.kind==='proficiency'&&feature.id&&
+       Number(feature.level||feature.requirements?.level||rule.min_feature_level||3)<=level)
+       result.proficiency_rows.push({id:feature.id,name:feature.name,
+         source:feature.source||rule.source_fallback,class_name:'Barbarian',class_source:'PHB',
+         ...(rule.subclass?{subclass_short_name:feature.subclass_short_name,
+           subclass_source:feature.subclass_source,subclass_feature:true}:{}),
+         level:Number(feature.level||(rule.subclass?6:rule.min_feature_level||3)),
+         skillProficiencies:[{choose:rule.choose}]});
+     else if(rule.kind==='spell_choice')result.spell_choices.push({id:rule.id,
+       origin_id:feature.origin_id,origin_name:feature.name,
+       granting_trait:feature.name,spell_options:rule.spell_options,
+       count:rule.count,mode:rule.mode,stage:rule.stage,usage:rule.usage,
+       tracker_id:rule.tracker_id,spellcasting_ability:rule.spellcasting_ability,
+       spellcasting_ability_options:rule.spellcasting_ability_options});
+   }
  }
- const danger=active('Danger Sense');
- if(danger)conditional_modes.push({id:'barbarian:2014:danger-sense',target:'save:dex',
-   mode:'advantage',origin_id:danger.origin_id,origin_name:'Tratto · Danger Sense',
-   granting_trait:'Danger Sense',condition_label:
-   'Solo contro effetti che puoi vedere; non se sei accecato, assordato o incapacitato.'});
- const instinct=active('Feral Instinct');
- const knowledge=rows(features).filter(f=>norm(f.name)==='primal knowledge'&&
-   String(f.origin_key||'').startsWith('class|phb|barbarian')&&
-   !f.inactive&&!f.disabled&&Number(f.level||f.requirements?.level||3)<=level);
- for(const f of knowledge)if(available(f)&&f.id)proficiency_rows.push({
-   id:f.id,name:f.name,source:f.source||'TCE',class_name:'Barbarian',class_source:'PHB',
-   level:Number(f.level||3),skillProficiencies:[{choose:{from:SKILLS,count:1}}]});
- const aspect=active('Aspect of the Beast','Totem Warrior');
- if(aspect?.id&&record.trait_state_selection?.barbarian_totem_aspect==='barbarian_totem_aspect:tiger')
-  proficiency_rows.push({id:aspect.id,name:aspect.name,source:aspect.source,
-   class_name:'Barbarian',class_source:'PHB',
-   subclass_short_name:aspect.subclass_short_name,
-   subclass_source:aspect.subclass_source,subclass_feature:true,
-   level:Number(aspect.level||6),
-   skillProficiencies:[{choose:{from:['acrobatics','athletics','stealth','survival'],count:2}}]});
- const giant=active('Giant Power','Giant');
- if(giant)spell_choices.push({id:'barbarian:2014:giant-power:cantrip',
-   origin_id:giant.origin_id,origin_name:giant.name,
-   granting_trait:giant.name,spell_options:['phb2014_druidcraft','phb2014_thaumaturgy'],
-   count:1,mode:'known',stage:'3',usage:'at_will',tracker_id:'',
-   spellcasting_ability:'wis',spellcasting_ability_options:[]});
- return {actions,trackers,numeric_grants,conditional_modes,
-   initiative_origin:instinct?.origin_id||'',spell_choices,proficiency_rows};
+ return result;
 }
+
 
 export function barbarian2014ProficiencyCatalog(index={},supplements={}){
  if(!supplements.proficiency_rows?.length)return index;

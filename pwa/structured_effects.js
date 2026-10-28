@@ -1,3 +1,4 @@
+import {CLASS_NUMERIC_FEATURE_GRANTS} from './catalog/class_numeric_feature_grants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {itemAttunementCount} from './item_controls.js';
 import {normalizeMonsterStatBlock} from './character_core.js';
@@ -487,19 +488,21 @@ export function structuredFeatureGrants(record,catalogs={},features=collectStruc
   const result=[];
   for(const feature of features){
     if(!feature||feature.inactive)continue;
-    const classSource=String(feature.class_source||String(feature.origin_key||'').split('|')[1]||'').toUpperCase();
-    const owner=String(feature.class_name||feature.requirements?.class_name||String(feature.origin_key||'').split('|')[2]||'').toLowerCase();
-    if(owner==='artificer'&&classSource==='TCE'){
-      // State-dependent speed grants live in the trait-state catalog.
-      const level=Number(classMembers(record).find(c=>match(c.name,'Artificer')&&c.source==='TCE')?.level||0);
-      let amount=0;
-      if(feature.name==='Magic Item Adept'&&level<14)amount=1;
-      if(feature.name==='Magic Item Savant'&&level<18)amount=2;
-      if(feature.name==='Magic Item Master')amount=3;
-      if(amount)result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'attunement','attunement_max',amount));
-      if(feature.name==='Soul of Artifice'){
-        const count=array(record.inventory).reduce((sum,item)=>sum+itemAttunementCount(item),0);
-        for(const ability of ['str','dex','con','int','wis','cha'])result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'soul','save:'+ability,count));
+    // Source-qualified catalog grants; no class or feature names are interpreted here.
+    for(const rule of CLASS_NUMERIC_FEATURE_GRANTS){
+      const classSource=feature.class_source||String(feature.origin_key||'').split('|')[1];
+      const owner=feature.class_name||feature.requirements?.class_name||String(feature.origin_key||'').split('|')[2];
+      if(!match(owner,rule.class_name)||!match(classSource,rule.class_source)||
+         !match(feature.name,rule.feature))continue;
+      if(rule.max_class_level){
+        const member=classMembers(record).find(c=>match(c.name,rule.class_name)&&match(c.source,rule.class_source));
+        if(Number(member?.level||0)>rule.max_class_level)continue;
+      }
+      const value=rule.formula==='attuned_item_count'?
+        array(record.inventory).reduce((sum,item)=>sum+itemAttunementCount(item),0):rule.value;
+      for(const target of array(rule.targets)){
+        const grant=numericGrant(feature.origin_id,'Tratto · '+feature.name,rule.group,target,value);
+        if(grant)result.push(grant);
       }
     }
     for(const row of array(feature.bonuses)){
