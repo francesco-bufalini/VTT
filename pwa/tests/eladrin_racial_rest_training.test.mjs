@@ -144,4 +144,15 @@ test('existing racial training choices are projected on the character and old pe
  const prof=fixedProficiencies(chosen,grants,c.features);
  assert(prof.has('weapon:longsword'));
  assert(prof.has('tool:smiths tools'));
+ const resolved=calculateSheet(chosen,{speciesPowers:index,proficiencyGrants:grants,
+   classMechanics:{races:[nativeRace],additional_spells:[]},
+   originDetails:{races:{'eladrin|mpmm':nativeRace}}});
+ assert(resolved.proficiency_sources['weapon:longsword'].some(row=>
+   row.id===choice.origin_id),'temporary proficiency belongs to Trance trait');
+ const disabled={...chosen,origin_enabled:{[choice.origin_id]:false}};
+ const muted=calculateSheet(disabled,{speciesPowers:index,proficiencyGrants:grants,
+   classMechanics:{races:[nativeRace],additional_spells:[]},
+   originDetails:{races:{'eladrin|mpmm':nativeRace}}});
+ assert(!muted.proficiencies.includes('weapon:longsword'),
+   'disabling the granting racial trait removes temporary proficiencies');
 });
