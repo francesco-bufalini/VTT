@@ -296,6 +296,7 @@ export function sheetScoreOriginSegments(record,calculated,target){
  const total=Number(calculated?.values?.[target]);
  if(!Number.isFinite(total))return [];
  const all=calculated?.roll_components||{};
+ const linked=calculated?.companion_owner_values;
  let sourceRows=[];
  let base=total;
  let formula='Valore di base';
@@ -314,10 +315,10 @@ export function sheetScoreOriginSegments(record,calculated,target){
        originName:label+' passiva · base'}:row);
  }else{
    const baseValues={
-     hp:()=>Number(record?.max_hp_base??record?.max_hp??1),
+     hp:()=>Number(linked?.hp??record?.max_hp_base??record?.max_hp??1),
      second_max:()=>Number(record?.second_form_max_hp??0),
       attunement_max:()=>Math.max(0,Number(record?.attunement_max_base??3)),
-     proficiency:()=>2+Math.floor((Math.max(1,Number(calculated?.stats?.level)||1)-1)/4)
+     proficiency:()=>Number(linked?.proficiency??(2+Math.floor((Math.max(1,Number(calculated?.stats?.level)||1)-1)/4)))
    };
    if(target.startsWith('ability:')){
      base=Number(record?.abilities?.[target.split(':')[1]]??10);
@@ -338,9 +339,12 @@ export function sheetScoreOriginSegments(record,calculated,target){
      base=total-list(all[target]).reduce((sum,row)=>sum+num(row.value),0);
      if(target==='ac'){
        const armorFormula=armorClassBaseFormula(record,calculated);
-       formula=armorFormula.formula;
-       baseName=armorFormula.sourceLabel;
+       formula=linked?.explanations?.ac||armorFormula.formula;
+       baseName=linked?.explanations?.ac?'Proprietario · '+linked.owner_name:armorFormula.sourceLabel;
       }else formula=target.startsWith('speed')?'Velocità di base':'Valore di base';
+   }
+   if(linked?.explanations?.[target]){
+     formula=linked.explanations[target];baseName='Proprietario · '+linked.owner_name;
    }
    sourceRows=[{kind:'base',formula,expanded:String(base),value:base,
      originId:'',originName:baseName,key:'base'}];
