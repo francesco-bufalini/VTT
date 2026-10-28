@@ -85,7 +85,8 @@ export function traitBenefitSources(trait={},record={}){
   for(const option of rows(grant.items)){
    const available=!option.owned&&(!grant.max_owned||total<Number(grant.max_owned));
    add('items','Oggetti concessi',option.name,option.owned?'Presente nell’inventario':option.description||'Da aggiungere','',{
-    grant_id:grant.id,option_id:option.id,owned:!!option.owned,available});
+    grant_id:grant.id,option_id:option.id,owned:!!option.owned,available,
+    requires_activation:!!grant.activation_action_id});
   }
  }
  for(const feat of rows(record.feats_catalog)){
