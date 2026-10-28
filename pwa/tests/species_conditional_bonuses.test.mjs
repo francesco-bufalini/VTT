@@ -93,3 +93,26 @@ test('racial bonuses appear under the source trait, never as permanent formula m
  assert(card.some(group=>group.items.some(row=>row.value?.includes('1d4'))));
  assert(!out.automatic_bonuses?.some(x=>x.origin_id===bonus.origin_id));
 });
+
+
+test('PHB Stonecunning and Rock Gnome Artificer Lore replace, never stack, proficiency',()=>{
+ for(const c of [
+  character('Dwarf','PHB'),
+  character('Gnome','PHB',{subrace:'Rock',subrace_source:'PHB'})
+ ]){
+  const b=project(c).bonuses.filter(x=>x.proficiency_multiplier===2);
+  assert.equal(b.length,1);
+  const withProfs=owned=>applicableDiceBonuses(c,'skill:history',[],{
+   racial_roll_bonuses:b,proficiencies:owned,
+   values:{proficiency:4,attunement_max:3},attunements:{counts:[]}
+  });
+  assert.equal(withProfs([])[0].flat_bonus,8);
+  assert.equal(withProfs(['skill:history'])[0].flat_bonus,4);
+  assert.equal(withProfs(['skill:history','expertise:history']).length,0);
+  assert.equal(applicableDiceBonuses(c,'skill:arcana',[],{
+   racial_roll_bonuses:b,proficiencies:[],values:{proficiency:4,attunement_max:3},
+   attunements:{counts:[]}
+  }).length,0);
+  assert.equal(project({...c,rules_version:'2024'}).bonuses.length,0);
+ }
+});
