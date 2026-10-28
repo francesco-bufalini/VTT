@@ -26,8 +26,8 @@ test('Armor Modifications is an owned source-bound item grant with +2 active inf
  assert.ok(grant);assert.equal(grant.origin_id.startsWith('feature:class|tce|artificer|'),true);
  assert.deepEqual(grant.items.map(i=>i.id),['armor-chest','armor-boots','armor-helmet','armor-special-weapon']);
  const first=infusionLimits(at9,mechanics,nine.features);
- assert.equal(first.active,6);
- assert.equal(first.known,8,'Armor Modifications does not grant two extra infusions known');
+ assert.equal(first.active,5);
+ assert.equal(first.known,6,'Armor Modifications does not grant two extra infusions known');
  let character=at9;
  for(const item of grant.items){
   character={...character,...claimFeatureItemPatch(character,
@@ -37,11 +37,11 @@ test('Armor Modifications is an owned source-bound item grant with +2 active inf
  assert.throws(()=>claimFeatureItemPatch(character,calculateSheet(character,catalogs),
    grant.id,'armor-boots'),/già concesso/i);
  const worn=calculateSheet({...at9,inventory:[armor]},catalogs);
- assert.equal(infusionLimits({...at9,inventory:[armor]},mechanics,worn.features).active,6);
+ assert.equal(infusionLimits({...at9,inventory:[armor]},mechanics,worn.features).active,5);
  const muted={...at9,origin_enabled:{[grant.origin_id]:false}};
  const disabled=calculateSheet(muted,catalogs);
  assert.equal(disabled.feature_item_grants.some(g=>g.id===grant.id),false);
- assert.equal(infusionLimits(muted,mechanics,disabled.features).active,4);
+ assert.equal(infusionLimits(muted,mechanics,disabled.features).active,3);
 });
 
 test('Eldritch Cannon uses the generic item-grant contract and its own paid ability',()=>{
