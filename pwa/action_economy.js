@@ -545,6 +545,19 @@ export function abilityAttackRoll(ability={},calculated={}){
 export function battleAbilityEntries(record={},calculated={},entries=[],activated=[]){
  const result=entries.filter(row=>row.origin==='personal'&&row.type==='Capacità'&&classOrigin(row));
  const seen=new Set(result.map(row=>String(row.name||'').trim().toLocaleLowerCase('it')));
+ // Targeted feat actions participate in the standard Battle/Resources
+ // pipeline, with exactly the same tracker and target selection as powers.
+ for(const ability of arr(calculated.feat_actions)){
+  if(!ability?.id||!ability.target_mode&&!ability.mode)continue;
+  const identity=String(ability.name||'').trim().toLocaleLowerCase('it');
+  if(!identity||seen.has(identity))continue;
+  const tracker=arr(calculated.trackers).find(row=>row.id===ability.tracker_id&&!row.disabled);
+  if(ability.resource_cost>0&&!tracker)continue;
+  result.push({...ability,id:ability.id,name:ability.name,origin:'personal',
+   type:'Capacità',time:ability.action_type||'contextual',
+   tracker:tracker?.name||'',tracker_id:tracker?.id||'',cost:Math.max(0,Number(ability.resource_cost)||0)});
+  seen.add(identity);
+ }
  for(const ability of activated){
   if(!String(ability.origin||'').startsWith('Classe ·')&&
      !String(ability.origin||'').startsWith('Specie ·')&&
