@@ -2357,10 +2357,12 @@ function resourceView(c,configure=false,compact=false){
    const compactActions='<div class="battle-resource-actions">'+
      '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo di '+esc(t.name)+'" title="Ripristina 1">−</button>'+
      '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo di '+esc(t.name)+'" title="Consuma 1">＋</button>'+
-     '<button type="button" class="btn small battle-resource-link" data-act="tracker-powers" data-tracker-id="'+esc(t.id)+'" aria-label="Apri '+esc(t.name)+' in Poteri" title="Vai a Poteri">↗</button>'+
+     '<button type="button" class="btn small battle-resource-link" data-act="'+(t.item_bound?'tracker-item':'tracker-powers')+'" '+
+       (t.item_bound?'data-item-index="'+esc(t.inventory_index)+'" ':'data-tracker-id="'+esc(t.id)+'" ')+
+       'aria-label="Apri '+esc(t.name)+(t.item_bound?' in Inventario':' in Poteri')+'" title="Vai a '+(t.item_bound?'Inventario':'Poteri')+'">↗</button>'+
      '<details class="battle-resource-details"><summary aria-label="Origine e recupero di '+esc(t.name)+'" title="Origine e recupero">ⓘ</summary>'+
        '<span>'+esc(t.origin_name||'Senza origine')+' · '+
-       esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</span></details></div>';
+       esc(t.recharge_note||modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</span></details></div>';
    return '<article class="battle-resource-row">'+
     '<div class="battle-resource-main"><strong>'+esc(t.name)+'</strong>'+
       '<span class="battle-resource-count"><b>'+esc(remaining)+'</b> / '+
@@ -2372,7 +2374,11 @@ function resourceView(c,configure=false,compact=false){
         optionalButton+'</div>':'')+
     '</article>';
   }
-  return '<article class="list-item"><div class="row between"><strong>'+esc(t.name)+'</strong><button type="button" class="btn small" data-act="tracker-powers" title="Apri in Poteri">↗ Poteri</button></div><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
+  return '<article class="list-item"><div class="row between"><strong>'+esc(t.name)+'</strong><button type="button" class="btn small" data-act="'+(t.item_bound?'tracker-item':'tracker-powers')+'"'+
+       (t.item_bound?' data-item-index="'+esc(t.inventory_index)+'"':'')+
+       ' title="Apri in '+(t.item_bound?'Inventario':'Poteri')+'">↗ '+(t.item_bound?'Inventario':'Poteri')+
+       '</button></div><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+
+       esc(t.recharge_note||modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
  }).join('');
  if(compact)return panel('Risorse',
    (body||'<p class="hint">Nessuna risorsa disponibile.</p>')+
@@ -7453,6 +7459,14 @@ async function handleAction(target){
     if(disclosure)disclosure.open=true;
     match.open=true;match.scrollIntoView?.({block:'center'});
     return;
+  }
+  if(act==="tracker-item"){
+    const index=Number(target.dataset.itemIndex),creature=state.editor?.read();
+    if(!Number.isInteger(index)||index<0||!creature?.inventory?.[index])
+      throw Error('Oggetto del tracker non disponibile.');
+    const container=itemContainerId(creature.inventory[index],inventoryContainers(creature));
+    state.inventorySelectedTabs=[container===DEFAULT_INVENTORY_CONTAINER?'items':'container:'+container];
+    state.inventorySelectedIndex=index;state.sheet="inventory";await render();return;
   }
   if(act==="tracker-powers"){state.magicPopup="";state.sheet="magic";await render();return;}
   if(act==="power-trait"){
