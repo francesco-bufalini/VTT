@@ -80,6 +80,29 @@ export function traitBenefitSources(trait={},record={}){
  }
  return ids;
 }
+// Resolve a clickable roll grant to its exact owning trait. Sources loaded
+// from a flattened 5etools subrace can have distinct display/projection IDs;
+// a qualified name and origin key recover the same card without routing to
+// the parent species or an unrelated same-named trait.
+export function rollGrantTraitRow(traits=[],record={},originId='',{traitName='',originKey=''}={}){
+ const id=String(originId||''),name=norm(traitName),key=String(originKey||'');
+ const scored=rows(traits).map(row=>{
+  const direct=id&&row.feature_origin===id;
+  const qualified=!!(key&&name&&row.origin_key===key&&norm(row.name)===name);
+  const alternate=!!(name&&norm(row.name)===name&&
+    (!key||row.origin_key===key));
+  const source=id&&traitBenefitSources(row,record).has(id);
+  const scope=key&&row.origin_key===key;
+  const score=qualified?9:direct&&(!key||scope)?8:
+    alternate?7:direct?6:
+    source&&(!key||scope)?5:scope&&(!name||norm(row.name)===name)?4:
+    source?3:0;
+  return {row,score};
+ }).filter(item=>item.score>0)
+  .sort((a,b)=>b.score-a.score||b.row.rank-a.row.rank);
+ return scored[0]?.row||null;
+}
+
 export function traitBenefitTargetLabel(value=''){
  const key=String(value);
  if(TARGETS[key])return TARGETS[key];
