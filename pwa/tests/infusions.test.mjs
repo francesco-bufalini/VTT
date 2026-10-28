@@ -8,6 +8,9 @@ import {
  learnInfusionPatch,applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch,expandedInfusionDefinitions
 } from "../item_controls.js";
 import {calculateSheet} from "../sheet_rules.js";
+import {abilitiesForCreature} from "../activated_abilities.js";
+import {battleResourcePowers} from "../sheet_rules_view.js";
+import {spendTrackerUses} from "../character_core.js";
 import {collectTraitRows} from "../trait_projection.js";
 const index=JSON.parse(readFileSync(new URL("../catalog/ability_grants.json",import.meta.url),"utf8"));
 const definitions=index.artificer_infusions;
@@ -281,4 +284,75 @@ test("all five charge-bearing infusion definitions specify their own counters",(
   "Armor of Magical Strength":6,"Spell-Refueling Ring":1};
  assert.deepEqual(Object.fromEntries(definitions.filter(x=>x.charge_tracker).map(x=>[x.name,x.charge_tracker.max])),expected);
  assert.equal(infusionChargeTrackers(make(10),definitions,[infusionTrait]).length,0);
+});
+
+test("Repulsion Shield reaction is a real owned-item power with mandatory shared charges",()=>{
+ const option=byName("Repulsion Shield");
+ let record=make(10);
+ record.inventory=[{id:"shield:plain",name:"Shield",type:"S",quantity:1,
+   rarity:"none",equipped_slots:["off"],attuned:false}];
+ record={...record,...learnInfusionPatch(record,option,definitions,mechanics,-1,[infusionTrait])};
+ record={...record,...applyInfusionPatch(record,learnedInfusions(record,definitions)[0],
+   definitions,mechanics,0,[infusionTrait])};
+ const projected=sheet=>({...calculateSheet(sheet,sheetCatalogs),infusion_catalog:definitions});
+ assert.equal(abilitiesForCreature(record,[],projected(record)).filter(x=>x.infusion_action).length,0,
+   "Unattuned shields cannot grant their active power.");
+ record.inventory[0].attuned=true;record.inventory[0].attuned_count=1;
+ const calculated=projected(record);
+ const owned=abilitiesForCreature(record,[],calculated).filter(x=>x.infusion_action);
+ assert.equal(owned.length,1);
+ const power=owned[0];
+ assert.equal(power.name,"Repulsione");
+ assert.equal(power.action_type,"reaction");
+ assert.equal(power.resource_cost,1);
+ assert.equal(power.target_mode,"single_token");
+ assert.equal(power.tracker_id,infusionChargeTrackerId(record.inventory[0],0));
+ assert.equal(power.tracker_remaining,4);
+ const rows=battleResourcePowers(calculated,[],owned,[]);
+ assert.equal(rows.filter(x=>x.source==="activated").length,1);
+ assert.equal(rows[0].key,"tracker:"+power.tracker_id);
+ assert.equal(rows[0].timing,"reaction");
+ const used={...record,...spendTrackerUses(record,power.tracker_id,1,calculated.trackers)};
+ const fresh=projected(used);
+ assert.equal(abilitiesForCreature(used,[],fresh).find(x=>x.id===power.id).tracker_remaining,3);
+ used.inventory[0].equipped_slots=[];
+ assert.equal(abilitiesForCreature(used,[],projected(used)).filter(x=>x.infusion_action).length,0,
+   "Unequipped shield powers disappear but spent charges survive.");
+});
+test("Boots of the Winding Path provides bonus action without any tracker or charge",()=>{
+ const option=byName("Boots of the Winding Path");
+ let record=make(10);
+ record.inventory=[{id:"local_boots",name:"Boots",custom_item_type:"other",
+   quantity:1,rarity:"none",attuned:false}];
+ record={...record,...learnInfusionPatch(record,option,definitions,mechanics,-1,[infusionTrait])};
+ record={...record,...applyInfusionPatch(record,learnedInfusions(record,definitions)[0],
+   definitions,mechanics,0,[infusionTrait])};
+ record.inventory[0].attuned=true;record.inventory[0].attuned_count=1;
+ const calculated={...calculateSheet(record,sheetCatalogs),infusion_catalog:definitions};
+ const powers=abilitiesForCreature(record,[],calculated).filter(x=>x.infusion_action);
+ assert.equal(powers.length,1);
+ assert.equal(powers[0].name,"Passo tortuoso");
+ assert.equal(powers[0].action_type,"bonus");
+ assert.equal(powers[0].resource_cost,0);
+ assert.equal(powers[0].tracker_id,"");
+ assert.equal(battleResourcePowers(calculated,[],powers,[])[0].key,"free");
+ const other=byName("Enhanced Defense");
+ assert.equal(other.item_abilities,undefined,"Purely passive infusions do not show a fake Use button.");
+});
+test("infusion item action declarations cover charged uses and non-charge activations",()=>{
+ const rule=(name)=>byName(name).item_abilities||[];
+ assert.equal(rule("Radiant Weapon").length,2);
+ assert.deepEqual(rule("Radiant Weapon").map(x=>[x.action_type,x.resource_cost]),
+  [["bonus",0],["reaction",1]]);
+ assert.deepEqual(rule("Armor of Magical Strength").map(x=>x.resource_cost),[1,1]);
+ assert.equal(rule("Mind Sharpener")[0].action_type,"reaction");
+ assert.equal(rule("Spell-Refueling Ring")[0].action_type,"action");
+ for(const infusion of definitions.filter(x=>x.item_abilities))
+  for(const action of infusion.item_abilities){
+    assert.ok(action.id&&action.name&&action.description);
+    assert.ok(["action","bonus","reaction","contextual"].includes(action.action_type));
+    assert.ok(Number.isInteger(action.resource_cost));
+    assert.ok(action.resource_cost===0||infusion.charge_tracker,
+       "Powers with costs must use a real charge tracker");
+  }
 });
