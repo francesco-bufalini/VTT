@@ -247,7 +247,10 @@ test('Artificer Initiate one-free-cast feat choice also accepts higher-level spe
  const row=entries.find(r=>r.kind==='feat'&&r.name==='Artificer Initiate'&&r.source==='TCE');
  const record={kind:'character',rules_version:'2014',level:4,
   feats_catalog:[{name:'Artificer Initiate',source:'TCE'}]};
- const result=structuredSpellGrants(record,[row],[],[],supplements);
+ // The supplemental rule must also work while the large packaged
+ // class_mechanics catalog still has its old block without slot_alternative.
+ const oldPackaged={...row,blocks:row.blocks.map(block=>({...block,slot_alternative:false}))};
+ const result=structuredSpellGrants(record,[oldPackaged],[],[],supplements);
  const choice=result.choices.find(row=>row.filter.includes('level=1'));
  assert.equal(choice.slot_alternative,true);
  assert.equal(choice.spellcasting_ability,'int');
