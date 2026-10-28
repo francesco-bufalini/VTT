@@ -7,7 +7,7 @@ export const EXTENSION_TARGETS=[['spell','Incantesimo'],['ability','Capacità ma
 export const EXTENSION_OPERATIONS=[
  ['set_range','Imposta gittata (ft)'],['bonus_damage','Danni aggiuntivi'],
  ['push','Spinge (ft)'],['pull','Attira (ft)'],['reduce_speed','Riduce velocità (ft)'],
- ['roll_twice','Tira due volte, usa il migliore'],['area_damage','Danni ad area'],
+ ['roll_twice','Tira due volte, usa il migliore'],['bonus_roll','Bonus al tiro della capacità'],['area_damage','Danni ad area'],
  ['temporary_hp','Punti ferita temporanei'],['add_effect','Effetto aggiuntivo'],
  ['grant_property','Proprietà aggiuntiva'],['grant_action','Azione concessa'],
  ['resistance','Resistenza a un danno'],['roll_mode','Modalità del tiro'],
@@ -75,6 +75,7 @@ export function normalizeEffectExtension(row={}){
  }else if(['add_effect','grant_action','grant_property'].includes(operation)&&
    !String(row.description||value||'').trim())return null;
  if(operation==='resistance'&&!/^(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)$/i.test(value))return null;
+ if(operation==='bonus_roll'&&!/^(?:[+-]?\d+|[1-9]\d*d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?|(?:proficiency|(?:str|dex|con|int|wis|cha)_mod)(?:[+-]\d+)?)$/i.test(value.replace(/\s+/g,'')))return null;
  if(operation==='roll_mode'&&!['advantage','disadvantage'].includes(value))return null;
  return {...row,target_kind,operation,trigger,frequency,value,
   target_name:String(row.target_name||'').trim(),target_id:String(row.target_id||'').trim(),
@@ -182,7 +183,7 @@ export function applyEffectExtensions(effect={},extensions=[],target={},variable
 export function effectExtensionLabel(row,variables={}){
  const labels={set_range:'Gittata',bonus_damage:'Danni aggiuntivi',
   push:'Spinta',pull:'Attrazione',reduce_speed:'Velocità ridotta',
-  roll_twice:'Ripeti il dado (tieni il migliore)',area_damage:'Danni ad area',
+  roll_twice:'Ripeti il dado (tieni il migliore)',bonus_roll:'Bonus al tiro della capacità',area_damage:'Danni ad area',
   temporary_hp:'PF temporanei',add_effect:'Effetto aggiuntivo',
   grant_property:'Proprietà aggiuntiva',grant_action:'Azione concessa',
   resistance:'Resistenza',roll_mode:'Modalità del tiro',ignore_armor_strength:'Ignora Forza richiesta'};
