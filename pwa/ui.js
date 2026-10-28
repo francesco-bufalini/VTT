@@ -34,14 +34,14 @@ import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
-import {healingHandsPatch,restTrainingPatch} from "./species_powers.js";
+import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch} from "./species_powers.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
-import {attackHitEffectPatch,onHitRollEffects} from './attack_hit_effects.js';
+import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
@@ -1545,7 +1545,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
    const mode=currentAbility.mode||'';
-   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight'].includes(mode);
+   const mandatory=['save_area','choice_area','temporary_defense','temporary_flight','temporary_condition'].includes(mode);
    if(mandatory&&(!spend||choice!==currentAbility.tracker_id||cost!==1))
      throw Error('La capacità richiede un utilizzo del tracker associato.');
    const selectedMode=mode==='choice_area'?(currentAbility.options||[]).find(row=>
@@ -1585,7 +1585,16 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
       [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.persistent_origin_id||currentAbility.origin_id||currentAbility.feature_id||requested,
        rules_version:record.rules_version||'2014',enhanced:false,
        duration_rounds:Math.max(0,Number(currentAbility.duration_rounds)||0),
-       damage_type:currentAbility.damage_type||''}};
+       damage_type:currentAbility.damage_type||'',
+       ...(currentAbility.effect_condition?{
+         effect_condition:currentAbility.effect_condition,
+         added_condition:!((record.conditions||[]).some(value=>String(value).toLowerCase()===String(currentAbility.effect_condition).toLowerCase())),
+         ends_on:currentAbility.ends_on||[]}: {})}};
+     if(currentAbility.effect_condition){
+       const existing=Array.isArray(record.conditions)?record.conditions:[];
+       changes.conditions=existing.some(value=>String(value).toLowerCase()===String(currentAbility.effect_condition).toLowerCase())?
+         existing:[...existing,currentAbility.effect_condition];
+     }
     }
     return changes;
    });
@@ -1605,7 +1614,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      (selectedMode?' '+selectedMode.name+' · TS '+selectedMode.save_ability.toUpperCase()+
        ' CD '+(8+Number(fresh.stats?.proficiency||2)+Number(fresh.abilities?.con?.modifier||0))+' · '+selectedMode.description:'')+
      (shape?' Effetti da applicare ai bersagli nell’area.':'')+
-     (persistentKey?' Effetto attivo per massimo 1 minuto; termina da Condizioni.':''));
+     (persistentKey?(currentAbility.duration_rounds===1?' Condizione attiva fino al prossimo turno o a un attacco, tiro danni o TS imposto.':' Effetto attivo per massimo 1 minuto; termina da Condizioni.') :''));
   }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -3524,7 +3533,7 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
            (ability.damage_formula?' · '+esc(ability.damage_formula)+' '+esc(ability.damage_type):'')+
            (ability.attack_replacement?' · Sostituisce un attacco':'')+'</p>':'')+
          (ability.persistent_key&&c.active_class_features?.[ability.persistent_key]?
-           '<div class="magic-active-form">Attivo · 1 minuto <button type="button" class="btn small" data-act="condition-remove-ability" data-ability-key="'+esc(ability.persistent_key)+'">Termina</button></div>':'')+
+           '<div class="magic-active-form">'+(ability.duration_rounds===1?'Attivo · fino al prossimo turno':'Attivo · 1 minuto')+' <button type="button" class="btn small" data-act="condition-remove-ability" data-ability-key="'+esc(ability.persistent_key)+'">Termina</button></div>':'')+
          (extensions.length?'<div class="magic-effect-extensions"><h3>Estensioni attive</h3><ul>'+
            extensions.map(extension=>'<li><strong>'+esc(extension.origin_name||'Privilegio')+'</strong> · '+
              esc(effectExtensionLabel(extension,{cha_mod:calculated.abilities?.cha?.modifier}))+'</li>').join('')+
@@ -3743,6 +3752,13 @@ function sessionTokenDetails(token) {
     const row=(state.conditionCatalog?.editions?.[edition]||[]).find(item=>item.id===id);
     return conditionLabel(id,row?.name||"");
   }):[];
+  const activeHitEffects=(Array.isArray(token.hit_effects)?token.hit_effects:[])
+    .filter(effect=>!hitEffectExpired(effect,state.map));
+  const attackEffects=activeHitEffects.map(effect=>
+    String(effect.attack_name||'Attacco')+' · '+
+    (effect.operation==='roll_mode'?effect.mode==='disadvantage'?'Svantaggio ai tiri per colpire':'Vantaggio ai tiri per colpire':
+      effect.condition_id||'Condizione')+
+    (effect.source_name?' · '+effect.source_name:''));
   const spellIds=Array.isArray(token.active_spell_ids)?[...new Set(token.active_spell_ids)]:[];
   const spellName=id=>(state.spellCatalog||[]).find(row=>row.id===id)?.name||id;
   const effects=spellIds.filter(Boolean).map(id=>spellName(id));
@@ -3754,6 +3770,7 @@ function sessionTokenDetails(token) {
     (token.free?' <small>· libero</small>':'')+'</strong>'+
     (identity.length?'<span class="session-status-line">'+esc(identity.join(" · "))+'</span>':'')+
     (conditionNames.length?'<span class="session-status-line" title="'+esc(conditionNames.join(", "))+'">Stati: '+esc(conditionNames.join(", "))+'</span>':'')+
+    (attackEffects.length?'<span class="session-status-line" title="'+esc(attackEffects.join(", "))+'">Effetti attacchi: '+esc(attackEffects.join(" · "))+'</span>':'')+
     (effects.length?'<span class="session-status-line" title="'+esc(effects.join(", "))+'">Incantesimi: '+esc(effects.join(", "))+'</span>':'')+
     '</span>';
 }
@@ -5853,6 +5870,8 @@ async function handleAction(target){
     if(key==='wild_shape'){
       await applyFormPatch(c,endWildShapePatch(c));await render();return;
     }
+    const temporary=endTemporaryConditionPatch(c,key);
+    if(Object.keys(temporary).length){await patch(temporary);await render();return;}
     const effects={...(c.active_class_features||{})};delete effects[key];
     await patch({active_class_features:effects});await render();return;
   }
@@ -6269,7 +6288,7 @@ async function handleAction(target){
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
   }
-  if(act==='battle-attack-hit-effect'){
+  if(act==='battle-attack-hit'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
     if(!state.paired||!state.online)
@@ -6277,8 +6296,7 @@ async function handleAction(target){
     const attackId=String(target.dataset.hitAttackId||'');
     const calculated=await computeLocalData(creature);
     const attack=(calculated.attacks||[]).find(row=>String(row.id)===attackId);
-    if(!attack||!onHitRollEffects(attack).length)
-      throw Error('Questo attacco non concede effetti applicabili sul colpo.');
+    if(!attack)throw Error('Attacco non più disponibile. Aggiorna la scheda.');
     const currentMap=await map();
     state.map=currentMap;
     const attacker=casterToken(creature,currentMap,await ownerId());
@@ -6290,7 +6308,7 @@ async function handleAction(target){
       melee:!!attack.melee
     });
     tacticalViewer.setAbilityTarget({
-      name:attack.name+' · effetto sul colpo',
+      name:attack.name+' · Colpisci',
       range_feet:Number(attack.range_feet)||5,
       exclude_self:true,
       onSelected:async selected=>{
@@ -6298,23 +6316,16 @@ async function handleAction(target){
         state.map=latest;
         if(!(latest.tokens||[]).some(row=>String(row.id)===String(selected.id)))
           throw Error('Il bersaglio non è più sulla mappa.');
-        const records=(await listCreatures()).map(row=>row.creature||row);
-        const recipient=records.find(row=>String(row.linked_token_sync_id||'')===String(selected.id)||
-          String(row.id||'')===String(latest.tokens.find(t=>String(t.id)===String(selected.id))?.creature_id||''));
-        if(!recipient){
-          message('Colpo confermato su '+selected.name+
-            '. La creatura non ha una scheda locale collegata: applica lo svantaggio manualmente sul desktop.',true);
-          return;
-        }
-        const editor=await openCreatureEditor(recipient.id);
-        const changes=attackHitEffectPatch(editor.read(),attack,0,{
-          source_token_id:String(attacker.id),target_token_id:String(selected.id),
-          source_name:creature.name||attacker.name||'Artificer',
-          source_creature_id:creature.id,snapshot:latest
+        const result=await action('hit_attack',{
+          token_id:String(attacker.id),owner_id:await ownerId(),
+          target_id:String(selected.id),attack_id:attack.id,
+          attack_name:attack.name,effects:onHitEffects(attack)
         });
-        await editor.update(changes);
-        message(attack.name+': effetto registrato su '+selected.name+
-          ' fino all’inizio del prossimo turno dell’attaccante. Il tiro richiede la scelta del bersaglio.');
+        if(!result?.ok)throw Error(result?.error||'Impossibile applicare l’attacco al bersaglio.');
+        state.map=await map();
+        message(attack.name+': '+selected.name+' colpito sulla mappa'+
+          (Number(result.effects_applied)>0?' · '+result.effects_applied+' effetti applicati.':
+           ' · nessun effetto aggiuntivo dichiarato.'));
       }
     });
     return;
@@ -6539,9 +6550,10 @@ async function handleAction(target){
     }
     if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
       chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
-    // A situational d20 mode must be chosen before the first d20 result.
-    if(row.roll_mode&&dialog.rollOutcome)
-      throw Error('Vantaggio e svantaggio vanno scelti prima del tiro.');
+    // A situational d20 mode and power-attack penalty must be chosen
+    // before the first d20 result, never in reaction to seeing a hit.
+    if((row.roll_mode||row.require_before_roll)&&dialog.rollOutcome)
+      throw Error('Questo beneficio va scelto prima di tirare il d20.');
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
     if(row.passive_class_bonus){
@@ -6600,9 +6612,13 @@ async function handleAction(target){
       }
     }
     if(row.roll_mode){
-      const current=await computeLocalData(state.editor.read());
-      if(!current.racial_roll_modes?.some(rule=>rule.benefit_id===row.benefit_id))
-        throw Error('Il tratto razziale non è più disponibile.');
+      const freshRecord=state.editor.read(),current=await computeLocalData(freshRecord);
+      const modeTarget=String(dialog.dataset.rollTarget||'');
+      const racialAvailable=(current.racial_roll_modes||[]).some(rule=>rule.benefit_id===row.benefit_id);
+      const featAvailable=applicableFeatRollBonuses(freshRecord,current,modeTarget)
+        .some(rule=>rule.roll_mode===row.roll_mode&&rule.benefit_id===row.benefit_id);
+      if(!racialAvailable&&!featAvailable)
+        throw Error('Il beneficio condizionale non è più disponibile.');
       dialog.usedRollBonuses.push(row);
       target.textContent=row.tracker_id?'Attivo':'Rimuovi';
       target.dataset.rollUsed='true';target.disabled=!!row.tracker_id;
@@ -6650,7 +6666,7 @@ async function handleAction(target){
     const key=concentration?'save:con':String(target.dataset.target||'');
     // Conditional on-hit marks expire on the source's next combat turn.
     // Refresh the live initiative snapshot when opening a marked creature's roll.
-    if(creature.applied_hit_effects?.length&&state.paired&&state.online)
+    if((key.startsWith('attack_hit:')||key.startsWith('casting_hit:'))&&state.paired&&state.online)
       try{state.map=await map();}catch(error){console.warn('Snapshot del combattimento non aggiornato',error);}
     const calculated=await computeLocalData(creature),modifier=calculated.values[key];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
@@ -6697,8 +6713,7 @@ async function handleAction(target){
     // A confirmed on-hit debuff must know the target of the affected attack.
     // Without an explicit target the original attacker is never penalized.
     if((key.startsWith('attack_hit:')||key.startsWith('casting_hit:'))&&
-       Array.isArray(creature.applied_hit_effects)&&
-       creature.applied_hit_effects.length){
+       (creature.applied_hit_effects?.length||targetTokenHitEffects(creature,state.map).length)){
       const selection=document.createElement('label');
       selection.className='sheet-roll-mode-control';
       selection.textContent='Bersaglio dell’attacco';
@@ -6749,6 +6764,8 @@ async function handleAction(target){
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
         dialog.rollOutcome=state.roll;dialog.rollHistoryEntry=state.rollHistory[0];
+        const damageEnd=endTemporaryConditionPatch(state.editor.read());
+        if(Object.keys(damageEnd).length)await patch(damageEnd);
         // A paid class-feature modifier applies to one damage roll only.
         // Keep the existing optional weapon dice behavior unchanged.
         const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
@@ -6790,6 +6807,10 @@ async function handleAction(target){
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
         dialog.rollOutcome=state.roll;dialog.rollHistoryEntry=state.rollHistory[0];
+        if(key.startsWith('attack_hit:')||key.startsWith('casting_hit:')){
+          const attackEnd=endTemporaryConditionPatch(state.editor.read());
+          if(Object.keys(attackEnd).length)await patch(attackEnd);
+        }
         // Tracker uses were spent at selection time, never again on rerolls.
         // A reaction modifies one roll only, even when the same dialog rerolls.
          const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));

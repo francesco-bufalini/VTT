@@ -164,7 +164,8 @@
           "target": "attack_roll",
           "flat_bonus": -5,
           "attack_heavy": true,
-          "condition_label": "Facoltativo: prima del tiro per colpire in mischia con arma pesante competente; se scegli −5, un colpo infligge +10 danni"
+          "condition_label": "Facoltativo: prima del tiro per colpire in mischia con arma pesante competente; se scegli −5, un colpo infligge +10 danni",
+          "require_before_roll": true
         },
         {
           "target": "damage_roll",
@@ -182,7 +183,8 @@
           "target": "attack_roll",
           "flat_bonus": -5,
           "attack_ranged_weapon": true,
-          "condition_label": "Facoltativo: prima del tiro per colpire con arma a distanza competente; se scegli −5, un colpo infligge +10 danni"
+          "condition_label": "Facoltativo: prima del tiro per colpire con arma a distanza competente; se scegli −5, un colpo infligge +10 danni",
+          "require_before_roll": true
         },
         {
           "target": "damage_roll",

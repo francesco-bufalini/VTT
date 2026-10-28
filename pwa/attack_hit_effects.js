@@ -6,12 +6,33 @@
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 
-export function onHitRollEffects(attack={}){
+// One attack can carry several effects. Nothing depends on where or whether
+// its attack and damage dice were rolled.
+export function onHitEffects(attack={}){
  return rows(attack.on_hit_effects).filter(row=>
-  row?.trigger==='on_hit'&&row.operation==='roll_mode'&&
-  ['advantage','disadvantage'].includes(row.mode)&&row.target==='attack_roll'&&
+  row?.trigger==='on_hit'&&(
+   row.operation==='roll_mode'&&row.target==='attack_roll'&&
+    ['advantage','disadvantage'].includes(row.mode)&&
+    ['until_start_of_next_turn','manual',''].includes(row.duration||'')||
+   row.operation==='condition'&&typeof row.condition_id==='string'&&
+    row.condition_id.length>0&&row.duration!=='until_start_of_next_turn'));
+}
+export function onHitRollEffects(attack={}){
+ return onHitEffects(attack).filter(row=>row.operation==='roll_mode'&&
   row.duration==='until_start_of_next_turn');
 }
+// A token without a local creature sheet still owns its combat effects on
+// the Godot board. A linked local sheet reads the same shared projection.
+export function targetTokenHitEffects(record={},snapshot={}){
+ const tokens=rows(snapshot?.tokens);
+ const linked=String(record.linked_token_sync_id||'');
+ const owner=String(record.owner_id||'');
+ const token=(linked?tokens.find(row=>String(row.id)===linked):null)||
+  tokens.find(row=>row.creature_id&&String(row.creature_id)===String(record.id||'')&&
+   (!owner||!row.owner_id||String(row.owner_id)===owner));
+ return rows(token?.hit_effects).filter(row=>!hitEffectExpired(row,snapshot));
+}
+
 export function hitEffectExpired(effect={},snapshot={}){
  const combat=snapshot?.combat;
  const added=Number(effect.applied_round);
@@ -43,8 +64,9 @@ export function attackHitRollSources(record={},rollTarget='',context='',snapshot
  const targetTokenId=String(context||'').startsWith('attack_target:')?
   String(context).slice('attack_target:'.length):'';
  if(!targetTokenId)return [];
- return rows(record.applied_hit_effects).filter(effect=>
-  effect?.mode==='disadvantage'||effect?.mode==='advantage')
+ return [...new Map([...rows(record.applied_hit_effects),
+  ...targetTokenHitEffects(record,snapshot)].map(row=>[row.id,row])).values()]
+ .filter(effect=>effect?.mode==='disadvantage'||effect?.mode==='advantage')
  .filter(effect=>effect.target==='attack_roll'&&effect.target_token_id&&
   targetTokenId!==effect.source_token_id&&!hitEffectExpired(effect,snapshot))
  .map(effect=>({id:effect.id,origin_id:effect.id,origin_name:

@@ -140,3 +140,42 @@ test('other pre-2024 conditional feat roll modes and Charger damage are source- 
  assert(skill.some(x=>x.feat_name==='Squat Nimbleness'));
  assert.equal(applicableFeatRollBonuses(record,calculated,'skill:perception').length,0);
 });
+
+test('Shield Master scales with equipped shield AC; power attacks require appropriate proficient weapons',()=>{
+ const packageRules=read('../catalog/ability_grants.json');
+ const feats=[{name:'Shield Master',source:'PHB'},{name:'Great Weapon Master',source:'PHB'},
+  {name:'Sharpshooter',source:'PHB'}];
+ const typed=featMechanicGrants({feats_catalog:feats},packageRules);
+ const attacks=[{id:'item:heavy',melee:true,proficient:true},
+  {id:'item:bow',melee:false,proficient:true},
+  {id:'item:sword',melee:true,proficient:true},
+  {id:'item:untrained',melee:true,proficient:false}];
+ const weapons=[
+  {id:'heavy',name:'Greatsword',type:'M',damage:'2d6',properties:['H','2H'],equipped_slots:['main'],quantity:1},
+  {id:'bow',name:'Longbow',type:'R',damage:'1d8',properties:['H','2H'],equipped_slots:['main'],quantity:1},
+  {id:'sword',name:'Sword',type:'M',damage:'1d8',properties:[],equipped_slots:['off'],quantity:1},
+  {id:'untrained',name:'Halberd',type:'M',damage:'1d10',properties:['H','2H'],equipped_slots:['main'],quantity:1},
+  {id:'shield',name:'Shield +1',type:'S',ac:3,equipped_slots:['off'],quantity:1}
+ ];
+ const record={rules_version:'2014',feats_catalog:feats,inventory:weapons};
+ const calculated={feat_roll_modes:typed.roll_modes,feat_roll_bonuses:typed.roll_bonuses,attacks};
+ const shield=applicableFeatRollBonuses(record,calculated,'save:dex').find(x=>x.feat_name==='Shield Master');
+ assert.equal(shield?.flat_bonus,3);
+ assert.equal(applicableFeatRollBonuses({...record,inventory:weapons.filter(w=>w.id!=='shield')},calculated,'save:dex')
+  .filter(x=>x.feat_name==='Shield Master').length,0);
+ const heavy=applicableFeatRollBonuses(record,calculated,'attack_hit:item:heavy');
+ assert(heavy.some(x=>x.feat_name==='Great Weapon Master'&&x.flat_bonus===-5&&x.require_before_roll));
+ assert(!heavy.some(x=>x.feat_name==='Sharpshooter'));
+ const bow=applicableFeatRollBonuses(record,calculated,'attack_hit:item:bow');
+ assert(bow.some(x=>x.feat_name==='Sharpshooter'&&x.flat_bonus===-5&&x.require_before_roll));
+ assert(!bow.some(x=>x.feat_name==='Great Weapon Master'));
+ assert(!applicableFeatRollBonuses(record,calculated,'attack_hit:item:sword')
+  .some(x=>x.feat_name==='Great Weapon Master'));
+ assert(!applicableFeatRollBonuses(record,calculated,'attack_hit:item:untrained')
+  .some(x=>x.feat_name==='Great Weapon Master'));
+ assert(applicableFeatRollBonuses(record,calculated,'attack_damage:item:heavy')
+  .some(x=>x.feat_name==='Great Weapon Master'&&x.flat_bonus===10));
+ const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
+ assert.match(ui,/row\.roll_mode\|\|row\.require_before_roll/);
+ assert.match(ui,/featAvailable=applicableFeatRollBonuses/);
+});

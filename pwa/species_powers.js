@@ -186,6 +186,19 @@ export function racialPowerProjection(record={},index={},features=[]) {
  }
  return output;
 }
+// End a trait-owned temporary condition without deleting a condition the
+// character already had before the racial ability was activated.
+export function endTemporaryConditionPatch(record={},key='racial:firbolg:hidden_step'){
+ const current=record.active_class_features?.[key];
+ if(!current||!current.effect_condition)return {};
+ const active={...(record.active_class_features||{})};
+ delete active[key];
+ const patch={active_class_features:active};
+ const stillGranted=Object.values(active).some(row=>row?.effect_condition===current.effect_condition);
+ if(current.added_condition&&!stillGranted)
+   patch.conditions=rows(record.conditions).filter(value=>norm(value)!==norm(current.effect_condition));
+ return patch;
+}
 // Rest training uses Armor Model's reselection lifecycle and ordinary typed
 // proficiency grants; it never writes a permanent racial proficiency.
 // A source-defined set of proficiency slots: skill+weapon/tool or two weapon/tools.

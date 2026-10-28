@@ -457,6 +457,22 @@
           "recharge": "long_rest",
           "description": "Come azione bonus diventi Invisibile fino all'inizio del tuo turno successivo, oppure finché effettui un attacco, tiri i danni o costringi una creatura a un tiro salvezza. Utilizzi pari alla competenza; recupero con riposo lungo."
         }
+      ],
+      "spell_usage": [
+        {
+          "spell": "detect magic",
+          "trait": "Firbolg Magic",
+          "uses": 1,
+          "recharge": "long_rest",
+          "slot_alternative": true
+        },
+        {
+          "spell": "disguise self",
+          "trait": "Firbolg Magic",
+          "uses": 1,
+          "recharge": "long_rest",
+          "slot_alternative": true
+        }
       ]
     },
     {
@@ -473,6 +489,16 @@
           "uses": "proficiency",
           "recharge": "long_rest",
           "description": "Lancia Blade Ward come azione bonus (bonus competenza volte per riposo lungo). Puoi sempre lanciarlo anche con il suo normale tempo di lancio, senza utilizzare questo tracker."
+        }
+      ],
+      "spell_usage": [
+        {
+          "spell": "pass without trace",
+          "subrace": "Earth",
+          "trait": "Merge with Stone",
+          "uses": 1,
+          "recharge": "long_rest",
+          "slot_alternative": true
         }
       ]
     }

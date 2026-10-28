@@ -1006,7 +1006,7 @@ function calculateSheetValues(record={},catalogs={}){
       const raw=typeof source==="object"&&source!==null?source.number??source.value:source;
       // A typed 5etools speed of true means "equal to walking speed",
       // not a speed of 1 foot (e.g. MPMM Aarakocra flight).
-      const copiesWalk=raw===true&&key==="fly";
+      const copiesWalk=raw===true&&["fly","swim","climb","burrow"].includes(key);
       const base=copiesWalk?resolve("speed",stack):
         Math.max(0,int(typeof raw==="string"?raw.split(" ")[0]:raw));
       if(key==='fly'&&(celestialForm?.fly_equals_walk||dragonbornFlight))
@@ -1234,7 +1234,7 @@ function calculateSheetValues(record={},catalogs={}){
   }
   const featMechanics=featMechanicGrants(record,index);
   const featureSpells=arr(classesCatalog?.feature_spells);
-  const additional=structuredSpellGrants(record,[...arr(classesCatalog?.additional_spells),...featureSpells],catalogs.spells||[],features,catalogs.spellGrantRules||[]);
+  const additional=structuredSpellGrants(record,[...arr(classesCatalog?.additional_spells),...featureSpells],catalogs.spells||[],features,catalogs.spellGrantRules||[],catalogs.speciesPowers?.races||[]);
   // Permanently prepared subclass spells are attached to their actual feature,
   // not to the class itself; the same source identity powers UI and calculations.
   const classCasting=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));

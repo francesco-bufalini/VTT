@@ -8,6 +8,7 @@ import {featOriginLabel,featTraitOriginKey} from './feat_picker.js';
 import {itemKind,resolveOwnedItem,armorDexterityBonus,armorDexterityLimit} from './item_controls.js';
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 import {powerRestSelections,powerRestChoicePatch} from './trait_state_rules.js';
+import {endTemporaryConditionPatch} from './species_powers.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["conditions","Condizioni"]];
@@ -138,6 +139,14 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
   const spent={...(patch.resource_tracker_spent||c.resource_tracker_spent||{})};
   spent[meta.tracker.id]=Number(spent[meta.tracker.id]||0)+meta.cost;patch.resource_tracker_spent=spent;
  }
+ // A spell that forces a saving throw ends Hide/Hidden Step invisibility
+ // once it has been cast successfully. This does not affect its normal
+ // spell payment, concentration or targeting resolution.
+ const saves=selection.saving_throw??selection.savingThrow??selection.saves??[];
+ if(Array.isArray(saves)&&saves.length||typeof saves==='string'&&saves.trim()){
+   const current={...c,active_class_features:patch.active_class_features||c.active_class_features};
+   Object.assign(patch,endTemporaryConditionPatch(current));
+ }
  return {patch,slotLevel,context:{caster_name:c.name||'',spellcasting_ability:ability,spell_attack_bonus:hit,
   ...(selection.item_target?{item_target:structuredClone(selection.item_target)}:{}),
   spell_save_dc:dc+(innate?1:0),...(innate?{spell_attack_advantage:true}:{}),
@@ -171,6 +180,13 @@ export function recoveryPatch(c,event,trackers,calculated={}){
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
  if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
  Object.assign(patch,powerRestChoicePatch(c,event,calculated));
+ // The user's next turn ends short-lived racial invisibility. A rest also
+ // clears its sheet condition without touching pre-existing invisibility.
+ const temporary=endTemporaryConditionPatch(c);
+ if(Object.keys(temporary).length){
+   if(temporary.conditions)patch.conditions=temporary.conditions;
+   if(event==='turn')patch.active_class_features=temporary.active_class_features;
+ }
  return patch;
 }
 
