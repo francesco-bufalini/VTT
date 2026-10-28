@@ -419,7 +419,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
    '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
    source+target+resources+
-   (String(item.id||'').startsWith('activated:')?'<button type="button" class="btn small" data-act="battle-use-ability" data-ability-id="'+esc(item.id)+'">Usa</button>':'')+
+   (String(item.id||'').startsWith('activated:')&&!item.descriptive_only?'<button type="button" class="btn small" data-act="battle-use-ability" data-ability-id="'+esc(item.id)+'">Usa</button>':'')+
    '</div></details>')+
   (rolls.length||mapButton||hitButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
    '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
@@ -478,7 +478,8 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
   const name=String(ability.name||'').trim().toLocaleLowerCase('it');
   if(!name||seen.has(name))continue;
   result.push({id:'activated:'+ability.id,ability_id:ability.id,name:ability.name,
-   description:ability.description||'',time:raw==='contextual'?'contextual':timing(raw),type:'Capacità',
+   description:ability.description||'',descriptive_only:ability.descriptive_only===true,
+   time:raw==='contextual'?'contextual':timing(raw),type:'Capacità',
    origin:'personal',origin_id:ability.feature_id||ability.origin_id||'',
    tracker_id:String(ability.tracker_id||''),tracker:ability.tracker_name||ability.resource_name||'',
    cost:Math.max(0,Number(ability.resource_cost??(ability.tracker_id?1:0))||0),
