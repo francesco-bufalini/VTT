@@ -1,3 +1,5 @@
+import {SKILLS} from './skill_definitions.js';
+import {offhandAttackAllowed} from './offhand_rules.js';
 import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {calculateSenses} from './sense_rules.js';
@@ -26,17 +28,7 @@ import {barbarian2014Supplements,barbarian2014ProficiencyCatalog} from './barbar
 import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
-export const SKILLS=[
- ["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],
- ["arcana","Arcano","int"],["athletics","Atletica","str"],
- ["deception","Inganno","cha"],["history","Storia","int"],
- ["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],
- ["investigation","Indagare","int"],["medicine","Medicina","wis"],
- ["nature","Natura","int"],["perception","Percezione","wis"],
- ["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],
- ["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],
- ["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]
-];
+export {SKILLS};
 const fullSlots=[
  [0,0,0,0,0,0,0,0,0,0],[0,2,0,0,0,0,0,0,0,0],
  [0,3,0,0,0,0,0,0,0,0],[0,4,2,0,0,0,0,0,0,0],
@@ -610,10 +602,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  const offBlocked=Boolean(main&&(hasProperty(main,'2H')||
    record.hand_grip_two_handed&&hasProperty(main,'V'))&&record.hand_off_with_two_handed!==true);
  const off=offBlocked?null:physicalOff;
- const dual=arr(record.feats_catalog).some(f=>!f?.disabled&&same(f.name,'Dual Wielder'));
- const offAllowed=main&&off&&itemKind(main)==='weapon'&&itemKind(off)==='weapon'&&
-   (String(record.rules_version)==='2024'?hasProperty(main,'L')&&(hasProperty(off,'L')||dual&&String(off.type).split('|')[0]!=='R'):
-    String(main.type).split('|')[0]!=='R'&&String(off.type).split('|')[0]!=='R'&&(hasProperty(main,'L')&&hasProperty(off,'L')||dual));
+ const offAllowed=offhandAttackAllowed(record,main,off);
  const style=record.two_weapon_fighting||['fighting_styles','proficiency_choices','proficiency_origins','selected_features','feats_catalog','trait_choices'].some(field=>arr(record[field]).some(row=>{
    if(row?.disabled)return false;
    const label=typeof row==='string'?row:[row?.name||row?.label||row?.key||'',...['fighting_style','fightingStyle','selected_style','selected','choice'].map(k=>typeof row?.[k]!=='boolean'?row?.[k]||'':'')].join(' ');

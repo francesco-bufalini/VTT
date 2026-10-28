@@ -68,6 +68,8 @@ const SHELL = [
   "/quick_homebrew.js",
   "/character_homebrew.js",
   "/sheet_rules.js",
+  "/skill_definitions.js",
+  "/offhand_rules.js",
   "/sense_rules.js",
   "/catalog/sense_grants.json",
   "/ability_choice_rules.js",

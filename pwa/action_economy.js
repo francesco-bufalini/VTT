@@ -3,7 +3,8 @@
 import {SKILLS} from './sheet_rules.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
-import {resolveOwnedItem,hasProperty,itemKind} from './item_controls.js';
+import {offhandActionEligibility} from './offhand_rules.js';
+export {offhandActionEligibility};
 
 let supplementsCache=null;
 let generalActionsCache=null;
@@ -524,62 +525,10 @@ export function battleSkillChecksPanel(calculated={}){
 
 // Spell actions open the very same spell/casting dialog as the Magia tab.
 // Keep prose out of the action list; its detailed facts are shown in the dialog.
-function battleSpellRow(item){
- const level=item.level;
- const levelLabel=level===0?'Trucchetto':Number.isInteger(level)&&level>0?'Livello '+level:'Livello non disponibile';
- const payment=item.spell_mode==='tracker'?'Capacità · '+(item.tracker||'risorsa'):
-  item.spell_mode==='free'?'Senza slot':level===0?'Senza slot':'Slot incantesimo';
- const attrs=' data-spell-id="'+esc(item.spell_id)+'" data-grant-id="'+esc(item.grant_id||'')+
-  '" data-casting-class="'+esc(item.casting_class||'')+'"';
- // Free/tracker origin spells use the exact same immediate casting action as
- // the resources list. Other spells need the slot/pact selector in their popup.
- const direct=!!item.grant_id&&['tracker','free'].includes(item.spell_mode);
- return '<article class="play-battle-attack-entry play-battle-spell-entry" data-spell-id="'+esc(item.spell_id)+
-  '" data-spell-level="'+esc(level??'')+'" data-action-timing-spell="'+esc(item.time)+'">'+
-  '<button type="button" class="play-battle-spell-open" data-act="action-cast-spell"'+attrs+
-  ' aria-label="Apri '+esc(item.name)+'">'+
-  actionGlyph('spell_cast')+'<span class="play-battle-attack-copy"><strong>'+esc(item.name)+
-  '</strong><small>'+esc(levelLabel+' · '+payment)+'</small></span></button>'+
-  '<button type="button" class="play-battle-spell-cast" data-act="'+
-  (direct?'battle-cast-resource-spell':'action-cast-spell')+'"'+attrs+
-  ' aria-label="Lancia '+esc(item.name)+'">Lancia</button></article>';
-}
-
 // The bonus attack is available only for a real two-weapon loadout.
 // An empty off hand (including an unarmed off-hand entry) does not qualify.
 // Light-weapon eligibility is independent of Dual Wielder: the feat grants
 // its own privilege, while the basic-rule row stays locked if not Light.
-export function offhandActionEligibility(record={},calculated={}){
- const attacks=arr(calculated.attacks);
- const main=attacks.find(a=>a.slot==='main'&&String(a.id||'').startsWith('item:'));
- const off=attacks.find(a=>a.slot==='off'&&String(a.id||'').startsWith('item:off:'));
- const shield=attacks.find(a=>a.slot==='shield'&&a.hand==='off');
- const equipped=arr(record.inventory).map(resolveOwnedItem);
- const mainItem=equipped.find(item=>arr(item.equipped_slots).includes('main')&&itemKind(item)==='weapon');
- const offItem=equipped.find(item=>arr(item.equipped_slots).includes('off')&&
-  ['weapon','shield'].includes(itemKind(item)));
- const edition=String(record.rules_version||'2014');
- const feat=arr(record.feats_catalog).find(row=>!row?.disabled&&
-  /^(dual wielder|combattente con due armi)$/i.test(String(row?.name||row?.id||'')));
- const hasBoth=Boolean(main&&(off||shield));
- const light=Boolean(hasBoth&&mainItem&&offItem&&itemKind(offItem)==='weapon'&&
-   hasProperty(mainItem,'L')&&hasProperty(offItem,'L'));
- const oneHanded=item=>item&&!hasProperty(item,'2H')&&
-  String(item.type||'').split('|')[0].toUpperCase()!=='R';
- const featAvailable=Boolean(edition==='2014'&&feat&&hasBoth&&
-  oneHanded(mainItem)&&offItem&&
-  (itemKind(offItem)==='shield'||itemKind(offItem)==='weapon'&&oneHanded(offItem)));
- const baseReason=!main?'Equipaggia un’arma nella mano principale.':
-  !off&&!shield?'Equipaggia un’arma nella mano secondaria.':
-  !mainItem||!offItem?'Equipaggia due armi, una per mano.':
-  itemKind(offItem)==='shield'?'Uno scudo non è un’arma Leggera per le regole base.':
-  'Per le regole base servono due armi Leggere.';
- return {available:light||featAvailable,base_available:light,feat_available:featAvailable,
-  reason:light||featAvailable?'':baseReason,base_reason:light?'':baseReason,
-  feat_reason:featAvailable?'':'Per il talento servono due armi a una mano, anche non Leggere, oppure uno scudo utilizzato come arma improvvisata.',
-  feat:feat||null};
-}
-
 export function offhandActionAvailable(record={},calculated={}){
  return offhandActionEligibility(record,calculated).available;
 }
@@ -689,20 +638,17 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    row.id==='spell_cast'&&time==='action'?-90:0;
   return order(a)-order(b);
  };
- const renderTiming=(rows,kind)=>BATTLE_TIMINGS.map(([time,label])=>{
+ const renderTiming=rows=>BATTLE_TIMINGS.map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time).sort((a,b)=>ordering(a,b,time));
-  if(kind==='spells')matching.sort((a,b)=>(a.level??99)-(b.level??99)||
-    String(a.name||'').localeCompare(String(b.name||''),'it'));
-  return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'"'+(kind==='others'?' open':'')+'>'+
+  return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'"'+' open'+'>'+
     '<summary class="play-battle-action-heading">'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+
     '<span>'+esc(label)+'</span></summary>'+
-    '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?battleSpellRow(row):
-      battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
+    '<div class="play-battle-action-rows">'+matching.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
    weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div>',
-  others:renderTiming(other,'others'),movement:'',
+  others:renderTiming(other),movement:'',
   checks:battleSkillChecksPanel(calculated),
   spells:'',
   abilityEntries:classAbilities,

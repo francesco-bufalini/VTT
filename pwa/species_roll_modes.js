@@ -1,3 +1,4 @@
+import {SKILL_ABILITY} from './skill_definitions.js';
 import {norm,same,sourceMuted,speciesOriginKey,speciesTraitOwner,flattenedSpeciesSources} from './species_origin_rules.js';
 // Non-destructive 2014 racial advantages/disadvantages. A source-qualified
 // 5etools trait supplies each mode. The condition_label is intentionally
@@ -5,12 +6,6 @@ import {norm,same,sourceMuted,speciesOriginKey,speciesTraitOwner,flattenedSpecie
 const rows=value=>Array.isArray(value)?value:[];
 const muted=sourceMuted;
 const signature=rule=>[norm(rule.trait),rule.target,rule.mode,rule.condition_label].join('|');
-const SKILL_ABILITY={
- athletics:'str',acrobatics:'dex','sleight of hand':'dex',stealth:'dex',
- arcana:'int',history:'int',investigation:'int',nature:'int',religion:'int',
- 'animal handling':'wis',insight:'wis',medicine:'wis',perception:'wis',survival:'wis',
- deception:'cha',intimidation:'cha',performance:'cha',persuasion:'cha'
-};
 export function selectedSpeciesRollModeRules(record={},catalog={}){
  if(record.rules_version==='2024'||!record.species||!record.species_source)return [];
  const {parent,sub}=flattenedSpeciesSources(record,catalog);
