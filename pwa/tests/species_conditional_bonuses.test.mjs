@@ -183,3 +183,26 @@ test('PHB Half-Orc Savage Attacks derives one weapon damage die only for melee c
  assert.equal(bonuses[0].tracker_id,undefined);
  assert.match(bonuses[0].condition_label,/critico/);
 });
+
+
+test('MPMM Harengon Hare-Trigger adds proficiency automatically to initiative',()=>{
+ const c=character('Harengon','MPMM');
+ const result=calculateSheet(c,{
+  speciesConditionalBonuses:rules,
+  classMechanics:{races:[],subraces:[]}
+ });
+ assert.equal(result.stats.proficiency,3);
+ assert.equal(result.stats.initiative,5); // Dexterity +2; Hare-Trigger +3
+ assert(result.automatic_bonuses.some(row=>row.target==='initiative'&&
+   row.granting_trait==='Hare-Trigger'&&row.expression==='proficiency'));
+ assert.equal(applicableDiceBonuses(c,'initiative',[],result)
+   .filter(row=>row.granting_trait==='Hare-Trigger').length,0);
+ const renamed={...c,species_source:'WBtW'};
+ assert.equal(project(renamed).bonuses.length,0);
+ const owner=project(c).features.find(x=>x.name==='Hare-Trigger');
+ assert(owner);
+ const disabled=calculateSheet({...c,trait_enabled:{[owner.key]:false}},{
+  speciesConditionalBonuses:rules,classMechanics:{races:[],subraces:[]}
+ });
+ assert.equal(disabled.stats.initiative,2);
+});
