@@ -7456,6 +7456,17 @@ async function handleAction(target){
   }
 
 
+  if(act==='racial-option-open'){
+    const record=state.editor?.read();
+    if(!record)throw Error('Apri prima una creatura.');
+    const calculated=await computeLocalData(record);
+    const group=String(target.dataset.racialOptionGroup||'');
+    const choice=(calculated.pending_choices||[]).find(row=>
+      row.kind==='racial_option'&&row.group===group);
+    if(!choice||!canReselectPower(record,group))
+      throw Error('Potrai cambiare questa scelta dopo un riposo lungo.');
+    await openCharacterChoice(choice);return;
+  }
   if(act==='rest-training-open'){
     await openRacialRestTrainingDialog(String(target.dataset.trainingGroup||''));
     return;
@@ -7472,12 +7483,17 @@ async function handleAction(target){
     const fresh=await computeLocalData(current);
     const choice=(fresh.racial_rest_choices||[]).find(row=>row.group===dialog.dataset.trainingGroup);
     if(!choice)throw Error('Privilegio non disponibile.');
-    const skill=dialog.querySelector('[data-rest-training-skill]')?.value||'';
-    const other=dialog.querySelector('[data-rest-training-other]')?.value||'';
+    const selected=[...dialog.querySelectorAll('[data-rest-training-pick]')]
+      .sort((a,b)=>Number(a.dataset.restTrainingPick)-Number(b.dataset.restTrainingPick))
+      .map(row=>row.value||'');
+    const withoutOwn={...current,proficiency_choices:(current.proficiency_choices||[])
+      .filter(row=>row.rest_training_group!==choice.group)};
+    const outside=await computeLocalData(withoutOwn);
     const allowed={skill:SKILLS.map(([key])=>key),
       weapon:trainingProficiencyOptions('weapon',current),
-      tool:trainingProficiencyOptions('tool',current)};
-    const changes=restTrainingPatch(current,choice,skill,other,allowed);
+      tool:trainingProficiencyOptions('tool',current),
+      unavailable:outside.proficiencies||[]};
+    const changes=restTrainingPatch(current,choice,selected,allowed);
     target.disabled=true;
     try{
       await patch(changes);
