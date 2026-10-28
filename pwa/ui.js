@@ -41,6 +41,7 @@ import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel,canReselectPower} from './trait_state_rules.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
+import {attackHitEffectPatch,onHitRollEffects} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
@@ -1127,7 +1128,7 @@ async function computeLocalData(record){
     for(const definition of embedded)spellMap.set(definition.id,{...definition,...spellMap.get(definition.id)});
     state.spellCatalog=[...spellMap.values()];
   }
-  return {...calculated,loadError,
+  return {...calculated,loadError,combat_snapshot:state.map||null,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
     infusion_mechanics:{...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]}};
@@ -6268,6 +6269,55 @@ async function handleAction(target){
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
   }
+  if(act==='battle-attack-hit-effect'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Apri prima una creatura.');
+    if(!state.paired||!state.online)
+      throw Error('Collega la partita per scegliere la creatura colpita.');
+    const attackId=String(target.dataset.hitAttackId||'');
+    const calculated=await computeLocalData(creature);
+    const attack=(calculated.attacks||[]).find(row=>String(row.id)===attackId);
+    if(!attack||!onHitRollEffects(attack).length)
+      throw Error('Questo attacco non concede effetti applicabili sul colpo.');
+    const currentMap=await map();
+    state.map=currentMap;
+    const attacker=casterToken(creature,currentMap,await ownerId());
+    if(!attacker)throw Error('Associa un token all’attaccante prima di applicare il colpo.');
+    if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+    await tacticalViewer.open(String(attacker.id),{
+      range_feet:Number(attack.range_feet)||5,
+      long_range_feet:Number(attack.long_range_feet)||0,
+      melee:!!attack.melee
+    });
+    tacticalViewer.setAbilityTarget({
+      name:attack.name+' · effetto sul colpo',
+      range_feet:Number(attack.range_feet)||5,
+      exclude_self:true,
+      onSelected:async selected=>{
+        const latest=await map();
+        if(!(latest.tokens||[]).some(row=>String(row.id)===String(selected.id)))
+          throw Error('Il bersaglio non è più sulla mappa.');
+        const records=(await listCreatures()).map(row=>row.creature||row);
+        const recipient=records.find(row=>String(row.linked_token_sync_id||'')===String(selected.id)||
+          String(row.id||'')===String(latest.tokens.find(t=>String(t.id)===String(selected.id))?.creature_id||''));
+        if(!recipient){
+          message('Colpo confermato su '+selected.name+
+            '. La creatura non ha una scheda locale collegata: applica lo svantaggio manualmente sul desktop.',true);
+          return;
+        }
+        const editor=await openCreatureEditor(recipient.id);
+        const changes=attackHitEffectPatch(editor.read(),attack,0,{
+          source_token_id:String(attacker.id),target_token_id:String(selected.id),
+          source_name:creature.name||attacker.name||'Artificer',
+          source_creature_id:creature.id,snapshot:latest
+        });
+        await editor.update(changes);
+        message(attack.name+': effetto registrato su '+selected.name+
+          ' fino all’inizio del prossimo turno dell’attaccante. Il tiro richiede la scelta del bersaglio.');
+      }
+    });
+    return;
+  }
   if(act==='battle-attack-map'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
@@ -6618,7 +6668,7 @@ async function handleAction(target){
        ...classFeatureRollBonuses(creature,calculated,key),
        ...applicableSpeciesRollModes(creature,calculated,key)
       ],{kind:'d20'});
-     const autoSources=classFeatureRollSources(creature,calculated,key,rollContext);
+     let autoSources=classFeatureRollSources(creature,calculated,key,rollContext);
     const automatic=resolveClassRollMode(autoSources);
     const formulaMarkup=(chosen=[],choice='auto')=>{
       const selectedModes=chosen.filter(row=>row.roll_mode).map(row=>({
@@ -6637,6 +6687,29 @@ async function handleAction(target){
       rollType:rollCategory(key,calculated),formula:formulaMarkup(),bonuses,autoLabel,
       creatureId:creature.id||'',target:key});
     dialog.dataset.rollContext=rollContext;
+    // A confirmed on-hit debuff must know the target of the affected attack.
+    // Without an explicit target the original attacker is never penalized.
+    if(key.startsWith('attack_hit:')&&Array.isArray(creature.applied_hit_effects)&&
+       creature.applied_hit_effects.length){
+      const selection=document.createElement('label');
+      selection.className='sheet-roll-mode-control';
+      selection.textContent='Bersaglio dell’attacco';
+      const choose=document.createElement('select');
+      choose.dataset.rollTargetToken='true';
+      const tokens=(state.map?.tokens||[]).filter(token=>token?.id);
+      const candidates=[['','Nessuno specificato'],
+        ...tokens.map(token=>[String(token.id),String(token.name||token.id)]),
+        ['other','Altra creatura (diversa dalla fonte)']];
+      choose.innerHTML=candidates.map(([id,name])=>
+        '<option value="'+esc(id)+'">'+esc(name)+'</option>').join('');
+      selection.append(choose);
+      dialog.querySelector('.sheet-roll-formula')?.before(selection);
+      choose.addEventListener('change',()=>{
+        dialog.dataset.rollContext=choose.value?'attack_target:'+choose.value:'';
+        autoSources=classFeatureRollSources(creature,calculated,key,dialog.dataset.rollContext);
+        dialog.renderRollFormula?.();
+      });
+    }
     dialog.renderRollFormula=()=>{
       const formula=dialog.querySelector('[data-roll-formula]');
       const choice=dialog.querySelector('[data-roll-mode]').value;
