@@ -36,6 +36,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
 import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} from './feature_rolls.js';
+import {availableZeroHpResponses,resolveZeroHpDamage} from './zero_hp_responses.js';
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
@@ -7345,14 +7346,28 @@ async function handleAction(target){
     if(!state.editor)throw Error('Apri prima una scheda.');
     let creature=state.editor.read(),calculated=await computeLocalData(creature);
     const draft=hpAdjustDraft(dialog,calculated);
+    // Interrupt a potentially lethal damage entry before recording HP loss.
+    // The player may ignore the response or cancel the damage entirely.
+    let responseChoice;
+    if(mode==='damage'&&availableZeroHpResponses({...creature,...draft},calculated,amount).length){
+      closeSessionDialog(dialog);
+      responseChoice=await chooseZeroHpResponse({...creature,...draft},calculated,amount);
+      if(!responseChoice)return;
+    }
     if(draft.current_hp!==Number(creature.current_hp||0)||draft.temporary_hp!==Number(creature.temporary_hp||0)){
       await patch(draft);
       creature=state.editor.read();
       calculated=await computeLocalData(creature);
     }
-    const damage=mode==='damage'?variantDamage(state.editor.readBase(),amount):null;
-    const concentrationCheck=mode==='damage'?concentrationDamageCheck(creature,amount):null;
-    await patch(damage?.patch||hitPointPatch(creature,amount,calculated));
+    const resolution=mode==='damage'&&responseChoice?.id?
+      resolveZeroHpDamage(creature,calculated,amount,responseChoice.id,responseChoice.roll):null;
+    const effectiveDamage=resolution?resolution.damage:amount;
+    const damage=mode==='damage'&&!resolution?
+      variantDamage(state.editor.readBase(),effectiveDamage):null;
+    const concentrationCheck=mode==='damage'&&effectiveDamage>0?
+      concentrationDamageCheck(creature,effectiveDamage):null;
+    await patch(resolution?.patch||damage?.patch||hitPointPatch(creature,
+      mode==='damage'?effectiveDamage:amount,calculated));
     closeSessionDialog(dialog);
     await render();
     if(concentrationCheck){
@@ -8619,6 +8634,80 @@ async function handleAction(target){
     return;
   }
   if(act==="roll"){await roll(state.diceSides);return;}
+}
+// Reuse the normal feature-roll dialog (and all its eligible bonus sources)
+// for damage prevention. A result rolled outside the app may be entered instead.
+async function chooseZeroHpResponse(creature,calculated,damage){
+ const choices=availableZeroHpResponses(creature,calculated,damage);
+ if(!choices.length)return {id:'',roll:null};
+ document.querySelector('#zero-hp-response-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='zero-hp-response-dialog';
+ dialog.className='sheet-roll-dialog magic-spell-dialog';
+ const hp=Number(creature.current_hp)||0,temp=Number(creature.temporary_hp)||0;
+ dialog.innerHTML=actionDialogIntro('Danni fino a 0 PF',[
+  {label:'Danni in arrivo',value:String(damage)},
+  {label:'PF',value:String(hp)+' attuali · '+String(temp)+' temporanei'}
+ ],'Puoi prevenire il danno o restare a 1 PF se un privilegio lo permette. La capacità è facoltativa.',
+ '', 'zero-hp-close')+
+ '<label>Capacità<select data-zero-hp-choice><option value="">Non usare capacità</option>'+
+ choices.map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+
+  ' · '+esc(a.damage_response.effect==='reduce_damage'?'Riduci il danno':'Resta a 1 PF')+
+  '</option>').join('')+'</select></label>'+
+ '<div data-zero-hp-roll-row hidden>'+
+  '<p class="hint" data-zero-hp-formula></p>'+
+  '<label>Risultato del tiro (anche esterno)<input type="number" min="0" max="99999" step="1" data-zero-hp-result placeholder="Inserisci il risultato"></label>'+
+  '<button type="button" class="btn" data-zero-hp-roll>Tira con i bonus applicabili</button></div>'+
+ '<p class="hint" data-zero-hp-note>Il danno verrà applicato normalmente.</p>'+
+ '<p role="status" data-zero-hp-error></p>'+
+ '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-zero-hp-apply>Applica danno</button>'+
+ '<button type="button" class="btn" data-zero-hp-cancel>Annulla</button></div>';
+ const picker=dialog.querySelector('[data-zero-hp-choice]');
+ const resultInput=dialog.querySelector('[data-zero-hp-result]');
+ const row=dialog.querySelector('[data-zero-hp-roll-row]');
+ const note=dialog.querySelector('[data-zero-hp-note]');
+ const selected=()=>choices.find(x=>x.id===picker.value);
+ picker.addEventListener('change',()=>{
+  const ability=selected();
+  resultInput.value='';
+  row.hidden=ability?.damage_response.effect!=='reduce_damage';
+  dialog.querySelector('[data-zero-hp-formula]').textContent=ability?.roll_effect?
+   'Riduzione: '+racialAbilityEffectFormula(ability,calculated):'';
+  note.textContent=ability?ability.damage_response.effect==='retain_one_hp'?
+   'Nessun tiro. Resti a 1 PF, se non sei stato ucciso sul colpo. Consuma un utilizzo.':
+   'La riduzione è sottratta al danno prima dei PF. Consuma un utilizzo.':
+   'Il danno verrà applicato normalmente.';
+ });
+ dialog.querySelector('[data-zero-hp-roll]').addEventListener('click',()=>{
+  const ability=selected();if(!ability?.roll_effect)return;
+  const formula=racialAbilityEffectFormula(ability,calculated);
+  const roller=openFeatureRollDialog(creature,calculated,ability,formula);
+  if(roller)roller.addEventListener('close',()=>{
+   if(Number.isFinite(roller.rollOutcome?.total)){
+    resultInput.value=String(Math.max(0,Math.trunc(roller.rollOutcome.total)));
+    note.textContent='Risultato registrato; conferma per applicare la riduzione ai danni.';
+   }
+  },{once:true});
+ });
+ let choice=null;
+ const answer=new Promise(resolve=>dialog.addEventListener('close',()=>{
+  resolve(choice);dialog.remove();
+ },{once:true}));
+ dialog.querySelectorAll('[data-zero-hp-cancel],[data-act="zero-hp-close"]').forEach(button=>
+  button.addEventListener('click',()=>closeDialog(dialog)));
+ dialog.querySelector('[data-zero-hp-apply]').addEventListener('click',()=>{
+  const ability=selected();
+  const raw=resultInput.value.trim(),roll=Number(raw);
+  if(ability?.damage_response.effect==='reduce_damage'&&
+      (!raw||!Number.isSafeInteger(roll)||roll<0||roll>99999)){
+   dialog.querySelector('[data-zero-hp-error]').textContent='Inserisci il totale del tiro di riduzione, anche se effettuato fuori dall’app.';
+   return;
+  }
+  choice={id:ability?.id||'',roll:ability?.damage_response.effect==='reduce_damage'?roll:null};
+  closeDialog(dialog);
+ });
+ document.body.append(dialog);openDialog(dialog);
+ return answer;
 }
 function configureHpAdjustDialog(dialog){
   const creature=state.editor?.read()||{};

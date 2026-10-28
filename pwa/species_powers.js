@@ -145,6 +145,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
      mode:'tracked_action',tracker_id:action.tracker_id,resource_cost:1,
      ...(action.action_ref?{action_ref:String(action.action_ref)}:{}),
      ...(action.roll_effect?{roll_effect:{...action.roll_effect,target:'feature_roll:'+action.id}}:{}),
+     ...(action.damage_response?{damage_response:{...action.damage_response}}:{}),
      ...(action.temp_hp?{temp_hp:action.temp_hp}:{}),
      ...(action.persistent_key?{persistent_key:action.persistent_key}:{}),
      ...(action.duration_rounds?{duration_rounds:action.duration_rounds}:{})});

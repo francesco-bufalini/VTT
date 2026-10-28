@@ -577,7 +577,11 @@
             "add": "con_mod",
             "label": "Riduzione danni"
           },
-          "description": "Reazione quando subisci danni: tira 1d12 + modificatore di Costituzione e riduci quei danni di tale quantità (minimo 0). Il pulsante Usa registra un utilizzo e tira la riduzione; applica manualmente il risultato ai PF. Utilizzi pari alla competenza, riposo lungo."
+          "description": "Reazione quando subisci danni: tira 1d12 + modificatore di Costituzione e riduci quei danni di tale quantità (minimo 0). Il pulsante Usa registra un utilizzo e tira la riduzione; puoi applicare la riduzione nel popup dei PF oppure usarla manualmente. Utilizzi pari alla competenza, riposo lungo.",
+          "damage_response": {
+            "trigger": "would_reach_zero",
+            "effect": "reduce_damage"
+          }
         }
       ]
     },
@@ -598,7 +602,32 @@
             "add": "proficiency",
             "label": "Riduzione danni"
           },
-          "description": "Reazione quando subisci danni: tira 1d6 + bonus di competenza e riduci quei danni del totale (minimo 0). Usa registra l'utilizzo e tira la riduzione; applicala manualmente ai PF. Utilizzi pari alla competenza, riposo lungo."
+          "description": "Reazione quando subisci danni: tira 1d6 + bonus di competenza e riduci quei danni del totale (minimo 0). Usa registra l'utilizzo e tira la riduzione; puoi applicare la riduzione nel popup dei PF oppure usarla manualmente. Utilizzi pari alla competenza, riposo lungo.",
+          "damage_response": {
+            "trigger": "would_reach_zero",
+            "effect": "reduce_damage"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Half-Orc",
+      "source": "PHB",
+      "tracked_actions": [
+        {
+          "trait": "Relentless Endurance",
+          "name": "Relentless Endurance",
+          "action_type": "free",
+          "uses": 1,
+          "recharge": "long_rest",
+          "damage_response": {
+            "trigger": "would_reach_zero",
+            "effect": "retain_one_hp",
+            "require_not_instant_death": true
+          },
+          "description": "Quando i danni ti ridurrebbero a 0 PF senza ucciderti sul colpo, resti invece a 1 PF. Non richiede tiri o reazioni; un utilizzo per riposo lungo. Usa il popup PF per applicarlo automaticamente oppure registra manualmente l'utilizzo.",
+          "id": "race:phb:half_orc:relentless_endurance",
+          "tracker_id": "race:phb:half_orc:relentless_endurance:uses"
         }
       ]
     },
@@ -649,6 +678,21 @@
           "temp_hp": "proficiency",
           "description": "Come azione bonus puoi effettuare Scatto. Quando utilizzi questo privilegio ottieni PF temporanei pari al bonus di competenza (non si sommano a quelli già presenti: conserva il valore maggiore). Usa registra un utilizzo e applica i PF temporanei; il movimento è da effettuare manualmente. Utilizzi pari alla competenza, riposo lungo.",
           "action_ref": "dash"
+        },
+        {
+          "trait": "Relentless Endurance",
+          "name": "Relentless Endurance",
+          "action_type": "free",
+          "uses": 1,
+          "recharge": "long_rest",
+          "damage_response": {
+            "trigger": "would_reach_zero",
+            "effect": "retain_one_hp",
+            "require_not_instant_death": true
+          },
+          "description": "Quando i danni ti ridurrebbero a 0 PF senza ucciderti sul colpo, resti invece a 1 PF. Non richiede tiri o reazioni; un utilizzo per riposo lungo. Usa il popup PF per applicarlo automaticamente oppure registra manualmente l'utilizzo.",
+          "id": "race:mpmm:orc:relentless_endurance",
+          "tracker_id": "race:mpmm:orc:relentless_endurance:uses"
         }
       ]
     },
