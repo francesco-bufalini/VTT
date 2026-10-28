@@ -35,6 +35,7 @@ const MAX_PAIRING_ATTEMPTS := 8
 const QrEncoder = preload("res://vtt/qr/qr_code.gd")
 const FILES := {
 	"/companion_rules.js": ["res://pwa/companion_rules.js", "text/javascript; charset=utf-8"],
+	"/companion_owner_stats.js": ["res://pwa/companion_owner_stats.js", "text/javascript; charset=utf-8"],
 	"/creature_variants.js": ["res://pwa/creature_variants.js", "text/javascript; charset=utf-8"],
 	"/creature_variants_view.js": ["res://pwa/creature_variants_view.js", "text/javascript; charset=utf-8"],
 	"/catalog/companion_spells.json": ["res://pwa/catalog/companion_spells.json", "application/json; charset=utf-8"],
