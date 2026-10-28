@@ -5,7 +5,8 @@ import {racialPowerProjection} from '../species_powers.js';
 import {applicableDiceBonuses} from '../sheet_rules.js';
 import {rollOptionalDice} from '../sheet_roll_origin.js';
 import {rollSheetDice,appendRollBonus,sheetRollChatFields} from '../sheet_rules_view.js';
-import {spendTrackerUses,recoveryPatch} from '../character_core.js';
+import {spendTrackerUses} from '../character_core.js';
+import {recoveryPatch} from '../native_sheet.js';
 
 const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
 const root='species|5etools:races:aag:autognome|aag';

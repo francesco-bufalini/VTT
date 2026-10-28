@@ -6,7 +6,7 @@ import {abilitiesForCreature} from '../activated_abilities.js';
 import {battleResourcePowers,resourceLinkedSubclassTrait,subclassTrackerUsePatch,mountPlaySheet} from '../sheet_rules_view.js';
 import {JSDOM} from 'jsdom';
 import {battleAbilityEntries} from '../action_economy.js';
-import {recoveryPatch} from '../character_core.js';
+import {recoveryPatch} from '../native_sheet.js';
 
 const json=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const catalogs={
