@@ -62,8 +62,9 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   const timed=featureActionEntries(creature,rows(projection.trackers),
     projection.feature_rules||{},features);
 
-  const descriptiveOwners=new Set(classFeatureDescriptors(creature,projection)
-    .filter(row=>row.descriptive_only).map(row=>row.feature_id));
+  const descriptiveDescriptors=classFeatureDescriptors(creature,projection)
+    .filter(row=>row.descriptive_only);
+  const descriptiveOwners=new Set(descriptiveDescriptors.map(row=>row.feature_id));
   // Class capabilities are unlocked only by an actual structured trait. The
   // preexisting IDs remain stable for saved grants and Android interoperability.
   for(const feature of features){
@@ -72,7 +73,8 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
     const owner=parts[2];
     const id=nativeIds.get(owner+"|"+norm(feature.name));
     const explicit=feature.action_type||feature.activation_type||feature.activation;
-    if(!id&&!explicit)continue; // Never turn passive features into actions.
+    const descriptive=descriptiveDescriptors.find(row=>row.feature_id===feature.origin_id);
+    if(!id&&!explicit&&!descriptive)continue; // Never turn passive features into actions.
     const action=timed.find(a=>id==="vtt_wild_shape"&&a.rule_action_id==="wild_shape")||
       timed.find(a=>norm(a.feature)===norm(feature.name)&&
         (String(a.origin_id||"").startsWith("feature:"+parts.slice(0,3).join("|"))||
@@ -86,8 +88,8 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
       feature_name:feature.name,
       origin_name:'Tratto · '+feature.name,
       requirements:feature.requirements,
-      action_type:action?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"",
-      activation_mode:action?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"contextual",
+      action_type:action?.time||descriptive?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"",
+      activation_mode:action?.time||descriptive?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"contextual",
       resource_name:action?.tracker||tracker?.name||"",
       tracker_id:action?.tracker_id||tracker?.id||"",
       resource_cost:action?.cost??(tracker?1:0),
