@@ -5,7 +5,7 @@ import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeatu
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -2253,7 +2253,7 @@ async function editorView() {
           description:detail.description??selected.item.description};
       }
     }
-    const description=selected?panel("Descrizione · "+(selected.item.name||"Oggetto"),
+    const description=selected?panel("Descrizione · "+ownedItemDisplayName(selected.item),
       inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"";
     const showingItems=selectedTabs.some(key=>key==='items'||key.startsWith('container:'));
     body=nav+
@@ -3288,10 +3288,11 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
         'data-item-index="'+index+'" data-item-key="quantity" value="'+qty+'">'+
         '<button type="button" class="inventory-qty-btn" data-act="inventory-quantity" data-index="'+index+
         '" data-delta="1" aria-label="Aumenta quantità">+</button></div>',
-        displayName=scrolls?spellScrollName(item):item.name||"Oggetto",
+        displayName=scrolls?spellScrollName(item):ownedItemDisplayName(item),
         name=isCatalogItem(item)?'<strong>'+esc(displayName)+'</strong>':
           '<input class="inventory-item-name-input" aria-label="Nome oggetto" data-item-index="'+index+
-          '" data-item-key="name" value="'+esc(item.name||"")+'">',
+          '" data-item-key="name" value="'+esc(item.name||"")+'">'+
+          (item.infusion?.name?'<small class="inventory-item-extension"> - '+esc(item.infusion.name)+'</small>':''),
         nameCell='<span class="inventory-col-name">'+
           '<button type="button" class="inventory-select" data-act="inventory-select" data-index="'+index+
           '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:scrolls?esc(displayName):'Dettagli')+'</button>'+
@@ -7821,7 +7822,8 @@ async function handleAction(target){
     await render();message("Eroe dimostrativo creato solo su questo dispositivo.");return;
   }
   if(act==="library-export"||act==="library-delete"||act==="library-send"){
-    const rows=(await listCreatures()).filter(row=>state.librarySelectedIds.has(row.creature.id));
+    const rows=(await listCreatures("default",{includeSubcreatures:act==="library-delete"}))
+      .filter(row=>state.librarySelectedIds.has(row.creature.id));
     if(!rows.length)throw new Error("Seleziona almeno una creatura.");
     if(act==="library-send"){
        if(rows.length>200)throw Error("Seleziona al massimo 200 creature.");

@@ -4,7 +4,7 @@ import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey,actionGlyph} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
 const inventoryContainers=inventoryModule.inventoryContainers||((record={})=>{
@@ -102,6 +102,7 @@ export function fastestMovement(data={}){
 // Read recovery rules from the effective tracker (automatic or custom).
 export function trackerRecoveryText(tracker={}) {
  const labels={short_rest:'riposo breve',long_rest:'riposo lungo',turn:'inizio turno',manual:'manuale'};
+ if(tracker.recharge_note)return 'Recupero: '+String(tracker.recharge_note);
  const mode=String(tracker.recharge||'manual');
  if(mode==='d6'){
   const n=Number(tracker.recharge_min);
@@ -409,7 +410,8 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
  if(item.infusion)status.push('Infuso');
  const properties=String(propertyText==='—'?'':propertyText||'').split(' · ').filter(part=>
    !(facts.some(fact=>fact.label==='CA')&&/^CA(?:\s|\+|$)/i.test(part))).join(' · ');
- return {kind,type,glyph,quantity,source:String(item.source||''),properties,facts,status,
+ return {kind,type,glyph,quantity,displayName:ownedItemDisplayName(item),
+   source:String(item.source||''),properties,facts,status,
   weight:kind==='document'?null:weight===null?null:weight*quantity,value:kind==='document'?null:value===null?null:value*quantity};
 }
 
@@ -1290,15 +1292,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       if(description)node.append(description);
     }
     bind(key,node);
-    const search=[item.name,spellScrollName(item),spellScrollLevel(item),info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
+    const search=[info.displayName,item.name,spellScrollName(item),spellScrollLevel(item),info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
     const level=spellScrollLevel(item),levelLabel=level==='0'?'Trucchetto':level==='—'?'—':level+'°';
     if(scroll)return '<div data-play-filter="'+esc(search)+'" data-inventory-search-index="'+i+'" class="'+(highlighted.has(i)?'inventory-search-highlight':'')+'"><button type="button" class="inventory-play-item inventory-play-scroll" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Pergamena')+'">'+
       '<span class="inventory-item-mark" aria-hidden="true">'+icon('scroll')+'</span>'+
       '<span class="inventory-item-content"><strong>'+esc(spellScrollName(item))+'</strong><small>'+esc(info.source||'Pergamena magica')+'</small></span>'+
       '<span class="inventory-scroll-stats"><span class="inventory-scroll-level" aria-label="Livello dell’incantesimo">'+esc(levelLabel)+'</span>'+
       '<span class="play-badge" aria-label="Quantità">×'+info.quantity+'</span></span></button></div>';
-    return '<div data-play-filter="'+esc(search)+'" data-inventory-search-index="'+i+'" class="'+(highlighted.has(i)?'inventory-search-highlight':'')+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
-      '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
+    return '<div data-play-filter="'+esc(search)+'" data-inventory-search-index="'+i+'" class="'+(highlighted.has(i)?'inventory-search-highlight':'')+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(info.displayName)+'">'+
+      '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(info.displayName)+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
       '<span class="inventory-item-type">'+esc([info.type,info.source].filter(Boolean).join(' · '))+'</span>'+
       (info.properties?'<span class="inventory-item-properties">'+esc(info.properties)+'</span>':'')+
       (info.facts.length?'<span class="inventory-item-facts">'+info.facts.map(fact=>'<span aria-label="'+esc(fact.label+': '+fact.value)+'">'+icon(fact.glyph)+'<span>'+esc(fact.label)+' <b>'+esc(fact.value)+'</b></span></span>').join('')+'</span>':'')+
