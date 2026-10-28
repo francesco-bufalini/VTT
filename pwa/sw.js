@@ -53,6 +53,7 @@ const SHELL = [
   "/documents.js",
   "/spell_selection.js",
   "/species_powers.js",
+  "/feature_rolls.js",
   "/dragonborn_ftd.js",
   "/ability_areas.js",
   "/activated_abilities.js",
