@@ -128,6 +128,9 @@ export function collectEffectExtensions(record={},catalog=[],features=[],infusio
   }
  }
  for(const raw of rows(record.effect_extensions)){
+  // Timed item-bound spells are not active beyond their preparation window.
+  if(raw?.stored_spell_feature==='spell_imprint'&&Number(raw.expires_at)>0&&
+     Date.now()>=Number(raw.expires_at))continue;
   const row=normalizeEffectExtension(raw);
   if(row&&enabled(record,row)&&!excluded.has('effect_extension:'+row.id))result.push(row);
  }
