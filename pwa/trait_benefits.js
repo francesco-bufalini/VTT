@@ -204,7 +204,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    const capacity=Number(grant.max_owned)||0;
    const canDuplicate=!!grant.allow_duplicate_choices&&capacity>1;
    const available=(!option.owned||canDuplicate&&Number(option.owned)<capacity)&&
-    (!capacity||total<capacity||grant.replace_existing);
+    (!capacity||total<capacity||grant.replace_existing&&capacity===1);
    add('items','Oggetti concessi',option.name,
     (option.owned?'Posseduto'+(option.owned>1?' ×'+option.owned:'')+' · ':'')+
     (option.description||'Da aggiungere'),'',{
