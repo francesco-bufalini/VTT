@@ -72,6 +72,11 @@ test('Stone Endurance and Hadozee Dodge have separate stable targets and reactio
  assert.equal(ga.action_type,'reaction');
  assert.equal(ha.action_type,'reaction');
  assert.equal(ga.mode,'tracked_action');
+ const gActions=abilitiesForCreature(g,[],{features:[trait(g,"Stone's Endurance")],
+   racial_abilities:gp.abilities,trackers:gp.trackers});
+ const battle=battleActionPanels(g,{trackers:gp.trackers,attacks:[],skills:{},values:{}},[],[],[],[],gActions);
+ assert.match(battle.others,/Stone&#39;s Endurance|Stone.s Endurance/);
+ assert.match(battle.others,/data-act="battle-use-ability"/);
  assert.equal(gp.trackers[0].max,3);
  assert.equal(hp.trackers[0].max,3);
  assert.equal(racialAbilityEffectFormula(ga,{abilities:{con:{modifier:3}},stats:{proficiency:3}}),'1d12+3');
