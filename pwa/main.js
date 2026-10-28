@@ -93,7 +93,7 @@ const MODULE_IMPORT_PATHS = STARTUP_MODULE_PATHS.filter(path => path !== "/main.
 // Independent modules first; then dependencies and finally the UI. Importing
 // modules sequentially is an optional fallback for connection-limited WebKit.
 const SERIAL_STARTUP_ORDER = [
-  "/storage.js", "/server_backups.js", "/companion_rules.js", "/creature_variants.js", "/creature_variants_view.js", "/creature_format.js", "/item_controls.js", "/spell_selection.js",
+  "/spell_imprints.js", "/storage.js", "/server_backups.js", "/companion_rules.js", "/creature_variants.js", "/creature_variants_view.js", "/creature_format.js", "/item_controls.js", "/spell_selection.js",
   "/structured_effects.js", "/condition_catalog.js", "/chat_notifications.js",
   "/tactical_view.js", "/session_map.js", "/spell_metadata.js", "/documents.js",
   "/character_core.js", "/client.js", "/feature_mechanics.js", "/sheet_rules.js",
