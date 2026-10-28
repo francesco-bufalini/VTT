@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {racialPowerProjection,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from '../species_powers.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
-import {battleAbilityEntries} from '../action_economy.js';
+import {battleAbilityEntries,battleActionPanels} from '../action_economy.js';
 import {applicableDiceBonuses} from '../sheet_rules.js';
 import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} from '../feature_rolls.js';
 import {normalizeEffectExtension,effectExtensionsFor} from '../effect_extensions.js';
@@ -36,6 +36,11 @@ test('2014 Goblin Nimble Escape exposes two separate bonus actions on all eligib
   assert.equal(entries.length,2,source);
   assert(entries.every(x=>x.time==='bonus'&&x.type==='Capacità'));
   assert.deepEqual(new Set(entries.map(x=>x.action_ref)),new Set(['hide','disengage']));
+  const rendered=battleActionPanels(rec,{trackers:[],attacks:[],skills:{stealth:4},values:{'skill:stealth':4}},[],[],[],[],abilities);
+  assert.match(rendered.others,/Nimble Escape/);
+  assert.match(rendered.others,/data-act="battle-use-ability"/);
+  assert.match(rendered.others,/data-target="skill:stealth"/);
+  assert.match(rendered.others,/Nessun attacco di opportunità/);
   assert.equal(racialPowerProjection({...rec,rules_version:'2024'},index,[trait(rec,'Nimble Escape')]).abilities.length,0);
  }
  const r=record('Goblin','PSZ');
