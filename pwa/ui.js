@@ -444,6 +444,9 @@ function ensureVisibleSpells(creature,calculated){
   // spells, but the small on-demand lookup must still resolve their details.
   for(const member of calculated.casting_classes||[]){
     for(const id of creature.known_spell_overrides?.[member.id]?.added||[])ids.add(id);
+    // An expanded racial list is eligible for every owned casting class,
+    // even if the spell is not part of the class's ordinary server-side scope.
+    for(const id of member.expanded_spell_ids||[])ids.add(id);
   }
   const scopes=[];
   if(state.sheet==='magic'&&state.magicPopup==='catalog'&&state.spellKnownView==='known'&&
@@ -3886,9 +3889,10 @@ function renderSpellResults(){
     (preparing?Number(spell.level)>0&&Number(spell.level)<=member.max_level&&
         (known.has(spell.id)||granted.has(spell.id)):
       learning?Number(spell.level)<=member.max_level&&
-        (state.spellLearnFilter==='all'||(Array.isArray(spell.classes)&&
-          spell.classes.some(name=>String(typeof name==='string'?name:name?.name).toLowerCase()===
-            state.spellLearnFilter.toLowerCase()))):
+        (state.spellLearnFilter==='all'||
+         (state.spellLearnFilter.toLowerCase()===member.name.toLowerCase()&&spellEligible(spell,member))||
+         (Array.isArray(spell.classes)&&spell.classes.some(name=>
+          String(typeof name==='string'?name:name?.name).toLowerCase()===state.spellLearnFilter.toLowerCase()))):
       !member||spellEligible(spell,member))&&
     (target!=='spellbook_spells'||Number(spell.level)>0||learning)&&
     matchesSearch(query,spell.name,spell.source))
