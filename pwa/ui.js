@@ -23,7 +23,7 @@ import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapVie
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
-import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
+import { traitBenefitGroups, rollGrantTraitRow } from "./trait_benefits.js";
 import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
 import {applicableSpeciesRollModes} from './species_roll_modes.js';
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
@@ -4692,15 +4692,11 @@ async function openRollTraitPicker(kind='bonus',target=''){
  document.body.append(picker);picker.addEventListener('close',()=>picker.remove(),{once:true});
  picker.showModal?.();
 }
-async function openRollTraitOrigin(originId){
+async function openRollTraitOrigin(originId,{traitName='',originKey=''}={}){
  state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
  state.sheet='info';await render();
  const record=state.editor?.read()||{};
- const candidates=(state.traitRows||[]).map(row=>({
-  row,score:row.feature_origin===originId||row.proficiency_origin===originId?5:
-    row.origin_key===originId?4:traitBenefitSources(row,record).has(originId)?3:0
- })).filter(item=>item.score>0).sort((a,b)=>b.score-a.score||b.row.rank-a.row.rank);
- const trait=candidates[0]?.row;
+ const trait=rollGrantTraitRow(state.traitRows||[],record,originId,{traitName,originKey});
  if(!trait){
    const isProficiency=originId==='proficiency:unattributed'||
      Object.values(state.calculated?.proficiency_sources||{}).some(sources=>
@@ -4763,18 +4759,31 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
    '<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-applicable" aria-label="Aggiungi tiro applicabile" title="Aggiungi tiro applicabile">+</button></div>'+
    (bonuses.length?'<div class="sheet-roll-bonus-list" data-roll-extra role="group" aria-label="Bonus disponibili">'+
      bonuses.map((row,i)=>{
+       const racialMode=row.roll_mode==='advantage'||row.roll_mode==='disadvantage';
        const trackerLabel=row.tracker_id?(row.tracker_name||'Tracker')+' · '+(row.remaining??0)+' rim.':'Nessun tracker associato';
-       return '<div class="sheet-roll-bonus-item">'+
-         '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open" data-origin-id="'+esc(row.origin_id||'')+'" title="'+esc(row.condition_label||'Apri tratto')+'">'+
-           '<span class="sheet-roll-origin-symbol">'+esc(row.roll_mode?
+       const originAttrs=' data-origin-id="'+esc(row.origin_id||'')+'"'+
+         ' data-origin-trait="'+esc(row.granting_trait||'')+'"'+
+         ' data-origin-key="'+esc(row.origin_key||'')+'"';
+       const targetTitle=racialMode?'Apri tratto · '+(row.granting_trait||row.origin_name||''):
+         'Apri tracker '+trackerLabel;
+       return '<div class="sheet-roll-bonus-item'+(racialMode?' sheet-roll-bonus-item--mode':'')+'">'+
+         '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open"'+originAttrs+' title="Apri tratto">'+
+           '<span class="sheet-roll-origin-symbol'+(racialMode?' sheet-roll-mode-symbol sheet-roll-mode-symbol--'+esc(row.roll_mode):'')+'">'+esc(row.roll_mode?
               row.roll_mode==='advantage'?'ADV':'DIS':Object.hasOwn(row,'flat_bonus')?
               (row.flat_bonus>=0?'+':'')+row.flat_bonus:'+'+row.dice)+'</span>'+
            (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
            '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
-         (row.condition_label?'<small class="sheet-roll-bonus-condition">'+esc(row.condition_label)+'</small>':'')+
+         (row.condition_label?
+            '<div class="sheet-roll-bonus-condition" title="'+esc(row.condition_label)+'">'+
+              '<span class="sheet-roll-bonus-condition-key">QUANDO</span>'+
+              '<span class="sheet-roll-bonus-condition-text">'+esc(row.condition_label)+'</span>'+
+            '</div>':'')+
          '<div class="sheet-roll-bonus-controls">'+
            '<button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'"'+(row.strict_tracker&&Number(row.remaining)<Number(row.tracker_cost)?' disabled title="Utilizzi esauriti"':'')+'>Usa</button>'+
-           '<button type="button" class="sheet-roll-tracker-open" data-act="sheet-roll-open-tracker" data-roll-tracker-button="'+i+'" aria-label="Apri tracker '+esc(trackerLabel)+'" title="'+esc(trackerLabel)+'"'+(row.tracker_id?'':' disabled')+'>'+
+           '<button type="button" class="sheet-roll-tracker-open" data-act="'+(racialMode?'roll-origin-open':'sheet-roll-open-tracker')+'"'+
+             (racialMode?originAttrs:' data-roll-tracker-button="'+i+'"')+
+             ' aria-label="'+esc(targetTitle)+'" title="'+esc(targetTitle)+'"'+
+             (racialMode||row.tracker_id?'':' disabled')+'>'+
              actionGlyph('target')+'</button>'+
          '</div></div>';
      }).join('')+'</div>':'')+'</section>';
@@ -6343,9 +6352,10 @@ async function handleAction(target){
     const dialog=document.querySelector('#sheet-roll-dialog')||
       document.querySelector('#sheet-score-formula-dialog');
     const originId=String(target.dataset.originId||''),section=String(target.dataset.originSection||'');
+    const traitName=String(target.dataset.originTrait||''),originKey=String(target.dataset.originKey||'');
     const fallbackTarget=dialog?.dataset.scoreTarget||dialog?.dataset.rollTarget||'';
     dialog?.close?.();dialog?.remove();
-    if(originId){await openRollTraitOrigin(originId);return;}
+    if(originId||traitName){await openRollTraitOrigin(originId,{traitName,originKey});return;}
     if(section==='conditions'){state.sheet='conditions';await render();return;}
     // Never translate a provenance click into a blank add-bonus form.
     if(section==='proficiency_choices'){
