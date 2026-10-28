@@ -19,8 +19,12 @@ export const CLASS_DEFENSE_RULES = [
  ],{class_source:'TCE',subclass:'Alchemist',subclass_source:'TCE'}),
  rule('Cleric','Soul of the Forge',defenses(1,'fire'),
   {subclass:'Forge Domain',subclass_source:'XGE',aliases:['Soul of Forge']}),
- rule('Cleric','Saint of Forge and Fire',defenses(2,'fire'),
-  {subclass:'Forge Domain',subclass_source:'XGE'}),
+ rule('Cleric','Saint of Forge and Fire',[
+  ...defenses(2,'fire'),
+  ...defenses(1,'bludgeoning','piercing','slashing').map(entry=>({...entry,
+   condition_label:'Solo attacchi non magici, mentre indossi armatura pesante',
+   requires_heavy_armor:true}))
+ ],{subclass:'Forge Domain',subclass_source:'XGE'}),
  rule('Druid',"Nature's Ward",[
   ...defenses(2,'poison'),...defenses(3,'poisoned','disease')
  ],{subclass:'Circle of the Land',subclass_source:'PHB'}),
@@ -47,6 +51,12 @@ export const CLASS_DEFENSE_RULES = [
   {subclass:'The Archfey',subclass_source:'PHB'}),
  rule('Wizard','Inured to Undeath',defenses(1,'necrotic'),
   {subclass:'School of Necromancy',subclass_source:'PHB'}),
+ rule('Wizard','Spell Resistance',[
+  {rank:1,key:'spell_damage',condition_label:'Solo danni causati da incantesimi'}
+ ],{subclass:'School of Abjuration',subclass_source:'PHB'}),
+ rule('Paladin','Aura of Warding',[
+  {rank:1,key:'spell_damage',condition_label:'Solo danni causati da incantesimi'}
+ ],{subclass:'Oath of the Ancients',subclass_source:'PHB',conscious:true}),
  // Rage itself already has an independent defensive projection. This
  // immunity is additional and must vanish the moment Rage ends.
  rule('Barbarian','Mindless Rage',defenses(3,'charmed','frightened'),
@@ -139,7 +149,12 @@ export function classDefenseEntries(record={},features=[],removed=new Set()) {
    entries.push({rank:rule.choice.rank,key:chosen,condition_label:rule.choice.condition_label||''});
   if(rule.choice?.grant_only && chosen!==rule.choice.grant_only)continue;
   if(rule.choice && !chosenValid)continue;
-  for(const {rank,key,condition_label} of entries){
+  for(const {rank,key,condition_label,requires_heavy_armor} of entries){
+   if(requires_heavy_armor&&!rows(record.inventory).some(item=>{
+    const slots=rows(item?.equipped_slots);
+    return Number(item?.quantity??1)>0&&slots.includes('body')&&
+     String(item?.type||'').split('|')[0].toUpperCase()==='HA';
+   }))continue;
    const id='defense:class:'+feature.origin_id+':'+rank+':'+key;
    if(removed.has(id))continue;
    out.push({id:'auto|'+id,benefit_id:id,rank,key,automatic:true,
