@@ -1,6 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {companionOwnerValues} from '../companion_owner_stats.js';
+import {calculateSheet} from '../sheet_rules.js';
+import {sheetScoreOriginSegments} from '../sheet_roll_origin.js';
+
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,
  spellCompanionRule,companionTemplateStat,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from '../companion_rules.js';
 
@@ -81,4 +85,47 @@ test('infused-object and spell-effect grants toggle availability, not saved shee
  assert.equal(companionGrantActive({...artificer,...effect},familiar),true);
  assert.equal(companionGrantActive({...artificer,...effect,proficiency_origins:[]},familiar),false);
  assert.deepEqual(companionSpellEffectPatch(artificer,{},'find-familiar'),{});
+});
+
+test('homunculus servant uses live owner proficiency, spell attack and HP',()=>{
+ const parent={...owner('Artificer','Alchemist',8),id:'owner',owner_id:'install',name:'Ari',
+  class_source:'TCE',classes:[{name:'Artificer',source:'TCE',level:8}]};
+ const template=rules.templates.homunculus_servant;
+ const child={kind:'monster',id:'homunculus',parent_creature_id:parent.id,owner_id:'install',
+  companion_rule_id:'homunculus_servant_2014',companion_template_id:'homunculus_servant',
+  stat_block:{action:structuredClone(template.action),hp:{average:13},ac:[13]},
+  abilities:template.abilities,current_hp:4,max_hp:13,max_hp_base:13,
+  armor_class_base:13,armor_natural_formula:'13',inventory:[]};
+ const initial=companionOwnerValues(child,parent,calculateSheet(parent,{}),rules);
+ assert.equal(initial.proficiency,3);
+ assert.equal(initial.hp,13);
+ assert.equal(initial.attacks[0].hit,7);
+ assert.equal(initial.attacks[0].damage,'1d4 + 3');
+ const calculated=calculateSheet({...child,companion_owner_values:initial},{});
+ assert.equal(calculated.values.proficiency,3);
+ assert.equal(calculated.stats.max_hp,13);
+ assert.equal(calculated.attacks.find(x=>x.name==='Force Strike').hit,7);
+ assert.equal(calculated.attacks.find(x=>x.name==='Force Strike').damage,'1d4 + 3');
+ assert.equal(sheetScoreOriginSegments(child,calculated,'proficiency')[0].originName,'Proprietario · Ari');
+ const grown={...parent,level:12,classes:[{name:'Artificer',source:'TCE',level:12}],
+  abilities:{...parent.abilities,int:20}};
+ const next=companionOwnerValues(child,grown,calculateSheet(grown,{}),rules);
+ assert.equal(next.proficiency,4);
+ assert.equal(next.hp,18);
+ assert.equal(next.attacks[0].hit,9);
+ assert.equal(child.current_hp,4);
+ assert.equal(child.max_hp_base,13,'linked values do not overwrite a saved companion');
+ assert.equal(companionOwnerValues({...child,parent_creature_id:'different'},parent,calculateSheet(parent,{}),rules),null);
+});
+test('owner-stat bindings are opt-in, including drake AC but not Find Familiar',()=>{
+ const parent={...owner('Ranger','Drakewarden',7),id:'owner',owner_id:'install',
+  class_source:'FTD',classes:[{name:'Ranger',source:'FTD',level:7}]};
+ const child={kind:'monster',id:'drake',parent_creature_id:'owner',owner_id:'install',
+  companion_rule_id:'drake_companion_2014',companion_template_id:'drake_companion',
+  stat_block:{action:structuredClone(rules.templates.drake_companion.action)}};
+ const calculated=calculateSheet(parent,{}),linked=companionOwnerValues(child,parent,calculated,rules);
+ assert.equal(linked.proficiency,3);
+ assert.equal(linked.ac,17);
+ assert.equal(calculateSheet({...child,companion_owner_values:linked},{}).values.ac,17);
+ assert.equal(companionOwnerValues({...child,companion_rule_id:'find_familiar_2014'},parent,calculated,rules),null);
 });
