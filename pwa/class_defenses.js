@@ -104,7 +104,7 @@ function wearingHeavyArmor(record) {
 }
 function usableRage(record) {
  return Boolean(record.active_class_features?.rage)&&!wearingHeavyArmor(record)&&
-  !hasCondition(record,'unconscious')&&!hasCondition(record,'incapacitated');
+  !hasCondition(record,'unconscious');
 }
 function ruleMatchesFeature(rule,feature) {
  const key=norm(feature.origin_key);
