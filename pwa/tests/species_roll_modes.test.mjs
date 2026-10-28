@@ -7,7 +7,8 @@ import {selectedSpeciesRollModeRules,speciesRollModeEntries,speciesRollModeFeatu
 import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureRollSources,resolveClassRollMode} from '../feature_mechanics.js';
 import {rollSheetDice} from '../sheet_rules_view.js';
-import {traitBenefitGroups} from '../trait_benefits.js';
+import {traitBenefitGroups,rollGrantTraitRow} from '../trait_benefits.js';
+import {collectTraitRows} from '../trait_projection.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const refs=read('../../vtt/data/creature_references_5etools.json');
@@ -185,4 +186,41 @@ test('confirming a situational racial disadvantage rolls two d20, not a numeric 
  assert.equal(rolled.total,8);
  assert.equal(rolled.count,2);
  assert.equal(resolveClassRollMode([{mode:'advantage'},...chosen]).mode,'normal');
+});
+
+test('mirino opens the specific Drow trait even for flattened or split race selections',async()=>{
+ for(const record of [
+  character('Elf (Drow)','PHB'),
+  character('Elf','PHB',{subrace:'Drow',subrace_source:'PHB'})
+ ]){
+  const mode=project(record);
+  const row=mode.entries.find(x=>x.granting_trait==='Sunlight Sensitivity');
+  const traits=await collectTraitRows(record,{features:mode.features,origins:[]},{
+   entries:async category=>category==='races'?
+    [find('Elf','PHB'),find('Elf (Drow)','PHB')]:[],
+   detail:async(_category,entry)=>entry
+  });
+  const exact=rollGrantTraitRow(traits,record,row.origin_id,{
+   traitName:row.granting_trait,originKey:row.origin_key
+  });
+  assert.equal(exact?.name,'Sunlight Sensitivity');
+  assert.equal(exact?.origin_key,row.origin_key);
+  // A stale or differently projected feature id must still find the right
+  // origin-qualified card, without falling back to the broad species header.
+  const stale=rollGrantTraitRow(traits,record,'feature:legacy:stale',{
+   traitName:row.granting_trait,originKey:row.origin_key
+  });
+  assert.equal(stale?.key,exact?.key);
+  assert.notEqual(exact?.rank,0);
+ }
+});
+
+test('roll target icon routes racial modes to trait, other bonuses to their trackers',()=>{
+ const source=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
+ assert.match(source,/racialMode\?'roll-origin-open':'sheet-roll-open-tracker'/);
+ assert.match(source,/data-origin-trait/);
+ assert.match(source,/data-origin-key/);
+ const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+ assert.match(css,/\.sheet-roll-bonus-condition-text\{/);
+ assert.match(css,/\.sheet-roll-mode-symbol--disadvantage\{/);
 });
