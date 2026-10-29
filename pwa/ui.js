@@ -50,7 +50,6 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {armorClassBaseFormula} from './armor_class_formula.js';
 import {selectedTraitState,traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
 import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerSelectionTriggerLabel} from './power_selection.js';
-import {slotFeaturePowers,slotFeaturePaymentOptions,slotFeatureUsePatch} from './slot_feature_powers.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -442,7 +441,8 @@ let fullSpellCatalogRequest=null;
 function loadFullSpellCatalog(){
   if(state.spellCatalogComplete)return Promise.resolve(state.spellCatalog);
   if(!fullSpellCatalogRequest)fullSpellCatalogRequest=catalogEntries("spells").then(rows=>{
-    state.spellCatalog=rows;
+    const retained=(state.spellCatalog||[]).filter(row=>row.internal_grant===true);
+    state.spellCatalog=[...new Map([...rows,...retained].map(row=>[row.id,row])).values()];
     state.spellCatalogComplete=true;
     state.spellCatalogError="";
     return rows;
@@ -458,7 +458,8 @@ async function refreshCharacterHomebrewOptions(){
   state.spellDemandKey='';
   state.inventorySearchCatalogError='';
   if(state.spellCatalogComplete){
-    try{state.spellCatalog=await catalogEntries('spells');refreshSpellPickers();}
+    try{state.spellCatalog=[...new Map([...(await catalogEntries('spells')),
+      ...(state.spellCatalog||[]).filter(row=>row.internal_grant===true)].map(row=>[row.id,row])).values()];refreshSpellPickers();}
     catch(error){console.warn('Impossibile aggiornare gli incantesimi homebrew locali',error);}
   }else state.spellCatalog=[];
 }
@@ -1329,10 +1330,16 @@ async function computeLocalData(record){
   const infusion_mechanics={...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]};
   const powerSelectionCatalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{}};
   const power_selections=powerSelectionModels(record,{...calculated,infusion_catalog,infusion_mechanics},powerSelectionCatalog);
-  const slot_feature_powers=slotFeaturePowers(record,calculated,catalogs.slotFeaturePowers||{});
+  // Spell-like class privileges are ordinary levelled spell definitions. Keep
+  // their catalog details available offline and after an asynchronous refresh.
+  const featureSpells=catalogs.featureSlotSpells?.spells||[];
+  if(featureSpells.length){
+    const definitions=new Map((state.spellCatalog||[]).map(row=>[row.id,row]));
+    for(const definition of featureSpells)definitions.set(definition.id,definition);
+    state.spellCatalog=[...definitions.values()];
+  }
   return {...calculated,loadError,companion_view:companionView,companion_rules:companionData,combat_snapshot:state.map||null,
     power_selections,power_selection_catalog:powerSelectionCatalog,
-    slot_feature_powers,slot_feature_catalog:catalogs.slotFeaturePowers||{},
     pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
     infusion_catalog,infusion_mechanics};
@@ -3287,34 +3294,6 @@ async function openGenericPowerOptionPreview(id){
 
 
 // Slot-spending features are spell-like uses, never additional known spells.
-async function openSlotFeatureDialog(id){
- const record=state.editor?.read();if(!record)throw Error('Scheda non disponibile.');
- const calculated=await computeLocalData(record);
- const power=calculated.slot_feature_powers?.find(row=>row.id===id);
- if(!power)throw Error('Privilegio non disponibile.');
- const options=slotFeaturePaymentOptions(power,calculated);
- app.querySelector('#slot-feature-dialog')?.remove();
- const dialog=document.createElement('dialog');
- dialog.id='slot-feature-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
- dialog.dataset.creatureId=record.id;dialog.dataset.slotFeatureId=id;
- const origin=(calculated.features||[]).find(row=>row.origin_id===power.origin_id);
- const description=origin?flattenDescription(origin)||power.description:power.description;
- dialog.innerHTML=actionDialogIntro(power.title||power.name,[
-    {label:'Azione',value:power.action==='bonus'?'Azione bonus':'Azione'},
-    {label:'Costo',value:'Uno slot incantesimo'}
-   ],description||power.description,'Tratto · '+power.name,'slot-feature-close')+
-   (!power.available?'<p class="warning">Devi avere Forma selvatica attiva.</p>':'')+
-   (power.available&&options.length?
-    '<label>Livello di lancio / risorsa<select id="slot-feature-choice">'+options.map(o=>
-     '<option value="'+esc(o.id)+'">'+esc(o.label)+'</option>').join('')+'</select></label>':
-    '<p class="hint">Nessuno slot utilizzabile.</p>')+
-   (power.effect?.kind==='heal'?'<p class="hint">Cura: '+esc(power.effect.dice_per_slot_level||1)+
-    'd'+esc(power.effect.die_faces||8)+' per livello dello slot. I PF sono applicati alla forma attiva quando questa ha PF propri.</p>':'')+
-   '<div class="actions magic-dialog-actions">'+
-   (power.available&&options.length?'<button type="button" class="btn primary" data-act="slot-feature-confirm">Usa</button>':'')+
-   '<button type="button" class="btn" data-act="slot-feature-close">Chiudi</button></div>';
- app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
-}
 
 function infusionPanel(c,calculated){
  const caps=infusionLimits(c,calculated.infusion_mechanics,calculated.features||[]);
@@ -3949,21 +3928,7 @@ function originSpellSections(c,calculated,renderRow){
      else group.missingTracker=true;
    }else if(mode==='free')group.hasFree=true;
  }
- // Slot-paid class abilities are grants of the owning trait, like spells from
- // species/feats. Keep their real action and slot semantics; never add fake
- // prepared/known spells or a separate Powers tab/card.
- for(const power of calculated.slot_feature_powers||[]){
-   const origin=String(power.origin_id||'feature:'+power.id);
-   if(!origins.has(origin))origins.set(origin,{
-     name:'Tratto · '+(power.name||power.title),ability:'',showStats:false,
-     allowed:[],items:[],slotPowers:[],trackers:new Map(),
-     usesSlots:false,missingTracker:false,hasFree:false
-   });
-   const group=origins.get(origin);
-   if(!group.slotPowers)group.slotPowers=[];
-   group.slotPowers.push(power);
-   group.usesSlots=true;
- }
+
  return [...origins.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
    .map(([origin,group])=>{
      const badges=(group.usesSlots?magicSlotUsageChip():'')+
@@ -3980,15 +3945,6 @@ function originSpellSections(c,calculated,renderRow){
          '<div class="magic-active-form"><strong>Manifestazione attiva · 1 minuto</strong> '+
          '<button type="button" class="btn small" data-act="end-racial-power">Termina</button></div>':'')+
        (group.items.length?groupedMagicSpells(group.items,({grant,info})=>renderRow(grant,info)):'')+
-       (group.slotPowers||[]).map(power=>
-         '<div class="magic-spell-row magic-slot-feature-row">'+
-         '<button type="button" class="magic-spell-open" data-act="slot-feature-open"'+
-         ' data-slot-feature-id="'+esc(power.id)+'" aria-label="Apri '+esc(power.title||power.name)+'">'+
-         esc(power.title||power.name)+'</button>'+
-         '<button type="button" class="btn small" data-act="power-trait"'+
-         ' data-origin-id="'+esc(power.origin_id||'')+'" aria-label="Apri il tratto di '+esc(power.name)+'">↗</button>'+
-         '<span class="hint magic-power-cost">Slot · '+esc(power.action==='bonus'?'Azione bonus':'Azione')+'</span>'+
-         '</div>').join('')+
        '</section>';
    }).join('');
 }
@@ -9236,35 +9192,6 @@ async function handleAction(target){
     return;
   }
 
-  if(act==='slot-feature-open'){
-    await openSlotFeatureDialog(String(target.dataset.slotFeatureId||''));return;
-  }
-  if(act==='slot-feature-close'){
-    closeDialog(app.querySelector('#slot-feature-dialog'),{remove:true});return;
-  }
-  if(act==='slot-feature-confirm'){
-    const dialog=app.querySelector('#slot-feature-dialog'),record=state.editor?.read();
-    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)
-      throw Error('Riapri il privilegio dalla scheda.');
-    const calculated=await computeLocalData(record),power=(calculated.slot_feature_powers||[]).
-      find(row=>row.id===dialog.dataset.slotFeatureId);
-    if(!power)throw Error('Privilegio non più disponibile.');
-    const payment=dialog.querySelector('#slot-feature-choice')?.value||'';
-    const option=slotFeaturePaymentOptions(power,calculated).find(row=>row.id===payment);
-    if(!option)throw Error('Slot non disponibile.');
-    const effect=power.effect||{},count=effect.kind==='heal'?
-      option.level*Math.max(1,Number(effect.dice_per_slot_level)||1):0;
-    const dice=Array.from({length:count},()=>randomDie(Number(effect.die_faces)||8));
-    const result=slotFeatureUsePatch(record,calculated,calculated.slot_feature_catalog,
-      power.id,payment,dice);
-    await patch(result.patch);
-    closeDialog(dialog,{remove:true});await render();
-    message(power.title+': slot '+result.level+'° consumato.'+
-      (effect.kind==='heal'?' Tiro '+dice.map(n=>'['+n+']').join(' + ')+
-        ' · '+(result.manual_healing?result.manual_healing+' PF da applicare manualmente alla forma.':
-        result.healed+' PF recuperati dalla forma.'):' Effetti da risolvere secondo il privilegio.'));
-    return;
-  }
   if(act==='power-selection-preview-close'){
     closeDialog(app.querySelector('#power-selection-preview'),{remove:true});return;
   }
