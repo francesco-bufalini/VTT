@@ -273,7 +273,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 export function nativeClassFeatureActions(record={},calculated={}){
  return [...classFeatureEntries(record,calculated),...arr(calculated.feat_actions),...arr(calculated.state_actions)].map(row=>({...row,description:details(row.description)}));
 }
-function diceGlyph(){return '<span class="action-dice" aria-hidden="true"></span>';}
+export function diceGlyph(){return '<span class="action-dice" aria-hidden="true"></span>';}
 // Compact battle sections use the same action projection as the Actions tab.
 // Keep attack buttons separate from description disclosures to avoid accidental dice rolls.
 const BATTLE_TIMINGS=[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Azione gratuita'],['movement','Movimento']];
@@ -331,6 +331,10 @@ function battleEffectMarkup(item,attack){
     esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-attack-id="'+esc(attack?.id||'')+'" data-damage-label="'+esc(item.name)+
     '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+
   '</div>';
+}
+// A computed attack's melee flag, not its name or source, selects the glyph.
+export function attackRowGlyphKey(attack={}){
+ return attack.melee===false?'target':'sword';
 }
 function battleAttackRow(item,calculated,attacksById,descriptions){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
@@ -395,7 +399,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const mapButton=rangeLabel&&selectedAttack?.id?
   '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="'+esc(selectedAttack.id)+
   '" aria-label="Mostra la gittata di '+esc(actionName)+' sulla mappa" title="Gittata sulla mappa">'+actionGlyph('map')+'</button>':'';
- const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):actionGlyphKey(item));
+ const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):
+  attack?attackRowGlyphKey(attack):actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
  const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
@@ -607,15 +612,17 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   if(attack?.slot==='off'||attack?.slot==='shield')return 1;
   return 2;
  };
- // Damaging attacks lead the list, even when a non-damaging maneuver or
- // weapon uses the main hand. Preserve the usual equipment order within
- // each group. Never infer damage from an action's prose alone.
+ // Generic improvised and unarmed attacks always follow all non-base
+ // attacks. Damage and equipment priority only apply within those tiers.
+ // Never infer damage from an action's prose alone.
  const dealsDamage=row=>{
   const attack=attacksById.get(String(row.attack_id||row.id||''));
   const formula=String(attack?.damage||row.damage||'').trim();
   return /\d+(?:d\d+)?/i.test(formula)||/\b(?:danni|damage)\s*:/i.test(String(row.description||''));
  };
- weapon.sort((a,b)=>Number(dealsDamage(b))-Number(dealsDamage(a))||
+ const baseTier=row=>row.id==='unarmed'?2:row.id==='improvised'?1:0;
+ weapon.sort((a,b)=>baseTier(a)-baseTier(b)||
+  Number(dealsDamage(b))-Number(dealsDamage(a))||
   weaponPriority(a)-weaponPriority(b));
  const specials=entries.filter(row=>!classIds.has(row)&&row.type!=='Incantesimo'&&
    row.type!=='Attacco'&&

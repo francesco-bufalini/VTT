@@ -40,13 +40,31 @@ test('Resource icons describe structured benefits rather than named abilities or
  assert.equal(resourceAbilityGlyphKey(row({power:{roll_attack:{id:'absent'}}}),{attacks:[attack]}),'spark');
  assert.equal(resourceAbilityGlyphKey(row({power:{target_mode:'single_token'}})),'target');
  assert.equal(resourceAbilityGlyphKey(row({classAction:{target_mode:'single_token'}})),'target');
- assert.equal(resourceAbilityGlyphKey(row({power:{roll_effect:{dice:'1d6'}}})),'attack_bonus');
- assert.equal(resourceAbilityGlyphKey(row({classAction:{roll_bonus:{dice:'1d6'}}})),'attack_bonus');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_effect:{dice:'1d6'}}})),'dice');
+ assert.equal(resourceAbilityGlyphKey(row({classAction:{roll_bonus:{dice:'1d6'}}})),'dice');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_bonus:{dice:'1d8'},target_mode:'single_token'}})),'dice',
+  'Roll bonuses do not inherit the target crosshair');
  assert.equal(resourceAbilityGlyphKey(row({kind:'spell'})),'spell_cast');
  for(const timing of ['action','bonus','reaction','movement','contextual']){
   assert.equal(resourceAbilityGlyphKey(row({timing})), 'spark');
  }
  assert.equal(resourceAbilityGlyphKey(row({name:'Evoca creatura',power:{companion_rule_id:'x'}})),'spark');
+});
+
+test('a tracker-backed dice bonus uses the dice pictogram, never a crosshair',()=>{
+ const record={...sheet('Bard','College of Creation'),dice_bonuses:[{
+  id:'extra-d6',name:'Bonus ai tiri',tracker_id:'dice-uses',dice:'1d6',target:'attack_roll'
+ }]};
+ const calculated=project(record);
+ calculated.trackers=[...calculated.trackers,{id:'dice-uses',name:'Usi bonus',max:2,spent:0}];
+ const bank='<div class="battle-resource-row"><button data-tracker-id="dice-uses">Usi bonus</button></div>';
+ render(record,calculated,app=>{
+  const bonus=app.querySelector('[data-roll-bonus-id="extra-d6"]');
+  assert(bonus,'A structured tracker dice bonus is rendered in Resources');
+  assert(bonus.querySelector('.action-dice'),'Reuses the real dice pictogram');
+  assert.equal(bonus.querySelector('.vtt-action-glyph'),null,
+   'Dice bonuses do not reuse the crosshair-like attack bonus atlas icon');
+ },'battle',bank);
 });
 
 test('Lightning Launcher attack and extra damage render in separate Resources groups, even when spent',()=>{
@@ -74,8 +92,10 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert(attackIcon);
   assert.equal(attackIcon.className,/class="([^"]+)"/.exec(actionGlyph('weapon'))[1],
    'A trait-granted attack uses the weapon pictogram');
-  assert.equal(free.querySelector('[data-act="battle-attack-map"]')?.dataset.mapAttackId,
-   attack.roll_attack.id,'An attack in Resources shares the regular map range action');
+  assert.equal(free.querySelector('[data-act="battle-attack-map"]'),null,
+   'Resource rows expose benefits but never duplicate the attack range button');
+  assert.equal(app.querySelectorAll('[data-battle-action="resources"] [data-act="battle-attack-map"]').length,0,
+   'Neither abilities nor basic rule rows expose a map range button in Resources');
   const buttons=free.querySelectorAll('[data-act="battle-use-ability"]');
   assert.equal(buttons.length,1);
   assert.equal(buttons[0].disabled,false);
