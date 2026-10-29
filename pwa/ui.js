@@ -5866,10 +5866,12 @@ function openLevelUpProgressDialog(plan){
 // All level and HP choices are edited before changing the character.
 async function openLevelUpClassDialog(preset={}){
  const record=state.editor?.read();
- if(!record||record.kind==='monster'||record.variant_rules_kind==='monster')return;
+ if(!record)return;
+ // Monsters use the same class progression, retaining their original bestiary stats.
+ const isMonster=record.kind==='monster'||record.variant_rules_kind==='monster';
  const fromTotal=totalClassLevel(record);
  const maximum=20-fromTotal;
- if(maximum<1)throw Error('Il personaggio è già al livello massimo.');
+ if(maximum<1)throw Error('La creatura ha già 20 livelli di classe.');
  const xpAvailable=availableXpLevels(record);
  const owned=rowsFor(record,'classes').map((row,index)=>({...row,index})).filter(row=>row.name);
  const all=state.referenceCatalogs.classes||await catalogEntries('classes');
@@ -6000,11 +6002,12 @@ async function openLevelUpClassDialog(preset={}){
    const from=selected?.from||0;
    dialog.querySelector('[data-level-up-preview]').textContent=
      (selected?.name||'Classe')+' · livello '+from+' → '+(from+count)+
-     ' · personaggio '+fromTotal+' → '+(fromTotal+count);
+     ' · '+(isMonster?'livelli di classe':'personaggio')+' '+fromTotal+' → '+(fromTotal+count);
    const base=die?averageHitDie(die):0;
    hpRows.innerHTML='<strong>Incremento dei punti ferita</strong>'+
      (die?Array.from({length:count},(_,i)=>{
-       const first=fromTotal===0&&i===0;
+       // A monster's first class level adds average class HP to its existing statblock HP.
+       const first=!isMonster&&fromTotal===0&&i===0;
        const expected=first?die:base;
        const value=Number.isInteger(values[i])&&values[i]>=1&&values[i]<=die?values[i]:expected;
        return '<label class="levelup-hp-row"><span>Livello '+(from+i+1)+
@@ -6019,7 +6022,9 @@ async function openLevelUpClassDialog(preset={}){
        '</p>')+
      (die?'<output class="levelup-hp-total" data-level-up-hp-total></output>':'');
    const note=dialog.querySelector('[data-level-up-xp-note]');
-   note.textContent=count>xpAvailable?'L’avanzamento manuale aggiornerà anche gli XP minimi del nuovo livello.':
+   note.textContent=isMonster?
+     'I livelli di classe si aggiungono al mostro senza modificare il GS o gli XP del bestiario.':
+     count>xpAvailable?'L’avanzamento manuale aggiornerà anche gli XP minimi del nuovo livello.':
      'Livelli disponibili con gli XP attuali: '+xpAvailable+'.';
    dialog.querySelector('[data-level-up-confirm]').disabled=!die;
    paintHpTotal();
@@ -6049,7 +6054,7 @@ async function openLevelUpClassDialog(preset={}){
    button.disabled=true;
    try{
      const current=state.editor?.read();
-     if(!current||current.id!==record.id)throw Error('Personaggio cambiato.');
+     if(!current||current.id!==record.id)throw Error('Creatura cambiata.');
      const rows=rowsFor(current,'classes'),count=Number(countSelect.value);
      const selected=selectedClass();
      const faces=hitDieFor(selected);
@@ -6078,7 +6083,7 @@ async function openLevelUpClassDialog(preset={}){
        changes=collectionPatch(current,'classes',rows);
      }
      Object.assign(changes,levelUpHpPatch(current,rolls,con,
-       {firstCharacterLevel:totalClassLevel(current)===0}));
+       {firstCharacterLevel:!isMonster&&totalClassLevel(current)===0}));
      // Preserve the same per-level projection shown before confirmation.
      let impactRows=[];
      try{impactRows=await getImpact(selected,count);}
