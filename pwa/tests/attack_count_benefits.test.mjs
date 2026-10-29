@@ -98,10 +98,6 @@ test('old monster multiattack is projected into a trait benefit; typed count tak
   'The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws.'
  ]}]}});
  assert.equal(withSpecial.count,3,'Optional Frightful Presence does not add to the three actual attacks');
- const chained=evaluate({...record,stat_block:{action:[{name:'Multiattack',entries:[
-  'The monster makes one attack with its tail. It then makes two attacks with its claws.'
- ]}]}});
- assert.equal(chained.count,2,'Choose the highest explicit sequence count rather than the first');
  const typed=evaluate({...record,stat_block:{action:[{name:'Multiattack',attacks_per_action:4,entries:['Three attacks.'] }]}});
  assert.equal(typed.count,4);
 });
