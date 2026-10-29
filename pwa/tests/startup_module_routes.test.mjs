@@ -17,3 +17,17 @@ test('startup module lists contain only routes served by the native PWA host',()
     assert(assets.has(path),key+' imports a module missing from offline shell: '+path);}
  }
 });
+
+test('every static offline shell asset is served by the native host',()=>{
+ const host=read('../../network/pwa_host.gd'),sw=read('../sw.js');
+ const routes=new Map([...host.matchAll(/"([^"\n]+)":\s*\["(res:\/\/[^"\n]+)"/g)].map(x=>[x[1],x[2]]));
+ const start=sw.indexOf('const SHELL = ['),end=sw.indexOf('];',start);
+ assert(start>=0&&end>start,'offline shell must be present');
+ const assets=[...sw.slice(start,end).matchAll(/"(\/[^"\n]+)"/g)].map(x=>x[1]);
+ for(const path of assets){
+  // The spell catalog is assembled by the host rather than served from a file.
+  if(path==='/catalog/spells.json')continue;
+  assert(routes.has(path),'offline update requests an unserved asset: '+path);
+  assert.doesNotThrow(()=>read('../../'+routes.get(path).slice('res://'.length)),path+' must exist');
+ }
+});

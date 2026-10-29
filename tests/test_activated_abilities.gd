@@ -53,18 +53,20 @@ func run() -> void:
 	tab.setup(func(_new_record: Dictionary) -> void: pass, Callable(),
 		func(_spell: Dictionary, _level: int, _grant: Dictionary = {}) -> bool: return true)
 	tab.load_record(fighter)
+	var tracker: Dictionary = Grants.tracker_for(fighter, grant)
+	assert(not tracker.is_empty(), "Selected maneuver must have its Superiority Dice tracker")
 	var header_found := false
 	for label: Node in tab._view.find_children("*", "Label", true, false):
-		if label.text == "Capacità":
+		if label.text == String(tracker.get("name", "")):
 			header_found = true
-	assert(header_found, "Nonspell activations must be grouped under a dedicated heading")
+	assert(header_found, "Nonspell activations must be grouped under the resource they consume")
 	var maneuver_button: Button = null
 	for row: Node in tab._view.find_children("PowerRow", "HBoxContainer", true, false):
 		var button: Button = row.get_child(0) as Button
 		if button != null and button.text == "Ambush":
 			maneuver_button = button
 	assert(maneuver_button != null,
-		"Maneuvers should appear without spell-level suffixes in the final capabilities section")
+		"Maneuvers should appear without spell-level suffixes in their resource section")
 	maneuver_button.pressed.emit()
 	assert(fighter.get("resource_tracker_spent", {}) == spent_before,
 		"Inspecting a contextual maneuver must never expend Superiority Dice")

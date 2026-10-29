@@ -169,6 +169,10 @@ func run() -> void:
 	assert(script.contains("indexedDB.open"))
 	var ui_script := await http("GET", "/ui.js")
 	assert(ui_script.begins_with("HTTP/1.1 200") and ui_script.contains("openCreatureEditor"))
+	var power_script := await http("GET", "/power_selection.js")
+	assert(power_script.begins_with("HTTP/1.1 200") and power_script.contains("text/javascript") and power_script.contains("POWER_SELECTION_TRIGGERS"), "Offline update must receive the power selection module")
+	var power_catalog := await http("GET", "/catalog/power_selections.json")
+	assert(power_catalog.begins_with("HTTP/1.1 200") and power_catalog.contains("application/json") and power_catalog.contains("class_spellcasting"), "Power selection catalog must be available to the mobile shell")
 	# Read-only, unauthenticated telemetry must contain JS transfer health only.
 	var module_diag := await http("GET", "/__vtt_module_diagnostics")
 	assert(module_diag.begins_with("HTTP/1.1 200"))

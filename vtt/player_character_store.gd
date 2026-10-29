@@ -71,7 +71,7 @@ func create_character() -> Dictionary:
 		"dice_bonuses": [],
 		"active_spell_context": {},
 		"active_class_features": {},
-		"artificer_armor_model": "guardian",
+		"trait_state_selection": {},
 		"created_spell_slots": [],
 		"conditions": [],
 		"concentrating_spell_id": "",

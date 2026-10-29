@@ -51,17 +51,19 @@ func run() -> void:
 	var armorer := character("Artificer", 8, "TCE", "Armorer")
 	assert(not Runtime.activate(armorer, "class_feature:defensive_field").ok)
 	armorer.inventory = [{"id": "test:armor", "type": "HA", "ac": 18, "quantity": 1, "equipped_slots": ["body"]}]
+	assert(not Runtime.activate(armorer, "class_feature:defensive_field").ok, "A model must be selected explicitly")
+	armorer = Runtime.activate(armorer, "class_feature:armor_guardian").record
 	var field := Runtime.activate(armorer, "class_feature:defensive_field")
 	assert(field.ok and int(field.record.temporary_hp) == 8)
 	field.record.temporary_hp = 12
 	var repeated := Runtime.activate(field.record, "class_feature:defensive_field")
 	assert(repeated.ok and int(repeated.record.temporary_hp) == 12)
 	assert(Runtime.armorer_weapons(armorer)[0].damage == "1d8")
-	armorer.artificer_armor_model = "infiltrator"
+	armorer = Runtime.activate(armorer, "class_feature:armor_infiltrator").record
 	assert(Runtime.armorer_weapons(armorer)[0].range_feet == 90)
 	assert(Bonuses.value(armorer, "speed") == 35)
 	var switched := Runtime.activate(armorer, "class_feature:armor_guardian")
-	assert(switched.ok and switched.record.artificer_armor_model == "guardian")
+	assert(switched.ok and switched.record.trait_state_selection.get("armor_model") == "armor_model:guardian")
 	assert(Bonuses.value(switched.record, "speed") == 30)
 	assert(not Runtime.activate(armorer, "class_feature:defensive_field").ok)
 	print("PASS: artificer resources, temporary HP, origin disabling, alternative AC")

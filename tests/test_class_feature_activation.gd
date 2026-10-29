@@ -118,12 +118,20 @@ func run() -> void:
 		return String(action.get("key", "")) == "armor_guardian"), "Missing eligible Guardian model")
 	assert(model_actions.any(func(action: Dictionary) -> bool:
 		return String(action.get("key", "")) == "armor_infiltrator"), "Missing eligible Infiltrator model")
-	assert(Runtime.armorer_weapons(armorer).any(func(attack: Dictionary) -> bool:
+	assert(Runtime.armorer_weapons(armorer).is_empty(), "An unselected model grants no weapons")
+	var stale_model: Dictionary = armorer.duplicate(true)
+	stale_model["artificer_armor_model"] = "guardian"
+	assert(Runtime.armorer_weapons(stale_model).is_empty(), "Removed legacy fields cannot select a model")
+	var guardian := Runtime.activate(armorer, "class_feature:armor_guardian")
+	assert(guardian.ok)
+	assert(guardian.record.trait_state_selection.get("armor_model") == "armor_model:guardian")
+	var deselected := Runtime.activate(guardian.record, "class_feature:armor_guardian")
+	assert(deselected.ok and Runtime.armorer_weapons(deselected.record).is_empty(), "Deselecting the model removes its weapons")
+	assert(Runtime.armorer_weapons(guardian.record).any(func(attack: Dictionary) -> bool:
 		return String(attack.get("name", "")) == "Thunder Gauntlets"))
-	var switched := Runtime.activate(armorer, "class_feature:armor_infiltrator")
+	var switched := Runtime.activate(guardian.record, "class_feature:armor_infiltrator")
 	assert(switched.ok, str(switched))
 	assert(switched.record.trait_state_selection.get("armor_model") == "armor_model:infiltrator")
-	assert(switched.record.artificer_armor_model == "infiltrator")
 	assert(switched.record.active_class_features.has("trait_state:armor_model:infiltrator"))
 	assert(Runtime.armorer_weapons(switched.record).any(func(attack: Dictionary) -> bool:
 		return String(attack.get("name", "")) == "Lightning Launcher"))

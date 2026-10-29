@@ -126,16 +126,7 @@ static func _model_trait(record: Dictionary, rule: Dictionary, features: Array[D
 
 
 static func _selected_armor_state(record: Dictionary) -> String:
-	var selected: Dictionary = record.get("trait_state_selection", {})
-	if selected.has("armor_model"):
-		return String(selected.get("armor_model", ""))
-	var legacy := String(record.get("artificer_armor_model", ""))
-	for rule: Dictionary in _armor_state_rules():
-		if String(rule.get("legacy_value", "")) == legacy and not legacy.is_empty():
-			return String(rule.get("id", ""))
-		if legacy.is_empty() and bool(rule.get("legacy_default", false)):
-			return String(rule.get("id", ""))
-	return ""
+	return String(record.get("trait_state_selection", {}).get("armor_model", ""))
 
 
 static func _armor_model_actions(record: Dictionary, features: Array[Dictionary]) -> Array[Dictionary]:
@@ -145,7 +136,7 @@ static func _armor_model_actions(record: Dictionary, features: Array[Dictionary]
 		if model_feature.is_empty():
 			continue
 		var id := String(rule.get("id", ""))
-		var mode := String(rule.get("legacy_value", ""))
+		var mode := String(rule.get("id", "")).trim_prefix("armor_model:")
 		result.append({"id": "class_feature:armor_" + mode, "key": "armor_" + mode,
 			"name": String(rule.get("name", "")), "class_name": String(rule.get("class_name", "")),
 			"origin_id": "feature:" + String(model_feature.get("key", "")),
@@ -288,7 +279,6 @@ static func activate(record: Dictionary, id: String, options: Dictionary = {}) -
 			active["trait_state:" + state_id] = {"name": String(action.name),
 				"origin_id": String(action.origin_id), "category": "stato"}
 		next["active_class_features"] = active
-		next["artificer_armor_model"] = "guardian" if key == "armor_guardian" else "infiltrator"
 		return {"ok": true, "record": next, "message": "Modello armatura aggiornato."}
 	if action.mode in ["metamagic", "conversion", "recovery"]:
 		return {"ok": false, "message": "Completa le scelte del privilegio."}

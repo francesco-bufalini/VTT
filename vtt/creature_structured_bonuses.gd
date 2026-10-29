@@ -279,7 +279,7 @@ static func derive(record: Dictionary) -> Array[Dictionary]:
 		"background": record.get("background", ""), "background_source": record.get("background_source", ""),
 		"feats_catalog": record.get("feats_catalog", []), "classes": record.get("classes", []),
 		"level": record.get("level", 1), "kind": record.get("kind", ""),
-		"artificer_armor_model": record.get("artificer_armor_model", "guardian"),
+		"trait_state_selection": record.get("trait_state_selection", {}),
 		"inventory": record.get("inventory", []), "stat_block": record.get("stat_block", {})
 	})
 	if signature == _cached_signature:
@@ -294,7 +294,7 @@ static func derive(record: Dictionary) -> Array[Dictionary]:
 		var label: String = "Tratto · " + String(feature.get("name", ""))
 		if String(feature.get("class_name", "")) == "Artificer" and String(feature.get("class_source", "")) == "TCE":
 			var name := String(feature.get("name", ""))
-			if name == "Powered Steps" and String(record.get("artificer_armor_model", "guardian")) == "infiltrator" and not Items.equipped_armor(record.get("inventory", [])).is_empty():
+			if name == "Powered Steps" and String(record.get("trait_state_selection", {}).get("armor_model", "")) == "armor_model:infiltrator" and not Items.equipped_armor(record.get("inventory", [])).is_empty():
 				_add(result, sid, label, "powered_steps", "speed", 5)
 			# Only the highest item-attunement feature contributes.
 			var class_level := Infusions.artificer_level(record)
