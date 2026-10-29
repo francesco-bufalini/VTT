@@ -173,6 +173,10 @@ func run() -> void:
 	assert(power_script.begins_with("HTTP/1.1 200") and power_script.contains("text/javascript") and power_script.contains("POWER_SELECTION_TRIGGERS"), "Offline update must receive the power selection module")
 	var power_catalog := await http("GET", "/catalog/power_selections.json")
 	assert(power_catalog.begins_with("HTTP/1.1 200") and power_catalog.contains("application/json") and power_catalog.contains("class_spellcasting"), "Power selection catalog must be available to the mobile shell")
+	var progression_script := await http("GET", "/optional_feature_progression.js")
+	assert(progression_script.begins_with("HTTP/1.1 200") and progression_script.contains("text/javascript") and progression_script.contains("optionalFeatureSelectionModels"), "Offline update must receive the optional feature progression module")
+	var progression_catalog := await http("GET", "/catalog/optional_feature_progressions.json")
+	assert(progression_catalog.begins_with("HTTP/1.1 200") and progression_catalog.contains("application/json") and progression_catalog.contains("optionalfeatureProgression"), "Optional feature progression catalog must be served to mobile")
 	# Read-only, unauthenticated telemetry must contain JS transfer health only.
 	var module_diag := await http("GET", "/__vtt_module_diagnostics")
 	assert(module_diag.begins_with("HTTP/1.1 200"))

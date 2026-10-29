@@ -171,6 +171,7 @@ const REQUIRED_CATALOGS = [
   "/catalog/spell_grant_rules.json", "/catalog/species_powers.json", "/catalog/proficiency_grants.json", "/catalog/classes.json",
   "/catalog/player.json", "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json", "/catalog/power_selections.json",
+  "/catalog/optional_feature_progressions.json",
   "/catalog/roll_bonus_rules.json", "/catalog/feature_item_grants.json", "/catalog/effect_extensions.json",
   "/catalog/activated_abilities.json", "/catalog/effects_5etools.json", "/catalog/species_types.json", "/catalog/species_attacks.json", "/catalog/species_defenses.json",
   "/catalog/action_feature_overrides.json", "/catalog/combat_actions_5etools.json",
