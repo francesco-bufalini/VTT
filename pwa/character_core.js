@@ -55,7 +55,9 @@ export function initialCreature(kind,name,id,owner_id){
   const c={
     id,name,owner_id,kind,transfer_revision:0,
     default_miniature_id:"",current_miniature_id:"",size_name:"Medium",
-    footprint:1,reach_feet:5,visual_front_quarter_turns:0,party_id:"",
+    footprint:1,reach_feet:5,visual_front_quarter_turns:0,
+    party_id:kind==="monster"?"":"Party",
+    identity_factions:kind==="monster"?[]:[{value:"Party",active:true}],
     rules_version:"2014",player_name:"",classes:[],class:"",class_source:"",
     class_id:"",subclass:"",subclass_id:"",subclass_source:"",
     level:1,xp:0,proficiency_bonus:2,spellcasting_calculation:{},
