@@ -464,7 +464,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
     option.damage_formula?'Danni '+option.damage_formula:'',
     ...arr(option.conditions).map(condition=>'Condizione '+condition)
    ].filter(Boolean);
-   return '<details class="play-battle-monster-option" data-monster-option="'+esc(option.id)+'">'+
+   return '<details class="play-battle-monster-option" name="monster-options-'+esc(item.id)+'" data-monster-option="'+esc(option.id)+'">'+
     '<summary>'+esc(option.name)+'</summary><div class="play-battle-monster-option-body">'+
     (facts.length?'<small>'+facts.map(esc).join(' · ')+'</small>':'')+
     '<p>'+esc(option.description)+'</p></div></details>';
