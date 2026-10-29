@@ -1,5 +1,6 @@
 import {CLASS_NUMERIC_FEATURE_GRANTS} from './catalog/class_numeric_feature_grants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
+import {monsterTraits} from './monster_traits.js';
 import {normalizeMonsterStatBlock} from './character_core.js';
 // Generic structured effects and fixed proficiency projection based on
 // creature_structured_bonuses.gd and creature_proficiency_rules.gd.
@@ -377,7 +378,7 @@ export function collectStructuredFeatures(record,catalogs={}){
     const at=gate.scope==="class"?classLevel(gate.class_name||className,gate.class_source||classSource):total;
     if(at<Number(gate.min_level||0)||gate.max_level!==undefined&&gate.max_level!==""&&at>Number(gate.max_level))return;
     const id=String(row.id||"").trim()||origin+"|"+level+"|"+norm(row.name);
-    const key=origin+"|"+id;if(seen.has(key))return;seen.add(key);
+    const key=row.feature_key||origin+"|"+id;if(seen.has(key))return;seen.add(key);
     const attacksPerAction=attackCount(row,origin,level,className,classSource);
     results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
       level,requirements:gate,inactive:inactive||row.inactive===true,
@@ -387,9 +388,7 @@ export function collectStructuredFeatures(record,catalogs={}){
       action_kind:row.action_kind||"Capacità"});
   }
   if(record.kind==="monster"){
-    for(const section of ["trait","action","bonus","reaction","legendary","mythic","lairActions"])
-      for(const row of array(record.stat_block?.[section]))
-        append(row,"monster|"+section,0);
+    for(const row of monsterTraits(record))append(row,row.origin_key,0);
   }else{
     const details=catalogs.originDetails||{};
     const lookup=(category,name,source)=>{

@@ -1,11 +1,12 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
+import {monsterActionUsePatch,monsterDetailPatch} from './monster_traits.js';
 import {identityEntries,identityEntriesPatch} from './identity_aliases.js';
 import {availableD20Rerolls,offerD20Reroll,chooseD20Reroll} from './d20_rerolls.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage,validateVariants} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch,companionStatBlockView} from './companion_rules.js';
 import {companionOwnerValues} from './companion_owner_stats.js';
-import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
+import { battleActionPanels, abilityAttackRoll, monsterActionOptionsMarkup, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { activeInfusions, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
@@ -2231,6 +2232,23 @@ function openInventorySearchAddDialog(catalogIndex){
   openDialog(dialog);
 }
 
+const monsterDetailAttempts=new Set();
+function loadMissingMonsterDetails(editor){
+ const creature=editor.read(),stat=creature.stat_block||{};
+ if(creature.kind!=='monster'||!stat.name||!stat.source||
+  (!state.online&&!state.hostReachable)||stat.fluff&&(!stat.legendaryGroup||stat.lairActions))return;
+ const key=[creature.id,stat.name,stat.source].join('|');
+ if(monsterDetailAttempts.has(key))return;
+ monsterDetailAttempts.add(key);
+ fetch('/catalog/bestiary/'+encodeURIComponent(stat.name)+'/'+encodeURIComponent(stat.source)+'.json')
+  .then(response=>response.ok?response.json():null).then(async detail=>{
+   if(!detail)return;
+   const delta=monsterDetailPatch(editor.read(),detail);
+   if(!Object.keys(delta).length)return;
+   await editor.update(current=>monsterDetailPatch(current,detail));
+   if(state.editor===editor)await render();
+  }).catch(()=>{}); // Optional lore never blocks the local sheet or offline archive.
+}
 async function editorView() {
   const creatureId=state.creatureId;
   if(!state.editor){
@@ -2240,6 +2258,7 @@ async function editorView() {
   }
   if(state.sheet==='origins')state.sheet='info';
   const c = state.editor.read();
+  loadMissingMonsterDetails(state.editor);
   // The persistent header owns creature identity and tab navigation.
   let body = "";
   // Start local calculation, descriptive references and spell lists together.
@@ -2823,6 +2842,7 @@ function mountTraitBenefitDialog(){
       '<div class="trait-capability-meta"><span>'+esc(item.timing||'Contestuale')+'</span>'+
         '<span>'+esc(item.cost||'Nessun costo')+'</span></div>'+
       (item.description?'<p class="trait-capability-description">'+esc(item.description)+'</p>':'')+
+      monsterActionOptionsMarkup({id:'trait:'+trait.key+':'+item.label,options:item.options})+
       (item.requirements?'<p class="trait-capability-requirements"><strong>Requisiti</strong> · '+esc(item.requirements)+'</p>':'')+
       (item.effects?.length?'<ul class="trait-capability-effects">'+item.effects.map(effect=>'<li>'+esc(effect)+'</li>').join('')+'</ul>':'')+
     '</article>':
@@ -6909,6 +6929,13 @@ async function handleAction(target){
     }
     await activateOtherAbility(c,ability,persistentKey,requested);
     return;
+  }
+  if(act==='monster-action-use'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Creatura non disponibile.');
+    const calculated=await computeLocalData(creature);
+    await patch(current=>monsterActionUsePatch(current,calculated,String(target.dataset.monsterActionId||'')));
+    await render();return;
   }
   if(act==='tracker-reset'){
     const creature=state.editor?.read();

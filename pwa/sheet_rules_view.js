@@ -6,7 +6,7 @@ import {characterDefenseSummary} from './defense_summary.js';
 import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
-import {actionGlyphKey,actionGlyph,diceGlyph} from "./action_economy.js";
+import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
@@ -746,7 +746,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const named=normalized?traits.filter(feature=>powerName(feature.name)===normalized):[];
    return named.length===1?named[0]:null;
   };
-  const timeLabels={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',
+  const timeLabels={legendary:'Azione leggendaria',legendary_resistance:'Resistenza leggendaria',lair:'Azione di tana',action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',
     movement:'Movimento',contextual:'Secondo il privilegio'};
   // A resource popup must keep its original counters and editors, while also
   // presenting the real originating trait and a full reset.
@@ -772,7 +772,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
    // Abilities can confirm "Nessun tracker" even if their resource is spent.
    // Spells still require the normal resource check.
-   const disabled=(row.kind==='spell'||row.power?.infusion_action)&&row.cost>0&&
+   const disabled=(row.kind==='spell'||row.power?.infusion_action||row.classAction?.monster_action)&&row.cost>0&&
     (!tracker||tracker.disabled||available<row.cost);
    const glyphKey=resourceAbilityGlyphKey(row,d);
    const glyph=glyphKey==='dice'?diceGlyph():icon(glyphKey);
@@ -792,7 +792,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const originId=trait?.origin_id||power.feature_id||power.origin_id||action.origin_id||'';
    const originLabel=trait?.name?'Tratto · '+trait.name:
      power.origin_name||action.origin_name||power.origin||action.origin_id||'';
-   const description=trait?.description||power.description||action.description||'';
+   const description=(action.monster_action?action.description:'')||trait?.description||power.description||action.description||'';
    const detail=document.createElement('section');
    detail.className='panel play-battle-power-detail';
    detail.innerHTML='<h2>'+esc(row.name)+'</h2>'+
@@ -801,6 +801,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      '<div><dt>Attivazione</dt><dd>'+esc(caption)+'</dd></div>'+
      (row.cost?'<div><dt>Costo</dt><dd>'+esc(row.cost+' utilizzi'+(tracker?' · '+tracker.name:''))+'</dd></div>':'')+'</dl>'+
     (description?'<div class="power-privilege-description"><h3>Descrizione del tratto</h3><p class="trait-description">'+esc(description)+'</p></div>':'')+
+    monsterActionOptionsMarkup({...action,id:'resource:'+String(action.id||row.id)})+
     (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'');
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));
    const context=bind(powerDetail?.key||'battle-power:'+id,detail);
@@ -816,7 +817,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
-    (descriptive?'':active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
+    (action.monster_action&&row.cost>0?'<button type="button" class="play-resource-use" data-act="monster-action-use" data-monster-action-id="'+esc(action.id)+'"'+(disabled?' disabled':'')+'>Usa · '+row.cost+'</button>':descriptive?'':active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
     ' aria-label="Disattiva '+esc(row.name)+'">Disattiva</button>':
     '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(useId)+'"'+
     (persistent?' data-persistent-key="'+esc(statusKey)+'"':'')+
@@ -899,17 +900,19 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   };
   const rulesOfBase=[
    ['attack','action'],['opportunity','reaction'],
-   ['spell_cast','action'],['two_weapon','bonus'],['ability_checks','action']
+   ['spell_cast','action'],['two_weapon','bonus'],['ability_checks','action'],
+   ...basic.filter(row=>['legendary_action','legendary_resistance','lair_action'].includes(row.id)).map(row=>[row.id,row.time])
   ];
   const basicRules=privilegeGroup('basic-rules','Regole di base',
    rulesOfBase.map(([id,time])=>{
     const row=base(id),available=row.available!==false;
     const hint=id==='spell_cast'?'Slot':
-     id==='attack'?'Azione':
+     id==='attack'?(row.grant_description||maxTrait?.description||'Attaccare con un’arma o con un colpo senz’armi.'):
+     ['legendary_action','legendary_resistance','lair_action'].includes(id)?'1 '+({legendary_action:'Azione leggendaria',legendary_resistance:'Resistenza leggendaria',lair_action:'Azione di tana'}[id]):
      !available?(row.unavailable_reason||
       (id==='opportunity'?'È necessario poter effettuare un attacco in mischia.':
        'Manca l’equipaggiamento richiesto.')):'';
-    return actionLink(id,baseRuleNames[id],time,available,hint,
+    return actionLink(id,baseRuleNames[id]||row.name,time,available,hint,
      id==='attack'?maxCount:0,
      id==='attack'?maxGrantOrigin:'',
      id==='attack'?(maxTrait?.name||mainGrant?.origin_name||'Multiattacco'):'');

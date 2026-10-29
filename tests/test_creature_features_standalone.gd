@@ -79,8 +79,10 @@ func run() -> void:
 
 	var found := false
 	for feature: Dictionary in Features.collect_features(fixtures[1]):
-		if String(feature.get("name", "")) == "Claw":
-			found = true
-	assert(found, "Structured monster features were lost")
+		if String(feature.get("name", "")) == "Panoramica":
+			for action: Dictionary in feature.get("monster_actions", []):
+				if action.get("name", "") == "Claw":
+					found = true
+	assert(found, "Monster capabilities must remain owned by the overview")
 	print("PASS: shared feature projection, cache isolation and standalone tracker derivation")
 	quit()

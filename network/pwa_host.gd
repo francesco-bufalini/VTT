@@ -107,6 +107,7 @@ const FILES := {
 	"/trait_benefit_distribution.js": ["res://pwa/trait_benefit_distribution.js", "text/javascript; charset=utf-8"],
 	"/trait_benefit_editor.js": ["res://pwa/trait_benefit_editor.js", "text/javascript; charset=utf-8"],
 	"/effect_extensions.js": ["res://pwa/effect_extensions.js", "text/javascript; charset=utf-8"],
+	"/monster_traits.js": ["res://pwa/monster_traits.js", "text/javascript; charset=utf-8"],
 	"/trait_projection.js": ["res://pwa/trait_projection.js", "text/javascript; charset=utf-8"],
 	"/spell_metadata.js": ["res://pwa/spell_metadata.js", "text/javascript; charset=utf-8"],
 	"/condition_catalog.js": ["res://pwa/condition_catalog.js", "text/javascript; charset=utf-8"],

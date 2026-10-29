@@ -10,7 +10,7 @@ const zeroSlots=()=>Array(10).fill(0);
 export function normalizeMonsterStatBlock(stat={}){
  let changed=false;
  const action=array(stat.action).map(row=>{
-  if(!row||!/^multiattack$/i.test(String(row.name||'').trim()))return row;
+  if(!row||!/^(?:multiattack|multiattacco)$/i.test(String(row.name||'').trim()))return row;
   const direct=Number(row.attacks_per_action);
   if(Number.isSafeInteger(direct)&&direct>=2)return row;
   // A special ability may precede the actual attack sequence:

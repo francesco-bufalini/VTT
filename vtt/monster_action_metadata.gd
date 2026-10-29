@@ -149,8 +149,25 @@ static func _source_revision(stat: Dictionary) -> int:
 		for value: Variant in raw:
 			if value is Dictionary:
 				pieces.append(section + "|" + String((value as Dictionary).get("name", ""))
-					+ "|" + JSON.stringify((value as Dictionary).get("entries", [])))
+					+ "|" + JSON.stringify((value as Dictionary).get("entries", []))
+					+ "|" + str((value as Dictionary).get("attacks_per_action", "")))
 	return "||".join(pieces).hash()
+
+
+static func multiattack_count(action: Dictionary) -> int:
+	if String(action.get("name", "")).strip_edges().to_lower() not in ["multiattack", "multiattacco"]:
+		return 0
+	var direct: int = int(action.get("attacks_per_action", 0))
+	if direct >= 2:
+		return direct
+	# Search complete attack clauses even after an optional nonattack ability.
+	var pattern := RegEx.create_from_string("(?i)\\b(?:makes?|can make|may make|effettua|può effettuare)\\s+(?:up to\\s+)?(\\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\\s+(?:(?:melee|ranged|weapon|spell|arma)\\s+)*(?:attacks?|attacchi)\\b")
+	var words: Dictionary = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "uno": 1, "due": 2, "tre": 3, "quattro": 4, "cinque": 5, "sei": 6}
+	var count: int = 0
+	for found: RegExMatch in pattern.search_all(JSON.stringify(action.get("entries", action.get("description", "")))):
+		var number: String = found.get_string(1).to_lower()
+		count = maxi(count, int(words.get(number, number)))
+	return count if count >= 2 else 0
 
 
 static func prepare(stat_block: Dictionary) -> Dictionary:
@@ -172,6 +189,11 @@ static func prepare(stat_block: Dictionary) -> Dictionary:
 			if not rows[index] is Dictionary:
 				continue
 			var action: Dictionary = rows[index]
+			var attack_count: int = multiattack_count(action)
+			if attack_count >= 2:
+				action["vtt_attacks_per_action"] = attack_count
+			else:
+				action.erase("vtt_attacks_per_action")
 			# Never reuse metadata after its source action changed. Re-evaluate
 			# the new formal tags and then apply the curated override.
 			action.erase("vtt_attack")

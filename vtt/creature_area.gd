@@ -250,6 +250,8 @@ var _suggested_miniature_ids: Array[String] = []
 var _import_dialog: AcceptDialog
 var _import_text: TextEdit
 var _auto_reference_requests: Dictionary = {}
+var _monster_detail_requests: Dictionary = {}
+var _monster_detail_attempts: Dictionary = {}
 var _form_hp_requests: Dictionary = {}
 var _form_hp_dialog: ConfirmationDialog
 var _form_hp_choice: OptionButton
@@ -4038,7 +4040,26 @@ func _on_selected(index: int) -> void:
 	call_deferred("_refresh_creature_language")
 
 
+func _request_missing_monster_details(record: Dictionary) -> void:
+	if record.get("kind", "") != "monster" or _client == null or DisplayServer.get_name() == "headless":
+		return
+	var stat: Dictionary = record.get("stat_block", {})
+	if String(stat.get("name", "")).is_empty() or String(stat.get("source", "")).is_empty():
+		return
+	if stat.has("fluff") and (not stat.has("legendaryGroup") or stat.has("lairActions")):
+		return
+	var key: String = "detail:" + String(record.get("id", "")) + ":" + String(stat.name) + ":" + String(stat.source)
+	if _monster_detail_attempts.has(key):
+		return
+	_monster_detail_attempts[key] = true
+	_monster_detail_requests[key] = String(record.get("id", ""))
+	var bestiary: Bestiary = _client as Bestiary
+	if bestiary != null:
+		bestiary.request_creature(String(stat.name), String(stat.source), key)
+
+
 func _load_form(record: Dictionary) -> void:
+	call_deferred("_request_missing_monster_details", record.duplicate(true))
 	_origin_preview_cache.clear()
 	# Empty hands are intentional. Loading a sheet never auto-equips weapons.
 	_refresh_trackers(record)
@@ -6680,6 +6701,28 @@ func _request_monster(index: int) -> void:
 
 
 func _on_monster_received(request_key: String, stat: Dictionary) -> void:
+	if _monster_detail_requests.has(request_key):
+		var id: String = String(_monster_detail_requests[request_key])
+		_monster_detail_requests.erase(request_key)
+		for owned: Dictionary in _archive.list_owned():
+			if String(owned.get("id", "")) != id:
+				continue
+			var previous: Dictionary = owned.get("stat_block", {}).duplicate(true)
+			if previous.get("name", "") != stat.get("name", "") or previous.get("source", "") != stat.get("source", ""):
+				return
+			var changed := false
+			for field: String in ["fluff", "lairActions", "regionalEffects"]:
+				if not previous.has(field) and stat.has(field):
+					var value: Variant = stat[field]
+					previous[field] = value.duplicate(true) if value is Array or value is Dictionary else value
+					changed = true
+			if changed:
+				owned["stat_block"] = previous
+				if _archive.save(owned) == OK and id == _selected_id:
+					_replace_current_record(owned)
+					_load_form(owned)
+			return
+		return
 	if _form_hp_requests.has(request_key):
 		var pending: Dictionary = _form_hp_requests[request_key]
 		_form_hp_requests.erase(request_key)
@@ -6865,6 +6908,9 @@ func _complete_auto_reference(id: String, stat: Dictionary) -> void:
 
 
 func _on_creature_request_failed(request_key: String, message: String) -> void:
+	if _monster_detail_requests.has(request_key):
+		_monster_detail_requests.erase(request_key)
+		return
 	if _form_hp_requests.has(request_key):
 		_form_hp_requests.erase(request_key)
 		_set_status("PF della forma non disponibili: " + message + " · Inserisci PF manualmente.")

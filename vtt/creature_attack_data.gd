@@ -36,6 +36,9 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 				continue
 			var definition: Dictionary = spec.duplicate(true)
 			definition["id"] = "monster:%s:%d" % [section, index]
+			var owner: Dictionary = preload("res://vtt/monster_trait_projection.gd").attack_owner(record, definition.id)
+			if not owner.is_empty():
+				definition["origin_id"] = "feature:" + String(owner.feature_key)
 			definition["name"] = title
 			definition["source"] = section
 			definition["proficient"] = true

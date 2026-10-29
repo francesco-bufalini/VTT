@@ -5,6 +5,7 @@ import {SENSE_NAMES,senseRange} from './sense_rules.js';
 import {resolveOwnedItem} from './item_controls.js';
 import {attackCountBenefits} from './attack_count_benefits.js';
 import {effectExtensionLabel,effectExtensionsFor} from './effect_extensions.js';
+import {monsterActions} from './monster_traits.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const ABILITIES={str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
@@ -26,7 +27,7 @@ const DEFENSE_CONDITIONS={blinded:'Accecato',charmed:'Affascinato',deafened:'Ass
  disease:'Malattie',frightened:'Spaventato',grappled:'Afferrato',incapacitated:'Incapacitato',
  paralyzed:'Paralizzato',petrified:'Pietrificato',poisoned:'Avvelenato',restrained:'Trattenuto',
  stunned:'Stordito',unconscious:'Privo di sensi',exhaustion:'Indebolimento'};
-const ACTION_TIMES={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento',contextual:'Contestuale'};
+const ACTION_TIMES={legendary:'Azione leggendaria',lair:'Azione di tana',legendary_resistance:'Resistenza leggendaria',action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento',contextual:'Contestuale'};
 const actionTime=value=>ACTION_TIMES[norm(typeof value==='object'?value?.unit||value?.type:value)]||String(value||'Contestuale');
 const describe=value=>typeof value==='string'?value:Array.isArray(value)?value.map(describe).filter(Boolean).join(' · '):
  value&&typeof value==='object'?describe(value.entries??value.entry??value.description??value.text??''):'';
@@ -62,6 +63,7 @@ export function signedTraitFormula(expression){
 }
 export function traitBenefitSources(trait={},record={}){
  const ids=new Set([trait.feature_origin,trait.proficiency_origin,
+  ...rows(trait.monster_legacy_keys).flatMap(key=>['feature:'+key,'feature:trait:'+key]),
   ...(trait.key?['feature:trait:'+trait.key]:[]),
   ...(trait.rank===0?[trait.origin_key]:[]),
   ...(trait.category==='oggetti'&&trait.rank===0?
@@ -322,7 +324,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    String(trait.origin_key||'').startsWith('item:')&&
    (String(attack.id||'').startsWith('item:'+itemId)||
     String(attack.id||'').includes(':'+itemId));
-  if(!belongs(attack)&&!stateAttackIds.has(String(attack.id))&&!fromItem)continue;
+  if(!belongs(attack)&&!stateAttackIds.has(String(attack.id))&&!fromItem&&!rows(trait.monster_attack_ids).includes(attack.id))continue;
   const reach=attack.melee?'Portata ':'Gittata ';
   const range=Number(attack.range_feet);
   const details=[attack.damage&&String(attack.damage)+' '+String(attack.damage_type||''),
@@ -484,7 +486,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  for(const row of defenses)
   add('defenses','Resistenze, immunità e vulnerabilità',row.label,row.value,row.id);
  for(const row of rows(calculated.trackers)){
-  if(!belongs(row)){
+  if(!belongs(row)&&!rows(trait.monster_tracker_ids).includes(row.id)){
    // Unattributed automatic class pools are shown only in the class overview,
    // never against an unrelated individual class feature.
    if(!(trait.rank===0&&trait.category==='classi'&&
@@ -557,10 +559,18 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   add('abilities','Capacità attivabili',label,'','',{
    status:details.status,timing:details.timing,cost:details.cost,
    description:details.description,requirements:details.requirements||'',
+   options:details.options||[],
    effects:details.effects||[]
   });
   if(details.origin_id)abilitySourceIds.add(String(details.origin_id));
  };
+ const resolvedMonsterActions=new Map(monsterActions(record,calculated.trackers).map(row=>[row.id,row]));
+ for(const declared of rows(trait.monster_actions)){
+  const action=resolvedMonsterActions.get(declared.id)||declared;
+  const tracker=rows(calculated.trackers).find(t=>t.id===action.tracker_id);
+  addAbility(action.name,{origin_id:action.origin_id,status:trait.inactive?'Tratto disattivato':tracker&&Number(tracker.max)-Number(tracker.spent||0)<action.cost?'Risorsa esaurita':'Promemoria',
+   timing:actionTime(action.time),cost:resourceCost(tracker?.name||action.tracker_id,action.cost),description:action.description,options:action.options,effects:[]});
+ }
  // Non-class feats can declare actions via the same typed benefits schema.
  for(const action of rows(calculated.feat_actions)){
   if(!belongs(action))continue;

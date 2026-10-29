@@ -1,3 +1,4 @@
+import {monsterTraits,bindMonsterTrackers,monsterAttackOwner} from './monster_traits.js';
 import {SKILLS} from './skill_definitions.js';
 import {variantFamilyAbilityGrants} from './species_variant_families.js';
 import {offhandAttackAllowed} from './offhand_rules.js';
@@ -553,6 +554,11 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
    add({id:'fightclub:'+resource.section+':'+i,name:clean(feature.name),max:int(resource.max),recharge:resource.recharge,...(resource.recharge==='d6'?{recharge_min:int(resource.recharge_min,6)}:{}),automatic:true});
   }
  }
+ if(record.kind==='monster')for(const trait of monsterTraits(record))if(trait.monster_pool){
+  const index=arr(record.stat_block?.trait).findIndex(row=>trait.feature_key==='monster|trait|'+(row.id||'monster|trait|0|'+norm(row.name)));
+  if(trait.monster_role==='resistance'&&index>=0&&(rows.has('fightclub:trait:'+index)||rows.has('recharge:trait:'+index)))continue;
+  add({...trait.monster_pool,automatic:true});
+ }
  for(const row of rows.values()){
   const ref=String(row.origin_feature_key||'').replace(/^feature:/,''),wanted=String(row.origin_name||row.name).trim().toLowerCase();
   const matches=ref?features.filter(f=>f.key===ref):features.filter(f=>{
@@ -587,6 +593,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
    record.origin_enabled?.[feature.origin_key]===false||arr(record.proficiency_origins).some(o=>
     o?.disabled&&[row.origin_id,feature.origin_key,feature.parent_origin].includes(o.id));
  }
+ bindMonsterTrackers(record,[...rows.values()]);
  for(const row of arr(record.resource_trackers)){
   if(!row||!requirementsAllow(record,row))continue;
   let max=Math.max(0,int(row.max));
@@ -652,11 +659,16 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
   if(linkedIds.has('monster:'+section+':'+i))return;
   if(!action?.name)return;
+  if(action.vtt_attack){
+   const spec=action.vtt_attack;if(spec.attack_kind!=='attack')return;
+   append({...spec,id:'monster:'+section+':'+i,origin_id:'feature:'+(monsterAttackOwner(record,'monster:'+section+':'+i)?.feature_key||''),name:action.name},spec.source_ability||'str',true,spec.damage||'',int(spec.base_hit));
+   return;
+  }
   const text=JSON.stringify(action.entries||[]),hit=text.match(/\{@hit\s*([+-]?\d+)\}/)||text.match(/([+-]\d+)\s+to\s+hit/i);
   if(!hit&&!/\{@atk |weapon attack:|spell attack:/i.test(text))return;
   const ranged=/ranged|\{@atk r[ws]\}/i.test(text),reach=int(text.match(/reach\s*(\d+)\s*(?:ft|feet)/i)?.[1],5);
   const range=text.match(/range\s*(\d+)(?:\/(\d+))?/i),damage=text.match(/\{@damage\s*([^}]+)\}/)?.[1]||text.match(/\d+d\d+(?:\s*[+-]\s*\d+)*/)?.[0]||'';
-  append({id:'monster:'+section+':'+i,name:action.name,melee:!ranged||/melee or ranged/i.test(text),range_feet:ranged?int(range?.[1],5):reach,long_range_feet:ranged?int(range?.[2]):0},ranged?'dex':'str',true,damage,int(hit?.[1]));
+  append({id:'monster:'+section+':'+i,origin_id:'feature:'+(monsterAttackOwner(record,'monster:'+section+':'+i)?.feature_key||''),name:action.name,melee:!ranged||/melee or ranged/i.test(text),range_feet:ranged?int(range?.[1],5):reach,long_range_feet:ranged?int(range?.[2]):0},ranged?'dex':'str',true,damage,int(hit?.[1]));
  });
  for(const slot of ['main','off']){
   const item=slot==='off'?off:main;if(!item||itemKind(item)!=='weapon')continue;

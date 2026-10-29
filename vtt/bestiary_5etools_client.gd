@@ -22,6 +22,7 @@ var _active: Dictionary = {}
 var _source_files: Dictionary = {}
 var _catalog: Array[Dictionary] = []
 var _catalog_requested: bool = false
+static var _detail_cache: Dictionary = {}
 
 
 func setup() -> void:
@@ -269,7 +270,7 @@ func _on_request_completed(
 					String(task.get("base_source", ""))
 				)
 				if not base.is_empty():
-					creature_ready.emit(
+					_deliver_enriched(
 						copy_request_key,
 						_merge_copy_creature(
 							base,
@@ -277,10 +278,15 @@ func _on_request_completed(
 						)
 					)
 				else:
-					creature_ready.emit(
+					_deliver_enriched(
 						copy_request_key,
 						(child_value as Dictionary).duplicate(true)
 					)
+		"creature_detail":
+			var detailed: Dictionary = task.get("creature", {})
+			if parsed is Dictionary:
+				_apply_details(detailed, parsed, String(task.get("detail_kind", "")))
+			_deliver_enriched(String(task.get("request_key", "")), detailed, int(task.get("stage", 0)) + 1)
 
 	_finish_catalog_if_ready()
 	_pump_queue()
@@ -305,7 +311,10 @@ func _retry_or_fail(message: String) -> void:
 	var request_key: String = String(task.get("request_key", ""))
 	_active = {}
 
-	if kind in ["creature_file", "copy_base_file"]:
+	if kind == "creature_detail":
+		# Lore is optional offline; never discard the usable stat block.
+		_deliver_enriched(request_key, task.get("creature", {}), int(task.get("stage", 0)) + 1)
+	elif kind in ["creature_file", "copy_base_file"]:
 		creature_failed.emit(request_key, message)
 	elif kind in ["source_index", "search_index"]:
 		if _load_catalog_from_cache():
@@ -327,14 +336,14 @@ func _deliver_or_resolve_copy(
 ) -> void:
 	var copy_value: Variant = creature.get("_copy", {})
 	if not copy_value is Dictionary:
-		creature_ready.emit(request_key, creature)
+		_deliver_enriched(request_key, creature)
 		return
 
 	var copy_data: Dictionary = copy_value as Dictionary
 	var base_name := String(copy_data.get("name", "")).strip_edges()
 	var base_source := String(copy_data.get("source", "")).strip_edges()
 	if base_name.is_empty() or base_source.is_empty():
-		creature_ready.emit(request_key, creature)
+		_deliver_enriched(request_key, creature)
 		return
 
 	var base := _find_creature(source_root, base_name, base_source)
@@ -368,13 +377,113 @@ func _deliver_or_resolve_copy(
 				return
 
 	if base.is_empty():
-		creature_ready.emit(request_key, creature)
+		_deliver_enriched(request_key, creature)
 		return
 
-	creature_ready.emit(
+	_deliver_enriched(
 		request_key,
 		_merge_copy_creature(base, creature)
 	)
+
+
+func _deliver_enriched(request_key: String, creature: Dictionary, stage: int = 0) -> void:
+	var filename: String = ""
+	var detail_kind: String = ""
+	if stage == 0:
+		var source_file: String = String(_source_files.get(creature.get("source", ""), ""))
+		if not creature.has("fluff") and not source_file.is_empty():
+			filename = "fluff-" + source_file
+			detail_kind = "fluff"
+	elif stage == 1 and creature.has("legendaryGroup"):
+		filename = "legendarygroups.json"
+		detail_kind = "legendary"
+	else:
+		creature_ready.emit(request_key, creature)
+		return
+	if filename.is_empty():
+		_deliver_enriched(request_key, creature, stage + 1)
+		return
+	var cache_path: String = CACHE_DIR.path_join(filename)
+	if FileAccess.file_exists(cache_path):
+		var cached: Variant = _read_json(cache_path)
+		if cached is Dictionary:
+			_apply_details(creature, cached, detail_kind)
+			_deliver_enriched(request_key, creature, stage + 1)
+			return
+	_queue.push_front({"kind": "creature_detail", "detail_kind": detail_kind,
+		"url": OFFICIAL_BASE + "data/bestiary/" + filename,
+		"fallback_url": MIRROR_BASE + "data/bestiary/" + filename,
+		"cache_path": cache_path, "fallback_used": false, "request_key": request_key,
+		"creature": creature, "stage": stage})
+	_pump_queue()
+
+
+static func _resolve_fluff(root: Dictionary, name: String, source: String, seen: Array[String] = []) -> Array:
+	var key: String = source.to_lower() + "|" + name.to_lower()
+	if key in seen:
+		return []
+	var visited: Array[String] = seen.duplicate()
+	visited.append(key)
+	for row: Variant in root.get("monsterFluff", []):
+		if not row is Dictionary or String(row.get("name", "")).nocasecmp_to(name) != 0 or String(row.get("source", "")).nocasecmp_to(source) != 0:
+			continue
+		var result: Array = row.get("entries", []).duplicate(true)
+		var copy: Dictionary = row.get("_copy", {})
+		if not copy.is_empty():
+			result = _resolve_fluff(root, String(copy.get("name", "")), String(copy.get("source", source)), visited) + result
+		return result
+	return []
+
+
+static func _apply_details(creature: Dictionary, root: Dictionary, kind: String) -> void:
+	if kind == "fluff" and not creature.has("fluff"):
+		var entries: Array = _resolve_fluff(root, String(creature.get("name", "")), String(creature.get("source", "")))
+		if not entries.is_empty():
+			creature["fluff"] = {"entries": entries}
+	elif kind == "legendary":
+		var reference: Dictionary = creature.get("legendaryGroup", {})
+		for row: Variant in root.get("legendaryGroup", []):
+			if row is Dictionary and row.get("name", "") == reference.get("name", "") and row.get("source", "") == reference.get("source", ""):
+				var resolved: Dictionary = row.duplicate(true)
+				var copy: Dictionary = row.get("_copy", {})
+				for base: Variant in root.get("legendaryGroup", []):
+					if base is Dictionary and base.get("name", "") == copy.get("name", "") and base.get("source", "") == copy.get("source", ""):
+						for field: String in ["lairActions", "regionalEffects"]:
+							if not resolved.has(field) and base.has(field):
+								resolved[field] = base[field]
+				for field: String in ["lairActions", "regionalEffects"]:
+					if not creature.has(field) and resolved.has(field):
+						creature[field] = resolved[field].duplicate(true)
+				return
+
+
+static func enrich_cached(creature: Dictionary) -> Dictionary:
+	var enriched: Dictionary = creature.duplicate(true)
+	var index: Dictionary = _cached_detail_json(SOURCE_CACHE)
+	if index is Dictionary:
+		var filename: String = String(index.get(enriched.get("source", ""), ""))
+		for detail: Dictionary in [{"file": "fluff-" + filename, "kind": "fluff"}, {"file": "legendarygroups.json", "kind": "legendary"}]:
+			var path: String = CACHE_DIR.path_join(String(detail.file))
+			if FileAccess.file_exists(path):
+				var root: Dictionary = _cached_detail_json(path)
+				if not root.is_empty():
+					_apply_details(enriched, root, String(detail.kind))
+	return enriched
+
+
+static func _cached_detail_json(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var modified: int = FileAccess.get_modified_time(path)
+	if _detail_cache.has(path) and int(_detail_cache[path].modified) == modified:
+		return _detail_cache[path].root
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not parsed is Dictionary:
+		return {}
+	if _detail_cache.size() >= 8:
+		_detail_cache.clear()
+	_detail_cache[path] = {"modified": modified, "root": parsed}
+	return parsed
 
 
 func _merge_copy_creature(

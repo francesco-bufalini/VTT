@@ -155,6 +155,8 @@ $fastTests = @(
     # validate them before independent tactical-grid rendering assertions.
     "test_structured_resource_trackers.gd",
     "test_monster_action_metadata.gd",
+    "test_monster_traits.gd",
+    "test_monster_recharge_options.gd",
     "test_structured_numeric_bonuses.gd",
     "test_split_item_bonuses.gd",
     "test_movement_speeds.gd",

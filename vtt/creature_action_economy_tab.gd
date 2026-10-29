@@ -57,14 +57,14 @@ static func _feature_supplements() -> Array[Dictionary]:
 # Original 98-icon pack: 64px cells. Keys are in the same order as manifest.json.
 const GENERATED_ICON_KEYS = SheetStyle.GENERATED_ICON_KEYS
 const GENERATED_ICON_ATLASES = SheetStyle.GENERATED_ICON_ATLASES
-const HEADER_ICON_KEYS := ["weapon", "flight", "sleight_of_hand", "dash", "reaction_trigger"]
+const HEADER_ICON_KEYS := ["weapon", "flight", "sleight_of_hand", "dash", "reaction_trigger", "proficiency", "shield", "flag"]
 const CONTROL_ICONS: Texture2D = preload("res://vtt/icons/action_controls.svg")
 const CONTROL_ICON_KEYS := ["dice", "settings", "alternate"]
 const GOLD := Color("edbd77")
 const INK := Color("f5eee5")
 const MUTED := Color("c7bdb1")
 
-const GROUPS := ["Azione", "Azione bonus", "Azione gratuita", "Movimento", "Reazione"]
+const GROUPS := ["Azione", "Azione bonus", "Azione gratuita", "Movimento", "Reazione", "Azione leggendaria", "Resistenza leggendaria", "Azioni di tana"]
 var _sections: Array[VBoxContainer] = []
 var _panels: Array[PanelContainer] = []
 var _section_counts: Array[Label] = []
@@ -306,6 +306,8 @@ static func _timing(value: Variant) -> int:
 				return _timing(value[key])
 		return 0
 	var s := String(value).to_lower()
+	if s in ["legendary", "legendary_resistance", "lair"]:
+		return {"legendary": 5, "legendary_resistance": 6, "lair": 7}[s]
 	if "reaction" in s or "reazione" in s:
 		return 4
 	if "bonus" in s:
@@ -474,11 +476,7 @@ static func attack_action_summary(record: Dictionary) -> Dictionary:
 			continue
 		var text := _source_text(_description(raw.get("entries", "")))
 		notes.append("Multiattacco · " + text)
-		# Presentation only: complex alternative routines retain their full text.
-		var match_count := RegEx.create_from_string("(?i)makes (two|three|four|five|six|[2-9]) (?:melee |ranged |weapon )?attacks").search(text)
-		if match_count != null:
-			var number := match_count.get_string(1).to_lower()
-			count = maxi(count, int({"two": 2, "three": 3, "four": 4, "five": 5, "six": 6}.get(number, number)))
+		count = maxi(count, preload("res://vtt/monster_action_metadata.gd").multiattack_count(raw))
 	return {"count": count, "detail": "\n\n".join(notes)}
 
 
@@ -507,6 +505,8 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 	for attack: Dictionary in Attacks.definitions(record):
 		var id := String(attack.get("id", ""))
 		seen[id] = true
+		if id.begins_with("monster:legendary:"):
+			continue # The resource-bearing capability below owns its action cost.
 		var time := 0
 		if id.begins_with("monster:"):
 			time = _timing(String(attack.get("source", "action")))
@@ -519,27 +519,44 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 		detail += "\nPortata/gittata: %d ft" % range_feet
 		var title := String(attack.get("name", "Attacco"))
 		var attack_row := _entry(title, time, "Attacco", _source_text(detail))
+		attack_row["origin_id"] = String(attack.get("origin_id", ""))
 		attack_row["attack_id"] = id
 		attack_row["parent_action"] = "two_weapon" if time == 1 else "attack" if time == 0 else ""
 		results.append(attack_row)
-	# A monster's actions without attack rolls (breath weapons, special abilities)
-	# still belong here; keep their structured stat-block section.
-	var stat: Variant = record.get("stat_block", {})
-	if stat is Dictionary:
-		for section: String in ["action", "bonus", "reaction"]:
-			var actions: Variant = stat.get(section, [])
-			if not actions is Array:
+	# Actions and their resource costs belong to the same source trait as cards.
+	if record.get("kind", "") == "monster":
+		for source: Dictionary in preload("res://vtt/monster_trait_projection.gd").traits(record):
+			for action: Dictionary in source.monster_actions:
+				var resource_id: String = String(action.tracker_id)
+				if resource_id.is_empty():
+					for prefix: String in ["recharge:", "fightclub:"]:
+						var candidate: String = prefix + String(action.id).trim_prefix("monster:")
+						if trackers.has(candidate):
+							resource_id = candidate
+							action["cost"] = 1
+				var row := _entry(String(action.name), _timing(action.action_type), "Capacità", _description(action.entries), _tracker_label(resource_id, trackers), resource_id)
+				row.merge(action, true)
+				row["tracker_id"] = resource_id
+				if row.get("options", []).is_empty() and trackers.has(resource_id) and String(trackers[resource_id].get("recharge", "")) in ["d6", "short_rest", "long_rest"]:
+					row["options"] = preload("res://vtt/monster_trait_projection.gd").action_options(action)
+				row["time"] = _timing(action.action_type)
+				results.append(row)
+			var pool: Dictionary = source.get("monster_pool", {})
+			if pool.is_empty():
 				continue
-			for i: int in range(actions.size()):
-				if seen.has("monster:%s:%d" % [section, i]):
-					continue
-				var action: Variant = actions[i]
-				if not action is Dictionary:
-					continue
-				var name := String(action.get("name", "")).strip_edges()
-				if name.is_empty() or name.to_lower() in ["multiattack", "multiattacco"]:
-					continue
-				results.append(_entry(name, _timing(section), "Capacità", _description(action.get("entries", action))))
+			if not trackers.has(String(pool.id)):
+				for existing: Dictionary in trackers.values():
+					if existing.get("origin_id", "") == "feature:" + String(source.feature_key):
+						pool = existing
+						break
+			var role: String = String(source.monster_role)
+			var timing: int = {"legendary": 5, "resistance": 6, "lair": 7}.get(role, 0)
+			var title: String = {"legendary": "Azione leggendaria", "resistance": "Resistenza leggendaria", "lair": "Azioni di tana"}.get(role, source.name)
+			var row := _entry(title, timing, "Generale", "1 · " + GROUPS[timing], String(pool.name), String(pool.id))
+			row["id"] = {"legendary": "legendary_action", "resistance": "legendary_resistance", "lair": "lair_action"}.get(role, role)
+			row["base_rule"] = true
+			row["cost"] = 1
+			results.append(row)
 	# Only explicitly structured activations are classified. Passive features
 	# remain in Tratti rather than being guessed from descriptive prose.
 	var automatic: Dictionary = {}
@@ -658,9 +675,9 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 			if int(routine.count) > 1:
 				row["name"] = String(row.name) + " ×%d" % int(routine.count)
 			if not String(routine.detail).is_empty():
-				row["detail"] = String(row.get("detail", "")) + "\n\n" + String(routine.detail)
+				row["detail"] = String(routine.detail)
 	for index: int in range(results.size()):
-		results[index]["origin"] = "personal" if index >= personal_start else "general"
+		results[index]["origin"] = "personal" if index >= personal_start and not bool(results[index].get("base_rule", false)) else "general"
 		results[index]["position"] = index
 	return _normalize_alternatives(results.filter(func(row: Dictionary) -> bool: return String(row.get("kind", "")) != "Incantesimo"))
 
@@ -838,13 +855,30 @@ func _show_entry(entry: Dictionary) -> void:
 	dialog.add_child(body)
 	var description := RichTextLabel.new()
 	description.text = _source_text(String(entry.get("detail", "")))
-	if description.text.is_empty(): description.text = "Testo del privilegio non disponibile nel catalogo locale."
+	if description.text.is_empty():
+		description.text = "Scegli una delle opzioni: condividono il contatore della capacità." if not entry.get("options", []).is_empty() else "Testo del privilegio non disponibile nel catalogo locale."
 	if not String(entry.get("source_label", "")).is_empty():
 		description.text += "\n\nFonte: " + String(entry["source_label"])
 	description.selection_enabled = true
 	description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_child(description)
+	var options: Array = entry.get("options", [])
+	if not options.is_empty():
+		var picker := OptionButton.new()
+		picker.name = "MonsterActionOptions"
+		picker.tooltip_text = "Scegli una delle alternative: condividono il contatore della capacità."
+		for option: Dictionary in options:
+			picker.add_item(String(option.name))
+		body.add_child(picker)
+		var option_description := RichTextLabel.new()
+		option_description.name = "MonsterActionOptionDescription"
+		option_description.selection_enabled = true
+		option_description.custom_minimum_size.y = 140
+		option_description.text = _source_text(_description(options[0].get("entries", "")))
+		body.add_child(option_description)
+		picker.item_selected.connect(func(index: int) -> void:
+			option_description.text = _source_text(_description(options[index].get("entries", ""))))
 	var source_url := String(entry.get("source_url", ""))
 	if not source_url.is_empty():
 		var source := LinkButton.new()
@@ -946,9 +980,10 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 		counter.add_theme_constant_override("separation", 3)
 		counter.alignment = BoxContainer.ALIGNMENT_END
 		controls.add_child(counter)
-		var minus := _action_button("−", "Consuma 1 · " + tracker_name)
-		minus.disabled = used >= maximum or bool(tracker.get("disabled", false))
-		minus.pressed.connect(func() -> void: tracker_change_requested.emit(tracker_id, 1, maximum))
+		var cost: int = maxi(1, int(entry.get("cost", 1)))
+		var minus := _action_button("−%d" % cost if cost > 1 else "−", "Consuma %d · %s" % [cost, tracker_name])
+		minus.disabled = used + cost > maximum or bool(tracker.get("disabled", false))
+		minus.pressed.connect(func() -> void: tracker_change_requested.emit(tracker_id, cost, maximum))
 		counter.add_child(minus)
 		var remaining := Label.new()
 		remaining.text = "%d/%d" % [maximum - used, maximum]
@@ -1170,7 +1205,9 @@ func load_record(record: Dictionary) -> void:
 			if child.has_meta("action_generated"):
 				section.remove_child(child)
 				child.queue_free()
-	var grouped: Array = [[], [], [], [], []]
+	var grouped: Array = []
+	for _index: int in range(GROUPS.size()):
+		grouped.append([])
 	var projected := entries(record, _enabled_variants)
 	var parents: Dictionary = {}
 	for entry: Dictionary in projected:
@@ -1198,7 +1235,7 @@ func load_record(record: Dictionary) -> void:
 			children.append(entry)
 			parents[parent]["children"] = children
 			continue
-		grouped[clampi(int(entry.get("time", 0)), 0, 4)].append(entry)
+		grouped[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)].append(entry)
 	for timing: int in movement_groups:
 		if not movement_groups[timing]["children"].is_empty():
 			grouped[timing].append(movement_groups[timing])
@@ -1214,6 +1251,7 @@ func load_record(record: Dictionary) -> void:
 	for timing: int in spell_groups: grouped[timing].append(spell_groups[timing])
 	for i: int in range(GROUPS.size()):
 		var section: VBoxContainer = _sections[i]
+		_panels[i].visible = i < 5 or not (grouped[i] as Array).is_empty()
 		_section_counts[i].text = "%d" % (grouped[i] as Array).size()
 		var common: Array[Dictionary] = []
 		var personal: Array[Dictionary] = []

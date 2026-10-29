@@ -1006,6 +1006,8 @@ static func trait_origins(record: Dictionary, only_feat_granters: bool = false) 
 # (disabled/equipped/attuned) instead keep the graph intact and only mute it.
 static func _live_origin_ids(record: Dictionary) -> Dictionary:
 	var live: Dictionary = {"": true}
+	for alias: String in preload("res://vtt/monster_trait_projection.gd").legacy_sources(record):
+		live[alias] = true
 	for source: Dictionary in candidate_sources(record):
 		live[String(source.get("id", ""))] = true
 	for feature: Dictionary in trait_origins(record):
@@ -1291,6 +1293,13 @@ static func origin_enabled_map(record: Dictionary) -> Dictionary:
 				break
 	var result: Dictionary = {}
 	var visiting: Dictionary = {}
+	# Removed monster action cards still own existing saved custom benefits.
+	# Resolve their stable source IDs through the new granting card.
+	var aliases: Dictionary = preload("res://vtt/monster_trait_projection.gd").legacy_sources(record)
+	for alias: String in aliases:
+		if not own.has(alias):
+			own[alias] = record.get("origin_enabled", {}).get(alias, true)
+		feature_parents[alias] = aliases[alias]
 	for sid: String in own.keys():
 		_resolved_source_active(sid, own, feat_grants, feature_parents, visiting, result)
 	return result

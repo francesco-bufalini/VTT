@@ -32,6 +32,7 @@ const SHELL = [
   "/trait_benefit_distribution.js",
   "/trait_benefit_editor.js",
   "/effect_extensions.js",
+  "/monster_traits.js",
   "/trait_projection.js",
   "/spell_metadata.js",
   "/condition_catalog.js",

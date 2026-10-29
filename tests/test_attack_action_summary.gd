@@ -14,5 +14,9 @@ func run() -> void:
 			assert(row.attack_count == 3 and "three attacks" in row.detail)
 			found = true
 	assert(found)
+	monster.stat_block.action[0].entries = ["The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws."]
+	assert(Actions.attack_action_summary(monster).count == 3, "Frightful Presence does not add an attack")
+	monster.stat_block.action[0].attacks_per_action = 4
+	assert(Actions.attack_action_summary(monster).count == 4, "Explicit structured count takes precedence")
 	print("PASS: Extra Attack uses class levels without stacking; Multiattack belongs to Attack with source tooltip")
 	quit()

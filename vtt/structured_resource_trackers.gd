@@ -16,7 +16,18 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 	if String(record.get("kind", "")) == "monster":
 		_append_monster_trackers(record, result)
 	_append_class_trackers(record, result)
+	preload("res://vtt/monster_trait_projection.gd").bind_trackers(record, result)
+	if record.get("kind", "") == "monster":
+		var existing: Dictionary = {}
+		for row: Dictionary in result:
+			existing[String(row.id)] = true
+		for projected_trait: Dictionary in preload("res://vtt/monster_trait_projection.gd").traits(record):
+			var pool: Dictionary = projected_trait.get("monster_pool", {})
+			var owned: bool = result.any(func(row: Dictionary) -> bool: return row.get("origin_id", "") == "feature:" + String(projected_trait.feature_key))
+			if not pool.is_empty() and not existing.has(pool.id) and not owned:
+				result.append(pool.duplicate(true))
 	_assign_automatic_origins(record, result)
+	preload("res://vtt/monster_trait_projection.gd").bind_trackers(record, result)
 	# A class table cannot grant usable resources without its owning trait.
 	# Keep the saved spent-use keys stable when the feature becomes available.
 	result = result.filter(func(row: Dictionary) -> bool:

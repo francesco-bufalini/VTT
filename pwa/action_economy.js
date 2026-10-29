@@ -4,6 +4,7 @@ import {SKILLS} from './sheet_rules.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {offhandActionEligibility} from './offhand_rules.js';
+import {monsterActions,monsterBasicRules,monsterTraits,monsterActionOptions as projectedMonsterActionOptions} from './monster_traits.js';
 export {offhandActionEligibility};
 
 let supplementsCache=null;
@@ -107,38 +108,14 @@ const details=value=>typeof value==='string'?value:Array.isArray(value)?value.ma
 // 5eTools models mutually exclusive choices as named list items within one
 // rechargeable action. The action, not its individual options, owns the resource.
 export function monsterActionOptions(feature={}){
- const options=[];
- const visit=nodes=>{
-  for(const node of arr(nodes)){
-   if(!node||typeof node!=='object')continue;
-   if(node.type==='list'&&arr(node.items).length>=2&&
-      node.items.every(item=>item?.type==='item'&&String(item.name||'').trim()&&
-        (item.entry!==undefined||item.entries!==undefined))){
-    for(const item of node.items){
-     const raw=details(item.entry??item.entries);
-     const damage=/\{@damage\s+([^}|]+)(?:\|[^}]*)?\}/i.exec(raw);
-     const dc=/\{@dc\s+(\d+)\}/i.exec(raw);
-     const save=/\b(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) saving throw\b/i.exec(raw);
-     const area=/\b(\d+)[- ]foot\s+(cone|line|radius|sphere|cube|cylinder)\b/i.exec(raw);
-     const conditions=[...raw.matchAll(/\{@condition\s+([^}|]+)(?:\|[^}]*)?\}/gi)].map(match=>match[1]);
-     const description=raw.replace(/\{@(\w+)\s+([^}|]+)(?:\|[^}]*)?\}/g,
-       (_,tag,value)=>tag==='dc'?'CD '+value:value);
-     options.push({id:String(options.length),name:String(item.name),description,
-       ...(dc?{save_dc:Number(dc[1])}:{}),...(save?{save_ability:save[1].toLowerCase()}:{}),
-       ...(area?{area_feet:Number(area[1]),area_shape:area[2].toLowerCase()}:{}),
-       ...(damage?{damage_formula:damage[1]}:{}),conditions});
-    }
-   }else if(node.entries)visit(node.entries);
-  }
- };
- visit(feature.entries);
- return options;
+ return projectedMonsterActionOptions(feature);
 }
 const specified=v=>v!==null&&v!==undefined&&(typeof v!=='string'||v.trim()!=='')&&(!Array.isArray(v)||v.length>0);
 function timing(value){
  if(Array.isArray(value))return value.some(v=>timing(v)==='bonus')?'bonus':timing(value[0]);
  if(value&&typeof value==='object')return timing(value.unit??value.type??value.action_type??value.activation_type??value.time);
  const s=String(value||'').toLowerCase();
+ if(['legendary','legendary_resistance','lair'].includes(s))return s;
  if(s.includes('reaction')||s.includes('reazione'))return 'reaction';
  if(s.includes('bonus'))return 'bonus';
  if(s.includes('free')||s.includes('gratuit')||s.includes('interact'))return 'free';
@@ -206,6 +183,11 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  for(const attack of arr(record.attacks))if(attack?.name&&!already.has(String(attack.id))){
   already.add(String(attack.id));add(attack.name,attack.action_type||'action','Attacco',attack.description||attack.damage||'',tracked(attack.tracker_id));
  }
+ for(const action of monsterActions(record,calculated.trackers)){
+  const existing=out.find(row=>row.id===action.id);
+  if(existing)Object.assign(existing,action,{type:existing.type,tracker:tracked(action.tracker_id)});
+  else add(action.name,action.time,'Capacità',action.description,tracked(action.tracker_id),action.cost,action);
+ }
  // Named monster abilities and attacks share the same typed recharge pool.
  // A 5eTools list of options is projected under its parent, never as extra uses.
  for(const section of ['action','bonus','reaction']){
@@ -219,9 +201,10 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
      feature.vtt_resource?.recharge==='d6'||!!trackerId&&
      ['d6','short_rest','long_rest'].includes(trackers.get(String(trackerId))?.recharge);
    const options=rechargeable?monsterActionOptions(feature):[];
-   if(already.has(id)){
+   if(/^(?:multiattack|multiattacco)$/i.test(String(feature.name).trim()))return;
+   if(already.has(id)||out.some(row=>row.id===id)){
     const existing=out.find(row=>row.id===id);
-    if(existing&&options.length)Object.assign(existing,{options,tracker_id:String(trackerId),
+    if(existing&&options.length)Object.assign(existing,{options:existing.options?.length?existing.options:options,tracker_id:String(trackerId),
       tracker:tracked(trackerId)});
     return;
    }
@@ -323,7 +306,7 @@ export function nativeClassFeatureActions(record={},calculated={}){
 export function diceGlyph(){return '<span class="action-dice" aria-hidden="true"></span>';}
 // Compact battle sections use the same action projection as the Actions tab.
 // Keep attack buttons separate from description disclosures to avoid accidental dice rolls.
-const BATTLE_TIMINGS=[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Azione gratuita'],['movement','Movimento']];
+const BATTLE_TIMINGS=[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Azione gratuita'],['movement','Movimento'],['legendary','Azione leggendaria'],['legendary_resistance','Resistenza leggendaria'],['lair','Azioni di tana']];
 const MOVEMENT_ACTION_IDS=new Set(['movement','stealth_movement','dash','disengage','drop_prone','climb_large','overrun','tumble','escape_grapple','stand_up','crawl','jump','mount','dismount','difficult_terrain']);
 const WEAPON_ROLL_ACTION_IDS=new Set(['disarm','opportunity']);
 const rollModifier=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?Number(value):null;
@@ -452,23 +435,9 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
  const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
- const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
+ const resources=tracker&&item.monster_action?'<div class="action-resource-control"><button type="button" class="btn small" data-act="monster-action-use" data-monster-action-id="'+esc(item.id)+'"'+(remaining<item.cost||tracker.disabled?' disabled':'')+'>Usa · '+esc(item.cost)+'</button><span>'+remaining+' / '+esc(tracker.max)+'</span></div>':tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
- const monsterOptions=arr(item.options);
- const optionMarkup=monsterOptions.length?
-  '<div class="play-battle-monster-options"><span class="play-battle-monster-options-title">Opzioni · scegli una</span>'+
-  monsterOptions.map(option=>{
-   const facts=[
-    option.area_shape?option.area_feet+' ft · '+option.area_shape:'',
-    option.save_ability?'TS '+option.save_ability.toUpperCase()+(option.save_dc?' · CD '+option.save_dc:''):'',
-    option.damage_formula?'Danni '+option.damage_formula:'',
-    ...arr(option.conditions).map(condition=>'Condizione '+condition)
-   ].filter(Boolean);
-   return '<details class="play-battle-monster-option" name="monster-options-'+esc(item.id)+'" data-monster-option="'+esc(option.id)+'">'+
-    '<summary>'+esc(option.name)+'</summary><div class="play-battle-monster-option-body">'+
-    (facts.length?'<small>'+facts.map(esc).join(' · ')+'</small>':'')+
-    '<p>'+esc(option.description)+'</p></div></details>';
-  }).join('')+'</div>':'';
+ const optionMarkup=monsterActionOptionsMarkup(item);
  if(item.id==='spell_cast')return '<article class="play-battle-attack-entry play-battle-action-direct" data-attack-id="spell_cast">'+
   '<button type="button" class="play-battle-attack-direct-button" data-act="action-open-spells">'+icon+
   '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span></button></article>';
@@ -519,7 +488,7 @@ export function abilityAttackRoll(ability={},calculated={}){
    null;
 }
 export function battleAbilityEntries(record={},calculated={},entries=[],activated=[]){
- const result=entries.filter(row=>row.origin==='personal'&&row.type==='Capacità'&&classOrigin(row));
+ const result=entries.filter(row=>row.origin==='personal'&&row.type==='Capacità'&&(classOrigin(row)||row.monster_action));
  const seen=new Set(result.map(row=>String(row.name||'').trim().toLocaleLowerCase('it')));
  // Targeted feat actions participate in the standard Battle/Resources
  // pipeline, with exactly the same tracker and target selection as powers.
@@ -631,6 +600,12 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    description:'Effettuare una prova di caratteristica o di abilità.',available:true}
  ];
  const baseById=new Map(baseRules.map(row=>[row.id,row]));
+ for(const row of monsterBasicRules(record,calculated))baseById.set(row.id,row);
+ const grants=arr(calculated.attack_count_benefits).filter(row=>Number(row.attacks_per_action)===count);
+ const grant=grants[0];
+ const grantingTrait=arr(calculated.features).find(row=>row.origin_id===grant?.origin_id)||
+  (record.kind==='monster'?monsterTraits(record).find(row=>row.monster_role==='multiattack')||monsterTraits(record)[0]:null);
+ baseById.get('attack').grant_description=details(grantingTrait?.entries)||grant?.origin_name||descriptions.main;
  const opportunity=entries.find(row=>row.id==='opportunity');
  if(opportunity)baseById.set('opportunity',{...opportunity,...baseById.get('opportunity')});
  const offhand=entries.find(row=>row.id==='two_weapon');
@@ -708,8 +683,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
      type:'Capacità'});
  }
  const basicInActions=actionsBase.filter(row=>row.id==='attack'||row.id==='two_weapon'||
-  row.id==='opportunity'&&row.available||row.id==='spell_cast'&&row.available);
- const other=[...basicInActions,...specials];
+  row.id==='opportunity'&&row.available||row.id==='spell_cast'&&row.available||row.monster_action);
+ const other=[...basicInActions,...specials,...classAbilities.filter(row=>row.monster_action)];
  const ordering=(a,b,time)=>{
   const order=row=>row.id==='attack'&&time==='action'?-100:
    row.id==='opportunity'&&time==='reaction'?-100:
@@ -738,3 +713,22 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  };
 }
 
+
+export function monsterActionOptionsMarkup(item={}){
+ const monsterOptions=arr(item.options);
+ const optionMarkup=monsterOptions.length?
+  '<div class="play-battle-monster-options"><span class="play-battle-monster-options-title">Opzioni · scegli una</span>'+
+  monsterOptions.map(option=>{
+   const facts=[
+    option.area_shape?option.area_feet+' ft · '+option.area_shape:'',
+    option.save_ability?'TS '+option.save_ability.toUpperCase()+(option.save_dc?' · CD '+option.save_dc:''):'',
+    option.damage_formula?'Danni '+option.damage_formula:'',
+    ...arr(option.conditions).map(condition=>'Condizione '+condition)
+   ].filter(Boolean);
+   return '<details class="play-battle-monster-option" name="monster-options-'+esc(item.id)+'" data-monster-option="'+esc(option.id)+'">'+
+    '<summary>'+esc(option.name)+'</summary><div class="play-battle-monster-option-body">'+
+    (facts.length?'<small>'+facts.map(esc).join(' · ')+'</small>':'')+
+    '<p>'+esc(option.description)+'</p></div></details>';
+  }).join('')+'</div>':'';
+ return optionMarkup;
+}

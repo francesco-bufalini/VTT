@@ -321,11 +321,11 @@ func run() -> void:
 			"spellcasting": [{"daily": {"1": ["some spell"]}}]
 		}
 	})
-	assert(monster.size() == 3, "No counters from natural prose or spellcasting")
+	assert(monster.size() == 4, "Explicit Legendary Resistance frequency grants its counter; unrelated prose and spellcasting do not")
 	assert(int(_find_resource(monster, "Azioni leggendarie").get("max", 0)) == 2)
 	assert(int(_find_resource(monster, "Flame Breath").get("recharge_min", 0)) == 5)
 	assert(int(_find_resource(monster, "Shadow Breath").get("recharge_min", 0)) == 6)
-	assert(_find_resource(monster, "Legendary Resistance").is_empty())
+	assert(int(_find_resource(monster, "Legendary Resistance (3/Day)").get("max", 0)) == 3)
 
 	# Source-qualified Fight Club supplements enrich only matching 5etools
 	# features; 5etools {@recharge} and numeric legendaryActions take priority.
@@ -361,12 +361,14 @@ func run() -> void:
 	assert(int(_find_resource(explicit_pool, "Azioni leggendarie").get("max", 0)) == 2,
 		"Native legendaryActions must override Fight Club's pool count")
 	archaic["stat_block"]["source"] = "OTHER"
-	assert(Trackers.for_creature(archaic).size() == 2,
-		"Supplement must never match a different source with the same monster name")
+	var other_source: Array[Dictionary] = Trackers.for_creature(archaic)
+	assert(other_source.size() == 3 and not other_source.any(func(row: Dictionary) -> bool: return String(row.id).begins_with("fightclub:")),
+		"The native resistance frequency remains valid; supplements must never match a different source")
 	archaic["stat_block"]["source"] = "SCC"
 	archaic["stat_block"]["name"] = "Variant Archaic"
-	assert(Trackers.for_creature(archaic).size() == 2,
-		"Supplement must not guess from a different monster variant")
+	var other_variant: Array[Dictionary] = Trackers.for_creature(archaic)
+	assert(other_variant.size() == 3 and not other_variant.any(func(row: Dictionary) -> bool: return String(row.id).begins_with("fightclub:")),
+		"The native resistance frequency remains valid; supplements must not guess from a different variant")
 	var short_rest_creature: Dictionary = {
 		"kind": "monster",
 		"stat_block": {
@@ -405,8 +407,8 @@ func run() -> void:
 	mm_dragon["stat_block"]["legendaryActions"] = 2
 	assert(int(_find_resource(Trackers.for_creature(mm_dragon), "Azioni leggendarie").get("max", 0)) == 2)
 	mm_dragon["stat_block"]["source"] = "XMM"
-	assert(_find_resource(Trackers.for_creature(mm_dragon), "Legendary Resistance (3/Day)").is_empty(),
-		"2024 Monster Manual must not borrow MM 2014 resources")
+	assert(String(_find_resource(Trackers.for_creature(mm_dragon), "Legendary Resistance (3/Day)").get("id", "")) == "legendary_resistance",
+		"The 2024 native frequency must use its own counter, never a 2014 supplement ID")
 
 	print("PASS: structured 5etools resource trackers")
 	quit()

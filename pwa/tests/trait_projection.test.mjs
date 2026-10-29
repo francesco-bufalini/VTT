@@ -65,12 +65,15 @@ test('disabled ownership stays listed and level-gated feat sections become visib
  assert.ok(rows.some(r=>r.name==='Feat section'));
  assert.ok(!rows.some(r=>r.name==='Arcane Ward'));
 });
-test('monster traits include native action categories without leaking character origins',async()=>{
+test('monster traits have one creature origin and put ordinary actions on the overview',async()=>{
  const record={kind:'monster',stat_block:{trait:[{name:'Keen Sight',entries:['A sharp eye']}],
   action:[{name:'Bite',entries:['One attack']}],bonus:[{name:'Quick Step'}],
   lairActions:['A lair pulse']}};
  const rows=await collectTraitRows(record,{},provider);
- assert.deepEqual(rows.map(r=>r.name).sort(),['Keen Sight','Bite','Quick Step','Azioni della tana · 1'].sort());
+ assert.deepEqual(rows.map(r=>r.name).sort(),['Keen Sight','Panoramica','Azioni di tana'].sort());
+ assert.equal(rows[0].name,'Panoramica');
+ assert.equal(new Set(rows.map(row=>row.origin_key)).size,1);
+ assert.deepEqual(rows[0].monster_actions.map(row=>row.name),['Bite','Quick Step']);
  assert.ok(rows.every(r=>r.category==='mostro'));
 });
 test('missing offline descriptive indexes preserve projected structured features',async()=>{

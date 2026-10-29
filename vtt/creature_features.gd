@@ -424,7 +424,7 @@ static func _append(
 	if key.is_empty():
 		key = "%s|%d|%s" % [origin_key, level, name.to_lower()]
 	# Disambiguate a feature appearing in two independently selected sources.
-	key = origin_key + "|" + key
+	key = String(feature.get("feature_key", origin_key + "|" + key))
 	var description: Variant = feature.get("entries", feature.get("description", ""))
 	if description is String and String(description).strip_edges().is_empty():
 		description = ContentCatalog.description(feature)
@@ -448,6 +448,12 @@ static func _append(
 		feature, gate_scope, class_label, class_book, "min_level", level
 	)
 	output.append({
+		"monster_role": feature.get("monster_role", ""),
+		"monster_legacy_keys": feature.get("monster_legacy_keys", []),
+		"monster_actions": feature.get("monster_actions", []),
+		"monster_attack_ids": feature.get("monster_attack_ids", []),
+		"monster_tracker_ids": feature.get("monster_tracker_ids", []),
+		"monster_pool": feature.get("monster_pool", {}),
 		"key": key, "name": name, "level": level, "rank": rank, "category": category,
 		"requirements": gate,
 		"inactive": bool(feature.get("inactive", false)),
@@ -527,37 +533,5 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 
 
 static func _collect_monster(record: Dictionary, output: Array[Dictionary]) -> void:
-	var raw: Variant = record.get("stat_block", {})
-	if not raw is Dictionary:
-		return
-	var stat: Dictionary = raw as Dictionary
-	var categories: Array[Dictionary] = [
-		{"key": "trait", "label": "Tratti"},
-		{"key": "action", "label": "Azioni"},
-		{"key": "bonus", "label": "Azioni bonus"},
-		{"key": "reaction", "label": "Reazioni"},
-		{"key": "legendary", "label": "Azioni leggendarie"},
-		{"key": "mythic", "label": "Azioni mitiche"},
-		{"key": "lairActions", "label": "Azioni della tana"}
-	]
-	for category: Dictionary in categories:
-		var section: String = String(category["key"])
-		var raw_entries: Variant = stat.get(section, [])
-		if not raw_entries is Array:
-			continue
-		for index: int in range((raw_entries as Array).size()):
-			var raw_entry: Variant = (raw_entries as Array)[index]
-			if raw_entry is Dictionary:
-				var item: Dictionary = (raw_entry as Dictionary).duplicate(true)
-				if String(item.get("name", "")).is_empty():
-					item["name"] = "%s · %d" % [category["label"], index + 1]
-				if not item.has("entries"):
-					item["entries"] = raw_entry
-				item["source"] = String(stat.get("source", ""))
-				_append(output, item, 0, "Mostro · " + String(category["label"]),
-					"monster|" + section, "", "", 0)
-			elif raw_entry is String and not String(raw_entry).strip_edges().is_empty():
-				_append(output, {
-					"name": "%s · %d" % [category["label"], index + 1],
-					"entries": raw_entry, "source": String(stat.get("source", ""))
-				}, 0, "Mostro · " + String(category["label"]), "monster|" + section, "", "", 0)
+	for row: Dictionary in preload("res://vtt/monster_trait_projection.gd").traits(record):
+		_append(output, row, 0, row.origin, row.origin_key, "", "", int(row.get("rank", 0)))

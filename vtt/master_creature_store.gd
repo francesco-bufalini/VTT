@@ -142,7 +142,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		if stat_value is Dictionary
 		else {}
 	)
-	stat_block = MonsterActions.prepare(stat_block)
+	stat_block = MonsterActions.prepare(preload("res://vtt/bestiary_5etools_client.gd").enrich_cached(stat_block))
 	var base_name := String(
 		value.get("base_name", stat_block.get("name", "Creatura"))
 	).strip_edges()

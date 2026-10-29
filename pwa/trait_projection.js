@@ -1,3 +1,4 @@
+import {monsterTraits} from './monster_traits.js';
 import {effectiveBackgrounds} from './structured_effects.js';
 // Read-only portable counterpart of CreatureFeatures.collect_features in the desktop.
 // Do not infer mechanics from descriptions: this projection only decides which
@@ -99,36 +100,11 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   });
  };
  if(record.kind==='monster'||record.variant_rules_kind==='monster'){
-  const sectionNames={trait:'Tratti',action:'Azioni',bonus:'Azioni bonus',
-   reaction:'Reazioni',legendary:'Azioni leggendarie',mythic:'Azioni mitiche',
-   lairActions:'Azioni della tana'};
-  for(const [section,label] of Object.entries(sectionNames))
-   arr(record.stat_block?.[section]).forEach((entry,i)=>add(
-    typeof entry==='string'?{name:label+' · '+(i+1),entries:entry}:
-     {...entry,name:entry?.name||label+' · '+(i+1)},
-    {category:'mostro',origin:'Mostro · '+label,origin_key:'monster|'+section,level:0,rank:0}));
-  // 5eTools spellcasting is a structured block, not a trait/action array.
-  // Keep the spells and use-frequency groups visible even when offline; this
-  // does not invent spell slots or imply automatic spellcasting resources.
-  arr(record.stat_block?.spellcasting).forEach((caster,i)=>{
-   const lines=[...arr(caster.headerEntries)];
-   for(const [level,group] of Object.entries(caster.spells||{})){
-    const names=arr(group?.spells).map(String);
-    if(names.length)lines.push('Livello '+level+': '+names.join(', '));
-   }
-   for(const [mode,label] of [['daily','Al giorno'],['rest','Per riposo'],
-     ['weekly','A settimana'],['will','A volontà'],['constant','Costanti']]){
-    const source=caster[mode];
-    if(Array.isArray(source)){
-     if(source.length)lines.push(label+': '+source.map(String).join(', '));
-    }else for(const [count,values] of Object.entries(source||{}))
-      if(arr(values).length)lines.push(label+' '+count+': '+values.map(String).join(', '));
-   }
-   lines.push(...arr(caster.footerEntries));
-   add({name:caster.name||'Incantesimi · '+(i+1),entries:lines},
-     {category:'mostro',origin:'Mostro · Incantesimi',origin_key:'monster|spellcasting',
-      level:0,rank:0});
-  });
+  for(const trait of monsterTraits(record)){
+   const id='feature:'+trait.feature_key;
+   rows.push({...trait,key:trait.feature_key,feature_origin:id,category:'mostro',
+    inactive:!traitIsActive(record,{...trait,key:trait.feature_key})||sourceDisabled(record,id)||sourceDisabled(record,trait.origin_key)});
+  }
  }else if(record.species){
   const selected=record.subrace?
    (await lookup('races',record.species+' ('+record.subrace+')',record.subrace_source)||
@@ -401,6 +377,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
  // cover portable grants absent from a descriptive index without duplicating.
  for(const feature of arr(calculated.features)){
   const originKey=String(feature.origin_key||'altro');
+  if(originKey.startsWith('monster|'))continue; // Already projected with its exact card identity.
   // Do not resurrect item-only structured features for unequipped inventory,
   // and do not replace the full item description with partial effect text.
   if(originKey.startsWith('item:')||

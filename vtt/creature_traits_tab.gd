@@ -20,6 +20,8 @@ var _cards: Dictionary = {}
 var _expanded: Dictionary = {}
 var _active_origin := ""
 var _record_id := ""
+var _record: Dictionary = {}
+var _monster_trackers: Array[Dictionary] = []
 var _touch_filters: VBoxContainer
 var _touch_filter_toggle: Button
 
@@ -123,6 +125,10 @@ func _update_touch_filter_label() -> void:
 
 
 func load_record(record: Dictionary) -> void:
+	_record = record
+	_monster_trackers.clear()
+	if record.get("kind", "") == "monster":
+		_monster_trackers = preload("res://vtt/structured_resource_trackers.gd").for_creature(record)
 	var record_id: String = String(record.get("id", ""))
 	if record_id != _record_id:
 		_expanded.clear()
@@ -267,6 +273,12 @@ func _rebuild() -> void:
 		source.add_theme_font_size_override("font_size", 12)
 		source.add_theme_color_override("font_color", Color(0.73, 0.66, 0.57))
 		body.add_child(source)
+		for benefit: String in _monster_benefits(feature):
+			var label := Label.new()
+			label.text = benefit
+			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			label.add_theme_font_size_override("font_size", 13)
+			body.add_child(label)
 		if opened:
 			var details := RichTextLabel.new()
 			TraitText.style(details)
@@ -294,6 +306,29 @@ func _rebuild() -> void:
 				link.tooltip_text = String(destination["help"])
 				link.pressed.connect(_request_section.bind(int(destination["section"])))
 				links.add_child(link)
+
+
+func _monster_benefits(feature: Dictionary) -> PackedStringArray:
+	var benefits: PackedStringArray = []
+	for id: String in feature.get("monster_attack_ids", []):
+		var parts: PackedStringArray = id.split(":")
+		var raw: Dictionary = _record.get("stat_block", {}).get(parts[1], [])[int(parts[2])]
+		var attack: Dictionary = raw.get("vtt_attack", {})
+		benefits.append("Attacco · " + String(raw.get("name", "")) + (" · " + String(attack.get("damage", "")) if not String(attack.get("damage", "")).is_empty() else ""))
+	for action: Dictionary in feature.get("monster_actions", []):
+		var timing: String = {"action": "Azione", "bonus": "Azione bonus", "reaction": "Reazione", "legendary": "Azione leggendaria", "lair": "Azione di tana"}.get(String(action.action_type), String(action.action_type))
+		var cost: int = int(action.cost)
+		if cost == 0:
+			for tracker: Dictionary in _monster_trackers:
+				if String(tracker.id) in ["recharge:" + String(action.id).trim_prefix("monster:"), "fightclub:" + String(action.id).trim_prefix("monster:")]:
+					cost = 1
+		benefits.append("Capacità · " + String(action.name) + " · " + timing + (" · Costo %d" % cost if cost > 0 else ""))
+		for option: Dictionary in action.get("options", []):
+			benefits.append("    Opzione · " + String(option.name))
+	for tracker: Dictionary in _monster_trackers:
+		if tracker.get("origin_id", "") == "feature:" + String(feature.get("key", "")):
+			benefits.append("Risorsa · " + String(tracker.name) + " · Max %d" % int(tracker.max))
+	return benefits
 
 
 func _request_section(section: int) -> void:

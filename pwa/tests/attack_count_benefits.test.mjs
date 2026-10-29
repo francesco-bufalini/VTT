@@ -93,7 +93,7 @@ test('old monster multiattack is projected into a trait benefit; typed count tak
  const first=evaluate(record);
  assert.equal(first.count,3);
  assert.equal(first.benefits.length,1);
- assert.equal(first.benefits[0].origin_id,first.features[0].origin_id);
+ assert.equal(first.benefits[0].origin_id,first.features.find(row=>row.name==='Multiattack').origin_id);
  const withSpecial=evaluate({...record,stat_block:{action:[{name:'Multiattack',entries:[
   'The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws.'
  ]}]}});

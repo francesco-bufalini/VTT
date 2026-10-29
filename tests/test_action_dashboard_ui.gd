@@ -38,8 +38,9 @@ func run() -> void:
 	tab._expand_all.pressed.emit()
 	tab._expand_all.pressed.emit()
 	for toggle: Button in tab._tree_toggles: assert(not toggle.button_pressed)
-	assert(tab._panels.size() == 5 and tab._sections.size() == 5)
-	assert(tab._section_counts.size() == 5 and int(tab._section_counts[0].text) > 0,
+	assert(tab._panels.size() == tab.GROUPS.size() and tab._sections.size() == tab.GROUPS.size())
+	assert(not tab._panels[5].visible and not tab._panels[6].visible and not tab._panels[7].visible)
+	assert(tab._section_counts.size() == tab.GROUPS.size() and int(tab._section_counts[0].text) > 0,
 		"Each bordered action panel must expose its live action count")
 	assert(tab._layout_two.visible)
 	assert(tab._panels[0].get_parent() == tab._layout_left)

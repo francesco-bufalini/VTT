@@ -174,7 +174,8 @@ test('recharge-bearing 5eTools action lists expose named options under one share
   .map(option=>option.textContent),['Cold Breath','Paralyzing Breath']);
  assert.equal(row.querySelectorAll('.action-resource-control').length,1,
   'Alternatives share a single parent recharge pool');
- assert.equal(row.querySelector('[data-act="tracker-more"]').dataset.trackerId,tracker.id);
+ assert.equal(row.querySelector('[data-act="monster-action-use"]').dataset.monsterActionId,parent.id);
+ assert.equal(parent.cost,1,'Each chosen option spends one use of the parent pool');
  assert.match(row.textContent,/13d8/);
  assert.match(row.textContent,/paralyzed/);
  const ordinary={...record,stat_block:{action:[{...breath,name:'Not Rechargeable'}]}};

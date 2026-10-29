@@ -1,0 +1,48 @@
+{
+  "kind": "monster",
+  "base_name": "Test Dragon",
+  "source": "TEST",
+  "rules_version": "2014",
+  "stat_block": {
+    "name": "Test Dragon",
+    "source": "TEST",
+    "fluff": {"entries": ["A dragon description from Info."]},
+    "trait": [
+      {"name": "Legendary Resistance (3/Day)", "entries": ["Turn a failed save into a success."]},
+      {"name": "Keen Senses", "entries": ["The dragon has keen senses."]}
+    ],
+    "action": [
+      {"name": "Multiattack", "entries": ["The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws."]},
+      {"name": "Bite", "entries": ["{@atk mw} {@hit 10} to hit, reach 10 ft. {@h}12 ({@damage 2d6 + 5}) piercing damage."]},
+      {"name": "Frightful Presence", "entries": ["Each chosen creature within 120 feet must make a DC 18 Wisdom saving throw or be frightened."]},
+      {"name": "Fire Breath {@recharge 5}", "entries": ["Each creature in a cone makes a saving throw."]},
+      {"name": "Breath Weapons {@recharge 5}", "entries": [
+        "The dragon uses one of the following breath weapons.",
+        {"type": "list", "style": "list-hang-notitle", "items": [
+          {"type": "item", "name": "Cold Breath", "entry": "The dragon exhales an icy blast in a 60-foot cone. Each creature must make a {@dc 20} Constitution saving throw, taking 58 ({@damage 13d8}) cold damage on a failed save, or half as much damage on a successful one."},
+          {"type": "item", "name": "Paralyzing Breath", "entry": "The dragon exhales paralyzing gas in a 60-foot cone. Each creature must succeed on a {@dc 20} Constitution saving throw or be {@condition paralyzed} for 1 minute."}
+        ]}
+      ]},
+      {"name": "Adaptive Pulse {@recharge 6}", "entries": [
+        {"type": "entries", "entries": [{"type": "list", "items": [
+          {"type": "item", "name": "Force Pulse", "entries": ["Creatures in a 30-foot line make a {@dc 15} Dexterity saving throw or take {@damage 4d8} force damage."]},
+          {"type": "item", "name": "Slowing Pulse", "entries": ["Creatures in a 30-foot line make a {@dc 15} Wisdom saving throw or be {@condition restrained}."]}
+        ]}]}
+      ]}
+    ],
+    "bonus": [{"name": "Quick Step", "entries": ["Move up to half speed."]}],
+    "reaction": [{"name": "Deflect", "entries": ["Reduce incoming damage."]}],
+    "legendaryActions": 3,
+    "legendary": [
+      {"name": "Detect", "entries": ["Make a Perception check."]},
+      {"name": "Wing Attack (Costs 2 Actions)", "entries": ["Beat its wings; creatures make a saving throw."]}
+    ],
+    "lairActions": [
+      "On initiative count 20 the dragon uses one option:",
+      {"type": "list", "items": [
+        {"type": "item", "name": "Lava", "entries": ["Lava erupts."]},
+        {"type": "item", "name": "Smoke", "entries": ["Smoke fills the lair."]}
+      ]}
+    ]
+  }
+}
