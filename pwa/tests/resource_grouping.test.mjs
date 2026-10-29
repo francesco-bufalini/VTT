@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {calculateSheet} from '../sheet_rules.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
-import {battleActionPanels,abilityAttackRoll} from '../action_economy.js';
-import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch} from '../sheet_rules_view.js';
+import {battleActionPanels,abilityAttackRoll,actionGlyph} from '../action_economy.js';
+import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch,resourceAbilityGlyphKey,resourceRollBonusGlyphKey} from '../sheet_rules_view.js';
 import {companionOwnerActions} from '../companion_rules.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const companions=read('companion_spells');
@@ -26,11 +26,30 @@ function render(record,calculated,check,sheet='battle',bank=''){
   const abilities=abilitiesForCreature(record,[],calculated);
   const battleActions=battleActionPanels(record,calculated,[],[],[],[],abilities);
   const app=document.querySelector('#app');
-  mountPlaySheet(app,{creature:record,calculated,sheet,icon:()=>'',view:{
+  mountPlaySheet(app,{creature:record,calculated,sheet,icon:actionGlyph,view:{
    battleAbilities:abilities,battleActions,battleTraits:calculated.features}});
   check(app,abilities,battleActions);
  }finally{globalThis.document=previous;dom.window.close();}
 }
+test('Resources uses distinct semantic icons for abilities, without inferring tracker icons',()=>{
+ const resource=row=>resourceAbilityGlyphKey({kind:'ability',name:'Generic power',...row});
+ assert.equal(resource({kind:'spell'}),'spell_cast');
+ assert.equal(resource({power:{roll_attack:{id:'launcher'}},timing:'bonus'}),'weapon');
+ assert.equal(resource({power:{companion_command:true},timing:'bonus'}),'talk');
+ assert.equal(resource({power:{companion_rule_id:'companion'},timing:'action'}),'summon');
+ assert.equal(resource({power:{infusion_action:true},timing:'reaction'}),'magic_item');
+ assert.equal(resource({name:'Forma selvatica',timing:'bonus'}),'wild_shape');
+ assert.equal(resource({power:{persistent_key:'aura'},timing:'action'}),'buff');
+ for(const [timing,icon] of Object.entries({action:'action',bonus:'bonus',reaction:'reaction_trigger',
+  free:'free',movement:'speed',contextual:'spark'})){
+  assert.equal(resource({timing}),icon);
+ }
+ assert.equal(resourceRollBonusGlyphKey({targets:['attack_damage:sword']}),'attack_bonus');
+ assert.equal(resourceRollBonusGlyphKey({targets:['save:con']}),'save_throw');
+ assert.equal(resourceRollBonusGlyphKey({targets:['skill:stealth']}),'skill');
+ assert.equal(resourceRollBonusGlyphKey({targets:['any_d20']}),'buff');
+});
+
 test('Lightning Launcher attack and extra damage render in separate Resources groups, even when spent',()=>{
  const record={...sheet('Artificer','Armorer','TCE'),
   inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],
@@ -40,6 +59,8 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
  render(record,calculated,(app,abilities)=>{
   const bonus=app.querySelector('[data-resource-tracker="'+tracker.id+'"]');
   assert(bonus);
+  assert.equal(bonus.querySelector('.play-resource > .play-resource-info .vtt-action-glyph'),null,
+   'The tracker heading is a counter, not an ability');
   assert.match(bonus.textContent,/1d6/);
   assert.equal(bonus.querySelector('[data-act="tracker-trait-use"]'),null);
   assert.equal(bonus.querySelector('[data-act="battle-use-ability"]'),null);
@@ -50,6 +71,10 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert.equal(abilityAttackRoll(attack,calculated).target,'attack_hit:class_feature:lightning_launcher');
   const free=app.querySelector('[data-resource-privilege="'+attack.feature_id+'"]');
   assert(free);
+  const attackIcon=free.querySelector('[data-ability-id] .vtt-action-glyph');
+  assert(attackIcon);
+  assert.equal(attackIcon.className,/class="([^"]+)"/.exec(actionGlyph('weapon'))[1],
+   'A trait-granted attack uses the weapon pictogram');
   const buttons=free.querySelectorAll('[data-act="battle-use-ability"]');
   assert.equal(buttons.length,1);
   assert.equal(buttons[0].disabled,false);
