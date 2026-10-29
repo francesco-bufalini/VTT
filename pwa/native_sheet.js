@@ -412,7 +412,7 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
    }).join('')+'</div>'+(key==='formula_bonuses'?benefitRequirements(row,'data-benefit-list="'+key+'" data-index="'+i+'"'):'')+
    (key==='formula_bonuses'?'<p class="hint" data-formula-preview="'+i+'">'+esc(formulaPreview(row.expression,catalogs.calculated))+'</p>':'')+
    (key==='origin_spell_grants'?'<p class="hint">'+list(row.spells).map(s=>esc(typeof s==='string'?s:s.name||s.id)).join(', ')+'</p>':'')+'</article>';
- }).join('')+'<button type="button" class="btn" data-act="native-add" data-list="'+key+'">＋ Aggiungi</button>';
+ }).join('')+(key==='classes'?'':'<button type="button" class="btn" data-act="native-add" data-list="'+key+'">＋ Aggiungi</button>');
 }
 export function formulaPreview(expression,calculated){
  try{return 'Risultato della formula: '+formulaValue(expression,calculated);}
