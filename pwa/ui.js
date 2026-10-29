@@ -1,5 +1,6 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
 import {identityEntriesPatch} from './identity_aliases.js';
+import {availableD20Rerolls,offerD20Reroll,chooseD20Reroll} from './d20_rerolls.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage,validateVariants} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
@@ -5322,6 +5323,35 @@ function applyPostRollBonus(dialog,bonus){
  dialog.renderRollFormula?.();
  return next;
 }
+function recordRevisedRoll(dialog,next){
+ const previous=dialog.rollOutcome;
+ dialog.rollOutcome=next;
+ if(state.roll===previous)state.roll=next;
+ const index=state.rollHistory.indexOf(dialog.rollHistoryEntry);
+ if(index>=0)state.rollHistory[index]=next;
+ dialog.rollHistoryEntry=next;
+ const result=dialog.querySelector('[data-roll-result]');
+ if(result){result.hidden=false;result.innerHTML=rollDieResultMarkup(next);}
+ return next;
+}
+function refreshD20RerollChoices(dialog,record,calculated){
+ const container=dialog?.querySelector('[data-d20-rerolls]');
+ if(!container)return;
+ if(!dialog.rollOutcome){container.hidden=true;return;}
+ const choices=availableD20Rerolls(record,calculated,dialog.dataset.rollTarget,dialog.rollOutcome)
+   .filter(row=>!dialog.usedRerollIds?.has(String(row.id)));
+ dialog.d20RerollSources=choices;
+ const current=dialog.rollOutcome.d20_reroll;
+ const select=current?'<div class="sheet-reroll-choice"><span>'+esc(current.source_name)+
+   ': precedente '+esc(current.previous)+' · nuovo '+esc(current.new_roll)+'</span>'+
+   '<button type="button" data-act="sheet-roll-choose-d20" data-d20-choice="previous" aria-pressed="'+(current.selected==='previous')+'">Tieni precedente</button>'+
+   '<button type="button" data-act="sheet-roll-choose-d20" data-d20-choice="new" aria-pressed="'+(current.selected==='new')+'">Usa nuovo</button></div>':'';
+ container.innerHTML=(choices.length?'<div class="sheet-reroll-title">Ritira un d20</div>'+
+   choices.map((row,index)=>'<button type="button" class="sheet-reroll-source" data-act="sheet-roll-reroll-d20" data-d20-reroll="'+index+'">'+
+     esc(row.origin_name||row.name||'Ritiro')+
+     (row.tracker_id?' · '+esc(row.tracker_cost||1)+' utilizzo':'')+'</button>').join(''):'')+select;
+ container.hidden=!choices.length&&!current;
+}
 async function announcePostRollBonus(updated){
  if(!updated||!state.paired||!state.online)return;
  try{
@@ -5428,6 +5458,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
  dialog.dataset.rollKind=kind;dialog.dataset.creatureId=creatureId;
  dialog.rollBonuses=bonuses;dialog.usedRollBonuses=[];
  dialog.rollOutcome=null;dialog.rollHistoryEntry=null;dialog.postRollBonuses=[];dialog.appliedBonusIds=new Set();
+ dialog.usedRerollIds=new Set();dialog.d20RerollSources=[];
  if(kind==='damage'||kind==='feature'){
    dialog.dataset.damageFormula=damageFormula;dialog.dataset.damageType=damageType;
    dialog.dataset.damageLabel=damageLabel;
@@ -5484,7 +5515,8 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
    '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span>'+
      '<div class="sheet-roll-formula-line"><div data-roll-formula>'+formula+'</div>'+
      '<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-bonus" aria-label="Aggiungi bonus alla formula" title="Aggiungi bonus alla formula">+</button></div></div>'+
-   '<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+bonusList+
+   '<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+
+   (kind==='d20'?'<section class="sheet-roll-rerolls" data-d20-rerolls hidden aria-label="Ritiri d20 disponibili"></section>':'')+bonusList+
    '<div class="actions sheet-roll-actions">'+select+
      btn('roll-sheet-confirm',kind==='damage'?'Tira danni':kind==='feature'?'Tira':'Tira 1d20','primary')+'</div>';
  document.body.append(dialog);
@@ -7238,6 +7270,40 @@ async function handleAction(target){
     });
     return;
   }
+  if(act==='sheet-roll-choose-d20'){
+    const dialog=document.querySelector('#sheet-roll-dialog');
+    if(!dialog||!dialog.rollOutcome?.d20_reroll||dialog.dataset.rolling==='true')return;
+    const next=chooseD20Reroll(dialog.rollOutcome,String(target.dataset.d20Choice||'previous'));
+    recordRevisedRoll(dialog,next);
+    refreshD20RerollChoices(dialog,state.editor.read(),await computeLocalData(state.editor.read()));
+    await announcePostRollBonus(next);
+    return;
+  }
+  if(act==='sheet-roll-reroll-d20'){
+    const dialog=document.querySelector('#sheet-roll-dialog');
+    if(!dialog||dialog.dataset.rollKind!=='d20'||!dialog.rollOutcome||dialog.dataset.rolling==='true')return;
+    const creature=state.editor?.read();
+    if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata.');
+    const index=Number(target.dataset.d20Reroll);
+    const listed=dialog.d20RerollSources?.[index];
+    const calculated=await computeLocalData(creature);
+    const source=availableD20Rerolls(creature,calculated,dialog.dataset.rollTarget,dialog.rollOutcome)
+      .find(row=>row.id===listed?.id);
+    if(!source||dialog.usedRerollIds.has(String(source.id)))throw Error('Ritiro non più disponibile.');
+    // Pay before rolling; choosing to retain the old die does not refund a use.
+    dialog.dataset.rolling='true';target.disabled=true;
+    try{
+      if(source.payment_mode==='inspiration')await patch({inspiration:false});
+      else if(source.tracker_id)await patch(spendTrackerUses(creature,source.tracker_id,
+        Math.max(1,Number(source.tracker_cost)||1),calculated.trackers));
+      const next=chooseD20Reroll(offerD20Reroll(dialog.rollOutcome,randomDie,source),'previous');
+      dialog.usedRerollIds.add(String(source.id));
+      recordRevisedRoll(dialog,next);
+      refreshD20RerollChoices(dialog,state.editor.read(),await computeLocalData(state.editor.read()));
+      await announcePostRollBonus(next);
+    }finally{delete dialog.dataset.rolling;}
+    return;
+  }
   if(act==='roll-sheet-confirm'){
     const dialog=document.querySelector('#sheet-roll-dialog');
     if(!dialog||dialog.dataset.rolling==='true'||
@@ -7302,6 +7368,7 @@ async function handleAction(target){
         const automatic=classFeatureRollSources(creature,calculated,key,dialog.dataset.rollContext||'');
         const resolved=resolveClassRollMode([...automatic,...confirmed],choice);
         const penalty=exhaustionRollModifier(calculated.exhaustion_effects,key);
+        dialog.usedRerollIds.clear();
         const outcome=rollSheetDice(modifier+penalty,numeric,randomDie,resolved.mode);
         state.roll={...outcome,label,author:selectedName()};
         state.rollHistory.unshift({...state.roll});
@@ -7372,6 +7439,8 @@ async function handleAction(target){
           !!(row.consumes_spell&&!calculatedAfter.origin_spells?.some(g=>g.spell_id===row.consumes_spell));
       }
       dialog.renderRollFormula?.();
+      if(dialog.dataset.rollKind==='d20')
+        refreshD20RerollChoices(dialog,state.editor.read(),calculatedAfter);
       if(state.paired&&state.online){
         try{await shareRoll({quiet:true});}
         catch(error){
