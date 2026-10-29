@@ -126,7 +126,8 @@ try{
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-identity [data-sheet-context="identity"]').count(),0,'No separate identity gear');
  assert.equal(await page.locator('#sheet-play-view [data-act="info-portrait-pick"]').count(),0,'Portrait actions belong to the identity dialog');
- assert.equal(await page.locator('#sheet-play-view .play-passives').count(),1,'Alignment and edition replace the portrait action');
+ assert.equal(await page.locator('#sheet-play-view .play-identity-metadata > small').count(),2,
+  'Plain alignment and edition text replace the portrait action');
  await popup('identity');
  assert.equal(await page.locator('#sheet-context-dialog [data-act="info-portrait-pick"]').count(),1);
  const canonicalName=page.locator('#sheet-context-dialog [data-identity-value="names"]').first();
@@ -192,10 +193,20 @@ try{
  await dismiss();
  assert.equal((await record()).identity_names.length,2);
  assert.deepEqual((await record()).identity_factions.filter(row=>row.active).map(row=>row.value),['Party','Gilda degli Arcani','Compagnia della Stella']);
- assert.equal(await page.locator('#sheet-play-view .play-identity-metadata .play-passives .play-identity-fact').count(),2,
-  'Alignment and edition occupy one compact metadata row');
- assert.equal(await page.locator('#sheet-play-view .play-identity-factions-line .play-identity-faction').count(),3,
-  'Active factions appear in the same compact identity footer');
+ const identityMeta=page.locator('#sheet-play-view .play-identity-metadata');
+ assert.equal(await identityMeta.locator(':scope > small').count(),2,
+  'Alignment and edition appear as two unlabelled small texts');
+ assert.equal(await identityMeta.locator('b, .play-identity-fact, .play-passives').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-identity-factions-line').count(),0,
+  'Factions remain editable but are not shown on the sheet');
+ const metadataStyle=await identityMeta.evaluate(el=>{
+  const s=getComputedStyle(el);
+  return {border:s.borderTopStyle,background:s.backgroundImage,display:s.display};
+ });
+ assert.deepEqual(metadataStyle,{border:'none',background:'none',display:'flex'});
+ const [alignmentPos,editionPos]=await identityMeta.locator(':scope > small').evaluateAll(nodes=>
+  nodes.map(node=>({left:node.getBoundingClientRect().left,right:node.getBoundingClientRect().right})));
+ assert(editionPos.left>alignmentPos.right,'Alignment and edition sit at opposite ends of the row');
  assert.equal((await record()).name,'Lyria, guardiana della Luna');
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
@@ -317,28 +328,37 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
   'Obsolete class-only toggle is absent');
 
- const toolbar=page.locator('#sheet-play-view .play-battle-expansion-tools');
- assert.equal(await toolbar.locator('button').count(),2);
  const activeState=page.locator('#sheet-play-view .play-status-overview');
  assert.equal(await activeState.count(),1);
- assert.equal(await activeState.evaluate(node=>getComputedStyle(node).borderTopStyle),'none',
-  'States have no enclosing border');
- assert.equal(await activeState.evaluate(node=>getComputedStyle(node).backgroundColor),'rgba(0, 0, 0, 0)',
-  'States have no filled box background');
- assert.equal(await activeState.locator('.play-status-rows').evaluate(node=>getComputedStyle(node).display),'grid',
-  'Active states appear on individual rows');
- assert.equal(await activeState.locator('.play-battle-heading-tools button').count(),2,
-  'Expand and collapse controls stay in the States heading');
+ assert.equal(await activeState.locator('.play-battle-summary h2').textContent(),'Condizioni');
+ assert.equal(await activeState.evaluate(node=>getComputedStyle(node).borderTopStyle),'solid',
+  'Conditions have the same framed box as the other Actions panels');
+ assert.equal(await activeState.locator('.play-status-rows').evaluate(node=>getComputedStyle(node).display),'grid');
+ assert.equal(await activeState.locator('.play-status-tag .vtt-action-glyph').count(),0,
+  'Individual states have no icons');
+ assert.equal(await page.locator('#sheet-play-view [data-act="battle-expand-all"],#sheet-play-view [data-act="battle-collapse-all"]').count(),0);
+ const conditionsDetails=activeState.locator('[data-battle-action="statuses"]');
+ const manageConditions=activeState.locator('[data-act="sheet"][data-sheet="conditions"]');
+ assert.equal(await manageConditions.count(),1);
+ assert.equal((await manageConditions.textContent()).trim(),'+');
  for(const width of [320,360,390,430]){
   await page.setViewportSize({width,height:844});
-  const buttons=await toolbar.locator('button').evaluateAll(nodes=>
-   nodes.map(node=>{const rect=node.getBoundingClientRect();return {top:rect.top,right:rect.right};}));
-  assert.equal(buttons.length,2);
-  assert(buttons.every(rect=>Math.abs(rect.top-buttons[0].top)<2),
-   'Expand and collapse remain on one row at '+width+'px');
+  const [titleBounds,plusBounds]=await Promise.all([
+   activeState.locator('.play-battle-summary h2').boundingBox(),manageConditions.boundingBox()
+  ]);
+  assert(titleBounds&&plusBounds&&plusBounds.x>titleBounds.x+titleBounds.width,
+   'Gold plus remains to the right of the title at '+width+'px');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
-   'Single-row action buttons must not overflow at '+width+'px');
+   'Conditions must not overflow at '+width+'px');
  }
+ await conditionsDetails.locator('summary').click();
+ assert.equal(await conditionsDetails.getAttribute('open'),null,'Conditions panel collapses');
+ await manageConditions.click();
+ assert.equal(await page.locator('#sheet-play-view[data-sheet="conditions"]').count(),1,
+  'Plus opens the Condizioni sheet even when the box is collapsed');
+ await sheet('battle');
+ const returnedConditions=page.locator('#sheet-play-view .play-status-overview [data-battle-action="statuses"]');
+ if((await returnedConditions.getAttribute('open'))===null)await returnedConditions.locator('summary').click();
  await page.setViewportSize({width:390,height:844});
 
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="movement"]').count(),0,
