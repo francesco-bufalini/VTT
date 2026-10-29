@@ -53,7 +53,7 @@ import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,use
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
-import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp} from "./character_core.js";
+import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment} from "./character_core.js";
 import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
@@ -5118,7 +5118,9 @@ async function handleField(target) {
   } else if(target.dataset.ability){
     const key=target.dataset.ability, value=Number(target.value);
     if(!Number.isInteger(value)||value<1||value>30) throw new Error("Caratteristica da 1 a 30.");
+    const modifierChange=key==='con'?await constitutionModifierChange(creature,value):null;
     await patch({abilities:{...creature.abilities,[key]:value}});
+    if(modifierChange)openConstitutionHpDialog(creature.id,modifierChange.previous,modifierChange.next);
   } else if(target.dataset.slot){
     const level=Number(target.dataset.slot), value=Number(target.value);
     if(!Number.isInteger(value)||value<0||value>99) throw new Error("Numero slot non valido.");
@@ -5675,6 +5677,66 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
 const editableScoreBaseTarget=target=>
   target==='hp'||target==='second_max'||target==='attunement_max'||
   /^ability:(?:str|dex|con|int|wis|cha)$/.test(target);
+
+// Only changes to the *effective modifier* can propose HP changes.
+async function constitutionModifierChange(record,nextScore){
+ if(Number(record.abilities?.con)===nextScore)return null;
+ const updated={...record,abilities:{...record.abilities,con:nextScore}};
+ const [before,after]=await Promise.all([computeLocalData(record),computeLocalData(updated)]);
+ const previous=Number(before.abilities?.con?.modifier),next=Number(after.abilities?.con?.modifier);
+ return previous===next?null:{previous,next};
+}
+
+function openConstitutionHpDialog(creatureId,previous,next,{returnTitle=''}={}){
+ const record=state.editor?.read();
+ if(!record||record.id!==creatureId)return;
+ const changes=constitutionHpAdjustment(record,previous,next);
+ if(!changes)return;
+ document.querySelector('#constitution-hp-dialog')?.remove();
+ const delta=next-previous;
+ const signed=value=>(value>=0?'+':'')+value;
+ const dialog=document.createElement('dialog');
+ dialog.id='constitution-hp-dialog';
+ dialog.className='sheet-context-dialog pending-choice-dialog constitution-hp-dialog';
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Costituzione e punti ferita</h2>'+
+   dialogCloseButton('constitution-hp-close','Chiudi','play-button')+'</header>'+
+   '<div class="pending-choice-dialog-body">'+
+     '<p>Il modificatore di Costituzione è cambiato da <strong>'+esc(signed(previous))+
+       '</strong> a <strong>'+esc(signed(next))+'</strong> ('+esc(signed(delta))+').</p>'+
+     '<p>Vuoi aggiornare i punti ferita di '+esc(signed(delta))+'?</p>'+
+     '<div class="native-summary">'+
+       '<div><dt>PF massimi</dt><dd>'+esc(record.max_hp_base??record.max_hp??1)+
+         ' → '+esc(changes.max_hp_base)+'</dd></div>'+
+       '<div><dt>PF attuali</dt><dd>'+esc(record.current_hp??0)+
+         ' → '+esc(changes.current_hp)+'</dd></div></div>'+
+   '</div><footer class="pending-choice-actions">'+
+     '<button type="button" data-con-hp-keep>Mantieni PF</button>'+
+     '<button type="button" class="btn primary" data-con-hp-apply>Aggiorna PF</button></footer>';
+ dialog.addEventListener('close',async()=>{
+   dialog.remove();
+   const current=state.editor?.read();
+   if(returnTitle&&current?.id===creatureId)
+     try{openSheetScoreFormula(current,await computeLocalData(current),'ability:con',returnTitle);}
+     catch(error){message(errorMessage(error),true);}
+ },{once:true});
+ dialog.querySelector('[data-con-hp-keep]').addEventListener('click',()=>closeDialog(dialog));
+ dialog.querySelector('[data-con-hp-apply]').addEventListener('click',async event=>{
+   const button=event.currentTarget;
+   button.disabled=true;
+   try{
+     const current=state.editor?.read();
+     if(!current||current.id!==creatureId)throw Error('La creatura è cambiata.');
+     const calculated=await computeLocalData(current);
+     if(Number(calculated.abilities?.con?.modifier)!==next)
+       throw Error('Il modificatore di Costituzione è cambiato ancora.');
+     const update=constitutionHpAdjustment(current,previous,next);
+     if(update)await patch(update);
+     await render();
+     closeDialog(dialog);
+   }catch(error){button.disabled=false;message(errorMessage(error),true);}
+ });
+ document.body.append(dialog);openDialog(dialog);
+}
 
 // A single restrained editor serves owned base scores, not derived figures.
 // Keep the formula behind it as the navigation context, then refresh it after
@@ -7426,9 +7488,14 @@ async function handleAction(target){
         throw Error('Libera le sintonie in eccesso prima di ridurre il massimo.');
     }
     const returnTitle=String(dialog.dataset.returnFormulaTitle||'');
+    const modifierChange=ability==='con'?await constitutionModifierChange(creature,value):null;
     await patch(change);
     dialog.close?.();dialog.remove();
     await render();
+    if(modifierChange){
+      openConstitutionHpDialog(creature.id,modifierChange.previous,modifierChange.next,{returnTitle});
+      return;
+    }
     if(returnTitle){
       const current=state.editor?.read();
       if(current)openSheetScoreFormula(current,await computeLocalData(current),scoreTarget,returnTitle);
@@ -9755,6 +9822,10 @@ function listen(){
     if(closeAction==='close-score-formula'){
       const dialog=document.querySelector('#sheet-score-formula-dialog');
       closeDialog(dialog,{remove:true});
+      return;
+    }
+    if(closeAction==='constitution-hp-close'){
+      closeDialog(document.querySelector('#constitution-hp-dialog'));
       return;
     }
     if(closeAction==='close-sheet-roll'){
