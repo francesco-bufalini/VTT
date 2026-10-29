@@ -372,6 +372,25 @@ try{
      monster.max_hp_base>11 && monster.current_hp>11;
  }), 'Adding a class preserves monster statblock, CR, skills, immunities and base HP');
  await page.locator('[data-level-up-close]').click();
+ // Advancing a bestiary monster from class level 1 to 2 must apply its XP floor.
+ await page.locator('#sheet-context-dialog [data-act="level-up-open"]').click();
+ await levelDialog.waitFor({state:'visible'});
+ assert.equal(await levelDialog.locator('[data-level-up-class]').inputValue(),'owned:0');
+ await page.waitForFunction(()=>
+   !document.querySelector('#class-level-up-dialog [data-level-up-confirm]')?.disabled);
+ assert.match(await levelDialog.locator('[data-level-up-xp-note]').innerText(),/300/);
+ await levelDialog.locator('[data-level-up-confirm]').click();
+ await levelDialog.waitFor({state:'detached'});
+ assert(await page.evaluate(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   const c=(await listCreatures()).find(row=>row.creature.name==='Lupo guardiano')?.creature;
+   return c?.kind==='monster' && c.level===2 && c.classes?.[0]?.level===2 &&
+     c.xp===300 && c.stat_block?.cr==='1/4' && c.stat_block?.hp?.average===11;
+ }), 'A monster at two class levels receives at least 300 XP while its CR stays unchanged');
+ await page.locator('[data-level-up-close]').click();
+ const monsterXpField=page.locator('#sheet-context-dialog [data-field="xp"]');
+ assert.equal(await monsterXpField.inputValue(),'300','The Classi editor displays the new XP floor');
+ assert.equal(await monsterXpField.getAttribute('min'),'300','The Classi editor enforces the XP floor');
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  // The score editor proposes HP changes only when the effective modifier changes.
  const conCard=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:con"]');

@@ -427,7 +427,10 @@ test('D&D XP minimum tracks cumulative character level in 2014 and 2024',()=>{
  assert.equal(minimumXpForCreature({kind:'character',class:'Wizard',level:3,
   classes:[{name:'Wizard',level:3},{name:'Cleric',level:2}]}),6500);
  assert.equal(minimumXpForCreature({kind:'character',level:20}),0,'no class has no character-level XP floor');
- assert.equal(minimumXpForCreature({kind:'monster',class:'Wizard',level:20}),0);
+ assert.equal(minimumXpForCreature({kind:'monster',class:'Wizard',level:20}),355000,
+   'A classed monster follows the same class-level XP minimum');
+ assert.equal(minimumXpForCreature({kind:'monster',level:20}),0,
+   'CR and legacy monster level without a class never imply an XP floor');
 });
 
 test('raising class levels enforces the cumulative XP floor, without losing XP already earned',()=>{

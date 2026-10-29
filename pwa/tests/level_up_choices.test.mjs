@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canLevelUp} from '../character_core.js';
-import {identityPatch,nativeRowPatch,nativeRows} from '../native_sheet.js';
+import {canLevelUp,minimumXpForCreature,minimumXpForLevel} from '../character_core.js';
+import {identityPatch,nativeRowPatch,nativeRows,collectionPatch} from '../native_sheet.js';
 import {pendingLineageChoices,savePendingChoice} from '../pending_choices.js';
 
 const fighter=(level,xp)=>({
@@ -23,6 +23,35 @@ test('XP eligibility is based on the NEXT total character level and stops at 20'
  assert.equal(canLevelUp(fighter(20,355000)),false);
  assert.equal(canLevelUp({...fighter(1,300),kind:'monster'}),false);
 });
+test('monster XP minima follow class levels, never bestiary CR',()=>{
+ const wolf={kind:'monster',variant_rules_kind:'monster',class:'',classes:[],
+   level:0,xp:50,stat_block:{cr:'1/4',xp:50}};
+ assert.equal(minimumXpForCreature(wolf),0,'Unclassed monsters retain their own XP');
+ assert.equal(minimumXpForCreature({...wolf,level:18}),0,
+   'A monster with no class has no minimum even if legacy level is populated');
+ const classes=level=>[{name:'Fighter',source:'PHB',level}];
+ const one={...wolf,...collectionPatch(wolf,'classes',classes(1))};
+ assert.equal(one.xp,50,'Level 1 has a zero minimum and does not overwrite current XP');
+ const two={...one,...collectionPatch(one,'classes',classes(2))};
+ assert.equal(minimumXpForLevel(2),300);
+ assert.equal(two.xp,300,'Level 2 automatically raises monster XP to 300');
+ const three={...two,...collectionPatch(two,'classes',[
+   {name:'Fighter',source:'PHB',level:2},{name:'Wizard',source:'PHB',level:1}])};
+ assert.equal(three.level,3);
+ assert.equal(three.xp,900,'Multiclass levels count toward the same minimum');
+ assert.equal(minimumXpForCreature(three),900);
+ assert.throws(()=>identityPatch(three,'xp',899),/almeno 900 XP/);
+ assert.equal(identityPatch(three,'xp',1500).xp,1500);
+ const rich={...three,xp:1500};
+ const down={...rich,...collectionPatch(rich,'classes',classes(2))};
+ assert.equal(down.xp,1500,'Reducing levels must not destroy already accumulated XP');
+ const up={...down,...collectionPatch(down,'classes',classes(5))};
+ assert.equal(up.xp,6500,'Level 5 uses the official threshold');
+ assert.equal(up.stat_block.cr,'1/4','Monster CR remains unchanged');
+ assert.equal(up.stat_block.xp,50,'Original 5eTools stat block remains unchanged');
+ assert.equal(canLevelUp(up),false,'Monster class leveling is still explicitly manual');
+});
+
 test('subclass becomes pending only when its class reaches subclass-feature level',()=>{
  const before=pendingLineageChoices(fighter(2,900),{},subclassCatalog);
  assert.equal(before.length,0);

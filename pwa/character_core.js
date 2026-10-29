@@ -32,9 +32,9 @@ export function minimumXpForLevel(level){
  return Number.isInteger(n)&&n>=1?XP_THRESHOLDS[Math.min(n,20)]:0;
 }
 export function minimumXpForCreature(record={}){
- // Monster challenge rating is not character level. An unclassed character
- // can keep custom XP without being assigned a class progression.
- if(record.kind==='monster')return 0;
+ // Challenge rating never counts as a class level. A monster with class
+ // levels uses the ordinary class XP thresholds; an unclassed creature
+ // (including a bestiary monster) has no minimum XP requirement.
  const classes=array(record.classes).filter(row=>row&&String(row.name||'').trim());
  const total=classes.length?
   classes.reduce((sum,row)=>sum+Math.max(1,integer(row.level,1)),0):
