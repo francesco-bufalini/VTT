@@ -58,7 +58,7 @@ try {
   };
   const rename = async name => {
     await page.locator('[data-sheet-context="identity"]').first().click();
-    const field = page.locator('[data-field="name"]').first();
+    const field = page.locator('#sheet-context-dialog [data-identity-value="names"]').first();
     await field.fill(name);
     await field.press("Tab");
     await page.waitForFunction(async expected => {
