@@ -589,3 +589,48 @@ export function removeOwnedFeatPatch(record={},originKey=''){
      row?.origin_id!==sourceId&&row?.origin_id!==originKey),
    origin_enabled};
 }
+
+/**
+ * A permanent sub-trait is a chosen branch of an owned trait, not another
+ * independently activated benefit. Its existing source remains authoritative
+ * for score bonuses, feats and other effects. Rest selections are excluded.
+ */
+export function permanentSubtraitsForTrait(trait={},record={},choices=[],powers=[]){
+ const owner=traitBenefitSources(trait,record),all=arr(choices).filter(choice=>
+   owner.has(choice.origin_id)&&
+   ['advancement_mode','ability_mode','ability','advancement_feat'].includes(choice.kind));
+ const hasAdvancement=all.some(choice=>choice.kind==='advancement_mode');
+ const hasVariant=all.some(choice=>choice.kind==='ability_mode');
+ const names={str:'Forza',dex:'Destrezza',con:'Costituzione',
+   int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
+ const result=all.filter(choice=>!['ability','advancement_feat'].includes(choice.kind)||
+    hasVariant||hasAdvancement).map(choice=>{
+   const depth=choice.kind==='advancement_mode'?0:
+     choice.kind==='ability_mode'&&hasAdvancement?1:
+     choice.kind==='ability'&&hasVariant?(hasAdvancement?2:1):
+     ['ability','advancement_feat'].includes(choice.kind)?1:0;
+   const selection=arr(choice.selected).map(value=>
+     choice.option_labels?.[value]||names[value]||value).join(' · ');
+   return {id:'choice:'+choice.id,kind:'pending',origin_id:choice.origin_id,
+     depth,title:choice.label,selection:selection||'Da scegliere',
+     remaining:choice.remaining,choice_id:choice.id};
+ });
+ for(const model of arr(powers)){
+  if(model.selection_kind!=='subtrait'||!owner.has(model.origin_id))continue;
+  const options=new Map(arr(model.options).map(option=>[option.id,option]));
+  for(const [stage,layer] of Object.entries(model.layers||{})){
+   if(!layer?.enabled||layer.trigger)continue;
+   const items=arr(layer.selected).map(value=>{
+    const option=options.get(typeof value==='string'?value:value?.id);
+    const details=arr(value?.subchoices).join(', ');
+    return (option?.name||String(value?.id||value||''))+(details?' · '+details:'');
+   });
+   result.push({id:'power:'+model.id+':'+stage,kind:'power',
+     origin_id:model.origin_id,depth:0,title:model.title,
+     selection:items.join(' · ')||'Da scegliere',
+     remaining:layer.limit===null?0:Math.max(0,layer.limit-items.length),
+     model_id:model.id,stage});
+  }
+ }
+ return result;
+}
