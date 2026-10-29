@@ -641,8 +641,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+
     vital('movement','Movimento e velocità','dash',fastest.label,fastest.key,' ft',true)+'</div>';
   html+='<div class="play-ability-quickstats play-battle-quickstats">'+
+   '<button type="button" class="play-quickstat" data-act="sheet-senses-open" aria-label="Apri percezione passiva e sensi">'+icon('eye')+'<span>Percezione passiva</span><strong>'+output('passive_perception')+'</strong></button>'+
    '<button type="button" class="play-quickstat" data-act="battle-competences-open" aria-label="Apri competenze">'+icon('proficiency')+'<span>Competenze</span><strong>'+output('proficiency',true)+'</strong></button>'+
-   '<button type="button" class="play-quickstat" data-act="sheet-senses-open" aria-label="Sensi e percezione passiva">'+icon('eye')+'<span>Sensi</span><strong>Passiva '+output('passive_perception')+'</strong></button>'+
    '<button type="button" class="play-quickstat" data-act="sheet-inspiration-toggle" aria-pressed="'+Boolean(c.inspiration)+'" aria-label="Attiva o disattiva ispirazione">'+icon('spark')+'<span>Ispirazione</span><strong>'+(c.inspiration?'Attiva':'Non attiva')+'</strong></button></div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
@@ -927,7 +927,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const portrait=isPortraitDataUrl(c.sheet_portrait_data)?c.sheet_portrait_data:'';
   const activeFactions=identityEntries(c,'factions').filter(row=>row.active).map(row=>row.value);
   const identityMarkup='<div class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
-   (activeFactions.length?'<p class="play-identity-factions">'+esc(activeFactions.join(' · '))+'</p>':'')+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+'</div>';
   html='<section class="play-character-portrait'+(portrait?' has-portrait':'')+'" data-act="sheet-context" data-sheet-context="identity" role="button" tabindex="0" aria-label="Apri identità e foto del personaggio">'+
@@ -935,6 +934,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    identityMarkup+
    '<div class="play-passives"><span><small>Allineamento</small>'+esc(c.alignment||'Completamente neutrale')+'</span>'+
    '<span><small>Edizione</small>'+esc(c.rules_version||'2014')+'</span></div>'+
+   (activeFactions.length?'<p class="play-identity-factions-line"><strong>Fazioni:</strong> '+esc(activeFactions.join(' · '))+'</p>':'')+
    '</section>';
   // Show the actual ability modifier, never the ability-check total, while keeping the click target as the check.
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
