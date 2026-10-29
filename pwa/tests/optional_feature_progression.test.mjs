@@ -18,6 +18,43 @@ test('Ranger fighting styles come from 5etools FS:R and respect the level cap',(
  assert.ok(model.options.every(o=>o.source!=='XPHB'));
  assert.equal(owned(character('Ranger',1),id),undefined);
 });
+test('Learned Fighting Styles are all applied automatically through the generic stage',()=>{
+ const id='optional:class:phb:ranger:fs-r';
+ let r=character('Ranger');
+ const empty=owned(r,id);
+ assert.deepEqual(empty.layers.applied.selected,[]);
+ assert.equal(empty.layers.applied.automatic,true);
+ assert.equal(empty.layers.applied.limit,null,'no separate applied-style cap');
+ const archery=empty.options.find(o=>o.name==='Archery');
+ r={...r,...powerSelectionPatch(r,{},catalog,id,'learned',archery.id)};
+ const learned=owned(r,id);
+ assert.deepEqual(learned.layers.applied.selected,[archery.id]);
+ assert.equal(learned.layers.applied.used,1);
+ assert.equal(r.power_applications,undefined,'no second application record');
+ assert.throws(()=>powerSelectionPatch(r,{},catalog,id,'applied',archery.id),/soltanto/);
+ r={...r,...powerSelectionPatch(r,{},catalog,id,'learned',archery.id)};
+ assert.deepEqual(owned(r,id).layers.applied.selected,[],'forgetting removes application');
+
+ const champion=character('Fighter',10,{classes:[{name:'Fighter',source:'PHB',
+  subclass:'Champion',subclass_source:'PHB',level:10}]});
+ const [base,extra]=powerSelectionModels(champion,{features:[]},catalog)
+  .filter(row=>row.title==='Fighting Style');
+ const first=base.options.find(o=>o.name==='Archery');
+ const second=extra.options.find(o=>o.name==='Defense');
+ let c={...champion,...powerSelectionPatch(champion,{},catalog,base.id,'learned',first.id)};
+ c={...c,...powerSelectionPatch(c,{},catalog,extra.id,'learned',second.id)};
+ const styles=powerSelectionModels(c,{features:[]},catalog).filter(row=>row.title==='Fighting Style');
+ assert.deepEqual(styles.map(row=>row.layers.learned.used),[1,1]);
+ assert.deepEqual(styles.map(row=>row.layers.applied.used),[1,1]);
+ assert.ok(styles.every(row=>row.layers.applied.limit===null));
+});
+test('Every PHB Fighting Style progression declares automatic application, unlike other option lists',()=>{
+ const styles=optional.progressions.filter(row=>row.feature_types.some(type=>type.startsWith('FS:')));
+ assert.equal(styles.length,5);
+ assert.ok(styles.every(row=>row.layers?.applied?.mode==='automatic'&&row.layers.applied.from==='learned'));
+ const warlock=owned(character('Warlock',2),'optional:class:phb:warlock:ei');
+ assert.equal(warlock.layers.applied,undefined,'non-style options retain their existing mechanics');
+});
 test('Warlock level-one vs level-two progression and Champion additional style',()=>{
  const id='optional:class:phb:warlock:ei';
  assert.equal(owned(character('Warlock',1),id),undefined);
