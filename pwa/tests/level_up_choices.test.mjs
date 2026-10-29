@@ -89,3 +89,23 @@ test('secondary class selector keeps class name and level together',()=>{
  assert.ok(group.indexOf('data-key="name"')<group.indexOf('data-key="level"'));
  assert.ok(group.indexOf('data-key="level"')<group.indexOf('data-key="subclass"'));
 });
+
+test('class rows no longer expose a manual Add button',()=>{
+ const record={...fighter(3,2700),classes:[
+   {name:'Fighter',source:'PHB',level:3},
+   {name:'Rogue',source:'PHB',level:1}
+ ]};
+ const html=nativeRows(record,'classes',{},1);
+ assert.doesNotMatch(html,/data-act="native-add" data-list="classes"/);
+ assert.match(html,/data-native-list="classes"[^>]*data-key="level"/);
+});
+test('identity shows each subclass, and total level only for multiclass',async()=>{
+ const {classIdentitySummary}=await import('../sheet_rules_view.js');
+ assert.equal(classIdentitySummary([{name:'Fighter',subclass:'Champion',level:3}]),
+   'Fighter · Champion 3');
+ assert.equal(classIdentitySummary([
+   {name:'Fighter',subclass:'Champion',level:3},
+   {name:'Wizard',subclass:'Evocation',level:2}]),
+   'Fighter · Champion 3 / Wizard · Evocation 2 · Liv. totale 5');
+ assert.equal(classIdentitySummary([]),'');
+});
