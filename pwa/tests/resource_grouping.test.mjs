@@ -40,8 +40,10 @@ test('Resource icons describe structured benefits rather than named abilities or
  assert.equal(resourceAbilityGlyphKey(row({power:{roll_attack:{id:'absent'}}}),{attacks:[attack]}),'spark');
  assert.equal(resourceAbilityGlyphKey(row({power:{target_mode:'single_token'}})),'target');
  assert.equal(resourceAbilityGlyphKey(row({classAction:{target_mode:'single_token'}})),'target');
- assert.equal(resourceAbilityGlyphKey(row({power:{roll_effect:{dice:'1d6'}}})),'attack_bonus');
- assert.equal(resourceAbilityGlyphKey(row({classAction:{roll_bonus:{dice:'1d6'}}})),'attack_bonus');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_effect:{dice:'1d6'}}})),'dice');
+ assert.equal(resourceAbilityGlyphKey(row({classAction:{roll_bonus:{dice:'1d6'}}})),'dice');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_bonus:{dice:'1d8'},target_mode:'single_token'}})),'dice',
+  'Roll bonuses do not inherit the target crosshair');
  assert.equal(resourceAbilityGlyphKey(row({kind:'spell'})),'spell_cast');
  for(const timing of ['action','bonus','reaction','movement','contextual']){
   assert.equal(resourceAbilityGlyphKey(row({timing})), 'spark');
@@ -74,8 +76,8 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert(attackIcon);
   assert.equal(attackIcon.className,/class="([^"]+)"/.exec(actionGlyph('weapon'))[1],
    'A trait-granted attack uses the weapon pictogram');
-  assert.equal(free.querySelector('[data-act="battle-attack-map"]')?.dataset.mapAttackId,
-   attack.roll_attack.id,'An attack in Resources shares the regular map range action');
+  assert.equal(free.querySelector('[data-act="battle-attack-map"]'),null,
+   'Resource rows expose benefits but never duplicate the attack range button');
   const buttons=free.querySelectorAll('[data-act="battle-use-ability"]');
   assert.equal(buttons.length,1);
   assert.equal(buttons[0].disabled,false);
