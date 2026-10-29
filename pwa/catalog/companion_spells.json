@@ -447,7 +447,8 @@
         "base": 2,
         "class_name": "Artificer",
         "per_class_level": 5,
-        "ability_mod": "int"
+        "ability_mod": "int",
+        "hit_die": 8
       },
       "speed": {
         "walk": 40
@@ -542,7 +543,8 @@
       "hp": {
         "base": 5,
         "class_name": "Ranger",
-        "per_class_level": 5
+        "per_class_level": 5,
+        "hit_die": 10
       },
       "speed": {
         "walk": 40
@@ -625,7 +627,8 @@
         "base": 1,
         "class_name": "Artificer",
         "per_class_level": 1,
-        "ability_mod": "int"
+        "ability_mod": "int",
+        "hit_die": 4
       },
       "speed": {
         "walk": 20,
