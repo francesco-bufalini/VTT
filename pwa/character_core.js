@@ -112,6 +112,22 @@ export function initialCreature(kind,name,id,owner_id){
   return c;
 }
 
+// An optional adjustment when the effective CON modifier changes.
+// Use the modifier difference once, not the raw ability-score difference.
+export function constitutionHpAdjustment(record,previousModifier,nextModifier){
+ const before=Number(previousModifier),after=Number(nextModifier);
+ if(!Number.isInteger(before)||!Number.isInteger(after)||before<-30||before>30||after<-30||after>30)
+   throw Error('Modificatore di Costituzione non valido.');
+ const delta=after-before;
+ if(!delta)return null;
+ const maximum=Number(record.max_hp_base??record.max_hp??1);
+ const current=Number(record.current_hp??0);
+ if(!Number.isSafeInteger(maximum)||maximum<1||!Number.isSafeInteger(current)||current<0)
+   throw Error('Punti ferita non validi.');
+ return {max_hp_base:Math.max(1,maximum+delta),
+   current_hp:Math.max(0,current+delta)};
+}
+
 export function changeTrackerUses(record,id,delta,trackers=record.resource_trackers){
   const row=array(trackers).find(t=>t&&t.id===id);
   if(!row||row.disabled)throw Error("Risorsa non disponibile.");
