@@ -104,6 +104,36 @@ function skillGlyphKey(skill){
 const arr=value=>Array.isArray(value)?value:[];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const details=value=>typeof value==='string'?value:Array.isArray(value)?value.map(details).filter(Boolean).join('\n'):value&&typeof value==='object'?details(value.entries??value.entry??value.text??value.description??''):'';
+// 5eTools models mutually exclusive choices as named list items within one
+// rechargeable action. The action, not its individual options, owns the resource.
+export function monsterActionOptions(feature={}){
+ const options=[];
+ const visit=nodes=>{
+  for(const node of arr(nodes)){
+   if(!node||typeof node!=='object')continue;
+   if(node.type==='list'&&arr(node.items).length>=2&&
+      node.items.every(item=>item?.type==='item'&&String(item.name||'').trim()&&
+        (item.entry!==undefined||item.entries!==undefined))){
+    for(const item of node.items){
+     const raw=details(item.entry??item.entries);
+     const damage=/\{@damage\s+([^}|]+)(?:\|[^}]*)?\}/i.exec(raw);
+     const dc=/\{@dc\s+(\d+)\}/i.exec(raw);
+     const save=/\b(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) saving throw\b/i.exec(raw);
+     const area=/\b(\d+)[- ]foot\s+(cone|line|radius|sphere|cube|cylinder)\b/i.exec(raw);
+     const conditions=[...raw.matchAll(/\{@condition\s+([^}|]+)(?:\|[^}]*)?\}/gi)].map(match=>match[1]);
+     const description=raw.replace(/\{@(\w+)\s+([^}|]+)(?:\|[^}]*)?\}/g,
+       (_,tag,value)=>tag==='dc'?'CD '+value:value);
+     options.push({id:String(options.length),name:String(item.name),description,
+       ...(dc?{save_dc:Number(dc[1])}:{}),...(save?{save_ability:save[1].toLowerCase()}:{}),
+       ...(area?{area_feet:Number(area[1]),area_shape:area[2].toLowerCase()}:{}),
+       ...(damage?{damage_formula:damage[1]}:{}),conditions});
+    }
+   }else if(node.entries)visit(node.entries);
+  }
+ };
+ visit(feature.entries);
+ return options;
+}
 const specified=v=>v!==null&&v!==undefined&&(typeof v!=='string'||v.trim()!=='')&&(!Array.isArray(v)||v.length>0);
 function timing(value){
  if(Array.isArray(value))return value.some(v=>timing(v)==='bonus')?'bonus':timing(value[0]);
@@ -176,12 +206,29 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  for(const attack of arr(record.attacks))if(attack?.name&&!already.has(String(attack.id))){
   already.add(String(attack.id));add(attack.name,attack.action_type||'action','Attacco',attack.description||attack.damage||'',tracked(attack.tracker_id));
  }
- // Named non-attack monster abilities also count, including breath weapons.
+ // Named monster abilities and attacks share the same typed recharge pool.
+ // A 5eTools list of options is projected under its parent, never as extra uses.
  for(const section of ['action','bonus','reaction']){
   arr(record.stat_block?.[section]).forEach((feature,i)=>{
-   if(!feature?.name||already.has('monster:'+section+':'+i))return;
-   add(feature.name,section,'Capacità',feature.entries||feature.description||'',
-       tracked(feature.tracker_id),Number(feature.tracker_cost)||0);
+   const id='monster:'+section+':'+i;
+   if(!feature?.name)return;
+   const candidates=[feature.tracker_id,feature.vtt_resource?.id,
+     'recharge:'+section+':'+i,'fightclub:'+section+':'+i];
+   const trackerId=candidates.find(key=>key&&trackers.has(String(key)))||'';
+   const rechargeable=/\{@recharge(?: [1-6])?\}/i.test(String(feature.name))||
+     feature.vtt_resource?.recharge==='d6'||!!trackerId&&
+     ['d6','short_rest','long_rest'].includes(trackers.get(String(trackerId))?.recharge);
+   const options=rechargeable?monsterActionOptions(feature):[];
+   if(already.has(id)){
+    const existing=out.find(row=>row.id===id);
+    if(existing&&options.length)Object.assign(existing,{options,tracker_id:String(trackerId),
+      tracker:tracked(trackerId)});
+    return;
+   }
+   const name=options.length?String(feature.name).replace(/\s*\{@recharge(?: [1-6])?\}/gi,''):feature.name;
+   add(name,section,'Capacità',feature.entries||feature.description||'',
+       tracked(trackerId),Number(feature.tracker_cost)||0,
+       {id,tracker_id:String(trackerId),options});
   });
  }
  // Explicit typed grants only. Passive traits are not automatically actions.
@@ -407,6 +454,21 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
  const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
+ const monsterOptions=arr(item.options);
+ const optionMarkup=monsterOptions.length?
+  '<div class="play-battle-monster-options"><span class="play-battle-monster-options-title">Opzioni · scegli una</span>'+
+  monsterOptions.map(option=>{
+   const facts=[
+    option.area_shape?option.area_feet+' ft · '+option.area_shape:'',
+    option.save_ability?'TS '+option.save_ability.toUpperCase()+(option.save_dc?' · CD '+option.save_dc:''):'',
+    option.damage_formula?'Danni '+option.damage_formula:'',
+    ...arr(option.conditions).map(condition=>'Condizione '+condition)
+   ].filter(Boolean);
+   return '<details class="play-battle-monster-option" data-monster-option="'+esc(option.id)+'">'+
+    '<summary>'+esc(option.name)+'</summary><div class="play-battle-monster-option-body">'+
+    (facts.length?'<small>'+facts.map(esc).join(' · ')+'</small>':'')+
+    '<p>'+esc(option.description)+'</p></div></details>';
+  }).join('')+'</div>':'';
  if(item.id==='spell_cast')return '<article class="play-battle-attack-entry play-battle-action-direct" data-attack-id="spell_cast">'+
   '<button type="button" class="play-battle-attack-direct-button" data-act="action-open-spells">'+icon+
   '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span></button></article>';
@@ -423,7 +485,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    (Number(item.attack_count)>1?'<span class="play-battle-attacks-per-action" title="Attacchi per azione" aria-label="'+esc(item.attack_count)+' attacchi per azione">×'+esc(item.attack_count)+'</span>':'')+
    (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
    '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
-   source+target+resources+
+   source+target+resources+optionMarkup+
    (String(item.id||'').startsWith('activated:')&&!item.descriptive_only?'<button type="button" class="btn small" data-act="battle-use-ability" data-ability-id="'+esc(item.id)+'">Usa</button>':'')+
    '</div></details>')+
   (rolls.length||mapButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
