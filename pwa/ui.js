@@ -5735,6 +5735,8 @@ function openLevelUpProgressDialog(plan){
  const steps=levelUpSteps(state.calculated||{},plan);
  if(!steps.length)return;
  const impactRows=Array.isArray(plan.impactRows)?plan.impactRows:[];
+ const powersChanged=impactRows.some(row=>(row.changes||[]).some(change=>
+   /(?:Incantesimi|Trucchetti|Slot|Patto|Infusioni)/i.test(change.label)));
  app.querySelector('#level-up-progress-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='level-up-progress-dialog';
@@ -5772,11 +5774,16 @@ function openLevelUpProgressDialog(plan){
      '<p class="levelup-footer-note">I privilegi già definiti vengono applicati dalle regole della scheda. '+
      'I PF vengono aggiornati dalla selezione precedente; i dadi vita seguono la progressione delle classi.</p>'+
    '</div><footer class="pending-choice-actions">'+
+     (powersChanged?'<button type="button" data-level-up-powers>Vai a Poteri</button>':'')+
      (choiceCount?'<button type="button" data-level-up-manage>Altre scelte</button>':'')+
      '<button type="button" data-level-up-close>Chiudi</button></footer>';
  dialog.querySelector('[data-level-up-close]').addEventListener('click',()=>closeDialog(dialog,{remove:true}));
  dialog.querySelector('[data-level-up-manage]')?.addEventListener('click',()=>{
    closeDialog(dialog,{remove:true});openPendingChoicesIndex();
+ });
+ dialog.querySelector('[data-level-up-powers]')?.addEventListener('click',async()=>{
+   closeDialog(dialog,{remove:true});
+   state.sheet='magic';await render();
  });
  for(const button of dialog.querySelectorAll('[data-level-up-choice-id]')){
    button.addEventListener('click',async()=>{
@@ -5838,6 +5845,8 @@ async function openLevelUpClassDialog(preset={}){
    '<section class="levelup-impact-preview" aria-label="Anteprima della progressione">'+
      '<h3>Cosa cambia con il livello</h3>'+
      '<div data-level-up-impact role="status"><p class="levelup-empty">Calcolo della progressione…</p></div>'+
+     '<p class="levelup-footer-note">Gli aumenti di capacità non preparano automaticamente '+
+       'incantesimi né insegnano o applicano infusioni: queste scelte restano nella scheda Poteri.</p>'+
    '</section>'+
    '<p class="levelup-footer-note" data-level-up-xp-note></p>'+
    '</div><footer class="pending-choice-actions">'+
