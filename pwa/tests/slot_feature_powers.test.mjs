@@ -1,62 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {slotFeaturePowers,slotFeaturePaymentOptions,slotFeatureUsePatch} from '../slot_feature_powers.js';
+import {supplementalFeatureSpellGrants,sessionSpellEntries} from '../spell_selection.js';
 
-const catalog=JSON.parse(readFileSync(new URL('../catalog/slot_feature_powers.json',import.meta.url),'utf8'));
-const features=[
- {name:'Primeval Awareness',origin_id:'feature:ranger',origin_key:'class|phb|ranger'},
- {name:'Combat Wild Shape',origin_id:'feature:moon',
-  origin_key:'class|phb|druid|subclass|circle of the moon|phb'}
-];
-const stats=(count=2,spent=0)=>({
- features,spell_slots:[{level:1,total:count,spent},...Array.from({length:8},(_,n)=>({level:n+2,total:0,spent:0}))],
- pact_slots:{level:2,total:0,spent:0}
+const catalog=JSON.parse(readFileSync(new URL('../catalog/feature_slot_spells.json',import.meta.url),'utf8'));
+const rangerFeature={name:'Primeval Awareness',origin_id:'feature:ranger-primal',
+ origin_key:'class|phb|ranger|feature|primeval awareness'};
+const moonFeature={name:'Combat Wild Shape',origin_id:'feature:moon-wild',
+ origin_key:'class|phb|druid|subclass|circle of the moon|phb|feature|combat wild shape'};
+function grants(record,features){
+ return supplementalFeatureSpellGrants(record,features,catalog.spells,catalog.grants,
+  [{name:record.classes[0].name,ability:'wis'}],[]);
+}
+test('Primeval Awareness is a native first-level slot-paid grant owned by its feature',()=>{
+ const record={rules_version:'2014',classes:[{name:'Ranger',source:'PHB',level:3}]};
+ const found=grants(record,[rangerFeature]);
+ assert.equal(found.length,1);
+ assert.equal(found[0].spell_id,'feature_slot_primeval_awareness_phb');
+ assert.equal(found[0].origin_id,rangerFeature.origin_id);
+ assert.equal(found[0].payment_mode,'slot');
+ assert.equal(catalog.spells.find(spell=>spell.id===found[0].spell_id).level,1);
+ assert.equal(grants({...record,classes:[{...record.classes[0],level:2}]},[rangerFeature]).length,0);
+ assert.equal(grants(record,[{...rangerFeature,inactive:true}]).length,0);
+ assert.equal(grants({...record,classes:[{name:'Ranger',source:'XPHB',level:3}]},[rangerFeature]).length,0);
 });
-const ranger=(level=3)=>({id:'ranger',classes:[{name:'Ranger',source:'PHB',level}],
- spell_slots_spent:Array(10).fill(0),active_class_features:{}});
-const moon=()=>({...ranger(3),classes:[{name:'Druid',source:'PHB',level:2}],
- current_form_id:'wild:owl',active_class_features:{wild_shape:{name:'Forma selvatica'}},
- current_hp:12,max_hp:20,
- variants:[{id:'wild:owl',name:'Forma selvatica',preset:'wild_shape',sections:['hp'],
- values:{current_hp:7,max_hp:16,max_hp_base:16,temporary_hp:0}}]});
-test('Primeval Awareness appears only with its PHB Ranger feature',()=>{
- const d=stats(),r=ranger();
- assert.equal(slotFeaturePowers(r,d,catalog)[0].id,'ranger_primeval_awareness_phb');
- assert.deepEqual(slotFeaturePowers(ranger(2),d,catalog),[]);
- assert.deepEqual(slotFeaturePowers(r,{...d,features:[]},catalog),[]);
- assert.deepEqual(slotFeaturePowers({...r,origin_enabled:{'feature:ranger':false}},d,catalog),[]);
- assert.deepEqual(slotFeaturePowers({...r,classes:[{name:'Ranger',source:'XPHB',level:3}]},d,catalog),[]);
+test('Moon Druid grant uses the same spell path and requires explicit Wild Shape context',()=>{
+ const record={rules_version:'2014',classes:[{name:'Druid',source:'PHB',subclass:'Circle of the Moon',subclass_source:'PHB',level:2}]};
+ const found=grants(record,[moonFeature]);
+ assert.equal(found.length,1);
+ assert.equal(found[0].spell_id,'feature_slot_combat_wild_shape_heal_phb');
+ assert.equal(found[0].cast_action_type,'bonus');
+ assert.equal(found[0].requires_context,'Confermo di essere in Forma selvatica');
+ assert.equal(found[0].payment_mode,'slot');
+ const spells=sessionSpellEntries(record,{casting_classes:[],origin_spells:found},catalog.spells);
+ assert.equal(spells.length,1);
+ assert.equal(spells[0].level,1);
+ assert.equal(spells[0].grant_id,found[0].id);
+ assert.deepEqual(spells[0].time,[{number:1,unit:'bonus'}]);
+ assert.equal(grants({...record,classes:[{...record.classes[0],subclass:'Circle of the Land'}]},[moonFeature]).length,0);
 });
-test('Same spell-slot choices and bounded consumption as ordinary spells',()=>{
- const r=ranger(),d=stats(),power=slotFeaturePowers(r,d,catalog)[0];
- assert.deepEqual(slotFeaturePaymentOptions(power,d).map(row=>row.id),['slot:1']);
- const applied=slotFeatureUsePatch(r,d,catalog,power.id,'slot:1');
- assert.equal(applied.patch.spell_slots_spent[1],1);
- assert.equal(applied.level,1);
- assert.equal(applied.healed,0);
- assert.throws(()=>slotFeatureUsePatch(r,d,catalog,power.id,'slot:3'),/Slot/);
- assert.throws(()=>slotFeatureUsePatch({...r,spell_slots_spent:applied.patch.spell_slots_spent},
-  stats(2,2),catalog,power.id,'slot:1'),/Slot/);
-});
-test('Combat Wild Shape slot healing operates on form HP, not original HP',()=>{
- const r=moon(),d=stats(),power=slotFeaturePowers(r,d,catalog)[0];
- assert.equal(power.id,'druid_combat_wild_shape_healing_phb');
- assert.equal(power.action,'bonus');
- const result=slotFeatureUsePatch(r,d,catalog,power.id,'slot:1',[5]);
- assert.equal(result.healed,5);
- assert.equal(result.patch.current_hp,12);
- assert.equal(result.patch.spell_slots_spent[1],1);
- assert.equal(r.current_hp,12,'base HP unchanged until variant-aware editor patch');
- assert.throws(()=>slotFeatureUsePatch(r,d,catalog,power.id,'slot:1',[9]),/cura/);
-});
-test('Combat Wild Shape requires transformation and tracks manual healing when form HP are not overridden',()=>{
- const r=moon(),d=stats();
- const off={...r,active_class_features:{}};
- assert.equal(slotFeaturePowers(off,d,catalog)[0].available,false);
- assert.throws(()=>slotFeatureUsePatch(off,d,catalog,'druid_combat_wild_shape_healing_phb','slot:1',[3]),/Forma selvatica/);
- const untracked={...r,variants:[{...r.variants[0],sections:['appearance']}]};
- const result=slotFeatureUsePatch(untracked,d,catalog,'druid_combat_wild_shape_healing_phb','slot:1',[3]);
- assert.equal(result.patch.current_hp,undefined);
- assert.equal(result.manual_healing,3);
+test('Both powers remain spell definitions, not separately tracked slot powers',()=>{
+ assert.equal(catalog.spells.length,2);
+ assert.equal(catalog.grants.length,2);
+ assert.ok(catalog.spells.every(spell=>spell.level===1&&spell.internal_grant));
+ assert.ok(catalog.grants.every(grant=>grant.payment_mode==='slot'));
 });
