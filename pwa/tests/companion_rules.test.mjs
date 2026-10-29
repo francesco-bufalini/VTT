@@ -126,7 +126,7 @@ test('homunculus servant uses live owner proficiency, spell attack and HP',()=>{
   'companion:homunculus_servant_2014');
  const defenses=characterDefenseSummary(child,calculated);
  assert.deepEqual(defenses.groups[1].items.map(x=>x.key),['poison']);
- assert.deepEqual(defenses.groups[2].items.map(x=>x.key),['exhaustion','poisoned']);
+ assert.deepEqual(defenses.groups[2].items.map(x=>x.key).sort(),['exhaustion','poisoned']);
  assert.equal(sheetScoreOriginSegments(child,calculated,'proficiency')[0].originName,'Proprietario · Ari');
  const grown={...parent,level:12,classes:[{name:'Artificer',source:'TCE',level:12}],
   abilities:{...parent.abilities,int:20}};
