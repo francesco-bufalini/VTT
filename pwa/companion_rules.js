@@ -136,6 +136,7 @@ export function companionTemplateStat(template,owner,{size='',name=''}={}){
  const trained=companionTemplateProficiencies(template,pb);
  const stat={name:String(name||template.name).trim().slice(0,160),source:template.source||'',
   type:template.type||'construct',size:(size||template.size||'M').slice(0,1).toUpperCase(),
+  ...(template.alignment?{alignment:structuredClone(template.alignment)}:{}),
   ac:[armor],hp:{average:hp},
   ...(template.hp?.hit_die?{hit_dice:classLevel+'d'+Number(template.hp.hit_die)}:{}),
   speed:structuredClone(template.speed||{}),
