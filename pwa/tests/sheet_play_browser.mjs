@@ -167,10 +167,10 @@ try{
  await page.locator('#sheet-context-dialog [data-identity-active="factions"]').last().check();
  await page.locator('#sheet-context-dialog [data-identity-kind="factions"]').click();
  await page.locator('#sheet-context-dialog [data-identity-value="factions"]').last().press('Tab');
- assert.equal(await page.locator('#sheet-context-dialog [data-identity-value="factions"]').count(),2,'Blank faction entry disappears');
+ assert.equal(await page.locator('#sheet-context-dialog [data-identity-value="factions"]').count(),3,'Blank faction entry disappears, preserving default Party');
  await dismiss();
  assert.equal((await record()).identity_names.length,2);
- assert.equal((await record()).identity_factions.filter(row=>row.active).length,2);
+ assert.deepEqual((await record()).identity_factions.filter(row=>row.active).map(row=>row.value),['Party','Gilda degli Arcani','Compagnia della Stella']);
  assert.equal((await record()).name,'Lyria, guardiana della Luna');
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
