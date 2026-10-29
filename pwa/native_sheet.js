@@ -640,8 +640,12 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         .map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])
   ]))+
   '';
- const identityGroups=(kind,label)=>'<div class="identity-group" data-identity-group="'+kind+'">'+
+ const identityGroups=(kind,label)=>'<div class="identity-group" data-identity-group="'+kind+'"'+
+  (kind==='names'?' data-show-all-names="'+(c.identity_hide_other_names===false)+'"':'')+'>'+
   '<div class="identity-group-heading"><strong>'+label+'</strong>'+
+  (kind==='names'?'<label class="identity-visibility-toggle" title="Nascondi o mostra gli altri nomi sotto quello principale">'+
+    '<input type="checkbox" data-identity-hide-others'+(c.identity_hide_other_names!==false?' checked':'')+'>'+
+    '<span>Nascondi gli altri nomi</span></label>':'')+
   '<button type="button" class="identity-add" data-act="identity-add" data-identity-kind="'+kind+'" aria-label="Aggiungi '+label.toLowerCase()+'">+</button></div>'+
   '<div class="identity-entry-list">'+identityEntries(c,kind).map((row,index)=>
    '<div class="identity-entry">'+
