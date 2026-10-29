@@ -136,3 +136,18 @@ test('multi-level progression calculates each step separately',async()=>{
  assert.ok(rows[2].changes.some(c=>c.label==='Nuove infusioni selezionabili'&&
    c.options.includes('Infusion II')));
 });
+
+test('class reference without hit dice uses the structured mechanics row',async()=>{
+ const {classHitDieFaces}=await import('../level_up.js');
+ const {classMechanicsRow}=await import('../sheet_rules.js');
+ const reference={id:'fighter:phb',name:'Fighter',source:'PHB'};
+ const catalog={classes:[
+   {name:'Fighter',source:'PHB',hit_die:10},
+   {name:'Wizard',source:'PHB',hit_die:6},
+   {name:'Artificer',source:'TCE',hit_die:8}
+ ]};
+ assert.equal(classHitDieFaces(reference),0);
+ assert.equal(classHitDieFaces(classMechanicsRow(catalog,reference.name,reference.source)),10);
+ assert.equal(classHitDieFaces(classMechanicsRow(catalog,'Wizard','PHB')),6);
+ assert.equal(classHitDieFaces(classMechanicsRow(catalog,'Artificer','TCE')),8);
+});

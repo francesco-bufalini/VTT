@@ -38,7 +38,7 @@ import { exportBackup, importBackup, getRecord } from "./storage.js";
 import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
-import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
+import { calculateSheet, loadRuleCatalogs, localClasses, classMechanicsRow, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
 import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} from './feature_rolls.js';
 import {availableZeroHpResponses,resolveZeroHpDamage} from './zero_hp_responses.js';
@@ -5857,6 +5857,15 @@ async function openLevelUpClassDialog(preset={}){
  const hpRows=dialog.querySelector('[data-level-up-hp-rows]');
  const impactPanel=dialog.querySelector('[data-level-up-impact]');
  const impactCache=new Map();
+ // The class chooser contains reference names; the numeric class catalog
+ // is the authoritative source for each class's hit_die.
+ let hitDiceCatalog=null,hitDiceLoad='loading';
+ const hitDieFor=selected=>{
+   if(!selected)return 0;
+   const row=hitDiceCatalog?
+     classMechanicsRow(hitDiceCatalog,selected.name,selected.source):null;
+   return classHitDieFaces(row||{})||classHitDieFaces(selected.reference||{});
+ };
  const rulesRequest=loadRuleCatalogs().then(rules=>{
    const definitions=(inventoryModule.expandedInfusionDefinitions||((value)=>value))(
      rules.abilityGrants?.artificer_infusions||[]);
@@ -5916,7 +5925,7 @@ async function openLevelUpClassDialog(preset={}){
  const paintPreview=()=>{
    const selected=selectedClass();
    const count=Number(countSelect.value)||1;
-   const die=classHitDieFaces(selected?.reference||{});
+   const die=hitDieFor(selected);
    const con=Number(state.calculated?.abilities?.con?.modifier ??
      Math.floor((Number(record.abilities?.con??10)-10)/2));
    const values=previousSelection===classSelect.value?
@@ -5938,7 +5947,10 @@ async function openLevelUpClassDialog(preset={}){
          '" data-level-up-hp value="'+value+'" aria-label="Punti ferita dal dado al livello '+(from+i+1)+'">'+
          '<span class="levelup-hp-con"> '+(con>=0?'+':'−')+' '+Math.abs(con)+
          ' COS</span></label>';
-     }).join(''):'<p class="levelup-footer-note">Dado vita non disponibile nel catalogo della classe. Seleziona un\'altra classe oppure riprova dopo il caricamento dei dati.</p>')+
+     }).join(''):'<p class="levelup-footer-note">'+
+       (hitDiceLoad==='loading'?'Caricamento dei dadi vita della classe…':
+         'Dado vita non disponibile nelle regole locali per '+esc(selected?.name||'questa classe')+'.')+
+       '</p>')+
      (die?'<output class="levelup-hp-total" data-level-up-hp-total></output>':'');
    const note=dialog.querySelector('[data-level-up-xp-note]');
    note.textContent=count>xpAvailable?'L’avanzamento manuale aggiornerà anche gli XP minimi del nuovo livello.':
@@ -5948,7 +5960,7 @@ async function openLevelUpClassDialog(preset={}){
    void refreshImpact();
  };
  const paintHpTotal=()=>{
-   const selected=selectedClass(),die=classHitDieFaces(selected?.reference||{});
+   const selected=selectedClass(),die=hitDieFor(selected);
    const inputs=[...hpRows.querySelectorAll('[data-level-up-hp]')];
    if(!die||!inputs.length)return;
    const con=Number(state.calculated?.abilities?.con?.modifier ??
@@ -5974,7 +5986,7 @@ async function openLevelUpClassDialog(preset={}){
      if(!current||current.id!==record.id)throw Error('Personaggio cambiato.');
      const rows=rowsFor(current,'classes'),count=Number(countSelect.value);
      const selected=selectedClass();
-     const faces=classHitDieFaces(selected?.reference||{});
+     const faces=hitDieFor(selected);
      if(!selected||!faces||!Number.isInteger(count)||count<1||totalClassLevel(current)+count>20)
        throw Error('Livellaggio non valido.');
      const rolls=[...hpRows.querySelectorAll('[data-level-up-hp]')].map(input=>Number(input.value));
@@ -6015,6 +6027,17 @@ async function openLevelUpClassDialog(preset={}){
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  app.append(dialog);openDialog(dialog);
+ // Numeric rules often arrive after the initial dialog render. Repaint
+ // without requiring the user to touch a selector or lose entered HP.
+ void rulesRequest.then(rules=>{
+   hitDiceCatalog=rules.classMechanics||null;
+   hitDiceLoad='ready';
+   if(dialog.isConnected)paintPreview();
+ }).catch(error=>{
+   hitDiceLoad='error';
+   console.warn('Dadi vita del livellaggio non disponibili',error);
+   if(dialog.isConnected)paintPreview();
+ });
 }
 function openPendingChoicesIndex(){
  const choices=state.calculated?.pending_choices||[];
@@ -8244,8 +8267,8 @@ async function handleAction(target){
       if(!rows[index]||rows[index].automatic)throw Error("Voce non rimovibile");
       rows.splice(index,1);
     }else{
-      const defaults={classes:{name:"",source:"",level:1},
-        proficiency_choices:{kind:"skill",key:"",origin_id:"",origin_name:"",disabled:false},
+      if(key==='classes')throw Error('Aggiungi una nuova classe dal popup di livellaggio.');
+      const defaults={proficiency_choices:{kind:"skill",key:"",origin_id:"",origin_name:"",disabled:false},
         feats_catalog:{name:"Nuovo talento",source:"",disabled:false},
         backgrounds_catalog:{name:"",source:"",disabled:false},
         formula_bonuses:{id:"bonus_"+crypto.randomUUID(),target:"initiative",expression:"0",origin_id:"",origin_name:"",disabled:false,automatic:false},
