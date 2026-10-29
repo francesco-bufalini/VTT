@@ -601,10 +601,10 @@ try{
  await hpCard.click({position:{x:22,y:80}});
  await page.locator('#hp-adjust-amount').fill('3');
  await page.locator('#hp-adjust-dialog [data-hp-mode="heal"]').click();
- await page.waitForFunction(async()=>{
-  const {listCreatures}=await import('/creatures.js');
-  return (await listCreatures())[0]?.creature.current_hp===40;
- });
+ await page.waitForFunction(async creatureId=>{
+  const {loadCreature}=await import('/creatures.js');
+  return (await loadCreature(creatureId)).data.current_hp===40;
+ },seededCreatureId);
  const healedHp=(await record()).current_hp;
  const maximumHp=Number((await page.locator('#sheet-play-view [data-calculated="hp"]').first().textContent()).trim());
  assert.equal(healedHp,Math.min(maximumHp,40),'Healing cannot exceed maximum HP');
@@ -612,6 +612,10 @@ try{
   await hpCard.click({position:{x:22,y:80}});
   await page.locator('#hp-adjust-amount').fill(String(healedHp-37));
   await page.locator('#hp-adjust-dialog [data-hp-mode="damage"]').click();
+  await page.waitForFunction(async creatureId=>{
+   const {loadCreature}=await import('/creatures.js');
+   return (await loadCreature(creatureId)).data.current_hp===37;
+  },seededCreatureId);
  }
  assert.equal((await record()).current_hp,37,'Subsequent damage restores expected HP');
 
