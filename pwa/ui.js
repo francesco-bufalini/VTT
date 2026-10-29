@@ -333,15 +333,15 @@ async function saveIdentityGroup(target){
  const changes=identityEntriesPatch(state.editor.read(),kind,entries);
  await patch(changes);
  if(kind==='factions'){
-  const hero=app.querySelector('#sheet-play-view .play-identity');
-  if(hero){
+  const header=app.querySelector('#sheet-play-view .play-character-portrait');
+  if(header){
    const labels=changes.identity_factions.filter(row=>row.active).map(row=>row.value).join(' · ');
-   let note=hero.querySelector('.play-identity-factions');
+   let note=header.querySelector('.play-identity-factions-line');
    if(labels&&!note){
-    note=document.createElement('p');note.className='play-identity-factions';
-    hero.querySelector('h2')?.after(note);
+    note=document.createElement('p');note.className='play-identity-factions-line';
+    header.querySelector('.play-passives')?.after(note);
    }
-   if(note){note.textContent=labels;note.hidden=!labels;}
+   if(note){note.innerHTML=labels?'<strong>Fazioni:</strong> '+esc(labels):'';note.hidden=!labels;}
   }
  }
 }
