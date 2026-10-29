@@ -1127,7 +1127,7 @@ function calculateSheetValues(record={},catalogs={}){
         const old=record.stat_block?.skill?.[key];
         // Published monster totals can contain bonuses beyond their training.
         // Keep the source's numeric value rather than losing those bonuses.
-        if(old!==undefined&&/^[-+]?\\d+$/.test(String(old)))
+        if(old!==undefined&&/^[-+]?\d+$/.test(String(old)))
           return int(old)+sumGrants("ability_check",stack);
       }
       return resolve("ability_mod:"+skill[2],stack)+rank*resolve("proficiency",stack)+sumGrants("ability_check",stack);
