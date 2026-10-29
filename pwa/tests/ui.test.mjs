@@ -193,7 +193,12 @@ test("mobile navigation and local creature editing persist through tabs",async()
   const pendingNote=document.querySelector('#sheet-context-dialog [data-identity-value="factions"]');
   pendingNote.value="Gruppo digitato e subito chiuso";
   pendingNote.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
-  // No change/blur or delay: a fast mobile tap must flush the debounce.
+  // Newly entered factions are optional until checked; select this one before
+  // navigating so it is the canonical party_id in the legacy archive.
+  const factionCheck=pendingNote.closest('.identity-entry').querySelector('[data-identity-active="factions"]');
+  factionCheck.checked=true;
+  factionCheck.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
+  // No blur or delay: a fast mobile tap must flush the pending identity write.
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
   assert.match(document.querySelector("#app").textContent,/Arcanista mobile/);
