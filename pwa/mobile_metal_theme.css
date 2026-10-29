@@ -5872,3 +5872,12 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
   max-width:185px
  }
 }
+
+/* A reroll belongs to the completed d20 result, never to its modifier. */
+.sheet-roll-rerolls{display:flex;flex-wrap:wrap;gap:7px;padding:10px 12px;border:1px solid #ae855251;border-radius:10px;margin:8px 0}
+.sheet-roll-rerolls[hidden]{display:none}
+.sheet-reroll-title{width:100%;font:650 12px system-ui;color:#e8c99a}
+.sheet-reroll-source,.sheet-reroll-choice button{min-height:36px;padding:7px 10px;border:1px solid #b790617a;border-radius:7px;background:#58402d;color:#f0d4a8;font:550 12px system-ui;cursor:pointer}
+.sheet-reroll-choice{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:100%;font:12px/1.4 system-ui;color:#dac5a6}
+.sheet-reroll-choice>span{width:100%}
+.sheet-reroll-choice button[aria-pressed="true"]{border-color:#f0c783;background:#795538}
