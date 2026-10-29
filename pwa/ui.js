@@ -2507,7 +2507,6 @@ async function editorView() {
       infusionPanel(c,calculated)+
       armorModelPanel(c,calculated)+
       genericPowerSelectionPanels(c,calculated)+
-      slotFeaturePanel(calculated)+
        racialRestTrainingPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
@@ -3163,7 +3162,7 @@ function genericPowerSelectionPanels(c,calculated){
     esc(selectedPowerLabel(optionById.get(selectedPowerId(item)),item))+'</span></div>').join('');
    const trigger=layer.change_label?'<span class="power-selection-rest">'+esc(layer.change_label)+'</span>':'';
    const action=stage==='learned'?'Impara / Dimentica':stage==='prepared'?'Prepara / Rimuovi':'Applica / Rimuovi';
-   return '<section class="magic-source power-selection-stage"><div class="infusion-overview"><strong>'+
+   return '<section class="power-selection-stage"><div class="infusion-overview"><strong>'+
     esc(powerLayerNames[stage]||stage)+' '+selected.length+(layer.limit!==null?' / '+layer.limit:'')+
     '</strong>'+trigger+'</div>'+
     '<div class="magic-source-controls"><button type="button" class="btn small magic-selection-button" data-act="power-selection-open"'+
@@ -3271,15 +3270,6 @@ async function openGenericPowerOptionPreview(id){
 
 
 // Slot-spending features are spell-like uses, never additional known spells.
-function slotFeaturePanel(calculated){
- const powers=calculated.slot_feature_powers||[];
- if(!powers.length)return '';
- return panel('Capacità con slot',powers.map(power=>
-  '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="slot-feature-open"'+
-  ' data-slot-feature-id="'+esc(power.id)+'">'+esc(power.title||power.name)+'</button>'+
-  '<span class="hint">'+esc(power.action==='bonus'?'Azione bonus':'Azione')+'</span>'+
-  (!power.available?'<small class="hint">Richiede Forma selvatica</small>':'')+'</div>').join(''));
-}
 async function openSlotFeatureDialog(id){
  const record=state.editor?.read();if(!record)throw Error('Scheda non disponibile.');
  const calculated=await computeLocalData(record);
@@ -3942,6 +3932,21 @@ function originSpellSections(c,calculated,renderRow){
      else group.missingTracker=true;
    }else if(mode==='free')group.hasFree=true;
  }
+ // Slot-paid class abilities are grants of the owning trait, like spells from
+ // species/feats. Keep their real action and slot semantics; never add fake
+ // prepared/known spells or a separate Powers tab/card.
+ for(const power of calculated.slot_feature_powers||[]){
+   const origin=String(power.origin_id||'feature:'+power.id);
+   if(!origins.has(origin))origins.set(origin,{
+     name:'Tratto · '+(power.name||power.title),ability:'',showStats:false,
+     allowed:[],items:[],slotPowers:[],trackers:new Map(),
+     usesSlots:false,missingTracker:false,hasFree:false
+   });
+   const group=origins.get(origin);
+   if(!group.slotPowers)group.slotPowers=[];
+   group.slotPowers.push(power);
+   group.usesSlots=true;
+ }
  return [...origins.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
    .map(([origin,group])=>{
      const badges=(group.usesSlots?magicSlotUsageChip():'')+
@@ -3957,7 +3962,16 @@ function originSpellSections(c,calculated,renderRow){
          item.grant.spell_id===calculated.active_celestial_form.spell_id)?
          '<div class="magic-active-form"><strong>Manifestazione attiva · 1 minuto</strong> '+
          '<button type="button" class="btn small" data-act="end-racial-power">Termina</button></div>':'')+
-       groupedMagicSpells(group.items,({grant,info})=>renderRow(grant,info))+
+       (group.items.length?groupedMagicSpells(group.items,({grant,info})=>renderRow(grant,info)):'')+
+       (group.slotPowers||[]).map(power=>
+         '<div class="magic-spell-row magic-slot-feature-row">'+
+         '<button type="button" class="magic-spell-open" data-act="slot-feature-open"'+
+         ' data-slot-feature-id="'+esc(power.id)+'" aria-label="Apri '+esc(power.title||power.name)+'">'+
+         esc(power.title||power.name)+'</button>'+
+         '<button type="button" class="btn small" data-act="power-trait"'+
+         ' data-origin-id="'+esc(power.origin_id||'')+'" aria-label="Apri il tratto di '+esc(power.name)+'">↗</button>'+
+         '<span class="hint magic-power-cost">Slot · '+esc(power.action==='bonus'?'Azione bonus':'Azione')+'</span>'+
+         '</div>').join('')+
        '</section>';
    }).join('');
 }

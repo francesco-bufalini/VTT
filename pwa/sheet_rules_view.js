@@ -721,9 +721,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    });
    powerGroups.set(key,abilities);
   }
+  const slotPowerNames=new Set((d.slot_feature_powers||[]).map(power=>String(power.name||'').toLowerCase()));
   const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],view.battleSpells||spells)
-    .filter(row=>!(d.slot_feature_powers||[]).some(power=>power.id==='ranger_primeval_awareness_phb'&&
-      row.kind==='ability'&&row.name===power.name));
+    .filter(row=>!(row.kind==='ability'&&slotPowerNames.has(String(row.name||'').toLowerCase())));
   const rollBonuses=trackerRollBonusRows(c,d);
   const bonusRows=trackerId=>rollBonuses.filter(row=>row.tracker_id===trackerId).map(row=>{
    const value=Object.hasOwn(row,'flat_bonus')?String(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice;
@@ -954,18 +954,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Missing trackers are exceptional and must remain visible, not be
   // misrepresented as cost-free privileges.
   const missingPowers=abilityButtons('missing');
-  const slotFeatureResources=(d.slot_feature_powers||[]).map(power=>
-   '<div class="play-resource-ungrouped"><div class="play-resource">'+
-   '<span class="play-resource-heading">'+esc(power.title||power.name)+'</span></div>'+
-   '<div class="play-resource-power-row"><button type="button" class="play-resource-power-open" data-act="slot-feature-open" data-slot-feature-id="'+esc(power.id)+'">'+
-     icon('spell_cast')+'<span><strong>'+esc(power.title||power.name)+'</strong><small>'+
-     esc(power.action==='bonus'?'Azione bonus':'Azione')+' · Slot incantesimo</small></span></button>'+
-   '<button type="button" class="play-resource-use" data-act="slot-feature-open" data-slot-feature-id="'+esc(power.id)+'"'+
-    (!power.available?' disabled':'')+'>Usa</button></div></div>').join('');
   const untracked=(missingPowers?'<div class="play-resource-ungrouped" data-ability-resource="missing">'+
    '<div class="play-resource"><span class="play-resource-heading">Tracker non disponibile</span></div>'+
     missingPowers+'</div>':'')+
-   slotFeatureResources+freePrivileges.join('')+featPrivileges.join('')+
+   freePrivileges.join('')+featPrivileges.join('')+
    overriddenPrivileges.join('')+basicRules;
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
@@ -1076,7 +1068,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       (concentrated?proxy(overview?.querySelector('[data-act="stop-concentration"]'),
         'Termina concentrazione','', '<span aria-hidden="true">×</span>'):'')+
     '</div></section>';
-  for(const source of bank.querySelectorAll('.magic-source')){
+  // Only the spell source card can contribute casting origins. Generic choice
+  // stages elsewhere in the hidden editor must not become extra "Poteri" cards.
+  for(const source of panelNamed('Incantesimi disponibili')?.querySelectorAll('.magic-source')||[]){
    const title=source.querySelector('.magic-source-title h3, h3')?.textContent||'Poteri';
    const granted=source.classList.contains('magic-origin-panel');
    // Source counters live in the hidden legacy bank. Project them into the
@@ -1101,7 +1095,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      }).join('');
    const trackerId=source.querySelector('.magic-source-header [data-magic-tracker-id]')?.dataset.magicTrackerId||'';
    const rows=[...source.querySelectorAll('.magic-spell-row')].map(row=>{
-    const node=row.querySelector('[data-act="power-spell"]');if(!node)return '';
+    const node=row.querySelector('[data-act="power-spell"],[data-act="slot-feature-open"]');
+    if(!node)return '';
     const level=row.closest('[data-magic-level]')?.dataset.magicLevel;
     const levelLabel=level==='0'?'Trucchetto':level&&level!=='null'?level+'°':'';
     const cost=granted?row.querySelector('.magic-power-cost')?.textContent.trim()||'':'';
@@ -1144,16 +1139,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      html+=card('Modelli di armatura',rows||'<p class="play-empty">Nessun modello disponibile.</p>',
        counters?'<div class="play-magic-source-resources" aria-label="Stato modelli di armatura">'+counters+'</div>':'',
        'play-magic-class-card play-infusion-card play-armor-model-card');
-     return;
-   }
-   if(heading(node)==='Capacità con slot'){
-     bind('slot-features',node);
-     const rows=[...node.querySelectorAll('[data-act="slot-feature-open"]')].map(button=>
-      '<div class="play-spell play-magic-origin-spell">'+
-      proxy(button,'Apri '+button.textContent.trim(),'spark',
-        '<span>'+esc(button.textContent.trim())+'</span>')+'</div>').join('');
-     html+=card('Capacità con slot',rows||'<p class="play-empty">Nessuna capacità disponibile.</p>',
-       '', 'play-magic-class-card');
      return;
    }
    if(node.querySelector('.power-selection-stage')){
