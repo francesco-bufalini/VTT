@@ -310,11 +310,8 @@ async function saveIdentityGroup(target){
  if(!group||!state.editor)return;
  const kind=group.dataset.identityGroup;
  if(!['names','factions'].includes(kind))return;
- const rows=[...group.querySelectorAll('.identity-entry')];
- for(const row of rows){
-  const input=row.querySelector('[data-identity-value]');
-  if(input&&!input.value.trim()&&(rows.length>1||kind==='factions'))row.remove();
- }
+ // Blank rows are removed by focusout, not by unrelated autosaves while
+ // the user is still about to type into a newly focused entry.
  const entries=[...group.querySelectorAll('.identity-entry')].map(row=>({
   value:row.querySelector('[data-identity-value]')?.value||'',
   active:Boolean(row.querySelector('[data-identity-active]')?.checked)
@@ -9109,9 +9106,16 @@ function listen(){
       const group=button.closest('[data-identity-group]');
       if(['names','factions'].includes(kind)&&group?.dataset.identityGroup===kind){
         const list=group.querySelector('.identity-entry-list');
-        const previous=list?.querySelector('.identity-entry');
-        if(previous){
-          const row=previous.cloneNode(true),input=row.querySelector('[data-identity-value]');
+        if(list){
+          const previous=list.querySelector('.identity-entry');
+          const row=previous?previous.cloneNode(true):document.createElement('div');
+          if(!previous){
+            row.className='identity-entry';
+            row.innerHTML='<input type="text" data-identity-value="factions" maxlength="160">'+
+              '<label class="identity-check" title="Fazione attiva"><input type="checkbox" data-identity-active="factions" aria-label="Attiva questa fazione">'+
+              '<span aria-hidden="true">✓</span></label>';
+          }
+          const input=row.querySelector('[data-identity-value]');
           input.value='';
           input.setAttribute('aria-label',kind==='names'?'Nuovo nome':'Nuova fazione');
           row.querySelector('[data-identity-active]').checked=false;
