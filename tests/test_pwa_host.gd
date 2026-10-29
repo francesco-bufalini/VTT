@@ -177,8 +177,8 @@ func run() -> void:
 	assert(progression_script.begins_with("HTTP/1.1 200") and progression_script.contains("text/javascript") and progression_script.contains("optionalFeatureSelectionModels"), "Offline update must receive the optional feature progression module")
 	var progression_catalog := await http("GET", "/catalog/optional_feature_progressions.json")
 	assert(progression_catalog.begins_with("HTTP/1.1 200") and progression_catalog.contains("application/json") and progression_catalog.contains("optionalfeatureProgression"), "Optional feature progression catalog must be served to mobile")
-	for asset: String in ["/slot_feature_powers.js", "/catalog/slot_feature_powers.json"]:
-		assert((await http("GET", asset)).begins_with("HTTP/1.1 200"), "Offline update requires " + asset)
+	var feature_slot_catalog := await http("GET", "/catalog/feature_slot_spells.json")
+	assert(feature_slot_catalog.begins_with("HTTP/1.1 200") and feature_slot_catalog.contains("application/json") and feature_slot_catalog.contains("Primeval Awareness") and feature_slot_catalog.contains("Combat Wild Shape"), "Offline update must serve native feature-granted spell definitions")
 	# Read-only, unauthenticated telemetry must contain JS transfer health only.
 	var module_diag := await http("GET", "/__vtt_module_diagnostics")
 	assert(module_diag.begins_with("HTTP/1.1 200"))
