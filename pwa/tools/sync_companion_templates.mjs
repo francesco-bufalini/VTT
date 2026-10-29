@@ -44,7 +44,7 @@ for(const template of Object.values(catalog.templates||{})){
   skill_ranks:rankMap(source.skill,source,true),
   save_ranks:rankMap(source.save,source)
  };
- for(const field of ['speed','languages','passive','resist','vulnerable','immune','conditionImmune','senses']){
+ for(const field of ['speed','alignment','languages','passive','resist','vulnerable','immune','conditionImmune','senses']){
   if(source[field]!==undefined)template[field]=clone(source[field]);
   else if(field!=='passive')template[field]=[];
   else delete template[field];
