@@ -28,7 +28,7 @@ export function availableD20Rerolls(record={},calculated={},target='',outcome=nu
 export function offerD20Reroll(outcome={},die,source={}){
  if(!Array.isArray(outcome.parts)||outcome.parts[0]?.kind==='flat'||
     !Array.isArray(outcome.parts[0]?.rolls)||!outcome.parts[0].rolls.length||
-    !Number.isSafeInteger(outcome.total)||typeof die!=='function)
+    !Number.isSafeInteger(outcome.total)||typeof die!=='function')
   throw Error('Tiro d20 originale non disponibile.');
  const result=die(20);
  if(!Number.isInteger(result)||result<1||result>20)throw Error('Nuovo d20 non valido.');
