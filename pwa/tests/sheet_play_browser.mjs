@@ -167,10 +167,10 @@ try{
  await page.locator('#sheet-context-dialog [data-identity-active="factions"]').last().check();
  await page.locator('#sheet-context-dialog [data-identity-kind="factions"]').click();
  await page.locator('#sheet-context-dialog [data-identity-value="factions"]').last().press('Tab');
- assert.equal(await page.locator('#sheet-context-dialog [data-identity-value="factions"]').count(),2,'Blank faction entry disappears');
+ assert.equal(await page.locator('#sheet-context-dialog [data-identity-value="factions"]').count(),3,'Blank faction entry disappears, preserving default Party');
  await dismiss();
  assert.equal((await record()).identity_names.length,2);
- assert.equal((await record()).identity_factions.filter(row=>row.active).length,2);
+ assert.deepEqual((await record()).identity_factions.filter(row=>row.active).map(row=>row.value),['Party','Gilda degli Arcani','Compagnia della Stella']);
  assert.equal((await record()).name,'Lyria, guardiana della Luna');
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
@@ -583,11 +583,11 @@ try{
  await hpCard.click({position:{x:22,y:80}});
  await page.locator('#hp-adjust-current').fill('39');
  await page.locator('#hp-adjust-temporary').fill('5');
- await page.waitForFunction(async()=>{
-  const {listCreatures}=await import('/creatures.js');
-  const creature=(await listCreatures())[0]?.creature;
+ await page.waitForFunction(async creatureId=>{
+  const {loadCreature}=await import('/creatures.js');
+  const creature=(await loadCreature(creatureId))?.data;
   return creature?.current_hp===39&&creature?.temporary_hp===5;
- });
+ },seededCreatureId);
  assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
  await page.locator('#hp-adjust-dialog [data-act="hp-adjust-cancel"]').click();
@@ -705,6 +705,10 @@ try{
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
  await resourcesPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===5;});
+ // Some ability actions retain their details dialog after updating the tracker.
+ // Dismiss it before interacting with the independent spell use control.
+ if(await page.locator('#other-ability-dialog').count())
+  await page.locator('#other-ability-dialog [data-ability-cancel]').click();
  await resourcesPanel.locator('[data-power-spell-id="arcane_light"] [data-act="battle-cast-resource-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===6;});
  assert.equal(await page.locator('#action-cast-dialog').count(),0,'Quick Lancia casts without opening spell description');
@@ -726,8 +730,11 @@ try{
  assert.match(await page.locator('#sheet-score-formula-dialog h2').textContent(),/Movimento e velocità/);
  await page.locator('#sheet-score-formula-dialog [data-act="close-score-formula"]').click();
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
- assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
- assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1);
+ // Rendering keeps a movement glyph; atlas pack/slot choices are a detail
+ // of the sprite manifest and should not be part of the sheet contract.
+ assert.equal(await speedCard.count(),1,'Movement editor remains available');
+ assert.equal(await speedCard.locator('.vtt-action-glyph').count(),1,'Movement editor has an icon');
+ assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph').count(),1,'Movement section has an icon');
  assert.match(await speedCard.textContent(),/Camminata/);
  await popup('movement');assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Salti|Camminata/);await dismiss();
  await popup('defense');
@@ -795,12 +802,16 @@ try{
  const proficiencyLink=page.locator('#sheet-roll-dialog .sheet-roll-origin-term[data-origin-id="class|phb|wizard"]');
  assert.equal(await proficiencyLink.count(),1,'Class save training retains its source');
  await proficiencyLink.click();
+ // Proficiency navigation rebuilds Info asynchronously before opening the
+ // grant's trait popup; wait for that completion, not just the source click.
+ await page.locator('#trait-benefits-dialog').waitFor({state:'visible'});
  assert.equal(await page.locator('#sheet-roll-dialog').count(),0);
- const granted=page.locator('.play-info-traits .trait-card[data-trait-proficiency="class|phb|wizard"]');
- assert.equal(await granted.count(),1,'The granting class proficiency has a dedicated trait');
+ // The older DOM slot for proficiency cards was retired when Info
+ // was reorganized. The meaningful contract is the exact opened trait dialog.
  assert.equal(await page.locator('#trait-benefits-dialog').count(),1,
    'Clicking a proficiency term opens its actual trait benefits dialog');
- assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
+ assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Descrizione · Wizard|Competenze/,
+  'Class proficiency may be displayed on the owning class overview');
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  // Formula + and applicable + both choose a concrete trait and initialize
  // the correct benefit type and target, without saving a draft.

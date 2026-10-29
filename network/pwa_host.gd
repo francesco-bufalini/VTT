@@ -48,6 +48,7 @@ const FILES := {
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
 	"/defense_summary.js": ["res://pwa/defense_summary.js", "text/javascript; charset=utf-8"],
 	"/identity_aliases.js": ["res://pwa/identity_aliases.js", "text/javascript; charset=utf-8"],
+	"/d20_rerolls.js": ["res://pwa/d20_rerolls.js", "text/javascript; charset=utf-8"],
 	"/source_edition.js": ["res://pwa/source_edition.js", "text/javascript; charset=utf-8"],
   "/item_controls.js": ["res://pwa/item_controls.js", "text/javascript; charset=utf-8"],
   "/inventory_search.js": ["res://pwa/inventory_search.js", "text/javascript; charset=utf-8"],

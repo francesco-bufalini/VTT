@@ -5348,6 +5348,18 @@
           "max": 3,
           "recharge": "long_rest"
         }
+      ],
+      "rerolls": [
+        {
+          "id": "feat:phb:lucky:d20",
+          "name": "Punto fortuna",
+          "targets": [
+            "any_d20"
+          ],
+          "tracker_id": "feat:phb:lucky:luck-points",
+          "tracker_cost": 1,
+          "condition_label": "Dopo il lancio del d20, prima di sapere se il tiro riesce; scegli quale d20 usare."
+        }
       ]
     },
     {
