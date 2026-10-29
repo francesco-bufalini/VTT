@@ -1649,15 +1649,16 @@ export function loadRuleCatalogs(){
     fetch('/catalog/optional_feature_progressions.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.progressions)&&Array.isArray(data.options)?data:{progressions:[],options:[]})
       .catch(()=>({progressions:[],options:[]})),
-    fetch('/catalog/slot_feature_powers.json').then(r=>r.ok?r.json():{}).then(data=>
-      data?.version===1&&Array.isArray(data.powers)?data:{powers:[]}).catch(()=>({powers:[]}))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,slotFeaturePowers])=>({
+    fetch('/catalog/feature_slot_spells.json').then(r=>r.ok?r.json():{}).then(data=>
+      data?.version===1&&Array.isArray(data.spells)&&Array.isArray(data.grants)?data:{spells:[],grants:[]})
+      .catch(()=>({spells:[],grants:[]}))
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
-    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,slotFeaturePowers,featureRules:featureRules||{},
+    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
-    featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
-    spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
+    featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
+    spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;
 }
