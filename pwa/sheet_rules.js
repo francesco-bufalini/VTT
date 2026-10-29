@@ -464,7 +464,7 @@ function subclassKey(value){
 // Source-qualified feat mechanics are ordinary typed tracker/roll/action grants.
 // No talent names appear in the runtime projection logic.
 export function featMechanicGrants(record={},index={}){
- const result={trackers:[],roll_modes:[],roll_bonuses:[],movement_rules:[],spell_imprints:[],attacks:[],actions:[]};
+ const result={trackers:[],roll_modes:[],roll_bonuses:[],rerolls:[],movement_rules:[],spell_imprints:[],attacks:[],actions:[]};
  for(const feat of arr(record.feats_catalog)){
   if(!feat?.name||feat.disabled)continue;
   const rule=arr(index.feat_mechanics).find(row=>same(row.name,feat.name)&&same(row.source,feat.source));
@@ -476,6 +476,8 @@ export function featMechanicGrants(record={},index={}){
   for(const raw of arr(rule.roll_modes))result.roll_modes.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,feat_name:feat.name});
   for(const raw of arr(rule.roll_bonuses))result.roll_bonuses.push({...raw,origin_id,
+    origin_name:'Talento · '+feat.name,feat_name:feat.name});
+  for(const raw of arr(rule.rerolls))result.rerolls.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,feat_name:feat.name});
   for(const raw of arr(rule.movement_rules))result.movement_rules.push({...raw,origin_id,
     origin_name:'Talento · '+feat.name,feat_name:feat.name});
@@ -1488,6 +1490,8 @@ function calculateSheetValues(record={},catalogs={}){
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
     feat_roll_modes:[...featMechanics.roll_modes,...barbarian.conditional_modes].filter(row=>sourceEnabled(row)),
     feat_roll_bonuses:featMechanics.roll_bonuses.filter(row=>sourceEnabled(row)),
+    feat_d20_rerolls:[...featMechanics.rerolls,...arr(record.d20_reroll_grants)]
+      .filter(row=>sourceEnabled(row)&&!row.disabled&&!suppressed.has('d20_reroll:'+String(row.id||''))),
     feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)).flatMap(row=>{
       if(row.tracker_binding!=='racial_breath_weapon')return [row];
       const power=racialPowers.abilities.find(power=>power.name==='Breath Weapon'&&power.tracker_id);
