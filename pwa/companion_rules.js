@@ -139,11 +139,44 @@ export function companionTemplateStat(template,owner,{size='',name=''}={}){
   ac:[armor],hp:{average:hp},speed:structuredClone(template.speed||{}),
   ...Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,Number(abilities[k])||10])),
   skill:trained.skill,save:trained.save,
+  languages:structuredClone(template.languages||[]),
+  ...(template.passive!==undefined?{passive:typeof template.passive==='number'?template.passive:
+   10+scoreMod(abilities.wis)+(trained.skill_ranks.perception||0)*pb}:{}),
   resist:structuredClone(template.resist||[]),vulnerable:structuredClone(template.vulnerable||[]),
   immune:structuredClone(template.immune||[]),conditionImmune:structuredClone(template.conditionImmune||[]),
   senses:structuredClone(template.senses||[]),
-  trait:structuredClone(template.trait||[]),action:structuredClone(template.action||[])};
+  trait:structuredClone(template.trait||[]),action:structuredClone(template.action||[]),
+  reaction:structuredClone(template.reaction||[]),bonus:structuredClone(template.bonus||[]),
+  spellcasting:structuredClone(template.spellcasting||[])};
  return stat;
+}
+// Legacy familiar sheets were created before all published fields were
+// captured. Fill only missing descriptive entries in a read-only view, never
+// rewrite the saved creature or its HP, inventory or manual ability values.
+export function companionStatBlockView(creature={},catalog={}){
+ if(!creature.parent_creature_id||!creature.companion_rule_id||
+   !creature.companion_template_id)return creature;
+ const rule=[...rows(catalog?.features),...rows(catalog?.spells)]
+   .find(row=>row.id===creature.companion_rule_id);
+ if(!rule||rule.template!==creature.companion_template_id)return creature;
+ const template=catalog?.templates?.[rule.template];
+ if(!template)return creature;
+ const old=creature.stat_block||{},stat={...old};
+ const copyIfMissing=field=>{
+  if(stat[field]===undefined&&template[field]!==undefined)
+   stat[field]=structuredClone(template[field]);
+ };
+ for(const field of ['languages','passive','senses','resist','vulnerable','immune',
+   'conditionImmune','spellcasting'])copyIfMissing(field);
+ // Older catalog versions omitted entire reactions or individual traits.
+ // Reconcile by stable source names without replacing saved text.
+ for(const field of ['trait','reaction','bonus']){
+  const current=rows(old[field]),additional=rows(template[field]).filter(row=>
+   !current.some(saved=>normal(saved?.name)===normal(row?.name)));
+  if(additional.length||!Array.isArray(old[field])&&Array.isArray(template[field]))
+   stat[field]=[...current,...structuredClone(additional)];
+ }
+ return {...creature,stat_block:stat};
 }
 export function companionSources(rule,data,bestiary=[],owner={}){
  if(!rule)return [];
