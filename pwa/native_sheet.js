@@ -362,7 +362,12 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
   const automatic=!!row.automatic;
   if(key==='formula_bonuses'&&(automatic||String(row.id||'').startsWith('auto|')))return '';
   return '<article class="native-entry"><div class="row between"><strong>'+esc(row.name||row.origin_name||row.key||'Voce '+(i+1))+'</strong>'+
-   (!automatic?'<button class="btn small danger" data-act="native-remove" data-list="'+key+'" data-index="'+i+'">Rimuovi</button>':'<span class="tag">Da origine</span>')+'</div><div class="columns">'+ROW_FIELDS[key].map(([field,label,type,min,max])=>{
+   (!automatic?'<button class="btn small danger" data-act="native-remove" data-list="'+key+'" data-index="'+i+'">Rimuovi</button>':'<span class="tag">Da origine</span>')+'</div><div class="columns'+(key==='classes'?' class-level-fields':'')+'">'+
+   (key==='classes'?[
+     ROW_FIELDS[key].find(([field])=>field==='name'),
+     ROW_FIELDS[key].find(([field])=>field==='level'),
+     ...ROW_FIELDS[key].filter(([field])=>!['name','level'].includes(field))
+   ]:ROW_FIELDS[key]).map(([field,label,type,min,max])=>{
     const category=key==='classes'?(field==='name'?'classes':field==='subclass'?'subclasses':''):key==='feats_catalog'&&field==='name'?'feats':key==='backgrounds_catalog'&&field==='name'?'backgrounds':'';
     const candidates=contentForRules(list(catalogs[category]),c.rules_version).filter(ref=>key!=='classes'||field==='name'||ref.class_name===row.name&&(!row.source||ref.class_source===row.source));
     if(key==='backgrounds_catalog'&&field==='name'){
@@ -702,14 +707,15 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    panel('Background','<h3>Background principale</h3>'+reference('Background principale','background','backgrounds')+
      '<h3>Altri background</h3>'+nativeRows(c,'backgrounds_catalog',catalogs))+
    panel('Classi',
-      (canLevelUp(c)?'<div class="actions"><button type="button" class="btn primary" data-act="level-up-open">↑ Level up</button></div>':'')+
+      '<div class="actions"><button type="button" class="btn primary" data-act="level-up-open">↑ Level up</button></div>'+
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
       number('XP','xp',Math.max(Number(c.xp)||0,minimumXpForCreature(c)),minimumXpForCreature(c),Number.MAX_SAFE_INTEGER)+'</div>'+
-      cols(reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
-       (c.class?select('Livello classe principale','primary_class_level',
+      cols('<div class="class-level-row">'+reference('Classe base','class','classes')+
+       (c.class?select('Livello','primary_class_level',
         Array.from({length:Math.max(1,20-secondaryClasses.reduce((n,row)=>n+Number(row.level||1),0))},
           (_,index)=>[index+1,String(index+1)]),primaryClassLevel(c)):
-        '<label>Livello classe principale<input type="number" value="0" disabled></label>')+
+        '<label>Livello<input type="number" value="0" disabled></label>')+
+       '</div>'+reference('Sottoclasse','subclass','subclasses')+
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
        nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
    panel('Talenti',feats+'<div class="actions"><button type="button" class="btn small" data-act="feat-catalog">＋ Aggiungi talento</button></div>')+

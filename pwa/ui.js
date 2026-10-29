@@ -54,7 +54,7 @@ import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPa
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp} from "./character_core.js";
-import {availableXpLevels,levelUpSteps} from "./level_up.js";
+import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch} from "./level_up.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
@@ -5221,7 +5221,7 @@ function organizeSheetPanels(){
     const root=app.querySelector('#sheet-play-view');
     const choices=state.calculated.pending_choices||[];
     const missing=choices.filter(choice=>choice.remaining>0);
-    const levelReady=canLevelUp(state.editor.read());
+    const levelReady=availableXpLevels(state.editor.read())>0;
     if(root&&(missing.length||levelReady)){
       const total=missing.reduce((n,choice)=>n+choice.remaining,0)+(levelReady?1:0);
       const notice=document.createElement('section');
@@ -5857,7 +5857,7 @@ async function openLevelUpClassDialog(){
 }
 function openPendingChoicesIndex(){
  const choices=state.calculated?.pending_choices||[];
- const levelReady=canLevelUp(state.editor?.read()||{});
+ const levelReady=availableXpLevels(state.editor?.read()||{})>0;
  if(!choices.length&&!levelReady)return;
  app.querySelector('#pending-choice-dialog')?.remove();
  const dialog=document.createElement('dialog');
