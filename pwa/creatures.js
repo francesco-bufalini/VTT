@@ -90,6 +90,26 @@ export async function createCreature(kind = "character", name = "Nuova creatura"
   return saved;
 }
 
+// Independent bestiary monsters use the same 5eTools statblock projection as
+// familiars, but have no parent, companion grant or summon lifecycle.
+export async function createBestiaryMonster(source, reference = {}, scope = "default", miniature = null) {
+  const stat = source?.stat_block || source;
+  if (!stat || typeof stat !== "object" || Array.isArray(stat) ||
+      typeof stat.name !== "string" || !stat.name.trim())
+    throw new Error("Seleziona una creatura valida dal bestiario.");
+  const name = String(reference.display_name ?? stat.name).trim();
+  if (!name || name.length > 160) throw new Error("Nome del mostro non valido.");
+  const creature = bestiarySheet(stat, miniature || reference.miniature || null);
+  creature.id = "creature_" + localId();
+  creature.owner_id = await ownerId();
+  creature.name = name;
+  creature.bestiary_ref = {
+    name: stat.name.trim().slice(0, 160),
+    source: String(stat.source || reference.source || "").trim().slice(0, 80)
+  };
+  return saveCreature(creature, scope, 0);
+}
+
 export async function listSubcreatures(parentId, scope = "default") {
   return (await listRecords(requiredScope(scope), CREATURE_TYPE))
     .filter(row => row.data?.parent_creature_id === parentId)
