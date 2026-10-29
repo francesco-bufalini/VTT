@@ -1,6 +1,6 @@
 // A saved familiar keeps its own state. Linked statistics are read from the
 // current owner sheet, using explicit per-template selectors, not name matching.
-import {classInfo} from './companion_rules.js';
+import {classInfo,companionTemplateProficiencies} from './companion_rules.js';
 const list=v=>Array.isArray(v)?v:[];
 const number=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))?Number(v):null;
 const mod=v=>Math.floor(((number(v)??10)-10)/2);
@@ -25,6 +25,13 @@ export function companionOwnerValues(child={},owner={},computed={},catalog={}){
  const result={owner_id:owner.id,owner_name:String(owner.name||'Proprietario'),
    explanations:{},attacks:[]};
  const pb=get('proficiency');
+ if(pb!==null&&template){
+  const prof=companionTemplateProficiencies({...template,owner_bindings:bindings},pb);
+  result.skill_ranks=prof.skill_ranks;
+  result.save_ranks=prof.save_ranks;
+  result.proficiency_origin={id:'companion:'+rule.id,
+   name:'Profilo · '+String(template.name||rule.names?.[0]||'Famiglio')};
+ }
  if(bindings.proficiency==='proficiency'&&pb!==null){
    result.proficiency=pb;result.explanations.proficiency='Bonus competenza del proprietario';
  }
