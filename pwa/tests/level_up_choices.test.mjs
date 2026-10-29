@@ -106,6 +106,6 @@ test('identity shows each subclass, and total level only for multiclass',async()
  assert.equal(classIdentitySummary([
    {name:'Fighter',subclass:'Champion',level:3},
    {name:'Wizard',subclass:'Evocation',level:2}]),
-   'Fighter · Champion 3 / Wizard · Evocation 2 · Liv. totale 5');
+   'Fighter · Champion 3 · Wizard · Evocation 2 · Liv. totale 5');
  assert.equal(classIdentitySummary([]),'');
 });
