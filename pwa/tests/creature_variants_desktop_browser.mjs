@@ -17,7 +17,7 @@ try{
  await page.locator('[data-act="creature-variants"]').click();await page.locator('[data-variant-new]').click();
  await page.locator('[data-variant-name]').fill('Alias desktop');await page.locator('[data-variant-save]').click();
  await page.locator('.variant-list article').filter({hasText:'Alias desktop'}).getByRole('button',{name:'Usa forma'}).click();await page.locator('[data-variant-close]').click();
- await page.locator('[data-sheet-context="identity"]').click();await page.locator('#sheet-context-dialog [data-field="name"]').fill('Ombra desktop');await page.locator('[data-act="sheet-context-close"]').click();
+ await page.locator('[data-sheet-context="identity"]').click();await page.locator('#sheet-context-dialog [data-identity-value="names"]').fill('Ombra desktop');await page.locator('[data-act="sheet-context-close"]').click();
  await page.evaluate(async()=>{const {desktopSheetSession}=await import('/ui.js');await desktopSheetSession.flush();});
  const native=await page.evaluate(async()=>{const {request}=await import('/desktop/bridge.js');return request('get',{scope:'default',type:'creature',id:'desktop_browser_fixture'});});
  assert.equal(native.data.name,'Lyria desktop');assert.equal(native.data.variants[0].values.name,'Ombra desktop');assert.equal(native.data.current_form_id,native.data.variants[0].id);
