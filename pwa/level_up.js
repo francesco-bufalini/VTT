@@ -45,7 +45,7 @@ export function levelUpSteps(calculated={},progress={}){
     });
   const choices=pending.filter(choice=>{
     if(choice.kind==='subclass'&&Number(choice.class_index)===index){
-      const unlock=Math.max(start+1,Math.min(end,Number(choice.unlock_level)||level));
+      const unlock=Math.max(start+1,Math.min(end,Number(choice.unlock_level)||(start+1)));
       return level===unlock;
     }
     return unlocked.some(feature=>feature.origin_id&&feature.origin_id===choice.origin_id);

@@ -6,7 +6,7 @@ import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
@@ -54,6 +54,7 @@ import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPa
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp} from "./character_core.js";
+import {availableXpLevels,levelUpSteps} from "./level_up.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
@@ -4834,11 +4835,15 @@ async function handleField(target) {
     if(target.value&&(!selection||!isContentAvailableForRules(selection,creature.rules_version)))throw Error('Riferimento non disponibile per queste regole');
     const selected=selection||{};
     const changes={...referencePatch(creature,key,selected),...(key==="background"?quickGrantPatch(creature,selected):{})};
+    const changedClass=key==='class'&&selected.name&&
+      (selected.name!==creature.class||selected.source!==(creature.class_source||''));
+    const fromTotal=totalClassLevel(creature);
     await patch(changes);
     await render();
-    if(key==='class'&&selected.name&&
-      (selected.name!==creature.class||selected.source!==(creature.class_source||'')))
-      openLevelUpPlaceholder(selected.name,Number(state.editor.read().level)||1);
+    if(changedClass)openLevelUpProgressDialog({className:selected.name,
+      classSource:selected.source||'',classIndex:0,fromLevel:0,
+      toLevel:Number(rowsFor(state.editor.read(),'classes')[0]?.level)||1,
+      fromTotal,toTotal:totalClassLevel(state.editor.read())});
     return;
   }
   if(target.dataset.nativeList){
@@ -4853,9 +4858,13 @@ async function handleField(target) {
     }
     if(target.dataset.key==='kind'||key==='classes'&&field==='level')await render();
     if(key==='classes'&&field==='level'){
-      const previous=rowsFor(creature,'classes')[Number(target.dataset.index)];
-      if(Number(target.value)>Number(previous?.level||1))
-        openLevelUpPlaceholder(previous.name,Number(target.value));
+      const index=Number(target.dataset.index);
+      const previous=rowsFor(creature,'classes')[index];
+      const fromLevel=Number(previous?.level)||1,toLevel=Number(target.value);
+      if(previous?.name&&toLevel>fromLevel)
+        openLevelUpProgressDialog({className:previous.name,classSource:previous.source||'',
+          classIndex:index,fromLevel,toLevel,fromTotal:totalClassLevel(creature),
+          toTotal:totalClassLevel(state.editor.read())});
     }
     return;
   }
@@ -4912,12 +4921,16 @@ async function handleField(target) {
     const rows=state.referenceCatalogs[target.dataset.category]||[];
     const selected=rows.find(row=>String(row.id||row.name+'|'+row.source)===target.value);
     if(target.value&&(!selected||!isContentAvailableForRules(selected,creature.rules_version)))throw Error('Riferimento non disponibile per queste regole');
-    await patch(rowReferencePatch(creature,target.dataset.nativePick,Number(target.dataset.index),target.dataset.key,selected));
+    const index=Number(target.dataset.index);
+    const previous=rowsFor(creature,'classes')[index];
+    const changedClass=target.dataset.nativePick==='classes'&&target.dataset.key==='name'&&selected.name&&
+      (selected.name!==previous?.name||selected.source!==previous?.source);
+    const fromTotal=totalClassLevel(creature);
+    await patch(rowReferencePatch(creature,target.dataset.nativePick,index,target.dataset.key,selected));
     await render();
-    if(target.dataset.nativePick==='classes'&&target.dataset.key==='name'&&selected.name&&
-      (selected.name!==rowsFor(creature,'classes')[Number(target.dataset.index)]?.name||
-       selected.source!==rowsFor(creature,'classes')[Number(target.dataset.index)]?.source))
-      openLevelUpPlaceholder(selected.name,1);
+    if(changedClass)openLevelUpProgressDialog({className:selected.name,classSource:selected.source||'',
+      classIndex:index,fromLevel:0,toLevel:Number(rowsFor(state.editor.read(),'classes')[index]?.level)||1,
+      fromTotal,toTotal:totalClassLevel(state.editor.read())});
     return;
   }
   if(target.dataset.castingSection){
@@ -5010,7 +5023,10 @@ async function handleField(target) {
     await patch(changes);
     if(['rules_version','xp','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
     if(key==='primary_class_level'&&Number(value)>Number(rowsFor(creature,'classes')[0]?.level||1))
-      openLevelUpPlaceholder(creature.class,Number(value));
+      openLevelUpProgressDialog({className:creature.class,classSource:creature.class_source||'',
+        classIndex:0,fromLevel:Number(rowsFor(creature,'classes')[0]?.level)||1,
+        toLevel:Number(value),fromTotal:totalClassLevel(creature),
+        toTotal:totalClassLevel(state.editor.read())});
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
@@ -5676,34 +5692,75 @@ function openSheetScoreFormula(record,calculated,target,label){
  openDialog(dialog);
  return dialog;
 }
-// One entry point for the future level-up wizard. At this stage, opening it
-// never applies additional class features, hit points, or character choices.
-function openLevelUpPlaceholder(className,level){
+// The class row has already been saved. Render its entire gained level range,
+// including features and outstanding decisions, without applying more grants.
+function openLevelUpProgressDialog(plan){
+ const steps=levelUpSteps(state.calculated||{},plan);
+ if(!steps.length)return;
  app.querySelector('#level-up-progress-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='level-up-progress-dialog';
- dialog.className='sheet-context-dialog pending-choice-dialog';
- dialog.innerHTML='<header class="sheet-context-head"><h2>Livellaggio · '+esc(className||'Personaggio')+'</h2>'+
+ dialog.className='sheet-context-dialog pending-choice-dialog levelup-progress-dialog';
+ const count=steps.length;
+ const choiceCount=steps.reduce((n,row)=>n+row.choices.reduce((m,c)=>m+Number(c.remaining||0),0),0);
+ const featureList=features=>features.map(feature=>
+   '<li class="levelup-feature"><strong>'+esc(feature.name)+'</strong>'+
+   (String(feature.origin_key||'').includes('|subclass|')?'<small>Sottoclasse</small>':'')+
+   '</li>').join('');
+ const choiceList=choices=>choices.map(choice=>
+   '<button type="button" class="levelup-choice-link" data-level-up-choice-id="'+esc(choice.id)+'">'+
+   '<span>'+esc(choice.label||choice.name||'Scelta disponibile')+
+   '<small>'+esc(choice.name||'Privilegio')+'</small></span><span aria-hidden="true">›</span></button>').join('');
+ dialog.innerHTML='<header class="sheet-context-head"><div><small>Avanzamento del personaggio</small>'+
+   '<h2>Livellaggio · '+esc(plan.className)+'</h2></div>'+
    dialogCloseButton('level-up-placeholder-close','Chiudi','play-button')+'</header>'+
-   '<div class="pending-choice-dialog-body"><p>Livello '+esc(level)+
-   ' registrato. La procedura guidata di livellaggio sarà aggiunta in seguito.</p></div>'+
-   '<footer class="pending-choice-actions"><button type="button" data-level-up-close>Chiudi</button></footer>';
+   '<div class="pending-choice-dialog-body levelup-progress-body">'+
+     '<div class="levelup-summary"><strong>Classe '+esc(plan.fromLevel)+' → '+esc(plan.toLevel)+'</strong>'+
+     '<span>Livello totale '+esc(plan.fromTotal)+' → '+esc(plan.toTotal)+'</span>'+
+     '<small>'+esc(count)+' '+(count===1?'livello acquisito':'livelli acquisiti')+
+     (choiceCount?' · '+esc(choiceCount)+' '+(choiceCount===1?'scelta da completare':'scelte da completare'):'')+'</small></div>'+
+     '<div class="levelup-steps">'+steps.map(row=>
+       '<section class="levelup-step" aria-label="Livello '+esc(row.level)+' di '+esc(plan.className)+'">'+
+       '<header><span class="levelup-step-index">'+esc(row.level)+'</span><div>'+
+       '<strong>Livello '+esc(row.level)+'</strong><small>Personaggio · livello '+esc(row.totalLevel)+'</small></div></header>'+
+       (row.features.length?'<ul class="levelup-features">'+featureList(row.features)+'</ul>':
+         '<p class="levelup-empty">Nessun nuovo privilegio individuato nei dati locali.</p>')+
+       (row.choices.length?'<div class="levelup-choices"><strong>Scelte da fare</strong>'+
+         choiceList(row.choices)+'</div>':'')+
+       '</section>').join('')+'</div>'+
+     '<p class="levelup-footer-note">I privilegi già definiti vengono applicati dalle regole della scheda. '+
+     'Questa prima versione non modifica automaticamente i PF e i dadi vita.</p>'+
+   '</div><footer class="pending-choice-actions">'+
+     (choiceCount?'<button type="button" data-level-up-manage>Altre scelte</button>':'')+
+     '<button type="button" data-level-up-close>Chiudi</button></footer>';
  dialog.querySelector('[data-level-up-close]').addEventListener('click',()=>closeDialog(dialog,{remove:true}));
+ dialog.querySelector('[data-level-up-manage]')?.addEventListener('click',()=>{
+   closeDialog(dialog,{remove:true});openPendingChoicesIndex();
+ });
+ for(const button of dialog.querySelectorAll('[data-level-up-choice-id]')){
+   button.addEventListener('click',async()=>{
+     const choice=(state.calculated?.pending_choices||[]).find(c=>c.id===button.dataset.levelUpChoiceId);
+     if(!choice){message('Scelta non più disponibile.',true);return;}
+     closeDialog(dialog,{remove:true});
+     try{await openCharacterChoice(choice);}
+     catch(error){message(errorMessage(error),true);}
+   });
+ }
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  app.append(dialog);openDialog(dialog);
 }
 async function openLevelUpClassDialog(){
  const record=state.editor?.read();
  if(!record||record.kind==='monster'||record.variant_rules_kind==='monster')return;
+ const countAvailable=availableXpLevels(record);
+ if(!countAvailable)throw Error('Gli XP attuali non permettono un ulteriore livello.');
  const owned=rowsFor(record,'classes').map((row,index)=>({...row,index})).filter(row=>row.name);
- const level=owned.reduce((n,row)=>n+Number(row.level||1),0);
- if(level>=20)throw Error('Il personaggio è già al livello massimo.');
  const all=state.referenceCatalogs.classes||await catalogEntries('classes');
  state.referenceCatalogs.classes=all;
  const choices=all.filter(row=>row.name&&isContentAvailableForRules(row,record.rules_version));
  const idOf=row=>String(row.id||row.name+'|'+row.source);
  const existing=owned.map(row=>({value:'owned:'+row.index,
-   label:row.name+' · '+(row.source||'Fonte non specificata')+' (livello '+row.level+' → '+(Number(row.level||1)+1)+')'}));
+   label:row.name+' · '+(row.source||'Fonte non specificata')+' (livello '+row.level+')'}));
  const remaining=choices.filter(row=>!owned.some(member=>member.name.toLowerCase()===row.name.toLowerCase()));
  const unique=new Map();
  for(const row of remaining){
@@ -5711,17 +5768,41 @@ async function openLevelUpClassDialog(){
    if(!unique.has(key)||row.source===preferred)unique.set(key,row);
  }
  const newEntries=[...unique.values()].sort((a,b)=>a.name.localeCompare(b.name,'it'));
+ if(!existing.length&&!newEntries.length)throw Error('Catalogo delle classi non disponibile.');
  const dialog=document.createElement('dialog');
- dialog.id='class-level-up-dialog';dialog.className='sheet-context-dialog pending-choice-dialog';
+ dialog.id='class-level-up-dialog';dialog.className='sheet-context-dialog pending-choice-dialog levelup-class-dialog';
  const opts=entries=>entries.map(row=>'<option value="'+esc(row.value)+'">'+esc(row.label)+'</option>').join('');
  dialog.innerHTML='<header class="sheet-context-head"><h2>Level up · scegli la classe</h2>'+
    dialogCloseButton('level-up-class-close','Chiudi','play-button')+'</header>'+
-   '<div class="pending-choice-dialog-body"><label>Classe da livellare<select data-level-up-class>'+
+   '<div class="pending-choice-dialog-body levelup-class-fields">'+
+   '<label>Classe da livellare<select data-level-up-class>'+
    (existing.length?'<optgroup label="Classi possedute">'+opts(existing)+'</optgroup>':'')+
-   '<optgroup label="Altre classi">'+opts(newEntries.map(row=>({value:'new:'+idOf(row),label:row.name+' · '+row.source})))+'</optgroup>'+
-   '</select></label></div><footer class="pending-choice-actions">'+
-   '<button type="button" data-level-up-cancel>Annulla</button>'+
+   (newEntries.length?'<optgroup label="Altre classi">'+opts(newEntries.map(row=>({value:'new:'+idOf(row),label:row.name+' · '+row.source})))+'</optgroup>':'')+
+   '</select></label>'+
+   '<label>Livelli da acquisire<select data-level-up-count>'+
+   Array.from({length:countAvailable},(_,i)=>'<option value="'+(i+1)+'">'+
+     (i+1)+' '+(i===0?'livello':'livelli')+'</option>').join('')+
+   '</select></label><p class="levelup-class-preview" data-level-up-preview></p></div>'+
+   '<footer class="pending-choice-actions"><button type="button" data-level-up-cancel>Annulla</button>'+
    '<button type="button" class="btn primary" data-level-up-confirm>Continua</button></footer>';
+ const paintPreview=()=>{
+   const value=dialog.querySelector('[data-level-up-class]')?.value||'';
+   const count=Number(dialog.querySelector('[data-level-up-count]')?.value)||1;
+   let label='Nuova classe',from=0;
+   if(value.startsWith('owned:')){
+     const row=owned.find(row=>row.index===Number(value.slice(6)));
+     if(row){label=row.name;from=Number(row.level)||1;}
+   }else{
+     const row=choices.find(row=>idOf(row)===value.slice(4));
+     if(row)label=row.name;
+   }
+   dialog.querySelector('[data-level-up-preview]').textContent=
+     label+' · livello '+from+' → '+(from+count)+
+     ' · personaggio '+totalClassLevel(record)+' → '+(totalClassLevel(record)+count);
+ };
+ dialog.querySelector('[data-level-up-class]').addEventListener('change',paintPreview);
+ dialog.querySelector('[data-level-up-count]').addEventListener('change',paintPreview);
+ paintPreview();
  dialog.querySelector('[data-level-up-cancel]').addEventListener('click',()=>closeDialog(dialog,{remove:true}));
  dialog.querySelector('[data-level-up-confirm]').addEventListener('click',async event=>{
    const button=event.currentTarget;
@@ -5732,28 +5813,35 @@ async function openLevelUpClassDialog(){
      if(!current||current.id!==record.id)throw Error('Personaggio cambiato.');
      const rows=rowsFor(current,'classes');
      const choice=dialog.querySelector('[data-level-up-class]')?.value||'';
-     let name='',nextLevel=1,changes;
-     const currentTotal=rows.filter(row=>row.name).reduce((n,row)=>n+Number(row.level||1),0);
-     if(currentTotal>=20)throw Error('Livello massimo già raggiunto.');
+     const count=Number(dialog.querySelector('[data-level-up-count]')?.value);
+     if(!Number.isInteger(count)||count<1||count>availableXpLevels(current))
+       throw Error('Gli XP non permettono questo avanzamento.');
+     let name='',source='',fromLevel=0,toLevel=count,classIndex=0;
+     const fromTotal=totalClassLevel(current);
+     let changes;
      if(choice.startsWith('owned:')){
        const index=Number(choice.slice(6));
        if(!Number.isInteger(index)||index<0||!rows[index]?.name)throw Error('Classe non valida.');
-       rows[index].level=Number(rows[index].level||1)+1;
-       name=rows[index].name;nextLevel=rows[index].level;
+       const member=rows[index];classIndex=index;
+       fromLevel=Number(member.level)||1;toLevel=fromLevel+count;
+       name=member.name;source=member.source||'';
+       member.level=toLevel;
        changes=collectionPatch(current,'classes',rows);
      }else if(choice.startsWith('new:')){
        const selected=choices.find(row=>idOf(row)===choice.slice(4));
        if(!selected||rows.some(row=>row.name?.toLowerCase()===selected.name.toLowerCase()))
          throw Error('Classe non disponibile.');
-       name=selected.name;
-       if(!rows.length||!rows[0].name)
-         changes=referencePatch(current,'class',selected);
-       else changes=collectionPatch(current,'classes',[...rows,{name,source:selected.source||'',id:selected.id||'',level:1}]);
+       name=selected.name;source=selected.source||'';
+       const filled=rows.filter(row=>row.name);
+       classIndex=filled.length;
+       changes=collectionPatch(current,'classes',[...filled,
+         {name,source,id:selected.id||'',level:count}]);
      }else throw Error('Seleziona una classe.');
      await patch(changes);
      closeDialog(dialog,{remove:true});
      await render();
-     openLevelUpPlaceholder(name,nextLevel);
+     openLevelUpProgressDialog({className:name,classSource:source,classIndex,
+       fromLevel,toLevel,fromTotal,toTotal:fromTotal+count});
    }catch(error){button.disabled=false;message(errorMessage(error),true);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});

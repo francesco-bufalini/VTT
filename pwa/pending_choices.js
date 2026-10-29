@@ -181,6 +181,9 @@ export function pendingLineageChoices(record={},calculated={},catalogs={}){
   const choices=options.map(row=>({id:String(row.id||row.name+'|'+row.source),row}));
   result.push({id:'subclass:'+index+':'+classOrigin,kind:'subclass',origin_id:classOrigin,
     name:member.name+' · livello '+member.level,label:'Scegli la sottoclasse',class_index:index,
+    unlock_level:Number.isFinite(unlock)?unlock:
+      Math.min(...classFeatures.filter(row=>norm(row.class_name)===norm(member.name)&&
+        row.gainSubclassFeature===true).map(row=>Number(row.level)).filter(n=>n>=1),Number(member.level)),
     count:1,selected:[],remaining:1,
     options:choices.map(x=>x.id),
     option_rows:Object.fromEntries(choices.map(x=>[x.id,x.row])),
