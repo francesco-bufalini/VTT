@@ -2690,6 +2690,15 @@ function mountTraitBenefitDialog(){
       ['any_d20','Qualunque tiro d20'],['initiative','Iniziativa'],
       ...targets.filter(([id])=>/^(ability_check:|skill:|save:|attack_hit:|casting_hit:)/.test(id))
      ]).replace('name="target"','name="target" data-trait-target')],
+  ['d20_reroll',formSelect('Tiro d20','target',[
+    ['any_d20','Qualunque d20'],['ability_check','Prove di caratteristica e abilità'],
+    ['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],
+    ['spell_attack','Attacchi con incantesimi'],['initiative','Iniziativa'],
+    ...targets.filter(([id])=>/^(ability_check:|skill:|save:|attack_hit:|casting_hit:)/.test(id))
+   ])+formSelect('Condizione','trigger',[
+    ['after_roll','Dopo il tiro'],['on_one','Solo se un d20 ha mostrato 1']
+   ])+formSelect('Tracker (facoltativo)','tracker_id',trackerOptions)+
+     formInput('Costo in utilizzi','tracker_cost','1','number')],
   ['proficiency',formSelect('Categoria','proficiency_kind',PROFICIENCY_KINDS)+formInput('Competenza','key','Es. perception, firearms, elvish')],
    ['senses',formSelect('Senso','sense_type',SENSE_OPTIONS)+formInput('Portata (ft)','range_feet','Es. 60','number')],
   ['defenses',formSelect('Difesa','rank',DEFENSE_RANKS)+formSelect('Danno o condizione','key',
