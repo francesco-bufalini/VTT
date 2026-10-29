@@ -144,6 +144,44 @@ test('multiattack counter uses active structured features or a monster multiatta
  assert.equal(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions).basicActions.find(row=>row.id==='attack').attack_count,3);
 });
 
+test('recharge-bearing 5eTools action lists expose named options under one shared tracker',()=>{
+ const breath={name:'Breath Weapons {@recharge 5}',entries:[
+  'The dragon uses one of the following breath weapons.',
+  {type:'list',style:'list-hang-notitle',items:[
+   {type:'item',name:'Cold Breath',
+    entry:'The dragon exhales an icy blast in a 60-foot cone. Each creature in that area must make a {@dc 20} Constitution saving throw, taking 58 ({@damage 13d8}) cold damage on a failed save, or half as much damage on a successful one.'},
+   {type:'item',name:'Paralyzing Breath',
+    entry:'The dragon exhales paralyzing gas in a 60-foot cone. Each creature in that area must succeed on a {@dc 20} Constitution saving throw or be {@condition paralyzed} for 1 minute.'}
+  ]}
+ ]};
+ const record={kind:'monster',rules_version:'2014',stat_block:{action:[breath]}};
+ const tracker={id:'recharge:action:0',name:'Breath Weapons',max:1,spent:0,
+  recharge:'d6',recharge_min:5};
+ const calculated={attacks:[],trackers:[tracker]};
+ const parent=actionEntries(record,calculated).find(row=>row.id==='monster:action:0');
+ assert(parent,'The recharge action remains the parent action');
+ assert.equal(parent.tracker_id,tracker.id);
+ assert.deepEqual(parent.options.map(row=>row.name),['Cold Breath','Paralyzing Breath']);
+ assert.deepEqual(parent.options.map(row=>row.area_feet),[60,60]);
+ assert.deepEqual(parent.options.map(row=>row.save_dc),[20,20]);
+ assert.deepEqual(parent.options.map(row=>row.save_ability),['constitution','constitution']);
+ assert.equal(parent.options[0].damage_formula,'13d8');
+ assert.deepEqual(parent.options[1].conditions,['paralyzed']);
+ const rendered=doc(battleActionPanels(record,calculated,[],[],catalog.actions).others);
+ const row=rendered.querySelector('[data-attack-id="monster:action:0"]');
+ assert(row,'The generic monster ability appears in battle actions');
+ assert.deepEqual([...row.querySelectorAll('.play-battle-monster-option>summary')]
+  .map(option=>option.textContent),['Cold Breath','Paralyzing Breath']);
+ assert.equal(row.querySelectorAll('.action-resource-control').length,1,
+  'Alternatives share a single parent recharge pool');
+ assert.equal(row.querySelector('[data-act="tracker-more"]').dataset.trackerId,tracker.id);
+ assert.match(row.textContent,/13d8/);
+ assert.match(row.textContent,/paralyzed/);
+ const ordinary={...record,stat_block:{action:[{...breath,name:'Not Rechargeable'}]}};
+ assert.equal(actionEntries(ordinary,{attacks:[]}).find(row=>row.id==='monster:action:0').options.length,0,
+  'A named list alone does not imply a rechargeable alternative action');
+});
+
 test('flat attacks place unarmed between privilege and ordinary attacks; timed Azioni stay unchanged',()=>{
  const main={id:'item:blade',name:'Lama principale',slot:'main',melee:true,hit:6,damage:'1d8'};
  const off={id:'item:off:dagger',name:'Pugnale secondario',slot:'off',melee:true,
