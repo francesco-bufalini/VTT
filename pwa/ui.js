@@ -9429,7 +9429,12 @@ function listen(){
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.matches('[data-hp-autosave]')){
-      clearTimeout(pendingFieldTimers.get(target));
+      // Current and temporary HP are one editable snapshot. A shared debounce
+      // prevents two timers from persisting overlapping stale editor revisions.
+      for(const field of target.closest('#hp-adjust-dialog')?.querySelectorAll('[data-hp-autosave]')||[]){
+        clearTimeout(pendingFieldTimers.get(field));
+        pendingFieldTimers.delete(field);
+      }
       const editor=state.editor;
       pendingFieldTimers.set(target,setTimeout(()=>{
         pendingFieldTimers.delete(target);
