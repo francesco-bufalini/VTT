@@ -1046,6 +1046,24 @@ function calculateSheetValues(record={},catalogs={}){
     const cr=crNumber(record.stat_block?.cr)+level;
     return 2+Math.max(0,Math.floor((Math.min(cr,30)-1)/4));
   };
+  // Published 5eTools numeric skill/save totals carry proficiency explicitly.
+  // Recognize an exact single/double PB, retaining unusual fixed totals below.
+  if(kind==='monster'){
+    const pb=proficiencyBase(),stats=record.stat_block||{};
+    if(!record.skill_ranks_custom)for(const [name,total] of Object.entries(stats.skill||{})){
+      const ability=SKILLS.find(([key])=>key===name)?.[2];
+      if(!ability||companionValues.skill_ranks?.[name]||!/^[-+]?\\d+$/.test(String(total)))continue;
+      const difference=int(total)-mod(int(record.abilities?.[ability],10));
+      if(difference===2*pb)proficiencies.set('expertise:'+name,true);
+      else if(difference===pb&&!proficiencies.has('expertise:'+name))proficiencies.set('skill:'+name,true);
+    }
+    for(const [ability,total] of Object.entries(stats.save||{})){
+      if(!ABILITIES.includes(ability)||companionValues.save_ranks?.[ability]||
+        !/^[-+]?\\d+$/.test(String(total)))continue;
+      if(int(total)-mod(int(record.abilities?.[ability],10))===pb)
+        proficiencies.set('save:'+ability,true);
+    }
+  }
   const targetBase=(target,resolve,stack)=>{
     const [prefix,key]=target.split(":");
     if(prefix==="ability"&&ABILITIES.includes(key))return int(record.abilities?.[key],10);
@@ -1132,7 +1150,13 @@ function calculateSheetValues(record={},catalogs={}){
       }
       return resolve("ability_mod:"+skill[2],stack)+rank*resolve("proficiency",stack)+sumGrants("ability_check",stack);
     }
-    if(target==="passive_perception")return 10+resolve("skill:perception",stack);
+    if(target==="passive_perception"){
+      const published=record.stat_block?.passive;
+      if(kind==='monster'&&!companionValues.skill_ranks?.perception&&
+        !record.skill_ranks_custom&&typeof published==='number'&&Number.isFinite(published))
+        return published+sumGrants("ability_check",stack);
+      return 10+resolve("skill:perception",stack);
+    }
     if(prefix==="passive_skill"&&SKILLS.some(([id])=>id===key))
       return 10+resolve("skill:"+key,stack);
     return 0;
