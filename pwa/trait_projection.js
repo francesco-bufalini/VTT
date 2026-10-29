@@ -416,6 +416,19 @@ export async function collectTraitRows(record={},calculated={},providers={}){
 
 // Origin is the primary group, not level: each class/subclass owns a single
 // visible section containing its own ordered level headings.
+// A live infusion belongs to the physical extended item's trait, not to a
+// synthetic state trait. Match the exact inventory instance for duplicate items.
+export function stateTraitNavigationKey(key,traits=[],infusions=[]){
+ const prefix='state|infusion:';
+ if(!String(key).startsWith(prefix))return key;
+ const infusion=infusions.find(row=>String(row.id)===key.slice(prefix.length));
+ if(!infusion)return key;
+ return traits.find(row=>row.category==='oggetti'&&
+   row.infusion_origin_id===infusion.id&&
+   Array.isArray(row.item_inventory_indices)&&
+   row.item_inventory_indices.includes(infusion.index))?.key||key;
+}
+
 export function groupTraitRows(rows){
  const groups=[];
  for(const row of rows){
