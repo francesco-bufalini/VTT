@@ -35,6 +35,8 @@ for(const template of Object.values(catalog.templates||{})){
   if(Number(template.abilities?.[key])!==Number(source[key]))
    throw Error('Caratteristica non corrispondente: '+source.name+' '+key);
  }
+ const die=String(source.hp?.special||'').match(/\\[d(4|6|8|10|12|20)s?\\]/i)?.[1];
+ if(die&&template.hp)template.hp.hit_die=Number(die);
  // Only owner-variable rules remain local; numeric proficiency ranks are read
  // from source expressions such as "+0 plus PB × 2".
  template.owner_bindings={
