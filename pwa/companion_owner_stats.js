@@ -40,6 +40,8 @@ export function companionOwnerValues(child={},owner={},computed={},catalog={}){
    const ability=hp.ability_mod?get('ability_mod:'+hp.ability_mod):0;
    if(level!==null&&ability!==null){
      result.hp=Math.max(1,Math.floor((number(hp.base)??1)+(number(hp.per_class_level)??0)*level+ability));
+     if(Number.isInteger(Number(hp.hit_die))&&Number(hp.hit_die)>0)
+       result.hit_dice=level+'d'+Number(hp.hit_die);
      result.explanations.hp=String(hp.base??1)+' + '+String(hp.per_class_level??0)+' × livello '+hp.class_name+
        (hp.ability_mod?' + Mod.'+hp.ability_mod.toUpperCase()+' del proprietario':'');
    }
