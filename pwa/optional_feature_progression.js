@@ -98,13 +98,20 @@ export function optionalFeatureSelectionModels(record={},calculated={},catalog={
   for(const id of legacyChoices(record,options,claimed))if(!selected.includes(id))selected.push(id);
   const feature=ownedFeature(calculated.features,rule.owner||{});
   if(limit<=0&&!selected.length)continue;
+  const layers={learned:{enabled:true,selected,limit,used:selected.length,
+   trigger:rule.trigger||null,change_label:rule.trigger==='level_up'?'Passaggio di livello':'',
+   storage:'optional_features_catalog',available:true}};
+  // Always-on options use the same learned/applied stages as other powers.
+  // Their application is derived from knowledge: no second user selection,
+  // active-style cap, persisted toggles or special Fighting Style handler.
+  if(rule.layers?.applied?.mode==='automatic'&&rule.layers.applied.from==='learned')
+   layers.applied={enabled:true,selected:[...selected],limit:null,used:selected.length,
+    trigger:null,change_label:'',storage:'derived:learned',available:true,
+    automatic:true,refundable:false};
   result.push({id:rule.id,title:rule.title,origin_id:feature?.origin_id||'',
     source_type:'optionalfeature_progression',option_kind:'optional_feature',
     description:'Opzioni da 5eTools · puoi aggiungere capacità homebrew.',
-    level,ui:'generic',options,required,
-    layers:{learned:{enabled:true,selected,limit,used:selected.length,
-     trigger:rule.trigger||null,change_label:rule.trigger==='level_up'?'Passaggio di livello':'',
-     storage:'optional_features_catalog',available:true}}});
+    level,ui:'generic',options,required,layers});
  }
  return result;
 }
