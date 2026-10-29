@@ -193,6 +193,10 @@ try{
  assert.equal(await inspiration.count(),1);
  const wasInspired=await inspiration.getAttribute('aria-pressed')==='true';
  await inspiration.click();
+ await page.waitForFunction(async expected=>{
+   const {listCreatures}=await import('/creatures.js');
+   return Boolean((await listCreatures())[0]?.creature?.inspiration)===expected;
+ },!wasInspired);
  assert.equal((await record()).inspiration,!wasInspired,'Inspiration is persisted without a popup');
  assert.equal(await page.locator('#sheet-movement-dialog').count(),0,'Legacy movement popup is removed');
  const senses=page.locator('#sheet-play-view [data-act="sheet-senses-open"]');
