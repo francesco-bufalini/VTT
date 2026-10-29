@@ -721,7 +721,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    });
    powerGroups.set(key,abilities);
   }
-  const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],view.battleSpells||spells);
+  const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],view.battleSpells||spells)
+    .filter(row=>!(d.slot_feature_powers||[]).some(power=>power.id==='ranger_primeval_awareness_phb'&&
+      row.kind==='ability'&&row.name===power.name));
   const rollBonuses=trackerRollBonusRows(c,d);
   const bonusRows=trackerId=>rollBonuses.filter(row=>row.tracker_id===trackerId).map(row=>{
    const value=Object.hasOwn(row,'flat_bonus')?String(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice;
@@ -952,10 +954,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Missing trackers are exceptional and must remain visible, not be
   // misrepresented as cost-free privileges.
   const missingPowers=abilityButtons('missing');
+  const slotFeatureResources=(d.slot_feature_powers||[]).map(power=>
+   '<div class="play-resource-ungrouped"><div class="play-resource">'+
+   '<span class="play-resource-heading">'+esc(power.title||power.name)+'</span></div>'+
+   '<div class="play-resource-power-row"><button type="button" class="play-resource-power-open" data-act="slot-feature-open" data-slot-feature-id="'+esc(power.id)+'">'+
+     icon('spell_cast')+'<span><strong>'+esc(power.title||power.name)+'</strong><small>'+
+     esc(power.action==='bonus'?'Azione bonus':'Azione')+' · Slot incantesimo</small></span></button>'+
+   '<button type="button" class="play-resource-use" data-act="slot-feature-open" data-slot-feature-id="'+esc(power.id)+'"'+
+    (!power.available?' disabled':'')+'>Usa</button></div></div>').join('');
   const untracked=(missingPowers?'<div class="play-resource-ungrouped" data-ability-resource="missing">'+
    '<div class="play-resource"><span class="play-resource-heading">Tracker non disponibile</span></div>'+
     missingPowers+'</div>':'')+
-   freePrivileges.join('')+featPrivileges.join('')+
+   slotFeatureResources+freePrivileges.join('')+featPrivileges.join('')+
    overriddenPrivileges.join('')+basicRules;
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
@@ -1134,6 +1144,29 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      html+=card('Modelli di armatura',rows||'<p class="play-empty">Nessun modello disponibile.</p>',
        counters?'<div class="play-magic-source-resources" aria-label="Stato modelli di armatura">'+counters+'</div>':'',
        'play-magic-class-card play-infusion-card play-armor-model-card');
+     return;
+   }
+   if(heading(node)==='Capacità con slot'){
+     bind('slot-features',node);
+     const rows=[...node.querySelectorAll('[data-act="slot-feature-open"]')].map(button=>
+      '<div class="play-spell play-magic-origin-spell">'+
+      proxy(button,'Apri '+button.textContent.trim(),'spark',
+        '<span>'+esc(button.textContent.trim())+'</span>')+'</div>').join('');
+     html+=card('Capacità con slot',rows||'<p class="play-empty">Nessuna capacità disponibile.</p>',
+       '', 'play-magic-class-card');
+     return;
+   }
+   if(node.querySelector('.power-selection-stage')){
+     bind('selection:'+i,node);
+     const controls=[...node.querySelectorAll('[data-act="power-selection-open"]')]
+       .map(button=>proxy(button,button.textContent.trim(),'book',
+        '<span>'+esc(button.textContent.trim())+'</span>')).join('');
+     const rows=[...node.querySelectorAll('.power-selection-stage .magic-spell-row')].map(row=>
+       '<div class="play-spell play-infusion-row"><span class="play-infusion-name">'+
+       esc(row.textContent.trim())+'</span></div>').join('');
+     html+=card(heading(node),'<div class="play-magic-selection">'+controls+'</div>'+
+       (rows||'<p class="play-empty">Nessuna opzione selezionata.</p>'),
+       '', 'play-magic-class-card play-infusion-card');
      return;
    }
    if(heading(node).startsWith('Infusioni')){

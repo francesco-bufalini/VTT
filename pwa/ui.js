@@ -50,6 +50,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {armorClassBaseFormula} from './armor_class_formula.js';
 import {selectedTraitState,traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
 import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerSelectionTriggerLabel} from './power_selection.js';
+import {slotFeaturePowers,slotFeaturePaymentOptions,slotFeatureUsePatch} from './slot_feature_powers.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -1327,8 +1328,10 @@ async function computeLocalData(record){
   const infusion_mechanics={...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]};
   const powerSelectionCatalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{}};
   const power_selections=powerSelectionModels(record,{...calculated,infusion_catalog,infusion_mechanics},powerSelectionCatalog);
+  const slot_feature_powers=slotFeaturePowers(record,calculated,catalogs.slotFeaturePowers||{});
   return {...calculated,loadError,companion_view:companionView,companion_rules:companionData,combat_snapshot:state.map||null,
     power_selections,power_selection_catalog:powerSelectionCatalog,
+    slot_feature_powers,slot_feature_catalog:catalogs.slotFeaturePowers||{},
     pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
     infusion_catalog,infusion_mechanics};
@@ -2504,6 +2507,7 @@ async function editorView() {
       infusionPanel(c,calculated)+
       armorModelPanel(c,calculated)+
       genericPowerSelectionPanels(c,calculated)+
+      slotFeaturePanel(calculated)+
        racialRestTrainingPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
@@ -3140,6 +3144,16 @@ const selectedPowerLabel=(option,selection)=>{
  return label+(details?' · '+details:'');
 };
 const powerLayerNames={learned:'Imparati',prepared:'Preparati',applied:'Applicati'};
+function learningSelectionDialogBody({title,closeAction,summary,searchLabel,searchAttribute,resultsClass,results='',extra=''}) {
+ return '<div class="magic-tools-head"><h2>'+esc(title)+'</h2>'+
+   dialogCloseButton(closeAction,'Chiudi','magic-tool-close')+'</div>'+
+   '<div class="magic-tools-body"><p class="magic-selection-warning">'+esc(summary)+'</p>'+
+   '<label class="vtt-list-search magic-editor-search">'+esc(searchLabel)+
+   '<input type="search" '+searchAttribute+' autocomplete="off" placeholder="Nome o fonte"></label>'+
+   '<div class="catalog-results vtt-selection-list magic-editor-results '+esc(resultsClass)+
+   '" role="list">'+results+'</div>'+extra+
+   '<div class="actions"><button type="button" class="btn" data-act="'+esc(closeAction)+'">Chiudi</button></div></div>';
+}
 function genericPowerSelectionPanels(c,calculated){
  return (calculated.power_selections||[]).filter(model=>model.ui==='generic').map(model=>{
   const stages=Object.entries(model.layers||{}).filter(([,layer])=>layer.enabled);
@@ -3148,18 +3162,18 @@ function genericPowerSelectionPanels(c,calculated){
    const rows=selected.map(item=>'<div class="magic-spell-row infusion-entry"><span class="magic-spell-open">'+
     esc(selectedPowerLabel(optionById.get(selectedPowerId(item)),item))+'</span></div>').join('');
    const trigger=layer.change_label?'<span class="power-selection-rest">'+esc(layer.change_label)+'</span>':'';
-   return '<section class="power-selection-stage"><div class="infusion-overview"><strong>'+
+   const action=stage==='learned'?'Impara / Dimentica':stage==='prepared'?'Prepara / Rimuovi':'Applica / Rimuovi';
+   return '<section class="magic-source power-selection-stage"><div class="infusion-overview"><strong>'+
     esc(powerLayerNames[stage]||stage)+' '+selected.length+(layer.limit!==null?' / '+layer.limit:'')+
-    '</strong>'+trigger+'</div>'+(rows||'<p class="hint">Nessuna opzione selezionata.</p>')+
-    '<div class="actions"><button type="button" class="btn small" data-act="power-selection-open"'+
-    ' data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+esc(stage)+'">'+
-    (selected.length?'Gestisci':'Scegli')+'</button></div></section>';
+    '</strong>'+trigger+'</div>'+
+    '<div class="magic-source-controls"><button type="button" class="btn small magic-selection-button" data-act="power-selection-open"'+
+    ' data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+esc(stage)+'">'+action+'</button></div>'+
+    (rows||'<p class="hint">Nessuna opzione selezionata.</p>')+'</section>';
   }).join(''));
  }).join('');
 }
 async function openGenericPowerSelectionDialog(id,stage){
- const record=state.editor?.read();
- if(!record)throw Error('Apri prima una creatura.');
+ const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(record);
  const model=calculated.power_selections?.find(row=>row.id===id&&row.ui==='generic');
  const layer=model?.layers?.[stage];
@@ -3174,48 +3188,124 @@ async function openGenericPowerSelectionDialog(id,stage){
  const selected=new Map((layer.selected||[]).map(row=>[selectedPowerId(row),row]));
  const learned=stage==='prepared'&&model.layers.learned?
   new Set((model.layers.learned.selected||[]).map(selectedPowerId)):null;
- const choices=(model.options||[]).filter(option=>(!option.min_level||model.level>=option.min_level||selected.has(option.id))&&
+ const choices=(model.options||[]).filter(option=>
+  (!option.min_level||model.level>=option.min_level||selected.has(option.id))&&
   (!learned||learned.has(option.id)||selected.has(option.id)));
- const optionMarkup=option=>{
-  const owned=selected.has(option.id),sub=option.subchoices;
+ const choiceRow=option=>{
+  const owned=selected.has(option.id),sub=option.subchoices,required=model.required?.includes(option.id);
   const current=selected.get(option.id);
   const fields=sub?'<div class="power-selection-subchoices">'+
    Array.from({length:sub.count},(_,i)=>'<label>'+esc(sub.label||'Sotto-opzione')+' '+(i+1)+
     '<input type="text" data-power-subchoice="'+i+'" data-power-option="'+esc(option.id)+'" maxlength="70" value="'+
     esc(current?.subchoices?.[i]||'')+'" placeholder="'+esc(sub.placeholder||'Sotto-opzione')+'"></label>').join('')+'</div>':'';
   return '<div class="magic-catalog-row vtt-selectable'+(owned?' is-selected':'')+'">'+
-   '<div class="magic-catalog-name">'+esc(option.name)+(option.description?'<small>'+esc(option.description)+'</small>':'')+'</div>'+
-   fields+'<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
-   '" data-act="power-selection-toggle" data-power-option-id="'+esc(option.id)+'">'+
-   (owned?(sub?'Aggiorna':'Rimuovi'):'Scegli')+'</button>'+
-   (owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
-   ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':'')+'</div>';
+   '<button type="button" class="magic-catalog-name" data-act="power-selection-details" data-power-option-id="'+esc(option.id)+'" aria-label="Dettagli di '+esc(option.name)+'">'+
+    esc(option.name)+(option.source?'<small>'+esc(option.source)+'</small>':'')+'</button>'+
+    fields+'<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
+    '" data-act="power-selection-toggle" data-power-option-id="'+esc(option.id)+'"'+
+    (required?' disabled title="Opzione obbligatoria"':'')+' aria-pressed="'+owned+'">'+
+    (required?'Obbligatoria':owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
+     stage==='learned'?'+ Impara':stage==='prepared'?'+ Prepara':'+ Applica')+'</button>'+
+    (owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
+    ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':'')+'</div>';
  };
- const trigger=layer.change_label?'<span class="power-selection-rest">'+esc(layer.change_label)+'</span>':'';
+ const hasLevelGroups=choices.some(row=>Number(row.min_level||0)>0);
+ const groupRows=rows=>'<div class="magic-entries">'+rows.map(choiceRow).join('')+'</div>';
+ const list=hasLevelGroups?'<div class="magic-groups">'+
+  [...new Set(choices.map(row=>Math.max(0,Number(row.min_level)||0)))].sort((a,b)=>a-b)
+   .map(level=>'<section class="magic-level"><div class="magic-level-heading"><h4>'+
+    (level?'Livello '+level:'Opzioni base')+'</h4></div>'+groupRows(choices.filter(row=>Math.max(0,Number(row.min_level)||0)===level))+'</section>')
+   .join('')+'</div>':groupRows(choices);
  const targetPicker=stage==='applied'&&layer.target&&model.source_type==='inline'?
-  '<label>Oggetto a cui applicare<select data-power-target-index>'+ 
+  '<label>Oggetto a cui applicare<select data-power-target-index>'+
   (record.inventory||[]).flatMap((item,index)=>Number(item.quantity??1)>0?
    ['<option value="'+index+'">'+esc(item.name||item.id||'Oggetto')+'</option>']:[]).join('')+
   '</select></label>':'';
- const cap=layer.limit===null?'':(' / '+layer.limit);
- dialog.innerHTML='<div class="magic-tools-head"><h2>'+esc(model.title)+'</h2>'+
-  dialogCloseButton('power-selection-close','Chiudi','power-selection-close')+'</div>'+
-  '<div class="magic-tools-body"><div class="infusion-overview"><strong>'+
-   esc(powerLayerNames[stage]||stage)+' '+selected.size+cap+'</strong>'+trigger+'</div>'+targetPicker+
-  '<label class="vtt-list-search magic-editor-search">Cerca opzione<input type="search" data-power-search autocomplete="off"></label>'+
-  '<div class="catalog-results vtt-selection-list magic-editor-results power-selection-results" role="list">'+
-   choices.map(optionMarkup).join('')+'</div>'+
-  '<section class="power-selection-homebrew"><h3>Opzione homebrew</h3>'+ 
-  '<label>Nome<input data-power-custom-name maxlength="80" placeholder="Nome della capacità"></label>'+ 
-  '<label>Descrizione (facoltativa)<textarea data-power-custom-description maxlength="2000" rows="2" placeholder="Effetto personalizzato"></textarea></label>'+ 
-  '<div class="actions"><button type="button" class="btn small" data-act="power-selection-custom">+ Aggiungi e scegli</button></div></section>'+ 
-  (model.description?'<p class="hint">'+esc(model.description)+'</p>':'')+
-  '<div class="actions"><button type="button" class="btn" data-act="power-selection-close">Chiudi</button></div></div>';
+ const stageTitle=stage==='learned'?'Impara '+model.title:
+  stage==='prepared'?'Prepara '+model.title:'Applica '+model.title;
+ dialog.innerHTML=learningSelectionDialogBody({
+  title:stageTitle,closeAction:'power-selection-close',
+  summary:(powerLayerNames[stage]||stage)+' '+selected.size+
+    (layer.limit!==null?' / '+layer.limit:'')+
+    (layer.change_label?' · '+layer.change_label:''),
+  searchLabel:'Cerca '+model.title,searchAttribute:'data-power-search',
+  resultsClass:'power-selection-results',
+  results:list||'<p class="hint">Nessuna opzione disponibile.</p>',
+  extra:targetPicker+(model.description?'<p class="hint">'+esc(model.description)+'</p>':'')
+ });
+ // An optional-feature, race or trait option is selected through the same
+ // learn/forget action as a spell; homebrew support remains in storage, but
+ // its additional form is intentionally not displayed here.
  dialog.querySelector('[data-power-search]')?.addEventListener('input',event=>{
   const q=String(event.target.value||'').trim().toLocaleLowerCase('it');
   for(const row of dialog.querySelectorAll('.power-selection-results .magic-catalog-row'))
    row.hidden=!row.textContent.toLocaleLowerCase('it').includes(q);
  });
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
+}
+async function openGenericPowerOptionPreview(id){
+ const dialog=app.querySelector('#power-selection-dialog');
+ const record=state.editor?.read();if(!dialog?.open||!record)return;
+ const calculated=await computeLocalData(record);
+ const model=calculated.power_selections?.find(row=>row.id===dialog.dataset.powerSelectionId);
+ const option=model?.options.find(row=>row.id===id);
+ if(!option)return;
+ let description=option.description||'';
+ if(model.source_type==='optionalfeature_progression'&&!option._homebrew){
+  try{
+   const detail=await detailedEntry('optional_features',
+    {name:option.name,source:option.source,_category:'optional_features'});
+   description=flattenDescription(detail)||description;
+  }catch{}
+ }
+ const preview=document.createElement('dialog');
+ preview.id='power-selection-preview';
+ preview.className='sheet-roll-dialog magic-spell-dialog';
+ preview.innerHTML=actionDialogIntro(option.name,[{label:'Origine',value:option.source||model.title}],
+   description||'Descrizione non disponibile nel catalogo.',
+   model.title,'power-selection-preview-close')+
+   '<div class="actions"><button type="button" class="btn" data-act="power-selection-preview-close">Chiudi</button></div>';
+ app.querySelector('#power-selection-preview')?.remove();
+ app.append(preview);preview.addEventListener('close',()=>preview.remove(),{once:true});openDialog(preview);
+}
+
+
+// Slot-spending features are spell-like uses, never additional known spells.
+function slotFeaturePanel(calculated){
+ const powers=calculated.slot_feature_powers||[];
+ if(!powers.length)return '';
+ return panel('Capacità con slot',powers.map(power=>
+  '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="slot-feature-open"'+
+  ' data-slot-feature-id="'+esc(power.id)+'">'+esc(power.title||power.name)+'</button>'+
+  '<span class="hint">'+esc(power.action==='bonus'?'Azione bonus':'Azione')+'</span>'+
+  (!power.available?'<small class="hint">Richiede Forma selvatica</small>':'')+'</div>').join(''));
+}
+async function openSlotFeatureDialog(id){
+ const record=state.editor?.read();if(!record)throw Error('Scheda non disponibile.');
+ const calculated=await computeLocalData(record);
+ const power=calculated.slot_feature_powers?.find(row=>row.id===id);
+ if(!power)throw Error('Privilegio non disponibile.');
+ const options=slotFeaturePaymentOptions(power,calculated);
+ app.querySelector('#slot-feature-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='slot-feature-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
+ dialog.dataset.creatureId=record.id;dialog.dataset.slotFeatureId=id;
+ const origin=(calculated.features||[]).find(row=>row.origin_id===power.origin_id);
+ const description=origin?flattenDescription(origin)||power.description:power.description;
+ dialog.innerHTML=actionDialogIntro(power.title||power.name,[
+    {label:'Azione',value:power.action==='bonus'?'Azione bonus':'Azione'},
+    {label:'Costo',value:'Uno slot incantesimo'}
+   ],description||power.description,'Tratto · '+power.name,'slot-feature-close')+
+   (!power.available?'<p class="warning">Devi avere Forma selvatica attiva.</p>':'')+
+   (power.available&&options.length?
+    '<label>Livello di lancio / risorsa<select id="slot-feature-choice">'+options.map(o=>
+     '<option value="'+esc(o.id)+'">'+esc(o.label)+'</option>').join('')+'</select></label>':
+    '<p class="hint">Nessuno slot utilizzabile.</p>')+
+   (power.effect?.kind==='heal'?'<p class="hint">Cura: '+esc(power.effect.dice_per_slot_level||1)+
+    'd'+esc(power.effect.die_faces||8)+' per livello dello slot. I PF sono applicati alla forma attiva quando questa ha PF propri.</p>':'')+
+   '<div class="actions magic-dialog-actions">'+
+   (power.available&&options.length?'<button type="button" class="btn primary" data-act="slot-feature-confirm">Usa</button>':'')+
+   '<button type="button" class="btn" data-act="slot-feature-close">Chiudi</button></div>';
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
 }
 
@@ -3267,14 +3357,11 @@ async function openInfusionPicker(mode){
  app.querySelector("#infusion-picker-dialog")?.remove();
  const dialog=document.createElement("dialog");dialog.id="infusion-picker-dialog";
  dialog.dataset.mode=mode;dialog.className="sheet-roll-dialog magic-tools-dialog infusion-picker-dialog";
- dialog.innerHTML='<div class="magic-tools-head"><h2>'+
-   'Impara infusioni</h2>'+
-   dialogCloseButton("infusion-picker-close","Chiudi","magic-tool-close")+'</div><div class="magic-tools-body">'+
-   '<p class="magic-selection-warning">Conosciute '+esc(count)+'</p>'+
-   '<label class="vtt-list-search magic-editor-search">Cerca infusione'+
-   '<input type="search" data-infusion-search autocomplete="off" placeholder="Nome o fonte"></label>'+
-   '<div class="catalog-results vtt-selection-list magic-editor-results infusion-picker-results" role="list"></div>'+
-   '<div class="actions"><button type="button" class="btn" data-act="infusion-picker-close">Chiudi</button></div></div>';
+ dialog.innerHTML=learningSelectionDialogBody({
+   title:'Impara infusioni',closeAction:'infusion-picker-close',
+   summary:'Conosciute '+count,searchLabel:'Cerca infusione',
+   searchAttribute:'data-infusion-search',resultsClass:'infusion-picker-results'
+ });
  const input=dialog.querySelector("[data-infusion-search]");
  const results=dialog.querySelector(".infusion-picker-results");
  const paint=()=>{
@@ -9118,6 +9205,41 @@ async function handleAction(target){
     return;
   }
 
+  if(act==='slot-feature-open'){
+    await openSlotFeatureDialog(String(target.dataset.slotFeatureId||''));return;
+  }
+  if(act==='slot-feature-close'){
+    closeDialog(app.querySelector('#slot-feature-dialog'),{remove:true});return;
+  }
+  if(act==='slot-feature-confirm'){
+    const dialog=app.querySelector('#slot-feature-dialog'),record=state.editor?.read();
+    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)
+      throw Error('Riapri il privilegio dalla scheda.');
+    const calculated=await computeLocalData(record),power=(calculated.slot_feature_powers||[]).
+      find(row=>row.id===dialog.dataset.slotFeatureId);
+    if(!power)throw Error('Privilegio non più disponibile.');
+    const payment=dialog.querySelector('#slot-feature-choice')?.value||'';
+    const option=slotFeaturePaymentOptions(power,calculated).find(row=>row.id===payment);
+    if(!option)throw Error('Slot non disponibile.');
+    const effect=power.effect||{},count=effect.kind==='heal'?
+      option.level*Math.max(1,Number(effect.dice_per_slot_level)||1):0;
+    const dice=Array.from({length:count},()=>randomDie(Number(effect.die_faces)||8));
+    const result=slotFeatureUsePatch(record,calculated,calculated.slot_feature_catalog,
+      power.id,payment,dice);
+    await patch(result.patch);
+    closeDialog(dialog,{remove:true});await render();
+    message(power.title+': slot '+result.level+'° consumato.'+
+      (effect.kind==='heal'?' Tiro '+dice.map(n=>'['+n+']').join(' + ')+
+        ' · '+(result.manual_healing?result.manual_healing+' PF da applicare manualmente alla forma.':
+        result.healed+' PF recuperati dalla forma.'):' Effetti da risolvere secondo il privilegio.'));
+    return;
+  }
+  if(act==='power-selection-preview-close'){
+    closeDialog(app.querySelector('#power-selection-preview'),{remove:true});return;
+  }
+  if(act==='power-selection-details'){
+    await openGenericPowerOptionPreview(String(target.dataset.powerOptionId||''));return;
+  }
   if(act==='power-selection-open'){
     await openGenericPowerSelectionDialog(target.dataset.powerSelectionId,target.dataset.powerStage);return;
   }

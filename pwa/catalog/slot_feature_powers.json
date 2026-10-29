@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "description": "Capacità di privilegio che spendono slot come gli incantesimi. Nessun incantesimo fittizio né tracker separato.",
+  "powers": [
+    {
+      "id": "ranger_primeval_awareness_phb",
+      "name": "Primeval Awareness",
+      "title": "Primeval Awareness",
+      "owner": {
+        "class_name": "Ranger",
+        "class_source": "PHB",
+        "trait": "Primeval Awareness",
+        "min_class_level": 3
+      },
+      "action": "action",
+      "payment": {
+        "kind": "spell_slot",
+        "minimum_level": 1,
+        "allow_pact": true
+      },
+      "effect": {
+        "kind": "descriptive",
+        "duration_minutes_per_slot_level": 1
+      },
+      "description": "Consuma uno slot incantesimo. Per 1 minuto per livello dello slot percepisci la presenza dei tipi di creature previsti dal privilegio entro 1 miglio (6 miglia nel terreno favorito), senza conoscere numero o posizione."
+    },
+    {
+      "id": "druid_combat_wild_shape_healing_phb",
+      "name": "Combat Wild Shape",
+      "title": "Combat Wild Shape · Cura",
+      "owner": {
+        "class_name": "Druid",
+        "class_source": "PHB",
+        "trait": "Combat Wild Shape",
+        "min_class_level": 2
+      },
+      "action": "bonus",
+      "payment": {
+        "kind": "spell_slot",
+        "minimum_level": 1,
+        "allow_pact": true
+      },
+      "require_active": "wild_shape",
+      "effect": {
+        "kind": "heal",
+        "die_faces": 8,
+        "dice_per_slot_level": 1,
+        "target": "current_form",
+        "maximum": "form_hp"
+      },
+      "description": "Mentre sei trasformato con Forma selvatica, puoi spendere un'azione bonus e uno slot incantesimo per recuperare 1d8 PF per livello dello slot. La trasformazione continua a usare il suo tracker separato."
+    }
+  ]
+}

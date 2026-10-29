@@ -73,6 +73,7 @@ test("Android offline installation includes required code, icon sprites and mini
     "/feature_item_grants.js", "/catalog/feature_item_grants.json",
     "/power_selection.js", "/catalog/power_selections.json",
     "/optional_feature_progression.js", "/catalog/optional_feature_progressions.json",
+    "/slot_feature_powers.js", "/catalog/slot_feature_powers.json",
     "/zero_hp_responses.js",
     "/mobile_metal_theme.css", "/catalog/class_mechanics.json",
     "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
