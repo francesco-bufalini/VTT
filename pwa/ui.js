@@ -4715,13 +4715,24 @@ async function persistDocumentEdit(index,part,creature){
 }
 async function handleField(target) {
   if(target.matches?.('[data-hp-autosave]')){
-    const key=target.dataset.hpAutosave;
-    if(!['current_hp','temporary_hp'].includes(key)||!state.editor)return;
-    const raw=target.value.trim(),value=Number(raw);
-    if(!raw)return; // An empty intermediate edit is not zero.
-    const maximum=key==='temporary_hp'?99999:Math.max(Number(state.calculated?.stats?.max_hp)||0,Number(state.editor.read().current_hp)||0);
-    if(!Number.isSafeInteger(value)||value<0||value>maximum)throw Error('Inserisci PF interi tra 0 e '+maximum+'.');
-    if(value!==Number(state.editor.read()[key]||0))await patch({[key]:value});
+    if(!state.editor)return;
+    // Both fields may be dirty while their independent debounce timers run.
+    // Snapshot both values together so a delayed writer never restores
+    // the old HP or temp HP saved by the other field's writer.
+    const record=state.editor.read(),dialog=target.closest('#hp-adjust-dialog'),draft={};
+    for(const key of ['current_hp','temporary_hp']){
+      const input=dialog?.querySelector('[data-hp-autosave="'+key+'"]');
+      const raw=input?.value.trim()||'';
+      if(!raw)continue; // An empty intermediate edit is not zero.
+      const value=Number(raw);
+      const maximum=key==='temporary_hp'?99999:
+        Math.max(Number(state.calculated?.stats?.max_hp)||0,Number(record.current_hp)||0);
+      if(!Number.isSafeInteger(value)||value<0||value>maximum)
+        throw Error('Inserisci PF interi tra 0 e '+maximum+'.');
+      draft[key]=value;
+    }
+    if(Object.entries(draft).some(([key,value])=>value!==Number(record[key]||0)))
+      await patch(draft);
     return;
   }
   // Tactical controls are independent from an open local creature editor.
