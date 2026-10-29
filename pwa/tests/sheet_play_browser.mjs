@@ -704,6 +704,10 @@ try{
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
  await resourcesPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===5;});
+ // Some ability actions retain their details dialog after updating the tracker.
+ // Dismiss it before interacting with the independent spell use control.
+ if(await page.locator('#other-ability-dialog').count())
+  await page.locator('#other-ability-dialog [data-ability-cancel]').click();
  await resourcesPanel.locator('[data-power-spell-id="arcane_light"] [data-act="battle-cast-resource-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===6;});
  assert.equal(await page.locator('#action-cast-dialog').count(),0,'Quick Lancia casts without opening spell description');
