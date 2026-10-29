@@ -156,6 +156,27 @@ try{
  });
  assert.equal(await page.locator('#sheet-context-dialog [data-identity-active="names"]:checked').count(),1);
  await page.locator('#sheet-context-dialog [data-identity-active="names"]').first().check();
+ const hideAdditionalNames=page.locator('#sheet-context-dialog [data-identity-hide-others]');
+ assert.equal(await hideAdditionalNames.count(),1,'Name visibility control is alongside the name heading');
+ assert.equal(await hideAdditionalNames.isChecked(),true,'Only the primary name is shown by default');
+ assert.equal(await page.locator('#sheet-play-view .play-identity-other-names').isVisible(),false);
+ await hideAdditionalNames.uncheck();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature?.identity_hide_other_names===false;
+ });
+ assert.equal(await page.locator('#sheet-context-dialog [data-identity-active="names"]').first().isVisible(),false,
+  'Name-selection checkboxes are hidden while showing all names');
+ assert.equal(await page.locator('#sheet-play-view .play-identity-other-names').isVisible(),true);
+ assert.match(await page.locator('#sheet-play-view .play-identity-other-names').textContent(),/Lyria delle Due Lune/);
+ await hideAdditionalNames.check();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature?.identity_hide_other_names===true;
+ });
+ assert.equal(await page.locator('#sheet-context-dialog [data-identity-active="names"]').first().isVisible(),true,
+  'The original primary-name selector returns when other names are hidden');
+ assert.equal(await page.locator('#sheet-play-view .play-identity-other-names').isVisible(),false);
  await page.locator('#sheet-context-dialog [data-identity-kind="factions"]').click();
  const factionInput=page.locator('#sheet-context-dialog [data-identity-value="factions"]').last();
  assert.equal(await factionInput.evaluate(node=>document.activeElement===node),true,'New faction receives focus');
@@ -171,6 +192,10 @@ try{
  await dismiss();
  assert.equal((await record()).identity_names.length,2);
  assert.deepEqual((await record()).identity_factions.filter(row=>row.active).map(row=>row.value),['Party','Gilda degli Arcani','Compagnia della Stella']);
+ assert.equal(await page.locator('#sheet-play-view .play-identity-metadata .play-passives .play-identity-fact').count(),2,
+  'Alignment and edition occupy one compact metadata row');
+ assert.equal(await page.locator('#sheet-play-view .play-identity-factions-line .play-identity-faction').count(),3,
+  'Active factions appear in the same compact identity footer');
  assert.equal((await record()).name,'Lyria, guardiana della Luna');
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
