@@ -549,33 +549,24 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
  return rows;
 }
 
-// Distinguish actual resource powers without assigning an icon to counters.
-// Explicit structured ability kinds win; known themed actions reuse the shared
-// gold atlas, and otherwise the action economy determines the icon.
-export function resourceAbilityGlyphKey(row={}){
- if(row.kind==='spell')return 'spell_cast';
+// An attack icon and map-range button belong only to a real attack in the
+// computed Attacks list; neither the feature name nor action timing decides.
+export function resourceAttackId(row={},attacks=[]){
  const power=row.power||{},action=row.classAction||{};
- if(power.roll_attack||action.roll_attack||action.attack_id)return 'weapon';
- if(power.companion_command||action.companion_command)return 'talk';
- if(power.companion_rule_id||action.companion_rule_id)return 'summon';
- if(power.infusion_action||action.infusion_action)return 'magic_item';
- const specific=actionGlyphKey({...action,...power,name:row.name,type:'Capacità'});
- if(specific!=='action'&&specific!=='proficiency')return specific;
- if(persistentBattleAbility(row))return 'buff';
- const timing=String(row.timing||power.action_type||power.activation_mode||action.time||'').toLowerCase().trim();
- return ({action:'action',bonus:'bonus',reaction:'reaction_trigger',
-  free:'free',movement:'speed',contextual:'spark'})[timing]||'spark';
+ const id=String(power.roll_attack?.id||action.roll_attack?.id||
+  power.attack_id||action.attack_id||'');
+ return id&&attacks.some(attack=>String(attack.id)===id)?id:'';
 }
 
-// Roll bonuses are powers attached to a tracker, not tracker icons.
-export function resourceRollBonusGlyphKey(row={}){
- const targets=(Array.isArray(row.targets)?row.targets:[row.target]).map(String);
- if(targets.some(target=>/^(attack_hit:|attack_damage:|attack_roll$|damage_roll$|spell_attack$|spell_damage$)/.test(target)))
-  return 'attack_bonus';
- if(targets.some(target=>target==='saving_throw'||target.startsWith('save:')))return 'save_throw';
- if(targets.some(target=>target==='ability_check'||target.startsWith('ability_check:')||target.startsWith('skill:')))
-  return 'skill';
- return 'buff';
+// Read the modeled benefit, not class, species, spell name or action type.
+export function resourceAbilityGlyphKey(row={},calculated={}){
+ if(row.kind==='spell')return 'spell_cast';
+ if(resourceAttackId(row,calculated.attacks||[]))return 'weapon';
+ const power=row.power||{},action=row.classAction||{};
+ if([power.target_mode,action.target_mode].includes('single_token'))return 'target';
+ if(power.roll_effect||power.roll_bonus||power.dice_bonus||
+    action.roll_bonus||action.dice_bonus)return 'attack_bonus';
+ return 'spark';
 }
 
 // A subclass trait that owns a tracker is usable even if its effects are not
@@ -720,8 +711,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const originId=row.origin_id||'';
    const content='<span><strong>'+esc(value+' · '+(row.name||'Bonus'))+'</strong><small>'+esc(trackerRollBonusTargets(row,d))+'</small></span>';
    return '<div class="play-resource-power-row play-resource-bonus-row" data-roll-bonus-id="'+esc(row.id||row.name||'')+'">'+
-    (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+icon(resourceRollBonusGlyphKey(row))+content+'</button>':
-      '<span class="play-resource-power-open">'+icon(resourceRollBonusGlyphKey(row))+content+'</span>')+'</div>';
+    (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+icon('attack_bonus')+content+'</button>':
+      '<span class="play-resource-power-open">'+icon('attack_bonus')+content+'</span>')+'</div>';
   }).join('');
   const traits=view.battleTraits||[];
   const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
@@ -766,7 +757,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    // Spells still require the normal resource check.
    const disabled=(row.kind==='spell'||row.power?.infusion_action)&&row.cost>0&&
     (!tracker||tracker.disabled||available<row.cost);
-   const glyph=icon(resourceAbilityGlyphKey(row));
+   const glyph=icon(resourceAbilityGlyphKey(row,d));
+   const mapAttackId=resourceAttackId(row,d.attacks||[]);
+   const mapButton=mapAttackId?'<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="'+esc(mapAttackId)+
+    '" aria-label="Mostra la gittata di '+esc(row.name)+' sulla mappa" title="Gittata sulla mappa">'+icon('map')+'</button>':'';
    const caption=row.kind==='spell'?row.casting_time_label:
      ((row.power?.roll_attack||row.classAction?.roll_attack)&&row.timing==='action'?'Azione di attacco':
        timeLabels[row.timing]||row.timing||'Secondo il privilegio');
@@ -806,7 +800,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
-    '<small>'+esc(caption+note)+'</small></span></button>'+
+    '<small>'+esc(caption+note)+'</small></span></button>'+mapButton+
     (descriptive?'':active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
     ' aria-label="Disattiva '+esc(row.name)+'">Disattiva</button>':
     '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(useId)+'"'+
@@ -821,7 +815,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const linked=resourceLinkedSubclassTrait(t,d.features||[],powerRows,d);
    const reference=linked?'<div class="play-resource-power-row" data-linked-subclass-resource="'+esc(t.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(linked.origin_id)+'"'+
-    ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon(resourceAbilityGlyphKey({name:linked.name,timing:linked.action_type||'contextual'}))+
+    ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon('spark')+
     '<span><strong>'+esc(linked.name)+'</strong><small>Capacità di sottoclasse · '+esc(trackerRecoveryText(t))+'</small></span></button>'+
     '<button type="button" class="play-resource-use" data-act="tracker-trait-use" data-tracker-id="'+esc(t.id)+'"'+
     ' data-origin-id="'+esc(linked.origin_id)+'"'+/* Alternative slot payments may be available even with zero tracker uses.
@@ -861,6 +855,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // can still be inspected. Spellcasting jumps straight to the Powers tab.
   // A feat can provide an independent second-weapon capacity without
   // changing the basic-rule availability for two Light weapons.
+  const actionMapButton=(id,name)=>['attack','opportunity','two_weapon'].includes(id)?
+   '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="unarmed" aria-label="Mostra la gittata di '+esc(name)+' sulla mappa" title="Gittata sulla mappa">'+icon('map')+'</button>':'';
   const actionLink=(id,name,time,available=true,extra='',count=0,grantId='',grantName='')=>
    '<div class="play-resource-power-row play-resource-rule'+(available?'':' play-resource-rule--inactive')+
     (id==='attack'?' play-resource-rule--attack':'')+'" data-rule-action="'+esc(id)+'">'+
@@ -870,6 +866,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<span><strong>'+esc(name)+'</strong><small>'+esc(extra||(
      available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):
      'Non disponibile'))+'</small></span></button>'+
+    actionMapButton(id,name)+
     (count>1?(grantId?'<button type="button" class="play-battle-attacks-per-action" data-act="power-trait"'+
       ' data-origin-id="'+esc(grantId)+'" title="Apri il privilegio '+esc(grantName||'Multiattacco')+'"'+
       ' aria-label="Apri il privilegio '+esc(grantName||'Multiattacco')+', '+count+' attacchi per azione">':

@@ -341,9 +341,13 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  };
  const choices=[...attacksById.values()];
  // Opportunity Attack is a rules action, not an automatically selected main-hand hit.
- const opportunityWeapon=null;
- // Treat the offhand choice as a generic action, not a separate weapon strike.
- const selectedAttack=attack||opportunityWeapon;
+ // Abstract attack actions use the unarmed strike's reach, not an invented
+ // main-hand weapon selection. Concrete attacks keep their own reach/range.
+ const attackAction=item.type==='Attacco'||item.attack_selector==='melee'||
+  ['attack','opportunity','two_weapon'].includes(String(item.id||''));
+ const unarmed=attacksById.get('unarmed')||
+  {id:'unarmed',name:'Colpo senz’armi',melee:true,range_feet:5};
+ const selectedAttack=attack||(attackAction?unarmed:null);
  // A typed shove action uses the existing map-targeting combat action.
  // It is not inferred from whether the character has used Dash.
  const actionName=item.name;
@@ -391,10 +395,6 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const mapButton=rangeLabel&&selectedAttack?.id?
   '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="'+esc(selectedAttack.id)+
   '" aria-label="Mostra la gittata di '+esc(actionName)+' sulla mappa" title="Gittata sulla mappa">'+actionGlyph('map')+'</button>':'';
- const hitButton=selectedAttack?.id?
-  '<button type="button" class="btn small play-battle-hit" data-act="battle-attack-hit" data-hit-attack-id="'+
-  esc(selectedAttack.id)+'" title="Seleziona una creatura sulla mappa e applica gli effetti dell’attacco"'+
-  (item.available===false?' disabled':'')+'>Colpisci</button>':'';
  const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
@@ -421,7 +421,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    source+target+resources+
    (String(item.id||'').startsWith('activated:')&&!item.descriptive_only?'<button type="button" class="btn small" data-act="battle-use-ability" data-ability-id="'+esc(item.id)+'">Usa</button>':'')+
    '</div></details>')+
-  (rolls.length||mapButton||hitButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
+  (rolls.length||mapButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
    '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
    esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
    (index===0?mapButton:'')+
@@ -429,7 +429,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
    '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+
    (!rolls.length&&mapButton?'<div class="play-battle-attack-roll-line">'+mapButton+'</div>':'')+
-   (hitButton?'<div class="play-battle-attack-roll-line">'+hitButton+'</div>':'')+'</div>':'')+
+   '</div>':'')+
   '</div>'+battleEffectMarkup({...item,name:actionName},selectedAttack)+'</article>';
 }
 
