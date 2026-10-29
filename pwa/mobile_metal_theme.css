@@ -5775,21 +5775,25 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 #sheet-play-view .play-character-portrait[role="button"]:focus-visible{
  outline:2px solid #f4cf91;outline-offset:3px;border-radius:15px
 }
+/* Allineamento ed edizione are compact metadata, not statistic cards. */
 #sheet-play-view .play-character-portrait .play-passives{
- width:min(100%,340px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
- gap:10px;margin:2px auto 6px
+ display:flex;justify-content:center;align-items:baseline;gap:14px;
+ margin:2px auto 3px;flex-wrap:wrap;font-size:11px;color:#bbaa92
 }
 #sheet-play-view .play-character-portrait .play-passives>span{
- min-width:0;text-align:center;display:grid;gap:3px;
- padding:9px 10px;border:1px solid #a47a4f60;border-radius:10px;
- background:linear-gradient(150deg,#4a382c,#29211e);color:#f2d2a0;
- font:600 12px/1.3 system-ui;overflow-wrap:anywhere
+ display:inline-flex;align-items:baseline;gap:4px;min-width:0;
+ font:400 11px/1.3 system-ui;color:#d4bea0
 }
 #sheet-play-view .play-character-portrait .play-passives small{
- color:#bba98f;font:500 10px/1.3 system-ui;text-transform:uppercase;letter-spacing:.06em
+ color:#ad9b80;font:400 10px/1.3 system-ui
 }
 #sheet-play-view .play-character-portrait.has-portrait .play-identity{padding-inline:20px}
-#sheet-play-view .play-character-portrait .play-identity-factions{color:#e6c28f;font-size:12px}
+#sheet-play-view .play-character-portrait .play-identity-factions-line{
+ margin:0 auto 7px;text-align:center;font:400 11px/1.35 system-ui;color:#cbb697
+}
+#sheet-play-view .play-character-portrait .play-identity-factions-line strong{
+ font-weight:600;color:#e6c28f
+}
 #sheet-play-view .play-battle-quickstats{margin:7px 0 12px}
 #sheet-play-view .play-battle-quickstats .play-quickstat[aria-pressed="true"]{
  border-color:#f0c783;background:linear-gradient(145deg,#745337,#393023);
