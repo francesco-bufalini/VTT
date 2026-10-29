@@ -48,6 +48,14 @@ Change the generator or normalization layer, then regenerate.
 
 ## Validation
 
+### Mandatory mobile update gate (all chats and branches)
+
+- Before committing, merging or pushing PWA changes, run `node scripts/check_pwa_assets.mjs` and the focused PWA tests. Do not bypass a failing asset check.
+- Every new browser module and offline catalog must be served by `network/pwa_host.gd`, with the correct MIME type, and included in the offline shell in `pwa/sw.js`. Essential catalogs also belong in `REQUIRED_CATALOGS`. Verify transitive imports too.
+- Enable the tracked Git hooks in each fresh clone: `git config core.hooksPath .githooks`. The pre-commit gate checks the staged snapshot, so unstaged fixes cannot hide broken commits. This clone is configured; linked worktrees share its Git configuration.
+- The normal validation scripts also run this gate. For startup/cache/asset changes, run `node pwa/tests/offline_browser.mjs` as well.
+- A running Godot PWA host retains its route table until restart. If routes changed, explicitly tell the user to restart the desktop VTT before retrying the phone; do not claim that the running host is fixed without checking it. Preserve phone IndexedDB and saved creatures.
+
 Fast parse/import check:
 
     .\scripts\validate.ps1

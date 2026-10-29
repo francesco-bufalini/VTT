@@ -3,6 +3,7 @@ set -euo pipefail
 
 GODOT="${GODOT:-godot}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+node "$PROJECT_ROOT/scripts/check_pwa_assets.mjs"
 RUN_TESTS=false
 
 if [[ "${1:-}" == "--tests" ]]; then

@@ -8,6 +8,9 @@ param(
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 
+& node (Join-Path $PSScriptRoot "check_pwa_assets.mjs")
+if ($LASTEXITCODE -ne 0) { throw "PWA update asset validation failed." }
+
 if (Test-Path -LiteralPath $Godot -PathType Leaf) {
     $GodotExecutable = (Resolve-Path -LiteralPath $Godot).Path
 } else {

@@ -1,0 +1,14 @@
+name: PWA update asset gate
+on:
+  push:
+  pull_request:
+jobs:
+  mobile-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/check_pwa_assets.mjs
+      - run: node --test pwa/tests/pwa_asset_gate.test.mjs pwa/tests/startup_module_routes.test.mjs pwa/tests/offline_cache_policy.test.mjs pwa/tests/version_gate.test.mjs
