@@ -431,6 +431,15 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
     add('bonus','Movimento','Scalata','Nessun costo aggiuntivo: puoi usare la velocità di camminata.',
       'feat_movement:'+rule.origin_id+':'+rule.mode);
  }
+ // Reusable d20 rerolls remain visible on the trait that owns them.
+ for(const rule of rows(calculated.feat_d20_rerolls)){
+  if(!belongs(rule))continue;
+  const targets=rows(rule.targets).map(traitBenefitTargetLabel).join(' · ')||'Qualunque d20';
+  add('d20_rerolls','Ritiri del d20',targets,
+   (rule.trigger==='on_one'?'Quando esce 1':'Dopo il tiro')+
+    (rule.tracker_id?' · '+(rows(calculated.trackers).find(t=>t.id===rule.tracker_id)?.name||'Risorsa'): ' · gratuito'),
+   'd20_reroll:'+String(rule.id||''));
+ }
  // User-authored mode grants carry the same stable source as other trait bonuses.
  for(const row of rows(record.roll_mode_grants)){
   if(row.disabled||!belongs(row)||!['advantage','disadvantage'].includes(row.mode))continue;
