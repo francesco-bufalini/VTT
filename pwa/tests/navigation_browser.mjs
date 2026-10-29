@@ -22,7 +22,7 @@ const server=createServer(async(req,res)=>{
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;}
   if(path==='/catalog/bestiary.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({monsters:[{name:'Wolf',source:'MM',id:'bestiary:wolf:mm'}]}));return;}
-  if(path==='/catalog/bestiary/Wolf/MM.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({name:'Wolf',source:'MM',type:'beast',size:['M'],hp:{average:11},ac:[13],speed:{walk:40},str:12,dex:15,con:12,int:3,wis:12,cha:6,skill:{prc:'+3'},resist:['cold'],immune:['poison'],conditionImmune:['frightened']}));return;}
+  if(path==='/catalog/bestiary/Wolf/MM.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({name:'Wolf',source:'MM',cr:'1/4',type:'beast',size:['M'],hp:{average:11},ac:[13],speed:{walk:40},str:12,dex:15,con:12,int:3,wis:12,cha:6,skill:{prc:'+3'},resist:['cold'],immune:['poison'],conditionImmune:['frightened']}));return;}
   const route=routes.get(path);if(!route){res.writeHead(404);res.end();return;}
   res.setHeader('Content-Type',route[1]);res.end(await readFile(new URL(route[0],root)));
  }catch{res.writeHead(404);res.end();}
@@ -343,6 +343,36 @@ try{
     monster.species==='Wolf'&&monster.bestiary_ref?.source==='MM'&&
     monster.stat_block?.skill?.prc==='+3'&&monster.stat_block?.immune?.[0]==='poison';
  }), 'The new monster retains its full bestiary statistics as an independent sheet');
+ // The existing Classi popup must let a bestiary monster gain a class level.
+ await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Classi'}).click();
+ await page.locator('#sheet-context-dialog [data-act="level-up-open"]').click();
+ const levelDialog=page.locator('#class-level-up-dialog');
+ await levelDialog.waitFor({state:'visible'});
+ const classSelect=levelDialog.locator('[data-level-up-class]');
+ const firstNew=classSelect.locator('option[value^="new:"]').first();
+ const chosen=await firstNew.textContent();
+ const chosenValue=await firstNew.getAttribute('value');
+ assert(chosenValue,'The class catalog offers at least one new class for the monster');
+ await classSelect.selectOption(chosenValue);
+ const hpInput=levelDialog.locator('[data-level-up-hp]').first();
+ await hpInput.waitFor({state:'visible'});
+ await page.waitForFunction(()=>
+   !document.querySelector('#class-level-up-dialog [data-level-up-confirm]')?.disabled);
+ const hpDie=Number(await hpInput.getAttribute('value'));
+ assert(hpDie>=1,'Monster class level uses the class hit die');
+ assert.equal(await levelDialog.locator('[data-level-up-xp-note]').innerText().then(t=>t.includes('GS')),true);
+ await levelDialog.locator('[data-level-up-confirm]').click();
+ await levelDialog.waitFor({state:'detached'});
+ assert(await page.evaluate(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   const monster=(await listCreatures()).find(row=>row.creature.name==='Lupo guardiano')?.creature;
+   return monster?.kind==='monster' && monster.classes?.length===1 && monster.level===1 &&
+     monster.stat_block?.cr==='1/4' && monster.stat_block?.hp?.average===11 &&
+     monster.stat_block?.skill?.prc==='+3' && monster.stat_block?.immune?.[0]==='poison' &&
+     monster.max_hp_base>11 && monster.current_hp>11;
+ }), 'Adding a class preserves monster statblock, CR, skills, immunities and base HP');
+ await page.locator('[data-level-up-close]').click();
+ await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  await page.locator('#creature-back').click();
  await page.locator('[data-act="library-filter"][data-kind="monster"]').click();
  assert(await page.locator('.creature-card').filter({hasText:'Lupo guardiano'}).isVisible());

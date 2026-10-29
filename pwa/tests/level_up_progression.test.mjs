@@ -59,6 +59,30 @@ test('class dice, half-up averages and Constitution are applied per level',async
  assert.throws(()=>hpGainForLevels([0],2),/non validi/);
 });
 
+test('a bestiary monster gains class HP on top of its original statblock, even at 1 HP',async()=>{
+ const {levelUpProjectedRecord,levelUpHpPatch}=await import('../level_up.js');
+ const {bestiarySheet}=await import('../creature_variants.js');
+ const {collectionPatch}=await import('../native_sheet.js');
+ const monster=bestiarySheet({name:'Tiny Beast',source:'MM',type:'beast',cr:'1/8',
+   size:['T'],hp:{average:1},ac:[12],str:4,dex:12,con:10,int:2,wis:10,cha:4,
+   immune:['poison'],action:[{name:'Bite'}]});
+ const plan={classIndex:-1,className:'Fighter',classSource:'PHB',classId:'fighter'};
+ const projected=levelUpProjectedRecord(monster,plan,1);
+ assert.equal(projected.kind,'monster');
+ assert.equal(projected.level,1);
+ assert.equal(projected.classes[0].name,'Fighter');
+ assert.deepEqual(projected.stat_block,monster.stat_block);
+ const saved={...collectionPatch(monster,'classes',projected.classes),
+   ...levelUpHpPatch(monster,[6],0,{firstCharacterLevel:false})};
+ const result={...monster,...saved};
+ assert.equal(result.max_hp_base,7);
+ assert.equal(result.current_hp,7);
+ assert.equal(result.xp,0,'Monster levels do not overwrite CR-derived advancement or require character XP');
+ assert.equal(result.stat_block.cr,'1/8');
+ assert.deepEqual(result.stat_block.immune,['poison']);
+ assert.deepEqual(monster.classes,[],'Projection must not mutate the original monster');
+});
+
 test('projected multiclass levels do not touch the stored character',async()=>{
  const {levelUpProjectedRecord}=await import('../level_up.js');
  const base={kind:'character',class:'Fighter',class_source:'PHB',level:4,
