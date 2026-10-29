@@ -5768,3 +5768,103 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
   #sheet-play-view .inventory-bulk-actions .library-bulk-button{flex:1;min-width:0}
   #sheet-play-view .inventory-item-batch-check{flex-basis:37px;padding:4px}
 }
+
+
+/* Identity presentation is the settings trigger; the old gear is intentionally gone. */
+#sheet-play-view .play-character-portrait[role="button"]{cursor:pointer;touch-action:manipulation}
+#sheet-play-view .play-character-portrait[role="button"]:focus-visible{
+ outline:2px solid #f4cf91;outline-offset:3px;border-radius:15px
+}
+#sheet-play-view .play-character-portrait .play-passives{
+ width:min(100%,340px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;margin:2px auto 6px
+}
+#sheet-play-view .play-character-portrait .play-passives>span{
+ min-width:0;text-align:center;display:grid;gap:3px;
+ padding:9px 10px;border:1px solid #a47a4f60;border-radius:10px;
+ background:linear-gradient(150deg,#4a382c,#29211e);color:#f2d2a0;
+ font:600 12px/1.3 system-ui;overflow-wrap:anywhere
+}
+#sheet-play-view .play-character-portrait .play-passives small{
+ color:#bba98f;font:500 10px/1.3 system-ui;text-transform:uppercase;letter-spacing:.06em
+}
+#sheet-play-view .play-character-portrait.has-portrait .play-identity{padding-inline:20px}
+#sheet-play-view .play-character-portrait .play-identity-factions{color:#e6c28f;font-size:12px}
+#sheet-play-view .play-battle-quickstats{margin:7px 0 12px}
+#sheet-play-view .play-battle-quickstats .play-quickstat[aria-pressed="true"]{
+ border-color:#f0c783;background:linear-gradient(145deg,#745337,#393023);
+ box-shadow:inset 0 1px #f6dea344
+}
+#sheet-play-view .play-battle-quickstats .play-quickstat:focus-visible{outline:2px solid #f4ce8c}
+.sheet-context-dialog[data-context="identity"] .sheet-context-body>.panel{
+ display:grid;gap:14px;min-width:0
+}
+.sheet-context-dialog[data-context="identity"] .sheet-context-body>.panel>.columns{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:14px
+}
+.sheet-context-dialog[data-context="identity"] .identity-group{display:grid;gap:8px;min-width:0}
+.sheet-context-dialog[data-context="identity"] .identity-group-heading{
+ display:flex;align-items:center;justify-content:flex-start;gap:10px;
+ color:#f0d5a6;font:650 13px/1.2 system-ui
+}
+.sheet-context-dialog[data-context="identity"] .identity-add{
+ display:grid;place-items:center;width:30px;height:30px;
+ padding:0;border:1px solid currentColor;border-radius:9px;
+ background:#94703b18;color:inherit;font:600 22px/1 system-ui
+}
+.sheet-context-dialog[data-context="identity"] .identity-add:hover,
+.sheet-context-dialog[data-context="identity"] .identity-add:focus-visible{
+ background:#b88d4b38;outline-offset:2px
+}
+.sheet-context-dialog[data-context="identity"] .identity-entry-list{display:grid;gap:8px}
+.sheet-context-dialog[data-context="identity"] .identity-entry{
+ display:flex;align-items:center;gap:12px;min-width:0
+}
+.sheet-context-dialog[data-context="identity"] .identity-entry>input{
+ flex:1;min-width:0;min-height:43px;padding:9px 12px;
+ border:1px solid #aa845872;border-radius:9px;
+ background:#231d1be0;color:#f6deba
+}
+.sheet-context-dialog[data-context="identity"] .identity-check{
+ position:relative;display:grid;place-items:center;flex:none;
+ width:35px;height:35px;margin:0;cursor:pointer
+}
+.sheet-context-dialog[data-context="identity"] .identity-check>input{
+ position:absolute;inset:0;width:100%;height:100%;margin:0;cursor:pointer;
+ opacity:0
+}
+.sheet-context-dialog[data-context="identity"] .identity-check>span{
+ display:grid;place-items:center;width:30px;height:30px;
+ border:1px solid #ac875e;border-radius:9px;background:#29211e;
+ color:transparent;font:700 17px/1 system-ui;transition:background .12s,border-color .12s
+}
+.sheet-context-dialog[data-context="identity"] .identity-check>input:checked+span{
+ background:linear-gradient(145deg,#8b673f,#533e2b);border-color:#f1c987;color:#ffe1aa;
+ box-shadow:inset 0 1px #ffe7a855
+}
+.sheet-context-dialog[data-context="identity"] .identity-check>input:focus-visible+span{
+ outline:2px solid #f4d095;outline-offset:3px
+}
+.sheet-context-dialog[data-context="identity"] .identity-rules-row{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;
+ align-items:end;gap:16px;min-width:0
+}
+.sheet-context-dialog[data-context="identity"] .identity-rules-row>label{min-width:0}
+.sheet-context-dialog[data-context="identity"] .identity-rules-row .play-portrait-controls{
+ display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end
+}
+.sheet-context-dialog[data-context="identity"] .identity-rules-row .play-portrait-pick{
+ min-height:41px;white-space:nowrap
+}
+.sheet-context-dialog[data-context="identity"] [data-info-portrait-file]{display:none!important}
+@media(max-width:390px){
+ .sheet-context-dialog[data-context="identity"] .identity-rules-row{
+  grid-template-columns:minmax(86px,1fr) auto;gap:11px
+ }
+ .sheet-context-dialog[data-context="identity"] .identity-rules-row .play-portrait-pick{
+  padding:8px 10px
+ }
+ .sheet-context-dialog[data-context="identity"] .identity-rules-row .play-portrait-controls{
+  max-width:185px
+ }
+}

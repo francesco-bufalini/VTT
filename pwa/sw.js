@@ -58,6 +58,7 @@ const SHELL = [
   "/barbarian_2014.js",
   "/trait_state_rules.js",
   "/native_sheet.js",
+  "/identity_aliases.js",
   "/source_edition.js",
   "/item_controls.js",
   "/inventory_search.js",

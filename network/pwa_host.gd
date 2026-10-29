@@ -46,6 +46,7 @@ const FILES := {
 	"/inventory_transfer.js": ["res://pwa/inventory_transfer.js", "text/javascript; charset=utf-8"],
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
+	"/identity_aliases.js": ["res://pwa/identity_aliases.js", "text/javascript; charset=utf-8"],
 	"/source_edition.js": ["res://pwa/source_edition.js", "text/javascript; charset=utf-8"],
   "/item_controls.js": ["res://pwa/item_controls.js", "text/javascript; charset=utf-8"],
   "/inventory_search.js": ["res://pwa/inventory_search.js", "text/javascript; charset=utf-8"],

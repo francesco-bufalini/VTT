@@ -21,7 +21,7 @@ try{
  await forms();await create('Identità segreta','alias');await page.locator('[data-variant-save]').click();
  await page.locator('.variant-list article').filter({hasText:'Identità segreta'}).getByRole('button',{name:'Usa forma'}).click();
  await closeForms();await popup('identity');
- await page.locator('#sheet-context-dialog [data-field="name"]').fill('Ombra');await dismiss();
+ await page.locator('#sheet-context-dialog [data-identity-value="names"]').fill('Ombra');await dismiss();
  await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Ombra');
  let c=await record();const aliasId=c.current_form_id;assert.equal(c.name,'Lyria base');assert.equal(c.variants[0].values.name,'Ombra');
  assert.equal(await page.locator('#sheet-play-view .play-identity [data-read-field="name"]').textContent(),'Ombra');

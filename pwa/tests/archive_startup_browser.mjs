@@ -151,7 +151,7 @@ async function updatePreservesEdits(failSave=false){
    });
   }
   const trigger=()=>f.page.evaluate(()=>{
-   const field=document.querySelector('#sheet-context-dialog [data-field="name"]');
+   const field=document.querySelector('#sheet-context-dialog [data-identity-value="names"]');
    field.value='Ultima modifica';field.dispatchEvent(new Event('input',{bubbles:true}));
    window.__controllerChange();
   });
@@ -159,7 +159,7 @@ async function updatePreservesEdits(failSave=false){
    await trigger();
    await f.page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('Aggiornamento rimandato'));
    assert.equal(navigations,0,'A rejected write must keep the current document open');
-   assert.equal(await f.page.locator('#sheet-context-dialog [data-field="name"]').inputValue(),'Ultima modifica');
+   assert.equal(await f.page.locator('#sheet-context-dialog [data-identity-value="names"]').inputValue(),'Ultima modifica');
    assert.equal(await f.page.locator('#app').evaluate(app=>app.inert),false);
   }else{
    await Promise.all([f.page.waitForEvent('load'),trigger()]);

@@ -17,7 +17,9 @@ try{
    'Unresolved character choices must be below the portrait button');
  }
  assert.equal(await portrait.locator('img').count(),0);
- assert.equal(await portrait.locator('[data-act="info-portrait-pick"]').count(),1);
+ assert.equal(await portrait.locator('[data-act="info-portrait-pick"]').count(),0,'Portrait controls were moved to the identity settings dialog');
+ await portrait.click();
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="info-portrait-pick"]').count(),1);
  const id=await page.evaluate(async()=>{
   const {listCreatures}=await import('/creatures.js');
   return (await listCreatures())[0].creature.id;
@@ -32,7 +34,7 @@ try{
  });
  // The visible button must open the native chooser synchronously (also on iOS).
  const chooserPromise=page.waitForEvent('filechooser');
- await portrait.locator('[data-act="info-portrait-pick"]').click();
+ await page.locator('#sheet-context-dialog [data-act="info-portrait-pick"]').click();
  const chooser=await chooserPromise;
  await chooser.setFiles({name:'ritratto.png',mimeType:'image/png',
   buffer:Buffer.from(image.split(',')[1],'base64')});
@@ -67,9 +69,10 @@ try{
   'The reloaded portrait must still decode under CSP');
  assert.equal(await page.locator('#sheet-play-view .play-portrait-frame img').getAttribute('src'),saved,
   'The photo survives a reload from local IndexedDB');
- await page.locator('[data-act="info-portrait-remove"]').click();
+ await portrait.click();
+ await page.locator('#sheet-context-dialog [data-act="info-portrait-remove"]').click();
  await page.waitForFunction(()=>!document.querySelector('#sheet-play-view .play-portrait-frame'));
  assert.equal(await read(),'');
- assert.equal(await page.locator('[data-act="info-portrait-pick"]').textContent().then(s=>s.trim()),'Aggiungi foto');
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="info-portrait-pick"]').textContent().then(s=>s.trim()),'▧Aggiungi foto');
  assert.deepEqual(errors,[],'No browser JS exceptions');
 }finally{await close();}
