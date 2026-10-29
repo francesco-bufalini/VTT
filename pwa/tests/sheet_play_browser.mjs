@@ -801,6 +801,9 @@ try{
  const proficiencyLink=page.locator('#sheet-roll-dialog .sheet-roll-origin-term[data-origin-id="class|phb|wizard"]');
  assert.equal(await proficiencyLink.count(),1,'Class save training retains its source');
  await proficiencyLink.click();
+ // Proficiency navigation rebuilds Info asynchronously before opening the
+ // grant's trait popup; wait for that completion, not just the source click.
+ await page.locator('#trait-benefits-dialog').waitFor({state:'visible'});
  assert.equal(await page.locator('#sheet-roll-dialog').count(),0);
  const granted=page.locator('.play-info-traits .trait-card[data-trait-proficiency="class|phb|wizard"]');
  assert.equal(await granted.count(),1,'The granting class proficiency has a dedicated trait');
