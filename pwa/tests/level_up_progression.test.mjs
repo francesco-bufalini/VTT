@@ -83,6 +83,22 @@ test('a bestiary monster gains class HP on top of its original statblock, even a
  assert.deepEqual(monster.classes,[],'Projection must not mutate the original monster');
 });
 
+test('changing Constitution proposes exactly the modifier difference, not the score difference',async()=>{
+ const {constitutionHpAdjustment}=await import('../character_core.js');
+ const record={max_hp_base:23,current_hp:18};
+ assert.equal(constitutionHpAdjustment(record,1,1),null,'12 to 13 CON retains the same modifier');
+ assert.deepEqual(constitutionHpAdjustment(record,1,2),{max_hp_base:24,current_hp:19},
+   '12 to 14 CON proposes +1 HP, not +2');
+ assert.deepEqual(constitutionHpAdjustment(record,2,0),{max_hp_base:21,current_hp:16},
+   '14 to 10 CON proposes -2 HP, not -4');
+ assert.deepEqual(record,{max_hp_base:23,current_hp:18},'Declining the adjustment leaves HP untouched');
+ assert.deepEqual(constitutionHpAdjustment({max_hp_base:1,current_hp:0},0,-2),
+   {max_hp_base:1,current_hp:0},'HP cannot become negative and maximum stays at least 1');
+ assert.deepEqual(constitutionHpAdjustment({kind:'monster',stat_block:{hp:{average:11}},
+   max_hp_base:11,current_hp:7},1,2),{max_hp_base:12,current_hp:8},
+   'An independent bestiary monster uses the identical adjustment');
+});
+
 test('projected multiclass levels do not touch the stored character',async()=>{
  const {levelUpProjectedRecord}=await import('../level_up.js');
  const base={kind:'character',class:'Fighter',class_source:'PHB',level:4,

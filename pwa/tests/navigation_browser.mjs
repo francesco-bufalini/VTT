@@ -373,6 +373,56 @@ try{
  }), 'Adding a class preserves monster statblock, CR, skills, immunities and base HP');
  await page.locator('[data-level-up-close]').click();
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
+ // The score editor proposes HP changes only when the effective modifier changes.
+ const conCard=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:con"]');
+ const scoreFormula=page.locator('#sheet-score-formula-dialog');
+ const scoreEditor=page.locator('#sheet-score-dialog');
+ const conDialog=page.locator('#constitution-hp-dialog');
+ const editCon=async score=>{
+   await conCard.click();
+   await scoreFormula.locator('[data-act="sheet-score-edit-base"]').click();
+   await scoreEditor.locator('#sheet-score-input').fill(String(score));
+   await scoreEditor.locator('[data-act="save-score"]').click();
+ };
+ const monsterBeforeCon=await page.evaluate(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures()).find(row=>row.creature.name==='Lupo guardiano')?.creature;
+ });
+ assert.equal(monsterBeforeCon.abilities.con,12);
+ await editCon(13);
+ await scoreFormula.waitFor({state:'visible'});
+ assert.equal(await conDialog.count(),0,'No prompt when 12 → 13 keeps modifier +1');
+ await scoreFormula.locator('[data-act="close-score-formula"]').click();
+ const hpBefore=await page.evaluate(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   const c=(await listCreatures()).find(row=>row.creature.name==='Lupo guardiano')?.creature;
+   return {max:c.max_hp_base,current:c.current_hp};
+ });
+ await editCon(14);
+ await conDialog.waitFor({state:'visible'});
+ assert.match(await conDialog.textContent(),/\+1/);
+ assert.equal((await page.locator('#sheet-score-formula-dialog').count()),0,
+   'The modifier confirmation takes precedence over the formula dialog');
+ await conDialog.locator('[data-con-hp-apply]').click();
+ await scoreFormula.waitFor({state:'visible'});
+ assert(await page.evaluate(async expected=>{
+   const {listCreatures}=await import('/creatures.js');
+   const c=(await listCreatures()).find(row=>row.creature.name==='Lupo guardiano')?.creature;
+   return c.abilities.con===14&&c.max_hp_base===expected.max+1&&
+     c.current_hp===expected.current+1&&c.stat_block.hp.average===11&&c.stat_block.cr==='1/4';
+ },hpBefore),'Applying +1 CON modifier changes max and current HP, never bestiary stats');
+ await scoreFormula.locator('[data-act="close-score-formula"]').click();
+ await editCon(10);
+ await conDialog.waitFor({state:'visible'});
+ assert.match(await conDialog.textContent(),/−2|-2/);
+ await conDialog.locator('[data-con-hp-keep]').click();
+ await scoreFormula.waitFor({state:'visible'});
+ assert(await page.evaluate(async expected=>{
+   const {listCreatures}=await import('/creatures.js');
+   const c=(await listCreatures()).find(row=>row.creature.name==='Lupo guardiano')?.creature;
+   return c.abilities.con===10&&c.max_hp_base===expected.max+1&&c.current_hp===expected.current+1;
+ },hpBefore),'Keeping HP commits Constitution but leaves the HP values unchanged');
+ await scoreFormula.locator('[data-act="close-score-formula"]').click();
  await page.locator('#creature-back').click();
  await page.locator('[data-act="library-filter"][data-kind="monster"]').click();
  assert(await page.locator('.creature-card').filter({hasText:'Lupo guardiano'}).isVisible());
