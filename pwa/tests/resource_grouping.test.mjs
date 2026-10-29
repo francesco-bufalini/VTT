@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {calculateSheet} from '../sheet_rules.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
 import {battleActionPanels,abilityAttackRoll,actionGlyph} from '../action_economy.js';
-import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch,resourceAbilityGlyphKey,resourceRollBonusGlyphKey} from '../sheet_rules_view.js';
+import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch,resourceAttackId,resourceAbilityGlyphKey} from '../sheet_rules_view.js';
 import {companionOwnerActions} from '../companion_rules.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const companions=read('companion_spells');
@@ -31,23 +31,22 @@ function render(record,calculated,check,sheet='battle',bank=''){
   check(app,abilities,battleActions);
  }finally{globalThis.document=previous;dom.window.close();}
 }
-test('Resources uses distinct semantic icons for abilities, without inferring tracker icons',()=>{
- const resource=row=>resourceAbilityGlyphKey({kind:'ability',name:'Generic power',...row});
- assert.equal(resource({kind:'spell'}),'spell_cast');
- assert.equal(resource({power:{roll_attack:{id:'launcher'}},timing:'bonus'}),'weapon');
- assert.equal(resource({power:{companion_command:true},timing:'bonus'}),'talk');
- assert.equal(resource({power:{companion_rule_id:'companion'},timing:'action'}),'summon');
- assert.equal(resource({power:{infusion_action:true},timing:'reaction'}),'magic_item');
- assert.equal(resource({name:'Forma selvatica',timing:'bonus'}),'wild_shape');
- assert.equal(resource({power:{persistent_key:'aura'},timing:'action'}),'buff');
- for(const [timing,icon] of Object.entries({action:'action',bonus:'bonus',reaction:'reaction_trigger',
-  free:'free',movement:'speed',contextual:'spark'})){
-  assert.equal(resource({timing}),icon);
+test('Resource icons describe structured benefits rather than named abilities or timing',()=>{
+ const attack={id:'trait:launcher',name:'Launcher'};
+ const row=props=>({kind:'ability',name:'Arbitrary feature name',...props});
+ assert.equal(resourceAttackId(row({power:{roll_attack:{id:attack.id}}}),[attack]),attack.id);
+ assert.equal(resourceAttackId(row({power:{roll_attack:{id:'absent'}}}),[attack]),'');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_attack:{id:attack.id}}}),{attacks:[attack]}),'weapon');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_attack:{id:'absent'}}}),{attacks:[attack]}),'spark');
+ assert.equal(resourceAbilityGlyphKey(row({power:{target_mode:'single_token'}})),'target');
+ assert.equal(resourceAbilityGlyphKey(row({classAction:{target_mode:'single_token'}})),'target');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_effect:{dice:'1d6'}}})),'attack_bonus');
+ assert.equal(resourceAbilityGlyphKey(row({classAction:{roll_bonus:{dice:'1d6'}}})),'attack_bonus');
+ assert.equal(resourceAbilityGlyphKey(row({kind:'spell'})),'spell_cast');
+ for(const timing of ['action','bonus','reaction','movement','contextual']){
+  assert.equal(resourceAbilityGlyphKey(row({timing})), 'spark');
  }
- assert.equal(resourceRollBonusGlyphKey({targets:['attack_damage:sword']}),'attack_bonus');
- assert.equal(resourceRollBonusGlyphKey({targets:['save:con']}),'save_throw');
- assert.equal(resourceRollBonusGlyphKey({targets:['skill:stealth']}),'skill');
- assert.equal(resourceRollBonusGlyphKey({targets:['any_d20']}),'buff');
+ assert.equal(resourceAbilityGlyphKey(row({name:'Evoca creatura',power:{companion_rule_id:'x'}})),'spark');
 });
 
 test('Lightning Launcher attack and extra damage render in separate Resources groups, even when spent',()=>{
@@ -75,6 +74,8 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert(attackIcon);
   assert.equal(attackIcon.className,/class="([^"]+)"/.exec(actionGlyph('weapon'))[1],
    'A trait-granted attack uses the weapon pictogram');
+  assert.equal(free.querySelector('[data-act="battle-attack-map"]')?.dataset.mapAttackId,
+   attack.roll_attack.id,'An attack in Resources shares the regular map range action');
   const buttons=free.querySelectorAll('[data-act="battle-use-ability"]');
   assert.equal(buttons.length,1);
   assert.equal(buttons[0].disabled,false);
