@@ -86,8 +86,9 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
          String(a.origin_id||"")===parts.slice(0,3).join("|")));
     const tracker=trackerFor(projection,feature.name,owner);
     const definition={
-      id:id||"feature:"+feature.key,name:feature.name,
+      id:id||"feature:"+feature.key,name:descriptive?.name||feature.name,
       descriptive_only:descriptiveOwners.has(feature.origin_id),
+      ...(descriptive?{class_feature_id:descriptive.class_feature_id}:{}),
       source:feature.source||parts[1].toUpperCase(),
       feature_id:feature.origin_id,
       feature_name:feature.name,

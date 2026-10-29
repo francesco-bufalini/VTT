@@ -5873,6 +5873,23 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
  }
 }
 
+/* Keep both HP pools together; defenses share the active sheet projection. */
+#sheet-play-view .play-health .play-hp-number{justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+#sheet-play-view .play-health .play-hp-temporary{display:inline-flex;align-items:baseline;gap:6px;letter-spacing:0;line-height:1.3}
+#sheet-play-view .play-hp-temporary small{font-size:14px;color:#bca98d}
+#sheet-play-view .play-hp-temporary b{font-size:18px;font-weight:600;color:#f6ddb3;font-variant-numeric:tabular-nums}
+#sheet-play-view .play-health-defenses{display:grid;gap:6px;margin-top:12px;font-size:12px;line-height:1.5;color:#ddc8a5}
+#sheet-play-view .play-health-defenses:empty{display:none}
+#sheet-play-view .play-health-defense{display:flex;flex-wrap:wrap;gap:4px 10px}
+#sheet-play-view .play-health-defense strong{color:#f6ddb3}
+
+.hp-adjust-dialog .hp-adjust-stats{grid-template-columns:32px repeat(3,minmax(0,1fr));gap:8px;align-items:end}
+.hp-adjust-dialog .hp-adjust-stat{display:grid;grid-template-rows:18px 48px;gap:6px;align-items:stretch}
+.hp-adjust-dialog .hp-adjust-stat>span{line-height:18px;margin:0}
+.hp-adjust-dialog .hp-adjust-stat input,.hp-adjust-dialog .hp-adjust-max button{height:48px;min-height:48px;line-height:normal}
+.hp-adjust-dialog .hp-adjust-restore{width:32px;height:48px;min-height:48px;padding:0;margin:0;border:1px solid #9f7d565e;border-radius:9px;background:#30231f;color:#f6ddb3;font-size:24px;cursor:pointer}
+.hp-adjust-dialog .hp-adjust-quick-row input,.hp-adjust-dialog .hp-adjust-quick-row .btn{height:48px;min-height:48px;max-height:48px;box-sizing:border-box;line-height:normal;margin:0}
+
 /* A reroll belongs to the completed d20 result, never to its modifier. */
 .sheet-roll-rerolls{display:flex;flex-wrap:wrap;gap:7px;padding:10px 12px;border:1px solid #ae855251;border-radius:10px;margin:8px 0}
 .sheet-roll-rerolls[hidden]{display:none}

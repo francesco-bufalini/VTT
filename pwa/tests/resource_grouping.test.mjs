@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {calculateSheet} from '../sheet_rules.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
-import {battleActionPanels,abilityAttackRoll} from '../action_economy.js';
-import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch} from '../sheet_rules_view.js';
+import {battleActionPanels,abilityAttackRoll,actionGlyph} from '../action_economy.js';
+import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch,resourceAttackId,resourceAbilityGlyphKey} from '../sheet_rules_view.js';
 import {companionOwnerActions} from '../companion_rules.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const companions=read('companion_spells');
@@ -26,11 +26,29 @@ function render(record,calculated,check,sheet='battle',bank=''){
   const abilities=abilitiesForCreature(record,[],calculated);
   const battleActions=battleActionPanels(record,calculated,[],[],[],[],abilities);
   const app=document.querySelector('#app');
-  mountPlaySheet(app,{creature:record,calculated,sheet,icon:()=>'',view:{
+  mountPlaySheet(app,{creature:record,calculated,sheet,icon:actionGlyph,view:{
    battleAbilities:abilities,battleActions,battleTraits:calculated.features}});
   check(app,abilities,battleActions);
  }finally{globalThis.document=previous;dom.window.close();}
 }
+test('Resource icons describe structured benefits rather than named abilities or timing',()=>{
+ const attack={id:'trait:launcher',name:'Launcher'};
+ const row=props=>({kind:'ability',name:'Arbitrary feature name',...props});
+ assert.equal(resourceAttackId(row({power:{roll_attack:{id:attack.id}}}),[attack]),attack.id);
+ assert.equal(resourceAttackId(row({power:{roll_attack:{id:'absent'}}}),[attack]),'');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_attack:{id:attack.id}}}),{attacks:[attack]}),'weapon');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_attack:{id:'absent'}}}),{attacks:[attack]}),'spark');
+ assert.equal(resourceAbilityGlyphKey(row({power:{target_mode:'single_token'}})),'target');
+ assert.equal(resourceAbilityGlyphKey(row({classAction:{target_mode:'single_token'}})),'target');
+ assert.equal(resourceAbilityGlyphKey(row({power:{roll_effect:{dice:'1d6'}}})),'attack_bonus');
+ assert.equal(resourceAbilityGlyphKey(row({classAction:{roll_bonus:{dice:'1d6'}}})),'attack_bonus');
+ assert.equal(resourceAbilityGlyphKey(row({kind:'spell'})),'spell_cast');
+ for(const timing of ['action','bonus','reaction','movement','contextual']){
+  assert.equal(resourceAbilityGlyphKey(row({timing})), 'spark');
+ }
+ assert.equal(resourceAbilityGlyphKey(row({name:'Evoca creatura',power:{companion_rule_id:'x'}})),'spark');
+});
+
 test('Lightning Launcher attack and extra damage render in separate Resources groups, even when spent',()=>{
  const record={...sheet('Artificer','Armorer','TCE'),
   inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],
@@ -40,6 +58,8 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
  render(record,calculated,(app,abilities)=>{
   const bonus=app.querySelector('[data-resource-tracker="'+tracker.id+'"]');
   assert(bonus);
+  assert.equal(bonus.querySelector('.play-resource > .play-resource-info .vtt-action-glyph'),null,
+   'The tracker heading is a counter, not an ability');
   assert.match(bonus.textContent,/1d6/);
   assert.equal(bonus.querySelector('[data-act="tracker-trait-use"]'),null);
   assert.equal(bonus.querySelector('[data-act="battle-use-ability"]'),null);
@@ -50,6 +70,12 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert.equal(abilityAttackRoll(attack,calculated).target,'attack_hit:class_feature:lightning_launcher');
   const free=app.querySelector('[data-resource-privilege="'+attack.feature_id+'"]');
   assert(free);
+  const attackIcon=free.querySelector('[data-ability-id] .vtt-action-glyph');
+  assert(attackIcon);
+  assert.equal(attackIcon.className,/class="([^"]+)"/.exec(actionGlyph('weapon'))[1],
+   'A trait-granted attack uses the weapon pictogram');
+  assert.equal(free.querySelector('[data-act="battle-attack-map"]')?.dataset.mapAttackId,
+   attack.roll_attack.id,'An attack in Resources shares the regular map range action');
   const buttons=free.querySelectorAll('[data-act="battle-use-ability"]');
   assert.equal(buttons.length,1);
   assert.equal(buttons[0].disabled,false);
@@ -136,4 +162,61 @@ test('Infusions does not repeat infused item powers while Resources keeps the ac
   assert.equal(app.querySelectorAll('.play-infusion-card .infusion-power-row').length,0);
   assert(!app.querySelector('#sheet-play-view').textContent.includes('Capacità degli oggetti infusi'));
  },'magic','<section class="panel"><h2>Infusioni</h2><div class="infusion-power-row">Old duplicate</div></section>');
+});
+
+test('Defensive Field retains its counter but exposes its action only with active Guardian armor',()=>{
+ const base=sheet('Artificer','Armorer','TCE');
+ const armor={id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']};
+ for(const [model,worn,available] of [
+  ['armor_model:guardian',false,false],
+  ['armor_model:infiltrator',true,false],
+  ['armor_model:guardian',true,true]
+ ]){
+  const record={...base,inventory:worn?[armor]:[],trait_state_selection:{armor_model:model}};
+  const calculated=project(record);
+  const tracker=calculated.trackers.find(row=>row.name==='Defensive Field');
+  assert(tracker,'The counter survives armor/model changes');
+  render(record,calculated,app=>{
+   const group=app.querySelector('[data-resource-tracker="'+tracker.id+'"]');
+   assert(group);
+   assert.equal(group.querySelectorAll('[data-act="tracker-trait-use"]').length,0);
+   const actions=group.querySelectorAll('[data-act="battle-use-ability"]');
+   assert.equal(actions.length,available?1:0);
+   if(available)assert.match(group.textContent,/Azione bonus · Costo 1/);
+  });
+  if(!available){
+   assert.equal(resourceLinkedSubclassTrait(tracker,calculated.features,[],calculated),null);
+   assert.throws(()=>subclassTrackerUsePatch(record,calculated,tracker.id,tracker.origin_id),/non disponibile/);
+  }
+ }
+});
+
+test('trait operation identity deduplicates translated descriptive actions and attacks name their action',()=>{
+ const record={...sheet('Artificer','Armorer','TCE'),inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],trait_state_selection:{armor_model:'armor_model:infiltrator'}};
+ const calculated=project(record);
+ render(record,calculated,app=>{
+  const trait=calculated.features.find(row=>row.name==='Magical Tinkering');
+  const group=app.querySelector('[data-resource-privilege="'+trait.origin_id+'"]');
+  assert.equal(group.querySelectorAll('[data-ability-id]').length,1);
+  assert(!group.textContent.includes('Congegni magici'));
+  const attack=app.querySelector('[data-ability-id="activated:trait-attack:class_feature:lightning_launcher"]');
+  assert.match(attack.textContent,/Azione di attacco/);
+ });
+});
+test('health presents temporary HP alongside current HP and active defenses below the bar',()=>{
+ const record={...sheet('Artificer','Alchemist','TCE'),current_hp:31,temporary_hp:12};
+ const calculated={...project(record),damage_defense_entries:[
+  {rank:1,key:'fire'},{rank:-1,key:'cold'},{rank:2,key:'poison'},
+  {rank:3,key:'charmed'},{rank:1,key:'acid',disabled:true}]};
+ render(record,calculated,app=>{
+  const health=app.querySelector('.play-health');
+  assert.match(health.querySelector('.play-hp-number').textContent,/31.*Temporanei12/);
+  const summary=health.querySelector('.play-health-defenses');
+  assert.match(summary.textContent,/Resistenze.*Fuoco/);
+  assert.match(summary.textContent,/Vulnerabilità.*Freddo/);
+  assert.match(summary.textContent,/Immunità ai danni.*Veleno/);
+  assert.match(summary.textContent,/Immunità alle condizioni.*Affascinato/);
+  assert(!summary.textContent.includes('Acido'));
+  assert(health.querySelector('progress').compareDocumentPosition(summary)&4);
+ });
 });

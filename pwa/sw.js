@@ -59,6 +59,7 @@ const SHELL = [
   "/trait_state_rules.js",
   "/native_sheet.js",
   "/identity_aliases.js",
+  "/defense_summary.js",
   "/d20_rerolls.js",
   "/source_edition.js",
   "/item_controls.js",

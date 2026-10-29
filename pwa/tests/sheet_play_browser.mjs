@@ -583,13 +583,14 @@ try{
  await hpCard.click({position:{x:22,y:80}});
  await page.locator('#hp-adjust-current').fill('39');
  await page.locator('#hp-adjust-temporary').fill('5');
- await page.locator('#hp-adjust-confirm').click();
  await page.waitForFunction(async()=>{
   const {listCreatures}=await import('/creatures.js');
-  return (await listCreatures())[0]?.creature.current_hp===39;
+  const creature=(await listCreatures())[0]?.creature;
+  return creature?.current_hp===39&&creature?.temporary_hp===5;
  });
  assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
+ await page.locator('#hp-adjust-dialog [data-act="hp-adjust-cancel"]').click();
  await hpCard.click({position:{x:22,y:80}});
  assert.equal(await page.locator('#hp-adjust-amount').inputValue(),'','Damage amount starts empty');
  await page.locator('#hp-adjust-amount').fill('7');

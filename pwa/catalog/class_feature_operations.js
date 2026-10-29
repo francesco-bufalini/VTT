@@ -8,7 +8,7 @@ export const DESCRIPTIVE_CLASS_FEATURE_IDS=new Set([
  'soul_of_artifice','uncanny_dodge','deflect_missiles','deflect_attacks'
 ]);
 export const CLASS_FEATURE_RULES=[
- ["magical_tinkering", "Artificer", "Magical Tinkering", "Congegni magici", "", "action", "context"],
+ ["magical_tinkering", "Artificer", "Magical Tinkering", "Magical Tinkering", "", "action", "context"],
  ["defensive_field", "Artificer", "Defensive Field", "Campo difensivo", "Defensive Field", "bonus", "temporary_hp"],
  ["experimental_elixir", "Artificer", "Experimental Elixir", "Elisir sperimentale", "Experimental Elixir", "action", "context"],
  ["eldritch_cannon", "Artificer", "Eldritch Cannon", "Cannone arcano", "Eldritch Cannon", "action", "context"],

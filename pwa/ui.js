@@ -4714,6 +4714,16 @@ async function persistDocumentEdit(index,part,creature){
   await pendingDocumentWrites;
 }
 async function handleField(target) {
+  if(target.matches?.('[data-hp-autosave]')){
+    const key=target.dataset.hpAutosave;
+    if(!['current_hp','temporary_hp'].includes(key)||!state.editor)return;
+    const raw=target.value.trim(),value=Number(raw);
+    if(!raw)return; // An empty intermediate edit is not zero.
+    const maximum=key==='temporary_hp'?99999:Math.max(Number(state.calculated?.stats?.max_hp)||0,Number(state.editor.read().current_hp)||0);
+    if(!Number.isSafeInteger(value)||value<0||value>maximum)throw Error('Inserisci PF interi tra 0 e '+maximum+'.');
+    if(value!==Number(state.editor.read()[key]||0))await patch({[key]:value});
+    return;
+  }
   // Tactical controls are independent from an open local creature editor.
   if(target.dataset.tokenCondition){
     const result=await action("set_condition",{token_id:state.editTokenId||state.tokenId,
@@ -6809,64 +6819,55 @@ async function handleAction(target){
       ', senza usare slot. Risolvi gli effetti e l’eventuale concentrazione.');
     return;
   }
-  if(act==='battle-attack-hit'){
-    const creature=state.editor?.read();
-    if(!creature)throw Error('Apri prima una creatura.');
-    if(!state.paired||!state.online)
-      throw Error('Collega la partita per scegliere la creatura colpita.');
-    const attackId=String(target.dataset.hitAttackId||'');
-    const calculated=await computeLocalData(creature);
-    const attack=(calculated.attacks||[]).find(row=>String(row.id)===attackId);
-    if(!attack)throw Error('Attacco non più disponibile. Aggiorna la scheda.');
-    const currentMap=await map();
-    state.map=currentMap;
-    const attacker=casterToken(creature,currentMap,await ownerId());
-    if(!attacker)throw Error('Associa un token all’attaccante prima di applicare il colpo.');
-    if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
-    await tacticalViewer.open(String(attacker.id),{
-      range_feet:Number(attack.range_feet)||5,
-      long_range_feet:Number(attack.long_range_feet)||0,
-      melee:!!attack.melee
-    });
-    tacticalViewer.setAbilityTarget({
-      name:attack.name+' · Colpisci',
-      range_feet:Number(attack.range_feet)||5,
-      exclude_self:true,
-      onSelected:async selected=>{
-        const latest=await map();
-        state.map=latest;
-        if(!(latest.tokens||[]).some(row=>String(row.id)===String(selected.id)))
-          throw Error('Il bersaglio non è più sulla mappa.');
-        const result=await action('hit_attack',{
-          token_id:String(attacker.id),owner_id:await ownerId(),
-          target_id:String(selected.id),attack_id:attack.id,
-          attack_name:attack.name,effects:onHitEffects(attack)
-        });
-        if(!result?.ok)throw Error(result?.error||'Impossibile applicare l’attacco al bersaglio.');
-        state.map=await map();
-        message(attack.name+': '+selected.name+' colpito sulla mappa'+
-          (Number(result.effects_applied)>0?' · '+result.effects_applied+' effetti applicati.':
-           ' · nessun effetto aggiuntivo dichiarato.'));
-      }
-    });
-    return;
-  }
   if(act==='battle-attack-map'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
     if(!state.paired||!state.online)throw Error('Collega la partita al desktop per vedere la gittata sulla mappa.');
     const attackId=String(target.dataset.mapAttackId||'');
     const calculated=await computeLocalData(creature);
-    const attack=(calculated.attacks||[]).find(row=>String(row.id)===attackId);
+    // Generic attack actions reference the computed unarmed strike. A
+    // 5-foot fallback is only needed for older or incomplete projections.
+    const attack=(calculated.attacks||[]).find(row=>String(row.id)===attackId)||
+      (attackId==='unarmed'?{id:'unarmed',name:'Colpo senz’armi',melee:true,range_feet:5}:null);
     if(!attack)throw Error('Attacco non più disponibile. Aggiorna la scheda.');
+    const range=row=>({
+      range_feet:Number(row.range_feet)||5,
+      long_range_feet:Number(row.long_range_feet)||0,
+      melee:Boolean(row.melee)
+    });
     const liveMap=await map();
     const token=casterToken(creature,liveMap,await ownerId());
     if(!token)throw Error('Piazza o associa la creatura a un token prima di visualizzare la gittata.');
     if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
-    await tacticalViewer.open(String(token.id),{
-      range_feet:Number(attack.range_feet)||5,
-      long_range_feet:Number(attack.long_range_feet)||0,
-      melee:Boolean(attack.melee)
+    await tacticalViewer.open(String(token.id),range(attack));
+    // No confirmation for plain attacks: only supported, explicitly modeled
+    // effects on the target may be applied, independently of dice rolls.
+    if(onHitEffects(attack).length)tacticalViewer.setAttackEffects({
+      name:attack.name,
+      onConfirmed:async selected=>{
+        const current=state.editor?.read();
+        if(!current||current.id!==creature.id)throw Error('La creatura attaccante è cambiata.');
+        const updated=await computeLocalData(current);
+        const latestAttack=(updated.attacks||[]).find(row=>String(row.id)===attackId);
+        if(!latestAttack||!onHitEffects(latestAttack).length)
+          throw Error('Gli effetti di questo attacco non sono più disponibili.');
+        const latestMap=await map();
+        state.map=latestMap;
+        if(!(latestMap.tokens||[]).some(row=>String(row.id)===String(selected.id)))
+          throw Error('Il bersaglio non è più sulla mappa.');
+        // Check range a second time in case a token moved while the popup was open.
+        await action('target_attack',{
+          token_id:String(token.id),target_id:String(selected.id),attack:range(latestAttack)
+        }).then(result=>{if(!result?.ok)throw Error(result?.error||'Bersaglio fuori gittata.');});
+        const result=await action('hit_attack',{
+          token_id:String(token.id),owner_id:await ownerId(),target_id:String(selected.id),
+          attack_id:latestAttack.id,attack_name:latestAttack.name,
+          effects:onHitEffects(latestAttack)
+        });
+        if(!result?.ok)throw Error(result?.error||'Impossibile applicare gli effetti.');
+        state.map=await map();
+        message(latestAttack.name+': '+selected.name+' · '+result.effects_applied+' effetti applicati.');
+      }
     });
     return;
   }
@@ -7505,7 +7506,16 @@ async function handleAction(target){
     if(!dialog)throw Error('Pannello punti ferita non disponibile.');
     openSessionDialog(dialog);
     configureHpAdjustDialog(dialog);
-    dialog.querySelector('#hp-adjust-current')?.focus();
+    dialog.querySelector('.hp-adjust-close')?.focus({preventScroll:true});
+    return;
+  }
+  if(act==='hp-adjust-restore'){
+    const creature=state.editor?.read();if(!creature)return;
+    const calculated=await computeLocalData(creature);
+    const value=Math.max(0,Number(calculated.stats?.max_hp)||0);
+    await patch({current_hp:value});
+    const input=target.closest('dialog')?.querySelector('#hp-adjust-current');
+    if(input)input.value=String(value);
     return;
   }
   if(act==='hp-adjust-max'){
@@ -8929,10 +8939,7 @@ async function handleSubmit(form){
   if(form.id==='hp-adjust-form'){
     const dialog=form.closest('#hp-adjust-dialog');
     if(!dialog||!state.editor)throw Error('Apri prima una scheda.');
-    const creature=state.editor.read(),calculated=await computeLocalData(creature);
-    await patch(hpAdjustDraft(dialog,calculated));
-    closeSessionDialog(dialog);
-    await render();
+    await flushPendingFields();
     return;
   }
   if(form.id==="pair-form"){
@@ -9251,6 +9258,12 @@ function listen(){
     finally{if(button.isConnected&&!button.hasAttribute('data-roll-used'))button.disabled=false;}
   });
   document.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.isComposing&&!e.shiftKey&&
+      e.target.matches?.('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]')){
+      e.preventDefault();e.stopPropagation();e.target.blur();
+    }
+  },true);
+  document.addEventListener('keydown',e=>{
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"],#sheet-play-view .play-character-portrait[role="button"]');
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();
@@ -9279,6 +9292,16 @@ function listen(){
   },true);
   app.addEventListener("input",e=>{
     const target=e.target;
+    if(target?.matches('[data-hp-autosave]')){
+      clearTimeout(pendingFieldTimers.get(target));
+      const editor=state.editor;
+      pendingFieldTimers.set(target,setTimeout(()=>{
+        pendingFieldTimers.delete(target);
+        if(target.isConnected&&state.editor===editor)
+          trackFieldWrite(target).catch(error=>message(errorMessage(error),true));
+      },500));
+      return;
+    }
     if(target?.id==='library-miniature-search'){
       state.libraryMiniatureLimit=36;
       paintLibraryMiniatures();

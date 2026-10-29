@@ -46,6 +46,7 @@ const FILES := {
 	"/inventory_transfer.js": ["res://pwa/inventory_transfer.js", "text/javascript; charset=utf-8"],
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
+	"/defense_summary.js": ["res://pwa/defense_summary.js", "text/javascript; charset=utf-8"],
 	"/identity_aliases.js": ["res://pwa/identity_aliases.js", "text/javascript; charset=utf-8"],
 	"/d20_rerolls.js": ["res://pwa/d20_rerolls.js", "text/javascript; charset=utf-8"],
 	"/source_edition.js": ["res://pwa/source_edition.js", "text/javascript; charset=utf-8"],
