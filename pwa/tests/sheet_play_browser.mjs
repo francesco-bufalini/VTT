@@ -621,7 +621,11 @@ try{
 
  const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
  assert.equal(await resourcesPanel.count(),1);
- assert.equal(await resourcesPanel.getAttribute('open'),null,'Risorse starts collapsed');
+ // The category remembers its disclosure state across tab changes. Close it
+ // explicitly before testing expansion instead of assuming its initial state.
+ if(await resourcesPanel.getAttribute('open')!==null)
+  await resourcesPanel.locator('summary.play-battle-summary').click();
+ assert.equal(await resourcesPanel.getAttribute('open'),null,'Risorse can be collapsed');
  assert.equal(await page.locator('.play-health-tools [data-sheet-context="rests"]').count(),1);
  assert.equal((await page.locator('.play-health-tools [data-sheet-context="rests"]').textContent()).trim(),'Riposi');
  assert.equal(await page.locator('.page-head.play-actions-page-title h1').textContent(),'Azioni');
