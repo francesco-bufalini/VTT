@@ -58,7 +58,8 @@ import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment,minimumXpForLevel} from "./character_core.js";
 import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
-import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,permanentSubtraitsForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import * as pendingChoicesModule from './pending_choices.js';
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
@@ -2672,7 +2673,7 @@ async function traitsView(c){
   const benefitCount=(benefitsByTrait.get(trait.key)||[])
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
-  const subtraits=permanentSubtraitsForTrait(trait,c,state.calculated?.pending_choices||[],state.calculated?.power_selections||[]);
+  const subtraits=pendingChoicesModule.permanentSubtraitsForTrait?.(trait,c,state.calculated?.pending_choices||[],state.calculated?.power_selections||[])||[];
   const nested=subtraits.length?'<div class="trait-subtraits" aria-label="Sotto-tratti e scelte permanenti">'+subtraits.map(sub=>
    '<button type="button" class="trait-subtrait trait-subtrait--depth-'+Math.min(2,sub.depth)+'" data-act="'+(sub.kind==='power'?'power-selection-open':'pending-choice-open')+'"'+
    (sub.kind==='power'?' data-power-selection-id="'+esc(sub.model_id)+'" data-power-stage="'+esc(sub.stage)+'"':
