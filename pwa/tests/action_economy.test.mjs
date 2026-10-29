@@ -545,7 +545,8 @@ test('Dual Wielder grants a separate capacity without unlocking the base Light r
  const action=doc(result.others).querySelector('[data-attack-id="two_weapon"]');
  assert(action&&!action.classList.contains('play-battle-attack-unavailable'));
  assert.equal(action.querySelector('.play-battle-attack-roll'),null);
- assert.equal(action.querySelector('.play-battle-attack-range'),null);
+ assert.equal(action.querySelector('.play-battle-attack-range')?.textContent,'Portata 5 ft');
+ assert.equal(action.querySelector('[data-act="battle-attack-map"]')?.dataset.mapAttackId,'unarmed');
  const light={...record,inventory:record.inventory.map(row=>({...row,properties:['L']}))};
  assert.equal(battleActionPanels(light,{attacks:[main,off]},[],[],catalog.actions)
   .basicActions.find(row=>row.id==='two_weapon').available,true);
