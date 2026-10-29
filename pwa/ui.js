@@ -9386,6 +9386,11 @@ function listen(){
       const hidden=Boolean(target.checked);
       const group=target.closest('[data-identity-group="names"]');
       if(group)group.dataset.showAllNames=String(!hidden);
+      // Reflect the switch immediately instead of waiting for the IndexedDB
+      // transaction: otherwise the popup and the nameplate briefly disagree.
+      if(state.editor)refreshIdentityPresentation({
+        ...state.editor.read(),identity_hide_other_names:hidden
+      });
       const write=patch({identity_hide_other_names:hidden}).then(()=>
         refreshIdentityPresentation(state.editor?.read()));
       pendingFieldWrites.add(write);
