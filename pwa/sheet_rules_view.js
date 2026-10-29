@@ -679,12 +679,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<button type="button" class="play-quickstat" data-act="sheet-inspiration-toggle" aria-pressed="'+Boolean(c.inspiration)+'" aria-label="Attiva o disattiva ispirazione">'+icon('spark')+'<span>Ispirazione</span><strong>'+(c.inspiration?'Attiva':'Non attiva')+'</strong></button></div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
-  const statusTag=(key,label,glyph='')=>'<button type="button" class="play-status-tag" data-act="state-trait-jump" data-state-trait="'+esc('state|'+key)+'" title="'+esc(label)+'">'+glyph+esc(label)+'</button>';
-  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+
-   activeConditions.map(({id,label})=>statusTag('condition:'+id,label)).join('')+
-   appliedSpells.map(row=>statusTag(String(row.id),String(row.name||row.id).replace(/^Incantesimo · /,''),'✦ ')).join('')+
-   activeAbilities.map(([key,value])=>statusTag(key,value?.name||key,'✧ ')).join('')+
-   infused.map(row=>statusTag('infusion:'+row.id,row.name,'✦ ')).join('')+'</div>';
+  const statusTag=(key,label,glyph)=>'<button type="button" class="play-status-tag" data-act="state-trait-jump" data-state-trait="'+esc('state|'+key)+'" title="'+esc(label)+'">'+icon(glyph)+'<span>'+esc(label)+'</span></button>';
+  const statusRows=[
+   ...activeConditions.map(({id,label})=>statusTag('condition:'+id,label,'condition')),
+   ...appliedSpells.map(row=>statusTag(String(row.id),String(row.name||row.id).replace(/^Incantesimo · /,''),'spell_cast')),
+   ...activeAbilities.map(([key,value])=>statusTag(key,value?.name||key,'buff')),
+   ...infused.map(row=>statusTag('infusion:'+row.id,row.name+' · '+(row.item.name||row.item.id),'infusion'))
+  ].join('');
+  html+='<section class="play-card play-battle-shell play-status-overview">'+
+   '<details class="play-battle-disclosure" data-battle-action="statuses" open>'+
+   '<summary class="play-battle-summary">'+icon('buff')+'<h2>Stati</h2></summary>'+
+   '<div class="play-status-rows">'+(statusRows||'<p class="play-empty">Nessuno stato attivo.</p>')+'</div></details>'+
+   '<div class="play-battle-heading-tools play-battle-expansion-tools" role="group" aria-label="Espansione delle azioni">'+
+   btn('Espandi tutto','increase','data-act="battle-expand-all"','<span>Espandi</span>')+
+   btn('Collassa tutto','decrease','data-act="battle-collapse-all"','<span>Collassa</span>')+'</div></section>';
   const rest=document.createElement('div');
   rest.innerHTML='<div class="play-rest-choices">'+
     [['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+
@@ -941,9 +949,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2></summary>'+body+'</details>'+
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
 
-  html+='<div class="play-battle-expansion-tools" role="group" aria-label="Espansione delle azioni">'+
-   btn('Espandi tutto','increase','data-act="battle-expand-all"')+
-   btn('Collassa tutto','decrease','data-act="battle-collapse-all"')+'</div>';
   if(resources+untracked)html+=disclosure('resources','Risorse','reset',
    resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>',true);
   if(view.battleActions?.attacks)html+=disclosure('attacks','Attacchi','weapon',
@@ -999,6 +1004,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '</div></details>'+
 
    '</section>';
+  html+='<h2 class="play-section-divider play-build-divider"><span>Build</span></h2>';
   for(const node of panels.filter(n=>n!==identity)){
    const title=heading(node),i=panels.indexOf(node);
    if(['Caratteristiche','Riepilogo','Abilità','Altre competenze','Tratti'].includes(title))continue;

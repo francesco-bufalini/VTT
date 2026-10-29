@@ -7,7 +7,7 @@ import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeatu
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
+import { activeInfusions, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -26,7 +26,7 @@ import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
-import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
+import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews, stateTraitNavigationKey } from "./trait_projection.js";
 import { traitBenefitGroups, rollGrantTraitRow } from "./trait_benefits.js";
 import { distributeTraitBenefits } from "./trait_benefit_distribution.js";
 import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
@@ -7817,7 +7817,10 @@ async function handleAction(target){
     state.sheet='info';state.sheetPopup='';state.sheetPopupTitle='';
     await render();
     const cards=[...app.querySelectorAll('.play-info-traits .trait-card')];
-    const match=cards.find(card=>card.dataset.traitKey===key);
+    const destination=stateTraitNavigationKey(key,state.traitRows,
+      key.startsWith('state|infusion:')?
+       activeInfusions(state.editor?.read()||{},state.calculated?.infusion_catalog||[],state.calculated?.features||[]):[]);
+    const match=cards.find(card=>card.dataset.traitKey===destination);
     if(!match){message('Tratto dello stato non disponibile.',true);return;}
     const disclosure=match.closest('.play-traits-disclosure');
     if(disclosure)disclosure.open=true;
