@@ -6465,19 +6465,6 @@ async function handleAction(target){
     action.querySelector('.play-battle-attack-details>summary')?.focus({preventScroll:true});
     return;
   }
-  if(act==='battle-expand-all'||act==='battle-collapse-all'){
-    const expanded=act==='battle-expand-all';
-    for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure, #sheet-play-view .play-battle-action-group')){
-      details.open=expanded;
-      const panel=details.closest('.play-battle-disclosure')?.dataset.battleAction||'';
-      const key=details.classList.contains('play-battle-disclosure')?
-        'battle-disclosure:'+details.dataset.battleAction:
-        details.dataset.actionAbility?'battle-ability:'+details.dataset.actionAbility:
-        'battle-timing:'+panel+':'+details.dataset.actionTiming;
-      state.disclosureState.set(key,expanded);
-    }
-    return;
-  }
   if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create')state.scrollSpellQuery='';state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
   if(act==='sheet-context-close'){await closeSheetContext();return;}
   if(act==='battle-competences-open'){
