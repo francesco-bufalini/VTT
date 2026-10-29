@@ -91,6 +91,7 @@ const FILES := {
 	"/concentration_rules.js": ["res://pwa/concentration_rules.js", "text/javascript; charset=utf-8"],
 	"/rule_supplements.js": ["res://pwa/rule_supplements.js", "text/javascript; charset=utf-8"],
 	"/character_core.js": ["res://pwa/character_core.js", "text/javascript; charset=utf-8"],
+	"/level_up.js": ["res://pwa/level_up.js", "text/javascript; charset=utf-8"],
 	"/character_portrait.js": ["res://pwa/character_portrait.js", "text/javascript; charset=utf-8"],
 	"/quick_homebrew.js": ["res://pwa/quick_homebrew.js", "text/javascript; charset=utf-8"],
 	"/character_homebrew.js": ["res://pwa/character_homebrew.js", "text/javascript; charset=utf-8"],

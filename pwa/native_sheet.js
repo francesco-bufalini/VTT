@@ -1,4 +1,4 @@
-import {hitDicePools,minimumXpForCreature,experienceFloorPatch} from './character_core.js';
+import {hitDicePools,minimumXpForCreature,experienceFloorPatch,canLevelUp} from './character_core.js';
 import {identityEntries} from './identity_aliases.js';
 // Native-style sheet sections and mutations of the portable native schema.
 // Math is owned by sheet_rules.js; this module never calls the desktop.
@@ -377,6 +377,13 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
       const options=[['','Nessuno'],...(!chosen&&row[field]?[['__current__',row[field]+' · importato']]:[]),...candidates.map(ref=>[String(ref.id||ref.name+'|'+ref.source),ref.name+' · '+ref.source])];
       return control(label,'data-native-pick="'+key+'" data-index="'+i+'" data-key="'+field+'" data-category="'+category+'"',selected,options);
     }
+    if(key==='classes'&&field==='level'){
+      const others=rows.filter((other,index)=>index!==i&&other.name)
+        .reduce((total,other)=>total+Number(other.level||1),0);
+      const remaining=Math.max(0,20-others);
+      type=remaining?Array.from({length:remaining},(_,index)=>[index+1,String(index+1)]):
+        [[Number(row.level)||1,String(row.level||1)]];
+    }
     if(key==='classes'&&['source','subclass_source'].includes(field))
       return '<div class="native-readonly-source"><span>'+esc(label)+'</span><strong>'+esc(row[field]||'—')+'</strong></div>';
     if(key==='proficiency_choices'&&field==='key'){
@@ -695,11 +702,13 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    panel('Background','<h3>Background principale</h3>'+reference('Background principale','background','backgrounds')+
      '<h3>Altri background</h3>'+nativeRows(c,'backgrounds_catalog',catalogs))+
    panel('Classi',
-      '<p class="sheet-section-description">Classi e punti esperienza del personaggio.</p>'+
+      (canLevelUp(c)?'<div class="actions"><button type="button" class="btn primary" data-act="level-up-open">↑ Level up</button></div>':'')+
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
       number('XP','xp',Math.max(Number(c.xp)||0,minimumXpForCreature(c)),minimumXpForCreature(c),Number.MAX_SAFE_INTEGER)+'</div>'+
       cols(reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
-       (c.class?number('Livello classe principale','primary_class_level',primaryClassLevel(c),1,20):
+       (c.class?select('Livello classe principale','primary_class_level',
+        Array.from({length:Math.max(1,20-secondaryClasses.reduce((n,row)=>n+Number(row.level||1),0))},
+          (_,index)=>[index+1,String(index+1)]),primaryClassLevel(c)):
         '<label>Livello classe principale<input type="number" value="0" disabled></label>')+
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
        nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+

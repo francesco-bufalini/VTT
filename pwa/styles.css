@@ -664,3 +664,6 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .concentration-damage-actions{display:flex;justify-content:flex-end;margin-top:17px}
 .concentration-damage-actions .btn{font-size:.85rem;min-height:34px}
 @media(max-width:360px){.concentration-damage-dialog{padding:16px}.concentration-damage-metrics{gap:7px}}
+
+.play-level-up-marker{display:inline-flex;align-items:center;justify-content:center;color:var(--accent,#e4bc63)}
+.play-level-up-marker .vtt-action-glyph{width:1.2em;height:1.2em}

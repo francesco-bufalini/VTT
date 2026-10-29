@@ -4,7 +4,8 @@ import {FEATURE_FEAT_GRANTS} from './catalog/feature_feat_grants.js';
 // creature_pending_choices.gd and creature_proficiency_rules.gd contracts.
 // Never infer a choice from prose or assign a privilege automatically.
 import {selectedSources,grantedFields,fixedProficiencies,effectiveBackgrounds} from './structured_effects.js';
-import {SKILLS} from './sheet_rules.js';
+import {SKILLS,localClasses} from './sheet_rules.js';
+import {referencePatch,rowReferencePatch} from './native_sheet.js';
 import {traitBenefitSources} from './trait_benefits.js';
 import {contentForRules} from './source_edition.js';
 import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants} from './ability_choice_rules.js';
@@ -158,8 +159,57 @@ export function singleNewPendingChoice(before=[],after=[],completed={}){
  return fresh.length===1?fresh[0]:null;
 }
 
+export function pendingLineageChoices(record={},calculated={},catalogs={}){
+ const result=[],classes=localClasses(record);
+ const subclasses=contentForRules(arr(catalogs.subclasses),record.rules_version);
+ const classFeatures=arr(catalogs.classFeatures?.class_features);
+ const subclassFeatures=arr(catalogs.classFeatures?.subclass_features);
+ for(const [index,member] of classes.entries()){
+  if(!member?.name||member.subclass)continue;
+  const options=subclasses.filter(row=>norm(row.class_name)===norm(member.name)&&
+    (!member.source||!row.class_source||norm(row.class_source)===norm(member.source)));
+  if(!options.length)continue;
+  const matching=subclassFeatures.filter(row=>norm(row.class_name)===norm(member.name)&&
+    (!member.source||!row.class_source||norm(row.class_source)===norm(member.source)));
+  const levels=matching.map(row=>Number(row.level)).filter(n=>Number.isInteger(n)&&n>=1);
+  const unlock=levels.length?Math.min(...levels):Infinity;
+  const classOrigin='class|'+norm(member.source||record.class_source||'PHB')+'|'+norm(member.name);
+  const grant=classFeatures.some(row=>norm(row.class_name)===norm(member.name)&&
+    (!member.source||!row.class_source||norm(row.class_source)===norm(member.source))&&
+    row.gainSubclassFeature===true&&Number(row.level)<=Number(member.level));
+  if(!grant&&Number(member.level)<unlock)continue;
+  const choices=options.map(row=>({id:String(row.id||row.name+'|'+row.source),row}));
+  result.push({id:'subclass:'+index+':'+classOrigin,kind:'subclass',origin_id:classOrigin,
+    name:member.name+' · livello '+member.level,label:'Scegli la sottoclasse',class_index:index,
+    unlock_level:Number.isFinite(unlock)?unlock:
+      Math.min(...classFeatures.filter(row=>norm(row.class_name)===norm(member.name)&&
+        row.gainSubclassFeature===true).map(row=>Number(row.level)).filter(n=>n>=1),Number(member.level)),
+    count:1,selected:[],remaining:1,
+    options:choices.map(x=>x.id),
+    option_rows:Object.fromEntries(choices.map(x=>[x.id,x.row])),
+    option_labels:Object.fromEntries(choices.map(x=>[x.id,x.row.name+' · '+x.row.source]))});
+ }
+ if(record.species&&!record.subrace){
+  const races=contentForRules(arr(catalogs.races),record.rules_version).filter(row=>
+    row.raceName&&norm(row.raceName)===norm(record.species)&&
+    (!record.species_source||!row.raceSource||norm(row.raceSource)===norm(record.species_source))&&
+    Number(row.level||1)<=Math.max(1,classes.reduce((n,row)=>n+Number(row.level||1),0)));
+  if(races.length){
+   const choices=races.map(row=>({id:String(row.id||row.name+'|'+row.source),row}));
+   result.push({id:'subrace:'+norm(record.species_source)+':'+norm(record.species),
+     kind:'subrace',origin_id:'species|'+norm(record.species_source)+'|'+norm(record.species),
+     name:'Specie · '+record.species,label:'Scegli la sottorazza',
+     count:1,selected:[],remaining:1,
+     options:choices.map(x=>x.id),
+     option_rows:Object.fromEntries(choices.map(x=>[x.id,x.row])),
+     option_labels:Object.fromEntries(choices.map(x=>[x.id,x.row.name+' · '+x.row.source]))});
+  }
+ }
+ return result;
+}
 export function pendingCharacterChoices(record={},calculated={},catalogs={}){
- const result=[],index=calculated.proficiency_catalog_overrides||catalogs.proficiencyGrants||{};
+ const result=pendingLineageChoices(record,calculated,catalogs),
+   index=calculated.proficiency_catalog_overrides||catalogs.proficiencyGrants||{};
  for(const source of selectedSources(record,index,calculated.features??null)){
   if(!enabled(record,source.id))continue;
   for(const [i,req] of requirementEntries(source).entries()){
@@ -399,9 +449,10 @@ export function choicesForTrait(trait,record,choices=[]){
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
 export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
- const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):strip(value)));
+ const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):
+   ['subclass','subrace'].includes(choice.kind)?String(value):strip(value)));
  const prefix='__custom__:';
  const mixed=choice.proficiency_kind==='mixed';
  const custom=raw.filter(key=>key.startsWith(prefix)).map(key=>
@@ -415,6 +466,13 @@ export function savePendingChoice(record,choice,values=[]){
        /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||
        arr(choice.excluded_options).includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
+ if(choice.kind==='subclass'||choice.kind==='subrace'){
+   if(selected.length!==1||!choice.options.includes(selected[0])||!choice.option_rows?.[selected[0]])
+     throw Error('Scegli una variante valida.');
+   const entry=choice.option_rows[selected[0]];
+   return choice.kind==='subrace'?referencePatch(record,'subrace',entry):
+     rowReferencePatch(record,'classes',choice.class_index,'subclass',entry);
+ }
  if(choice.kind==='spell_variant'){
    return {origin_spell_variants:{...(record.origin_spell_variants||{}),[choice.origin_id]:selected[0]||''},
      ...(choice.feat_name?{feats_catalog:arr(record.feats_catalog).map(feat=>
