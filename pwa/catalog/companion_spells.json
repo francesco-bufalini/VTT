@@ -356,7 +356,10 @@
       "passive": 10,
       "resist": [],
       "vulnerable": [],
-      "reaction": []
+      "reaction": [],
+      "alignment": [
+        "U"
+      ]
     },
     "wildfire_spirit": {
       "name": "Wildfire Spirit",
@@ -435,7 +438,10 @@
       "passive": 12,
       "resist": [],
       "vulnerable": [],
-      "reaction": []
+      "reaction": [],
+      "alignment": [
+        "U"
+      ]
     },
     "steel_defender": {
       "name": "Steel Defender",
