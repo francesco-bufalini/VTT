@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "description": "Concessioni di incantesimi modellate tramite privilegi di classe, senza popup o consumi personalizzati. Ogni voce usa il normale lancio degli incantesimi.",
+  "spells": [
+    {
+      "id": "feature_slot_primeval_awareness_phb",
+      "name": "Primeval Awareness",
+      "source": "VTT",
+      "level": 1,
+      "school": "Divination",
+      "internal_grant": true,
+      "time": [
+        {
+          "number": 1,
+          "unit": "action"
+        }
+      ],
+      "range": {
+        "type": "self"
+      },
+      "duration": [
+        {
+          "type": "timed",
+          "duration": {
+            "type": "minute",
+            "amount": 1
+          }
+        }
+      ],
+      "entries": [
+        "Come descritto da Primeval Awareness (Ranger PHB): spendi uno slot incantesimo. Per 1 minuto per livello dello slot percepisci se le creature dei tipi specificati dal privilegio sono presenti entro 1 miglio (6 miglia nel terreno favorito), senza conoscerne numero o posizione."
+      ]
+    },
+    {
+      "id": "feature_slot_combat_wild_shape_heal_phb",
+      "name": "Combat Wild Shape · Cura",
+      "source": "VTT",
+      "level": 1,
+      "school": "Evocation",
+      "internal_grant": true,
+      "time": [
+        {
+          "number": 1,
+          "unit": "bonus"
+        }
+      ],
+      "range": {
+        "type": "self"
+      },
+      "duration": [
+        {
+          "type": "instant"
+        }
+      ],
+      "entries": [
+        "Durante la Forma selvatica, spendi uno slot incantesimo come azione bonus per recuperare 1d8 punti ferita per livello dello slot. Applica i punti ferita alla forma attuale, senza superarne i PF massimi. Il costo della trasformazione rimane separato."
+      ]
+    }
+  ],
+  "grants": [
+    {
+      "class_name": "Ranger",
+      "class_sources": [
+        "PHB"
+      ],
+      "feature_names": [
+        "Primeval Awareness"
+      ],
+      "levels": [
+        {
+          "level": 3,
+          "spells": [
+            "Primeval Awareness|VTT"
+          ]
+        }
+      ],
+      "payment_mode": "slot",
+      "casting_ability_not_required": true,
+      "mechanic_source": "structured.feature_slot_spell"
+    },
+    {
+      "class_name": "Druid",
+      "class_sources": [
+        "PHB"
+      ],
+      "subclass": "Circle of the Moon",
+      "subclass_sources": [
+        "PHB"
+      ],
+      "feature_names": [
+        "Combat Wild Shape"
+      ],
+      "levels": [
+        {
+          "level": 2,
+          "spells": [
+            "Combat Wild Shape · Cura|VTT"
+          ]
+        }
+      ],
+      "cast_action_type": "bonus",
+      "payment_mode": "slot",
+      "casting_ability_not_required": true,
+      "requires_context": "Confermo di essere in Forma selvatica",
+      "mechanic_source": "structured.feature_slot_spell"
+    }
+  ]
+}
