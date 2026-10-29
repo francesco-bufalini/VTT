@@ -125,7 +125,7 @@ try {
   await archive();
   await page.locator('[data-act="open"]').first().click();
   await page.locator('[data-sheet-context="identity"]').first().click();
-  assert.equal(await page.locator('[data-field="name"]').first().inputValue(),
+  assert.equal(await page.locator('#sheet-context-dialog [data-identity-value="names"]').first().inputValue(),
     "Creatura modificata offline");
   await page.goto(origin + "/?open=chat");
   await archive();
