@@ -372,6 +372,7 @@ try{
      monster.max_hp_base>11 && monster.current_hp>11;
  }), 'Adding a class preserves monster statblock, CR, skills, immunities and base HP');
  await page.locator('[data-level-up-close]').click();
+ await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  await page.locator('#creature-back').click();
  await page.locator('[data-act="library-filter"][data-kind="monster"]').click();
  assert(await page.locator('.creature-card').filter({hasText:'Lupo guardiano'}).isVisible());
