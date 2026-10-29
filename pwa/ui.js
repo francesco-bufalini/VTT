@@ -54,7 +54,7 @@ import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPa
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp} from "./character_core.js";
-import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch} from "./level_up.js";
+import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
@@ -5710,11 +5710,31 @@ function openSheetScoreFormula(record,calculated,target,label){
  openDialog(dialog);
  return dialog;
 }
+// Read-only changes, derived with the same numerical rules as the character
+// sheet. "Preparabili" and "selezionabili" denote capacity, not auto-grants.
+function levelUpImpactDetails(changes=[]){
+ if(!changes.length)return '<p class="levelup-empty">Nessuna ulteriore variazione numerica.</p>';
+ return '<ul class="levelup-impact-list">'+changes.map(item=>
+   '<li><div class="levelup-impact-line"><span>'+esc(item.label)+'</span>'+
+   '<strong>'+esc(item.from)+' → '+esc(item.to)+'</strong></div>'+
+   (item.options?.length?'<details class="levelup-impact-options"><summary>Vedi le opzioni ('+
+     esc(item.options.length)+')</summary><ul>'+item.options.map(name=>
+     '<li>'+esc(name)+'</li>').join('')+'</ul></details>':'')+
+   '</li>').join('')+'</ul>';
+}
+function levelUpImpactStep(row,{preview=false}={}){
+ return '<section class="levelup-impact-step"><header><strong>Livello '+esc(row.level)+
+   '</strong><small>Personaggio · livello '+esc(row.totalLevel)+'</small></header>'+
+   (preview&&row.features?.length?'<ul class="levelup-impact-features">'+
+     row.features.map(feature=>'<li>'+esc(feature.name)+'</li>').join('')+'</ul>':'')+
+   levelUpImpactDetails(row.changes||[])+'</section>';
+}
 // The class row has already been saved. Render its entire gained level range,
 // including features and outstanding decisions, without applying more grants.
 function openLevelUpProgressDialog(plan){
  const steps=levelUpSteps(state.calculated||{},plan);
  if(!steps.length)return;
+ const impactRows=Array.isArray(plan.impactRows)?plan.impactRows:[];
  app.querySelector('#level-up-progress-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='level-up-progress-dialog';
@@ -5744,6 +5764,8 @@ function openLevelUpProgressDialog(plan){
        '<strong>Livello '+esc(row.level)+'</strong><small>Personaggio · livello '+esc(row.totalLevel)+'</small></div></header>'+
        (row.features.length?'<ul class="levelup-features">'+featureList(row.features)+'</ul>':
          '<p class="levelup-empty">Nessun nuovo privilegio individuato nei dati locali.</p>')+
+       (impactRows.length?'<div class="levelup-impact"><strong>Progressione</strong>'+
+         levelUpImpactDetails(impactRows[row.level-plan.fromLevel-1]?.changes||[])+'</div>':'')+
        (row.choices.length?'<div class="levelup-choices"><strong>Scelte da fare</strong>'+
          choiceList(row.choices)+'</div>':'')+
        '</section>').join('')+'</div>'+
@@ -5813,6 +5835,10 @@ async function openLevelUpClassDialog(preset={}){
    '</select></label>'+
    '<p class="levelup-class-preview" data-level-up-preview></p>'+
    '<div class="levelup-hp-rows" data-level-up-hp-rows></div>'+
+   '<section class="levelup-impact-preview" aria-label="Anteprima della progressione">'+
+     '<h3>Cosa cambia con il livello</h3>'+
+     '<div data-level-up-impact role="status"><p class="levelup-empty">Calcolo della progressione…</p></div>'+
+   '</section>'+
    '<p class="levelup-footer-note" data-level-up-xp-note></p>'+
    '</div><footer class="pending-choice-actions">'+
    '<button type="button" data-level-up-cancel>Annulla</button>'+
@@ -5820,6 +5846,46 @@ async function openLevelUpClassDialog(preset={}){
  const classSelect=dialog.querySelector('[data-level-up-class]');
  const countSelect=dialog.querySelector('[data-level-up-count]');
  const hpRows=dialog.querySelector('[data-level-up-hp-rows]');
+ const impactPanel=dialog.querySelector('[data-level-up-impact]');
+ const impactCache=new Map();
+ const rulesRequest=loadRuleCatalogs().then(rules=>{
+   const definitions=(inventoryModule.expandedInfusionDefinitions||((value)=>value))(
+     rules.abilityGrants?.artificer_infusions||[]);
+   const visibleSpells=[...state.spellCatalog||[],
+     ...record.prepared_spells||[],...record.spellbook_spells||[],
+     ...record.known_spells||[]].filter(row=>row&&typeof row==='object'&&row.id);
+   return {...rules,abilityGrants:{...rules.abilityGrants,artificer_infusions:definitions},
+     spells:[...new Map([...(rules.spells||[]),...visibleSpells].map(row=>[row.id,row])).values()]};
+ });
+ let impactGeneration=0;
+ const projectionPlan=(selected,count)=>({
+   classIndex:selected.index,className:selected.name,classSource:selected.source,
+   classId:selected.reference?.id||'',fromLevel:selected.from,toLevel:selected.from+count,
+   fromTotal,toTotal:fromTotal+count
+ });
+ const getImpact=async(selected,count)=>{
+   const key=classSelect.value+'|'+count;
+   if(!impactCache.has(key))impactCache.set(key,rulesRequest.then(rules=>
+     levelUpProgressionImpact(record,projectionPlan(selected,count),rules,
+       calculateSheet,infusionLimits)));
+   return impactCache.get(key);
+ };
+ const refreshImpact=async()=>{
+   const generation=++impactGeneration;
+   const selected=selectedClass(),count=Number(countSelect.value);
+   impactPanel.innerHTML='<p class="levelup-empty">Calcolo della progressione…</p>';
+   if(!selected||!Number.isInteger(count)||count<1)return;
+   try{
+     const rows=await getImpact(selected,count);
+     if(generation!==impactGeneration||!dialog.isConnected)return;
+     impactPanel.innerHTML=rows.map(row=>levelUpImpactStep(row,{preview:true})).join('')||
+       '<p class="levelup-empty">Nessuna variazione disponibile.</p>';
+   }catch(error){
+     if(generation===impactGeneration&&dialog.isConnected)
+       impactPanel.innerHTML='<p class="levelup-empty">Anteprima non disponibile: '+
+         esc(errorMessage(error))+'</p>';
+   }
+ };
  if(preset.preferredIndex!==undefined&&existing.some(row=>row.value==='owned:'+preset.preferredIndex))
    classSelect.value='owned:'+preset.preferredIndex;
  if(preset.preferredNew&&[...classSelect.options].some(o=>o.value==='new:'+preset.preferredNew))
@@ -5870,6 +5936,7 @@ async function openLevelUpClassDialog(preset={}){
      'Livelli disponibili con gli XP attuali: '+xpAvailable+'.';
    dialog.querySelector('[data-level-up-confirm]').disabled=!die;
    paintHpTotal();
+   void refreshImpact();
  };
  const paintHpTotal=()=>{
    const selected=selectedClass(),die=classHitDieFaces(selected?.reference||{});
@@ -5925,11 +5992,15 @@ async function openLevelUpClassDialog(preset={}){
      }
      Object.assign(changes,levelUpHpPatch(current,rolls,con,
        {firstCharacterLevel:totalClassLevel(current)===0}));
+     // Preserve the same per-level projection shown before confirmation.
+     let impactRows=[];
+     try{impactRows=await getImpact(selected,count);}
+     catch(error){console.warn('Progressione del livellaggio non disponibile',error);}
      await patch(changes);
      closeDialog(dialog,{remove:true});
      await render();
      openLevelUpProgressDialog({className:name,classSource:source,classIndex,
-       fromLevel,toLevel,fromTotal,toTotal:fromTotal+count,hpGain:
+       fromLevel,toLevel,fromTotal,toTotal:fromTotal+count,impactRows,hpGain:
          changes.max_hp_base-Number(current.max_hp_base??current.max_hp??0)});
    }catch(error){button.disabled=false;message(errorMessage(error),true);}
  });
