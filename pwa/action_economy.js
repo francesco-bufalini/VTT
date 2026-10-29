@@ -612,9 +612,10 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   if(attack?.slot==='off'||attack?.slot==='shield')return 1;
   return 2;
  };
- // Privilege-granted attacks precede the two generic strikes, which
- // precede ordinary equipment and rule attacks. Use the attack's structured
- // granting origin; the action's "personal" label alone is not a privilege.
+ // Privilege and stat-block attacks precede the two generic strikes,
+ // which precede equipment. A monster:<section>:<index> attack is special
+ // only if the referenced action actually exists in the creature stat block.
+ // Never infer its origin from a feature or attack name.
  // Damage and equipment priority only apply within the same tier.
  const dealsDamage=row=>{
   const attack=attacksById.get(String(row.attack_id||row.id||''));
@@ -624,7 +625,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const attackTier=row=>{
   if(row.id==='unarmed'||row.id==='improvised')return 1;
   const attack=attacksById.get(String(row.attack_id||row.id||''));
-  return attack?.origin_id||row.origin_id||attack?.feature_id||row.feature_id?0:2;
+  const source=/^monster:(action|bonus|reaction|legendary|mythic):(\d+)$/.exec(String(attack?.id||''));
+  const statBlockAttack=source&&arr(record.stat_block?.[source[1]])[Number(source[2])];
+  return attack?.origin_id||row.origin_id||attack?.feature_id||row.feature_id||statBlockAttack?0:2;
  };
  weapon.sort((a,b)=>attackTier(a)-attackTier(b)||
   Number(dealsDamage(b))-Number(dealsDamage(a))||
