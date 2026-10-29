@@ -964,15 +964,22 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
   const portrait=isPortraitDataUrl(c.sheet_portrait_data)?c.sheet_portrait_data:'';
   const activeFactions=identityEntries(c,'factions').filter(row=>row.active).map(row=>row.value);
+  const otherNames=identityEntries(c,'names').filter(row=>!row.active);
   const identityMarkup='<div class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
+   '<div class="play-identity-other-names" aria-label="Altri nomi"'+
+    (c.identity_hide_other_names!==false||!otherNames.length?' hidden':'')+'>'+
+    otherNames.map(row=>'<span class="play-identity-alias">'+esc(row.value)+'</span>').join('')+'</div>'+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+'</div>';
   html='<section class="play-character-portrait'+(portrait?' has-portrait':'')+'" data-act="sheet-context" data-sheet-context="identity" role="button" tabindex="0" aria-label="Apri identità e foto del personaggio">'+
    (portrait?'<figure class="play-portrait-frame"><img src="'+esc(portrait)+'" alt="Ritratto di '+esc(c.name)+'"></figure>':'')+
    identityMarkup+
-   '<div class="play-passives"><span><small>Allineamento</small>'+esc(c.alignment||'Completamente neutrale')+'</span>'+
-   '<span><small>Edizione</small>'+esc(c.rules_version||'2014')+'</span></div>'+
-   (activeFactions.length?'<p class="play-identity-factions-line"><strong>Fazioni:</strong> '+esc(activeFactions.join(' · '))+'</p>':'')+
+   '<div class="play-identity-metadata">'+
+   '<div class="play-passives"><span class="play-identity-fact"><small>Allineamento</small><b>'+esc(c.alignment||'Completamente neutrale')+'</b></span>'+
+   '<span class="play-identity-fact"><small>Edizione</small><b>'+esc(c.rules_version||'2014')+'</b></span></div>'+
+   '<div class="play-identity-factions-line"'+(activeFactions.length?'':' hidden')+'>'+
+   '<small>Fazioni</small><span class="play-identity-faction-list">'+
+   activeFactions.map(name=>'<span class="play-identity-faction">'+esc(name)+'</span>').join('')+'</span></div></div>'+
    '</section>';
   // Show the actual ability modifier, never the ability-check total, while keeping the click target as the check.
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
