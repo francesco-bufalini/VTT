@@ -8,7 +8,7 @@ import {SKILLS,localClasses} from './sheet_rules.js';
 import {referencePatch,rowReferencePatch} from './native_sheet.js';
 import {traitBenefitSources} from './trait_benefits.js';
 import {contentForRules} from './source_edition.js';
-import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants,savedAllocation,allocationVariantLabel} from './ability_choice_rules.js';
+import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants,savedAllocation} from './ability_choice_rules.js';
 import {selectedSpeciesDefenseRules} from './species_defenses.js';
 import {classDefenseChoices} from './class_defenses.js';
 import {dragonbornFtdChoice,dragonbornFtdSaveChoice} from './dragonborn_ftd.js';
@@ -352,7 +352,9 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     selected,options:direct?[...variants.map((_,i)=>'ability:'+i),'feat']:
       rule.feat_alternative?['ability','feat']:['ability'],
     option_labels:direct?Object.fromEntries([
-      ...variants.map((v,i)=>['ability:'+i,allocationVariantLabel(v)]),
+      ...variants.map((v,i)=>['ability:'+i,v.parts.map(part=>'+'
+        +part.amount+' a '+part.count+
+        (part.count===1?' caratteristica':' caratteristiche')).join(' e ')]),
       ['feat','Talento'+(rule.feat_optional?' (regola opzionale)':'')]
     ]):{ability:'Incrementa le caratteristiche',feat:'Scegli un talento'+(rule.feat_optional?' (regola opzionale)':'')},
     remaining:selected.length?0:1});
