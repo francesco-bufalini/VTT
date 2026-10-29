@@ -1889,7 +1889,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
    const current=state.editor?.read();
    if(!current||current.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
    const fresh=await computeLocalData(current);
-   const panels=battleActionPanels(current,fresh,state.spellCatalog||[],state.featureActionOverrides||[],
+   const panels=battleActionPanels(fresh.companion_view||current,fresh,state.spellCatalog||[],state.featureActionOverrides||[],
     state.generalActionSupplements||[],readActionVariants(),
     abilitiesForCreature(current,state.abilityCatalog||[],fresh));
    const power=requested.startsWith('activated:')?
@@ -5224,7 +5224,7 @@ async function saveInfoPortrait(input){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventoryHighlightedIndices:state.inventoryHighlightedIndices,inventorySubtab:state.inventorySubtab,inventorySelectedTabs:inventoryVisibleSections(state.editor.read()),search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventoryHighlightedIndices:state.inventoryHighlightedIndices,inventorySubtab:state.inventorySubtab,inventorySelectedTabs:inventoryVisibleSections(state.editor.read()),search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.calculated?.companion_view||state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
@@ -6722,7 +6722,7 @@ async function handleAction(target){
   if(act==='battle-use-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
     const calculated=await computeLocalData(c);
-    const panels=battleActionPanels(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
+    const panels=battleActionPanels(calculated.companion_view||c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
       state.generalActionSupplements||[],readActionVariants(),
       abilitiesForCreature(c,state.abilityCatalog||[],calculated));
     const requested=String(target.dataset.abilityId||'');
