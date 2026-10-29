@@ -612,16 +612,21 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   if(attack?.slot==='off'||attack?.slot==='shield')return 1;
   return 2;
  };
- // Generic improvised and unarmed attacks always follow all non-base
- // attacks. Damage and equipment priority only apply within those tiers.
- // Never infer damage from an action's prose alone.
+ // Privilege-granted attacks precede the two generic strikes, which
+ // precede ordinary equipment and rule attacks. Use the attack's structured
+ // granting origin; the action's "personal" label alone is not a privilege.
+ // Damage and equipment priority only apply within the same tier.
  const dealsDamage=row=>{
   const attack=attacksById.get(String(row.attack_id||row.id||''));
   const formula=String(attack?.damage||row.damage||'').trim();
   return /\d+(?:d\d+)?/i.test(formula)||/\b(?:danni|damage)\s*:/i.test(String(row.description||''));
  };
- const baseTier=row=>row.id==='unarmed'?2:row.id==='improvised'?1:0;
- weapon.sort((a,b)=>baseTier(a)-baseTier(b)||
+ const attackTier=row=>{
+  if(row.id==='unarmed'||row.id==='improvised')return 1;
+  const attack=attacksById.get(String(row.attack_id||row.id||''));
+  return attack?.origin_id||row.origin_id||attack?.feature_id||row.feature_id?0:2;
+ };
+ weapon.sort((a,b)=>attackTier(a)-attackTier(b)||
   Number(dealsDamage(b))-Number(dealsDamage(a))||
   weaponPriority(a)-weaponPriority(b));
  const specials=entries.filter(row=>!classIds.has(row)&&row.type!=='Incantesimo'&&

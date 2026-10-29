@@ -144,7 +144,7 @@ test('multiattack counter uses active structured features or a monster multiatta
  assert.equal(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions).basicActions.find(row=>row.id==='attack').attack_count,3);
 });
 
-test('flat attacks order equipped weapons first; typed Azioni prioritize Attack, offhand and opportunity',()=>{
+test('flat attacks place unarmed between privilege and ordinary attacks; timed Azioni stay unchanged',()=>{
  const main={id:'item:blade',name:'Lama principale',slot:'main',melee:true,hit:6,damage:'1d8'};
  const off={id:'item:off:dagger',name:'Pugnale secondario',slot:'off',melee:true,
   offhand_bonus:true,hit:4,damage:'1d4'};
@@ -155,7 +155,8 @@ test('flat attacks order equipped weapons first; typed Azioni prioritize Attack,
  },{attacks:[monster,off,main]},[],[],catalog.actions);
  const flat=doc(result.attacks),others=doc(result.others);
  const ids=[...flat.querySelectorAll('.play-battle-attack-entry')].map(n=>n.dataset.attackId);
- assert.equal(ids[0],'item:blade');
+ assert.equal(ids[0],'unarmed','Unarmed is above ordinary equipment attacks');
+ assert(ids.indexOf('unarmed')<ids.indexOf('item:blade'));
  assert(ids.includes('monster:action:0'),'Monster attack choices remain available');
  assert(!ids.includes('item:off:dagger'),'Offhand weapon attacks live in the bonus-action entry');
  assert(ids.includes('unarmed'),'Unarmed is always available');
@@ -566,8 +567,12 @@ test('improvised shield offhand is usable through feat only in 2014 rules',()=>{
   {attacks:[main,shield]},[],[],catalog.actions).offhandEligibility.feat_available,false);
 });
 
-test('non-base attacks precede improvised and unarmed regardless of damage, preserving normal attack priorities',()=>{
+test('privilege attacks precede improvised and unarmed, which precede ordinary attacks',()=>{
  const computed={attacks:[
+  {id:'class_feature:thunder_gauntlets',name:'Guanti tonanti',slot:'natural',melee:true,
+   range_feet:5,hit:4,origin_id:'feature:class|artificer|armorer|thunder-gauntlets'},
+  {id:'natural:claws',name:'Artigli naturali',slot:'natural',melee:true,range_feet:5,
+   hit:4,damage:'1d4',origin_id:'feature:species|claws'},
   {id:'item:empty',name:'Arma senza danni',slot:'main',melee:true,range_feet:5,hit:3},
   {id:'monster:action:0',name:'Morso',melee:true,range_feet:5,hit:4,damage:'2d6 + 1'},
   {id:'item:blade',name:'Lama',slot:'main',melee:true,range_feet:5,hit:5,damage:'1d8 + 3'},
@@ -577,16 +582,22 @@ test('non-base attacks precede improvised and unarmed regardless of damage, pres
  ]};
  const rows=doc(battleActionPanels({},computed,[],[],catalog.actions).attacks);
  const ids=[...rows.querySelectorAll('.play-battle-attack-entry')].map(row=>row.dataset.attackId);
+ assert.equal(ids[0],'natural:claws',
+  'Damaging privilege attacks lead within the privilege tier');
+ assert.equal(ids[1],'class_feature:thunder_gauntlets',
+  'Even a privilege attack without damage precedes ordinary attacks');
+ assert(ids.indexOf('class_feature:thunder_gauntlets')<ids.indexOf('improvised'));
+ assert(ids.indexOf('improvised')<ids.indexOf('unarmed'));
+ assert(ids.indexOf('unarmed')<ids.indexOf('item:blade'),
+  'The generic strikes appear above equipped weapons');
+ assert(ids.indexOf('unarmed')<ids.indexOf('monster:action:0'),
+  'The generic strikes appear above non-privilege monster attacks');
+ assert(ids.indexOf('unarmed')<ids.indexOf('item:empty'),
+  'Even non-damaging equipment attacks follow the generic strikes');
  assert(ids.indexOf('item:blade')<ids.indexOf('monster:action:0'),
-  'Damaging main-hand weapon keeps precedence among damaging attacks');
+  'Ordinary damaging main-hand weapons keep precedence within the base tier');
  assert(ids.indexOf('monster:action:0')<ids.indexOf('item:empty'),
-  'A damaging monster attack precedes a non-damaging main-hand weapon');
- assert(ids.indexOf('item:empty')<ids.indexOf('improvised'),
-  'Even non-damaging non-base attacks precede improvised attacks');
- assert(ids.indexOf('improvised')<ids.indexOf('unarmed'),
-  'Improvised and unarmed attacks remain at the bottom');
- assert.equal(ids.at(-2),'improvised');
- assert.equal(ids.at(-1),'unarmed');
+  'Ordinary damaging monster attacks precede non-damaging base attacks');
  assert.equal(attackRowGlyphKey({melee:true}),'sword');
  assert.equal(attackRowGlyphKey({melee:false}),'target');
  const sword=rows.querySelector('[data-attack-id="item:blade"] summary>.vtt-action-glyph');
