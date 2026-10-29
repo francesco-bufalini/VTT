@@ -326,14 +326,17 @@ export function supplementalFeatureSpellGrants(record={},features=[],catalog=[],
  for(const rule of arr(rules)){
    const member=members.find(row=>norm(row.name)===norm(rule.class_name)&&
      (!arr(rule.class_sources).length||arr(rule.class_sources).some(source=>norm(source)===norm(row.source)))&&
-     norm(row.subclass||(norm(row.name)===norm(record.class)?record.subclass:''))===norm(rule.subclass)&&
+     (!rule.subclass||norm(row.subclass||(norm(row.name)===norm(record.class)?record.subclass:''))===norm(rule.subclass))&&
      (!arr(rule.subclass_sources).length||!row.subclass_source||
        arr(rule.subclass_sources).some(source=>norm(source)===norm(row.subclass_source))));
    if(!member)continue;
-   const origin='class|'+norm(member.source||record.class_source)+'|'+norm(member.name)+'|subclass|'+norm(rule.subclass)+'|';
+   const origin='class|'+norm(member.source||record.class_source)+'|'+norm(member.name)+
+     (rule.subclass?'|subclass|'+norm(rule.subclass)+'|':'');
    // Do not grant spells to a class/subclass without an owned structured trait.
    const feature=arr(rule.feature_names).flatMap(name=>arr(features).filter(row=>
-     !row.inactive&&String(row.origin_key||'').startsWith(origin)&&norm(row.name)===norm(name)))[0];
+     !row.inactive&&String(row.origin_key||'').startsWith(origin)&&
+     (rule.subclass||!String(row.origin_key||'').includes('|subclass|'))&&
+     norm(row.name)===norm(name)))[0];
    if(!feature?.origin_id)continue;
    if(arr(structured).some(row=>featureSpellOwner(feature,row)))continue;
    const current=Math.max(0,Number(member.level)||0);
@@ -347,7 +350,11 @@ export function supplementalFeatureSpellGrants(record={},features=[],catalog=[],
        grants.push({id:'supplemental-spell:'+feature.origin_id+'|'+id,
          origin_id:feature.origin_id,origin_name:feature.name,parent_origin:feature.origin_key,
          spell_id:id,mode:'prepared',spellcasting_ability:ability,automatic:true,
-         mechanic_source:'structured.supplemental_class_spells'});
+         payment_mode:rule.payment_mode||'slot',
+         ...(rule.cast_action_type?{cast_action_type:rule.cast_action_type}:{}),
+         ...(rule.requires_context?{requires_context:rule.requires_context}:{}),
+         ...(rule.casting_ability_not_required?{casting_ability_not_required:true}:{}),
+         mechanic_source:rule.mechanic_source||'structured.supplemental_class_spells'});
      }
    }
  }
