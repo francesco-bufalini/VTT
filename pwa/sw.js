@@ -74,6 +74,7 @@ const SHELL = [
   "/ability_areas.js",
   "/activated_abilities.js",
   "/character_core.js",
+  "/level_up.js",
   "/character_portrait.js",
   "/quick_homebrew.js",
   "/character_homebrew.js",
