@@ -55,11 +55,14 @@ function requiredOptionIds(rule,options,level){
  }
  return [...ids];
 }
-function legacyChoices(record,options,claimed){
+function legacyChoices(record,options,claimed,progressionId){
  const candidates=[...rows(record.optional_features_catalog).filter(row=>row&&!row.disabled),
   ...rows(record.fighting_styles).map(row=>typeof row==='string'?{name:row}:row).filter(Boolean)];
  const ids=[];
  for(const row of candidates){
+  // Choices saved by the generic learner belong to their original progression.
+  // Only pre-existing unbound rows may be distributed to the first match.
+  if(row.optional_progression_id&&row.optional_progression_id!==progressionId)continue;
   const found=options.find(opt=>!opt._homebrew&&same(opt.name,row.name)&&
    (!row.source||same(row.source,opt.source)));
   const fallback=found||(!row.source?options.find(opt=>!opt._homebrew&&same(opt.name,row.name)):null);
@@ -95,7 +98,7 @@ export function optionalFeatureSelectionModels(record={},calculated={},catalog={
   }
   // Old sheets keep their selected optional features, without requiring migration.
   // Distribute ambiguous legacy choices to the first applicable progression.
-  for(const id of legacyChoices(record,options,claimed))if(!selected.includes(id))selected.push(id);
+  for(const id of legacyChoices(record,options,claimed,rule.id))if(!selected.includes(id))selected.push(id);
   const feature=ownedFeature(calculated.features,rule.owner||{});
   if(limit<=0&&!selected.length)continue;
   const layers={learned:{enabled:true,selected,limit,used:selected.length,
