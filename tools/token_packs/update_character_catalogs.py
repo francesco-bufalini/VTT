@@ -65,8 +65,21 @@ def update_catalogs(pack_dir, source_catalog, spec_path, unified_path, additions
             else:
                 unified["tokens"].append({**entry, "release_tag": spec["release_tag"]})
     release["generated_at"] = datetime.now(timezone.utc).isoformat()
-    (pack_dir / "token_catalog.json").write_text(json.dumps(release, indent=2) + "\n", encoding="utf-8")
-    unified_path.write_text(json.dumps(unified, indent=2) + "\n", encoding="utf-8")
+    # Character artwork is a 2D token as well as a portable PWA portrait.
+    # Generate the same metadata in the release and bundled unified catalogs.
+    for entry in release["tokens"]:
+        image = ROOT / "pwa/miniature-images" / (entry["id"] + ".webp")
+        digest = hashlib.sha256(image.read_bytes()).hexdigest()
+        artwork = {
+            "token_image_url": f"https://github.com/francesco-bufalini/VTT/releases/download/characters/{image.name}?v={digest[:12]}",
+            "token_image_path": f"res://pwa/miniature-images/{image.name}",
+            "token_image_sha256": digest,
+            "token_image_bytes": image.stat().st_size,
+        }
+        entry.update(artwork)
+        next(p for p in unified["tokens"] if p["id"] == entry["id"]).update(artwork)
+    (pack_dir / "token_catalog.json").write_text(json.dumps(release, indent=2) + "\n", encoding="utf-8", newline="\n")
+    unified_path.write_text(json.dumps(unified, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"Generated {len(release['tokens'])} character entries in both catalogs")
 
 if __name__ == "__main__":

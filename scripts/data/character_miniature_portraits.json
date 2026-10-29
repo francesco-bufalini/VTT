@@ -1,0 +1,83 @@
+{
+  "meters_per_cell": 1.5,
+  "background_rgb": [
+    31,
+    38,
+    48
+  ],
+  "margin_pixels": 24,
+  "tokens": [
+    {
+      "id": "ore",
+      "height_m": 1.55,
+      "view": "front",
+      "pack_sha256": "761779683a85bab77fe00d424d0f8d4a80838045156f8d0492313b04b198c3fd"
+    },
+    {
+      "id": "gilliam",
+      "height_m": 1.7,
+      "view": "back",
+      "pack_sha256": "bb7e8e865487ba2b5969fc476eb11d82e02dd299eae0e6b025a947753057e7e9"
+    },
+    {
+      "id": "kaos",
+      "height_m": 2.5,
+      "view": "back",
+      "pack_sha256": "94a536ffc3d84386a6bb8a6e92fe49f2a6f8e4d74e48b58e9ab0a13097f6f544"
+    },
+    {
+      "id": "kryss",
+      "height_m": 1.6,
+      "view": "back",
+      "pack_sha256": "a47fab13c023604c343a8cd69afa1f47950298ad8f6c4a59173d4cc96d7b5bdb"
+    },
+    {
+      "id": "phenax",
+      "height_m": 2.5,
+      "view": "back",
+      "pack_sha256": "9c92e909044e7cab790981fe26d21c8ccfec8946a66e08d9297ee03c26eea7d8"
+    },
+    {
+      "id": "sariel",
+      "height_m": 1.65,
+      "view": "back",
+      "pack_sha256": "e573f2f159bcdec6fed782ead841730623832112d639688d87df4a3d5879d996"
+    },
+    {
+      "id": "valandir",
+      "height_m": 2.5,
+      "view": "front",
+      "pack_sha256": "c7447ef1ebb540acb8ae1829a48758fb2ea8e0d59203a2206269d288a22b6f93"
+    },
+    {
+      "id": "wilfred",
+      "height_m": 1.8,
+      "view": "back",
+      "pack_sha256": "7d658b044a3fca58c87cc0b8175f2bfa62e3eb144a204b77395f34f9cc0f0a8e"
+    },
+    {
+      "id": "wyrda",
+      "height_m": 1.75,
+      "view": "back",
+      "pack_sha256": "ed6f6915d31506db165fe383c1d44c6b018a6ccb239efa8a54991c2e96017cdf"
+    },
+    {
+      "id": "nazaryl",
+      "height_m": 1.85,
+      "view": "front",
+      "pack_sha256": "61ba929ec63aeb6110ef39e540b803991eb89e3bcab1afdc074c31f27eecf4c4"
+    },
+    {
+      "id": "tiabald",
+      "height_m": 1.8,
+      "view": "front",
+      "pack_sha256": "387f7494543769934f11202da8f2dec7752b301788d309aa5af4f4a6e9d6eb61"
+    },
+    {
+      "id": "harmakis",
+      "height_m": 1.4,
+      "view": "front",
+      "pack_sha256": "2d95740a233eeea81e822ab9fd97f10aa40f6efe89d5ed290989bd17642ba8ff"
+    }
+  ]
+}

@@ -1522,7 +1522,11 @@
       "sha256": "bb7e8e865487ba2b5969fc476eb11d82e02dd299eae0e6b025a947753057e7e9",
       "size_name": "Medium",
       "source_collection": "Gilliam/Guilliam.glb",
-      "version": 2
+      "version": 2,
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/gilliam.webp?v=a21d921def5d",
+      "token_image_path": "res://pwa/miniature-images/gilliam.webp",
+      "token_image_sha256": "a21d921def5d3cdd54b2cacf6b8533bad368fa393842e2bd516505e9a2fc8f4a",
+      "token_image_bytes": 68470
     },
     {
       "bytes": 19658684.0,
@@ -1886,7 +1890,11 @@
       "sha256": "94a536ffc3d84386a6bb8a6e92fe49f2a6f8e4d74e48b58e9ab0a13097f6f544",
       "size_name": "Medium",
       "source_collection": "Kaos/Kaos.glb",
-      "version": 2
+      "version": 2,
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/kaos.webp?v=cdbfcc7af435",
+      "token_image_path": "res://pwa/miniature-images/kaos.webp",
+      "token_image_sha256": "cdbfcc7af435d2bcf08604e79634048924991b240f99196786ed86200f6c7261",
+      "token_image_bytes": 128548
     },
     {
       "bytes": 5141340.0,
@@ -1912,7 +1920,11 @@
       "sha256": "a47fab13c023604c343a8cd69afa1f47950298ad8f6c4a59173d4cc96d7b5bdb",
       "size_name": "Medium",
       "source_collection": "Kryss/Kryss.glb",
-      "version": 2
+      "version": 2,
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/kryss.webp?v=3f6644e933f5",
+      "token_image_path": "res://pwa/miniature-images/kryss.webp",
+      "token_image_sha256": "3f6644e933f50e6a141a8a25b00adfce5ea887ebcf55aa87a36b031ae25e4a28",
+      "token_image_bytes": 81050
     },
     {
       "bytes": 665148.0,
@@ -2458,7 +2470,11 @@
       "sha256": "9c92e909044e7cab790981fe26d21c8ccfec8946a66e08d9297ee03c26eea7d8",
       "size_name": "Medium",
       "source_collection": "Phenax.glb",
-      "version": 2
+      "version": 2,
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/phenax.webp?v=c2fc7b90ce9a",
+      "token_image_path": "res://pwa/miniature-images/phenax.webp",
+      "token_image_sha256": "c2fc7b90ce9a5033e72551bb4c50018c0cbcdd212e836e1a87e1751136df904e",
+      "token_image_bytes": 112452
     },
     {
       "bytes": 16400644.0,
@@ -2822,7 +2838,11 @@
       "sha256": "e573f2f159bcdec6fed782ead841730623832112d639688d87df4a3d5879d996",
       "size_name": "Medium",
       "source_collection": "Sariel/Sariel.glb",
-      "version": 2
+      "version": 2,
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/sariel.webp?v=56dc289d5763",
+      "token_image_path": "res://pwa/miniature-images/sariel.webp",
+      "token_image_sha256": "56dc289d5763ac9da9c1a6a55cdb40073d0dfab6f44972ff7c73d9b17b98ee37",
+      "token_image_bytes": 65702
     },
     {
       "bytes": 5415852.0,
@@ -3121,7 +3141,11 @@
       "sha256": "c7447ef1ebb540acb8ae1829a48758fb2ea8e0d59203a2206269d288a22b6f93",
       "size_name": "Medium",
       "source_collection": "Valandir.glb",
-      "version": 2
+      "version": 2,
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/valandir.webp?v=34eb6bb70d23",
+      "token_image_path": "res://pwa/miniature-images/valandir.webp",
+      "token_image_sha256": "34eb6bb70d2343879a374be84648e8413a9fe0ec1829b8932493e6341c1170c6",
+      "token_image_bytes": 140928
     },
     {
       "bytes": 12845508.0,
@@ -3290,7 +3314,11 @@
       "sha256": "7d658b044a3fca58c87cc0b8175f2bfa62e3eb144a204b77395f34f9cc0f0a8e",
       "size_name": "Medium",
       "source_collection": "Wilfred/Wilfred.glb",
-      "version": 2
+      "version": 2,
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/wilfred.webp?v=9795d0bdbb15",
+      "token_image_path": "res://pwa/miniature-images/wilfred.webp",
+      "token_image_sha256": "9795d0bdbb15d742fdf3caff4076d39c72fc9492fff52dc991e5e9e96309f4b3",
+      "token_image_bytes": 110890
     },
     {
       "bytes": 169428.0,
@@ -3394,7 +3422,11 @@
       "sha256": "ed6f6915d31506db165fe383c1d44c6b018a6ccb239efa8a54991c2e96017cdf",
       "size_name": "Medium",
       "source_collection": "Wyrda/wyrda.glb",
-      "version": 2
+      "version": 2,
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/wyrda.webp?v=46c30559405d",
+      "token_image_path": "res://pwa/miniature-images/wyrda.webp",
+      "token_image_sha256": "46c30559405d1f7d6a2b911a724bc232bb5be78fd26b5ebd5622062e991bcb94",
+      "token_image_bytes": 119636
     },
     {
       "bytes": 16318788.0,
@@ -3550,7 +3582,11 @@
       "scene": "res://remote_tokens/ore/ore_token.tscn",
       "sha256": "761779683a85bab77fe00d424d0f8d4a80838045156f8d0492313b04b198c3fd",
       "source_collection": "ore.glb",
-      "release_tag": "characters"
+      "release_tag": "characters",
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/ore.webp?v=4e7cf961e973",
+      "token_image_path": "res://pwa/miniature-images/ore.webp",
+      "token_image_sha256": "4e7cf961e97305310b80c5afb441223345b79836a194d47693dbe93e5730fcd6",
+      "token_image_bytes": 157398
     },
     {
       "id": "nazaryl",
@@ -3563,7 +3599,11 @@
       "scene": "res://remote_tokens/nazaryl/nazaryl_token.tscn",
       "sha256": "61ba929ec63aeb6110ef39e540b803991eb89e3bcab1afdc074c31f27eecf4c4",
       "bytes": 23090308,
-      "release_tag": "characters"
+      "release_tag": "characters",
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/nazaryl.webp?v=7d48186f6755",
+      "token_image_path": "res://pwa/miniature-images/nazaryl.webp",
+      "token_image_sha256": "7d48186f675524dce42ec57c19e900a00ad816c4693308a9afc45517ac01ca23",
+      "token_image_bytes": 76020
     },
     {
       "id": "tiabald",
@@ -3576,7 +3616,11 @@
       "scene": "res://remote_tokens/tiabald/tiabald_token.tscn",
       "sha256": "387f7494543769934f11202da8f2dec7752b301788d309aa5af4f4a6e9d6eb61",
       "bytes": 28325956,
-      "release_tag": "characters"
+      "release_tag": "characters",
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/tiabald.webp?v=2f49d94d22e7",
+      "token_image_path": "res://pwa/miniature-images/tiabald.webp",
+      "token_image_sha256": "2f49d94d22e7b23c78235fd1713730562339888241878d0af3291658b601bab5",
+      "token_image_bytes": 124738
     },
     {
       "id": "harmakis",
@@ -3589,7 +3633,11 @@
       "scene": "res://remote_tokens/harmakis/harmakis_token.tscn",
       "sha256": "2d95740a233eeea81e822ab9fd97f10aa40f6efe89d5ed290989bd17642ba8ff",
       "bytes": 22928556,
-      "release_tag": "characters"
+      "release_tag": "characters",
+      "token_image_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/harmakis.webp?v=611d591e78c5",
+      "token_image_path": "res://pwa/miniature-images/harmakis.webp",
+      "token_image_sha256": "611d591e78c518780bedf518cc99aa2802c6b2229497480787ebc8611202b4cd",
+      "token_image_bytes": 57116
     }
   ],
   "version": 1,

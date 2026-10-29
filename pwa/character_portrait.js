@@ -1,9 +1,28 @@
-// Local, portable character-sheet portrait. No server or remote image URL is needed.
+// Portable character-sheet portrait, including rendered miniature artwork.
 // A bounded data URL is part of the creature record and survives offline backup/export.
 export const PORTRAIT_MAX_INPUT_BYTES=12*1024*1024;
 export const PORTRAIT_MAX_DATA_LENGTH=2*1024*1024;
 export const PORTRAIT_MAX_SIDE=1200;
 const SUPPORTED_TYPES=new Set(['image/jpeg','image/png','image/webp','image/heic','image/heif']);
+
+export function miniaturePortraitPath(creature,profiles){
+ const id=String(creature?.current_miniature_id||creature?.default_miniature_id||'');
+ const profile=profiles.find(row=>row.id===id);
+ // Only bundled catalog artwork is fetched: never an arbitrary creature URL.
+ const path=profile?.token_image_path;
+ if(!id||typeof path!=='string'||!/^res:\/\/pwa\/miniature-images\/[a-z0-9_-]+\.webp$/.test(path))
+  throw Error('Immagine 2D non disponibile per questa miniatura. Scegli una miniatura dei personaggi.');
+ return path.slice('res://pwa'.length);
+}
+
+export async function prepareMiniaturePortrait(creature,profiles){
+ const path=miniaturePortraitPath(creature,profiles);
+ let response;
+ try{response=await fetch(path);}catch{/* The optional artwork may already be cached. */}
+ if(!response?.ok&&typeof caches!=='undefined')response=await caches.match(path);
+ if(!response?.ok)throw Error('Immagine della miniatura non disponibile. Collegati al desktop e riprova.');
+ return preparePortraitImage(await response.blob());
+}
 
 export function isPortraitDataUrl(value){
  if(typeof value!=='string'||value.length>PORTRAIT_MAX_DATA_LENGTH)return false;

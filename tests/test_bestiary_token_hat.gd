@@ -37,7 +37,7 @@ func _run() -> void:
 	assert(manager.get_bestiary_reference("giant_goat", "2014").size_name == "Large")
 	assert(manager.get_bestiary_reference("giant_goat", "2014").footprint == 2)
 	assert(manager.get_bestiary_reference("red_half_dragon", "2024").size_name == "Medium")
-	var board := load("res://dnd_base.gd").new()
+	var board = load("res://dnd_base.gd").new()
 	var resolved: Dictionary = board._profile_with_bestiary_size({
 		"id": "awakened_tree", "size_name": "Small", "footprint": 1.0
 	})
@@ -98,7 +98,13 @@ func _run() -> void:
 	a.set_top_down_token_enabled(false)
 	assert(not a._top_down_token_sprite.visible)
 	assert(a.visuals.visible)
+	var character_shape: Shape3D = a.collision_shape.shape
 	a.set_token_pack_id("valandir")
+	a.set_top_down_token_enabled(true)
+	assert(a._top_down_token_sprite.visible)
+	assert(a._top_down_token_sprite.texture == manager.get_bestiary_texture(manager.get_bestiary_token_url("valandir")))
+	assert(a.visuals.visible and a.collision_shape.shape == character_shape)
+	a.set_token_pack_id("missing_character_artwork")
 	a.set_top_down_token_enabled(true)
 	assert(not a._top_down_token_sprite.visible)
 	a._on_bestiary_texture_ready(ape_url, texture)
@@ -153,7 +159,7 @@ func _run() -> void:
 	b.set_token_pack_id("wolf")
 	b.set_top_down_token_enabled(true)
 	assert(b.get_top_down_icon_texture() == texture)
-	b.set_token_pack_id("valandir")
+	b.set_token_pack_id("missing_character_artwork")
 	b.set_top_down_token_enabled(true)
 	assert(b.get_top_down_icon_texture() == null)
 	b.set_2d_elevation_overlay_enabled(true)

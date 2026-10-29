@@ -540,6 +540,12 @@ func _accept_catalog_text(raw: String, persist: bool) -> bool:
 			continue
 		if not release_tag.is_empty():
 			entry["release_tag"] = release_tag
+		# An older cached catalog can describe the same PCK without its newer
+		# artwork fields. Keep bundled artwork until a new image is supplied.
+		if entry.get("sha256", "") == previous.get("sha256", ""):
+			for key in ["token_image_url", "token_image_path", "token_image_sha256", "token_image_bytes"]:
+				if not entry.has(key) and previous.has(key):
+					entry[key] = previous[key]
 		entries[token_id] = entry
 
 	var merged_tokens: Array[Dictionary] = []
@@ -843,6 +849,9 @@ func get_bestiary_reference(identity: String, edition: String) -> Dictionary:
 
 
 func get_bestiary_token_url(identity: String) -> String:
+	var character_image := String(get_entry(identity).get("token_image_url", ""))
+	if not character_image.is_empty():
+		return character_image
 	for edition in ["2024", "2014"]:
 		var reference := get_bestiary_reference(identity, edition)
 		var url := String(reference.get("token_url", ""))
@@ -852,6 +861,16 @@ func get_bestiary_token_url(identity: String) -> String:
 
 
 func get_bestiary_texture(url: String) -> Texture2D:
+	if not url.is_empty() and not _bestiary_textures.has(url):
+		for entry: Dictionary in _entries_by_id.values():
+			if String(entry.get("token_image_url", "")) != url:
+				continue
+			var path := String(entry.get("token_image_path", ""))
+			if path.begins_with("res://pwa/miniature-images/") and ResourceLoader.exists(path) and FileAccess.get_sha256(path) == entry.get("token_image_sha256", ""):
+				var texture := load(path) as Texture2D
+				if texture != null:
+					_bestiary_textures[url] = texture
+			break
 	return _bestiary_textures.get(url) as Texture2D
 
 

@@ -5514,7 +5514,7 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
 /* Info hero: the portrait and character identity share an overlapping nameplate. */
 .sheet-play-view[data-sheet="info"] .play-character-portrait.has-portrait{gap:0;margin:0;padding:3px 8px 5px}
 .play-character-portrait.has-portrait .play-portrait-frame{
- width:min(100%,344px);margin:0;aspect-ratio:4/5;border-radius:18px;
+ width:min(100%,344px);margin:0;aspect-ratio:auto;border-radius:18px;
  box-shadow:inset 0 1px #ffe5b27d,0 12px 32px #08060688,0 0 0 3px #6c513127;
 }
 .play-character-portrait.has-portrait .play-portrait-frame>img{border-radius:10px;object-fit:contain}
@@ -5887,7 +5887,10 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 }
 .sheet-context-dialog[data-context="identity"] .identity-rules-row>label{min-width:0}
 .sheet-context-dialog[data-context="identity"] .identity-rules-row .play-portrait-controls{
- display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end
+ display:flex;gap:8px;flex-direction:column;align-items:stretch;width:min(235px,100%)
+}
+.sheet-context-dialog[data-context="identity"] .play-portrait-miniature{
+ min-height:48px;white-space:normal;line-height:1.3;padding:8px 12px
 }
 .sheet-context-dialog[data-context="identity"] .identity-rules-row .play-portrait-pick{
  min-height:41px;white-space:nowrap

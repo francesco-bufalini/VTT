@@ -82,3 +82,32 @@ convention. Fur tips and ears remain above the curated crown reference; the
 whole miniature still stays below the first 1.50 m grid line. The source GLB is
 preserved, with the same 250k triangle / 2048 px texture budget as the other
 new character imports.
+
+## Character 2D images and PWA portraits
+
+All twelve characters also have a tightly cropped full-body WebP, rendered from
+the calibrated PCK visual with the same dark 1.50 m grid used for height review.
+Equipment, wings, tails and bases stay in the frame. The camera views, original
+pack hashes and render settings are curated in
+`scripts/data/character_miniature_portraits.json`.
+
+Run `tools/token_packs/render_character_portraits.gd` with a rendering driver,
+`--pack-dir`, `--output-dir` and `--spec`; then run
+`tools/token_packs/compose_character_portraits.py --render-dir PATH` to crop the
+silhouette with a 24 px margin and composite the calibrated grid. Output lives
+in `pwa/miniature-images/`. The catalog generator derives the image URLs,
+SHA-256 digests, byte counts and bundled resource paths from those WebPs.
+Publish the twelve images to the `characters` release before its catalog.
+
+The PWA identity dialog offers **Usa la miniatura come immagine** below the
+photo picker. It copies the current miniature's image (or the base miniature
+when no current ID is set) into the existing portable portrait field. This is
+a snapshot: later miniature changes do not replace a chosen portrait until the
+button is used again. Unsupported miniatures report that no 2D image is
+available and retain the existing photo. Uploaded photos, removal, export and
+offline reload keep using the existing portrait workflow.
+
+The native 2D token renderer uses the same image URL and prefers bundled image
+bytes when available, retaining its existing texture download/cache fallback.
+The 3D miniature, saved visual path, tactical footprint and pack version remain
+unchanged. Bestiary miniatures keep their existing 5etools image associations.

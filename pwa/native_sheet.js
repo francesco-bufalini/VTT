@@ -692,6 +692,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
       '<div class="play-portrait-controls"><button type="button" class="play-portrait-pick" data-act="info-portrait-pick">'+
        '<span aria-hidden="true">▧</span><span>'+(c.sheet_portrait_data?'Cambia foto':'Aggiungi foto')+'</span></button>'+
+      '<button type="button" class="play-portrait-miniature" data-act="info-portrait-miniature">Usa la miniatura come immagine</button>'+
       (c.sheet_portrait_data?'<button type="button" class="play-portrait-remove" data-act="info-portrait-remove">Rimuovi</button>':'')+
       '</div><input type="file" data-info-portrait-file accept="image/*" aria-label="Seleziona la foto del personaggio" hidden></div>') )+
    panel('Aspetto',

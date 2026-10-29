@@ -1,9 +1,22 @@
 // Substituted by the host with the fingerprint of the actual served assets.
 // Each deployed version gets an atomic app-shell cache; IndexedDB is untouched.
 const REVISION = "__VTT_COMMIT_SHA__";
-const CACHE = "vtt-mobile-shell-v197-" + REVISION;
+const CACHE = "vtt-mobile-shell-v198-" + REVISION;
 const CATALOGS = ["/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
 const SHELL = [
+  "/miniature-images/ore.webp",
+  "/miniature-images/gilliam.webp",
+  "/miniature-images/kaos.webp",
+  "/miniature-images/kryss.webp",
+  "/miniature-images/phenax.webp",
+  "/miniature-images/sariel.webp",
+  "/miniature-images/valandir.webp",
+  "/miniature-images/wilfred.webp",
+  "/miniature-images/wyrda.webp",
+  "/miniature-images/nazaryl.webp",
+  "/miniature-images/tiabald.webp",
+  "/miniature-images/harmakis.webp",
+
   "/companion_rules.js",
   "/companion_owner_stats.js",
   "/creature_variants.js",
@@ -164,7 +177,8 @@ const REQUIRED_CATALOGS = [
 // cached CSS without its icons results in an unusable offline interface.
 const REQUIRED_ICONS = SHELL.filter(path =>
   path.startsWith("/icons/") || /^\/icon(?:-|\.)/.test(path));
-const REQUIRED_SHELL = [...new Set([...CORE_SHELL, ...REQUIRED_CATALOGS, ...REQUIRED_ICONS])];
+const REQUIRED_PORTRAITS = SHELL.filter(path => path.startsWith("/miniature-images/"));
+const REQUIRED_SHELL = [...new Set([...CORE_SHELL, ...REQUIRED_CATALOGS, ...REQUIRED_ICONS, ...REQUIRED_PORTRAITS])];
 const OPTIONAL_SHELL = [...new Set([...SHELL, ...CATALOGS])]
   .filter(path => !REQUIRED_SHELL.includes(path));
 
@@ -178,6 +192,7 @@ function usableResponse(path, response) {
   if (/\.css$/.test(path)) return /text\/css/i.test(type);
   if (/\.svg$/.test(path)) return /image\/svg\+xml/i.test(type);
   if (/\.png$/.test(path)) return /image\/png/i.test(type);
+  if (/\.webp$/.test(path)) return /image\/webp/i.test(type);
   if (path === "/" || /\.html$/.test(path)) return /text\/html/i.test(type);
   return true;
 }
