@@ -721,9 +721,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    });
    powerGroups.set(key,abilities);
   }
-  const slotPowerNames=new Set((d.slot_feature_powers||[]).map(power=>String(power.name||'').toLowerCase()));
+  const slotTraitGrants=(d.origin_spells||[]).filter(grant=>grant.mechanic_source==='structured.feature_slot_spell');
   const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],view.battleSpells||spells)
-    .filter(row=>!(row.kind==='ability'&&slotPowerNames.has(String(row.name||'').toLowerCase())));
+    .filter(row=>!(row.kind==='ability'&&slotTraitGrants.some(grant=>
+      String(grant.origin_name||'').toLowerCase()===String(row.name||'').toLowerCase())));
   const rollBonuses=trackerRollBonusRows(c,d);
   const bonusRows=trackerId=>rollBonuses.filter(row=>row.tracker_id===trackerId).map(row=>{
    const value=Object.hasOwn(row,'flat_bonus')?String(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice;
@@ -1095,7 +1096,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      }).join('');
    const trackerId=source.querySelector('.magic-source-header [data-magic-tracker-id]')?.dataset.magicTrackerId||'';
    const rows=[...source.querySelectorAll('.magic-spell-row')].map(row=>{
-    const node=row.querySelector('[data-act="power-spell"],[data-act="slot-feature-open"]');
+    const node=row.querySelector('[data-act="power-spell"]');
     if(!node)return '';
     const level=row.closest('[data-magic-level]')?.dataset.magicLevel;
     const levelLabel=level==='0'?'Trucchetto':level&&level!=='null'?level+'°':'';
