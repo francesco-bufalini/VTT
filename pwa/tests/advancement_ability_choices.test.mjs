@@ -75,6 +75,15 @@ test('each class-level ASI allows score allocation or an owned feat, all linked 
  const granted=traitBenefitGroups({category:'classi',rank:2,
   origin_key:feature.origin_key,feature_origin:originId},c,calculated);
  assert(granted.some(row=>row.type==='bonus'&&row.items.length>=2));
+ const projected=await collectTraitRows(c,calculated,{
+  entries:async category=>category==='class_features'?[asi]:[],
+  detail:async(_category,row)=>row
+ });
+ const owningRow=projected.find(row=>row.name==='Ability Score Improvement'&&
+  row.feature_origin===originId);
+ assert(owningRow,'the real class trait owns its permanent selection');
+ assert(permanentSubtraitsForTrait(owningRow,c,pending(c,index))
+   .some(row=>row.selection==='+1 a 2 caratteristiche'));
  c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+originId),['feat'])};
  assert.equal(calc(c,index).abilities.str.score,10,'switching to a feat revokes ASI');
  const featChoice=find(pending(c,index),'advancement-feat:'+originId);
