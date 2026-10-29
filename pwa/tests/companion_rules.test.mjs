@@ -45,6 +45,7 @@ test('Dancing Item, steel defender and wildfire spirit are derived from their ac
  assert.equal(drake.ac[0],17);
  const servant=companionTemplateStat(rules.templates.homunculus_servant,owner('Artificer','Alchemist',8));
  assert.equal(servant.hp.average,13);
+ assert.equal(servant.hit_dice,'8d4');
  assert.deepEqual(servant.skill,{perception:6,stealth:5});
  assert.deepEqual(servant.save,{dex:5});
  const saved=bestiarySheet(servant);
@@ -110,11 +111,13 @@ test('homunculus servant uses live owner proficiency, spell attack and HP',()=>{
  const initial=companionOwnerValues(child,parent,calculateSheet(parent,{}),rules);
  assert.equal(initial.proficiency,3);
  assert.equal(initial.hp,13);
+ assert.equal(initial.hit_dice,'8d4');
  assert.equal(initial.attacks[0].hit,7);
  assert.equal(initial.attacks[0].damage,'1d4 + 3');
  const calculated=calculateSheet({...child,companion_owner_values:initial},{});
  assert.equal(calculated.values.proficiency,3);
  assert.equal(calculated.stats.max_hp,13);
+ assert.equal(calculated.stats.hit_dice,'8d4');
  assert.equal(calculated.attacks.find(x=>x.name==='Force Strike').hit,7);
  assert.equal(calculated.attacks.find(x=>x.name==='Force Strike').damage,'1d4 + 3');
  assert.deepEqual([calculated.values['skill:perception'],calculated.values['skill:stealth'],
@@ -133,6 +136,7 @@ test('homunculus servant uses live owner proficiency, spell attack and HP',()=>{
  const next=companionOwnerValues(child,grown,calculateSheet(grown,{}),rules);
  assert.equal(next.proficiency,4);
  assert.equal(next.hp,18);
+ assert.equal(next.hit_dice,'12d4');
  assert.equal(next.attacks[0].hit,9);
  const changed=calculateSheet({...child,companion_owner_values:next},{});
  assert.deepEqual([changed.values['skill:perception'],changed.values['skill:stealth'],
@@ -174,17 +178,21 @@ test('5eTools-based companion profiles preserve languages, reactions and all PB-
  assert.deepEqual(steel.skill,{athletics:5,perception:6});
  assert.deepEqual(steel.save,{dex:4,con:5});
  assert.equal(steel.passive,16);
+ assert.equal(steel.hit_dice,'8d8');
  assert.deepEqual(steel.reaction.map(x=>x.name),['Deflect Attack']);
  assert.equal(steel.languages[0],'understands the languages you speak');
  assert.deepEqual(companionTemplateStat(rules.templates.dancing_item,owner('Bard','College of Creation',6))
    .trait.map(x=>x.name),['Immutable Form','Irrepressible Dance']);
  const drake=companionTemplateStat(rules.templates.drake_companion,owner('Ranger','Drakewarden',7));
  assert.deepEqual(drake.save,{dex:4,wis:5});
+ assert.equal(drake.hit_dice,'7d10');
  assert.deepEqual(drake.reaction.map(x=>x.name),['Infused Strikes']);
  assert.deepEqual(drake.languages,['Draconic']);
  const homunculus=companionTemplateStat(rules.templates.homunculus_servant,artificer);
  assert.deepEqual(homunculus.reaction.map(x=>x.name),['Channel Magic']);
  assert.equal(homunculus.passive,16);
+ assert.equal(bestiarySheet(companionTemplateStat(rules.templates.dancing_item,
+  owner('Bard','College of Creation',6))).alignment,'Senza allineamento');
 });
 
 test('saved companion sheets gain omitted template entries in view only and retain user edits',()=>{
@@ -235,6 +243,8 @@ test('ordinary bestiary saving throws and training icons retain source numeric t
   hp:{average:18},ac:[13],skill:{perception:6,stealth:3,arcana:9},
   save:{dex:3,con:3},passive:16});
  const calc=calculateSheet(beast,{});
+ assert.equal(beast.alignment,'—');
+ assert.equal(bestiarySheet({name:'Wolf',hp:{average:11,formula:'2d8 + 2'},ac:[13]}).hit_dice,'2d8');
  assert.equal(calc.values['skill:perception'],6);
  assert.equal(calc.values['skill:stealth'],3);
  assert.equal(calc.values['skill:arcana'],9);
