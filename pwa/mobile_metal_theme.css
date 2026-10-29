@@ -987,9 +987,33 @@ input:disabled{opacity:.75;cursor:default}
 .sheet-context-body .inventory-description-panel>h2{display:none}
 .sheet-context-body .inventory-more{min-width:48px;min-height:48px}
 
-.play-status-strip{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:-5px 0}
-.play-status-strip>.play-button{font-size:12px;padding:8px;color:#cdbb9d}
-.play-status-tag{font:500 11px/1.4 system-ui;color:#e6c188;min-height:48px;padding:8px 10px;border:1px solid #b48c5045;border-radius:9px;background:#67472e20}
+/* States share the collapsible Actions header, but not its framed card.
+   Each state gets its own full-width row with no filled chip background. */
+.play-status-overview{margin:0;border:0!important;background:transparent!important;box-shadow:none!important}
+.play-status-overview .play-status-rows{display:grid;min-width:0;padding:0 8px 7px}
+.play-status-overview .play-status-tag{
+ display:flex;align-items:center;gap:10px;width:100%;min-width:0;min-height:44px;
+ padding:8px 10px;border:0;border-bottom:1px solid #b48c5038;border-radius:0;
+ background:transparent;color:#e6c188;text-align:left;cursor:pointer;
+ font:500 12px/1.4 system-ui;overflow-wrap:anywhere;
+}
+.play-status-overview .play-status-tag:last-child{border-bottom:0}
+.play-status-overview .play-status-tag .vtt-action-glyph{width:18px;height:18px;flex:0 0 18px}
+.play-status-overview .play-status-tag:hover{color:#f6dfae}
+.play-status-overview .play-status-tag:focus-visible{outline:2px solid #e4ba7b;outline-offset:-2px}
+.play-status-overview .play-status-rows .play-empty{margin:0;padding:10px}
+.play-status-overview:has(>.play-battle-heading-tools)>.play-battle-disclosure>.play-battle-summary{padding-right:195px}
+.play-status-overview .play-battle-expansion-tools{
+ top:8px;right:7px;padding:0;gap:5px;flex-wrap:nowrap;
+}
+.play-status-overview .play-battle-expansion-tools>.play-button{
+ min-height:40px;padding:7px 6px;font-size:10px;gap:4px;
+}
+@media(max-width:410px){
+ .play-status-overview:has(>.play-battle-heading-tools)>.play-battle-disclosure>.play-battle-summary{padding-right:106px}
+ .play-status-overview .play-battle-expansion-tools>.play-button>span:not(.vtt-action-glyph){display:none}
+ .play-status-overview .play-battle-expansion-tools>.play-button{min-width:44px}
+}
 
 .sheet-context-body .play-item-editor>.inventory-table-row{display:block;padding:0;background:transparent;border:0;box-shadow:none}
 .play-item-fields{display:grid;gap:16px;width:100%}
@@ -1101,7 +1125,7 @@ input:disabled{opacity:.75;cursor:default}
 .play-effect-add label{display:grid;gap:6px;font-size:12px;color:#d9c29d}
 .play-effect-add input,.play-effect-add select{width:100%;min-width:0;min-height:45px;font-size:14px}
 .play-effect-add>.play-button{border:1px solid #a47b4a65;background:#75533730;justify-self:start}
-.play-status-strip .play-status-tag{max-width:100%;overflow-wrap:anywhere}
+/* Status rows fill the available width without chip wrapping. */
 @media(max-width:360px){
  .play-card-head{padding-left:10px;padding-right:10px}
  .play-card-head>.play-button{padding:6px 3px;font-size:10px}
@@ -5940,3 +5964,16 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 .sheet-reroll-choice{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:100%;font:12px/1.4 system-ui;color:#dac5a6}
 .sheet-reroll-choice>span{width:100%}
 .sheet-reroll-choice button[aria-pressed="true"]{border-color:#f0c783;background:#795538}
+
+/* The dedicated States view follows the same borderless, unfilled rhythm. */
+#sheet-play-view .play-status-card{border:0;box-shadow:none;background:transparent}
+#sheet-play-view .play-status-section-content .play-condition-wrap{
+ display:flex;width:100%;max-width:100%;margin:0;align-items:center;
+}
+#sheet-play-view .play-status-section-content .play-condition-wrap>.play-condition{
+ flex:1;min-width:0;max-width:100%;margin:0;padding-right:48px;
+ border:0;border-bottom:1px solid #a37b4738;border-radius:0;background:transparent;
+}
+#sheet-play-view .play-status-section-content .play-condition-remove{
+ top:50%;right:7px;transform:translateY(-50%);
+}
