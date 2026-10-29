@@ -1,4 +1,5 @@
 import {hitDicePools,spendTrackerUses} from './character_core.js';
+import {canLevelUp} from './character_core.js';
 import {isPortraitDataUrl} from './character_portrait.js';
 import {identityEntries} from './identity_aliases.js';
 import {characterDefenseSummary} from './defense_summary.js';
@@ -1006,7 +1007,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      [classNames||'Nessuna classe assegnata',c.subclass||'',
       c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
     title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
-   html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub);
+   html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub,
+    title==='Classi'&&canLevelUp(c)?
+      '<span class="play-level-up-marker" title="Level up disponibile" aria-label="Level up disponibile">'+icon('increase')+'</span>':'');
   }
   // Tratti is a permanent Info section like Competenze; only each trait's
   // description can be expanded. Keep all benefit controls visible.
