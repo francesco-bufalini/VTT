@@ -136,7 +136,9 @@ export function companionTemplateStat(template,owner,{size='',name=''}={}){
  const trained=companionTemplateProficiencies(template,pb);
  const stat={name:String(name||template.name).trim().slice(0,160),source:template.source||'',
   type:template.type||'construct',size:(size||template.size||'M').slice(0,1).toUpperCase(),
-  ac:[armor],hp:{average:hp},speed:structuredClone(template.speed||{}),
+  ac:[armor],hp:{average:hp},
+  ...(template.hp?.hit_die?{hit_dice:classLevel+'d'+Number(template.hp.hit_die)}:{}),
+  speed:structuredClone(template.speed||{}),
   ...Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,Number(abilities[k])||10])),
   skill:trained.skill,save:trained.save,
   languages:structuredClone(template.languages||[]),
