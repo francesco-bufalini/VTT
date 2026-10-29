@@ -49,7 +49,7 @@ import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrai
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
 import {selectedTraitState,traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
-import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,powerSelectionTriggerLabel} from './power_selection.js';
+import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerSelectionTriggerLabel} from './power_selection.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -1325,9 +1325,10 @@ async function computeLocalData(record){
   }
   const infusion_catalog=catalogs.abilityGrants?.artificer_infusions||[];
   const infusion_mechanics={...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]};
-  const power_selections=powerSelectionModels(record,{...calculated,infusion_catalog,infusion_mechanics},catalogs.powerSelections||{});
+  const powerSelectionCatalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{}};
+  const power_selections=powerSelectionModels(record,{...calculated,infusion_catalog,infusion_mechanics},powerSelectionCatalog);
   return {...calculated,loadError,companion_view:companionView,companion_rules:companionData,combat_snapshot:state.map||null,
-    power_selections,power_selection_catalog:catalogs.powerSelections||{},
+    power_selections,power_selection_catalog:powerSelectionCatalog,
     pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
     infusion_catalog,infusion_mechanics};
@@ -3173,7 +3174,7 @@ async function openGenericPowerSelectionDialog(id,stage){
  const selected=new Map((layer.selected||[]).map(row=>[selectedPowerId(row),row]));
  const learned=stage==='prepared'&&model.layers.learned?
   new Set((model.layers.learned.selected||[]).map(selectedPowerId)):null;
- const choices=(model.options||[]).filter(option=>(!option.min_level||model.level>=option.min_level)&&
+ const choices=(model.options||[]).filter(option=>(!option.min_level||model.level>=option.min_level||selected.has(option.id))&&
   (!learned||learned.has(option.id)||selected.has(option.id)));
  const optionMarkup=option=>{
   const owned=selected.has(option.id),sub=option.subchoices;
@@ -3204,6 +3205,10 @@ async function openGenericPowerSelectionDialog(id,stage){
   '<label class="vtt-list-search magic-editor-search">Cerca opzione<input type="search" data-power-search autocomplete="off"></label>'+
   '<div class="catalog-results vtt-selection-list magic-editor-results power-selection-results" role="list">'+
    choices.map(optionMarkup).join('')+'</div>'+
+  '<section class="power-selection-homebrew"><h3>Opzione homebrew</h3>'+ 
+  '<label>Nome<input data-power-custom-name maxlength="80" placeholder="Nome della capacità"></label>'+ 
+  '<label>Descrizione (facoltativa)<textarea data-power-custom-description maxlength="2000" rows="2" placeholder="Effetto personalizzato"></textarea></label>'+ 
+  '<div class="actions"><button type="button" class="btn small" data-act="power-selection-custom">+ Aggiungi e scegli</button></div></section>'+ 
   (model.description?'<p class="hint">'+esc(model.description)+'</p>':'')+
   '<div class="actions"><button type="button" class="btn" data-act="power-selection-close">Chiudi</button></div></div>';
  dialog.querySelector('[data-power-search]')?.addEventListener('input',event=>{
@@ -9118,6 +9123,21 @@ async function handleAction(target){
   }
   if(act==='power-selection-close'){
     closeDialog(app.querySelector('#power-selection-dialog'),{remove:true});return;
+  }
+  if(act==='power-selection-custom'){
+    const dialog=app.querySelector('#power-selection-dialog'),record=state.editor?.read();
+    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)
+      throw Error('Riapri la selezione dei poteri dalla scheda.');
+    const calculated=await computeLocalData(record),id=dialog.dataset.powerSelectionId,
+      stage=dialog.dataset.powerStage;
+    const changes=powerSelectionCustomPatch(record,calculated,calculated.power_selection_catalog,
+      id,stage,'homebrew:'+crypto.randomUUID(),
+      dialog.querySelector('[data-power-custom-name]')?.value,
+      dialog.querySelector('[data-power-custom-description]')?.value||'',{
+        itemIndex:Number(dialog.querySelector('[data-power-target-index]')?.value??-1)
+      });
+    await patch(changes);closeDialog(dialog,{remove:true});await render();
+    await openGenericPowerSelectionDialog(id,stage);return;
   }
   if(act==='power-selection-toggle'){
     const dialog=app.querySelector('#power-selection-dialog');

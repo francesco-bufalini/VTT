@@ -26,3 +26,9 @@ The normalized descriptors are now shared by casting, infusions, models, and Fav
 Triggers are **guidance only**, even for supposedly permanent choices. Limits are real selection capacities. The generic application engine supports a tracker reserve/refund, but it does not infer mechanical effects from prose: those must be declared and projected through existing structured benefit systems.
 
 Automated checks: \`node --test pwa/tests/power_selection.test.mjs\`; the legacy Armor Model browser regression should also be rerun when an interactive browser is available.
+
+## 5eTools optional-feature progressions / homebrew
+
+The generated `pwa/catalog/optional_feature_progressions.json` is a snapshot of source class/subclass `optionalfeatureProgression` entries joined to `optionalfeatures.json` by `featureType`. The shared picker computes limits from the selected class level. Required options are reserved, and the class-level prerequisites are checked. Non-level prerequisites require human judgment. The existing Infusions picker/application stays intact rather than appearing twice. Selected optional features are also stored in `optional_features_catalog` so their existing traits/benefits continue to work, while older `fighting_styles` and `optional_features_catalog` entries are recognized without migration.
+
+Every generic selection popup accepts a custom homebrew name and description, stored on the creature in `power_selection_custom_options`. Homebrew and official choices use the same limits; regenerated source catalogs never overwrite personal options.

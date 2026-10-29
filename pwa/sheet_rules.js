@@ -1645,11 +1645,14 @@ export function loadRuleCatalogs(){
     // One declarative three-stage selection contract, optional for older offline shells.
     fetch('/catalog/power_selections.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.selections)&&Array.isArray(data.templates)?data:{selections:[],templates:[]})
-      .catch(()=>({selections:[],templates:[]}))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections])=>({
+      .catch(()=>({selections:[],templates:[]})),
+    fetch('/catalog/optional_feature_progressions.json').then(r=>r.ok?r.json():{}).then(data=>
+      data?.version===1&&Array.isArray(data.progressions)&&Array.isArray(data.options)?data:{progressions:[],options:[]})
+      .catch(()=>({progressions:[],options:[]}))
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
-    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,featureRules:featureRules||{},
+    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))

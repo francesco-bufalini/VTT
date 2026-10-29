@@ -2,6 +2,7 @@
 // spellbooks remain authoritative; adapters project them into one JSON contract.
 // A trigger describes when rules permit changing a choice, but never gates UI.
 import {infusionLimits,infusionGrantingTrait,learnedInfusions} from './item_controls.js';
+import {optionalFeatureSelectionModels,optionalFeatureSelectionPatch} from './optional_feature_progression.js';
 
 const rows=value=>Array.isArray(value)?value:[];
 const low=value=>String(value??'').trim().toLowerCase();
@@ -82,7 +83,7 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
   let options=[];
   const values={};
   if(source.type==='inline'){
-   options=rows(source.options);
+   options=[...rows(source.options),...rows(record.power_selection_custom_options?.[rule.id])];
    const saved=record.power_selections?.[rule.id]||{};
    for(const stage of STAGES){
     if(!stageRules[stage])continue;
@@ -118,6 +119,7 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
    origin_id:owner.origin_id,level:owner.level,option_kind:rule.option_kind||'feature',
    source_type:source.type,options,layers,ui:rule.ui||'generic'});
  }
+ models.push(...optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}));
  return models;
 }
 function savedIdentity(row){return typeof row==='string'?row:String(row?.id||'');}
@@ -135,6 +137,8 @@ function selectedDetails(option,subchoices){
 // Only inline rules use this new storage. Other catalogs keep their existing
 // spellbook, inventory and state persistence until the adapter is migrated.
 export function powerSelectionPatch(record,calculated,catalog,id,stage,optionId,subchoices=[]){
+ const optional=optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}).find(row=>row.id===id);
+ if(optional)return optionalFeatureSelectionPatch(record,calculated,catalog.optionalFeatureProgressions,id,stage,optionId);
  const definition=rows(catalog.selections).find(rule=>rule.id===id);
  if(!definition||definition.source?.type!=='inline'||
    !['learned','prepared'].includes(stage)||!definition.layers?.[stage])
@@ -162,6 +166,25 @@ export function powerSelectionPatch(record,calculated,catalog,id,stage,optionId,
  return {power_selections:{...(record.power_selections||{}),[id]:{
   ...(record.power_selections?.[id]||{}),[stage]:next}}};
 }
+// A homebrew option belongs to its creature, not to the official source catalog.
+export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,optionId,name,description='',settings={}){
+ const model=powerSelectionModels(record,calculated,catalog).find(row=>row.id===id);
+ if(!model||model.ui!=='generic'||!model.layers?.[stage])throw Error('Lista dei poteri non disponibile.');
+ name=String(name||'').trim();description=String(description||'').trim();
+ if(!name||name.length>80||/[<>{}\x00-\x1f]/.test(name)||
+  description.length>2000||/[<>\x00-\x08\x0b\x0c\x0e-\x1f]/.test(description))
+  throw Error('Nome o descrizione homebrew non validi.');
+ if(!/^homebrew:[a-z0-9-]{8,80}$/.test(String(optionId||''))||
+  model.options.some(row=>row.id===optionId||String(row.name).toLowerCase()===name.toLowerCase()))
+  throw Error('Nome homebrew già presente.');
+ const all={...(record.power_selection_custom_options||{})};
+ all[id]=[...(all[id]||[]),{id:optionId,name,description,source:'HOMEBREW',_homebrew:true}];
+ const draft={...record,power_selection_custom_options:all};
+ const updates=stage==='applied'?powerApplicationPatch(draft,calculated,catalog,id,optionId,true,settings):
+  powerSelectionPatch(draft,calculated,catalog,id,stage,optionId);
+ return {...updates,power_selection_custom_options:all};
+}
+
 // Generic 'applied' stage for future source-backed option lists. A counted
 // application reserves one tracker charge, and removing it refunds exactly one.
 // No spell/metamagic application layer is created.
