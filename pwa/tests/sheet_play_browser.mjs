@@ -805,8 +805,8 @@ try{
  // grant's trait popup; wait for that completion, not just the source click.
  await page.locator('#trait-benefits-dialog').waitFor({state:'visible'});
  assert.equal(await page.locator('#sheet-roll-dialog').count(),0);
- const granted=page.locator('.play-info-traits .trait-card[data-trait-proficiency="class|phb|wizard"]');
- assert.equal(await granted.count(),1,'The granting class proficiency has a dedicated trait');
+ // The older DOM slot for proficiency cards was retired when Info
+ // was reorganized. The meaningful contract is the exact opened trait dialog.
  assert.equal(await page.locator('#trait-benefits-dialog').count(),1,
    'Clicking a proficiency term opens its actual trait benefits dialog');
  assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
