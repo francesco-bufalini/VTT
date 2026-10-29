@@ -5940,3 +5940,38 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 .sheet-reroll-choice{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:100%;font:12px/1.4 system-ui;color:#dac5a6}
 .sheet-reroll-choice>span{width:100%}
 .sheet-reroll-choice button[aria-pressed="true"]{border-color:#f0c783;background:#795538}
+
+/* A single level-up summary can contain an entire advancement interval. */
+.levelup-progress-dialog.pending-choice-dialog{width:min(560px,calc(100vw - 24px));max-height:min(90dvh,900px)}
+.levelup-progress-body{display:grid;gap:12px;padding:15px 17px 12px}
+.levelup-summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 12px;padding:10px 12px;
+ border:1px solid #b68a4c43;border-radius:9px;background:#b68a4c10}
+.levelup-summary>strong{color:#ffe3b9;font-size:14px}
+.levelup-summary>span{color:#dcc1a2;font-size:12px}
+.levelup-summary>small{color:#c5a980;width:100%;font-size:11px}
+.levelup-steps{display:grid;gap:10px}
+.levelup-step{padding:11px 12px;border:1px solid #b68a4c38;border-radius:9px;background:#ffffff05}
+.levelup-step>header{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.levelup-step-index{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:8px;
+ border:1px solid #b68a4c70;color:#f5d6a5;background:#b68a4c1b;font-weight:700;font-size:14px}
+.levelup-step>header strong{display:block;font-size:14px;color:#f0d5b6}
+.levelup-step>header small{font-size:11px;color:#bca286}
+.levelup-features{list-style:none;padding:0;margin:0;display:grid;gap:5px}
+.levelup-feature{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+ padding:7px 9px;border-radius:6px;background:#b68a4c12;font-size:12px}
+.levelup-feature strong{font-weight:600}
+.levelup-feature small{color:#d0ae7a}
+.levelup-empty{margin:0;font-size:11px;color:#b7a18a}
+.levelup-choices{border-top:1px solid #b68a4c30;margin-top:10px;padding-top:9px;display:grid;gap:6px}
+.levelup-choices>strong{color:#d7ba95;font-size:11px}
+.levelup-choice-link{display:flex;align-items:center;justify-content:space-between;gap:8px;
+ border:1px solid #b68a4c53;border-radius:7px;background:#b68a4c13;color:#f0d6b7;
+ padding:8px 10px;text-align:left;font:600 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.levelup-choice-link small{display:block;margin-top:3px;font-size:10px;font-weight:400;color:#cab398}
+.levelup-choice-link:hover{border-color:#e0b57b;background:#b68a4c26}
+.levelup-footer-note{margin:0;color:#c1ab92;font-size:11px;line-height:1.55}
+.levelup-class-fields{display:grid;gap:11px}
+.levelup-class-fields label{display:grid;gap:6px;font-size:12px}
+.levelup-class-fields select{width:100%;min-height:39px}
+.levelup-class-preview{margin:0;padding:9px 10px;color:#ebd0a9;background:#b68a4c15;
+ border:1px solid #b68a4c31;border-radius:7px;font-size:12px}

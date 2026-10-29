@@ -41,6 +41,14 @@ export function minimumXpForCreature(record={}){
   record.class?Math.max(1,integer(record.level,1)):0;
  return minimumXpForLevel(total);
 }
+export function canLevelUp(record={}){
+ if(record.kind==='monster'||record.variant_rules_kind==='monster')return false;
+ const classes=array(record.classes).filter(row=>row&&String(row.name||'').trim());
+ const level=classes.length?classes.reduce((n,row)=>n+Math.max(1,integer(row.level,1)),0):
+  record.class?Math.max(1,integer(record.level,1)):0;
+ const xp=Number(record.xp);
+ return level>=1&&level<20&&Number.isSafeInteger(xp)&&xp>=minimumXpForLevel(level+1);
+}
 export function experienceFloorPatch(record,changes={}){
  const updated={...record,...changes};
  const min=minimumXpForCreature(updated),xp=Number(updated.xp??0);
