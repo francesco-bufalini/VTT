@@ -156,8 +156,10 @@ export function subscribeMap(onData, onError, intervalMs = 1500) {
   let timeout;
   (async function tick() {
     if (!active) return;
-    try { onData(await map()); }
-    catch (error) { onError?.(error); }
+    try {
+      const data = await map();
+      if (active) onData(data);
+    } catch (error) { if (active) onError?.(error); }
     if (active) timeout = setTimeout(tick, Math.max(500, intervalMs));
   })();
   return () => { active = false; clearTimeout(timeout); };
