@@ -809,7 +809,8 @@ try{
  // was reorganized. The meaningful contract is the exact opened trait dialog.
  assert.equal(await page.locator('#trait-benefits-dialog').count(),1,
    'Clicking a proficiency term opens its actual trait benefits dialog');
- assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
+ assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Descrizione · Wizard|Competenze/,
+  'Class proficiency may be displayed on the owning class overview');
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  // Formula + and applicable + both choose a concrete trait and initialize
  // the correct benefit type and target, without saving a draft.
