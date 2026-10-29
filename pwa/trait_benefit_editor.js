@@ -200,7 +200,7 @@ export function addBenefitPatch(record,trait,kind,values={},id){
      !/^(ability_check:|skill:|save:|attack_hit:|casting_hit:)/.test(target))
    throw Error('Ritiro applicabile solo ai tiri d20');
   const cost=Number(values.tracker_cost||1);
-  if(tracker_id&&(!/^[\\w:|.-]{1,160}$/.test(tracker_id)||
+  if(tracker_id&&(!/^[\w:|.-]{1,160}$/.test(tracker_id)||
       !Number.isInteger(cost)||cost<1||cost>100))throw Error('Tracker o costo non valido');
   const trigger=String(values.trigger||'after_roll');
   if(!['after_roll','on_one'].includes(trigger))throw Error('Condizione del ritiro non valida');
