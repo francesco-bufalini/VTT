@@ -126,7 +126,8 @@ try{
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-identity [data-sheet-context="identity"]').count(),0,'No separate identity gear');
  assert.equal(await page.locator('#sheet-play-view [data-act="info-portrait-pick"]').count(),0,'Portrait actions belong to the identity dialog');
- assert.equal(await page.locator('#sheet-play-view .play-passives').count(),1,'Alignment and edition replace the portrait action');
+ assert.equal(await page.locator('#sheet-play-view .play-identity-metadata > small').count(),2,
+  'Plain alignment and edition text replace the portrait action');
  await popup('identity');
  assert.equal(await page.locator('#sheet-context-dialog [data-act="info-portrait-pick"]').count(),1);
  const canonicalName=page.locator('#sheet-context-dialog [data-identity-value="names"]').first();
