@@ -8,7 +8,7 @@ import {characterDefenseSummary} from '../defense_summary.js';
 import {bestiarySheet} from '../creature_variants.js';
 
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,
- spellCompanionRule,companionTemplateStat,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from '../companion_rules.js';
+ spellCompanionRule,companionTemplateStat,companionStatBlockView,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from '../companion_rules.js';
 
 const rules=JSON.parse(readFileSync(new URL('../catalog/companion_spells.json',import.meta.url),'utf8'));
 const owner=(className,subclass,level)=>({
@@ -166,4 +166,81 @@ test('ordinary bestiary monsters preserve fixed skill totals and project uncondi
  const defenses=characterDefenseSummary(monster,result);
  assert.deepEqual(defenses.groups.map(group=>group.items.map(row=>row.key)),
   [['cold'],['fire'],['poisoned'],['radiant']]);
+});
+
+test('5eTools-based companion profiles preserve languages, reactions and all PB-dependent skills/saves',()=>{
+ const artificer={...owner('Artificer','Battle Smith',8),id:'artificer',owner_id:'local'};
+ const steel=companionTemplateStat(rules.templates.steel_defender,artificer);
+ assert.deepEqual(steel.skill,{athletics:5,perception:6});
+ assert.deepEqual(steel.save,{dex:4,con:5});
+ assert.equal(steel.passive,16);
+ assert.deepEqual(steel.reaction.map(x=>x.name),['Deflect Attack']);
+ assert.equal(steel.languages[0],'understands the languages you speak');
+ assert.deepEqual(companionTemplateStat(rules.templates.dancing_item,owner('Bard','College of Creation',6))
+   .trait.map(x=>x.name),['Immutable Form','Irrepressible Dance']);
+ const drake=companionTemplateStat(rules.templates.drake_companion,owner('Ranger','Drakewarden',7));
+ assert.deepEqual(drake.save,{dex:4,wis:5});
+ assert.deepEqual(drake.reaction.map(x=>x.name),['Infused Strikes']);
+ assert.deepEqual(drake.languages,['Draconic']);
+ const homunculus=companionTemplateStat(rules.templates.homunculus_servant,artificer);
+ assert.deepEqual(homunculus.reaction.map(x=>x.name),['Channel Magic']);
+ assert.equal(homunculus.passive,16);
+});
+
+test('saved companion sheets gain omitted template entries in view only and retain user edits',()=>{
+ const saved={kind:'monster',parent_creature_id:'owner',companion_rule_id:'steel_defender_2014',
+  companion_template_id:'steel_defender',stat_block:{name:'Steel Defender',
+   action:[{name:'Force-Empowered Rend',entries:['Custom attack text']}],
+   trait:[{name:'Vigilant',entries:['Custom description']}],
+   immune:['custom'],languages:['Goblin']},
+  current_hp:7,inventory:[{id:'my-item'}]};
+ const before=structuredClone(saved);
+ const viewed=companionStatBlockView(saved,rules);
+ assert.deepEqual(saved,before,'Render must never persist or mutate source');
+ assert.equal(viewed.stat_block.trait[0].entries[0],'Custom description');
+ assert.deepEqual(viewed.stat_block.reaction.map(x=>x.name),['Deflect Attack']);
+ assert.deepEqual(viewed.stat_block.immune,['custom']);
+ assert.deepEqual(viewed.stat_block.languages,['Goblin']);
+ assert.deepEqual(viewed.inventory,saved.inventory);
+ assert.equal(viewed.current_hp,7);
+ const drake=companionStatBlockView({...saved,
+  companion_rule_id:'drake_companion_2014',companion_template_id:'drake_companion',
+  stat_block:{action:[{name:'Bite'}]}},rules);
+ assert.deepEqual(drake.stat_block.reaction.map(x=>x.name),['Infused Strikes']);
+ assert.equal(companionStatBlockView({...saved,companion_template_id:'invalid'},rules).stat_block,saved.stat_block);
+});
+
+test('steel defender and drake owner proficiency changes update their full live training',()=>{
+ const original={...owner('Artificer','Battle Smith',8),id:'owner',owner_id:'local'};
+ const child={kind:'monster',id:'steel',owner_id:'local',parent_creature_id:'owner',
+  companion_rule_id:'steel_defender_2014',companion_template_id:'steel_defender',
+  stat_block:{action:rules.templates.steel_defender.action},
+  abilities:rules.templates.steel_defender.abilities};
+ const linked=companionOwnerValues(child,original,calculateSheet(original,{}),rules);
+ const first=calculateSheet({...child,companion_owner_values:linked},{});
+ assert.deepEqual([first.values['save:dex'],first.values['save:con'],
+  first.values['skill:athletics'],first.values['skill:perception'],first.values.passive_perception],
+  [4,5,5,6,16]);
+ assert.equal(first.proficiencies.includes('expertise:perception'),true);
+ const grown={...original,level:12,classes:[{name:'Artificer',level:12}]};
+ const next=companionOwnerValues(child,grown,calculateSheet(grown,{}),rules);
+ const second=calculateSheet({...child,companion_owner_values:next},{});
+ assert.deepEqual([second.values['save:dex'],second.values['save:con'],
+  second.values['skill:athletics'],second.values['skill:perception'],second.values.passive_perception],
+  [5,6,6,8,18]);
+});
+
+test('ordinary bestiary saving throws and training icons retain source numeric totals',()=>{
+ const beast=bestiarySheet({name:'Guardian',cr:3,str:10,dex:12,con:12,int:10,wis:14,cha:10,
+  hp:{average:18},ac:[13],skill:{perception:6,stealth:3,arcana:9},
+  save:{dex:3,con:3},passive:16});
+ const calc=calculateSheet(beast,{});
+ assert.equal(calc.values['skill:perception'],6);
+ assert.equal(calc.values['skill:stealth'],3);
+ assert.equal(calc.values['skill:arcana'],9);
+ assert.equal(calc.proficiencies.includes('expertise:perception'),true);
+ assert.equal(calc.proficiencies.includes('skill:stealth'),true);
+ assert.equal(calc.proficiencies.includes('save:con'),true);
+ assert.equal(calc.values['save:con'],3);
+ assert.equal(calc.values.passive_perception,16);
 });
