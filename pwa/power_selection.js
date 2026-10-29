@@ -117,7 +117,8 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
   if(!Object.keys(layers).length)continue;
   models.push({id:rule.id,title:rule.title||owner.name,description:rule.description||'',
    origin_id:owner.origin_id,level:owner.level,option_kind:rule.option_kind||'feature',
-   source_type:source.type,options,layers,ui:rule.ui||'generic'});
+   source_type:source.type,options,layers,ui:rule.ui||'generic',
+   selection_kind:rule.selection_kind||'power'});
  }
  models.push(...optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}));
  return models;
@@ -159,8 +160,10 @@ export function powerSelectionPatch(record,calculated,catalog,id,stage,optionId,
   throw Error('Rimuovi prima questa opzione dalla lista preparata.');
  if(removing&&rows(record.power_applications?.[id]).some(row=>savedIdentity(row)===optionId))
   throw Error('Disapplica prima questa opzione.');
+ const singleBranch=definition.selection_kind==='subtrait'&&layer.limit===1;
  const next=exists&&!replacing?old.filter(row=>savedIdentity(row)!==optionId):
-  [...old.filter(row=>savedIdentity(row)!==optionId),selectedDetails(option,subchoices)];
+  [...(singleBranch?[]:old.filter(row=>savedIdentity(row)!==optionId)),
+    selectedDetails(option,subchoices)];
  if(!exists&&layer.limit!==null&&next.length>layer.limit)
   throw Error('Numero massimo di opzioni raggiunto.');
  return {power_selections:{...(record.power_selections||{}),[id]:{
