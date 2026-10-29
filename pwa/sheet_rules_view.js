@@ -1400,6 +1400,11 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  return sources;
 }
 export function refreshPlayReadouts(root,creature,calculated){
+ for(const button of root.querySelectorAll('[data-act="sheet-inspiration-toggle"]')){
+  button.setAttribute('aria-pressed',String(Boolean(creature.inspiration)));
+  const value=button.querySelector('strong');
+  if(value)value.textContent=creature.inspiration?'Attiva':'Non attiva';
+ }
  for(const node of root.querySelectorAll('[data-read-field]'))node.textContent=String(creature[node.dataset.readField]??0);
  for(const progress of root.querySelectorAll('[data-hp-progress]')){progress.max=Math.max(1,Number(calculated.values?.hp)||1);progress.value=Number(creature.current_hp)||0;}
 }
