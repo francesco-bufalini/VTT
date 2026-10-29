@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {collectTraitRows} from '../trait_projection.js';
+import {collectTraitRows,stateTraitNavigationKey} from '../trait_projection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {calculateSheet} from '../sheet_rules.js';
-import {learnInfusionPatch,learnedInfusions,applyInfusionPatch,clearInfusionPatch} from '../item_controls.js';
+import {activeInfusions,learnInfusionPatch,learnedInfusions,applyInfusionPatch,clearInfusionPatch} from '../item_controls.js';
 
 const abilityGrants=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const effectExtensions=JSON.parse(readFileSync(new URL('../catalog/effect_extensions.json',import.meta.url),'utf8')).extensions;
@@ -92,4 +92,28 @@ test('removing an infusion collapses identical rods back into one ordinary item 
  assert.deepEqual(traits.filter(row=>row.category==='oggetti').map(row=>row.name),['Rod']);
  assert.equal(traitBenefitGroups(traits.find(row=>row.name==='Rod'),cleared,calculated)
    .some(row=>row.type==='effect_extensions'),false);
+});
+
+test('infusion status jumps to the extended item trait, not a fabricated state or another copy',async()=>{
+ const record=infuse();
+ const {traits,calculated}=await project(record);
+ const applied=activeInfusions(record,definitions,calculated.features||[]);
+ assert.equal(applied.length,1);
+ const destination=stateTraitNavigationKey('state|infusion:'+applied[0].id,traits,applied);
+ const infused=traits.find(row=>row.name==='Rod - Enhanced Arcane Focus');
+ const ordinary=traits.find(row=>row.name==='Rod');
+ assert.equal(destination,infused.key);
+ assert.notEqual(destination,ordinary.key);
+ assert.equal(stateTraitNavigationKey('state|condition:poisoned',traits,applied),
+  'state|condition:poisoned');
+ assert.equal(stateTraitNavigationKey('state|infusion:missing',traits,applied),
+  'state|infusion:missing');
+
+ const identicalCopies=[
+  {category:'oggetti',key:'item:one',infusion_origin_id:'infused:one',item_inventory_indices:[3]},
+  {category:'oggetti',key:'item:two',infusion_origin_id:'infused:two',item_inventory_indices:[4]}
+ ];
+ const copies=[{id:'infused:one',index:3},{id:'infused:two',index:4}];
+ assert.equal(stateTraitNavigationKey('state|infusion:infused:one',identicalCopies,copies),'item:one');
+ assert.equal(stateTraitNavigationKey('state|infusion:infused:two',identicalCopies,copies),'item:two');
 });
