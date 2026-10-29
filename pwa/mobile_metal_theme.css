@@ -6065,3 +6065,24 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 .library-bestiary-pagination{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:36px}
 .library-bestiary-progress{color:#c7ac89;font:500 11px/1.4 system-ui,sans-serif}
 .library-bestiary-choices .hint{margin:7px 2px;font-size:12px}
+/* Permanent trait alternatives inherit their source's visual hierarchy. */
+.play-info-traits .trait-row>.trait-subtraits{
+ grid-column:2;min-width:0;padding:0 4px 10px 0;
+}
+.play-info-traits .trait-subtrait{
+ display:flex;align-items:center;gap:8px;width:100%;min-width:0;
+ margin:0;padding:9px 10px;border:0;border-left:1px solid #b28b5b89;
+ border-bottom:1px solid #a37b4733;background:linear-gradient(90deg,#a5794819,transparent);
+ color:#e9c99b;text-align:left;cursor:pointer;font:inherit;
+}
+.play-info-traits .trait-subtrait:hover,.play-info-traits .trait-subtrait:focus-visible{
+ background:#a9815129;outline-offset:-2px;
+}
+.play-info-traits .trait-subtrait--depth-1{margin-left:13px;width:calc(100% - 13px)}
+.play-info-traits .trait-subtrait--depth-2{margin-left:26px;width:calc(100% - 26px)}
+.play-info-traits .trait-subtrait-mark{flex:none;font-size:14px;color:#ab895d}
+.play-info-traits .trait-subtrait-copy{display:grid;min-width:0;gap:3px;flex:1}
+.play-info-traits .trait-subtrait-title{font:600 13px/1.3 Georgia,serif;color:#f3d6a5}
+.play-info-traits .trait-subtrait-copy small{font:12px/1.4 system-ui;color:#c2aa8b;overflow-wrap:anywhere}
+.play-info-traits .trait-subtrait-chevron{font-size:20px;color:#d9b783}
+.play-info-traits .trait-subtrait:disabled{opacity:.5;cursor:default}
