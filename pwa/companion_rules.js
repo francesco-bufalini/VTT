@@ -129,8 +129,9 @@ export function companionTemplateStat(template,owner,{size='',name=''}={}){
   (template.hp?.ability_mod?scoreMod(owner.abilities?.[template.hp.ability_mod]):0)));
  const totalLevel=rows(owner.classes).reduce((sum,m)=>sum+Math.max(0,Number(m.level)||0),0)||
    Number(owner.level)||1;
- const pb=clamp(Number(owner.proficiency_bonus)||
-   2+Math.floor((Math.max(1,totalLevel)-1)/4),2,9);
+ // A saved owner.proficiency_bonus can be stale after level-up. The live
+ // projection uses calculateSheet; initial templates use class-level PB.
+ const pb=clamp(2+Math.floor((Math.max(1,totalLevel)-1)/4),2,9);
  const armor=typeof template.ac==='object'?Number(template.ac.base||10)+Number(template.ac.per_pb||0)*pb:Number(template.ac)||10;
  const abilities=template.abilities||{};
  const trained=companionTemplateProficiencies(template,pb);
