@@ -67,6 +67,42 @@ test("native Godot receives exact spell/attack/area targeting payloads",async()=
   assert.equal(calls[3].action,"target_attack");
   assert.equal(calls[3].payload.target_id,"enemy");
 });
+test('range-checked map taps only confirm and apply supported attack effects',async()=>{
+ const calls=[],applied=[];let inRange=false,accept=false,confirmations=0,refreshes=0;
+ const previousWindow=globalThis.window;
+ globalThis.window={confirm:()=>{confirmations++;return accept;}};
+ try{
+  const viewer=new TacticalViewer({
+   send:async(name,payload)=>{
+    calls.push({name,payload});
+    if(name==='target_attack')return inRange?{ok:true,distance_feet:5}:
+     {ok:false,error:'Bersaglio fuori gittata'};
+    return {ok:true};
+   },
+   ownerId:async()=> 'owner',notify:()=>{}
+  });
+  viewer.root={querySelector:()=>null,querySelectorAll:()=>[]};
+  viewer.attack={melee:true,range_feet:5};
+  viewer.tokenId='hero';viewer.snapshot=snapshot();viewer.draw=()=>{};
+  viewer.refresh=async()=>{refreshes++;};
+  viewer.setAttackEffects({name:'Attacco con condizione',onConfirmed:async token=>applied.push(token)});
+  await assert.rejects(viewer.tap([750,600]),/fuori gittata/);
+  assert.equal(confirmations,0,'Out-of-range targets must not prompt');
+  assert.equal(applied.length,0);
+  inRange=true;
+  await viewer.tap([750,600]);
+  assert.equal(confirmations,1);assert.equal(applied.length,0,'Cancel changes nothing');
+  accept=true;
+  await viewer.tap([750,600]);
+  assert.equal(confirmations,2);assert.deepEqual(applied,[{id:'enemy',name:'Nemico'}]);
+  assert.equal(refreshes,1);
+  viewer.attackEffects=null;
+  await viewer.tap([750,600]);
+  assert.equal(confirmations,2,'Plain attacks only show range and distance');
+  assert.equal(calls.filter(row=>row.name==='target_attack').length,4);
+ }finally{globalThis.window=previousWindow;}
+});
+
 test('desktop rejection or transport failure never consumes a local casting resource',async()=>{
  for(const send of [async()=>({ok:false,error:'Rejected'}),async()=>{throw Error('Disconnected');}]){
   let charged=0;
