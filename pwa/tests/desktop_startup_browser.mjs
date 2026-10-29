@@ -52,7 +52,7 @@ try{
   }
   await page.setViewportSize({width:1440,height:1000});
   await page.locator('[data-sheet-context="identity"]').click();
-  await page.locator('#sheet-context-dialog [data-field="name"]').fill('Lyria modificata nel desktop');
+  await page.locator('#sheet-context-dialog [data-identity-value="names"]').fill('Lyria modificata nel desktop');
   await page.locator('[data-act="sheet-context-close"]').click();
   await page.evaluate(async()=>{const {desktopSheetSession}=await import('/ui.js');await desktopSheetSession.flush();});
   const native=await page.evaluate(async()=>{
