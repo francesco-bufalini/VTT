@@ -33,8 +33,9 @@ test('Favored Enemy tracks chosen creature types and two humanoid races',()=>{
  let record=ranger(1);
  record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','dragons')};
  assert.deepEqual(pick(record,ctx).layers.prepared.selected,['dragons']);
- assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'prepared','beasts'),/massimo/);
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','dragons')};
+ record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','beasts')};
+ assert.deepEqual(pick(record,ctx).layers.prepared.selected,['beasts']);
+ record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','beasts')};
  assert.deepEqual(pick(record,ctx).layers.prepared.selected,[]);
  assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['elf']),/sotto-opzioni/);
  record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['Elf','Orc'])};
@@ -130,4 +131,15 @@ test('learned options form the prepared sublist and cannot be lost while active'
  rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a')};
  rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','learned','a')};
  assert.deepEqual(powerSelectionModels(rec,calc,schema)[0].layers.learned.selected,['b']);
+});
+
+test('a permanent one-choice sub-trait replaces its previous branch without affecting normal powers',()=>{
+ const ctx=context(),id='ranger_favored_enemy_phb';
+ let character=ranger(1);
+ const model=pick(character,ctx);
+ assert.equal(model.selection_kind,'subtrait');
+ character={...character,...powerSelectionPatch(character,ctx,data,id,'prepared','dragons')};
+ character={...character,...powerSelectionPatch(character,ctx,data,id,'prepared','beasts')};
+ assert.deepEqual(pick(character,ctx).layers.prepared.selected,['beasts']);
+ assert.equal(pick(character,ctx).layers.prepared.limit,1);
 });

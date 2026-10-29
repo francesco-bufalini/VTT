@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
-import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait} from '../pending_choices.js';
+import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,permanentSubtraitsForTrait} from '../pending_choices.js';
 import {collectTraitRows} from '../trait_projection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 const abilities=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
@@ -61,10 +61,11 @@ test('each class-level ASI allows score allocation or an owned feat, all linked 
  assert(feature);
  const originId=feature.origin_id;
  let mode=find(pending(c,index),'advancement-mode:'+originId);
- assert.deepEqual(mode.options,['ability','feat']);
- c={...c,...savePendingChoice(c,mode,['ability'])};
- let variant=find(pending(c,index),'ability-mode:'+originId);
- c={...c,...savePendingChoice(c,variant,['1'])};
+ assert.deepEqual(mode.options,['ability:0','ability:1','feat']);
+ assert.deepEqual(mode.option_labels['ability:1'],'+1 a 2 caratteristiche');
+ c={...c,...savePendingChoice(c,mode,['ability:1'])};
+ assert(!pending(c,index).some(x=>x.id==='ability-mode:'+originId),
+   'the permanent sub-trait contains the chosen allocation mode');
  let picker=find(pending(c,index),'ability:'+originId+':0');
  assert.equal(picker.count,2);
  c={...c,...savePendingChoice(c,picker,['str','con'])};
@@ -74,6 +75,15 @@ test('each class-level ASI allows score allocation or an owned feat, all linked 
  const granted=traitBenefitGroups({category:'classi',rank:2,
   origin_key:feature.origin_key,feature_origin:originId},c,calculated);
  assert(granted.some(row=>row.type==='bonus'&&row.items.length>=2));
+ const projected=await collectTraitRows(c,calculated,{
+  entries:async category=>category==='class_features'?[asi]:[],
+  detail:async(_category,row)=>row
+ });
+ const owningRow=projected.find(row=>row.name==='Ability Score Improvement'&&
+  row.feature_origin===originId);
+ assert(owningRow,'the real class trait owns its permanent selection');
+ assert(permanentSubtraitsForTrait(owningRow,c,pending(c,index))
+   .some(row=>row.selection==='+1 a 2 caratteristiche'));
  c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+originId),['feat'])};
  assert.equal(calc(c,index).abilities.str.score,10,'switching to a feat revokes ASI');
  const featChoice=find(pending(c,index),'advancement-feat:'+originId);
@@ -92,8 +102,9 @@ test('each class-level ASI allows score allocation or an owned feat, all linked 
  const asiBenefit=traitBenefitGroups({category:'classi',rank:2,origin_key:feature.origin_key,
   feature_origin:originId},c,calc(c,index));
  assert(asiBenefit.some(group=>group.type==='feats'));
- c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+originId),['ability'])};
+ c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+originId),['ability:0'])};
  assert.equal(c.feats_catalog.length,0,'switching away must revoke its owned feat');
+ assert.equal(pending(c,index).find(x=>x.id==='advancement-mode:'+originId)?.selected[0],'ability:0');
 });
 test('XPHB Ability Score Improvement feat itself offers +2 or +1/+1 through its own trait',()=>{
  let c={...base(),rules_version:'2024',feats_catalog:[{name:'Ability Score Improvement',source:'XPHB'}]};
@@ -121,16 +132,13 @@ test('saving ASI choice automatically exposes exactly one dependent modal at eac
   return singleNewPendingChoice(before,pending(c,index),choice);
  };
  const main=find(pending(c,index),'advancement-mode:'+sid);
- const second=saved(main,['ability']);
- assert(second,'the ASI choice creates a follow-up variant');
- assert.equal(second.kind,'ability_mode');
+ const second=saved(main,['ability:0']);
+ assert(second,'the ASI branch directly opens its one-part score picker');
+ assert.equal(second.kind,'ability');
  assert.equal(second.origin_id,sid);
- const third=saved(second,['0']);
- assert(third,'selecting a one-part distribution creates one ability choice');
- assert.equal(third.kind,'ability');
- assert.equal(third.count,1);
- assert.equal(third.amount,2);
- assert.equal(saved(third,['str']),null,'a completed chain does not reopen a popup');
+ assert.equal(second.count,1);
+ assert.equal(second.amount,2);
+ assert.equal(saved(second,['str']),null,'a completed choice does not reopen a popup');
  // Switching to feats creates only the selected feat picker.
  c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+sid),[])};
  const featMode=find(pending(c,index),'advancement-mode:'+sid);
@@ -163,4 +171,36 @@ test('auto-follow-up is suppressed for multiple newly created options, existing 
    [{id:'main',remaining:0},{id:'unchanged',remaining:0}],{id:'main'}),null);
  assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
    [{id:'main',remaining:0},{id:'new',remaining:1}],{id:'stale'}),null);
+});
+
+test('permanent choice branches appear nested only under their owning trait',()=>{
+ const sid='race|mpmm|aarakocra';
+ let c={...base(),species:'Aarakocra',species_source:'MPMM'};
+ const own={category:'razza',rank:0,origin_key:'species|aarakocra|mpmm'};
+ const stranger={category:'classi',rank:2,origin_key:'class|phb|ranger',
+   feature_origin:'feature:other'};
+ let shown=permanentSubtraitsForTrait(own,c,pending(c));
+ assert.equal(shown.length,1);
+ assert.equal(shown[0].choice_id,'ability-mode:'+sid);
+ assert.equal(shown[0].selection,'Da scegliere');
+ assert.deepEqual(permanentSubtraitsForTrait(stranger,c,pending(c)),[]);
+ c={...c,...savePendingChoice(c,find(pending(c),'ability-mode:'+sid),['0'])};
+ shown=permanentSubtraitsForTrait(own,c,pending(c));
+ assert.equal(shown.length,3,'the selected distribution exposes its two existing score pickers');
+ assert.equal(shown[0].selection,'+2 a 1 caratteristica e +1 a 1 caratteristica');
+ assert(shown.slice(1).every(x=>x.depth===1&&x.kind==='pending'));
+ const origin='feature:class|phb|ranger|favored-enemy:1';
+ const trait={category:'classi',rank:2,origin_key:'class|phb|ranger',feature_origin:origin};
+ const power={id:'ranger_favored_enemy_phb',selection_kind:'subtrait',
+  origin_id:origin,title:'Nemici prescelti',options:[{id:'humanoids',name:'Umanoidi'}],
+  layers:{prepared:{enabled:true,trigger:null,limit:1,
+   selected:[{id:'humanoids',subchoices:['Orc','Goblin']}]}}};
+ shown=permanentSubtraitsForTrait(trait,c,[],[power]);
+ assert.equal(shown.length,1);
+ assert.equal(shown[0].selection,'Umanoidi · Orc, Goblin');
+ assert.equal(shown[0].model_id,power.id);
+ assert.equal(permanentSubtraitsForTrait(stranger,c,[],[power]).length,0);
+ assert.equal(permanentSubtraitsForTrait(trait,c,[],[{
+   ...power,layers:{prepared:{...power.layers.prepared,trigger:'long_rest'}}
+ }]).length,0,'choices that change on a rest are not permanent sub-traits');
 });

@@ -47,6 +47,10 @@ export function effectiveAllocations(record,originId,variants,legacy=''){
  if(!allocationComplete(state,rule))return [];
  return state.allocations.map(x=>({ability:x.ability,amount:rule.parts[x.part].amount}));
 }
+export function allocationVariantLabel(variant){
+ return variant.parts.map(part=>'+'+part.amount+' a '+part.count+
+   (part.count===1?' caratteristica':' caratteristiche')).join(' e ');
+}
 export function allocationChoiceRows(record,originId,name,variants,legacy=''){
  if(!variants.length)return [];
  const state=savedAllocation(record,originId,variants,legacy),rows=[];
@@ -64,7 +68,7 @@ export function allocationChoiceRows(record,originId,name,variants,legacy=''){
   selected:state.variant<0?[]:[String(state.variant)],
   options:variants.map((_,i)=>String(i)),
   option_labels:Object.fromEntries(variants.map((variant,i)=>[String(i),
-   variant.parts.map(part=>'+'+part.amount+' a '+part.count+(part.count===1?' caratteristica':' caratteristiche')).join(' e ')])),
+   allocationVariantLabel(variant)])),
   remaining:state.variant<0?1:0
  });
  const rule=variants[state.variant];

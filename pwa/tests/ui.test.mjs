@@ -1310,9 +1310,7 @@ test('ASI opens its sole next picker automatically until ability allocation is c
   input.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
   dialog.querySelector('[data-act="pending-choice-save"]').click();
  };
- await selectAndSave('ability');
- await until(()=>document.querySelector('#pending-choice-dialog[data-choice-id^="ability-mode:"]'));
- await selectAndSave('0');
+ await selectAndSave('ability:0');
  await until(()=>document.querySelector('#pending-choice-dialog[data-choice-id^="ability:"]'));
  await selectAndSave('str');
  await until(()=>!document.querySelector('#pending-choice-dialog'));
