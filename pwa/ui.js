@@ -1,5 +1,5 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
-import {identityEntriesPatch} from './identity_aliases.js';
+import {identityEntries,identityEntriesPatch} from './identity_aliases.js';
 import {availableD20Rerolls,offerD20Reroll,chooseD20Reroll} from './d20_rerolls.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage,validateVariants} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
@@ -304,6 +304,25 @@ const pendingFieldTimers = new Map();
 // those commits in the flush so Escape cannot discard the last edited field.
 const pendingFieldWrites = new Set();
 let returnToBattleFromCompetences=false;
+// Keep both forms of identity readable immediately after changing the popup,
+// without rebuilding the active sheet or re-opening the dialog.
+function refreshIdentityPresentation(creature){
+ const header=app.querySelector('#sheet-play-view .play-character-portrait');
+ if(!header||!creature)return;
+ const other=header.querySelector('.play-identity-other-names');
+ if(other){
+  const names=identityEntries(creature,'names').filter(row=>!row.active);
+  other.innerHTML=names.map(row=>'<span class="play-identity-alias">'+esc(row.value)+'</span>').join('');
+  other.hidden=creature.identity_hide_other_names!==false||!names.length;
+ }
+ const factions=header.querySelector('.play-identity-factions-line');
+ if(factions){
+  const active=identityEntries(creature,'factions').filter(row=>row.active).map(row=>row.value);
+  const list=factions.querySelector('.play-identity-faction-list');
+  if(list)list.innerHTML=active.map(name=>'<span class="play-identity-faction">'+esc(name)+'</span>').join('');
+  factions.hidden=!active.length;
+ }
+}
 // The multi-identity editor writes a complete group atomically, preserving
 // both the canonical legacy fields and the additional display identities.
 async function saveIdentityGroup(target){
@@ -333,18 +352,7 @@ async function saveIdentityGroup(target){
  }
  const changes=identityEntriesPatch(state.editor.read(),kind,entries);
  await patch(changes);
- if(kind==='factions'){
-  const header=app.querySelector('#sheet-play-view .play-character-portrait');
-  if(header){
-   const labels=changes.identity_factions.filter(row=>row.active).map(row=>row.value).join(' · ');
-   let note=header.querySelector('.play-identity-factions-line');
-   if(labels&&!note){
-    note=document.createElement('p');note.className='play-identity-factions-line';
-    header.querySelector('.play-passives')?.after(note);
-   }
-   if(note){note.innerHTML=labels?'<strong>Fazioni:</strong> '+esc(labels):'';note.hidden=!labels;}
-  }
- }
+ refreshIdentityPresentation(state.editor?.read());
 }
 function trackIdentityWrite(target){
  const write=saveIdentityGroup(target);
@@ -9374,6 +9382,17 @@ function listen(){
   });
   app.addEventListener("change",e=>{
     const target=e.target;
+    if(target?.matches?.('[data-identity-hide-others]')){
+      const hidden=Boolean(target.checked);
+      const group=target.closest('[data-identity-group="names"]');
+      if(group)group.dataset.showAllNames=String(!hidden);
+      const write=patch({identity_hide_other_names:hidden}).then(()=>
+        refreshIdentityPresentation(state.editor?.read()));
+      pendingFieldWrites.add(write);
+      void write.finally(()=>pendingFieldWrites.delete(write))
+        .catch(error=>message(errorMessage(error),true));
+      return;
+    }
     if(target?.matches?.('[data-info-portrait-file]')){
       void saveInfoPortrait(target);
       return;
