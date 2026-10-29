@@ -19,6 +19,7 @@ materials and textures. Tactical size and the one-cell footprint stay unchanged.
 | Wyrda | 1.75 m | 1.1667 |
 | Nazaryl | 1.85 m | 1.2333 |
 | Tiabald | 1.80 m | 1.2000 |
+| Harmakis | 1.40 m | 0.9333 |
 
 Ore, Gilliam, Kaos, Phenax, Valandir and Tiabald use the heights supplied by the user.
 The remaining heights are small chosen variations for the specified ancestries.
@@ -74,3 +75,10 @@ generator when publishing their `nazaryl.pck` and `tiabald.pck` with the origina
 nine calibrated packs. Newly imported packs start at version 1, while the
 recalibrated original packs retain version 2. Both use the established visual
 paths, one-cell footprints and ordinary token pack loading.
+
+Harmakis uses the user-requested 1.40 m head reference and `Small` size metadata.
+The native footprint stays at one grid cell, matching the existing Small size
+convention. Fur tips and ears remain above the curated crown reference; the
+whole miniature still stays below the first 1.50 m grid line. The source GLB is
+preserved, with the same 250k triangle / 2048 px texture budget as the other
+new character imports.

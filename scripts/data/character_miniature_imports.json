@@ -38,6 +38,22 @@
       "size_name": "Medium",
       "footprint": 1.0,
       "version": 1
+    },
+    {
+      "id": "harmakis",
+      "name": "Harmakis",
+      "source_file": "2fafb3cd2d1a41c8f02e730dfb55bab6.glb",
+      "source_sha256": "9d80c771af145f011f2e3f867325da366f18d31c3efbd0e132892ad82aac0a4d",
+      "optimized_sha256": "a7ea367f35a1d75c061fe726e8ca72fa9853cc9dd3e8c3ec02d10293a7f524b5",
+      "source_bytes": 78148496,
+      "optimized_bytes": 25430756,
+      "height_m": 1.4,
+      "source_head_height_cells": 1.0764788236882945,
+      "scale_factor": 0.8670243322906178,
+      "source_collection": "Harmakis.glb",
+      "size_name": "Small",
+      "footprint": 1.0,
+      "version": 1
     }
   ]
 }
