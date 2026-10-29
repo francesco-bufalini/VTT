@@ -21,6 +21,8 @@ const server=createServer(async(req,res)=>{
   }
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;}
+  if(path==='/catalog/bestiary.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({monsters:[{name:'Wolf',source:'MM',id:'bestiary:wolf:mm'}]}));return;}
+  if(path==='/catalog/bestiary/Wolf/MM.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({name:'Wolf',source:'MM',type:'beast',size:['M'],hp:{average:11},ac:[13],speed:{walk:40},str:12,dex:15,con:12,int:3,wis:12,cha:6,skill:{prc:'+3'},resist:['cold'],immune:['poison'],conditionImmune:['frightened']}));return;}
   const route=routes.get(path);if(!route){res.writeHead(404);res.end();return;}
   res.setHeader('Content-Type',route[1]);res.end(await readFile(new URL(route[0],root)));
  }catch{res.writeHead(404);res.end();}
@@ -66,7 +68,8 @@ try{
  await page.locator('[data-act="library-add"]').click();
  assert.equal(await page.locator('[data-act="import"]').count(),0,'Creation no longer offers import');
  assert.equal(await page.locator('#library-create-name').getAttribute('placeholder'),'Nuova creatura');
- assert(await page.locator('.library-create-type[disabled]').isVisible(),'Bestiary path is visible but disabled');
+ assert.equal(await page.locator('[data-act="library-create-kind"]').count(),2,'Character and monster creation are available');
+ assert(await page.locator('[data-act="library-create-kind"][data-kind="monster"]').isEnabled(),'Bestiary monster creation is enabled');
  assert(await page.locator('.library-miniature-option[aria-pressed="true"]').count()>=1,'A base miniature is always selected');
  const miniatureSearch=page.locator('#library-miniature-search');
  assert(await miniatureSearch.evaluate(input=>{
@@ -319,6 +322,30 @@ try{
  assert.equal(await page.locator('#creature-symbol').count(),0);
  await sheet('info');
  assert.equal(await page.locator('.play-identity-mark').count(),0,'No portrait icon appears on Info');
+ // Independent monsters are created from an actual bestiary choice, not a blank sheet.
+ await context.setOffline(false);
+ await page.locator('#creature-back').click();
+ await page.locator('[data-act="library-add"]').click();
+ await page.locator('[data-act="library-create-kind"][data-kind="monster"]').click();
+ assert(await page.locator('#library-create-bestiary').isVisible());
+ assert.equal(await page.locator('[data-act="create"]').isEnabled(),false,'A bestiary source is required');
+ await page.locator('#library-bestiary-search').fill('Wolf');
+ await page.locator('[data-act="library-bestiary-select"]').first().waitFor();
+ await page.locator('[data-act="library-bestiary-select"]').first().click();
+ assert(await page.locator('[data-act="create"]').isEnabled());
+ await page.locator('#library-create-name').fill('Lupo guardiano');
+ await page.locator('[data-act="create"]').click();
+ await page.locator('[data-sheet-context="identity"]').waitFor();
+ assert(await page.evaluate(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  const monster=(await listCreatures()).find(row=>row.creature.name==='Lupo guardiano')?.creature;
+  return monster?.kind==='monster'&&!monster?.parent_creature_id&&
+    monster.species==='Wolf'&&monster.bestiary_ref?.source==='MM'&&
+    monster.stat_block?.skill?.prc==='+3'&&monster.stat_block?.immune?.[0]==='poison';
+ }), 'The new monster retains its full bestiary statistics as an independent sheet');
+ await page.locator('#creature-back').click();
+ await page.locator('[data-act="library-filter"][data-kind="monster"]').click();
+ assert(await page.locator('.creature-card').filter({hasText:'Lupo guardiano'}).isVisible());
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: six direct creature destinations at 320/360/390/430px and landscape, header back restores archive bars, quick condition/origin links, pending saves, catalog, session, offline and disclosure regressions.');
  console.log('Screenshots: '+fileURLToPath(artifacts));

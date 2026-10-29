@@ -20,7 +20,7 @@ import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rule
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import {openSendDialog,pollIncomingShares} from './share_transfer.js';
 import {exportInventoryItems} from './inventory_transfer.js';
-import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportCreatureArchive, exportHomebrewPackage, exportCatalogHomebrewEntry,
+import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, createBestiaryMonster, importCreatureFile, exportCreature, exportCreatureBatch, exportCreatureArchive, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -259,7 +259,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, sessionPane:"", disclosureState:new Map(),
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, sessionPane:"", disclosureState:new Map(),
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -925,9 +925,66 @@ function paintLibraryMiniatures(){
  }
  const chosen=profiles.find(m=>m.id===state.libraryMiniatureId);
  const label=dialog.querySelector('.library-miniature-current');
- if(label)label.textContent=chosen?'Selezionata: '+chosen.name:'Seleziona una miniatura';
+ if(label)label.textContent=chosen?'Selezionata: '+chosen.name:state.libraryCreateKind==='monster'?'Nessuna miniatura (facoltativa)':'Seleziona una miniatura';
  const confirm=dialog.querySelector('[data-act="create"]');
- if(confirm)confirm.disabled=!chosen;
+ if(confirm)confirm.disabled=state.libraryCreateKind==='monster'?!state.libraryBestiaryKey:!chosen;
+}
+
+function selectBestiaryDefaultMiniature(){
+ if(state.libraryCreateKind!=='monster'||state.libraryMiniatureManuallySelected)return;
+ const entry=state.libraryBestiaryEntries.find(row=>row.key===state.libraryBestiaryKey);
+ const candidate=entry?.miniature?.id;
+ state.libraryMiniatureId=libraryMiniatureOptions().some(row=>row.id===candidate)?candidate:'';
+}
+function paintLibraryBestiary(){
+ const dialog=app.querySelector('#library-create-dialog');if(!dialog)return;
+ const search=dialog.querySelector('#library-bestiary-search');
+ const query=search?.value||'';
+ const filtered=state.libraryBestiaryEntries.filter(row=>matchesSearch(query,row.name,row.source));
+ const selected=filtered.find(row=>row.key===state.libraryBestiaryKey);
+ const ordered=selected?[selected,...filtered.filter(row=>row.key!==selected.key)]:filtered;
+ const items=pageResults(ordered,state.libraryBestiaryLimit).items;
+ const area=dialog.querySelector('.library-bestiary-choices');
+ if(area)area.innerHTML=items.length?items.map(row=>
+  '<button type="button" class="library-bestiary-option vtt-selectable'+(row.key===state.libraryBestiaryKey?' is-selected':'')+
+  '" aria-pressed="'+(row.key===state.libraryBestiaryKey)+'" data-act="library-bestiary-select" data-bestiary-key="'+esc(row.key)+'">'+
+  '<strong>'+esc(row.name)+'</strong><small>'+esc(row.source||'Bestiario')+'</small></button>').join(''):
+  '<p class="hint">'+esc(state.libraryBestiaryError||(!state.libraryBestiaryEntries.length?'Caricamento bestiario…':'Nessun mostro trovato.'))+'</p>';
+ const progress=dialog.querySelector('.library-bestiary-progress');
+ if(progress)progress.textContent=filtered.length?items.length+' di '+filtered.length+' mostri':'';
+ const more=dialog.querySelector('[data-act="library-bestiary-more"]');
+ if(more){more.hidden=items.length>=filtered.length;more.textContent='Mostra altri '+Math.min(36,filtered.length-items.length);}
+ const name=dialog.querySelector('#library-create-name');
+ if(name)name.placeholder=state.libraryCreateKind==='monster'?
+  (state.libraryBestiaryEntries.find(row=>row.key===state.libraryBestiaryKey)?.name||'Nome del mostro (facoltativo)'):'Nuova creatura';
+ const confirm=dialog.querySelector('[data-act="create"]');
+ if(confirm)confirm.disabled=state.libraryCreateKind==='monster'?!state.libraryBestiaryKey:
+  !libraryMiniatureOptions().some(row=>row.id===state.libraryMiniatureId);
+}
+function paintLibraryCreateMode(){
+ const dialog=app.querySelector('#library-create-dialog');if(!dialog)return;
+ const monster=state.libraryCreateKind==='monster';
+ dialog.querySelectorAll('[data-act="library-create-kind"]').forEach(button=>{
+  const selected=button.dataset.kind===(monster?'monster':'character');
+  button.classList.toggle('is-active',selected);button.setAttribute('aria-pressed',String(selected));
+ });
+ const bestiary=dialog.querySelector('#library-create-bestiary');
+ if(bestiary)bestiary.hidden=!monster;
+ const label=dialog.querySelector('[data-library-name-label]');
+ if(label)label.textContent=monster?'Nome del mostro (facoltativo)':'Nome';
+ paintLibraryBestiary();
+ paintLibraryMiniatures();
+}
+async function loadLibraryBestiary(){
+ state.libraryBestiaryError='';
+ try{
+  const {listRecords}=await import('./storage.js');
+  state.libraryBestiaryEntries=await variantSources([],await listRecords('global','homebrew'));
+ }catch(error){
+  state.libraryBestiaryEntries=[];
+  state.libraryBestiaryError=errorMessage(error);
+ }
+ paintLibraryBestiary();
 }
 async function loadLibraryMiniatures(){
  try{
@@ -937,14 +994,15 @@ async function loadLibraryMiniatures(){
   const profiles=Array.isArray(data.tokens)?data.tokens.filter(m=>typeof m?.id==='string'&&m.id&&typeof m.name==='string'):[];
   if(profiles.length){
    state.libraryMiniatures=profiles;
-   if(!profiles.some(m=>m.id===state.libraryMiniatureId))
+   if(state.libraryCreateKind==='character'&&!profiles.some(m=>m.id===state.libraryMiniatureId))
     state.libraryMiniatureId=profiles.find(m=>/^(human|commoner|adventurer|sariel|gilliam)/i.test(m.id))?.id||profiles[0].id;
   }
  }catch{
   state.libraryMiniatures=[];
-  if(!LIBRARY_MINIATURE_PRESETS.some(m=>m.id===state.libraryMiniatureId))
+  if(state.libraryCreateKind==='character'&&!LIBRARY_MINIATURE_PRESETS.some(m=>m.id===state.libraryMiniatureId))
    state.libraryMiniatureId=LIBRARY_MINIATURE_PRESETS[0].id;
  }
+ selectBestiaryDefaultMiniature();
  paintLibraryMiniatures();
 }
 
@@ -1122,9 +1180,15 @@ async function libraryView(){
    '<div class="library-create-body">'+dialogCloseButton('library-create-close','Chiudi','library-create-close')+
     '<h2 id="library-create-title">Nuova creatura</h2>'+
     '<div class="library-create-types" role="group" aria-label="Tipo di creatura">'+
-     '<button type="button" class="library-create-type is-active" aria-pressed="true">'+actionGlyph('proficiency')+'Personaggio</button>'+
-     '<button type="button" class="library-create-type" disabled>'+actionGlyph('book')+'Bestiario <small>Prossimamente</small></button></div>'+
-    '<label class="library-create-field" for="library-create-name">Nome'+
+     '<button type="button" class="library-create-type is-active" data-act="library-create-kind" data-kind="character" aria-pressed="true">'+actionGlyph('proficiency')+'Personaggio</button>'+
+     '<button type="button" class="library-create-type" data-act="library-create-kind" data-kind="monster" aria-pressed="false">'+actionGlyph('book')+'Bestiario</button></div>'+
+    '<div id="library-create-bestiary" class="library-create-bestiary" hidden>'+
+     '<label class="library-create-field" for="library-bestiary-search">Razza dal bestiario'+
+       '<input id="library-bestiary-search" type="search" placeholder="Cerca un mostro" autocomplete="off"></label>'+
+     '<div class="library-bestiary-choices vtt-selection-list" role="group" aria-label="Mostri del bestiario"></div>'+
+     '<div class="library-bestiary-pagination"><span class="library-bestiary-progress" aria-live="polite"></span>'+
+       '<button type="button" class="library-miniature-more" data-act="library-bestiary-more" hidden>Mostra altri</button></div></div>'+
+    '<label class="library-create-field" for="library-create-name"><span data-library-name-label>Nome</span>'+
      '<input id="library-create-name" type="text" maxlength="120" placeholder="Nuova creatura" autocomplete="off"></label>'+
     '<div class="library-create-miniature-title"><strong>Miniatura di base</strong><small class="library-miniature-current" role="status">Selezionata: Sariel</small></div>'+
     '<label class="library-miniature-search vtt-list-search" for="library-miniature-search">'+actionGlyph('search')+
@@ -8423,19 +8487,47 @@ async function handleAction(target){
     syncLibraryFilterUI();return;
   }
   if(act==="library-add"){
+    state.libraryCreateKind='character';state.libraryBestiaryKey='';state.libraryBestiaryLimit=36;
+    state.libraryMiniatureManuallySelected=false;
     state.libraryMiniatureId='sariel';
     state.libraryMiniatureLimit=36;
     const dialog=app.querySelector('#library-create-dialog');
     if(dialog){
-      paintLibraryMiniatures();
+      const name=dialog.querySelector('#library-create-name');if(name)name.value='';
+      const search=dialog.querySelector('#library-bestiary-search');if(search)search.value='';
+      paintLibraryCreateMode();
       openDialog(dialog);
       void loadLibraryMiniatures();
     }
     return;
   }
+
+  if(act==="library-create-kind"){
+    if(!['character','monster'].includes(target.dataset.kind))return;
+    state.libraryCreateKind=target.dataset.kind;
+    state.libraryMiniatureManuallySelected=false;
+    state.libraryMiniatureId=state.libraryCreateKind==='character'?
+      (libraryMiniatureOptions().find(row=>row.id==='sariel')?.id||libraryMiniatureOptions()[0]?.id||''):'';
+    selectBestiaryDefaultMiniature();
+    paintLibraryCreateMode();
+    if(state.libraryCreateKind==='monster'&&!state.libraryBestiaryEntries.length)void loadLibraryBestiary();
+    return;
+  }
+  if(act==="library-bestiary-select"){
+    const entry=state.libraryBestiaryEntries.find(row=>row.key===target.dataset.bestiaryKey);
+    if(!entry)return;
+    state.libraryBestiaryKey=entry.key;
+    selectBestiaryDefaultMiniature();
+    paintLibraryBestiary();paintLibraryMiniatures();
+    return;
+  }
+  if(act==="library-bestiary-more"){
+    state.libraryBestiaryLimit+=36;paintLibraryBestiary();
+    return;
+  }
   if(act==="library-miniature-select"){
     if(libraryMiniatureOptions().some(row=>row.id===target.dataset.miniatureId)){
-      state.libraryMiniatureId=target.dataset.miniatureId;paintLibraryMiniatures();
+      state.libraryMiniatureId=target.dataset.miniatureId;state.libraryMiniatureManuallySelected=true;paintLibraryMiniatures();
     }
     return;
   }
@@ -8457,11 +8549,19 @@ async function handleAction(target){
   if(act==="create"){
     const dialog=app.querySelector('#library-create-dialog');
     if(!dialog?.open)throw Error("Apri prima la creazione di una creatura.");
-    const name=String(dialog.querySelector('#library-create-name')?.value||'').trim()||'Nuova creatura';
+    const name=String(dialog.querySelector('#library-create-name')?.value||'').trim();
     const miniature=libraryMiniatureOptions().find(row=>row.id===state.libraryMiniatureId);
-    if(!miniature)throw Error("Seleziona una miniatura di base.");
     state.magicPopup="";
-    const row=await createCreature("character",name,"default",miniature);
+    let row;
+    if(state.libraryCreateKind==='monster'){
+      const entry=state.libraryBestiaryEntries.find(source=>source.key===state.libraryBestiaryKey);
+      if(!entry)throw Error('Seleziona una razza dal bestiario.');
+      const stat=await entry.load();
+      row=await createBestiaryMonster(stat,{display_name:name||entry.name,source:entry.source},'default',miniature||entry.miniature||null);
+    }else{
+      if(!miniature)throw Error("Seleziona una miniatura di base.");
+      row=await createCreature('character',name||'Nuova creatura','default',miniature);
+    }
     closeDialog(dialog);
     state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";
     await refreshCharacterHomebrewOptions();
@@ -9707,6 +9807,9 @@ function listen(){
           trackFieldWrite(target).catch(error=>message(errorMessage(error),true));
       },500));
       return;
+    }
+    if(target?.id==='library-bestiary-search'){
+      state.libraryBestiaryLimit=36;paintLibraryBestiary();return;
     }
     if(target?.id==='library-miniature-search'){
       state.libraryMiniatureLimit=36;

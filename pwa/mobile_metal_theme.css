@@ -6022,3 +6022,34 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
  cursor:pointer;padding:3px 0}
 .levelup-impact-options ul{padding:3px 0 0 18px;margin:0;display:grid;gap:4px}
 .levelup-impact-options li{font:400 11px/1.45 system-ui,sans-serif;color:#d4baa0}
+
+
+/* The new-creature dialog reuses the existing miniature/variant picker vocabulary. */
+.library-create-dialog{max-height:calc(100dvh - 28px);overflow-y:auto}
+.library-create-dialog .library-create-type[aria-pressed="true"]{
+ border-color:#f2c88f;color:#ffeac6;background:linear-gradient(#856044,#563b2e);
+ box-shadow:inset 0 0 0 1px #f6d19850,0 2px 7px #0009
+}
+#library-create-bestiary[hidden]{display:none!important}
+.library-create-bestiary{margin:0 0 17px}
+.library-create-bestiary .library-create-field{margin-bottom:10px}
+.library-bestiary-choices{
+ display:grid;gap:6px;max-height:210px;overflow-y:auto;
+ padding:2px;margin:0 0 5px
+}
+.library-create-dialog .library-bestiary-option{
+ min-width:0;min-height:48px;display:flex;align-items:center;
+ justify-content:space-between;gap:9px;text-align:left;
+ padding:9px 11px;border:1px solid #9b79568c;border-radius:8px;
+ background:linear-gradient(#40312c,#292120);color:#f1d8b6;
+ font:550 12px/1.35 system-ui,sans-serif
+}
+.library-create-dialog .library-bestiary-option strong{min-width:0;overflow-wrap:anywhere}
+.library-create-dialog .library-bestiary-option small{flex:none;color:#bea181;font:500 10px system-ui,sans-serif}
+.library-create-dialog .library-bestiary-option[aria-pressed="true"]{
+ border-color:#efc58b;background:linear-gradient(#735239,#443125);
+ box-shadow:inset 0 0 0 1px #e6c18c36
+}
+.library-bestiary-pagination{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:36px}
+.library-bestiary-progress{color:#c7ac89;font:500 11px/1.4 system-ui,sans-serif}
+.library-bestiary-choices .hint{margin:7px 2px;font-size:12px}
