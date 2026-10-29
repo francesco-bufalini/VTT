@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {companionOwnerValues} from '../companion_owner_stats.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {battleActionPanels} from '../action_economy.js';
 import {sheetScoreOriginSegments} from '../sheet_roll_origin.js';
 import {characterDefenseSummary} from '../defense_summary.js';
 import {bestiarySheet} from '../creature_variants.js';
@@ -123,6 +124,11 @@ test('homunculus servant uses live owner proficiency, spell attack and HP',()=>{
  assert.equal(calculated.stats.hit_dice,'8d4');
  assert.equal(calculated.attacks.find(x=>x.name==='Force Strike').hit,7);
  assert.equal(calculated.attacks.find(x=>x.name==='Force Strike').damage,'1d4 + 3');
+ const displayed=battleActionPanels({...child,companion_owner_values:initial},calculated).attacks;
+ const force=displayed.indexOf('data-attack-id="monster:action:0"');
+ const unarmed=displayed.indexOf('data-attack-id="unarmed"');
+ assert(force>=0&&unarmed>=0&&force<unarmed,
+  'The homunculus stat-block Force Strike appears before the generic unarmed strike');
  assert.deepEqual([calculated.values['skill:perception'],calculated.values['skill:stealth'],
   calculated.values['save:dex'],calculated.values.passive_perception],[6,5,5,16]);
  assert(calculated.proficiencies.includes('expertise:perception'));
