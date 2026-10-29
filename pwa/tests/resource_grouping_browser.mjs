@@ -10,6 +10,7 @@ try{
   await saveCreature({...saved.data,class:'Artificer',class_source:'TCE',level:8,
    classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
    abilities:{str:12,dex:14,con:14,int:18,wis:12,cha:10},
+   temporary_hp:12,
    trait_state_selection:{armor_model:'armor_model:infiltrator'},
    resource_tracker_spent:{'feature:lightning_launcher:extra_damage':1},
    inventory:[{id:'armor',name:'Armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']},
@@ -47,6 +48,10 @@ try{
  for(const width of [390,1440]){
   await page.setViewportSize({width,height:1000});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#sheet-play-view .play-health').scrollIntoViewIfNeeded();
+  const hp=page.locator('#sheet-play-view .play-hp-reading'),temp=page.locator('#sheet-play-view .play-hp-temporary');
+  const hpBox=await hp.boundingBox(),tempBox=await temp.boundingBox();
+  assert(hpBox&&tempBox&&tempBox.x>hpBox.x&&Math.abs(tempBox.y-hpBox.y)<35);
   await shot('resource-grouping-'+width);
  }
  await sheet('magic');

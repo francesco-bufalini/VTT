@@ -1,6 +1,7 @@
 import {hitDicePools,spendTrackerUses} from './character_core.js';
 import {isPortraitDataUrl} from './character_portrait.js';
 import {identityEntries} from './identity_aliases.js';
+import {characterDefenseSummary} from './defense_summary.js';
 import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
@@ -511,6 +512,8 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
   const identity=powerIdentity(action);
   const same=action.mode==='trait_state'?null:rows.find(row=>row.kind==='ability'&&row.source==='activated'&&(
    (identity==='wild_shape'&&powerIdentity(row.power)==='wild_shape')||
+   (action.class_feature_id&&row.power.class_feature_id===action.class_feature_id&&
+    row.power.feature_id===action.origin_id&&row.key===keyFor(cost,action.tracker_id))||
    (action.origin_id&&row.power.feature_id===action.origin_id&&
     powerName(row.name)===powerName(action.name)&&row.key===keyFor(cost,action.tracker_id))||
    (identity&&identity===powerIdentity(row.power)&&
@@ -557,6 +560,12 @@ export function resourceLinkedSubclassTrait(tracker={},features=[],powers=[],cal
  if((calculated.trait_state_optional_dice||[]).some(row=>row.tracker_id===tracker.id)||
    (calculated.attacks||[]).some(row=>row.origin_id===id))return null;
  const feature=features.find(row=>row.origin_id===id&&!row.disabled&&!row.inactive);
+ // A retained counter does not authorize its state-gated granting capability.
+ // Use the same explicit state requirements as the structured action path.
+ const requiredStates=(calculated.trait_state_catalog||[]).filter(rule=>
+   (rule.granted_features||[]).includes(feature?.name));
+ if(requiredStates.length&&!requiredStates.some(rule=>
+   (calculated.active_trait_state_ids||[]).includes(rule.id)))return null;
  return feature?{origin_id:id,name:feature.name,tracker_id:tracker.id}:null;
 }
 
@@ -627,7 +636,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Both battle entry points display the exact same editor and computed AC.
   bind('equipment',bank.querySelector('.battle-defense-panel'));
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
-  html='<section class="play-health" role="button" tabindex="0" data-act="hp-adjust-open" aria-label="Gestisci punti ferita"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+'</div></header><div class="play-hp-number"><span class="play-hp-reading">'+val('current_hp')+'<small> / '+output('hp')+'</small></span></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span></div></section>';
+  const defenses=characterDefenseSummary(c,d).groups.filter(group=>group.items.length)
+   .map(group=>'<div class="play-health-defense"><strong>'+esc(group.title)+'</strong><span>'+
+     [...new Set(group.items.map(item=>item.label))].map(esc).join(' · ')+'</span></div>').join('');
+  html='<section class="play-health" role="button" tabindex="0" data-act="hp-adjust-open" aria-label="Gestisci punti ferita"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+'</div></header><div class="play-hp-number"><span class="play-hp-reading">'+val('current_hp')+'<small> / '+output('hp')+'</small></span><span class="play-hp-temporary"><small>Temporanei</small><b>'+val('temporary_hp')+'</b></span></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-defenses">'+defenses+'</div></section>';
   const fastest=fastestMovement(d);
   const vital=(context,title,glyph,label,key,suffix='',fastestLabel=false)=>
     '<div class="play-button play-vital-card">'+
@@ -728,7 +740,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const glyph=icon(row.kind==='spell'?'spell_cast':
      actionGlyphKey({...row.classAction,...row.power,name:row.name,type:'Capacità'}));
    const caption=row.kind==='spell'?row.casting_time_label:
-     (timeLabels[row.timing]||row.timing||'Secondo il privilegio');
+     ((row.power?.roll_attack||row.classAction?.roll_attack)&&row.timing==='action'?'Azione di attacco':
+       timeLabels[row.timing]||row.timing||'Secondo il privilegio');
    const note=row.kind==='spell'?(row.cost>1?' · Costo '+row.cost:''):
      (row.cost?' · Costo '+row.cost:'');
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+

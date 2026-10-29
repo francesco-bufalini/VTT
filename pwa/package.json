@@ -17,6 +17,7 @@
     "test:attunement-browser": "node tests/attunement_counts_browser.mjs",
     "test:sheets-browser": "node tests/sheet_play_browser.mjs",
     "test:actions-browser": "node tests/action_dashboard_browser.mjs",
+    "test:hp-autosave-browser": "node tests/hp_autosave_browser.mjs",
     "test:resource-groups-browser": "node tests/resource_grouping_browser.mjs",
     "test:native-origins": "node tests/compare_native_origins.mjs",
     "test:native-mechanics": "node tests/compare_native_mechanics.mjs",

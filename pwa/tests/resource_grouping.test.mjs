@@ -137,3 +137,60 @@ test('Infusions does not repeat infused item powers while Resources keeps the ac
   assert(!app.querySelector('#sheet-play-view').textContent.includes('Capacità degli oggetti infusi'));
  },'magic','<section class="panel"><h2>Infusioni</h2><div class="infusion-power-row">Old duplicate</div></section>');
 });
+
+test('Defensive Field retains its counter but exposes its action only with active Guardian armor',()=>{
+ const base=sheet('Artificer','Armorer','TCE');
+ const armor={id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']};
+ for(const [model,worn,available] of [
+  ['armor_model:guardian',false,false],
+  ['armor_model:infiltrator',true,false],
+  ['armor_model:guardian',true,true]
+ ]){
+  const record={...base,inventory:worn?[armor]:[],trait_state_selection:{armor_model:model}};
+  const calculated=project(record);
+  const tracker=calculated.trackers.find(row=>row.name==='Defensive Field');
+  assert(tracker,'The counter survives armor/model changes');
+  render(record,calculated,app=>{
+   const group=app.querySelector('[data-resource-tracker="'+tracker.id+'"]');
+   assert(group);
+   assert.equal(group.querySelectorAll('[data-act="tracker-trait-use"]').length,0);
+   const actions=group.querySelectorAll('[data-act="battle-use-ability"]');
+   assert.equal(actions.length,available?1:0);
+   if(available)assert.match(group.textContent,/Azione bonus · Costo 1/);
+  });
+  if(!available){
+   assert.equal(resourceLinkedSubclassTrait(tracker,calculated.features,[],calculated),null);
+   assert.throws(()=>subclassTrackerUsePatch(record,calculated,tracker.id,tracker.origin_id),/non disponibile/);
+  }
+ }
+});
+
+test('trait operation identity deduplicates translated descriptive actions and attacks name their action',()=>{
+ const record={...sheet('Artificer','Armorer','TCE'),inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],trait_state_selection:{armor_model:'armor_model:infiltrator'}};
+ const calculated=project(record);
+ render(record,calculated,app=>{
+  const trait=calculated.features.find(row=>row.name==='Magical Tinkering');
+  const group=app.querySelector('[data-resource-privilege="'+trait.origin_id+'"]');
+  assert.equal(group.querySelectorAll('[data-ability-id]').length,1);
+  assert(!group.textContent.includes('Congegni magici'));
+  const attack=app.querySelector('[data-ability-id="activated:trait-attack:class_feature:lightning_launcher"]');
+  assert.match(attack.textContent,/Azione di attacco/);
+ });
+});
+test('health presents temporary HP alongside current HP and active defenses below the bar',()=>{
+ const record={...sheet('Artificer','Alchemist','TCE'),current_hp:31,temporary_hp:12};
+ const calculated={...project(record),damage_defense_entries:[
+  {rank:1,key:'fire'},{rank:-1,key:'cold'},{rank:2,key:'poison'},
+  {rank:3,key:'charmed'},{rank:1,key:'acid',disabled:true}]};
+ render(record,calculated,app=>{
+  const health=app.querySelector('.play-health');
+  assert.match(health.querySelector('.play-hp-number').textContent,/31.*Temporanei12/);
+  const summary=health.querySelector('.play-health-defenses');
+  assert.match(summary.textContent,/Resistenze.*Fuoco/);
+  assert.match(summary.textContent,/Vulnerabilità.*Freddo/);
+  assert.match(summary.textContent,/Immunità ai danni.*Veleno/);
+  assert.match(summary.textContent,/Immunità alle condizioni.*Affascinato/);
+  assert(!summary.textContent.includes('Acido'));
+  assert(health.querySelector('progress').compareDocumentPosition(summary)&4);
+ });
+});

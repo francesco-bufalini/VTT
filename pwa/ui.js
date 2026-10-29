@@ -4704,6 +4704,16 @@ async function persistDocumentEdit(index,part,creature){
   await pendingDocumentWrites;
 }
 async function handleField(target) {
+  if(target.matches?.('[data-hp-autosave]')){
+    const key=target.dataset.hpAutosave;
+    if(!['current_hp','temporary_hp'].includes(key)||!state.editor)return;
+    const raw=target.value.trim(),value=Number(raw);
+    if(!raw)return; // An empty intermediate edit is not zero.
+    const maximum=key==='temporary_hp'?99999:Math.max(Number(state.calculated?.stats?.max_hp)||0,Number(state.editor.read().current_hp)||0);
+    if(!Number.isSafeInteger(value)||value<0||value>maximum)throw Error('Inserisci PF interi tra 0 e '+maximum+'.');
+    if(value!==Number(state.editor.read()[key]||0))await patch({[key]:value});
+    return;
+  }
   // Tactical controls are independent from an open local creature editor.
   if(target.dataset.tokenCondition){
     const result=await action("set_condition",{token_id:state.editTokenId||state.tokenId,
@@ -7427,7 +7437,16 @@ async function handleAction(target){
     if(!dialog)throw Error('Pannello punti ferita non disponibile.');
     openSessionDialog(dialog);
     configureHpAdjustDialog(dialog);
-    dialog.querySelector('#hp-adjust-current')?.focus();
+    dialog.querySelector('.hp-adjust-close')?.focus({preventScroll:true});
+    return;
+  }
+  if(act==='hp-adjust-restore'){
+    const creature=state.editor?.read();if(!creature)return;
+    const calculated=await computeLocalData(creature);
+    const value=Math.max(0,Number(calculated.stats?.max_hp)||0);
+    await patch({current_hp:value});
+    const input=target.closest('dialog')?.querySelector('#hp-adjust-current');
+    if(input)input.value=String(value);
     return;
   }
   if(act==='hp-adjust-max'){
@@ -8851,10 +8870,7 @@ async function handleSubmit(form){
   if(form.id==='hp-adjust-form'){
     const dialog=form.closest('#hp-adjust-dialog');
     if(!dialog||!state.editor)throw Error('Apri prima una scheda.');
-    const creature=state.editor.read(),calculated=await computeLocalData(creature);
-    await patch(hpAdjustDraft(dialog,calculated));
-    closeSessionDialog(dialog);
-    await render();
+    await flushPendingFields();
     return;
   }
   if(form.id==="pair-form"){
@@ -9173,6 +9189,12 @@ function listen(){
     finally{if(button.isConnected&&!button.hasAttribute('data-roll-used'))button.disabled=false;}
   });
   document.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.isComposing&&!e.shiftKey&&
+      e.target.matches?.('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]')){
+      e.preventDefault();e.stopPropagation();e.target.blur();
+    }
+  },true);
+  document.addEventListener('keydown',e=>{
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"],#sheet-play-view .play-character-portrait[role="button"]');
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();
@@ -9201,6 +9223,16 @@ function listen(){
   },true);
   app.addEventListener("input",e=>{
     const target=e.target;
+    if(target?.matches('[data-hp-autosave]')){
+      clearTimeout(pendingFieldTimers.get(target));
+      const editor=state.editor;
+      pendingFieldTimers.set(target,setTimeout(()=>{
+        pendingFieldTimers.delete(target);
+        if(target.isConnected&&state.editor===editor)
+          trackFieldWrite(target).catch(error=>message(errorMessage(error),true));
+      },500));
+      return;
+    }
     if(target?.id==='library-miniature-search'){
       state.libraryMiniatureLimit=36;
       paintLibraryMiniatures();
