@@ -334,3 +334,18 @@ test('same-name traits with distinct feature IDs never share explicitly owned bo
   origin_key:'class|phb|fighter',rank:0,category:'classi'}, {},calculated)
    .some(group=>group.type==='bonus'));
 });
+
+test('Spellcasting benefits follow the real granting trait rather than the class summary',()=>{
+ const member={name:'Ranger',source:'PHB',mode:'Conosciuti',limit:4,
+  level:5,max_level:2,cantrips:0,ability:'wis',granting_trait_id:'feature:ranger:spellcasting'};
+ const calculated={casting_classes:[member],spell_slots:[{level:1,total:4,spent:1},{level:2,total:2,spent:0}]};
+ const trait={name:'Spellcasting',rank:2,category:'classi',
+  feature_origin:member.granting_trait_id,origin_key:'class|phb|ranger'};
+ const benefits=traitBenefitGroups(trait,{},calculated).find(group=>group.type==='spellcasting');
+ assert(benefits);
+ assert(benefits.items.some(row=>row.label==='Incantesimi di classe'&&row.value.includes('Conosciuti')));
+ assert(benefits.items.some(row=>row.label==='Caratteristica da incantatore'&&row.value==='Saggezza'));
+ assert(benefits.items.some(row=>row.label==='Slot condivisi'&&row.value.includes('1°: 3/4')));
+ assert(!traitBenefitGroups({...trait,feature_origin:'feature:other'}, {},calculated).some(g=>g.type==='spellcasting'));
+ assert(!traitBenefitGroups({...trait,rank:0,name:'Descrizione · Ranger'}, {},calculated).some(g=>g.type==='spellcasting'));
+});

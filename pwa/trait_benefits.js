@@ -185,6 +185,31 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    add('effects','Effetti e limitazioni','Armature pesanti',
      'Ignora la penalità di velocità per Forza insufficiente','armor_waiver:'+waiver.id);
  }
+ // Spellcasting/Pact Magic already owns class casting in the numeric projection.
+ // Display that existing entitlement on its exact trait instead of copying
+ // learned/prepared spells into automatic feature grants.
+ if(trait.rank!==0)for(const member of rows(calculated.casting_classes)){
+  if(!member.granting_trait_id||!ids.has(member.granting_trait_id))continue;
+  const count=Number(member.limit);
+  add('spellcasting','Lancio di incantesimi','Incantesimi di classe',
+   member.mode==='Preparati'?
+    'Preparazione'+(count>=0?' · massimo '+count:''):
+    'Conosciuti'+(count>=0?' · '+count+' previsti dalla progressione':''));
+  add('spellcasting','Lancio di incantesimi','Caratteristica da incantatore',
+   ABILITIES[member.ability]||String(member.ability||'').toUpperCase());
+  if(Number(member.cantrips)>0)
+   add('spellcasting','Lancio di incantesimi','Trucchetti conosciuti',String(member.cantrips));
+  if(Number(member.max_level)>0)
+   add('spellcasting','Lancio di incantesimi','Livello massimo incantesimi',String(member.max_level));
+  const ordinary=rows(calculated.spell_slots).filter(slot=>Number(slot.total)>0)
+   .map(slot=>String(slot.level)+'°: '+Math.max(0,Number(slot.total)-Number(slot.spent||0))+'/'+slot.total);
+  if(ordinary.length)
+   add('spellcasting','Lancio di incantesimi','Slot condivisi',ordinary.join(' · '));
+  const pact=calculated.pact_slots;
+  if(pact&&Number(pact.total)>0)
+   add('spellcasting','Lancio di incantesimi','Slot del Patto',
+    Math.max(0,Number(pact.total)-Number(pact.spent||0))+'/'+pact.total+' · livello '+pact.level);
+ }
  // An infused item's structured companion grant is displayed on that exact
  // object's benefit card. Mere knowledge of an infusion never grants a pet.
  if(trait.category==='oggetti'&&trait.rank===0){
@@ -292,6 +317,25 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   add('bonus','Bonus applicabili al tiro',rule.bonus.name||feature.name,
    value+' · '+String(rule.bonus.condition_label||'Applica quando previsto dal privilegio'),
    'passive_class:'+rule.id);
+ }
+ // Conditional class roll options use the same generic typed rule as the
+ // roll popup. Their condition is a manual choice, never an assumed state.
+ for(const rule of rows(calculated.roll_bonus_rules)){
+  if(rule.passive||!rule.bonus?.targets?.length)continue;
+  const feature=rows(calculated.features).find(row=>norm(row.name)===norm(rule.feature_name)&&
+   classOf(row)===norm(rule.class_name)&&
+   (!rule.class_source||sourceOf(row)===norm(rule.class_source))&&
+   (!rule.subclass_name||String(row.origin_key||'').includes('|subclass|')));
+  if(!feature||!ids.has(feature.origin_id))continue;
+  const condition=String(rule.bonus.condition_label||'Da verificare');
+  const value=rule.bonus.roll_mode?
+   (rule.bonus.roll_mode==='advantage'?'Vantaggio':'Svantaggio'):
+   rule.bonus.ability_modifier?'Mod. '+(ABILITIES[rule.bonus.ability_modifier]||rule.bonus.ability_modifier):
+   Number.isFinite(Number(rule.bonus.flat_bonus))?signedTraitFormula(rule.bonus.flat_bonus):
+   String(rule.bonus.dice||'');
+  add(rule.bonus.roll_mode?'roll_modes':'bonus',
+   rule.bonus.roll_mode?'Vantaggi e svantaggi':'Bonus applicabili al tiro',
+   rule.bonus.name||feature.name,value+' · '+condition);
  }
  const bonusSeen=new Set();
  const multipliers=new Map(Object.values(calculated.roll_components||{}).flat().map(row=>[row.id,row.multiplier]));

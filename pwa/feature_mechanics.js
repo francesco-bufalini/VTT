@@ -111,11 +111,13 @@ export function classFeatureRollResourceBonuses(record={},calculated={}){
   const value=modifier?Number(calculated.values?.['ability_mod:'+modifier]):Number(bonus.flat_bonus);
   const flat=Number.isFinite(value)?Math.max(Number(bonus.minimum??-Infinity),value):NaN;
   const dice=String(bonus.dice||'').trim();
-  if(!Number.isFinite(flat)&&!/^[1-9]\d*d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/.test(dice))return [];
+  const rollMode=['advantage','disadvantage'].includes(bonus.roll_mode)?bonus.roll_mode:'';
+  if(!rollMode&&!Number.isFinite(flat)&&!/^[1-9]\d*d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/.test(dice))return [];
   return [{id:ability.id,class_feature_id:ability.class_feature_id,
    origin_id:ability.origin_id,origin_name:ability.origin_name,
    name:bonus.name||ability.name,description:ability.description,
-   ...(Number.isFinite(flat)?{flat_bonus:flat}:{dice}),
+   ...(rollMode?{roll_mode:rollMode,benefit_id:'class-roll:'+ability.class_feature_id,
+      granting_trait:ability.feature_name}:Number.isFinite(flat)?{flat_bonus:flat}:{dice}),
    targets:bonus.targets,condition_label:bonus.condition_label||'',tracker_id:ability.tracker_id,
    tracker_cost:Math.max(0,Number(ability.cost)||0),optional:true}];
  });
@@ -636,6 +638,7 @@ export function contextualFeatureDescriptors(record={},features=[],catalog={},pr
   return [{id:rule.id,name:rule.name,action_type:rule.activation,type:'Capacità',
    description:rule.detail||'',origin_id:feature.origin_id,feature_id:feature.origin_id,
    feature_name:feature.name,tracker_id:trackerId,tracker_cost:resource?1:0,
+   descriptive_only:rule.descriptive_only===true,
    ...(rule.attack_selector?{attack_selector:rule.attack_selector}:{}),automatic:true,
    available:available(feature),
    resource_tracker:resource?{id:trackerId,name:resource.name,

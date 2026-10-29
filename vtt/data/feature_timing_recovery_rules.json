@@ -361,6 +361,18 @@
       "name": "Mighty Impel",
       "activation": "bonus",
       "detail": "Seleziona una creatura entro portata, TS Forza se non consenziente, poi spostala fino a 30 ft verso una casella valida. I danni da caduta sono manuali."
+    },
+    {
+      "id": "ranger:2014:primeval-awareness",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Primeval Awareness",
+      "subclass": "",
+      "name": "Primeval Awareness · individuare presenze",
+      "activation": "action",
+      "descriptive_only": true,
+      "detail": "Spendi manualmente uno slot incantesimo per percepire se sono presenti aberrazioni, celestiali, draghi, elementali, folletti, immondi o non morti entro 1 miglio (6 miglia nel terreno favorito). Non rivela posizione o numero; durata un minuto per livello dello slot."
     }
   ],
   "sources": [

@@ -89,3 +89,23 @@ test('2014 class catalogs expose Tool Expertise at level 6 and do not project it
  assert(output.features.some(f=>f.name==='Tool Expertise'));
  assert(get(high,output,'ability_check:int').some(row=>row.name==='Tool Expertise'));
 });
+
+test('Ranger PHB conditional features reuse typed roll options without granting unconditional bonuses',()=>{
+ const ranger=record('Ranger'),features=[
+  feature('Favored Enemy','Ranger'),feature("Land's Stride",'Ranger'),
+  feature('Hide in Plain Sight','Ranger'),feature('Foe Slayer','Ranger')
+ ];
+ const calculated={...calc(features,[],3),values:{proficiency:3,'ability_mod:wis':2}};
+ const options=target=>classFeatureRollBonuses(ranger,calculated,target);
+ assert(options('skill:survival').some(row=>row.roll_mode==='advantage'&&row.origin_id===features[0].origin_id));
+ assert(options('save:dex').some(row=>row.roll_mode==='advantage'&&row.origin_id===features[1].origin_id));
+ assert(options('skill:stealth').some(row=>row.flat_bonus===10&&row.origin_id===features[2].origin_id));
+ assert(options('attack_hit:weapon').some(row=>row.flat_bonus===2&&row.origin_id===features[3].origin_id));
+ assert(options('attack_damage:weapon').some(row=>row.flat_bonus===2&&row.origin_id===features[3].origin_id));
+ assert(!options('save:con').some(row=>row.origin_id===features[0].origin_id));
+ assert(!options('skill:perception').some(row=>row.origin_id===features[2].origin_id));
+ const disabled={...ranger,origin_enabled:{[features[3].origin_id]:false}};
+ assert(!classFeatureRollBonuses(disabled,calculated,'attack_hit:weapon').some(row=>row.origin_id===features[3].origin_id));
+ const revised={...ranger,rules_version:'2024',classes:[{name:'Ranger',source:'XPHB',level:8}]};
+ assert(!classFeatureRollBonuses(revised,calculated,'skill:survival').some(row=>row.origin_id===features[0].origin_id));
+});

@@ -7728,7 +7728,10 @@ async function handleAction(target){
       const racialAvailable=(current.racial_roll_modes||[]).some(rule=>rule.benefit_id===row.benefit_id);
       const featAvailable=applicableFeatRollBonuses(freshRecord,current,modeTarget)
         .some(rule=>rule.roll_mode===row.roll_mode&&rule.benefit_id===row.benefit_id);
-      if(!racialAvailable&&!featAvailable)
+      const classAvailable=classFeatureRollBonuses(freshRecord,current,modeTarget)
+        .some(rule=>rule.roll_mode===row.roll_mode&&rule.id===row.id&&
+          rule.origin_id===row.origin_id);
+      if(!racialAvailable&&!featAvailable&&!classAvailable)
         throw Error('Il beneficio condizionale non è più disponibile.');
       dialog.usedRollBonuses.push(row);
       target.textContent=row.tracker_id?'Attivo':'Rimuovi';

@@ -122,6 +122,85 @@
         "dice": "1d6",
         "condition_label": "Una volta per turno, sul primo colpo durante l’Ira; aggiungi anche metà del livello da Barbaro (per difetto). Il tipo radioso o necrotico è scelto dal personaggio."
       }
+    },
+    {
+      "id": "ranger_favored_enemy_tracking",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "feature_name": "Favored Enemy",
+      "label": "Nemico prescelto · prove pertinenti",
+      "time": "contextual",
+      "mode": "context",
+      "cost": 0,
+      "bonus": {
+        "name": "Nemico prescelto",
+        "targets": [
+          "skill:survival",
+          "ability_check:int",
+          "skill:arcana",
+          "skill:history",
+          "skill:investigation",
+          "skill:nature",
+          "skill:religion"
+        ],
+        "roll_mode": "advantage",
+        "condition_label": "Solo per seguire le tracce di un nemico prescelto con Sopravvivenza oppure per ricordare informazioni su di esso con una prova di Intelligenza. Scegli il beneficio soltanto se pertinente."
+      }
+    },
+    {
+      "id": "ranger_lands_stride_plants",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "feature_name": "Land's Stride",
+      "label": "Passo della terra · vegetazione magica",
+      "time": "contextual",
+      "mode": "context",
+      "cost": 0,
+      "bonus": {
+        "name": "Land's Stride",
+        "targets": [
+          "saving_throw"
+        ],
+        "roll_mode": "advantage",
+        "condition_label": "Solo ai tiri salvezza contro piante create o manipolate magicamente per ostacolare il movimento (per esempio Entangle). Non si applica a ogni TS."
+      }
+    },
+    {
+      "id": "ranger_hide_in_plain_sight",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "feature_name": "Hide in Plain Sight",
+      "label": "Nascondersi in piena vista · camuffamento",
+      "time": "contextual",
+      "mode": "context",
+      "cost": 0,
+      "bonus": {
+        "name": "Hide in Plain Sight",
+        "targets": [
+          "skill:stealth"
+        ],
+        "flat_bonus": 10,
+        "condition_label": "Solo dopo un minuto impiegato a creare il camuffamento naturale e finché rimani fermo senza compiere azioni; non vale per ogni prova di Furtività."
+      }
+    },
+    {
+      "id": "ranger_foe_slayer",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "feature_name": "Foe Slayer",
+      "label": "Sterminatore di nemici · Saggezza",
+      "time": "contextual",
+      "mode": "context",
+      "cost": 0,
+      "bonus": {
+        "name": "Foe Slayer",
+        "targets": [
+          "attack_roll",
+          "damage_roll"
+        ],
+        "ability_modifier": "wis",
+        "condition_label": "Una volta per turno: applica il modificatore di Saggezza al tiro per colpire O al tiro per i danni di un attacco contro un nemico prescelto. Scegli un solo tiro; verifica il bersaglio manualmente."
+      }
     }
   ]
 }
