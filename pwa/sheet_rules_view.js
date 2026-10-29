@@ -853,8 +853,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // can still be inspected. Spellcasting jumps straight to the Powers tab.
   // A feat can provide an independent second-weapon capacity without
   // changing the basic-rule availability for two Light weapons.
-  const actionMapButton=(id,name)=>['attack','opportunity','two_weapon'].includes(id)?
-   '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="unarmed" aria-label="Mostra la gittata di '+esc(name)+' sulla mappa" title="Gittata sulla mappa">'+icon('map')+'</button>':'';
   const actionLink=(id,name,time,available=true,extra='',count=0,grantId='',grantName='')=>
    '<div class="play-resource-power-row play-resource-rule'+(available?'':' play-resource-rule--inactive')+
     (id==='attack'?' play-resource-rule--attack':'')+'" data-rule-action="'+esc(id)+'">'+
@@ -864,7 +862,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<span><strong>'+esc(name)+'</strong><small>'+esc(extra||(
      available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):
      'Non disponibile'))+'</small></span></button>'+
-    actionMapButton(id,name)+
     (count>1?(grantId?'<button type="button" class="play-battle-attacks-per-action" data-act="power-trait"'+
       ' data-origin-id="'+esc(grantId)+'" title="Apri il privilegio '+esc(grantName||'Multiattacco')+'"'+
       ' aria-label="Apri il privilegio '+esc(grantName||'Multiattacco')+', '+count+' attacchi per azione">':
