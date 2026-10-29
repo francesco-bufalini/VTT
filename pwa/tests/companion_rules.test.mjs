@@ -46,6 +46,9 @@ test('Dancing Item, steel defender and wildfire spirit are derived from their ac
  const servant=companionTemplateStat(rules.templates.homunculus_servant,owner('Artificer','Alchemist',8));
  assert.equal(servant.hp.average,13);
  assert.equal(servant.hit_dice,'8d4');
+ const leveled=companionTemplateStat(rules.templates.homunculus_servant,
+  owner('Artificer','Alchemist',12));
+ assert.equal(leveled.skill.perception,8,'A stale saved PB must not leak into new companions');
  assert.deepEqual(servant.skill,{perception:6,stealth:5});
  assert.deepEqual(servant.save,{dex:5});
  const saved=bestiarySheet(servant);
