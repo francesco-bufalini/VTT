@@ -107,6 +107,28 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     typeof entry==='string'?{name:label+' · '+(i+1),entries:entry}:
      {...entry,name:entry?.name||label+' · '+(i+1)},
     {category:'mostro',origin:'Mostro · '+label,origin_key:'monster|'+section,level:0,rank:0}));
+  // 5eTools spellcasting is a structured block, not a trait/action array.
+  // Keep the spells and use-frequency groups visible even when offline; this
+  // does not invent spell slots or imply automatic spellcasting resources.
+  arr(record.stat_block?.spellcasting).forEach((caster,i)=>{
+   const lines=[...arr(caster.headerEntries)];
+   for(const [level,group] of Object.entries(caster.spells||{})){
+    const names=arr(group?.spells).map(String);
+    if(names.length)lines.push('Livello '+level+': '+names.join(', '));
+   }
+   for(const [mode,label] of [['daily','Al giorno'],['rest','Per riposo'],
+     ['weekly','A settimana'],['will','A volontà'],['constant','Costanti']]){
+    const source=caster[mode];
+    if(Array.isArray(source)){
+     if(source.length)lines.push(label+': '+source.map(String).join(', '));
+    }else for(const [count,values] of Object.entries(source||{}))
+      if(arr(values).length)lines.push(label+' '+count+': '+values.map(String).join(', '));
+   }
+   lines.push(...arr(caster.footerEntries));
+   add({name:caster.name||'Incantesimi · '+(i+1),entries:lines},
+     {category:'mostro',origin:'Mostro · Incantesimi',origin_key:'monster|spellcasting',
+      level:0,rank:0});
+  });
  }else if(record.species){
   const selected=record.subrace?
    (await lookup('races',record.species+' ('+record.subrace+')',record.subrace_source)||

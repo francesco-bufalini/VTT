@@ -285,7 +285,10 @@
       },
       "speed": {
         "walk": 30,
-        "fly": 30,
+        "fly": {
+          "number": 30,
+          "condition": "(hover)"
+        },
         "canHover": true
       },
       "abilities": {
@@ -315,6 +318,12 @@
           "entries": [
             "Immune to effects that would alter its form."
           ]
+        },
+        {
+          "name": "Irrepressible Dance",
+          "entries": [
+            "Quando una creatura inizia il turno entro 10 ft, l'oggetto può aumentarne o ridurne di 10 ft la velocità di camminata fino alla fine del turno."
+          ]
         }
       ],
       "action": [
@@ -337,8 +346,20 @@
             "damage_type": "force",
             "reach_feet": 5
           }
-        ]
-      }
+        ],
+        "skill_ranks": {},
+        "save_ranks": {}
+      },
+      "languages": [
+        "understands the languages you speak"
+      ],
+      "passive": 10,
+      "resist": [],
+      "vulnerable": [],
+      "reaction": [],
+      "alignment": [
+        "U"
+      ]
     },
     "wildfire_spirit": {
       "name": "Wildfire Spirit",
@@ -353,7 +374,10 @@
       },
       "speed": {
         "walk": 30,
-        "fly": 30,
+        "fly": {
+          "number": 30,
+          "condition": "(hover)"
+        },
         "canHover": true
       },
       "abilities": {
@@ -404,8 +428,20 @@
             "range_feet": 60,
             "ranged": true
           }
-        ]
-      }
+        ],
+        "skill_ranks": {},
+        "save_ranks": {}
+      },
+      "languages": [
+        "understands the languages you speak"
+      ],
+      "passive": 12,
+      "resist": [],
+      "vulnerable": [],
+      "reaction": [],
+      "alignment": [
+        "U"
+      ]
     },
     "steel_defender": {
       "name": "Steel Defender",
@@ -417,7 +453,8 @@
         "base": 2,
         "class_name": "Artificer",
         "per_class_level": 5,
-        "ability_mod": "int"
+        "ability_mod": "int",
+        "hit_die": 8
       },
       "speed": {
         "walk": 40
@@ -475,8 +512,30 @@
             "damage_type": "force",
             "reach_feet": 5
           }
-        ]
-      }
+        ],
+        "skill_ranks": {
+          "athletics": 1,
+          "perception": 2
+        },
+        "save_ranks": {
+          "dex": 1,
+          "con": 1
+        }
+      },
+      "languages": [
+        "understands the languages you speak"
+      ],
+      "passive": "10 + (PB × 2)",
+      "resist": [],
+      "vulnerable": [],
+      "reaction": [
+        {
+          "name": "Deflect Attack",
+          "entries": [
+            "Reazione: impone svantaggio a un attacco effettuato da una creatura visibile entro 5 ft contro un bersaglio diverso dal difensore."
+          ]
+        }
+      ]
     },
     "drake_companion": {
       "name": "Drake Companion",
@@ -490,7 +549,8 @@
       "hp": {
         "base": 5,
         "class_name": "Ranger",
-        "per_class_level": 5
+        "per_class_level": 5,
+        "hit_die": 10
       },
       "speed": {
         "walk": 40
@@ -535,8 +595,33 @@
             "damage_type": "piercing",
             "reach_feet": 5
           }
-        ]
-      }
+        ],
+        "skill_ranks": {},
+        "save_ranks": {
+          "dex": 1,
+          "wis": 1
+        }
+      },
+      "languages": [
+        "Draconic"
+      ],
+      "passive": 12,
+      "resist": [],
+      "vulnerable": [],
+      "immune": [
+        {
+          "special": "determined by the drake's draconic essence trait"
+        }
+      ],
+      "conditionImmune": [],
+      "reaction": [
+        {
+          "name": "Infused Strikes",
+          "entries": [
+            "Reazione: quando un'altra creatura visibile entro 30 ft colpisce con un'arma, il draco aggiunge 1d6 danni del tipo scelto."
+          ]
+        }
+      ]
     },
     "homunculus_servant": {
       "name": "Homunculus Servant",
@@ -548,7 +633,8 @@
         "base": 1,
         "class_name": "Artificer",
         "per_class_level": 1,
-        "ability_mod": "int"
+        "ability_mod": "int",
+        "hit_die": 4
       },
       "speed": {
         "walk": 20,
@@ -601,8 +687,29 @@
             "range_feet": 30,
             "ranged": true
           }
-        ]
-      }
+        ],
+        "skill_ranks": {
+          "perception": 2,
+          "stealth": 1
+        },
+        "save_ranks": {
+          "dex": 1
+        }
+      },
+      "languages": [
+        "understands the languages you speak"
+      ],
+      "passive": "10 + (PB × 2)",
+      "resist": [],
+      "vulnerable": [],
+      "reaction": [
+        {
+          "name": "Channel Magic",
+          "entries": [
+            "L'homunculus può consegnare un incantesimo a contatto lanciato dal proprietario, quando è entro 120 ft."
+          ]
+        }
+      ]
     }
   }
 }

@@ -2,6 +2,7 @@
 // familiar picker. No feature is detected from its description text.
 import {creatureMatchesFilter} from './creature_variants.js';
 import {activeInfusions} from './item_controls.js';
+import {SKILL_ABILITY} from './skill_definitions.js';
 
 const normal=value=>String(value??'').toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
@@ -101,6 +102,25 @@ export function spellCompanionRule(data,spell,owner){
  return rows(data?.spells).find(rule=>rows(rule.editions).includes(String(owner.rules_version||'2014'))&&
   rows(rule.names).some(n=>candidates.some(c=>c===normal(n)||c.endsWith(' '+normal(n)))))||null;
 }
+// Numeric companion proficiency ranks are typed data, not guessed from prose.
+// Both the initial bestiary snapshot and linked sheets use this same projection.
+export function companionTemplateProficiencies(template={},proficiency=2){
+ const skill={},save={},skill_ranks={},save_ranks={};
+ const ranks=template.owner_bindings||{},abilities=template.abilities||{};
+ for(const [key,value] of Object.entries(ranks.skill_ranks||{})){
+  const rank=Number(value),ability=SKILL_ABILITY[key];
+  if(!ability||![1,2].includes(rank))continue;
+  skill_ranks[key]=rank;
+  skill[key]=scoreMod(abilities[ability])+rank*proficiency;
+ }
+ for(const [key,value] of Object.entries(ranks.save_ranks||{})){
+  const rank=Number(value);
+  if(!['str','dex','con','int','wis','cha'].includes(key)||![1,2].includes(rank))continue;
+  save_ranks[key]=rank;
+  save[key]=scoreMod(abilities[key])+rank*proficiency;
+ }
+ return {skill,save,skill_ranks,save_ranks};
+}
 export function companionTemplateStat(template,owner,{size='',name=''}={}){
  if(!template||typeof template!=='object'||!template.name)throw Error('Profilo creatura mancante.');
  const classLevel=classInfo(owner,template.hp?.class_name).level;
@@ -109,18 +129,58 @@ export function companionTemplateStat(template,owner,{size='',name=''}={}){
   (template.hp?.ability_mod?scoreMod(owner.abilities?.[template.hp.ability_mod]):0)));
  const totalLevel=rows(owner.classes).reduce((sum,m)=>sum+Math.max(0,Number(m.level)||0),0)||
    Number(owner.level)||1;
- const pb=clamp(Number(owner.proficiency_bonus)||
-   2+Math.floor((Math.max(1,totalLevel)-1)/4),2,9);
+ // A saved owner.proficiency_bonus can be stale after level-up. The live
+ // projection uses calculateSheet; initial templates use class-level PB.
+ const pb=clamp(2+Math.floor((Math.max(1,totalLevel)-1)/4),2,9);
  const armor=typeof template.ac==='object'?Number(template.ac.base||10)+Number(template.ac.per_pb||0)*pb:Number(template.ac)||10;
  const abilities=template.abilities||{};
+ const trained=companionTemplateProficiencies(template,pb);
  const stat={name:String(name||template.name).trim().slice(0,160),source:template.source||'',
   type:template.type||'construct',size:(size||template.size||'M').slice(0,1).toUpperCase(),
-  ac:[armor],hp:{average:hp},speed:structuredClone(template.speed||{}),
+  ...(template.alignment?{alignment:structuredClone(template.alignment)}:{}),
+  ac:[armor],hp:{average:hp},
+  ...(template.hp?.hit_die?{hit_dice:classLevel+'d'+Number(template.hp.hit_die)}:{}),
+  speed:structuredClone(template.speed||{}),
   ...Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,Number(abilities[k])||10])),
+  skill:trained.skill,save:trained.save,
+  languages:structuredClone(template.languages||[]),
+  ...(template.passive!==undefined?{passive:typeof template.passive==='number'?template.passive:
+   10+scoreMod(abilities.wis)+(trained.skill_ranks.perception||0)*pb}:{}),
+  resist:structuredClone(template.resist||[]),vulnerable:structuredClone(template.vulnerable||[]),
   immune:structuredClone(template.immune||[]),conditionImmune:structuredClone(template.conditionImmune||[]),
   senses:structuredClone(template.senses||[]),
-  trait:structuredClone(template.trait||[]),action:structuredClone(template.action||[])};
+  trait:structuredClone(template.trait||[]),action:structuredClone(template.action||[]),
+  reaction:structuredClone(template.reaction||[]),bonus:structuredClone(template.bonus||[]),
+  spellcasting:structuredClone(template.spellcasting||[])};
  return stat;
+}
+// Legacy familiar sheets were created before all published fields were
+// captured. Fill only missing descriptive entries in a read-only view, never
+// rewrite the saved creature or its HP, inventory or manual ability values.
+export function companionStatBlockView(creature={},catalog={}){
+ if(!creature.parent_creature_id||!creature.companion_rule_id||
+   !creature.companion_template_id)return creature;
+ const rule=[...rows(catalog?.features),...rows(catalog?.spells)]
+   .find(row=>row.id===creature.companion_rule_id);
+ if(!rule||rule.template!==creature.companion_template_id)return creature;
+ const template=catalog?.templates?.[rule.template];
+ if(!template)return creature;
+ const old=creature.stat_block||{},stat={...old};
+ const copyIfMissing=field=>{
+  if(stat[field]===undefined&&template[field]!==undefined)
+   stat[field]=structuredClone(template[field]);
+ };
+ for(const field of ['languages','passive','senses','resist','vulnerable','immune',
+   'conditionImmune','spellcasting'])copyIfMissing(field);
+ // Older catalog versions omitted entire reactions or individual traits.
+ // Reconcile by stable source names without replacing saved text.
+ for(const field of ['trait','reaction','bonus']){
+  const current=rows(old[field]),additional=rows(template[field]).filter(row=>
+   !current.some(saved=>normal(saved?.name)===normal(row?.name)));
+  if(additional.length||!Array.isArray(old[field])&&Array.isArray(template[field]))
+   stat[field]=[...current,...structuredClone(additional)];
+ }
+ return {...creature,stat_block:stat};
 }
 export function companionSources(rule,data,bestiary=[],owner={}){
  if(!rule)return [];

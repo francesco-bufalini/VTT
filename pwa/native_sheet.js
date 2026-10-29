@@ -648,6 +648,9 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       .map(([,label])=>label).join(', ')||'Nessuna'],
     ...['tool','language','weapon','armor'].map((kind,i)=>[
       ['Strumenti','Linguaggi','Armi','Armature'][i],
+      kind==='language'&&(c.kind==='monster'||c.variant_rules_kind==='monster')&&
+        Array.isArray(c.stat_block?.languages)&&c.stat_block.languages.length?
+        c.stat_block.languages.map(row=>typeof row==='string'?row:row?.name||'').filter(Boolean).join(', '):
       (calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':'))
         .map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])
   ]))+
