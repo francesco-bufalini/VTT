@@ -79,6 +79,7 @@ try {
     const paths = ["/", "/index.html", "/main.js", "/ui.js", "/storage.js",
       "/creatures.js", "/styles.css", "/catalog/class_mechanics.json",
       "/catalog/ability_grants.json", "/catalog/spells.json", "/catalog/player.json",
+      "/power_selection.js", "/catalog/power_selections.json",
       "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
       "/catalog/miniatures.json", "/catalog/species_attacks.json", "/catalog/combat_action_supplements_5etools.json",
       "/icons/action_controls.svg", "/icons/gold_generated/gold_2.svg",
@@ -98,7 +99,7 @@ try {
   // Static app resources must come straight from CacheStorage (not from the
   // 502 proxy), including sprite atlases and assets referenced by CSS.
   const offlineAssets = await page.evaluate(async () => {
-    const paths = ["/main.js", "/ui.js", "/styles.css", "/mobile_metal_theme.css",
+    const paths = ["/main.js", "/ui.js", "/power_selection.js", "/catalog/power_selections.json", "/styles.css", "/mobile_metal_theme.css",
       "/icons/gold_generated/gold_2.svg", "/icons/action_controls.svg",
       "/icons/info/identity.svg", "/icon-192.png", "/catalog/miniatures.json"];
     return Promise.all(paths.map(async path => {

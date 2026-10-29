@@ -71,6 +71,7 @@ test("Android offline installation includes required code, icon sprites and mini
     "/dragonborn_ftd.js", "/ability_areas.js",
     "/class_defenses.js", "/armor_rules.js",
     "/feature_item_grants.js", "/catalog/feature_item_grants.json",
+    "/power_selection.js", "/catalog/power_selections.json",
     "/zero_hp_responses.js",
     "/mobile_metal_theme.css", "/catalog/class_mechanics.json",
     "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
