@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "description": "Selezione di poteri: imparati, preparati, applicati. I trigger sono informazioni per la UI; mai cancelli o blocchi sulle selezioni.",
+  "templates": [
+    {
+      "id": "class_spellcasting",
+      "source": "casting_classes",
+      "title": "Incantesimi",
+      "option_kind": "spell",
+      "layers": {
+        "learned": {
+          "when": "book_or_known",
+          "limit": "spell_known",
+          "trigger": "level_up",
+          "storage": "existing_spell_selection"
+        },
+        "prepared": {
+          "when": "prepared",
+          "limit": "spell_prepared",
+          "trigger": "long_rest",
+          "storage": "prepared_spells"
+        }
+      },
+      "cantrips": {
+        "layer": "learned",
+        "limit": "cantrips"
+      },
+      "ui": "existing"
+    }
+  ],
+  "selections": [
+    {
+      "id": "artificer_infusions",
+      "title": "Infusioni",
+      "owner": {
+        "class_name": "Artificer",
+        "class_source": "TCE",
+        "trait": "Infuse Item"
+      },
+      "option_kind": "infusion",
+      "source": {
+        "type": "infusion_catalog"
+      },
+      "layers": {
+        "learned": {
+          "limit": "infusion_known",
+          "trigger": "level_up",
+          "storage": "optional_features_catalog"
+        },
+        "applied": {
+          "limit": "infusion_active",
+          "trigger": "long_rest",
+          "storage": "inventory.infusion",
+          "target": {
+            "kind": "item",
+            "selector": "infusion.item_selector"
+          },
+          "refund_on_remove": true
+        }
+      },
+      "ui": "existing"
+    },
+    {
+      "id": "armor_model",
+      "title": "Modelli di armatura",
+      "owner": {
+        "class_name": "Artificer",
+        "class_source": "TCE",
+        "subclass": "Armorer",
+        "trait": "Armor Model"
+      },
+      "option_kind": "trait_state",
+      "source": {
+        "type": "trait_states",
+        "group": "armor_model"
+      },
+      "layers": {
+        "applied": {
+          "limit": 1,
+          "trigger": "short_rest",
+          "storage": "trait_state_selection.armor_model",
+          "target": {
+            "kind": "equipped_item",
+            "slot": "body"
+          },
+          "refund_on_remove": true
+        }
+      },
+      "ui": "existing"
+    },
+    {
+      "id": "ranger_favored_enemy_phb",
+      "title": "Nemici prescelti",
+      "owner": {
+        "class_name": "Ranger",
+        "class_source": "PHB",
+        "trait": "Favored Enemy"
+      },
+      "option_kind": "creature_type",
+      "source": {
+        "type": "inline",
+        "options": [
+          {
+            "id": "aberrations",
+            "name": "Aberrazioni"
+          },
+          {
+            "id": "beasts",
+            "name": "Bestie"
+          },
+          {
+            "id": "celestials",
+            "name": "Celestiali"
+          },
+          {
+            "id": "constructs",
+            "name": "Costrutti"
+          },
+          {
+            "id": "dragons",
+            "name": "Draghi"
+          },
+          {
+            "id": "elementals",
+            "name": "Elementali"
+          },
+          {
+            "id": "fey",
+            "name": "Folletti"
+          },
+          {
+            "id": "fiends",
+            "name": "Immondi"
+          },
+          {
+            "id": "humanoids",
+            "name": "Umanoidi",
+            "subchoices": {
+              "count": 2,
+              "label": "Due razze umanoidi",
+              "free_text": true,
+              "placeholder": "Razza umanoide"
+            }
+          },
+          {
+            "id": "giants",
+            "name": "Giganti"
+          },
+          {
+            "id": "monstrosities",
+            "name": "Mostruosità"
+          },
+          {
+            "id": "oozes",
+            "name": "Melme"
+          },
+          {
+            "id": "plants",
+            "name": "Vegetali"
+          },
+          {
+            "id": "undead",
+            "name": "Non morti"
+          }
+        ]
+      },
+      "layers": {
+        "prepared": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                1
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                14,
+                3
+              ]
+            ]
+          },
+          "trigger": null,
+          "storage": "power_selections.ranger_favored_enemy_phb.prepared"
+        }
+      },
+      "ui": "generic",
+      "description": "Scegli un tipo di creatura, oppure due razze di umanoidi, al 1°, 6° e 14° livello da Ranger. La scelta è permanente secondo le regole; l'interfaccia non impone quando cambiarla."
+    }
+  ]
+}

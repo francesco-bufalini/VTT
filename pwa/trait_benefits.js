@@ -175,6 +175,17 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(group.seen.has(key))return;
   group.seen.add(key);group.items.push({label,value,id,...extra});
  };
+ // The same learn / prepare / apply model appears as a benefit of its owner.
+ // Existing spellcasting detail rows and state capabilities remain unchanged.
+ if(trait.rank!==0)for(const model of rows(calculated.power_selections)){
+  if(!model.origin_id||!ids.has(model.origin_id))continue;
+  for(const [stage,layer] of Object.entries(model.layers||{})){
+   const label=({learned:'Imparati',prepared:'Preparati',applied:'Applicati'})[stage]||stage;
+   const details=layer.used+(layer.limit!==null?' / '+layer.limit:'')+
+    (layer.change_label?' · '+layer.change_label:'');
+   add('power_selections','Selezione dei poteri',model.title+' · '+label,details);
+  }
+ }
  for(const sense of rows(calculated.senses?.grants)){
   if(!belongs(sense))continue;
   add('senses','Sensi',SENSE_NAMES[sense.type]||sense.type,

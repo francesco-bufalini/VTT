@@ -8,7 +8,7 @@ try{
   const {createCreature,saveCreature}=await import('/creatures.js');const saved=await createCreature('character','Ore - verifica Armorer');
   await saveCreature({...saved.data,class:'Artificer',class_source:'TCE',level:8,
    classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
-   abilities:{str:18,dex:14,con:14,int:19,wis:12,cha:10},artificer_armor_model:'infiltrator',attack_ability:'int',
+   abilities:{str:18,dex:14,con:14,int:19,wis:12,cha:10},trait_state_selection:{armor_model:'armor_model:infiltrator'},attack_ability:'int',
    current_hp:62,max_hp_base:62,inventory:[{id:'test:armor',name:'Celebrum Armor',type:'MA',ac:14,quantity:1,equipped_slots:['body']}]
   },'default',saved.revision);
  });
@@ -40,16 +40,16 @@ try{
   assert.equal(await page.locator('#sheet-play-view [data-resource-tracker="feature:armor_model:activation"]').count(),0);
   // Armor Models are displayed and activated from their dedicated Powers card.
  await sheet('magic');
- const modelCard=page.locator('#sheet-play-view .play-armor-model-card');
- assert.equal(await modelCard.locator('[data-act="armor-model-open"]').count(),2);
+ const modelCard=page.locator('#sheet-play-view .armor-model-panel');
+ assert.equal(await modelCard.locator('.armor-model-entry[role="button"]').count(),2);
  const guardian=modelCard.locator('[data-armor-model-id="armor_model:guardian"]');
  const infiltrator=modelCard.locator('[data-armor-model-id="armor_model:infiltrator"]');
- assert.equal(await infiltrator.locator('.play-infusion-state').getAttribute('title'),'Attivo');
- assert.equal(await guardian.locator('.play-infusion-state').getAttribute('title'),'Non attivo');
+ assert.equal(await infiltrator.getAttribute('data-armor-model-active'),'true');
+ assert.equal(await guardian.getAttribute('data-armor-model-active'),'false');
  await guardian.click();
  const modelDialog=page.locator('#armor-model-dialog');
  await modelDialog.locator('[data-act="armor-model-apply"]').waitFor();
- assert.equal((await record()).artificer_armor_model,'infiltrator','No switch before confirmation');
+ assert.equal((await record()).trait_state_selection?.armor_model,'armor_model:infiltrator','No switch before confirmation');
  assert.match(await modelDialog.locator('.magic-spell-description').innerText(),/Guardiano|guanti|Campo difensivo/i);
  assert.equal(await modelDialog.locator('.armor-model-benefits .infusion-dialog-item').count(),2);
  assert.equal(await modelDialog.locator('[data-ability-payment]').count(),0,'No activation tracker is offered');
@@ -58,11 +58,11 @@ try{
   assert.equal(await modelDialog.locator('[data-act="armor-model-apply"]').isEnabled(),true);
  await modelDialog.locator('[data-act="armor-model-apply"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
-   return (await listCreatures())[0].creature.artificer_armor_model==='guardian';});
+   return (await listCreatures())[0].creature.trait_state_selection?.armor_model==='armor_model:guardian';});
  assert.equal((await record()).resource_tracker_spent?.['feature:armor_model:activation'],undefined);
  assert.equal((await record()).rest_selection_available?.armor_model,undefined);
- assert.equal(await guardian.locator('.play-infusion-state').getAttribute('title'),'Attivo');
- assert.equal(await infiltrator.locator('.play-infusion-state').getAttribute('title'),'Non attivo');
+ assert.equal(await guardian.getAttribute('data-armor-model-active'),'true');
+ assert.equal(await infiltrator.getAttribute('data-armor-model-active'),'false');
  await sheet('battle');
  await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').waitFor({state:"attached"});
  assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').count(),0);

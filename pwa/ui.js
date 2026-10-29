@@ -49,6 +49,7 @@ import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrai
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
 import {selectedTraitState,traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
+import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,powerSelectionTriggerLabel} from './power_selection.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -1322,11 +1323,14 @@ async function computeLocalData(record){
     for(const definition of embedded)spellMap.set(definition.id,{...definition,...spellMap.get(definition.id)});
     state.spellCatalog=[...spellMap.values()];
   }
+  const infusion_catalog=catalogs.abilityGrants?.artificer_infusions||[];
+  const infusion_mechanics={...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]};
+  const power_selections=powerSelectionModels(record,{...calculated,infusion_catalog,infusion_mechanics},catalogs.powerSelections||{});
   return {...calculated,loadError,companion_view:companionView,companion_rules:companionData,combat_snapshot:state.map||null,
+    power_selections,power_selection_catalog:catalogs.powerSelections||{},
     pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
-    infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
-    infusion_mechanics:{...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]}};
+    infusion_catalog,infusion_mechanics};
 }
 
 // Spells and nonspell powers share their popup header, facts and description.
@@ -2482,6 +2486,7 @@ async function editorView() {
             (member.source?'<span class="hint">'+esc(member.source)+'</span>':'')+'</div>'+
             '<div class="magic-source-resources" aria-label="Risorse di lancio">'+magicSlotUsageChip()+
             (member.mode==='Preparati'?'<span class="magic-source-resource magic-selection-rest" title="Puoi riselezionare gli incantesimi dopo un riposo lungo"><span class="magic-source-resource-label">Riposo lungo</span></span>':'')+
+            (member.mode==='Conosciuti'?(()=>{const trigger=calculated.power_selections?.find(row=>row.id==='class_spellcasting:'+member.id)?.layers.learned?.change_label;return trigger?'<span class="magic-source-resource magic-selection-rest" title="Quando cambiare gli incantesimi conosciuti"><span class="magic-source-resource-label">'+esc(trigger)+'</span></span>':'';})():'')+
             '</div></header>'+
             castingStatistics(c,member.id,member.ability)+
             '<div class="magic-source-controls">'+
@@ -2497,6 +2502,7 @@ async function editorView() {
         'magic-panel')+
       infusionPanel(c,calculated)+
       armorModelPanel(c,calculated)+
+      genericPowerSelectionPanels(c,calculated)+
        racialRestTrainingPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
@@ -3066,13 +3072,15 @@ function armorModelPanel(c,calculated){
  if(!rules.length)return '';
  const selected=selectedTraitState(c,rules);
  const activeRules=new Set(calculated.active_trait_state_ids||[]);
- const recovery=selectionRestLabel(rules[0].selection_recovery||'short_rest');
+ const model=calculated.power_selections?.find(row=>row.id==='armor_model');
+ const recovery=powerSelectionTriggerLabel(model?.layers.applied?.trigger)||
+  selectionRestLabel(rules[0].selection_recovery||'short_rest');
  const summary='<div class="infusion-overview"><span class="power-selection-rest">'+esc(recovery)+'</span></div>';
  return panel('Modelli di armatura',summary+rules.map(rule=>{
    const available=(calculated.state_actions||[]).some(action=>action.state_id===rule.id);
    const active=available&&activeRules.has(rule.id);
    const label=active?'Attivo':selected===rule.id?'Selezionato':'Selezionabile';
-   return '<div class="magic-spell-row armor-model-entry" data-armor-model-id="'+esc(rule.id)+
+   return '<div class="magic-spell-row armor-model-entry" role="button" tabindex="0" data-armor-model-id="'+esc(rule.id)+
      '" data-armor-model-active="'+active+'" data-armor-model-available="'+available+'">'+
      '<span class="magic-spell-open">'+esc(rule.name.replace(/^Modello armatura · /,''))+
      '<small class="infusion-status">'+label+(available?'':' · Armatura richiesta')+'</small></span></div>';
@@ -3087,7 +3095,9 @@ async function openArmorModelDialog(id){
  const selected=selectedTraitState(creature,rules),available=(calculated.state_actions||[])
   .some(action=>action.state_id===id);
  const active=selected===id&&available;
- const rest=selectionRestLabel(rule.selection_recovery||'short_rest');
+ const model=calculated.power_selections?.find(row=>row.id==='armor_model');
+ const rest=powerSelectionTriggerLabel(model?.layers.applied?.trigger)||
+  selectionRestLabel(rule.selection_recovery||'short_rest');
  const description=String(rule.summary||'').trim();
  const benefits=[
    ...(rule.attacks||[]).map(attack=>({name:attack.name||attack.trait,detail:attack.damage?
@@ -3118,14 +3128,101 @@ async function openArmorModelDialog(id){
  openDialog(dialog);
 }
 
+
+// Source-qualified, three-layer selection list. The existing spell, infusion
+// and Armor Model presentations are kept intact; inline catalog choices use
+// this shared view without naming a class or privilege in their UI logic.
+const selectedPowerId=row=>typeof row==='string'?row:String(row?.id||'');
+const selectedPowerLabel=(option,selection)=>{
+ const label=option?.name||selectedPowerId(selection);
+ const details=Array.isArray(selection?.subchoices)?selection.subchoices.join(', '):'';
+ return label+(details?' · '+details:'');
+};
+const powerLayerNames={learned:'Imparati',prepared:'Preparati',applied:'Applicati'};
+function genericPowerSelectionPanels(c,calculated){
+ return (calculated.power_selections||[]).filter(model=>model.ui==='generic').map(model=>{
+  const stages=Object.entries(model.layers||{}).filter(([,layer])=>layer.enabled);
+  return panel(model.title,stages.map(([stage,layer])=>{
+   const selected=layer.selected||[],optionById=new Map((model.options||[]).map(option=>[option.id,option]));
+   const rows=selected.map(item=>'<div class="magic-spell-row infusion-entry"><span class="magic-spell-open">'+
+    esc(selectedPowerLabel(optionById.get(selectedPowerId(item)),item))+'</span></div>').join('');
+   const trigger=layer.change_label?'<span class="power-selection-rest">'+esc(layer.change_label)+'</span>':'';
+   return '<section class="power-selection-stage"><div class="infusion-overview"><strong>'+
+    esc(powerLayerNames[stage]||stage)+' '+selected.length+(layer.limit!==null?' / '+layer.limit:'')+
+    '</strong>'+trigger+'</div>'+(rows||'<p class="hint">Nessuna opzione selezionata.</p>')+
+    '<div class="actions"><button type="button" class="btn small" data-act="power-selection-open"'+
+    ' data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+esc(stage)+'">'+
+    (selected.length?'Gestisci':'Scegli')+'</button></div></section>';
+  }).join(''));
+ }).join('');
+}
+async function openGenericPowerSelectionDialog(id,stage){
+ const record=state.editor?.read();
+ if(!record)throw Error('Apri prima una creatura.');
+ const calculated=await computeLocalData(record);
+ const model=calculated.power_selections?.find(row=>row.id===id&&row.ui==='generic');
+ const layer=model?.layers?.[stage];
+ if(!layer||!['learned','prepared','applied'].includes(stage))
+  throw Error('Selezione del privilegio non disponibile.');
+ app.querySelector('#power-selection-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='power-selection-dialog';
+ dialog.className='sheet-roll-dialog magic-tools-dialog infusion-picker-dialog';
+ dialog.dataset.powerSelectionId=id;dialog.dataset.powerStage=stage;
+ dialog.dataset.creatureId=record.id;
+ const selected=new Map((layer.selected||[]).map(row=>[selectedPowerId(row),row]));
+ const choices=(model.options||[]).filter(option=>!option.min_level||model.level>=option.min_level);
+ const optionMarkup=option=>{
+  const owned=selected.has(option.id),sub=option.subchoices;
+  const current=selected.get(option.id);
+  const fields=sub?'<div class="power-selection-subchoices">'+
+   Array.from({length:sub.count},(_,i)=>'<label>'+esc(sub.label||'Sotto-opzione')+' '+(i+1)+
+    '<input type="text" data-power-subchoice="'+i+'" data-power-option="'+esc(option.id)+'" maxlength="70" value="'+
+    esc(current?.subchoices?.[i]||'')+'" placeholder="'+esc(sub.placeholder||'Sotto-opzione')+'"></label>').join('')+'</div>':'';
+  return '<div class="magic-catalog-row vtt-selectable'+(owned?' is-selected':'')+'">'+
+   '<div class="magic-catalog-name">'+esc(option.name)+(option.description?'<small>'+esc(option.description)+'</small>':'')+'</div>'+
+   fields+'<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
+   '" data-act="power-selection-toggle" data-power-option-id="'+esc(option.id)+'">'+
+   (owned?(sub?'Aggiorna':'Rimuovi'):'Scegli')+'</button>'+
+   (owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
+   ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':'')+'</div>';
+ };
+ const trigger=layer.change_label?'<span class="power-selection-rest">'+esc(layer.change_label)+'</span>':'';
+ const targetPicker=stage==='applied'&&layer.target?'<label>Oggetto a cui applicare<select data-power-target-index>'+ 
+  (record.inventory||[]).flatMap((item,index)=>Number(item.quantity??1)>0?
+   ['<option value="'+index+'">'+esc(item.name||item.id||'Oggetto')+'</option>']:[]).join('')+
+  '</select></label>':'';
+ const cap=layer.limit===null?'':(' / '+layer.limit);
+ dialog.innerHTML='<div class="magic-tools-head"><h2>'+esc(model.title)+'</h2>'+
+  dialogCloseButton('power-selection-close','Chiudi','power-selection-close')+'</div>'+
+  '<div class="magic-tools-body"><div class="infusion-overview"><strong>'+
+   esc(powerLayerNames[stage]||stage)+' '+selected.size+cap+'</strong>'+trigger+'</div>'+targetPicker+
+  '<label class="vtt-list-search magic-editor-search">Cerca opzione<input type="search" data-power-search autocomplete="off"></label>'+
+  '<div class="catalog-results vtt-selection-list magic-editor-results power-selection-results" role="list">'+
+   choices.map(optionMarkup).join('')+'</div>'+
+  (model.description?'<p class="hint">'+esc(model.description)+'</p>':'')+
+  '<div class="actions"><button type="button" class="btn" data-act="power-selection-close">Chiudi</button></div></div>';
+ dialog.querySelector('[data-power-search]')?.addEventListener('input',event=>{
+  const q=String(event.target.value||'').trim().toLocaleLowerCase('it');
+  for(const row of dialog.querySelectorAll('.power-selection-results .magic-catalog-row'))
+   row.hidden=!row.textContent.toLocaleLowerCase('it').includes(q);
+ });
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
+}
+
 function infusionPanel(c,calculated){
  const caps=infusionLimits(c,calculated.infusion_mechanics,calculated.features||[]);
  if(!caps.level)return "";
  const trait=infusionGrantingTrait(c,calculated.features||[]);
  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
  const active=(c.inventory||[]).filter(item=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
+ const selection=calculated.power_selections?.find(row=>row.id==='artificer_infusions');
+ const knownTrigger=selection?.layers.learned?.change_label||'';
+ const activeTrigger=selection?.layers.applied?.change_label||'Riposo lungo';
  const summary='<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+caps.known+
-   '</strong><span>Applicate '+active.length+' / '+caps.active+'</span><span class="power-selection-rest">Riposo lungo</span></div>';
+   '</strong><span>Applicate '+active.length+' / '+caps.active+'</span>'+
+   (knownTrigger?'<span class="power-selection-rest">'+esc(knownTrigger)+' · imparare</span>':'')+
+   (activeTrigger?'<span class="power-selection-rest">'+esc(activeTrigger)+' · applicare</span>':'')+'</div>';
  const levels=[...new Set(known.map(row=>Math.max(2,Number(row.min_level)||2)))].sort((a,b)=>a-b);
  const learned=levels.map(level=>'<section class="infusion-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div>'+
    known.map((entry,index)=>({entry,index})).filter(({entry})=>Math.max(2,Number(entry.min_level)||2)===level).map(({entry,index})=>{
@@ -9012,6 +9109,33 @@ async function handleAction(target){
     return;
   }
 
+  if(act==='power-selection-open'){
+    await openGenericPowerSelectionDialog(target.dataset.powerSelectionId,target.dataset.powerStage);return;
+  }
+  if(act==='power-selection-close'){
+    closeDialog(app.querySelector('#power-selection-dialog'),{remove:true});return;
+  }
+  if(act==='power-selection-toggle'){
+    const dialog=app.querySelector('#power-selection-dialog');
+    const record=state.editor?.read();
+    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)
+      throw Error('Riapri la selezione dei poteri dalla scheda.');
+    const calculated=await computeLocalData(record),id=dialog.dataset.powerSelectionId;
+    const stage=dialog.dataset.powerStage,model=calculated.power_selections?.find(row=>row.id===id);
+    const option=model?.options.find(row=>row.id===target.dataset.powerOptionId);
+    if(!option)throw Error('Opzione non disponibile.');
+    const subchoices=option.subchoices&&target.dataset.powerRemove!=='true'?
+      [...dialog.querySelectorAll('[data-power-subchoice][data-power-option="'+option.id+'"]')]
+        .map(input=>input.value):[];
+    const changes=stage==='applied'?
+      powerApplicationPatch(record,calculated,calculated.power_selection_catalog,id,option.id,
+        !(model.layers.applied.selected||[]).some(row=>selectedPowerId(row)===option.id),{
+          itemIndex:Number(dialog.querySelector('[data-power-target-index]')?.value??-1)
+        }):
+      powerSelectionPatch(record,calculated,calculated.power_selection_catalog,id,stage,option.id,subchoices);
+    await patch(changes);closeDialog(dialog,{remove:true});await render();
+    await openGenericPowerSelectionDialog(id,stage);return;
+  }
   if(act==='armor-model-open'){
     await openArmorModelDialog(String(target.dataset.armorModelId||''));return;
   }
@@ -9796,6 +9920,13 @@ function listen(){
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button){
+      // The styled model row remains the click target; keep the same visual UI.
+      const armorRow=e.target.closest?.('.armor-model-entry[data-armor-model-id]');
+      if(armorRow){
+        try{await flushPendingFields();await handleAction({dataset:{act:'armor-model-open',armorModelId:armorRow.dataset.armorModelId}});}
+        catch(error){message(errorMessage(error),true);}
+        return;
+      }
       // An HP card is a single click target, except for its own controls.
       const card=e.target.closest('#sheet-play-view .play-health[data-act="hp-adjust-open"],#sheet-play-view .play-character-portrait[data-sheet-context="identity"]');
       if(card&&!e.target.closest('button,input,select,textarea,a,[role="button"]:not(.play-health):not(.play-character-portrait)')){
@@ -9897,6 +10028,10 @@ function listen(){
     }
   },true);
   document.addEventListener('keydown',e=>{
+    const row=e.target.closest?.('.armor-model-entry[role="button"]');
+    if(row&&e.target===row&&['Enter',' '].includes(e.key)){
+      e.preventDefault();row.click();return;
+    }
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"],#sheet-play-view .play-character-portrait[role="button"]');
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();
