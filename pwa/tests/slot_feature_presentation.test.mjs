@@ -15,7 +15,7 @@ function originRenderer(){
  return fn({spellCatalog:[]},
   row=>({name:row.name||row.id,level:1}),
   ()=>'<slot-chip/>',()=>'<tracker-chip/>',()=>'<casting-statistics/>',
-  ()=>'<spell-list/>',value=>String(value));
+  (items,renderRow)=>'<spell-list>'+items.map(renderRow).join('')+'</spell-list>',value=>String(value));
 }
 const grant={id:'feature-spell:feature:ranger|feature_slot_primeval_awareness_phb',
  spell_id:'feature_slot_primeval_awareness_phb',origin_id:'feature:ranger',
