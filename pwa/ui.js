@@ -4844,6 +4844,7 @@ async function handleField(target) {
     const selected=selection||{};
     // Adding the first class is a level-up, not a silent reference change.
     if(key==='class'&&!creature.class&&selected.name){
+      target.value='';
       await openLevelUpClassDialog({preferredNew:String(selected.id||selected.name+'|'+selected.source),
         suggestedCount:1});return;
     }
@@ -4865,6 +4866,7 @@ async function handleField(target) {
       const previous=rowsFor(creature,'classes')[Number(target.dataset.index)];
       const count=Number(target.value)-Number(previous?.level||1);
       if(previous?.name&&count>0){
+        target.value=String(previous.level||1);
         await openLevelUpClassDialog({preferredIndex:Number(target.dataset.index),
           suggestedCount:count});return;
       }
@@ -4938,6 +4940,7 @@ async function handleField(target) {
     const changedClass=target.dataset.nativePick==='classes'&&target.dataset.key==='name'&&selected?.name&&
       (selected.name!==previous?.name||selected.source!==previous?.source);
     if(changedClass&&!previous?.name){
+      target.value='';
       await openLevelUpClassDialog({preferredNew:String(selected.id||selected.name+'|'+selected.source),
         suggestedCount:1});return;
     }
@@ -5025,6 +5028,7 @@ async function handleField(target) {
     if(key==='primary_class_level'){
       const before=Number(rowsFor(creature,'classes')[0]?.level)||1;
       if(Number(value)>before){
+        target.value=String(before);
         await openLevelUpClassDialog({preferredIndex:0,suggestedCount:Number(value)-before});
         return;
       }
