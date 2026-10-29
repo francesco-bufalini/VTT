@@ -3,7 +3,7 @@ import {identityEntries,identityEntriesPatch} from './identity_aliases.js';
 import {availableD20Rerolls,offerD20Reroll,chooseD20Reroll} from './d20_rerolls.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage,validateVariants} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
-import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from './companion_rules.js';
+import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch,companionStatBlockView} from './companion_rules.js';
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
@@ -1245,8 +1245,9 @@ async function computeLocalData(record){
       }
     }catch{ /* A missing owner must not prevent opening the saved familiar. */ }
   }
+  const companionView=companionStatBlockView(record,companionData);
   const calculated=calculateSheet(linked?
-    {...record,companion_owner_values:linked}:record,catalogs);
+    {...companionView,companion_owner_values:linked}:companionView,catalogs);
   // Internal racial powers must remain resolvable offline, even when the
   // native host has not supplied a full/selected spell catalogue yet.
   const ownedAreaIds=new Set((calculated.origin_spells||[]).map(row=>row.spell_id));
@@ -1256,7 +1257,7 @@ async function computeLocalData(record){
     for(const definition of embedded)spellMap.set(definition.id,{...definition,...spellMap.get(definition.id)});
     state.spellCatalog=[...spellMap.values()];
   }
-  return {...calculated,loadError,companion_rules:companionData,combat_snapshot:state.map||null,
+  return {...calculated,loadError,companion_view:companionView,companion_rules:companionData,combat_snapshot:state.map||null,
     pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
@@ -2296,9 +2297,10 @@ async function editorView() {
     }
   }
   state.battleOptionalTraits=battleOptionalTraits;
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
+  const displayRecord=calculated.companion_view||c;
+  body=nativeSection(displayRecord,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   if(state.sheet==="info"){
-    const request=traitsView(c);
+    const request=traitsView(displayRecord);
     try{body+=await sheetLoadingDeadline(request,2500,"dei tratti");}
     catch(error){
       if(error.code!=='SHEET_LOADING_TIMEOUT')throw error;
