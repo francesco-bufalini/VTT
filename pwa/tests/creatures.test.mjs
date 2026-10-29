@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseCreatureExport, makeOwnedCopy, referencedDefinitions, makeCreatureExport } from "../creature_format.js";
 import { importCreatureExport, importCreatureFile, loadCreature, listCreatures,
-  ownerId, openCreatureEditor, exportCreature, exportCreatureBatch, removeCreature, createCreature,
+  ownerId, openCreatureEditor, exportCreature, exportCreatureBatch, removeCreature, createCreature, createBestiaryMonster,
   createSubcreature, summonSubcreature, listSubcreatures } from "../creatures.js";
 import { exportBackup, importBackup, putAttachment, getAttachment, listRecords } from "../storage.js";
 
@@ -172,6 +172,49 @@ test('functional edits compose against latest state and retain identity checks',
  await assert.rejects(editor.update(()=>({id:'another-id'})),/identity/);
  await editor.update(current=>({name:current.name+' salvati'}));
  assert.equal((await loadCreature(row.id)).data.name,'Aggiornamenti atomici salvati');
+});
+
+
+test("bestiary monsters are independent, persist full 5eTools stats and export normally", async () => {
+  const scope="bestiary_monsters_"+Date.now();
+  const stat={
+    name:"Dire Wolf",source:"MM",type:"beast",size:["L"],cr:"1",
+    hp:{average:37,formula:"5d10+10"},ac:[{ac:14,from:["natural armor"]}],
+    speed:{walk:50},str:17,dex:15,con:15,int:3,wis:12,cha:7,
+    skill:{prc:"+3",stealth:"+4"},resist:["cold"],immune:["poison"],
+    conditionImmune:["frightened"],
+    action:[{name:"Bite",entries:["Melee Weapon Attack"]}]
+  };
+  const row=await createBestiaryMonster(stat,{display_name:"Lupo della guardia"},scope);
+  assert.equal(row.revision,1);
+  assert.equal(row.data.kind,"monster");
+  assert.equal(row.data.variant_rules_kind,"monster");
+  assert.equal(row.data.name,"Lupo della guardia");
+  assert.equal(row.data.species,"Dire Wolf");
+  assert.deepEqual(row.data.bestiary_ref,{name:"Dire Wolf",source:"MM"});
+  assert.equal(row.data.parent_creature_id,undefined);
+  assert.equal(row.data.companion_identity,undefined);
+  assert.equal(row.data.current_hp,37);
+  assert.equal(row.data.armor_class_base,14);
+  assert.equal(row.data.speed_base,50);
+  assert.deepEqual(row.data.abilities,{str:17,dex:15,con:15,int:3,wis:12,cha:7});
+  assert.equal(row.data.size_name,"Large");
+  assert.equal(row.data.footprint,2);
+  assert.deepEqual(row.data.stat_block,stat);
+  assert.equal((await listCreatures(scope)).length,1);
+  assert.equal((await listSubcreatures(row.id,scope)).length,0);
+  const payload=JSON.parse(await (await exportCreature(row.id,scope)).text());
+  assert.deepEqual(payload.creature.stat_block,stat);
+  assert.equal(payload.subcreatures,undefined);
+  const second=await createBestiaryMonster(stat,{source:"MM"},scope,
+    {id:"dire-wolf-miniature",size_name:"Large",footprint:2});
+  assert.notEqual(second.id,row.id);
+  assert.equal(second.data.name,"Dire Wolf");
+  assert.equal(second.data.default_miniature_id,"dire-wolf-miniature");
+  assert.equal((await listCreatures(scope)).length,2);
+  await assert.rejects(createBestiaryMonster({source:"MM"},{},scope),/bestiario/);
+  await assert.rejects(createBestiaryMonster(stat,{display_name:"x".repeat(161)},scope),/Nome/);
+  assert.equal((await listCreatures(scope)).length,2);
 });
 
 test("subcreatures have independent sheets, remain hidden from the main roster and travel with their owner", async () => {
