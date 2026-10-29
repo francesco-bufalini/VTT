@@ -31,7 +31,8 @@ async function workerFixture(revision = "a".repeat(40)) {
       path.endsWith(".css") ? "text/css" :
       path.endsWith(".webmanifest") || path.endsWith(".json") ? "application/json" :
       path.endsWith(".svg") ? "image/svg+xml" :
-      path.endsWith(".png") ? "image/png" : "text/html";
+      path.endsWith(".png") ? "image/png" :
+      path.endsWith(".webp") ? "image/webp" : "text/html";
     return new Response(path, { headers: { "Content-Type": type } });
   };
   const self = {
@@ -75,7 +76,7 @@ test("Android offline installation includes required code, icon sprites and mini
     "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
     "/catalog/miniatures.json", "/icons/action_controls.svg",
     "/icons/gold_generated/gold_2.svg", "/icons/info/identity.svg",
-    "/icon-192.png", "/icon-512.png"
+    "/icon-192.png", "/icon-512.png", "/miniature-images/ore.webp", "/miniature-images/harmakis.webp"
   ];
   for (const path of expected) {
     const request = new Request("https://vtt.example" + path +
