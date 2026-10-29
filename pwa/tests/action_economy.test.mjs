@@ -33,10 +33,8 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(sword.querySelector('[data-act="battle-damage-roll"]'));
  assert.equal(sword.querySelector('.play-battle-attack-range').textContent,'Portata 5 ft');
  assert.equal(sword.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:sword');
- assert.equal(sword.querySelector('[data-act="battle-attack-hit"]').dataset.hitAttackId,'item:sword',
-  'Colpisci exists even when the attack has no on-hit mechanics');
- assert.equal(sword.querySelector('[data-act="battle-attack-hit-effect"]'),null,
-  'No post-roll success-confirmation button remains');
+ assert.equal(sword.querySelector('[data-act="battle-attack-hit"]'),null,
+  'Only the map-range button can select a target for on-hit effects');
  assert.equal(sword.querySelector('[data-damage-formula]').dataset.damageFormula,'1d8');
  assert.equal(sword.querySelectorAll('.play-battle-effect').length,1);
  assert(!sword.querySelector('.play-battle-attack-chevron'));
@@ -45,8 +43,9 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  const dagger=movement.querySelector('[data-attack-id="two_weapon"]');
  assert.equal(dagger.querySelector('.play-battle-attack-roll'),null,
   'Azione secondaria is a generic action, not a weapon attack');
- assert.equal(dagger.querySelector('.play-battle-attack-range'),null);
- assert.equal(dagger.querySelector('[data-act="battle-attack-map"]'),null);
+ assert.equal(dagger.querySelector('.play-battle-attack-range').textContent,'Portata 5 ft');
+ assert.equal(dagger.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'unarmed',
+  'Basic offhand attacks use unarmed reach, not the equipped dagger range');
  assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus',
   'The secondary-hand strike is in bonus actions');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
@@ -70,6 +69,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(movement.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
  const opportunity=movement.querySelector('[data-attack-id="opportunity"]');
  assert(opportunity,'The opportunity reaction is available');
+ assert.equal(opportunity.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'unarmed');
  assert.equal(opportunity.querySelector('.play-battle-attack-copy strong').textContent,'Attacco di opportunità');
  assert(!opportunity.querySelector('[data-act="battle-damage-roll"]'),
   'Opportunity shows the generic action, not the main-hand weapon roll');
@@ -103,12 +103,16 @@ test('flat Attacks retain unarmed and equipped weapons; the basic actions are ti
   features:[{name:'Extra Attack',attacks_per_action:2}]},[],[],catalog.actions,[],[],true);
  const attacks=doc(projected.attacks),others=doc(projected.others);
  assert(attacks.querySelector('[data-attack-id="unarmed"]'));
- assert.equal(attacks.querySelector('[data-attack-id="unarmed"] [data-act="battle-attack-hit"]')?.dataset.hitAttackId,
-  'unarmed','Unarmed strikes can target a map creature independently of a roll');
+ assert.equal(attacks.querySelector('[data-attack-id="unarmed"] [data-act="battle-attack-hit"]'),null);
+ assert.equal(attacks.querySelector('[data-attack-id="unarmed"] [data-act="battle-attack-map"]')?.dataset.mapAttackId,
+  'unarmed','Unarmed strikes retain their map-range button');
  assert(!attacks.querySelector('[data-action-timing]'));
  assert(!attacks.querySelector('[data-attack-id="opportunity"]'));
  assert(!attacks.querySelector('[data-attack-id="unarmed:off"]'));
  assert(others.querySelector('[data-action-timing="action"] [data-attack-id="attack"]'));
+ assert.equal(others.querySelector('[data-attack-id="attack"] [data-act="battle-attack-map"]').dataset.mapAttackId,'unarmed');
+ assert.equal(others.querySelector('[data-attack-id="two_weapon"] [data-act="battle-attack-map"]').dataset.mapAttackId,'unarmed');
+ assert(!attacks.querySelector('[data-act="battle-attack-hit"]'));
  assert(others.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
  assert.equal(others.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action'),null,
   'Only basic rules show the linked multiattack multiplier');
