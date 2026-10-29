@@ -11,8 +11,9 @@ and those capabilities do not also create individual trait cards.
 
 Passive traits and Multiattack retain their own cards. Legendary actions,
 lair actions and Legendary Resistance have dedicated granting traits with
-their counters. Legendary/lair options belong to their respective traits and
-show the actual resource cost; Legendary Resistance has no child capability.
+their counters. Legendary actions remain distinct capabilities. Lair actions
+appear in one capability whose description includes the complete base and
+additional lair entries; Legendary Resistance has no child capability.
 The base-rule list includes the corresponding special action types when the
 creature owns them. Attack-action subtitles show the granting trait's text,
 including character Extra Attack and monster Multiattack descriptions.
@@ -29,20 +30,28 @@ those benefits appear on the new granting card without changing their IDs.
 
 Rechargeable actions can expose alternatives from nested 5etools `list` blocks
 with named `item` entries, using either `entry` or `entries`. This is independent
-of creature or action names. The parent remains the sole capacity/resource owner;
-its alternatives share its timing and cost. The PWA shows mutually exclusive
-disclosures in actions and capacity details; native details use a single option
-picker. A named list without a recharge source does not create alternatives.
+of creature or action names. Every alternative becomes a distinct capability,
+identified as `monster:section:index:option:option-index`. They retain the same
+granting trait, timing, cost and parent recharge tracker. Spending either one
+exhausts the shared resource for all its siblings. The unsplit parent is no
+longer listed as another capability. A named list without a recharge source
+does not create separate variants.
 
 Multiattack normalization searches explicit attack clauses throughout the text,
-including sequences after an optional special ability. Frightful Presence followed
-by three attacks grants three attacks. An explicit `attacks_per_action` count
-takes precedence. The native normalizer retains its derived value separately as
-`vtt_attacks_per_action` and invalidates it when the source description changes.
+including a special-use clause preceding the attack sequence. The displayed
+multiplier counts routine components: Frightful Presence followed by three
+attacks displays ×4. Physical attack and special-use counts remain separately
+available in the PWA's normalization metadata. Previously generated ×3 values
+matching that attack clause are migrated; other explicit custom counts retain
+precedence. Versioned derived counts are invalidated when descriptions change.
 
 The bestiary client enriches imported stat blocks with source-qualified lore
 from `fluff-bestiary-*.json` and lair entries from `legendarygroups.json`.
-Same-file lore copies and group inheritance are resolved before delivery.
+Same-file lore copies and group inheritance are resolved before delivery,
+including structured append/prepend extensions for additional lair actions.
+Known older base-only descriptions receive missing additions without replacing
+local edits or duplicating entries. Nested additional sections retain their names
+and complete text in the single lair capability.
 Opening an existing monster can fill missing descriptive/lair fields while
 preserving user-edited statistics and actions. Cached data remains usable
 offline; a failed optional fetch leaves the local sheet available.

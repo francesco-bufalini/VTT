@@ -2236,7 +2236,7 @@ const monsterDetailAttempts=new Set();
 function loadMissingMonsterDetails(editor){
  const creature=editor.read(),stat=creature.stat_block||{};
  if(creature.kind!=='monster'||!stat.name||!stat.source||
-  (!state.online&&!state.hostReachable)||stat.fluff&&(!stat.legendaryGroup||stat.lairActions))return;
+  (!state.online&&!state.hostReachable)||stat.fluff&&(!stat.legendaryGroup||Number(stat.vtt_lair_details_version)>=2))return;
  const key=[creature.id,stat.name,stat.source].join('|');
  if(monsterDetailAttempts.has(key))return;
  monsterDetailAttempts.add(key);

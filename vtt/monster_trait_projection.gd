@@ -59,6 +59,21 @@ static func _make(record: Dictionary, id: String, name: String, entries: Variant
 		"feature_key": origin(record) + "|" + id, "monster_role": id, "rank": 0,
 		"monster_actions": [], "monster_attack_ids": [], "monster_tracker_ids": [], "monster_legacy_keys": []}
 
+static func entry_text(value: Variant) -> String:
+	if value is String:
+		return String(value)
+	if value is Array:
+		var parts: PackedStringArray = []
+		for item: Variant in value:
+			var text: String = entry_text(item)
+			if not text.is_empty():
+				parts.append(text)
+		return "\n".join(parts)
+	if value is Dictionary:
+		var body: String = entry_text(value.get("entries", value.get("entry", value.get("items", value.get("description", "")))))
+		return (String(value.get("name", "")) + "\n" + body).strip_edges()
+	return ""
+
 static func traits(record: Dictionary) -> Array[Dictionary]:
 	var stat: Dictionary = record.get("stat_block", {})
 	var fluff: Variant = stat.get("fluff", record.get("fluff", stat.get("description", "")))
@@ -75,9 +90,16 @@ static func traits(record: Dictionary) -> Array[Dictionary]:
 		special["legendary"] = row
 		output.append(row)
 	if not stat.get("lairActions", []).is_empty():
-		var row: Dictionary = _make(record, "lair", "Azioni di tana", stat.get("lairHeader", stat.get("lairActions", [])))
+		var lair_entries: Array = stat.get("lairActions", []).duplicate(true)
+		if stat.has("lairHeader"):
+			var header: Variant = stat.lairHeader
+			lair_entries = (header if header is Array else [header]) + lair_entries
+		var row: Dictionary = _make(record, "lair", "Azioni di tana", lair_entries)
 		row["monster_pool"] = {"id": "lair_actions", "name": "Azioni di tana", "max": 1, "recharge": "turn"}
 		row.monster_tracker_ids.append("lair_actions")
+		row.monster_actions.append({"id": "monster:lairActions:0", "name": "Azioni di tana", "entries": lair_entries,
+			"action_type": "lair", "origin_id": "feature:" + String(row.feature_key), "tracker_id": "lair_actions", "cost": 1,
+			"aggregate_lair": true, "options": [], "attack_id": ""})
 		special["lairActions"] = row
 		output.append(row)
 	for section: String in ["trait", "action", "bonus", "reaction", "legendary", "mythic", "lairActions"]:
@@ -89,6 +111,9 @@ static func traits(record: Dictionary) -> Array[Dictionary]:
 		for index: int in range(entries.size()):
 			var raw: Variant = entries[index]
 			var row: Dictionary = raw.duplicate(true) if raw is Dictionary else {"name": "Azione di tana · %d" % (index + 1), "entries": [raw]}
+			if section == "lairActions":
+				special.lairActions.monster_legacy_keys.append(legacy_key(section, row))
+				continue
 			if is_multiattack(row) or section == "trait":
 				var projected_trait: Dictionary = _make(record, "trait:%s:%d" % [section, index], String(row.get("name", "")), row.get("entries", row.get("description", "")))
 				projected_trait.merge(row, true)
@@ -147,6 +172,23 @@ static func traits(record: Dictionary) -> Array[Dictionary]:
 		var story: Array = overview.entries if overview.entries is Array else [overview.entries]
 		story.append({"name": caster.get("name", "Incantesimi"), "entries": lines})
 		overview["entries"] = story
+	for source: Dictionary in output:
+		var abilities: Array[Dictionary] = []
+		for action: Dictionary in source.monster_actions:
+			var options: Array = action.get("options", [])
+			if options.is_empty():
+				abilities.append(action)
+				continue
+			for option: Dictionary in options:
+				var ability: Dictionary = action.duplicate(true)
+				ability["id"] = String(action.id) + ":option:" + String(option.id)
+				ability["parent_action_id"] = action.id
+				ability["name"] = option.name
+				ability["entries"] = option.entries
+				ability["options"] = []
+				ability["attack_id"] = ""
+				abilities.append(ability)
+		source["monster_actions"] = abilities
 	return output
 
 static func attack_owner(record: Dictionary, id: String) -> Dictionary:

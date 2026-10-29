@@ -184,6 +184,10 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   already.add(String(attack.id));add(attack.name,attack.action_type||'action','Attacco',attack.description||attack.damage||'',tracked(attack.tracker_id));
  }
  for(const action of monsterActions(record,calculated.trackers)){
+  if(action.parent_action_id){
+   const parentIndex=out.findIndex(row=>row.id===action.parent_action_id);
+   if(parentIndex>=0)out.splice(parentIndex,1);
+  }
   const existing=out.find(row=>row.id===action.id);
   if(existing)Object.assign(existing,action,{type:existing.type,tracker:tracked(action.tracker_id)});
   else add(action.name,action.time,'Capacità',action.description,tracked(action.tracker_id),action.cost,action);
@@ -194,6 +198,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   arr(record.stat_block?.[section]).forEach((feature,i)=>{
    const id='monster:'+section+':'+i;
    if(!feature?.name)return;
+   if(out.some(row=>row.parent_action_id===id))return;
    const candidates=[feature.tracker_id,feature.vtt_resource?.id,
      'recharge:'+section+':'+i,'fightclub:'+section+':'+i];
    const trackerId=candidates.find(key=>key&&trackers.has(String(key)))||'';

@@ -5,6 +5,7 @@ import {monsterTraits,monsterActions,monsterActionUsePatch,monsterBasicRules,mon
 import {JSDOM} from 'jsdom';
 import {mountPlaySheet} from '../sheet_rules_view.js';
 import {actionGlyph} from '../action_economy.js';
+import {normalizeMonsterStatBlock,multiattackSequence} from '../character_core.js';
 import {collectTraitRows,groupTraitRows} from '../trait_projection.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {resourceTrackers,attackCalculations} from '../sheet_rules.js';
@@ -34,13 +35,14 @@ test('one creature section, overview first, exact attack and capacity ownership'
  assert.match(abilities.find(row=>row.label.startsWith('Fire Breath')).cost,/1 utilizzo/);
  assert.equal(data.attacks.find(row=>row.id==='monster:action:1').origin_id,traits[0].feature_origin);
  assert.equal(traits.filter(row=>row.name==='Multiattack').length,1);
- assert.equal(data.attack_count_benefits[0].attacks_per_action,3);
+ assert.equal(data.attack_count_benefits[0].attacks_per_action,4);
 });
 test('legendary, resistance and lair traits grant their own counters and correct costs',()=>{
  const traits=monsterTraits(fixture),data=calculated();
  const legendary=traits.find(row=>row.monster_role==='legendary');
  assert.equal(legendary.monster_actions.find(row=>row.name.startsWith('Wing Attack')).cost,2);
- assert.deepEqual(traits.find(row=>row.monster_role==='lair').monster_actions.map(row=>row.name),['Lava','Smoke']);
+ assert.deepEqual(traits.find(row=>row.monster_role==='lair').monster_actions.map(row=>row.name),['Azioni di tana']);
+ assert.match(traits.find(row=>row.monster_role==='lair').monster_actions[0].description,/Lava[\s\S]*Smoke/);
  const resistance=traits.find(row=>row.monster_role==='resistance');
  assert.equal(resistance.monster_actions?.length||0,0);
  assert.equal(data.trackers.filter(row=>row.origin_id==='feature:'+resistance.feature_key).length,1);
@@ -117,24 +119,54 @@ test('saved benefits of removed action cards remain visible on their new grantin
  const overview=traitBenefitGroups(traits[0],record,{...data,bonuses:record.formula_bonuses});
  assert.ok(overview.flatMap(group=>group.items).some(row=>row.id==='bonus:old-bite-bonus'));
 });
-test('recharge alternatives belong to one overview capability and spend a single shared use',async()=>{
+test('recharge variants are separate overview capabilities sharing the parent pool',async()=>{
  const data=calculated(),traits=await collectTraitRows(fixture,data);
  const actions=monsterActions(fixture,data.trackers);
  for(const [index,names] of [[4,['Cold Breath','Paralyzing Breath']],[5,['Force Pulse','Slowing Pulse']]]){
-  const parent=actions.find(row=>row.id==='monster:action:'+index);
-  assert.deepEqual(parent.options.map(row=>row.name),names);
-  assert.ok(parent.options.every(row=>row.parent_action_id===parent.id&&row.tracker_id===parent.tracker_id));
-  assert.equal(parent.cost,1);
-  assert.ok(!actions.some(row=>names.includes(row.name)),'Options must not become independent capacities');
-  const preview=traitBenefitGroups(traits[0],fixture,data).find(group=>group.type==='abilities').items.find(row=>row.label===parent.name);
-  assert.deepEqual(preview.options.map(row=>row.name),names);
-  const patch=monsterActionUsePatch(fixture,data,parent.id);
-  assert.equal(patch.resource_tracker_spent[parent.tracker_id],1);
+  const parentId='monster:action:'+index;
+  const variants=actions.filter(row=>row.parent_action_id===parentId);
+  assert.deepEqual(variants.map(row=>row.name),names);
+  assert.ok(!actions.some(row=>row.id===parentId));
+  assert.ok(variants.every(row=>row.tracker_id==='recharge:action:'+index&&row.cost===1&&row.options.length===0));
+  const preview=traitBenefitGroups(traits[0],fixture,data).find(group=>group.type==='abilities').items;
+  assert.ok(names.every(name=>preview.some(row=>row.label===name)));
+  const patch=monsterActionUsePatch(fixture,data,variants[0].id);
+  assert.equal(patch.resource_tracker_spent[variants[0].tracker_id],1);
   const spent={...fixture,...patch};
-  assert.throws(()=>monsterActionUsePatch(spent,calculated(spent),parent.id),/insufficiente/);
+  assert.throws(()=>monsterActionUsePatch(spent,calculated(spent),variants[1].id),/insufficiente/);
  }
- const cold=actions.find(row=>row.id==='monster:action:4').options[0];
+ const cold=actions.find(row=>row.name==='Cold Breath').option_metadata;
  assert.equal(cold.save_dc,20);assert.equal(cold.damage_formula,'13d8');assert.equal(cold.area_feet,60);
  const guardian={...fixture,stat_block:{...fixture.stat_block,name:'Construct Guardian'}};
- assert.equal(monsterActions(guardian,calculated(guardian).trackers).find(row=>row.id==='monster:action:5').options.length,2);
+ assert.equal(monsterActions(guardian,calculated(guardian).trackers).filter(row=>row.parent_action_id==='monster:action:5').length,2);
+});
+test('one lair capacity retains base, additional and nested lair descriptions',()=>{
+ const data=calculated(),lair=monsterActions(fixture,data.trackers).filter(row=>row.time==='lair');
+ assert.equal(lair.length,1);assert.equal(lair[0].name,'Azioni di tana');
+ for(const text of ['Lava','Smoke','Additional Lair Actions','Frozen Floor','Ice covers'])assert.ok(lair[0].description.includes(text));
+ assert.equal(lair[0].tracker_id,'lair_actions');assert.equal(lair[0].cost,1);
+});
+test('legacy saved three-count migrates to four routine components and remains recalculable',()=>{
+ const row={...fixture.stat_block.action[0],attacks_per_action:3};
+ const normalized=normalizeMonsterStatBlock({action:[row]});
+ assert.equal(normalized.action[0].attacks_per_action,4);
+ assert.equal(normalized.action[0].vtt_attack_sequence_count,3);
+ assert.equal(normalized.action[0].vtt_special_sequence_count,1);
+ assert.equal(normalizeMonsterStatBlock(normalized),normalized);
+ const edited=normalizeMonsterStatBlock({action:[{...normalized.action[0],entries:['It can use a special ability.','It then makes two attacks.']}]});
+ assert.equal(edited.action[0].attacks_per_action,3);
+ assert.deepEqual(multiattackSequence(row),{attacks:3,specials:1,total:4});
+ assert.equal(normalizeMonsterStatBlock({action:[{...row,attacks_per_action:7}]}).action[0].attacks_per_action,7);
+ const saved={...fixture,stat_block:{...fixture.stat_block,action:[row]}};
+ assert.equal(calculated(saved).attack_count_benefits[0].attacks_per_action,4);
+});
+test('lair enrichment adds inherited additions without overwriting local descriptions',()=>{
+ const record=structuredClone(fixture);record.stat_block.lairActions=['Original base'];
+ const detail={name:record.stat_block.name,source:record.stat_block.source,lairActions:['Original base',{name:'Additional Lair Actions',entries:['Inherited addition']}],vtt_lair_base_entries:['Original base'],vtt_lair_details_version:2};
+ const migrated=monsterDetailPatch(record,detail);
+ assert.deepEqual(migrated.stat_block.lairActions,detail.lairActions);
+ assert.deepEqual(monsterDetailPatch({...record,...migrated},detail),{});
+ record.stat_block.lairActions=['My edited base'];
+ const custom=monsterDetailPatch(record,detail);
+ assert.deepEqual(custom.stat_block.lairActions,['My edited base',detail.lairActions[1]]);
 });

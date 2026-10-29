@@ -38,7 +38,9 @@ func run() -> void:
 		if feature.monster_role == "resistance":
 			assert(feature.monster_actions.is_empty())
 		if feature.monster_role == "lair":
-			assert(feature.monster_actions.size() == 2)
+			assert(feature.monster_actions.size() == 1)
+			assert("Lava" in MonsterProjection.entry_text(feature.monster_actions[0].entries))
+			assert("Smoke" in MonsterProjection.entry_text(feature.monster_actions[0].entries))
 	var actions: Array[Dictionary] = Actions.entries(record)
 	assert(actions.any(func(row: Dictionary) -> bool: return row.name == "Wing Attack (Costs 2 Actions)" and row.time == 5 and row.cost == 2))
 	assert(actions.any(func(row: Dictionary) -> bool: return row.name == "Frightful Presence" and row.time == 0 and not String(row.origin_id).is_empty()))
@@ -52,6 +54,19 @@ func run() -> void:
 	lore["legendaryGroup"] = {"name": "Dragon", "source": "TEST"}
 	Bestiary._apply_details(lore, {"legendaryGroup": [{"name": "Dragon", "source": "OTHER", "lairActions": ["Wrong book"]}, {"name": "Dragon", "source": "TEST", "lairActions": ["Correct book"]}]}, "legendary")
 	assert(lore.lairActions == ["Correct book"])
+	var hag_root: Dictionary = {"legendaryGroup": [
+		{"name": "Base Hag", "source": "TEST", "lairActions": ["Original base"]},
+		{"name": "Derived Hag", "source": "TEST", "_copy": {"name": "Base Hag", "source": "TEST", "_mod": {"lairActions": {"mode": "appendArr", "items": [{"name": "Additional Lair Actions", "entries": ["Inherited addition"]}]}}}}
+	]}
+	var hag: Dictionary = {"name": "Hag Creature", "source": "TEST", "legendaryGroup": {"name": "Derived Hag", "source": "TEST"}, "lairActions": ["Original base"]}
+	Bestiary._apply_details(hag, hag_root, "legendary")
+	assert(hag.lairActions.size() == 2 and hag.vtt_lair_details_version == 2)
+	assert("Inherited addition" in MonsterProjection.entry_text(hag.lairActions))
+	Bestiary._apply_details(hag, hag_root, "legendary")
+	assert(hag.lairActions.size() == 2, "Additional lair entries must not duplicate")
+	var custom_hag: Dictionary = {"name": "Hag Creature", "source": "TEST", "legendaryGroup": {"name": "Derived Hag", "source": "TEST"}, "lairActions": ["My edited base"]}
+	Bestiary._apply_details(custom_hag, hag_root, "legendary")
+	assert(custom_hag.lairActions[0] == "My edited base" and custom_hag.lairActions.size() == 2)
 	var tab = Actions.new()
 	root.add_child(tab)
 	await process_frame

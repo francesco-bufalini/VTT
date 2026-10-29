@@ -4046,7 +4046,7 @@ func _request_missing_monster_details(record: Dictionary) -> void:
 	var stat: Dictionary = record.get("stat_block", {})
 	if String(stat.get("name", "")).is_empty() or String(stat.get("source", "")).is_empty():
 		return
-	if stat.has("fluff") and (not stat.has("legendaryGroup") or stat.has("lairActions")):
+	if stat.has("fluff") and (not stat.has("legendaryGroup") or int(stat.get("vtt_lair_details_version", 0)) >= 2):
 		return
 	var key: String = "detail:" + String(record.get("id", "")) + ":" + String(stat.name) + ":" + String(stat.source)
 	if _monster_detail_attempts.has(key):
@@ -6710,12 +6710,9 @@ func _on_monster_received(request_key: String, stat: Dictionary) -> void:
 			var previous: Dictionary = owned.get("stat_block", {}).duplicate(true)
 			if previous.get("name", "") != stat.get("name", "") or previous.get("source", "") != stat.get("source", ""):
 				return
-			var changed := false
-			for field: String in ["fluff", "lairActions", "regionalEffects"]:
-				if not previous.has(field) and stat.has(field):
-					var value: Variant = stat[field]
-					previous[field] = value.duplicate(true) if value is Array or value is Dictionary else value
-					changed = true
+			var enriched: Dictionary = Bestiary.merge_details(previous, stat)
+			var changed: bool = enriched != previous
+			previous = enriched
 			if changed:
 				owned["stat_block"] = previous
 				if _archive.save(owned) == OK and id == _selected_id:

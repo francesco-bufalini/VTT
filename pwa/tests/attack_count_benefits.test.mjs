@@ -97,7 +97,7 @@ test('old monster multiattack is projected into a trait benefit; typed count tak
  const withSpecial=evaluate({...record,stat_block:{action:[{name:'Multiattack',entries:[
   'The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws.'
  ]}]}});
- assert.equal(withSpecial.count,3,'Optional Frightful Presence does not add to the three actual attacks');
+ assert.equal(withSpecial.count,4,'The displayed routine includes Frightful Presence plus three attacks');
  const typed=evaluate({...record,stat_block:{action:[{name:'Multiattack',attacks_per_action:4,entries:['Three attacks.'] }]}});
  assert.equal(typed.count,4);
 });

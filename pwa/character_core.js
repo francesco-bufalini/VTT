@@ -6,22 +6,31 @@ const zeroSlots=()=>Array(10).fill(0);
 
 // Current imported monster catalogs include untyped Multiattack records.
 // Convert once at ingress; runtime attack benefits read only the typed count.
-// Ambiguous prose remains descriptive, with exactly the previous parser scope.
+// The displayed routine includes a preceding special use as well as attacks.
+const multiattackText=v=>typeof v==='string'?v:Array.isArray(v)?v.map(multiattackText).join(' '):
+ v&&typeof v==='object'?multiattackText(v.entries??v.entry??v.description??''):'';
+export function multiattackSequence(row={}){
+ const description=multiattackText(row.entries??row.description??'');
+ const matches=[...description.matchAll(/\b(?:makes?|can make|may make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*(?:attacks?|attacchi)\b/gi)];
+ const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
+ const attacks=Math.max(0,...matches.map(match=>Number(match[1])||words[match[1].toLowerCase()]||0));
+ const specials=attacks?[...description.matchAll(/\b(?:can|may)\s+use\s+[^.!?]+[.!?]\s*(?:It|They|The [A-Za-z -]+?)\s+then\s+(?:makes?|can make|may make)\s+/gi)].length:0;
+ return {attacks,specials,total:attacks+specials};
+}
 export function normalizeMonsterStatBlock(stat={}){
  let changed=false;
  const action=array(stat.action).map(row=>{
   if(!row||!/^(?:multiattack|multiattacco)$/i.test(String(row.name||'').trim()))return row;
   const direct=Number(row.attacks_per_action);
-  if(Number.isSafeInteger(direct)&&direct>=2)return row;
-  // A special ability may precede the actual attack sequence:
-  // "It can use Frightful Presence. It then makes three attacks ...".
-  // Only explicit attack counts matter, not the optional special use.
-  const description=JSON.stringify(row.entries||row.description||'');
-  const matches=[...description.matchAll(/\b(?:makes?|can make|may make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*(?:attacks?|attacchi)\b/gi)];
-  const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
-  const count=Math.max(0,...matches.map(match=>Number(match[1])||words[match[1].toLowerCase()]||0));
+  const sequence=multiattackSequence(row);
+  const derived=row.vtt_multiattack_count_version===2&&row.vtt_multiattack_count_derived===true;
+  const legacy=!row.vtt_multiattack_count_version&&sequence.specials>0&&direct===sequence.attacks;
+  if(Number.isSafeInteger(direct)&&direct>=2&&!derived&&!legacy)return row;
+  const count=sequence.total;
   if(count<2)return row;
-  changed=true;return {...row,attacks_per_action:count};
+  if(derived&&direct===count&&row.vtt_attack_sequence_count===sequence.attacks&&row.vtt_special_sequence_count===sequence.specials)return row;
+  changed=true;return {...row,attacks_per_action:count,vtt_multiattack_count_version:2,
+   vtt_multiattack_count_derived:true,vtt_attack_sequence_count:sequence.attacks,vtt_special_sequence_count:sequence.specials};
  });
  return changed?{...stat,action}:stat;
 }

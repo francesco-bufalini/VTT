@@ -42,6 +42,10 @@
       {"type": "list", "items": [
         {"type": "item", "name": "Lava", "entries": ["Lava erupts."]},
         {"type": "item", "name": "Smoke", "entries": ["Smoke fills the lair."]}
+      ]},
+      {"type": "entries", "name": "Additional Lair Actions", "source": "FTD", "entries": [
+        "The dragon can also use the following additional lair action.",
+        {"type": "list", "items": [{"type": "item", "name": "Frozen Floor", "entry": "Ice covers the floor until the next lair action."}]}
       ]}
     ]
   }

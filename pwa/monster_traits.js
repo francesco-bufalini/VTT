@@ -2,6 +2,7 @@
 // Existing attack, multiattack and resource IDs remain stable across regrouping.
 const rows=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??'').trim().toLowerCase();
+const sourceJson=value=>JSON.stringify(value,(_key,item)=>item&&typeof item==='object'&&!Array.isArray(item)?Object.fromEntries(Object.keys(item).sort().map(key=>[key,item[key]])):item);
 export const monsterOrigin=record=>'monster|'+norm(record.stat_block?.source||record.source)+'|'+norm(record.stat_block?.name||record.base_name||record.species);
 export const monsterFeatureKey=(section,row)=>'monster|'+section+'|'+(row.id||'monster|'+section+'|0|'+norm(row.name));
 export const monsterMultiattack=row=>/^(multiattack|multiattacco)$/i.test(String(row?.name||'').trim());
@@ -13,13 +14,22 @@ export function monsterDetailPatch(record={},detail={}){
  for(const field of ['fluff','lairActions','regionalEffects'])if(!Object.hasOwn(stat,field)&&Object.hasOwn(detail,field)){
   enriched[field]=structuredClone(detail[field]);changed=true;
  }
+ if(detail.lairActions&&detail.vtt_lair_base_entries&&Array.isArray(stat.lairActions)){
+  const base=detail.vtt_lair_base_entries;
+  const lair=sourceJson(stat.lairActions)===sourceJson(base)?detail.lairActions:
+   [...stat.lairActions,...detail.lairActions.filter(entry=>!base.some(old=>sourceJson(old)===sourceJson(entry))&&!stat.lairActions.some(old=>sourceJson(old)===sourceJson(entry)))];
+  if(sourceJson(stat.lairActions)!==sourceJson(lair)){enriched.lairActions=structuredClone(lair);changed=true;}
+ }
+ for(const field of ['vtt_lair_details_version','vtt_lair_base_entries'])if(Object.hasOwn(detail,field)&&JSON.stringify(stat[field])!==JSON.stringify(detail[field])){
+  enriched[field]=structuredClone(detail[field]);changed=true;
+ }
  return changed?{stat_block:enriched}:{};
 }
 export function monsterAttack(row={}){
  if(row.vtt_attack)return row.vtt_attack.attack_kind==='attack';
  return /\{@(?:atk|atkr|hit)\s|[+-]\d+\s+to hit|(?:weapon|spell) attack:/i.test(JSON.stringify(row.entries||[]));
 }
-const content=v=>typeof v==='string'?v:Array.isArray(v)?v.map(content).filter(Boolean).join('\n'):v&&typeof v==='object'?content(v.entries??v.entry??v.items??v.text??v.description??''):'';
+const content=v=>typeof v==='string'?v:Array.isArray(v)?v.map(content).filter(Boolean).join('\n'):v&&typeof v==='object'?[v.name,content(v.entries??v.entry??v.items??v.text??v.description??'')].filter(Boolean).join('\n'):'';
 export function monsterActionCost(row={}){
  const explicit=Number(row.legendaryActionCost??row.actionCost??row.cost);
  if(Number.isInteger(explicit)&&explicit>0)return explicit;
@@ -39,7 +49,9 @@ export function monsterTraits(record={}){
   out.push(special.legendary);
  }
  if(rows(stat.lairActions).length){
-  special.lairActions=make('lair','Azioni di tana',stat.lairHeader||stat.lairActions,{monster_actions:[],monster_attack_ids:[],monster_tracker_ids:['lair_actions'],monster_pool:{id:'lair_actions',name:'Azioni di tana',max:1,recharge:'turn'}});
+  const entries=stat.lairHeader?[...rows(Array.isArray(stat.lairHeader)?stat.lairHeader:[stat.lairHeader]),...stat.lairActions]:stat.lairActions;
+  special.lairActions=make('lair','Azioni di tana',entries,{monster_actions:[],monster_attack_ids:[],monster_tracker_ids:['lair_actions'],monster_pool:{id:'lair_actions',name:'Azioni di tana',max:1,recharge:'turn'}});
+  special.lairActions.monster_actions.push({id:'monster:lairActions:0',name:'Azioni di tana',description:content(entries),entries,time:'lair',origin_id:'feature:'+special.lairActions.feature_key,feature_id:'feature:'+special.lairActions.feature_key,tracker_id:'lair_actions',cost:1,monster_action:true,descriptive_only:true,options:[],aggregate_lair:true});
   out.push(special.lairActions);
  }
  for(const section of ['trait','action','bonus','reaction','legendary','mythic','lairActions']){
@@ -47,6 +59,10 @@ export function monsterTraits(record={}){
   values.forEach((raw,index)=>{
    const row=typeof raw==='string'?{name:'Azione di tana · '+(index+1),entries:[raw]}:raw;
    if(!row||typeof row!=='object')return;
+   if(section==='lairActions'){
+    special.lairActions.monster_legacy_keys.push(monsterFeatureKey(section,row));
+    return;
+   }
    const key=monsterFeatureKey(section,row);
    if(monsterMultiattack(row)||section==='trait'){
     const trait=make('trait:'+section+':'+index,row.name,row.entries||row.description||'',{...row,feature_key:key,monster_role:monsterResistance(row)?'resistance':monsterMultiattack(row)?'multiattack':'passive',monster_tracker_ids:[]});
@@ -96,7 +112,7 @@ export function lairOptions(entries=[]){
  if(lists.length)return lists.flatMap(row=>rows(row.items)).map((row,i)=>typeof row==='string'?{name:'Azione di tana · '+(i+1),entries:[row]}:row);
  return rows(entries);
 }
-export function monsterActions(record={},trackers=[]){return monsterTraits(record).flatMap(row=>rows(row.monster_actions)).map(action=>{
+export function monsterActions(record={},trackers=[]){return monsterTraits(record).flatMap(row=>rows(row.monster_actions)).flatMap(action=>{
  const key=action.id.replace(/^monster:/,'');
  const [,section,index]=action.id.split(':'),raw=record.stat_block?.[section]?.[Number(index)]||{};
  const candidates=[action.tracker_id,raw.tracker_id,raw.vtt_resource?.id,'recharge:'+key,'fightclub:'+key].filter(Boolean);
@@ -104,16 +120,20 @@ export function monsterActions(record={},trackers=[]){return monsterTraits(recor
  const trackerId=action.tracker_id||tracker?.id||raw.tracker_id||raw.vtt_resource?.id||'';
  const rechargeable=/\{@recharge(?: [1-6])?\}/i.test(String(raw.name))||
   ['d6','short_rest','long_rest'].includes(raw.vtt_resource?.recharge||tracker?.recharge);
- const options=rechargeable?monsterActionOptions(raw).map(option=>({...option,parent_action_id:action.id,tracker_id:trackerId})):[];
- return {...action,tracker_id:trackerId,cost:action.cost||(trackerId?1:0),options,
-  description:options.length?monsterActionIntroduction(raw):action.description,
-  name:options.length?action.name.replace(/\s*\{@recharge(?: [1-6])?\}/gi,''):action.name};
+ const options=!action.aggregate_lair&&rechargeable?monsterActionOptions(raw):[];
+ const resolved={...action,tracker_id:trackerId,cost:action.cost||(trackerId?1:0),options:[]};
+ if(!options.length)return [resolved];
+ return options.map(option=>({...resolved,id:action.id+':option:'+option.id,parent_action_id:action.id,
+  name:option.name,description:option.description,option_metadata:option,
+  parent_name:action.name.replace(/\s*\{@recharge(?: [1-6])?\}/gi,''),
+  attack_id:'',roll_attack:null}));
 });}
 export function monsterAttackOwner(record={},id=''){
  return monsterTraits(record).find(row=>rows(row.monster_attack_ids).includes(id));
 }
 export function monsterActionUsePatch(record={},calculated={},id=''){
- const action=monsterActions(record,calculated.trackers).find(row=>row.id===id)||monsterBasicRules(record,calculated).find(row=>row.id===id);
+ const actions=monsterActions(record,calculated.trackers);
+ const action=actions.find(row=>row.id===id)||actions.find(row=>row.parent_action_id===id)||monsterBasicRules(record,calculated).find(row=>row.id===id);
  if(!action)throw Error('Capacità del mostro non disponibile.');
  const owner=monsterTraits(record).find(row=>'feature:'+row.feature_key===action.origin_id);
  if(owner&&(record.trait_enabled?.[owner.feature_key]===false||record.origin_enabled?.[action.origin_id]===false||record.origin_enabled?.[owner.origin_key]===false))throw Error('Tratto disattivato.');

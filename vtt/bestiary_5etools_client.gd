@@ -435,6 +435,61 @@ static func _resolve_fluff(root: Dictionary, name: String, source: String, seen:
 	return []
 
 
+static func _resolve_legendary_group(root: Dictionary, name: String, source: String, seen: Array[String] = []) -> Dictionary:
+	var key: String = source + "|" + name
+	if key in seen:
+		return {}
+	var visited: Array[String] = seen.duplicate()
+	visited.append(key)
+	for row: Variant in root.get("legendaryGroup", []):
+		if not row is Dictionary or row.get("name", "") != name or row.get("source", "") != source:
+			continue
+		var copy: Dictionary = row.get("_copy", {})
+		var resolved: Dictionary = {}
+		var legacy_lair: Array = row.get("lairActions", []).duplicate(true)
+		if not copy.is_empty():
+			resolved = _resolve_legendary_group(root, String(copy.get("name", "")), String(copy.get("source", source)), visited)
+			for base: Variant in root.get("legendaryGroup", []):
+				if base is Dictionary and base.get("name", "") == copy.get("name", "") and base.get("source", "") == copy.get("source", "") and not row.has("lairActions"):
+					legacy_lair = base.get("lairActions", []).duplicate(true)
+		resolved.merge(row, true)
+		for field: String in ["lairActions", "regionalEffects"]:
+			var raw: Variant = copy.get("_mod", {}).get(field, [])
+			var operations: Array = raw if raw is Array else [raw]
+			for operation: Variant in operations:
+				if not operation is Dictionary or operation.get("mode", "") not in ["appendArr", "prependArr", "appendIfNotExistsArr"]:
+					continue
+				var items: Variant = operation.get("items", [])
+				var additions: Array = items if items is Array else [items]
+				var values: Array = resolved.get(field, []).duplicate(true)
+				if operation.mode == "prependArr":
+					values = additions.duplicate(true) + values
+				else:
+					for item: Variant in additions:
+						if operation.mode != "appendIfNotExistsArr" or item not in values:
+							values.append(item)
+				resolved[field] = values
+		resolved["vtt_lair_base_entries"] = legacy_lair
+		return resolved
+	return {}
+
+static func merge_details(current: Dictionary, detail: Dictionary) -> Dictionary:
+	var merged: Dictionary = current.duplicate(true)
+	if current.get("name", "") != detail.get("name", "") or current.get("source", "") != detail.get("source", ""):
+		return merged
+	if current.has("lairActions") and detail.has("lairActions") and detail.has("vtt_lair_base_entries") and current.lairActions != detail.vtt_lair_base_entries:
+		var lair_entries: Array = current.lairActions.duplicate(true)
+		for entry: Variant in detail.lairActions:
+			if entry not in detail.vtt_lair_base_entries and entry not in lair_entries:
+				lair_entries.append(entry)
+		merged["lairActions"] = lair_entries
+	for field: String in ["fluff", "lairActions", "regionalEffects", "vtt_lair_details_version", "vtt_lair_base_entries"]:
+		var legacy_lair: bool = field == "lairActions" and detail.has("vtt_lair_base_entries") and current.get(field, null) == detail.vtt_lair_base_entries
+		if detail.has(field) and (not current.has(field) or legacy_lair or field.begins_with("vtt_lair_")):
+			var value: Variant = detail[field]
+			merged[field] = value.duplicate(true) if value is Array or value is Dictionary else value
+	return merged
+
 static func _apply_details(creature: Dictionary, root: Dictionary, kind: String) -> void:
 	if kind == "fluff" and not creature.has("fluff"):
 		var entries: Array = _resolve_fluff(root, String(creature.get("name", "")), String(creature.get("source", "")))
@@ -442,19 +497,12 @@ static func _apply_details(creature: Dictionary, root: Dictionary, kind: String)
 			creature["fluff"] = {"entries": entries}
 	elif kind == "legendary":
 		var reference: Dictionary = creature.get("legendaryGroup", {})
-		for row: Variant in root.get("legendaryGroup", []):
-			if row is Dictionary and row.get("name", "") == reference.get("name", "") and row.get("source", "") == reference.get("source", ""):
-				var resolved: Dictionary = row.duplicate(true)
-				var copy: Dictionary = row.get("_copy", {})
-				for base: Variant in root.get("legendaryGroup", []):
-					if base is Dictionary and base.get("name", "") == copy.get("name", "") and base.get("source", "") == copy.get("source", ""):
-						for field: String in ["lairActions", "regionalEffects"]:
-							if not resolved.has(field) and base.has(field):
-								resolved[field] = base[field]
-				for field: String in ["lairActions", "regionalEffects"]:
-					if not creature.has(field) and resolved.has(field):
-						creature[field] = resolved[field].duplicate(true)
-				return
+		var resolved: Dictionary = _resolve_legendary_group(root, String(reference.get("name", "")), String(reference.get("source", "")))
+		if not resolved.is_empty():
+			resolved["name"] = creature.get("name", "")
+			resolved["source"] = creature.get("source", "")
+			resolved["vtt_lair_details_version"] = 2
+			creature.merge(merge_details(creature, resolved), true)
 
 
 static func enrich_cached(creature: Dictionary) -> Dictionary:

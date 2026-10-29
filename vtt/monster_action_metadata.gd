@@ -154,20 +154,37 @@ static func _source_revision(stat: Dictionary) -> int:
 	return "||".join(pieces).hash()
 
 
+static func _multiattack_text(value: Variant) -> String:
+	if value is String:
+		return String(value)
+	if value is Array:
+		var parts: PackedStringArray = []
+		for part: Variant in value:
+			parts.append(_multiattack_text(part))
+		return " ".join(parts)
+	if value is Dictionary:
+		return _multiattack_text(value.get("entries", value.get("entry", value.get("description", ""))))
+	return ""
+
 static func multiattack_count(action: Dictionary) -> int:
 	if String(action.get("name", "")).strip_edges().to_lower() not in ["multiattack", "multiattacco"]:
 		return 0
 	var direct: int = int(action.get("attacks_per_action", 0))
-	if direct >= 2:
-		return direct
-	# Search complete attack clauses even after an optional nonattack ability.
+	# Count the full routine: a preceding special use plus the attack clause.
 	var pattern := RegEx.create_from_string("(?i)\\b(?:makes?|can make|may make|effettua|può effettuare)\\s+(?:up to\\s+)?(\\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\\s+(?:(?:melee|ranged|weapon|spell|arma)\\s+)*(?:attacks?|attacchi)\\b")
 	var words: Dictionary = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "uno": 1, "due": 2, "tre": 3, "quattro": 4, "cinque": 5, "sei": 6}
 	var count: int = 0
-	for found: RegExMatch in pattern.search_all(JSON.stringify(action.get("entries", action.get("description", "")))):
+	var description: String = _multiattack_text(action.get("entries", action.get("description", "")))
+	for found: RegExMatch in pattern.search_all(description):
 		var number: String = found.get_string(1).to_lower()
 		count = maxi(count, int(words.get(number, number)))
-	return count if count >= 2 else 0
+	var special_pattern := RegEx.create_from_string("(?i)\\b(?:can|may)\\s+use\\s+[^.!?]+[.!?]\\s*(?:It|They|The [A-Za-z -]+?)\\s+then\\s+(?:makes?|can make|may make)\\s+")
+	var specials: int = special_pattern.search_all(description).size() if count > 0 else 0
+	var derived: bool = int(action.get("vtt_multiattack_count_version", 0)) == 2 and bool(action.get("vtt_multiattack_count_derived", false))
+	var legacy: bool = not action.has("vtt_multiattack_count_version") and specials > 0 and direct == count
+	if direct >= 2 and not derived and not legacy:
+		return direct
+	return count + specials if count + specials >= 2 else 0
 
 
 static func prepare(stat_block: Dictionary) -> Dictionary:
@@ -175,10 +192,12 @@ static func prepare(stat_block: Dictionary) -> Dictionary:
 	var source_revision: int = _source_revision(stat_block)
 	var override_revision: int = JSON.stringify(_overrides).hash()
 	if (int(stat_block.get("vtt_action_metadata_version", 0)) == 1
+		and int(stat_block.get("vtt_multiattack_count_version", 0)) == 2
 		and int(stat_block.get("vtt_action_source_revision", -1)) == source_revision
 		and int(stat_block.get("vtt_action_override_revision", -1)) == override_revision):
 		return stat_block
 	var stat: Dictionary = stat_block.duplicate(true)
+	stat["vtt_multiattack_count_version"] = 2
 	var max_reach: int = 5
 	for section: String in SECTIONS:
 		var raw: Variant = stat.get(section, [])

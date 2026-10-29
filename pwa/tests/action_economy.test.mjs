@@ -144,7 +144,7 @@ test('multiattack counter uses active structured features or a monster multiatta
  assert.equal(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions).basicActions.find(row=>row.id==='attack').attack_count,3);
 });
 
-test('recharge-bearing 5eTools action lists expose named options under one shared tracker',()=>{
+test('recharge-bearing 5eTools action lists expose distinct capabilities under one shared tracker',()=>{
  const breath={name:'Breath Weapons {@recharge 5}',entries:[
   'The dragon uses one of the following breath weapons.',
   {type:'list',style:'list-hang-notitle',items:[
@@ -158,26 +158,26 @@ test('recharge-bearing 5eTools action lists expose named options under one share
  const tracker={id:'recharge:action:0',name:'Breath Weapons',max:1,spent:0,
   recharge:'d6',recharge_min:5};
  const calculated={attacks:[],trackers:[tracker]};
- const parent=actionEntries(record,calculated).find(row=>row.id==='monster:action:0');
- assert(parent,'The recharge action remains the parent action');
- assert.equal(parent.tracker_id,tracker.id);
- assert.deepEqual(parent.options.map(row=>row.name),['Cold Breath','Paralyzing Breath']);
- assert.deepEqual(parent.options.map(row=>row.area_feet),[60,60]);
- assert.deepEqual(parent.options.map(row=>row.save_dc),[20,20]);
- assert.deepEqual(parent.options.map(row=>row.save_ability),['constitution','constitution']);
- assert.equal(parent.options[0].damage_formula,'13d8');
- assert.deepEqual(parent.options[1].conditions,['paralyzed']);
+ const variants=actionEntries(record,calculated).filter(row=>row.parent_action_id==='monster:action:0');
+ assert.equal(variants.length,2);
+ assert.ok(variants.every(row=>row.tracker_id===tracker.id));
+ assert.deepEqual(variants.map(row=>row.name),['Cold Breath','Paralyzing Breath']);
+ assert.deepEqual(variants.map(row=>row.option_metadata.area_feet),[60,60]);
+ assert.deepEqual(variants.map(row=>row.option_metadata.save_dc),[20,20]);
+ assert.deepEqual(variants.map(row=>row.option_metadata.save_ability),['constitution','constitution']);
+ assert.equal(variants[0].option_metadata.damage_formula,'13d8');
+ assert.deepEqual(variants[1].option_metadata.conditions,['paralyzed']);
  const rendered=doc(battleActionPanels(record,calculated,[],[],catalog.actions).others);
- const row=rendered.querySelector('[data-attack-id="monster:action:0"]');
- assert(row,'The generic monster ability appears in battle actions');
- assert.deepEqual([...row.querySelectorAll('.play-battle-monster-option>summary')]
-  .map(option=>option.textContent),['Cold Breath','Paralyzing Breath']);
+ assert.equal(rendered.querySelector('[data-attack-id="monster:action:0"]'),null);
+ const row=rendered.querySelector('[data-attack-id="monster:action:0:option:0"]');
+ assert(row,'Each variant appears as a separate capability');
+ assert.equal(rendered.querySelectorAll('.play-battle-monster-option').length,0);
  assert.equal(row.querySelectorAll('.action-resource-control').length,1,
   'Alternatives share a single parent recharge pool');
- assert.equal(row.querySelector('[data-act="monster-action-use"]').dataset.monsterActionId,parent.id);
- assert.equal(parent.cost,1,'Each chosen option spends one use of the parent pool');
+ assert.equal(row.querySelector('[data-act="monster-action-use"]').dataset.monsterActionId,variants[0].id);
+ assert.equal(variants[0].cost,1,'Each capability spends one use of the parent pool');
  assert.match(row.textContent,/13d8/);
- assert.match(row.textContent,/paralyzed/);
+ assert.match(rendered.querySelector('[data-attack-id="monster:action:0:option:1"]').textContent,/paralyzed/);
  const ordinary={...record,stat_block:{action:[{...breath,name:'Not Rechargeable'}]}};
  assert.equal(actionEntries(ordinary,{attacks:[]}).find(row=>row.id==='monster:action:0').options.length,0,
   'A named list alone does not imply a rechargeable alternative action');

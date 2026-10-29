@@ -505,6 +505,8 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 	for attack: Dictionary in Attacks.definitions(record):
 		var id := String(attack.get("id", ""))
 		seen[id] = true
+		if collected.any(func(feature: Dictionary) -> bool: return feature.get("monster_actions", []).any(func(action: Dictionary) -> bool: return action.get("parent_action_id", "") == id)):
+			continue
 		if id.begins_with("monster:legendary:"):
 			continue # The resource-bearing capability below owns its action cost.
 		var time := 0
@@ -530,11 +532,13 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 				var resource_id: String = String(action.tracker_id)
 				if resource_id.is_empty():
 					for prefix: String in ["recharge:", "fightclub:"]:
-						var candidate: String = prefix + String(action.id).trim_prefix("monster:")
+						var candidate: String = prefix + String(action.get("parent_action_id", action.id)).trim_prefix("monster:")
 						if trackers.has(candidate):
 							resource_id = candidate
 							action["cost"] = 1
 				var row := _entry(String(action.name), _timing(action.action_type), "Capacità", _description(action.entries), _tracker_label(resource_id, trackers), resource_id)
+				if bool(action.get("aggregate_lair", false)):
+					row["detail"] = preload("res://vtt/monster_trait_projection.gd").entry_text(action.entries)
 				row.merge(action, true)
 				row["tracker_id"] = resource_id
 				if row.get("options", []).is_empty() and trackers.has(resource_id) and String(trackers[resource_id].get("recharge", "")) in ["d6", "short_rest", "long_rest"]:

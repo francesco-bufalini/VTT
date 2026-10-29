@@ -882,8 +882,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      'Non disponibile'))+'</small></span></button>'+
     (count>1?(grantId?'<button type="button" class="play-battle-attacks-per-action" data-act="power-trait"'+
       ' data-origin-id="'+esc(grantId)+'" title="Apri il privilegio '+esc(grantName||'Multiattacco')+'"'+
-      ' aria-label="Apri il privilegio '+esc(grantName||'Multiattacco')+', '+count+' attacchi per azione">':
-      '<span class="play-battle-attacks-per-action" aria-label="'+count+' attacchi per azione">')+
+      ' aria-label="Apri il privilegio '+esc(grantName||'Multiattacco')+', '+count+(c.kind==='monster'?' elementi della sequenza':' attacchi per azione')+'">':
+      '<span class="play-battle-attacks-per-action" aria-label="'+count+(c.kind==='monster'?' elementi della sequenza':' attacchi per azione')+'">')+
      '×'+count+(grantId?'</button>':'</span>'):'')+'</div>';
   const basic=view.battleActions?.basicActions||[];
   const base=id=>basic.find(row=>row.id===id)||{id,available:false};

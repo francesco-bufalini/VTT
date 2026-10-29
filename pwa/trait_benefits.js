@@ -234,7 +234,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    calculated.attack_count_benefits:attackCountBenefits(record,calculated.features);
  for(const grant of attackGrants){
   if(!belongs(grant))continue;
-  add('attack_count','Attacchi per azione','Attacchi disponibili',
+  const routine=trait.category==='mostro'&&trait.monster_role==='multiattack';
+  add('attack_count',routine?'Sequenza di multiattacco':'Attacchi per azione',routine?'Componenti della sequenza':'Attacchi disponibili',
    '×'+grant.attacks_per_action,'attack_count:'+grant.id);
  }
  // Exhaustion has one virtual state trait, backed by structured rules rather
@@ -564,9 +565,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   });
   if(details.origin_id)abilitySourceIds.add(String(details.origin_id));
  };
- const resolvedMonsterActions=new Map(monsterActions(record,calculated.trackers).map(row=>[row.id,row]));
- for(const declared of rows(trait.monster_actions)){
-  const action=resolvedMonsterActions.get(declared.id)||declared;
+ const declaredMonsterActions=new Set(rows(trait.monster_actions).map(row=>row.id));
+ for(const action of monsterActions(record,calculated.trackers).filter(row=>declaredMonsterActions.has(row.parent_action_id||row.id))){
   const tracker=rows(calculated.trackers).find(t=>t.id===action.tracker_id);
   addAbility(action.name,{origin_id:action.origin_id,status:trait.inactive?'Tratto disattivato':tracker&&Number(tracker.max)-Number(tracker.spent||0)<action.cost?'Risorsa esaurita':'Promemoria',
    timing:actionTime(action.time),cost:resourceCost(tracker?.name||action.tracker_id,action.cost),description:action.description,options:action.options,effects:[]});
