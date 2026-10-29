@@ -145,7 +145,8 @@
         ],
         "roll_mode": "advantage",
         "condition_label": "Solo per seguire le tracce di un nemico prescelto con Sopravvivenza oppure per ricordare informazioni su di esso con una prova di Intelligenza. Scegli il beneficio soltanto se pertinente."
-      }
+      },
+      "roll_only": true
     },
     {
       "id": "ranger_lands_stride_plants",
@@ -163,7 +164,8 @@
         ],
         "roll_mode": "advantage",
         "condition_label": "Solo ai tiri salvezza contro piante create o manipolate magicamente per ostacolare il movimento (per esempio Entangle). Non si applica a ogni TS."
-      }
+      },
+      "roll_only": true
     },
     {
       "id": "ranger_hide_in_plain_sight",
@@ -181,7 +183,8 @@
         ],
         "flat_bonus": 10,
         "condition_label": "Solo dopo un minuto impiegato a creare il camuffamento naturale e finché rimani fermo senza compiere azioni; non vale per ogni prova di Furtività."
-      }
+      },
+      "roll_only": true
     },
     {
       "id": "ranger_foe_slayer",
@@ -200,7 +203,8 @@
         ],
         "ability_modifier": "wis",
         "condition_label": "Una volta per turno: applica il modificatore di Saggezza al tiro per colpire O al tiro per i danni di un attacco contro un nemico prescelto. Scegli un solo tiro; verifica il bersaglio manualmente."
-      }
+      },
+      "roll_only": true
     }
   ]
 }

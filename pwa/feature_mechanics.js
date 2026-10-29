@@ -84,6 +84,7 @@ export function classFeatureEntries(record={},calculated={}){
    (!t.origin_class||low(t.origin_class)===low(rule.class_name)));
   output.push({id:'class_feature:'+rule.id,class_feature_id:rule.id,name:rule.label||feature.name,
    time:rule.time||'contextual',type:'Capacità',mode:rule.mode||'context',
+   roll_only:rule.roll_only===true,
    description:feature.entries??feature.description??'',class_name:rule.class_name,
    resource_name:rule.resource_name||'',tracker:tracker?.name||rule.resource_name||'',
    tracker_id:tracker?.id||'',cost:Math.max(0,Number(rule.cost)||0),

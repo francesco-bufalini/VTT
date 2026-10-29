@@ -306,7 +306,9 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 }
 // Retain the public projection API; execution and eligibility share one rule set.
 export function nativeClassFeatureActions(record={},calculated={}){
- return [...classFeatureEntries(record,calculated),...arr(calculated.feat_actions),...arr(calculated.state_actions)].map(row=>({...row,description:details(row.description)}));
+ return [...classFeatureEntries(record,calculated).filter(row=>!row.roll_only),
+  ...arr(calculated.feat_actions),...arr(calculated.state_actions)]
+  .map(row=>({...row,description:details(row.description)}));
 }
 export function diceGlyph(){return '<span class="action-dice" aria-hidden="true"></span>';}
 // Compact battle sections use the same action projection as the Actions tab.

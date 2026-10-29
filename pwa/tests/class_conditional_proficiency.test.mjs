@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {passiveClassRollBonuses,classFeatureRollBonuses,classFeatureEntries} from '../feature_mechanics.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {nativeClassFeatureActions} from '../action_economy.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const rules=read('roll_bonus_rules').features;
@@ -103,6 +104,10 @@ test('Ranger PHB conditional features reuse typed roll options without granting 
  assert(options('attack_hit:weapon').some(row=>row.flat_bonus===2&&row.origin_id===features[3].origin_id));
  assert(options('attack_damage:weapon').some(row=>row.flat_bonus===2&&row.origin_id===features[3].origin_id));
  assert(!options('save:con').some(row=>row.origin_id===features[0].origin_id));
+ assert(!nativeClassFeatureActions(ranger,calculated).some(row=>
+  ['ranger_favored_enemy_tracking','ranger_lands_stride_plants',
+   'ranger_hide_in_plain_sight','ranger_foe_slayer'].includes(row.class_feature_id)),
+  'roll-only class benefits are not fictitious free combat actions');
  assert(!options('skill:perception').some(row=>row.origin_id===features[2].origin_id));
  const disabled={...ranger,origin_enabled:{[features[3].origin_id]:false}};
  assert(!classFeatureRollBonuses(disabled,calculated,'attack_hit:weapon').some(row=>row.origin_id===features[3].origin_id));
