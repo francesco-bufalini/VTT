@@ -44,7 +44,7 @@ import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} fr
 import {availableZeroHpResponses,resolveZeroHpDamage} from './zero_hp_responses.js';
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
-import {preparePortraitImage} from './character_portrait.js';
+import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
 import {selectedTraitState,traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
@@ -6515,6 +6515,24 @@ async function handleAction(target){
   }
 
 
+  if(act==='info-portrait-miniature'){
+    if(!state.editor||state.sheet!=='info')throw Error('Apri prima la scheda Info.');
+    const editor=state.editor,creatureId=state.creatureId;
+    const miniatureId=editor.read().current_miniature_id||editor.read().default_miniature_id||'';
+    target.disabled=true;
+    try{
+      await loadSessionMiniatures();
+      const image=await prepareMiniaturePortrait(editor.read(),state.miniatureCatalog);
+      const current=state.editor?.read();
+      if(state.editor!==editor||state.creatureId!==creatureId||state.sheet!=='info'||
+         (current?.current_miniature_id||current?.default_miniature_id||'')!==miniatureId)
+        throw Error('La scheda o la miniatura è cambiata. Riprova.');
+      await patch({sheet_portrait_data:image});
+      await render();
+      message('Immagine della miniatura salvata nella scheda, disponibile anche offline.');
+    }finally{target.disabled=false;}
+    return;
+  }
   if(act==='info-portrait-remove'){
     if(!state.editor||state.sheet!=='info')throw Error('Apri prima la scheda Info.');
     await patch({sheet_portrait_data:''});
