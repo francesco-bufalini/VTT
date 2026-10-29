@@ -1181,7 +1181,7 @@ async function libraryView(){
     '<h2 id="library-create-title">Nuova creatura</h2>'+
     '<div class="library-create-types" role="group" aria-label="Tipo di creatura">'+
      '<button type="button" class="library-create-type is-active" data-act="library-create-kind" data-kind="character" aria-pressed="true">'+actionGlyph('proficiency')+'Personaggio</button>'+
-     '<button type="button" class="library-create-type" data-act="library-create-kind" data-kind="monster" aria-pressed="false">'+actionGlyph('book')+'Mostro</button></div>'+
+     '<button type="button" class="library-create-type" data-act="library-create-kind" data-kind="monster" aria-pressed="false">'+actionGlyph('book')+'Bestiario</button></div>'+
     '<div id="library-create-bestiary" class="library-create-bestiary" hidden>'+
      '<label class="library-create-field" for="library-bestiary-search">Razza dal bestiario'+
        '<input id="library-bestiary-search" type="search" placeholder="Cerca un mostro" autocomplete="off"></label>'+
