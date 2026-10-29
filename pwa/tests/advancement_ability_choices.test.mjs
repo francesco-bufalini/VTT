@@ -1,144 +1,198 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {powerSelectionModels,powerSelectionPatch,powerSelectionLimit,
-  powerApplicationPatch} from '../power_selection.js';
-const data=JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8'));
-const owner=(className,source,name)=>({name,origin_id:'feature:'+name,
- origin_key:'class|'+source.toLowerCase()+'|'+className.toLowerCase(),
- requirements:{class_name:className,class_source:source}});
-const ranger=level=>({
- classes:[{name:'Ranger',source:'PHB',level}],
- abilities:{str:12,dex:14,con:12,int:10,wis:16,cha:8}
-});
-const context=()=>({features:[owner('Ranger','PHB','Favored Enemy')]});
-const pick=(record,calculated,id='ranger_favored_enemy_phb')=>
- powerSelectionModels(record,calculated,data).find(row=>row.id===id);
+import {calculateSheet} from '../sheet_rules.js';
+import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,permanentSubtraitsForTrait} from '../pending_choices.js';
+import {collectTraitRows} from '../trait_projection.js';
+import {traitBenefitGroups} from '../trait_benefits.js';
+const abilities=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
+const base=()=>({kind:'character',rules_version:'2014',abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},inventory:[],feats_catalog:[]});
+const catalogs={abilityGrants:abilities,originDetails:{feats:{
+ 'alert|phb':{entries:['Cannot be surprised']},
+ 'athlete|xphb':{entries:['Athlete benefits']}
+}}};
+const calc=(record,index=catalogs)=>calculateSheet(record,index);
+const pending=(record,index=catalogs)=>pendingCharacterChoices(record,calc(record,index),index);
+const find=(rows,id)=>{const row=rows.find(x=>x.id===id);assert(row,id+' not found');return row;};
 
-test('PHB Ranger Favored Enemy uses prepared-only power choices without a trigger',()=>{
- for(const [level,max] of [[1,1],[5,1],[6,2],[13,2],[14,3],[20,3]]){
-  const row=pick(ranger(level),context());
-  assert.equal(row.layers.prepared.limit,max);
-  assert.equal(row.layers.learned,undefined);
-  assert.equal(row.layers.applied,undefined);
-  assert.equal(row.layers.prepared.trigger,null);
-  assert.equal(row.ui,'generic');
+test('Aarakocra fixed EEPC and DMG increases appear among available origin choices but never duplicate',()=>{
+ for(const [source,dex,wis] of [['EEPC',12,11],['DMG',12,12]]){
+  const c={...base(),species:'Aarakocra',species_source:source};
+  const p=pending(c),fixed=find(p,'ability-fixed:race|'+source.toLowerCase()+'|aarakocra');
+  assert.equal(fixed.remaining,0);assert.equal(fixed.kind,'ability_fixed');
+  assert.deepEqual(fixed.amounts,{dex:2,wis:source==='EEPC'?1:2});
+  assert.equal(calc(c).abilities.dex.score,dex);
+  assert.equal(calc(c).abilities.wis.score,wis);
+  assert.throws(()=>savePendingChoice(c,fixed,['dex']),/automatici/);
  }
- assert.equal(pick(ranger(1),{features:[]}),undefined,'no feature: no free benefit');
- assert.equal(pick({classes:[{name:'Ranger',source:'XPHB',level:20}]},context()),undefined);
+});
+test('MPMM Aarakocra chooses +2/+1 or three +1, with unique abilities and origin-controlled grants',()=>{
+ let c={...base(),species:'Aarakocra',species_source:'MPMM'};
+ const sid='race|mpmm|aarakocra';
+ let p=pending(c);
+ const mode=find(p,'ability-mode:'+sid);
+ assert.equal(mode.options.length,2);
+ assert.equal(calc(c).abilities.dex.score,10);
+ c={...c,...savePendingChoice(c,mode,['0'])};
+ p=pending(c);
+ const first=find(p,'ability:'+sid+':0'),second=find(p,'ability:'+sid+':1');
+ assert.equal(first.amount,2);assert.equal(second.amount,1);
+ c={...c,...savePendingChoice(c,first,['dex'])};
+ assert.throws(()=>savePendingChoice(c,{...second,used_elsewhere:['dex']},['dex']),/differente/);
+ c={...c,...savePendingChoice(c,find(pending(c),'ability:'+sid+':1'),['wis'])};
+ assert.equal(calc(c).abilities.dex.score,12);
+ assert.equal(calc(c).abilities.wis.score,11);
+ assert.equal(calc({...c,origin_enabled:{[sid]:false}}).abilities.dex.score,10);
+ c={...c,...savePendingChoice(c,find(pending(c),'ability-mode:'+sid),['1'])};
+ assert.equal(calc(c).abilities.dex.score,10,'changing variant invalidates earlier allocation');
+ let third=find(pending(c),'ability:'+sid+':0');
+ assert.equal(third.count,3);
+ c={...c,...savePendingChoice(c,third,['str','con','cha'])};
+ for(const stat of ['str','con','cha'])assert.equal(calc(c).abilities[stat].score,11);
+});
+test('each class-level ASI allows score allocation or an owned feat, all linked to the source feature',async()=>{
+ const asi={id:'5etools:class_features:phb:ability%20score%20improvement:fighter:4',
+ name:'Ability Score Improvement',class_name:'Fighter',class_source:'PHB',source:'PHB',
+ level:4,entries:['Increase a score or choose a feat']};
+ const index={...catalogs,classFeatures:{class_features:[asi],subclass_features:[]}};
+ let c={...base(),class:'Fighter',class_source:'PHB',classes:[{name:'Fighter',source:'PHB',level:4}]};
+ let calculated=calc(c,index);
+ const feature=calculated.features.find(x=>x.name==='Ability Score Improvement');
+ assert(feature);
+ const originId=feature.origin_id;
+ let mode=find(pending(c,index),'advancement-mode:'+originId);
+ assert.deepEqual(mode.options,['ability','feat']);
+ c={...c,...savePendingChoice(c,mode,['ability'])};
+ let variant=find(pending(c,index),'ability-mode:'+originId);
+ c={...c,...savePendingChoice(c,variant,['1'])};
+ let picker=find(pending(c,index),'ability:'+originId+':0');
+ assert.equal(picker.count,2);
+ c={...c,...savePendingChoice(c,picker,['str','con'])};
+ calculated=calc(c,index);
+ assert.equal(calculated.abilities.str.score,11);
+ assert.equal(calculated.abilities.con.score,11);
+ const granted=traitBenefitGroups({category:'classi',rank:2,
+  origin_key:feature.origin_key,feature_origin:originId},c,calculated);
+ assert(granted.some(row=>row.type==='bonus'&&row.items.length>=2));
+ c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+originId),['feat'])};
+ assert.equal(calc(c,index).abilities.str.score,10,'switching to a feat revokes ASI');
+ const featChoice=find(pending(c,index),'advancement-feat:'+originId);
+ assert(featChoice.options.includes('phb|alert'));
+ assert(!featChoice.options.includes('xphb|athlete'),
+   'A 2014 character must not be offered feats from the 2024 Player Handbook');
+ c={...c,...savePendingChoice(c,featChoice,['phb|alert'])};
+ assert.equal(c.feats_catalog.length,1);
+ assert.equal(c.feats_catalog[0].granted_by,originId);
+ const rows=await collectTraitRows(c,calc(c,index),{
+  entries:async category=>category==='feats'?[{name:'Alert',source:'PHB',entries:['Initiative']}] : [],
+  detail:async(_category,row)=>row
+ });
+ const featTrait=rows.find(row=>row.category==='talenti'&&row.name.toLowerCase()==='alert');
+ assert(featTrait);assert(featTrait.origin.includes('Ability Score Improvement'));
+ const asiBenefit=traitBenefitGroups({category:'classi',rank:2,origin_key:feature.origin_key,
+  feature_origin:originId},c,calc(c,index));
+ assert(asiBenefit.some(group=>group.type==='feats'));
+ c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+originId),['ability'])};
+ assert.equal(c.feats_catalog.length,0,'switching away must revoke its owned feat');
+});
+test('XPHB Ability Score Improvement feat itself offers +2 or +1/+1 through its own trait',()=>{
+ let c={...base(),rules_version:'2024',feats_catalog:[{name:'Ability Score Improvement',source:'XPHB'}]};
+ const id='feat|xphb|ability score improvement';
+ c={...c,...savePendingChoice(c,find(pending(c),'ability-mode:'+id),['0'])};
+ c={...c,...savePendingChoice(c,find(pending(c),'ability:'+id+':0'),['dex'])};
+ assert.equal(calc(c).abilities.dex.score,12);
+ const p=pending(c);
+ const owner={category:'talenti',rank:0,origin_key:'feat|ability score improvement|xphb'};
+ assert(choicesForTrait(owner,c,p).some(row=>row.id==='ability-mode:'+id));
+ assert(traitBenefitGroups(owner,c,calc(c)).some(group=>group.type==='bonus'));
 });
 
-test('Favored Enemy tracks chosen creature types and two humanoid races',()=>{
- const ctx=context(),id='ranger_favored_enemy_phb';
- let record=ranger(1);
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','dragons')};
- assert.deepEqual(pick(record,ctx).layers.prepared.selected,['dragons']);
- assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'prepared','beasts'),/massimo/);
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','dragons')};
- assert.deepEqual(pick(record,ctx).layers.prepared.selected,[]);
- assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['elf']),/sotto-opzioni/);
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['Elf','Orc'])};
- assert.deepEqual(pick(record,ctx).layers.prepared.selected,[{id:'humanoids',subchoices:['Elf','Orc']}]);
- assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['Elf','elf']),/sotto-opzioni/);
- // Reselection of an existing option updates its sublist without spending a new pick.
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['Elf','Goblin'])};
- assert.equal(pick(record,ctx).layers.prepared.used,1);
- record.classes[0].level=6;
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','dragons')};
- assert.equal(pick(record,ctx).layers.prepared.used,2);
- // Recoveries and advancement triggers do not gate edits.
- assert.equal(record.rest_selection_available,undefined);
+test('saving ASI choice automatically exposes exactly one dependent modal at each step',()=>{
+ const asi={id:'5etools:class_features:phb:ability%20score%20improvement:fighter:4',
+  name:'Ability Score Improvement',class_name:'Fighter',class_source:'PHB',
+  source:'PHB',level:4};
+ const index={...catalogs,classFeatures:{class_features:[asi],subclass_features:[]}};
+ let c={...base(),class:'Fighter',class_source:'PHB',
+   classes:[{name:'Fighter',source:'PHB',level:4}]};
+ const sid=find(pending(c,index),'advancement-mode:'+pending(c,index).find(x=>x.kind==='advancement_mode').origin_id).origin_id;
+ const saved=(choice,selection)=>{
+  const before=pending(c,index);
+  c={...c,...savePendingChoice(c,choice,selection)};
+  return singleNewPendingChoice(before,pending(c,index),choice);
+ };
+ const main=find(pending(c,index),'advancement-mode:'+sid);
+ const second=saved(main,['ability']);
+ assert(second,'the ASI choice creates a follow-up variant');
+ assert.equal(second.kind,'ability_mode');
+ assert.equal(second.origin_id,sid);
+ const third=saved(second,['0']);
+ assert(third,'selecting a one-part distribution creates one ability choice');
+ assert.equal(third.kind,'ability');
+ assert.equal(third.count,1);
+ assert.equal(third.amount,2);
+ assert.equal(saved(third,['str']),null,'a completed chain does not reopen a popup');
+ // Switching to feats creates only the selected feat picker.
+ c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+sid),[])};
+ const featMode=find(pending(c,index),'advancement-mode:'+sid);
+ const featFollowUp=saved(featMode,['feat']);
+ assert(featFollowUp);assert.equal(featFollowUp.kind,'advancement_feat');
+ assert.equal(featFollowUp.origin_id,sid);
+ assert.equal(saved(featFollowUp,['phb|alert']),null);
 });
 
-test('class spellcasting projects optional learned and prepared layers',()=>{
- const calculated={casting_classes:[
-  {id:'wizard',name:'Wizard',level:7,book:true,mode:'Preparati',limit:10,cantrips:4},
-  {id:'druid',name:'Druid',level:7,book:false,mode:'Preparati',limit:10},
-  {id:'sorcerer',name:'Sorcerer',level:7,book:false,mode:'Conosciuti',limit:8}
- ]};
- const [wizard,druid,sorcerer]=powerSelectionModels({},calculated,data);
- assert.deepEqual(Object.keys(wizard.layers),['learned','prepared']);
- assert.equal(wizard.layers.learned.limit,null,'spellbook is not artificially capped');
- assert.equal(wizard.layers.learned.trigger,null);
- assert.equal(wizard.layers.prepared.trigger,'long_rest');
- assert.deepEqual(Object.keys(druid.layers),['prepared']);
- assert.deepEqual(Object.keys(sorcerer.layers),['learned']);
- assert.equal(sorcerer.layers.learned.trigger,'level_up');
+test('auto-follow-up is suppressed for multiple newly created options, existing choices, or incomplete saves',()=>{
+ let c={...base(),species:'Aarakocra',species_source:'MPMM'};
+ const first=pending(c),mode=first.find(x=>x.kind==='ability_mode');
+ assert(mode);
+ c={...c,...savePendingChoice(c,mode,['0'])};
+ const next=pending(c);
+ assert.equal(next.filter(x=>x.id.startsWith('ability:race|mpmm|aarakocra:')).length,2);
+ assert.equal(singleNewPendingChoice(first,next,mode),null,
+  'two newly opened ability parts must not select one arbitrarily');
+ const previouslyOpen=[{id:'old',remaining:1,origin_id:'other'}];
+ const newlyOpen=[...previouslyOpen,{id:'new',kind:'proficiency',remaining:1}];
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1},...previouslyOpen],
+   [{id:'main',remaining:0},...newlyOpen],{id:'main'}).id,'new',
+ 'unrelated older unresolved choices must not suppress a unique NEW dependent choice');
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
+   [{id:'main',remaining:1},{id:'new',remaining:1}],{id:'main'}),null,
+ 'partially completed parent must not open another modal');
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
+   [{id:'main',remaining:0},{id:'new1',remaining:1},{id:'new2',remaining:1}],{id:'main'}),null);
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
+   [{id:'main',remaining:0},{id:'unchanged',remaining:0}],{id:'main'}),null);
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
+   [{id:'main',remaining:0},{id:'new',remaining:1}],{id:'stale'}),null);
 });
 
-test('Armor Model and infusion JSON share the same stage contract',()=>{
- const artificer={id:'a',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],
-  trait_state_selection:{armor_model:'armor_model:guardian'},inventory:[]};
- const features=[owner('Artificer','TCE','Armor Model'),
-   owner('Artificer','TCE','Infuse Item')];
- const calculated={features,trait_state_catalog:[{group:'armor_model',id:'armor_model:guardian',
-  name:'Guardian'}, {group:'armor_model',id:'armor_model:infiltrator',name:'Infiltrator'}],
-  infusion_catalog:[],infusion_mechanics:{}};
- const models=powerSelectionModels(artificer,calculated,data);
- const armor=models.find(row=>row.id==='armor_model');
- const infusion=models.find(row=>row.id==='artificer_infusions');
- assert.deepEqual(Object.keys(armor.layers),['applied']);
- assert.equal(armor.layers.applied.used,1);
- assert.equal(armor.layers.applied.limit,1);
- assert.equal(armor.layers.applied.trigger,'short_rest');
- assert.deepEqual(Object.keys(infusion.layers),['learned','applied']);
- assert.equal(infusion.layers.applied.trigger,'long_rest');
- assert.equal(infusion.layers.learned.trigger,'level_up');
- assert.equal(powerSelectionLimit({by_class_level:[[1,1],[3,2],[8,3]]},7),2);
-});
-
-test('generic applied powers spend and refund exactly one owned tracker use',()=>{
- const custom={selections:[{id:'item_grant',owner:{class_name:'Ranger',
-  class_source:'PHB',trait:'Favored Enemy'},source:{type:'inline',
-   options:[{id:'one',name:'One'}]},application_tracker_id:'resource',
-  layers:{learned:{limit:1},applied:{limit:1,target:{kind:'equipped_item',slot:'body'},
-    refund_on_remove:true}}}]};
- const calculated={...context(),trackers:[{id:'resource',max:2}]};
- let record={...ranger(8),inventory:[{id:'armor',instance_id:'a',type:'MA',
-  quantity:1,equipped_slots:['body']}],resource_tracker_spent:{}};
- assert.throws(()=>powerApplicationPatch(record,calculated,custom,'item_grant','one',
-  true,{itemIndex:0}),/prima imparare/);
- record={...record,...powerSelectionPatch(record,calculated,custom,'item_grant','learned','one')};
- assert.throws(()=>powerApplicationPatch(record,calculated,custom,'item_grant','one',
-  true,{itemIndex:4}),/oggetto/);
- record={...record,...powerApplicationPatch(record,calculated,custom,'item_grant','one',
-  true,{itemIndex:0})};
- assert.equal(record.resource_tracker_spent.resource,1);
- assert.equal(powerSelectionModels(record,calculated,custom)[0].layers.applied.used,1);
- assert.throws(()=>powerApplicationPatch(record,calculated,custom,'item_grant','one',
-  true,{itemIndex:0}),/già applicato/);
- record={...record,...powerApplicationPatch(record,calculated,custom,'item_grant','one',false)};
- assert.equal(record.resource_tracker_spent.resource,0);
- assert.equal(powerSelectionModels(record,calculated,custom)[0].layers.applied.used,0);
-});
-
-test('learned options form the prepared sublist and cannot be lost while active',()=>{
- const schema={selections:[{id:'three_layers',
-  owner:{class_name:'Ranger',class_source:'PHB',trait:'Favored Enemy'},
-  source:{type:'inline',options:[{id:'a',name:'A'},{id:'b',name:'B'}]},
-  layers:{learned:{limit:2},prepared:{limit:1},applied:{limit:1}}}]};
- let rec=ranger(8),calc=context();
- assert.throws(()=>powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a'),/prima imparare/);
- rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','learned','a')};
- rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','learned','b')};
- rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a')};
- assert.throws(()=>powerSelectionPatch(rec,calc,schema,'three_layers','learned','a'),/prima/);
- assert.throws(()=>powerSelectionPatch(rec,calc,schema,'three_layers','prepared','b'),/massimo/);
- rec={...rec,...powerApplicationPatch(rec,calc,schema,'three_layers','a',true)};
- assert.throws(()=>powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a'),/Disapplica/);
- rec={...rec,...powerApplicationPatch(rec,calc,schema,'three_layers','a',false)};
- rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a')};
- rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','learned','a')};
- assert.deepEqual(powerSelectionModels(rec,calc,schema)[0].layers.learned.selected,['b']);
-});
-
-test('a permanent one-choice sub-trait replaces its previous branch without affecting normal powers',()=>{
- const ctx=context(),id='ranger_favored_enemy_phb';
- let character=ranger(1);
- const model=pick(character,ctx);
- assert.equal(model.selection_kind,'subtrait');
- character={...character,...powerSelectionPatch(character,ctx,data,id,'prepared','dragons')};
- character={...character,...powerSelectionPatch(character,ctx,data,id,'prepared','beasts')};
- assert.deepEqual(pick(character,ctx).layers.prepared.selected,['beasts']);
- assert.equal(pick(character,ctx).layers.prepared.limit,1);
+test('permanent choice branches appear nested only under their owning trait',()=>{
+ const sid='race|mpmm|aarakocra';
+ let c={...base(),species:'Aarakocra',species_source:'MPMM'};
+ const own={category:'razza',rank:0,origin_key:'species|aarakocra|mpmm'};
+ const stranger={category:'classi',rank:2,origin_key:'class|phb|ranger',
+   feature_origin:'feature:other'};
+ let shown=permanentSubtraitsForTrait(own,c,pending(c));
+ assert.equal(shown.length,1);
+ assert.equal(shown[0].choice_id,'ability-mode:'+sid);
+ assert.equal(shown[0].selection,'Da scegliere');
+ assert.deepEqual(permanentSubtraitsForTrait(stranger,c,pending(c)),[]);
+ c={...c,...savePendingChoice(c,find(pending(c),'ability-mode:'+sid),['0'])};
+ shown=permanentSubtraitsForTrait(own,c,pending(c));
+ assert.equal(shown.length,3,'the selected distribution exposes its two existing score pickers');
+ assert.equal(shown[0].selection,'+2 a 1 caratteristica e +1 a 1 caratteristica');
+ assert(shown.slice(1).every(x=>x.depth===1&&x.kind==='pending'));
+ const origin='feature:class|phb|ranger|favored-enemy:1';
+ const trait={category:'classi',rank:2,origin_key:'class|phb|ranger',feature_origin:origin};
+ const power={id:'ranger_favored_enemy_phb',selection_kind:'subtrait',
+  origin_id:origin,title:'Nemici prescelti',options:[{id:'humanoids',name:'Umanoidi'}],
+  layers:{prepared:{enabled:true,trigger:null,limit:1,
+   selected:[{id:'humanoids',subchoices:['Orc','Goblin']}]}}};
+ shown=permanentSubtraitsForTrait(trait,c,[],[power]);
+ assert.equal(shown.length,1);
+ assert.equal(shown[0].selection,'Umanoidi · Orc, Goblin');
+ assert.equal(shown[0].model_id,power.id);
+ assert.equal(permanentSubtraitsForTrait(stranger,c,[],[power]).length,0);
+ assert.equal(permanentSubtraitsForTrait(trait,c,[],[{
+   ...power,layers:{prepared:{...power.layers.prepared,trigger:'long_rest'}}
+ }]).length,0,'choices that change on a rest are not permanent sub-traits');
 });
