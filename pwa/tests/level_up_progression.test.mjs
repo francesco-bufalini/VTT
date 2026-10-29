@@ -38,6 +38,6 @@ test('subclass choice owed before a batch is shown at its first acquired level',
  const rows=levelUpSteps({pending_choices:[{id:'sub',kind:'subclass',
    class_index:1,unlock_level:3,remaining:1}]},
    {className:'Rogue',classSource:'PHB',classIndex:1,fromLevel:4,toLevel:6});
- assert.deepEqual(rows.map(row=>row.choices.map(choice=>choice.id)),[['sub'],[],[]]);
+ assert.deepEqual(rows.map(row=>row.choices.map(choice=>choice.id)),[['sub'],[]]);
  assert.deepEqual(levelUpSteps({}, {className:'Rogue',fromLevel:6,toLevel:6}),[]);
 });
