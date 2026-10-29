@@ -4842,6 +4842,11 @@ async function handleField(target) {
     const selection=rows.find(r=>String(r.id||r.name+'|'+(r.source||''))===target.value);
     if(target.value&&(!selection||!isContentAvailableForRules(selection,creature.rules_version)))throw Error('Riferimento non disponibile per queste regole');
     const selected=selection||{};
+    // Adding the first class is a level-up, not a silent reference change.
+    if(key==='class'&&!creature.class&&selected.name){
+      await openLevelUpClassDialog({preferredNew:String(selected.id||selected.name+'|'+selected.source),
+        suggestedCount:1});return;
+    }
     const changes={...referencePatch(creature,key,selected),...(key==="background"?quickGrantPatch(creature,selected):{})};
     const changedClass=key==='class'&&selected.name&&
       (selected.name!==creature.class||selected.source!==(creature.class_source||''));
@@ -4856,6 +4861,14 @@ async function handleField(target) {
   }
   if(target.dataset.nativeList){
     const key=target.dataset.nativeList,field=target.dataset.key;
+    if(key==='classes'&&field==='level'){
+      const previous=rowsFor(creature,'classes')[Number(target.dataset.index)];
+      const count=Number(target.value)-Number(previous?.level||1);
+      if(previous?.name&&count>0){
+        await openLevelUpClassDialog({preferredIndex:Number(target.dataset.index),
+          suggestedCount:count});return;
+      }
+    }
     if(key==='dice_bonuses'&&field==='dice'&&!validBonusDice(target.value))throw Error('Dadi: da 1 a 100 dadi d4, d6, d8, d10, d12, d20 o d100; modificatore opzionale');
     const changes=nativeRowPatch(creature,key,Number(target.dataset.index),field,target.type==="checkbox"?target.checked:target.value);
     if(field==='origin_id')changes[key][Number(target.dataset.index)].origin_name=state.calculated.origins.find(o=>o.id===target.value)?.name||'';
@@ -4865,15 +4878,6 @@ async function handleField(target) {
       if(preview)preview.textContent=formulaPreview(target.value,state.calculated);
     }
     if(target.dataset.key==='kind'||key==='classes'&&field==='level')await render();
-    if(key==='classes'&&field==='level'){
-      const index=Number(target.dataset.index);
-      const previous=rowsFor(creature,'classes')[index];
-      const fromLevel=Number(previous?.level)||1,toLevel=Number(target.value);
-      if(previous?.name&&toLevel>fromLevel)
-        openLevelUpProgressDialog({className:previous.name,classSource:previous.source||'',
-          classIndex:index,fromLevel,toLevel,fromTotal:totalClassLevel(creature),
-          toTotal:totalClassLevel(state.editor.read())});
-    }
     return;
   }
   if(target.dataset.originConfig){
@@ -4931,14 +4935,14 @@ async function handleField(target) {
     if(target.value&&(!selected||!isContentAvailableForRules(selected,creature.rules_version)))throw Error('Riferimento non disponibile per queste regole');
     const index=Number(target.dataset.index);
     const previous=rowsFor(creature,'classes')[index];
-    const changedClass=target.dataset.nativePick==='classes'&&target.dataset.key==='name'&&selected.name&&
+    const changedClass=target.dataset.nativePick==='classes'&&target.dataset.key==='name'&&selected?.name&&
       (selected.name!==previous?.name||selected.source!==previous?.source);
-    const fromTotal=totalClassLevel(creature);
+    if(changedClass&&!previous?.name){
+      await openLevelUpClassDialog({preferredNew:String(selected.id||selected.name+'|'+selected.source),
+        suggestedCount:1});return;
+    }
     await patch(rowReferencePatch(creature,target.dataset.nativePick,index,target.dataset.key,selected));
     await render();
-    if(changedClass)openLevelUpProgressDialog({className:selected.name,classSource:selected.source||'',
-      classIndex:index,fromLevel:0,toLevel:Number(rowsFor(state.editor.read(),'classes')[index]?.level)||1,
-      fromTotal,toTotal:totalClassLevel(state.editor.read())});
     return;
   }
   if(target.dataset.castingSection){
@@ -5018,6 +5022,13 @@ async function handleField(target) {
       throw Error('Caratteristica attacchi non valida.');
     if(key==='attack_ability_finesse_only'&&typeof value!=='boolean')
       throw Error('Ambito caratteristica attacchi non valido.');
+    if(key==='primary_class_level'){
+      const before=Number(rowsFor(creature,'classes')[0]?.level)||1;
+      if(Number(value)>before){
+        await openLevelUpClassDialog({preferredIndex:0,suggestedCount:Number(value)-before});
+        return;
+      }
+    }
     const changes=identityPatch(creature,key,value);
     if(key==='pact_slot_level'){
       const calculated=await computeLocalData(creature);
@@ -5030,12 +5041,7 @@ async function handleField(target) {
     }
     await patch(changes);
     if(['rules_version','xp','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
-    if(key==='primary_class_level'&&Number(value)>Number(rowsFor(creature,'classes')[0]?.level||1))
-      openLevelUpProgressDialog({className:creature.class,classSource:creature.class_source||'',
-        classIndex:0,fromLevel:Number(rowsFor(creature,'classes')[0]?.level)||1,
-        toLevel:Number(value),fromTotal:totalClassLevel(creature),
-        toTotal:totalClassLevel(state.editor.read())});
-    if(key==="name"){
+     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
     }

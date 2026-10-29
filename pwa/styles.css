@@ -669,8 +669,8 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .play-level-up-marker .vtt-action-glyph{width:1.2em;height:1.2em}
 
 /* Keep each class level dropdown adjacent to its class name. */
-.class-level-row,.class-level-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(78px,98px);
+ .class-level-row,.columns.class-level-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(78px,98px);
  align-items:end;gap:8px;min-width:0}
-.class-level-row>label,.class-level-fields>label{min-width:0;margin:0}
-.class-level-row select,.class-level-fields select{width:100%;min-width:0}
-.class-level-fields>:nth-child(n+3){grid-column:1/-1}
+.class-level-row>label,.columns.class-level-fields>label{min-width:0;margin:0}
+.class-level-row select,.columns.class-level-fields select{width:100%;min-width:0}
+.columns.class-level-fields>:nth-child(n+3){grid-column:1/-1}
