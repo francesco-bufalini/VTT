@@ -13,9 +13,13 @@ export function normalizeMonsterStatBlock(stat={}){
   if(!row||!/^multiattack$/i.test(String(row.name||'').trim()))return row;
   const direct=Number(row.attacks_per_action);
   if(Number.isSafeInteger(direct)&&direct>=2)return row;
-  const match=JSON.stringify(row.entries||row.description||'').match(/\b(?:makes?|can make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*attacks?\b/i);
+  // A special ability may precede the actual attack sequence:
+  // "It can use Frightful Presence. It then makes three attacks ...".
+  // Only explicit attack counts matter, not the optional special use.
+  const description=JSON.stringify(row.entries||row.description||'');
+  const matches=[...description.matchAll(/\b(?:makes?|can make|may make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*(?:attacks?|attacchi)\b/gi)];
   const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
-  const count=match?(Number(match[1])||words[match[1].toLowerCase()]||0):0;
+  const count=Math.max(0,...matches.map(match=>Number(match[1])||words[match[1].toLowerCase()]||0));
   if(count<2)return row;
   changed=true;return {...row,attacks_per_action:count};
  });
