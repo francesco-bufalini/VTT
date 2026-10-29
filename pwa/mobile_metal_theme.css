@@ -1192,6 +1192,14 @@ input:disabled{opacity:.75;cursor:default}
 .play-battle-attack-expanded>.play-battle-attack-impact{color:#e9c590;font-size:11px}
 .play-battle-attack-expanded>a{display:block;margin-bottom:8px;color:#edca94}
 .play-battle-attack-expanded>.btn,.play-battle-attack-expanded>.action-resource-control{margin-top:5px}
+/* Alternatives nested in a single rechargeable 5eTools monster action. */
+.play-battle-monster-options{display:grid;gap:5px;margin:8px 0 3px}
+.play-battle-monster-options-title{font:600 11px/1.4 system-ui;color:#e9c590}
+.play-battle-monster-option{border:1px solid #a6804e45;border-radius:7px;background:#17141355;min-width:0}
+.play-battle-monster-option>summary{padding:7px 9px;cursor:pointer;color:#eed9bc;font-weight:600}
+.play-battle-monster-option-body{padding:0 9px 8px}
+.play-battle-monster-option-body>small{display:block;color:#e9c590;line-height:1.5}
+.play-battle-monster-option-body>p{margin:5px 0 0;white-space:pre-line}
 .play-battle-attack-rolls{display:flex;flex-direction:column;align-self:flex-start;align-items:stretch;gap:5px}
 .play-battle-attack-roll{display:flex;align-items:center;justify-content:flex-end;gap:5px;width:100%;min-height:41px;min-width:0;padding:5px 7px;border:1px solid #a77c493f;border-radius:9px;background:#8a644c24;color:#f2d39a;cursor:pointer}
 .play-battle-attack-roll>b{flex:0 0 auto;font:600 14px/1.2 system-ui;font-variant-numeric:tabular-nums}
