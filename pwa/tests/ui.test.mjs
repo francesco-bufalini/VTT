@@ -87,6 +87,21 @@ function change(selector,value){
   elem.value=value;
   elem.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
 }
+async function openIdentityEditor(){
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
+  if(!document.querySelector('#sheet-context-dialog[data-context="identity"]')){
+    click('#sheet-play-view .play-character-portrait');
+    await until(()=>document.querySelector('#sheet-context-dialog[data-context="identity"] [data-identity-value="names"]'));
+  }
+}
+async function renameFromIdentity(name){
+  await openIdentityEditor();
+  change('#sheet-context-dialog [data-identity-value="names"]',name);
+  await until(async()=>(await listCreatures()).some(row=>row.creature.name===name),5000);
+  click('#sheet-context-dialog [data-act="sheet-context-close"]');
+  await until(()=>!document.querySelector('#sheet-context-dialog'));
+}
+
 async function addHomebrewToInventory(name){
   assert.ok(document.querySelector('[data-act="new-homebrew-item"]'),
     "Only one homebrew creation action should be visible in the items subtab");
@@ -126,10 +141,10 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(document.querySelectorAll('#nav [data-nav]').length,3);
   assert.ok([...document.querySelectorAll('#sheet-navigation button')].every(button=>button.disabled));
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]')).catch(error=>{
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait')).catch(error=>{
     throw Error(error.message+" — "+document.querySelector("#app")?.textContent.slice(0,650));
   });
-  change('[data-field="name"]',"Arcanista mobile");
+  await renameFromIdentity("Arcanista mobile");
   click('[data-sheet="battle"]');
   // New characters start at zero HP: editing to a positive value requires
   // setting max HP first. This navigation regression checks the visible HP
@@ -172,8 +187,10 @@ test("mobile navigation and local creature editing persist through tabs",async()
   click('#sheet-context-dialog [data-act="sheet-context-close"]');
   await until(()=>!document.querySelector('#sheet-context-dialog'));
   click('[data-sheet="info"]');
-  await until(()=>document.querySelector('[data-field="party_id"]'));
-  const pendingNote=document.querySelector('[data-field="party_id"]');
+  await openIdentityEditor();
+  if(!document.querySelector('#sheet-context-dialog [data-identity-value="factions"]'))
+    click('#sheet-context-dialog [data-act="identity-add"][data-identity-kind="factions"]');
+  const pendingNote=document.querySelector('#sheet-context-dialog [data-identity-value="factions"]');
   pendingNote.value="Gruppo digitato e subito chiuso";
   pendingNote.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
   // No change/blur or delay: a fast mobile tap must flush the debounce.
@@ -198,7 +215,7 @@ test("prototype sample creature is editable, private and persists offline",async
   document.body.append(demoButton);
   demoButton.click();
   demoButton.remove();
-  await until(()=>document.querySelector('[data-field="name"]')?.value==="Eroe di prova");
+  await until(()=>document.querySelector('#sheet-play-view .play-identity [data-read-field="name"]')?.textContent==="Eroe di prova");
   const rows=await listCreatures();
   const saved=rows.find(r=>r.creature.name==="Eroe di prova");
   assert.ok(saved);
@@ -367,7 +384,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   const owned=(await listCreatures()).find(row=>row.creature.name==="Arcanista mobile")?.creature;
   assert.ok(owned,'Test character remains available after pairing');
   click('[data-act="open"][data-id="'+owned.id+'"]');
-  await until(()=>document.querySelector('[data-field="name"]')?.value==='Arcanista mobile');
+  await until(()=>document.querySelector('#sheet-play-view .play-identity [data-read-field="name"]')?.textContent==='Arcanista mobile');
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="sheet-roll"][data-target="save:dex"]'));
   const rollMessages=()=>calls.filter(c=>c.url==='/api/action'&&
@@ -498,7 +515,7 @@ test("successful one-time pairing survives an initial transient map error",async
 
 test("grouped smartphone navigation retains every editable sheet section",async()=>{
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
   assert.deepEqual(sections,["Info","Azioni","Poteri","Zaino"]);
   assert.equal(document.querySelector('#more-navigation'),null);
@@ -626,7 +643,7 @@ test("inline spell catalog adds available and spellbook choices without divergin
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector('[data-act="magic-select-spells"]'));
   click('[data-act="magic-select-spells"]');
@@ -682,7 +699,7 @@ test("slot popup casts inline while compact search opens the existing spell deta
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
   click('.magic-level-slot[data-level="1"][data-pact="false"]');
@@ -724,8 +741,8 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
   await until(()=>document.querySelector('#app .library-index')&&
     !document.querySelector('[data-nav="library"]').disabled);
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
-  change('[data-field="name"]',"Poteri tracker condivisi");
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
+  await renameFromIdentity("Poteri tracker condivisi");
   await until(async()=>(await listCreatures()).some(row=>row.creature.name==="Poteri tracker condivisi"));
   const id=(await listCreatures()).find(row=>row.creature.name==="Poteri tracker condivisi").creature.id;
   click('[data-nav="library"]');
@@ -788,7 +805,7 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
 
 test("native-like inventory shows read-only catalog attributes and mutable custom item state",async()=>{
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="new-homebrew-item"]'));
   await addHomebrewToInventory("Test personalizzato");
@@ -829,7 +846,7 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
 
 test("mobile inventory actions persist equipment, quantity zero removal and attunement",async()=>{
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="new-homebrew-item"]'));
   await addHomebrewToInventory("Oggetto prova");
@@ -849,9 +866,9 @@ test("mobile inventory actions persist equipment, quantity zero removal and attu
 
 test("PWA coins persist across inventory subtabs and reopening a creature",async()=>{
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   const name="Tesoriere mobile";
-  change('[data-field="name"]',name);
+  await renameFromIdentity(name);
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-coin-code="gp"]'));
   change('[data-coin-code="gp"]',"47");
@@ -891,7 +908,7 @@ test("inventory section switches keep their order and can all be disabled",async
   await clickLibraryAdd();
   await until(()=>document.querySelector('#library-create-dialog[open]'));
   click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="items"]'));
   const allToggle=()=>document.querySelector('.page-head.play-inventory-page-title [data-act="inventory-toggle-all"]');
@@ -1011,8 +1028,8 @@ test("custom section deletion confirms transfers and preserves inventory on canc
 
 test("magic scrolls use a dedicated inventory tab and keep quantities across section changes",async()=>{
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
-  change('[data-field="name"]',"Arcanista delle pergamene");
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
+  await renameFromIdentity("Arcanista delle pergamene");
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
   const saved=(await listCreatures()).find(row=>row.creature.name==="Arcanista delle pergamene");
@@ -1069,8 +1086,8 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
 
 test("scroll creation selects a spell and casting level without opening item catalog",async()=>{
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
-  change('[data-field="name"]',"Scriba degli incantesimi");
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
+  await renameFromIdentity("Scriba degli incantesimi");
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"]'));
   if(document.querySelector('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
@@ -1115,8 +1132,8 @@ test("scroll creation selects a spell and casting level without opening item cat
 
 test("PWA document editor autosaves homebrew text and retains per-copy style",async()=>{
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
-  change('[data-field="name"]',"Scriba locale");
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
+  await renameFromIdentity("Scriba locale");
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="documents"]'));
   if(document.querySelector('#sheet-play-view [data-subtab="documents"]')?.getAttribute('aria-pressed')!=='true')
@@ -1155,7 +1172,7 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
   const open=[...document.querySelectorAll('[data-act="open"]')]
     .find(x=>x.getAttribute("data-id")===saved.id);
   assert.ok(open);open.click();
-  await until(()=>document.querySelector('[data-field="name"]')?.value==="Scriba locale");
+  await until(()=>document.querySelector('#sheet-play-view .play-identity [data-read-field="name"]')?.textContent==="Scriba locale");
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="documents"]'));
   click('[data-act="inventory-subtab"][data-subtab="documents"]');
@@ -1217,7 +1234,7 @@ test('native play sheet preserves HP, resources and inventory without desktop ca
  click('[data-nav="library"]');
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
- await until(()=>document.querySelector('[data-field="name"]'));
+ await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('#sheet-play-view .play-health[data-act="hp-adjust-open"]'));
  const health=document.querySelector('#sheet-play-view .play-health[data-act="hp-adjust-open"]');
@@ -1340,7 +1357,7 @@ test('rapid changes to distinct resource counters preserve both commands',async(
  click('[data-nav="library"]');
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
- await until(()=>document.querySelector('[data-field="name"]'));
+ await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_a"]'));
  const a=document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_a"]');
@@ -1385,7 +1402,7 @@ test('rapid use of two spell slot levels preserves both spent counters',async()=
  click('[data-nav="library"]');
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
- await until(()=>document.querySelector('[data-field="name"]'));
+ await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
  click('[data-sheet="magic"]');
  await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
  // Each chip opens a confirmation dialog rather than spending at first tap.
@@ -1414,7 +1431,7 @@ for(const action of ['tracker-reset','tracker-recharge']){
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-act="'+action+'"][data-tracker-id="recover"]'));
   const use=document.querySelector('[data-act="tracker-more"][data-tracker-id="keep"]');
@@ -1442,7 +1459,7 @@ for(const maximum of [3,5]){
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="battle"]');
   for(const [index,id] of ['test_pulse','second_pulse'].entries()){
    const selector='[data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]';
@@ -1496,7 +1513,7 @@ test('failed hit-point save keeps the dialog and entered amount open',async t=>{
  click('[data-nav="library"]');
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
- await until(()=>document.querySelector('[data-field="name"]'));
+ await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('#sheet-play-view .play-health[data-act="hp-adjust-open"]'));
  click('#sheet-play-view .play-health[data-act="hp-adjust-open"]');
