@@ -813,13 +813,16 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const use=persistent?'Attiva':'Usa';
    const descriptive=action.descriptive_only===true||power.descriptive_only===true;
    const useId=persistent&&action.class_feature_id&&action.id?action.id:id;
+   const monsterPayment=action.monster_action&&row.cost>0;
+   const useAction=monsterPayment?'monster-action-use':'battle-use-ability';
+   const useIdentity=monsterPayment?' data-monster-action-id="'+esc(action.id)+'"':' data-ability-id="'+esc(useId)+'"';
    return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
-    (action.monster_action&&row.cost>0?'<button type="button" class="play-resource-use" data-act="monster-action-use" data-monster-action-id="'+esc(action.id)+'"'+(disabled?' disabled':'')+'>Usa · '+row.cost+'</button>':descriptive?'':active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
+    (descriptive&&!monsterPayment?'':active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
     ' aria-label="Disattiva '+esc(row.name)+'">Disattiva</button>':
-    '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(useId)+'"'+
+    '<button type="button" class="play-resource-use" data-act="'+useAction+'"'+useIdentity+
     (persistent?' data-persistent-key="'+esc(statusKey)+'"':'')+
     (disabled?' disabled':'')+' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+'</div>';
   }).join('');
