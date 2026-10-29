@@ -146,6 +146,15 @@ export function powerSelectionPatch(record,calculated,catalog,id,stage,optionId,
  const old=rows(record.power_selections?.[id]?.[stage]);
  const exists=old.some(row=>savedIdentity(row)===optionId);
  const replacing=exists&&option.subchoices&&rows(subchoices).length>0;
+ const removing=exists&&!replacing;
+ const saved=record.power_selections?.[id]||{};
+ if(stage==='prepared'&&!exists&&definition.layers.learned&&
+   !rows(saved.learned).some(row=>savedIdentity(row)===optionId))
+  throw Error('Devi prima imparare questa opzione.');
+ if(stage==='learned'&&removing&&rows(saved.prepared).some(row=>savedIdentity(row)===optionId))
+  throw Error('Rimuovi prima questa opzione dalla lista preparata.');
+ if(removing&&rows(record.power_applications?.[id]).some(row=>savedIdentity(row)===optionId))
+  throw Error('Disapplica prima questa opzione.');
  const next=exists&&!replacing?old.filter(row=>savedIdentity(row)!==optionId):
   [...old.filter(row=>savedIdentity(row)!==optionId),selectedDetails(option,subchoices)];
  if(!exists&&layer.limit!==null&&next.length>layer.limit)

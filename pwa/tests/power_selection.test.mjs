@@ -111,3 +111,23 @@ test('generic applied powers spend and refund exactly one owned tracker use',()=
  assert.equal(record.resource_tracker_spent.resource,0);
  assert.equal(powerSelectionModels(record,calculated,custom)[0].layers.applied.used,0);
 });
+
+test('learned options form the prepared sublist and cannot be lost while active',()=>{
+ const schema={selections:[{id:'three_layers',
+  owner:{class_name:'Ranger',class_source:'PHB',trait:'Favored Enemy'},
+  source:{type:'inline',options:[{id:'a',name:'A'},{id:'b',name:'B'}]},
+  layers:{learned:{limit:2},prepared:{limit:1},applied:{limit:1}}}]};
+ let rec=ranger(8),calc=context();
+ assert.throws(()=>powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a'),/prima imparare/);
+ rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','learned','a')};
+ rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','learned','b')};
+ rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a')};
+ assert.throws(()=>powerSelectionPatch(rec,calc,schema,'three_layers','learned','a'),/prima/);
+ assert.throws(()=>powerSelectionPatch(rec,calc,schema,'three_layers','prepared','b'),/massimo/);
+ rec={...rec,...powerApplicationPatch(rec,calc,schema,'three_layers','a',true)};
+ assert.throws(()=>powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a'),/Disapplica/);
+ rec={...rec,...powerApplicationPatch(rec,calc,schema,'three_layers','a',false)};
+ rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','prepared','a')};
+ rec={...rec,...powerSelectionPatch(rec,calc,schema,'three_layers','learned','a')};
+ assert.deepEqual(powerSelectionModels(rec,calc,schema)[0].layers.learned.selected,['b']);
+});

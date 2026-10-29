@@ -3171,7 +3171,10 @@ async function openGenericPowerSelectionDialog(id,stage){
  dialog.dataset.powerSelectionId=id;dialog.dataset.powerStage=stage;
  dialog.dataset.creatureId=record.id;
  const selected=new Map((layer.selected||[]).map(row=>[selectedPowerId(row),row]));
- const choices=(model.options||[]).filter(option=>!option.min_level||model.level>=option.min_level);
+ const learned=stage==='prepared'&&model.layers.learned?
+  new Set((model.layers.learned.selected||[]).map(selectedPowerId)):null;
+ const choices=(model.options||[]).filter(option=>(!option.min_level||model.level>=option.min_level)&&
+  (!learned||learned.has(option.id)||selected.has(option.id)));
  const optionMarkup=option=>{
   const owned=selected.has(option.id),sub=option.subchoices;
   const current=selected.get(option.id);
@@ -3188,7 +3191,8 @@ async function openGenericPowerSelectionDialog(id,stage){
    ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':'')+'</div>';
  };
  const trigger=layer.change_label?'<span class="power-selection-rest">'+esc(layer.change_label)+'</span>':'';
- const targetPicker=stage==='applied'&&layer.target?'<label>Oggetto a cui applicare<select data-power-target-index>'+ 
+ const targetPicker=stage==='applied'&&layer.target&&model.source_type==='inline'?
+  '<label>Oggetto a cui applicare<select data-power-target-index>'+ 
   (record.inventory||[]).flatMap((item,index)=>Number(item.quantity??1)>0?
    ['<option value="'+index+'">'+esc(item.name||item.id||'Oggetto')+'</option>']:[]).join('')+
   '</select></label>':'';
@@ -9127,8 +9131,10 @@ async function handleAction(target){
     const subchoices=option.subchoices&&target.dataset.powerRemove!=='true'?
       [...dialog.querySelectorAll('[data-power-subchoice][data-power-option="'+option.id+'"]')]
         .map(input=>input.value):[];
-    const changes=stage==='applied'?
-      powerApplicationPatch(record,calculated,calculated.power_selection_catalog,id,option.id,
+    const changes=stage==='applied'&&model.source_type==='trait_states'?
+      traitStateActivationPatch(record,calculated.features,calculated.trait_state_catalog,
+        option.id,calculated.trackers):
+      stage==='applied'?powerApplicationPatch(record,calculated,calculated.power_selection_catalog,id,option.id,
         !(model.layers.applied.selected||[]).some(row=>selectedPowerId(row)===option.id),{
           itemIndex:Number(dialog.querySelector('[data-power-target-index]')?.value??-1)
         }):
