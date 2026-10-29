@@ -780,6 +780,27 @@ export function calculateSheet(record={},catalogs={}){
   result.complete=false;
   return {...result,attunements:{counts:inventory.map(()=>0),maximum:Math.max(0,Math.floor(result.values.attunement_max||0)),used:0}};
 }
+// 5etools stores monster defenses directly on the stat block. Qualified
+// entries are not silently turned into unconditional defenses.
+function monsterStatDefenses(stat={}){
+ const result=[],seen=new Set();
+ for(const [field,rank] of [['vulnerable',-1],['resist',1],['immune',2],['conditionImmune',3]]){
+  for(const entry of arr(stat[field])){
+   const values=typeof entry==='string'?[entry]:
+     entry&&typeof entry==='object'&&!entry.note&&!entry.cond&&!entry.condition?
+       arr(entry[field]):[];
+   for(const value of values){
+    if(typeof value!=='string')continue;
+    const key=value.trim().toLowerCase();
+    if(!/^[a-z]+(?: [a-z]+)*$/.test(key)||seen.has(rank+':'+key))continue;
+    seen.add(rank+':'+key);
+    result.push({key,rank,origin_id:'monster|stat_block',origin_name:'Bestiario',
+      benefit_id:'defense:monster|stat_block:'+rank+':'+key,automatic:true});
+   }
+  }
+ }
+ return result;
+}
 function calculateSheetValues(record={},catalogs={}){
   if(record.variant_rules_kind==='monster')record={...record,kind:'monster'};
   const suppressed=removedBenefitIds(record);
@@ -855,6 +876,7 @@ function calculateSheetValues(record={},catalogs={}){
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const racialBonusRows=racialBonusEntries(record,catalogs.speciesConditionalBonuses||{},features,suppressed);
   const damage_defense_entries=[...arr(record.damage_defense_entries),
+    ...(kind==='monster'?monsterStatDefenses(record.stat_block):[]),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed),
     ...classDefenseEntries(record,features,suppressed),
     ...dragonbornFtdResistances(record,catalogs.speciesPowers,features).filter(row=>
@@ -980,7 +1002,16 @@ function calculateSheetValues(record={},catalogs={}){
   if(record.additional_traits||arr(record.stat_block?.trait).length)
     warnings.add("Tratti personalizzati: verificare i bonus non strutturati");
   // Disabled sources are handled by their identities and the parent-feature hierarchy.
+  const companionValues=record.parent_creature_id&&kind==='monster'?
+    record.companion_owner_values||{}:{};
   const proficiencies=fixedProficiencies(record,proficiencyIndex,features);
+  // Template training uses the owner's current proficiency, even for saved
+  // companions created before this data was included in their stat block.
+  for(const [skill,rank] of Object.entries(companionValues.skill_ranks||{}))
+    if(SKILLS.some(([key])=>key===skill)&&[1,2].includes(rank))
+      proficiencies.set((rank===2?'expertise:':'skill:')+skill,true);
+  for(const [ability,rank] of Object.entries(companionValues.save_ranks||{}))
+    if(ABILITIES.includes(ability)&&[1,2].includes(rank))proficiencies.set('save:'+ability,true);
   if(!catalogs.proficiencyGrants)
     warnings.add("Competenze automatiche da origini non disponibili senza il catalogo");
   const inventory=arr(record.inventory).map(resolveOwnedItem);
@@ -1008,8 +1039,6 @@ function calculateSheetValues(record={},catalogs={}){
     warnings.add("Velocità della specie non disponibile nello snapshot locale");
   if(kind==="character"&&record.species&&!record.species_source&&index)
     warnings.add("Le fonti delle specie senza edizione esplicita possono essere ambigue");
-  const companionValues=record.parent_creature_id&&kind==='monster'?
-    record.companion_owner_values||{}:{};
   const proficiencyBase=()=>{
     if(Number.isFinite(companionValues.proficiency))return companionValues.proficiency;
     if(kind!=="monster"&&!Object.hasOwn(record,"stat_block"))
@@ -1094,13 +1123,12 @@ function calculateSheetValues(record={},catalogs={}){
       const skill=SKILLS.find(row=>row[0]===key);
       if(!skill)return 0;
       let rank=hasProficiency(record,"expertise",key,proficiencies)?2:hasProficiency(record,"skill",key,proficiencies)?1:0;
-      if(kind==="monster"&&!record.skill_ranks_custom){
+      if(kind==="monster"&&!record.skill_ranks_custom&&rank===0){
         const old=record.stat_block?.skill?.[key];
-        if(old!==undefined&&/^[-+]?\d+$/.test(String(old))){
-          const difference=int(old)-mod(int(record.abilities?.[skill[2]],10));
-          if(difference===resolve("proficiency",stack)*2)rank=Math.max(rank,2);
-          else if(difference===resolve("proficiency",stack))rank=Math.max(rank,1);
-        }
+        // Published monster totals can contain bonuses beyond their training.
+        // Keep the source's numeric value rather than losing those bonuses.
+        if(old!==undefined&&/^[-+]?\\d+$/.test(String(old)))
+          return int(old)+sumGrants("ability_check",stack);
       }
       return resolve("ability_mod:"+skill[2],stack)+rank*resolve("proficiency",stack)+sumGrants("ability_check",stack);
     }
@@ -1462,8 +1490,14 @@ function calculateSheetValues(record={},catalogs={}){
     // Preserve origins for every structured proficiency kind (including
     // weapons, armor, tools and languages), not only d20-linked skills/saves.
     proficiency_sources:Object.fromEntries([...proficiencies.keys()]
-      .map(key=>{const [kind,...parts]=key.split(':');return [key,
-        proficiencyGrantOrigins(record,proficiencyIndex,kind,parts.join(':'),features)];})),
+      .map(key=>{
+        const [type,...parts]=key.split(':'),name=parts.join(':');
+        const sources=proficiencyGrantOrigins(record,proficiencyIndex,type,name,features);
+        const linked=type==='save'?companionValues.save_ranks?.[name]:
+          type==='skill'||type==='expertise'?companionValues.skill_ranks?.[name]:null;
+        return [key,sources.length?sources:linked&&companionValues.proficiency_origin?
+          [companionValues.proficiency_origin]:[]];
+      })),
     casting_classes:spellClasses,trackers,attacks,damage_defense_entries,
     feature_item_grants:featureItemGrants(record,features,catalogs.featureItemGrants||catalogs.classMechanics?.feature_item_grants||[]),
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
