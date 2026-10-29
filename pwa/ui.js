@@ -3163,18 +3163,25 @@ function learningSelectionDialogBody({title,closeAction,summary,searchLabel,sear
 }
 function genericPowerSelectionPanels(c,calculated){
  return (calculated.power_selections||[]).filter(model=>model.ui==='generic'&&model.selection_kind!=='subtrait').map(model=>{
-  const stages=Object.entries(model.layers||{}).filter(([,layer])=>layer.enabled);
+  const automaticallyApplied=model.layers?.applied?.automatic&&model.layers?.learned;
+  // An automatically derived application is part of the learned choice;
+  // displaying it again would duplicate rows and expose a meaningless toggle.
+  const stages=Object.entries(model.layers||{}).filter(([stage,layer])=>
+   layer.enabled&&!(automaticallyApplied&&stage==='applied'));
   return panel(model.title,stages.map(([stage,layer])=>{
    const selected=layer.selected||[],optionById=new Map((model.options||[]).map(option=>[option.id,option]));
    const rows=selected.map(item=>'<div class="magic-spell-row infusion-entry"><span class="magic-spell-open">'+
     esc(selectedPowerLabel(optionById.get(selectedPowerId(item)),item))+'</span></div>').join('');
    const trigger=layer.change_label?'<span class="power-selection-rest">'+esc(layer.change_label)+'</span>':'';
+   const autoStatus=stage==='learned'&&automaticallyApplied?
+    '<span class="power-selection-rest">Applicati automaticamente · '+
+    model.layers.applied.selected.length+'</span>':'';
    const action=stage==='learned'?'Impara / Dimentica':stage==='prepared'?'Prepara / Rimuovi':'Applica / Rimuovi';
    return '<section class="power-selection-stage"><div class="infusion-overview"><strong>'+
     esc(powerLayerNames[stage]||stage)+' '+selected.length+(layer.limit!==null?' / '+layer.limit:'')+
-    '</strong>'+trigger+'</div>'+
-    '<div class="magic-source-controls"><button type="button" class="btn small magic-selection-button" data-act="power-selection-open"'+
-    ' data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+esc(stage)+'">'+action+'</button></div>'+
+    '</strong>'+trigger+autoStatus+'</div>'+
+    (layer.automatic?'':'<div class="magic-source-controls"><button type="button" class="btn small magic-selection-button" data-act="power-selection-open"'+
+    ' data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+esc(stage)+'">'+action+'</button></div>')+
     (rows||'<p class="hint">Nessuna opzione selezionata.</p>')+'</section>';
   }).join(''));
  }).join('');
@@ -3184,7 +3191,7 @@ async function openGenericPowerSelectionDialog(id,stage){
  const calculated=await computeLocalData(record);
  const model=calculated.power_selections?.find(row=>row.id===id&&row.ui==='generic');
  const layer=model?.layers?.[stage];
- if(!layer||!['learned','prepared','applied'].includes(stage))
+ if(!layer||layer.automatic||!['learned','prepared','applied'].includes(stage))
   throw Error('Selezione del privilegio non disponibile.');
  app.querySelector('#power-selection-dialog')?.remove();
  const dialog=document.createElement('dialog');
