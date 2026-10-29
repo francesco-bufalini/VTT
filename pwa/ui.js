@@ -53,7 +53,7 @@ import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,use
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
-import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
+import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
@@ -1248,7 +1248,8 @@ async function computeLocalData(record){
     state.spellCatalog=[...spellMap.values()];
   }
   return {...calculated,loadError,companion_rules:companionData,combat_snapshot:state.map||null,
-    pending_choices:pendingCharacterChoices(record,calculated,catalogs),
+    pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
+      races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
     infusion_mechanics:{...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]}};
 }
@@ -2216,6 +2217,13 @@ async function editorView() {
   await Promise.all(optionalTasks);
   const calculated=await pendingCalculation;
   if(state.creatureId!==creatureId||state.libraryMode)return '';
+  if(state.sheet==='info'){
+    // Class and race references load concurrently with numeric rules.
+    // Resolve pending lineage choices only after both are available.
+    const rules=await loadRuleCatalogs().catch(()=>({}));
+    calculated.pending_choices=pendingCharacterChoices(c,calculated,{...rules,
+      races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]});
+  }
   state.calculated=calculated;
   if(['battle','magic','conditions','info'].includes(state.sheet)||
       state.sheet==='inventory'&&inventoryVisibleSections(c).includes('scrolls')){
@@ -4828,6 +4836,9 @@ async function handleField(target) {
     const changes={...referencePatch(creature,key,selected),...(key==="background"?quickGrantPatch(creature,selected):{})};
     await patch(changes);
     await render();
+    if(key==='class'&&selected.name&&
+      (selected.name!==creature.class||selected.source!==(creature.class_source||'')))
+      openLevelUpPlaceholder(selected.name,Number(state.editor.read().level)||1);
     return;
   }
   if(target.dataset.nativeList){
@@ -4841,6 +4852,11 @@ async function handleField(target) {
       if(preview)preview.textContent=formulaPreview(target.value,state.calculated);
     }
     if(target.dataset.key==='kind'||key==='classes'&&field==='level')await render();
+    if(key==='classes'&&field==='level'){
+      const previous=rowsFor(creature,'classes')[Number(target.dataset.index)];
+      if(Number(target.value)>Number(previous?.level||1))
+        openLevelUpPlaceholder(previous.name,Number(target.value));
+    }
     return;
   }
   if(target.dataset.originConfig){
@@ -4897,7 +4913,12 @@ async function handleField(target) {
     const selected=rows.find(row=>String(row.id||row.name+'|'+row.source)===target.value);
     if(target.value&&(!selected||!isContentAvailableForRules(selected,creature.rules_version)))throw Error('Riferimento non disponibile per queste regole');
     await patch(rowReferencePatch(creature,target.dataset.nativePick,Number(target.dataset.index),target.dataset.key,selected));
-    await render();return;
+    await render();
+    if(target.dataset.nativePick==='classes'&&target.dataset.key==='name'&&selected.name&&
+      (selected.name!==rowsFor(creature,'classes')[Number(target.dataset.index)]?.name||
+       selected.source!==rowsFor(creature,'classes')[Number(target.dataset.index)]?.source))
+      openLevelUpPlaceholder(selected.name,1);
+    return;
   }
   if(target.dataset.castingSection){
     if(!Object.hasOwn(abilities,target.value))throw Error('Caratteristica non valida');
@@ -4988,6 +5009,8 @@ async function handleField(target) {
     }
     await patch(changes);
     if(['rules_version','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
+    if(key==='primary_class_level'&&Number(value)>Number(rowsFor(creature,'classes')[0]?.level||1))
+      openLevelUpPlaceholder(creature.class,Number(value));
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
@@ -5649,6 +5672,89 @@ function openSheetScoreFormula(record,calculated,target,label){
  openDialog(dialog);
  return dialog;
 }
+// One entry point for the future level-up wizard. At this stage, opening it
+// never applies additional class features, hit points, or character choices.
+function openLevelUpPlaceholder(className,level){
+ app.querySelector('#level-up-progress-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='level-up-progress-dialog';
+ dialog.className='sheet-context-dialog pending-choice-dialog';
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Livellaggio · '+esc(className||'Personaggio')+'</h2>'+
+   dialogCloseButton('level-up-placeholder-close','Chiudi','play-button')+'</header>'+
+   '<div class="pending-choice-dialog-body"><p>Livello '+esc(level)+
+   ' registrato. La procedura guidata di livellaggio sarà aggiunta in seguito.</p></div>'+
+   '<footer class="pending-choice-actions"><button type="button" data-level-up-close>Chiudi</button></footer>';
+ dialog.querySelector('[data-level-up-close]').addEventListener('click',()=>closeDialog(dialog,{remove:true}));
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ app.append(dialog);openDialog(dialog);
+}
+async function openLevelUpClassDialog(){
+ const record=state.editor?.read();
+ if(!record||record.kind==='monster'||record.variant_rules_kind==='monster')return;
+ const owned=rowsFor(record,'classes').filter(row=>row.name);
+ const level=owned.reduce((n,row)=>n+Number(row.level||1),0);
+ if(level>=20)throw Error('Il personaggio è già al livello massimo.');
+ const all=state.referenceCatalogs.classes||await catalogEntries('classes');
+ state.referenceCatalogs.classes=all;
+ const choices=all.filter(row=>row.name&&isContentAvailableForRules(row,record.rules_version));
+ const idOf=row=>String(row.id||row.name+'|'+row.source);
+ const existing=owned.map((row,index)=>({value:'owned:'+index,
+   label:row.name+' · '+(row.source||'Fonte non specificata')+' (livello '+row.level+' → '+(Number(row.level||1)+1)+')'}));
+ const remaining=choices.filter(row=>!owned.some(member=>member.name.toLowerCase()===row.name.toLowerCase()));
+ const unique=new Map();
+ for(const row of remaining){
+   const key=row.name.toLowerCase(),preferred=record.rules_version==='2024'?'XPHB':'PHB';
+   if(!unique.has(key)||row.source===preferred)unique.set(key,row);
+ }
+ const newEntries=[...unique.values()].sort((a,b)=>a.name.localeCompare(b.name,'it'));
+ const dialog=document.createElement('dialog');
+ dialog.id='class-level-up-dialog';dialog.className='sheet-context-dialog pending-choice-dialog';
+ const opts=entries=>entries.map(row=>'<option value="'+esc(row.value)+'">'+esc(row.label)+'</option>').join('');
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Level up · scegli la classe</h2>'+
+   dialogCloseButton('level-up-class-close','Chiudi','play-button')+'</header>'+
+   '<div class="pending-choice-dialog-body"><label>Classe da livellare<select data-level-up-class>'+
+   (existing.length?'<optgroup label="Classi possedute">'+opts(existing)+'</optgroup>':'')+
+   '<optgroup label="Altre classi">'+opts(newEntries.map(row=>({value:'new:'+idOf(row),label:row.name+' · '+row.source})))+'</optgroup>'+
+   '</select></label></div><footer class="pending-choice-actions">'+
+   '<button type="button" data-level-up-cancel>Annulla</button>'+
+   '<button type="button" class="btn primary" data-level-up-confirm>Continua</button></footer>';
+ dialog.querySelector('[data-level-up-cancel]').addEventListener('click',()=>closeDialog(dialog,{remove:true}));
+ dialog.querySelector('[data-level-up-confirm]').addEventListener('click',async event=>{
+   const button=event.currentTarget;
+   if(button.disabled)return;
+   button.disabled=true;
+   try{
+     const current=state.editor?.read();
+     if(!current||current.id!==record.id)throw Error('Personaggio cambiato.');
+     const rows=rowsFor(current,'classes');
+     const choice=dialog.querySelector('[data-level-up-class]')?.value||'';
+     let name='',nextLevel=1,changes;
+     const currentTotal=rows.filter(row=>row.name).reduce((n,row)=>n+Number(row.level||1),0);
+     if(currentTotal>=20)throw Error('Livello massimo già raggiunto.');
+     if(choice.startsWith('owned:')){
+       const index=Number(choice.slice(6));
+       if(!Number.isInteger(index)||index<0||!rows[index]?.name)throw Error('Classe non valida.');
+       rows[index].level=Number(rows[index].level||1)+1;
+       name=rows[index].name;nextLevel=rows[index].level;
+       changes=collectionPatch(current,'classes',rows);
+     }else if(choice.startsWith('new:')){
+       const selected=choices.find(row=>idOf(row)===choice.slice(4));
+       if(!selected||rows.some(row=>row.name?.toLowerCase()===selected.name.toLowerCase()))
+         throw Error('Classe non disponibile.');
+       name=selected.name;
+       if(!rows.length||!rows[0].name)
+         changes=referencePatch(current,'class',selected);
+       else changes=collectionPatch(current,'classes',[...rows,{name,source:selected.source||'',id:selected.id||'',level:1}]);
+     }else throw Error('Seleziona una classe.');
+     await patch(changes);
+     closeDialog(dialog,{remove:true});
+     await render();
+     openLevelUpPlaceholder(name,nextLevel);
+   }catch(error){button.disabled=false;message(errorMessage(error),true);}
+ });
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ app.append(dialog);openDialog(dialog);
+}
 function openPendingChoicesIndex(){
  const choices=state.calculated?.pending_choices||[];
  if(!choices.length)return;
@@ -6178,6 +6284,9 @@ async function handleAction(target){
     const changes=removeOwnedFeatPatch(state.editor.read(),key);
     dialog.remove();await patch(changes);await render();return;
   }
+  if(act==='level-up-open'){
+    await openLevelUpClassDialog();return;
+  }
   if(act==='pending-choice-manage'){
     openPendingChoicesIndex();return;
   }
@@ -6185,6 +6294,12 @@ async function handleAction(target){
     const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===target.dataset.choiceId);
     if(!choice)throw Error('Scelta non disponibile nella scheda.');
     await openCharacterChoice(choice);return;
+  }
+  if(act==='level-up-placeholder-close'){
+    closeDialog(app.querySelector('#level-up-progress-dialog'),{remove:true});return;
+  }
+  if(act==='level-up-class-close'){
+    closeDialog(app.querySelector('#class-level-up-dialog'),{remove:true});return;
   }
   if(act==='pending-choice-close'){
     const dialog=app.querySelector('#pending-choice-dialog');
@@ -6204,8 +6319,10 @@ async function handleAction(target){
     const fresh=await computeLocalData(current);
     const live=fresh.pending_choices.find(row=>row.id===choice.id);
     if(!live)throw Error('Il privilegio non concede più questa scelta.');
-    await patch(savePendingChoice(current,live,selected));
+    const update=savePendingChoice(current,live,selected);
+    await patch(update);
     dialog.remove();await render();
+    if(live.kind==='subclass'||live.kind==='subrace')return;
     // Render and inspect actual saved choices before opening anything else.
     // Several new pending choices or old unrelated choices must never open a
     // guessed next dialog. A re-opened modal/changed character wins.
