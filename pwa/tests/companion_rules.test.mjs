@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import {companionOwnerValues} from '../companion_owner_stats.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {sheetScoreOriginSegments} from '../sheet_roll_origin.js';
+import {characterDefenseSummary} from '../defense_summary.js';
+import {bestiarySheet} from '../creature_variants.js';
 
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,
  spellCompanionRule,companionTemplateStat,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from '../companion_rules.js';
@@ -43,6 +45,13 @@ test('Dancing Item, steel defender and wildfire spirit are derived from their ac
  assert.equal(drake.ac[0],17);
  const servant=companionTemplateStat(rules.templates.homunculus_servant,owner('Artificer','Alchemist',8));
  assert.equal(servant.hp.average,13);
+ assert.deepEqual(servant.skill,{perception:6,stealth:5});
+ assert.deepEqual(servant.save,{dex:5});
+ const saved=bestiarySheet(servant);
+ assert.deepEqual(saved.stat_block.skill,servant.skill);
+ assert.deepEqual(saved.stat_block.save,servant.save);
+ assert.deepEqual(saved.stat_block.immune,['poison']);
+ assert.deepEqual(saved.stat_block.conditionImmune,['exhaustion','poisoned']);
 });
 test('trait choices must match the source and allowed beast CR/size',async()=>{
  const ranger=owner('Ranger','Beast Master',5);
@@ -93,7 +102,9 @@ test('homunculus servant uses live owner proficiency, spell attack and HP',()=>{
  const template=rules.templates.homunculus_servant;
  const child={kind:'monster',id:'homunculus',parent_creature_id:parent.id,owner_id:'install',
   companion_rule_id:'homunculus_servant_2014',companion_template_id:'homunculus_servant',
-  stat_block:{action:structuredClone(template.action),hp:{average:13},ac:[13]},
+  // Existing saved companions can predate the new structured training fields.
+  stat_block:{action:structuredClone(template.action),hp:{average:13},ac:[13],
+   immune:structuredClone(template.immune),conditionImmune:structuredClone(template.conditionImmune)},
   abilities:template.abilities,current_hp:4,max_hp:13,max_hp_base:13,
   armor_class_base:13,armor_natural_formula:'13',inventory:[]};
  const initial=companionOwnerValues(child,parent,calculateSheet(parent,{}),rules);
@@ -106,6 +117,16 @@ test('homunculus servant uses live owner proficiency, spell attack and HP',()=>{
  assert.equal(calculated.stats.max_hp,13);
  assert.equal(calculated.attacks.find(x=>x.name==='Force Strike').hit,7);
  assert.equal(calculated.attacks.find(x=>x.name==='Force Strike').damage,'1d4 + 3');
+ assert.deepEqual([calculated.values['skill:perception'],calculated.values['skill:stealth'],
+  calculated.values['save:dex'],calculated.values.passive_perception],[6,5,5,16]);
+ assert(calculated.proficiencies.includes('expertise:perception'));
+ assert(calculated.proficiencies.includes('skill:stealth'));
+ assert(calculated.proficiencies.includes('save:dex'));
+ assert.equal(calculated.proficiency_sources['expertise:perception'][0].id,
+  'companion:homunculus_servant_2014');
+ const defenses=characterDefenseSummary(child,calculated);
+ assert.deepEqual(defenses.groups[1].items.map(x=>x.key),['poison']);
+ assert.deepEqual(defenses.groups[2].items.map(x=>x.key),['exhaustion','poisoned']);
  assert.equal(sheetScoreOriginSegments(child,calculated,'proficiency')[0].originName,'Proprietario · Ari');
  const grown={...parent,level:12,classes:[{name:'Artificer',source:'TCE',level:12}],
   abilities:{...parent.abilities,int:20}};
@@ -113,6 +134,9 @@ test('homunculus servant uses live owner proficiency, spell attack and HP',()=>{
  assert.equal(next.proficiency,4);
  assert.equal(next.hp,18);
  assert.equal(next.attacks[0].hit,9);
+ const changed=calculateSheet({...child,companion_owner_values:next},{});
+ assert.deepEqual([changed.values['skill:perception'],changed.values['skill:stealth'],
+  changed.values['save:dex'],changed.values.passive_perception],[8,6,6,18]);
  assert.equal(child.current_hp,4);
  assert.equal(child.max_hp_base,13,'linked values do not overwrite a saved companion');
  assert.equal(companionOwnerValues({...child,parent_creature_id:'different'},parent,calculateSheet(parent,{}),rules),null);
@@ -128,4 +152,18 @@ test('owner-stat bindings are opt-in, including drake AC but not Find Familiar',
  assert.equal(linked.ac,17);
  assert.equal(calculateSheet({...child,companion_owner_values:linked},{}).values.ac,17);
  assert.equal(companionOwnerValues({...child,companion_rule_id:'find_familiar_2014'},parent,calculated,rules),null);
+});
+
+test('ordinary bestiary monsters preserve fixed skill totals and project unconditional defenses',()=>{
+ const monster=bestiarySheet({name:'Test Beast',type:'beast',cr:3,str:10,dex:12,con:10,int:10,wis:12,cha:10,
+  hp:{average:12},ac:[12],skill:{perception:7},
+  resist:['cold'],immune:['fire'],vulnerable:['radiant'],conditionImmune:['poisoned'],
+  // Conditional defenses must not become blanket resistances.
+  trait:[],action:[]});
+ monster.stat_block.resist.push({resist:['slashing'],note:'only against nonmagical attacks'});
+ const result=calculateSheet(monster,{});
+ assert.equal(result.values['skill:perception'],7);
+ const defenses=characterDefenseSummary(monster,result);
+ assert.deepEqual(defenses.groups.map(group=>group.items.map(row=>row.key)),
+  [['cold'],['fire'],['poisoned'],['radiant']]);
 });
