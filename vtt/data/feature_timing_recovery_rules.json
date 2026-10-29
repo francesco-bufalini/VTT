@@ -1091,6 +1091,21 @@
       "priority": 0
     },
     {
+      "id": "monk_phb_xge_sun_soul_searing_sunburst",
+      "class_name": "Monk",
+      "class_source": "PHB",
+      "min_level": 11,
+      "subclass": "Way of the Sun Soul",
+      "feature": "Searing Sunburst",
+      "action_id": "searing_sunburst",
+      "name": "Esplosione solare",
+      "activation": "action",
+      "tracker_name": "",
+      "detail": "Azione: scegli un punto entro 150 piedi; l'esplosione ha raggio 20 piedi e infligge 2d6 danni radiosi con TS COS. Fino a 3 Ki possono aumentarne il danno di 2d6 ciascuno. Area, copertura, bersagli, TS e spesa facoltativa restano da risolvere nel contesto.",
+      "kind": "activation",
+      "priority": 0
+    },
+    {
       "id": "monk_phb_long_death_hour_of_reaping",
       "class_name": "Monk",
       "class_source": "PHB",

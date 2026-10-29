@@ -7,6 +7,29 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-29: Monk XGE, Way of the Sun Soul
+
+Esaminate una per una le **5 voci** `subclassFeature` XGE della Way of the
+Sun Soul con `classSource=PHB` in
+[5etools `class-monk.json`](https://github.com/5etools-mirror-3/5etools-src/blob/main/data/class/class-monk.json)
+(`2a072f176f6886f360326f9e79b7b96c320a0f38`) e
+[FightClub5eXML `class-monk-xge.xml`](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-monk-xge.xml)
+(`9d268781fbb79d67309b203fec001d3135f02bf8`). La sottoclasse XGE
+non dichiara `reprintedAs` verso il 2024; il record di compatibilità Monk
+XPHB resta distinto.
+
+| Tratto (livello) | Esito |
+| --- | --- |
+| Way of the Sun Soul (3) | Intestazione della sottoclasse. |
+| Radiant Sun Bolt (3) | Opzione di attacco magico a distanza con dado Martial Arts, caratteristica Destrezza e uso speciale di Ki per due attacchi bonus; richiede un'azione d'attacco reale e una progressione dell'arma virtuale. |
+| Searing Arc Strike (6) | Burning Hands come azione bonus immediatamente dopo Attack, pagando 2 Ki più l'eventuale incremento scelto, entro il limite di metà livello da Monaco. Non è un lancio gratuito generico. |
+| Searing Sunburst (11) | **Ora strutturato:** tempo di azione del tratto. Punto entro 150 piedi, sfera di raggio 20 piedi, TS COS, copertura opaca e spesa facoltativa di massimo 3 Ki restano da risolvere al lancio. |
+| Sun Shield (17) | Luce accesa/spenta con azione bonus e reazione soltanto mentre la luce è attiva dopo un colpo in mischia subito; richiede lo stato della luce e il trigger effettivo. |
+
+È stato aggiunto soltanto il tempo verificato di Searing Sunburst, senza
+addebitare Ki né applicare in anticipo area o danni. Le altre parti sono
+nella lista separata.
+
 ## Lotto 2026-10-28: Monk XGE, Way of the Kensei
 
 Esaminate una per una le **7 voci** `subclassFeature` della Way of the

@@ -125,6 +125,18 @@ test('XGE Kensei Shot is a bonus action only for its 2014 subclass trait',()=>{
  assert.equal(matching(creature('Monk','2024',3,'Way of the Kensei')).length,0);
 });
 
+test('XGE Sun Soul Sunburst exposes only its 2014 action timing',()=>{
+ const matching=record=>actionsFor(record).filter(row=>row.rule_id==='monk_phb_xge_sun_soul_searing_sunburst');
+ const own=matching(creature('Monk','2014',11,'Way of the Sun Soul'));
+ assert.equal(own.length,1);
+ assert.equal(own[0].time,'action');
+ assert(own[0].origin_id.includes('|subclass|'));
+ assert.equal(own[0].tracker_id,'');
+ assert.equal(matching(creature('Monk','2014',10,'Way of the Sun Soul')).length,0);
+ assert.equal(matching(creature('Monk','2014',11,'Way of the Kensei')).length,0);
+ assert.equal(matching(creature('Monk','2024',11,'Way of the Sun Soul')).length,0);
+});
+
 test('non-reprinted SCAG Monk and Paladin actions require their own 2014 subclass traits',()=>{
  const longDeath=creature('Monk','2014',6,'Long Death');
  const hour=actionsFor(longDeath,calculateSheet(longDeath,catalogs).trackers)
