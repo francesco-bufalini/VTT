@@ -2,6 +2,7 @@
 // familiar picker. No feature is detected from its description text.
 import {creatureMatchesFilter} from './creature_variants.js';
 import {activeInfusions} from './item_controls.js';
+import {SKILL_ABILITY} from './skill_definitions.js';
 
 const normal=value=>String(value??'').toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
@@ -101,6 +102,25 @@ export function spellCompanionRule(data,spell,owner){
  return rows(data?.spells).find(rule=>rows(rule.editions).includes(String(owner.rules_version||'2014'))&&
   rows(rule.names).some(n=>candidates.some(c=>c===normal(n)||c.endsWith(' '+normal(n)))))||null;
 }
+// Numeric companion proficiency ranks are typed data, not guessed from prose.
+// Both the initial bestiary snapshot and linked sheets use this same projection.
+export function companionTemplateProficiencies(template={},proficiency=2){
+ const skill={},save={},skill_ranks={},save_ranks={};
+ const ranks=template.owner_bindings||{},abilities=template.abilities||{};
+ for(const [key,value] of Object.entries(ranks.skill_ranks||{})){
+  const rank=Number(value),ability=SKILL_ABILITY[key];
+  if(!ability||![1,2].includes(rank))continue;
+  skill_ranks[key]=rank;
+  skill[key]=scoreMod(abilities[ability])+rank*proficiency;
+ }
+ for(const [key,value] of Object.entries(ranks.save_ranks||{})){
+  const rank=Number(value);
+  if(!['str','dex','con','int','wis','cha'].includes(key)||![1,2].includes(rank))continue;
+  save_ranks[key]=rank;
+  save[key]=scoreMod(abilities[key])+rank*proficiency;
+ }
+ return {skill,save,skill_ranks,save_ranks};
+}
 export function companionTemplateStat(template,owner,{size='',name=''}={}){
  if(!template||typeof template!=='object'||!template.name)throw Error('Profilo creatura mancante.');
  const classLevel=classInfo(owner,template.hp?.class_name).level;
@@ -113,10 +133,13 @@ export function companionTemplateStat(template,owner,{size='',name=''}={}){
    2+Math.floor((Math.max(1,totalLevel)-1)/4),2,9);
  const armor=typeof template.ac==='object'?Number(template.ac.base||10)+Number(template.ac.per_pb||0)*pb:Number(template.ac)||10;
  const abilities=template.abilities||{};
+ const trained=companionTemplateProficiencies(template,pb);
  const stat={name:String(name||template.name).trim().slice(0,160),source:template.source||'',
   type:template.type||'construct',size:(size||template.size||'M').slice(0,1).toUpperCase(),
   ac:[armor],hp:{average:hp},speed:structuredClone(template.speed||{}),
   ...Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,Number(abilities[k])||10])),
+  skill:trained.skill,save:trained.save,
+  resist:structuredClone(template.resist||[]),vulnerable:structuredClone(template.vulnerable||[]),
   immune:structuredClone(template.immune||[]),conditionImmune:structuredClone(template.conditionImmune||[]),
   senses:structuredClone(template.senses||[]),
   trait:structuredClone(template.trait||[]),action:structuredClone(template.action||[])};
