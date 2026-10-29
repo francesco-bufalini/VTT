@@ -53,7 +53,7 @@ import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,use
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
-import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment} from "./character_core.js";
+import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment,minimumXpForLevel} from "./character_core.js";
 import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
@@ -6085,7 +6085,8 @@ async function openLevelUpClassDialog(preset={}){
      (die?'<output class="levelup-hp-total" data-level-up-hp-total></output>':'');
    const note=dialog.querySelector('[data-level-up-xp-note]');
    note.textContent=isMonster?
-     'I livelli di classe si aggiungono al mostro senza modificare il GS o gli XP del bestiario.':
+     'Il GS resta invariato. XP minimi per '+(fromTotal+count)+' livelli di classe: '+
+       minimumXpForLevel(fromTotal+count).toLocaleString('it-IT')+'. Gli XP già superiori vengono mantenuti.':
      count>xpAvailable?'L’avanzamento manuale aggiornerà anche gli XP minimi del nuovo livello.':
      'Livelli disponibili con gli XP attuali: '+xpAvailable+'.';
    dialog.querySelector('[data-level-up-confirm]').disabled=!die;
