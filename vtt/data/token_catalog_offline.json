@@ -3577,6 +3577,19 @@
       "sha256": "387f7494543769934f11202da8f2dec7752b301788d309aa5af4f4a6e9d6eb61",
       "bytes": 28325956,
       "release_tag": "characters"
+    },
+    {
+      "id": "harmakis",
+      "name": "Harmakis",
+      "size_name": "Small",
+      "footprint": 1.0,
+      "version": 1,
+      "source_collection": "Harmakis.glb",
+      "pck": "harmakis.pck",
+      "scene": "res://remote_tokens/harmakis/harmakis_token.tscn",
+      "sha256": "2d95740a233eeea81e822ab9fd97f10aa40f6efe89d5ed290989bd17642ba8ff",
+      "bytes": 22928556,
+      "release_tag": "characters"
     }
   ],
   "version": 1,
