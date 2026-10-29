@@ -104,8 +104,8 @@ const difference=(label,previous,next)=>number(previous)!==number(next)?
 export function levelUpProjectedRecord(record={},plan={},gained=1){
  const n=Number(gained);
  if(!Number.isInteger(n)||n<1||n>20)throw Error('Livelli di anteprima non validi.');
- const classes=list(record.classes).filter(row=>row?.name).map(row=>({...row}));
- if(!classes.length&&record.class)classes.push({
+ const classes=list(record.classes).map(row=>({...row}));
+ if(!classes.some(row=>row?.name)&&record.class)classes.splice(0,classes.length,{
    name:record.class,source:record.class_source||'',id:record.class_id||'',
    subclass:record.subclass||'',subclass_source:record.subclass_source||'',level:Number(record.level)||1
  });
@@ -119,12 +119,16 @@ export function levelUpProjectedRecord(record={},plan={},gained=1){
  }else{
    if(!plan.className||classes.some(row=>same(row.name,plan.className)))
      throw Error('Nuova classe non valida.');
-   classes.push({name:plan.className,source:plan.classSource||'',id:plan.classId||'',level:n});
+   const index=classes.findIndex(row=>!row?.name);
+   const member={name:plan.className,source:plan.classSource||'',id:plan.classId||'',level:n};
+   if(index>=0)classes[index]=member;
+   else classes.push(member);
  }
- const level=classes.reduce((sum,row)=>sum+Math.max(1,Number(row.level)||1),0);
+ const total=classes.filter(row=>row?.name);
+ const level=total.reduce((sum,row)=>sum+Math.max(1,Number(row.level)||1),0);
  if(level>20)throw Error('Il livello totale non può superare 20.');
- const first=classes[0]||{};
- return {...record,classes,level,
+ const first=total[0]||{};
+ return {...record,classes:total,level,
    class:first.name||'',class_source:first.source||'',class_id:first.id||'',
    subclass:first.subclass||'',subclass_source:first.subclass_source||'',
    subclass_id:first.subclass_id||''};
