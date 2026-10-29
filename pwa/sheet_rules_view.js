@@ -712,7 +712,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const content='<span><strong>'+esc(value+' · '+(row.name||'Bonus'))+'</strong><small>'+esc(trackerRollBonusTargets(row,d))+'</small></span>';
    return '<div class="play-resource-power-row play-resource-bonus-row" data-roll-bonus-id="'+esc(row.id||row.name||'')+'">'+
     (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+diceGlyph()+content+'</button>':
-      '<span class="play-resource-power-open">'+icon('attack_bonus')+content+'</span>')+'</div>';
+      '<span class="play-resource-power-open">'+diceGlyph()+content+'</span>')+'</div>';
   }).join('');
   const traits=view.battleTraits||[];
   const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
