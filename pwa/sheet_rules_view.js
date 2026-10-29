@@ -31,7 +31,7 @@ import {matchesSearch} from './ui_primitives.js';
 export function classIdentitySummary(members=[]){
  const owned=(Array.isArray(members)?members:[]).filter(member=>member?.name);
  const classes=owned.map(member=>[member.name,member.subclass].filter(Boolean).join(' · ')+
-   ' '+Math.max(1,Number(member.level)||1)).join(' / ');
+   ' '+Math.max(1,Number(member.level)||1)).join(' · ');
  const total=owned.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
  return classes+(owned.length>1?' · Liv. totale '+total:'');
 }
