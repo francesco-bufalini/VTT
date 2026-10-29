@@ -27,6 +27,14 @@ import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml,exhaustionLevel,exhaustionConditionRows} from "./condition_catalog.js";
 import {matchesSearch} from './ui_primitives.js';
 
+/** Compact class/subclass caption for the character identity and Build panel. */
+export function classIdentitySummary(members=[]){
+ const owned=(Array.isArray(members)?members:[]).filter(member=>member?.name);
+ const classes=owned.map(member=>[member.name,member.subclass].filter(Boolean).join(' · ')+
+   ' '+Math.max(1,Number(member.level)||1)).join(' / ');
+ const total=owned.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
+ return classes+(owned.length>1?' · Liv. totale '+total:'');
+}
 export function inventorySectionControls(record,selected=[]){
  const containers=inventoryContainers(record);
  const tabs=[['items','Zaino','inventory'],['scrolls','Pergamene','scroll'],['documents','Documenti','book'],
@@ -962,7 +970,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='info'){
   const identity=panelNamed('Identità');bind('identity',identity);
   const classMembers=localClasses(c),totalClassLevel=classMembers.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
-  const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
+  const classNames=classIdentitySummary(classMembers);
   const portrait=isPortraitDataUrl(c.sheet_portrait_data)?c.sheet_portrait_data:'';
   const otherNames=identityEntries(c,'names').filter(row=>!row.active);
   const identityMarkup='<div class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
@@ -970,7 +978,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     (c.identity_hide_other_names!==false||!otherNames.length?' hidden':'')+'>'+
     otherNames.map(row=>'<span class="play-identity-alias">'+esc(row.value)+'</span>').join('')+'</div>'+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
-   (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+'</div>';
+   (classMembers.length?'<p class="play-identity-classes">'+esc(classNames)+'</p>':'')+'</div>';
   html='<section class="play-character-portrait'+(portrait?' has-portrait':'')+'" data-act="sheet-context" data-sheet-context="identity" role="button" tabindex="0" aria-label="Apri identità e foto del personaggio">'+
    (portrait?'<figure class="play-portrait-frame"><img src="'+esc(portrait)+'" alt="Ritratto di '+esc(c.name)+'"></figure>':'')+
    identityMarkup+
@@ -1007,7 +1015,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     ['Specie '+(c.species||'da definire'),c.subrace||'',c.size_name||'Medium'].filter(Boolean).join(' · '):
     title==='Background'?([c.background,...(c.backgrounds_catalog||[]).filter(row=>!row.disabled).map(row=>row.name)].filter(Boolean).join(' · ')||'Nessun background assegnato'):
     title==='Classi'?
-     [classNames||'Nessuna classe assegnata',c.subclass||'',
+     [classNames||'Nessuna classe assegnata',
       c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
     title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
    html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub,
