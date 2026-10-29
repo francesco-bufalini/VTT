@@ -61,10 +61,11 @@ test('each class-level ASI allows score allocation or an owned feat, all linked 
  assert(feature);
  const originId=feature.origin_id;
  let mode=find(pending(c,index),'advancement-mode:'+originId);
- assert.deepEqual(mode.options,['ability','feat']);
- c={...c,...savePendingChoice(c,mode,['ability'])};
- let variant=find(pending(c,index),'ability-mode:'+originId);
- c={...c,...savePendingChoice(c,variant,['1'])};
+ assert.deepEqual(mode.options,['ability:0','ability:1','feat']);
+ assert.deepEqual(mode.option_labels['ability:1'],'+1 a 2 caratteristiche');
+ c={...c,...savePendingChoice(c,mode,['ability:1'])};
+ assert(!pending(c,index).some(x=>x.id==='ability-mode:'+originId),
+   'the permanent sub-trait contains the chosen allocation mode');
  let picker=find(pending(c,index),'ability:'+originId+':0');
  assert.equal(picker.count,2);
  c={...c,...savePendingChoice(c,picker,['str','con'])};
@@ -92,8 +93,9 @@ test('each class-level ASI allows score allocation or an owned feat, all linked 
  const asiBenefit=traitBenefitGroups({category:'classi',rank:2,origin_key:feature.origin_key,
   feature_origin:originId},c,calc(c,index));
  assert(asiBenefit.some(group=>group.type==='feats'));
- c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+originId),['ability'])};
+ c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+originId),['ability:0'])};
  assert.equal(c.feats_catalog.length,0,'switching away must revoke its owned feat');
+ assert.equal(pending(c,index).find(x=>x.id==='advancement-mode:'+originId)?.selected[0],'ability:0');
 });
 test('XPHB Ability Score Improvement feat itself offers +2 or +1/+1 through its own trait',()=>{
  let c={...base(),rules_version:'2024',feats_catalog:[{name:'Ability Score Improvement',source:'XPHB'}]};
@@ -121,16 +123,13 @@ test('saving ASI choice automatically exposes exactly one dependent modal at eac
   return singleNewPendingChoice(before,pending(c,index),choice);
  };
  const main=find(pending(c,index),'advancement-mode:'+sid);
- const second=saved(main,['ability']);
- assert(second,'the ASI choice creates a follow-up variant');
- assert.equal(second.kind,'ability_mode');
+ const second=saved(main,['ability:0']);
+ assert(second,'the ASI branch directly opens its one-part score picker');
+ assert.equal(second.kind,'ability');
  assert.equal(second.origin_id,sid);
- const third=saved(second,['0']);
- assert(third,'selecting a one-part distribution creates one ability choice');
- assert.equal(third.kind,'ability');
- assert.equal(third.count,1);
- assert.equal(third.amount,2);
- assert.equal(saved(third,['str']),null,'a completed chain does not reopen a popup');
+ assert.equal(second.count,1);
+ assert.equal(second.amount,2);
+ assert.equal(saved(second,['str']),null,'a completed choice does not reopen a popup');
  // Switching to feats creates only the selected feat picker.
  c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+sid),[])};
  const featMode=find(pending(c,index),'advancement-mode:'+sid);
