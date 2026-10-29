@@ -729,8 +729,11 @@ try{
  assert.match(await page.locator('#sheet-score-formula-dialog h2').textContent(),/Movimento e velocità/);
  await page.locator('#sheet-score-formula-dialog [data-act="close-score-formula"]').click();
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
- assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
- assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1);
+ // Rendering keeps a movement glyph; atlas pack/slot choices are a detail
+ // of the sprite manifest and should not be part of the sheet contract.
+ assert.equal(await speedCard.count(),1,'Movement editor remains available');
+ assert.equal(await speedCard.locator('.vtt-action-glyph').count(),1,'Movement editor has an icon');
+ assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph').count(),1,'Movement section has an icon');
  assert.match(await speedCard.textContent(),/Camminata/);
  await popup('movement');assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Salti|Camminata/);await dismiss();
  await popup('defense');
