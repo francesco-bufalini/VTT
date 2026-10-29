@@ -319,10 +319,16 @@ try{
 
  const toolbar=page.locator('#sheet-play-view .play-battle-expansion-tools');
  assert.equal(await toolbar.locator('button').count(),2);
- const activeState=page.locator('#sheet-play-view .play-status-strip');
+ const activeState=page.locator('#sheet-play-view .play-status-overview');
  assert.equal(await activeState.count(),1);
- assert.equal(await activeState.evaluate(node=>getComputedStyle(node).borderTopStyle),'solid',
-  'States display a visible enclosing border');
+ assert.equal(await activeState.evaluate(node=>getComputedStyle(node).borderTopStyle),'none',
+  'States have no enclosing border');
+ assert.equal(await activeState.evaluate(node=>getComputedStyle(node).backgroundColor),'rgba(0, 0, 0, 0)',
+  'States have no filled box background');
+ assert.equal(await activeState.locator('.play-status-rows').evaluate(node=>getComputedStyle(node).display),'grid',
+  'Active states appear on individual rows');
+ assert.equal(await activeState.locator('.play-battle-heading-tools button').count(),2,
+  'Expand and collapse controls stay in the States heading');
  for(const width of [320,360,390,430]){
   await page.setViewportSize({width,height:844});
   const buttons=await toolbar.locator('button').evaluateAll(nodes=>
@@ -986,7 +992,7 @@ try{
  await page.locator('[data-state-trait="state|spell:phb2014_light"]').click();
  await page.locator('.play-info-traits .trait-card[data-trait-key="state|spell:phb2014_light"][open]').waitFor();
  assert.match(await page.locator('.play-info-traits .trait-card[data-trait-key="state|spell:phb2014_light"]').textContent(),/Light/);
- await sheet('battle');assert.match(await page.locator('.play-status-strip').textContent(),/Light/);
+ await sheet('battle');assert.match(await page.locator('.play-status-overview .play-status-rows').textContent(),/Light/);
  await sheet('conditions');await page.locator('[data-act="condition-remove-spell"][data-spell-id="phb2014_light"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light');});
  await sheet('magic');
