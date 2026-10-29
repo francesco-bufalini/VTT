@@ -601,7 +601,14 @@
             "range_feet": 30,
             "ranged": true
           }
-        ]
+        ],
+        "skill_ranks": {
+          "perception": 2,
+          "stealth": 1
+        },
+        "save_ranks": {
+          "dex": 1
+        }
       }
     }
   }
