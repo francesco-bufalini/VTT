@@ -67,7 +67,7 @@ export class TacticalViewer {
     this.send=send;this.ownerId=ownerId;this.notify=notify;this.onCastAccepted=onCastAccepted;
     this.tokenId="";this.attack={};this.image=null;this.snapshot=null;
     this.targeting={};this.preview=null;this.aimPixel=null;this.selectedId="";
-    this.basicAction=null;this.abilityTarget=null;this.areaAbility=null;
+    this.basicAction=null;this.abilityTarget=null;this.areaAbility=null;this.attackEffects=null;
     this.zoom=1;this.panX=0;this.panY=0;this.pointers=new Map();
     this.touchMoved=false;this.busy=false;this.root=null;this.onResize=()=>this.draw();
     this.imgUrl="";
@@ -78,7 +78,7 @@ export class TacticalViewer {
     if(this.root&&(this.targeting.active||this.abilityTarget||this.areaAbility))
       throw new Error("Completa o annulla prima la selezione in corso.");
     this.close();
-    this.tokenId=tokenId;this.attack=structuredClone(attack);this.basicAction=null;
+    this.tokenId=tokenId;this.attack=structuredClone(attack);this.basicAction=null;this.attackEffects=null;
     this.root=document.createElement("div");
     this.root.className="tactical-overlay";
     this.root.innerHTML='<section class="tactical-dialog" role="dialog" aria-modal="true" aria-label="Snapshot della mappa">'+
@@ -122,6 +122,11 @@ export class TacticalViewer {
     await this.refresh();
     this.schedulePoll();
   }
+  setAttackEffects({name,onConfirmed}={}){
+    if(!this.root||!this.attack?.range_feet||!name||typeof onConfirmed!=='function')
+      throw Error('Attacco sulla mappa non disponibile.');
+    this.attackEffects={name,onConfirmed};
+  }
   setBasicAction(action) {
     if(!this.root||!['help','shove','prone','grapple'].includes(action?.mode))
       throw Error('Azione di combattimento non valida.');
@@ -153,7 +158,7 @@ export class TacticalViewer {
     this.resizeObserver?.disconnect();this.resizeObserver=null;
     if(this.onKey)window.removeEventListener("keydown",this.onKey);
     window.removeEventListener("resize",this.onResize);
-    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;this.basicAction=null;this.abilityTarget=null;this.areaAbility=null;
+    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;this.basicAction=null;this.abilityTarget=null;this.areaAbility=null;this.attackEffects=null;
     if(this.imgUrl){URL.revokeObjectURL(this.imgUrl);this.imgUrl="";}
     document.body.classList.remove("tactical-open");
     this.pointers.clear();
@@ -437,9 +442,18 @@ export class TacticalViewer {
       const result=await this.runAction("target_attack",{
         token_id:this.tokenId,target_id:marker.id,attack:this.attack
       });
-      this.setStatus("Bersaglio: "+marker.name+" · distanza "+
+      const distance="Bersaglio: "+marker.name+" · distanza "+
         Math.ceil(result.distance_feet||0)+" ft"+
-        (result.long_range?" · gittata lunga (svantaggio)":""));
+        (result.long_range?" · gittata lunga (svantaggio)":"");
+      if(this.attackEffects&&marker.id!==this.tokenId){
+        const selected=this.attackEffects;
+        if(window.confirm('Applicare gli effetti sul colpo di '+selected.name+
+          ' a '+(marker.name||marker.id)+'?\\nNon vengono tirati dadi né applicati danni.')){
+          await selected.onConfirmed({id:marker.id,name:marker.name||marker.id});
+          await this.refresh();
+          this.setStatus(distance+" · effetti applicati");
+        }else this.setStatus(distance+" · effetti non applicati");
+      }else this.setStatus(distance);
     }else{
       this.setStatus(marker ? "Token: "+marker.name+
         (marker.status_text?" · "+marker.status_text:""):"Seleziona un token sulla mappa.");
