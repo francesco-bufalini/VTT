@@ -55,11 +55,14 @@ function requiredOptionIds(rule,options,level){
  }
  return [...ids];
 }
-function legacyChoices(record,options,claimed){
+function legacyChoices(record,options,claimed,progressionId){
  const candidates=[...rows(record.optional_features_catalog).filter(row=>row&&!row.disabled),
   ...rows(record.fighting_styles).map(row=>typeof row==='string'?{name:row}:row).filter(Boolean)];
  const ids=[];
  for(const row of candidates){
+  // Choices saved by the generic learner belong to their original progression.
+  // Only pre-existing unbound rows may be distributed to the first match.
+  if(row.optional_progression_id&&row.optional_progression_id!==progressionId)continue;
   const found=options.find(opt=>!opt._homebrew&&same(opt.name,row.name)&&
    (!row.source||same(row.source,opt.source)));
   const fallback=found||(!row.source?options.find(opt=>!opt._homebrew&&same(opt.name,row.name)):null);
@@ -95,16 +98,23 @@ export function optionalFeatureSelectionModels(record={},calculated={},catalog={
   }
   // Old sheets keep their selected optional features, without requiring migration.
   // Distribute ambiguous legacy choices to the first applicable progression.
-  for(const id of legacyChoices(record,options,claimed))if(!selected.includes(id))selected.push(id);
+  for(const id of legacyChoices(record,options,claimed,rule.id))if(!selected.includes(id))selected.push(id);
   const feature=ownedFeature(calculated.features,rule.owner||{});
   if(limit<=0&&!selected.length)continue;
+  const layers={learned:{enabled:true,selected,limit,used:selected.length,
+   trigger:rule.trigger||null,change_label:rule.trigger==='level_up'?'Passaggio di livello':'',
+   storage:'optional_features_catalog',available:true}};
+  // Always-on options use the same learned/applied stages as other powers.
+  // Their application is derived from knowledge: no second user selection,
+  // active-style cap, persisted toggles or special Fighting Style handler.
+  if(rule.layers?.applied?.mode==='automatic'&&rule.layers.applied.from==='learned')
+   layers.applied={enabled:true,selected:[...selected],limit:null,used:selected.length,
+    trigger:null,change_label:'',storage:'derived:learned',available:true,
+    automatic:true,refundable:false};
   result.push({id:rule.id,title:rule.title,origin_id:feature?.origin_id||'',
     source_type:'optionalfeature_progression',option_kind:'optional_feature',
     description:'Opzioni da 5eTools · puoi aggiungere capacità homebrew.',
-    level,ui:'generic',options,required,
-    layers:{learned:{enabled:true,selected,limit,used:selected.length,
-     trigger:rule.trigger||null,change_label:rule.trigger==='level_up'?'Passaggio di livello':'',
-     storage:'optional_features_catalog',available:true}}});
+    level,ui:'generic',options,required,layers});
  }
  return result;
 }

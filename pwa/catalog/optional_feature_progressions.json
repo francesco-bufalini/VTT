@@ -54,6 +54,12 @@
       "feature_types": [
         "FS:B"
       ],
+      "layers": {
+        "applied": {
+          "mode": "automatic",
+          "from": "learned"
+        }
+      },
       "progression": {
         "3": 1
       },
@@ -71,6 +77,12 @@
       "feature_types": [
         "FS:F"
       ],
+      "layers": {
+        "applied": {
+          "mode": "automatic",
+          "from": "learned"
+        }
+      },
       "progression": {
         "1": 1
       },
@@ -112,6 +124,12 @@
       "feature_types": [
         "FS:F"
       ],
+      "layers": {
+        "applied": {
+          "mode": "automatic",
+          "from": "learned"
+        }
+      },
       "progression": {
         "10": 1
       },
@@ -245,6 +263,12 @@
       "feature_types": [
         "FS:P"
       ],
+      "layers": {
+        "applied": {
+          "mode": "automatic",
+          "from": "learned"
+        }
+      },
       "progression": {
         "2": 1
       },
@@ -262,6 +286,12 @@
       "feature_types": [
         "FS:R"
       ],
+      "layers": {
+        "applied": {
+          "mode": "automatic",
+          "from": "learned"
+        }
+      },
       "progression": {
         "2": 1
       },
