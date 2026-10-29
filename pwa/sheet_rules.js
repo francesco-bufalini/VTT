@@ -1052,14 +1052,14 @@ function calculateSheetValues(record={},catalogs={}){
     const pb=proficiencyBase(),stats=record.stat_block||{};
     if(!record.skill_ranks_custom)for(const [name,total] of Object.entries(stats.skill||{})){
       const ability=SKILLS.find(([key])=>key===name)?.[2];
-      if(!ability||companionValues.skill_ranks?.[name]||!/^[-+]?\\d+$/.test(String(total)))continue;
+      if(!ability||companionValues.skill_ranks?.[name]||!/^[-+]?\d+$/.test(String(total)))continue;
       const difference=int(total)-mod(int(record.abilities?.[ability],10));
       if(difference===2*pb)proficiencies.set('expertise:'+name,true);
       else if(difference===pb&&!proficiencies.has('expertise:'+name))proficiencies.set('skill:'+name,true);
     }
     for(const [ability,total] of Object.entries(stats.save||{})){
       if(!ABILITIES.includes(ability)||companionValues.save_ranks?.[ability]||
-        !/^[-+]?\\d+$/.test(String(total)))continue;
+        !/^[-+]?\d+$/.test(String(total)))continue;
       if(int(total)-mod(int(record.abilities?.[ability],10))===pb)
         proficiencies.set('save:'+ability,true);
     }
