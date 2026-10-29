@@ -76,7 +76,7 @@ export function initialCreature(kind,name,id,owner_id){
     equipped_inventory_index:-1,hand_main_special:"none",hand_off_special:"none",
     hand_grip_two_handed:false,two_weapon_fighting:false,fighting_styles:[],
     proficiency_choices:[],origin_ability_choices:[],advancement_choices:[],formula_bonuses:[],base_value_overrides:[],dice_bonuses:[],
-    resource_trackers:[],resource_tracker_spent:{},
+    d20_reroll_grants:[],resource_trackers:[],resource_tracker_spent:{},
     resource_recovery_ready:{},resource_recovery_used:{},origin_spell_grants:[],
     origin_spell_configs:{},spellcasting_section_abilities:{},
     active_spell_context:{},conditions:[],concentrating_spell_id:"",
