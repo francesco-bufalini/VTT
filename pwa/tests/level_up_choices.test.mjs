@@ -73,3 +73,19 @@ test('class-level editors present dropdown options and retain the 20-level limit
  assert.equal(identityPatch(record,'primary_class_level','18').level,20);
  assert.throws(()=>identityPatch(record,'primary_class_level','19'),/20/);
 });
+
+test('XP entered in the class editor immediately makes advancement available',()=>{
+ const record=fighter(2,300);
+ const updated={...record,...identityPatch(record,'xp',900)};
+ assert.equal(canLevelUp(record),false);
+ assert.equal(canLevelUp(updated),true);
+});
+test('secondary class selector keeps class name and level together',()=>{
+ const record={...fighter(3,2700),classes:[...fighter(3,2700).classes,
+   {name:'Rogue',source:'PHB',level:2}]};
+ const html=nativeRows(record,'classes',{
+   classes:[{id:'rogue',name:'Rogue',source:'PHB'}]},1);
+ const group=html.slice(html.indexOf('class-level-fields'));
+ assert.ok(group.indexOf('data-key="name"')<group.indexOf('data-key="level"'));
+ assert.ok(group.indexOf('data-key="level"')<group.indexOf('data-key="subclass"'));
+});

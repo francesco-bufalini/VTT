@@ -5978,3 +5978,19 @@ dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-si
 #sheet-play-view .play-status-section-content .play-condition-remove{
  top:50%;right:7px;transform:translateY(-50%);
 }
+
+/* Editable per-level hit die gains in the level-up setup dialog. */
+.levelup-class-dialog.pending-choice-dialog{width:min(520px,calc(100vw - 26px))}
+.levelup-hp-rows{display:grid;gap:8px;padding:12px;border:1px solid #b68a4c3d;
+ border-radius:9px;background:#b68a4c0b}
+.levelup-hp-rows>strong{font-size:12px;color:#edcfa5}
+.levelup-hp-row{display:grid!important;grid-template-columns:minmax(0,1fr) 80px auto;
+ align-items:center;gap:8px;min-width:0}
+.levelup-hp-row>span:first-child{font-size:12px;min-width:0}
+.levelup-hp-row small{display:block;color:#bca385;font-size:10px}
+.levelup-hp-row input{box-sizing:border-box;min-width:0;width:100%;height:36px;padding:5px 8px;
+ border:1px solid #b68a4c66;border-radius:6px;background:#241d1b;color:#f9dbb1;
+ text-align:center;font:600 15px/1.3 system-ui}
+.levelup-hp-con{white-space:nowrap;color:#dec098;font-size:12px}
+.levelup-hp-total{font:600 12px/1.4 system-ui;color:#eec88b;text-align:right}
+@media(max-width:380px){.levelup-hp-row{grid-template-columns:minmax(0,1fr) 66px auto;gap:6px}}

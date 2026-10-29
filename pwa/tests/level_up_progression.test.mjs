@@ -41,3 +41,20 @@ test('subclass choice owed before a batch is shown at its first acquired level',
  assert.deepEqual(rows.map(row=>row.choices.map(choice=>choice.id)),[['sub'],[]]);
  assert.deepEqual(levelUpSteps({}, {className:'Rogue',fromLevel:6,toLevel:6}),[]);
 });
+
+test('class dice, half-up averages and Constitution are applied per level',async()=>{
+ const {classHitDieFaces,averageHitDie,hpGainForLevels,levelUpHpPatch}=
+   await import('../level_up.js');
+ assert.equal(classHitDieFaces({hd:{number:1,faces:10}}),10);
+ assert.equal(classHitDieFaces({hit_die:'d8'}),8);
+ assert.equal(classHitDieFaces({name:'Unknown'}),0);
+ assert.equal(averageHitDie(10),6);
+ assert.equal(averageHitDie(6),4);
+ assert.equal(hpGainForLevels([6,6,6],2),24);
+ assert.equal(hpGainForLevels([1,1],-3),2);
+ assert.deepEqual(levelUpHpPatch({max_hp_base:26,current_hp:21},[6,6],2),
+   {max_hp_base:42,current_hp:37});
+ assert.deepEqual(levelUpHpPatch({max_hp_base:1,current_hp:1},[10],2,
+   {firstCharacterLevel:true}),{max_hp_base:12,current_hp:12});
+ assert.throws(()=>hpGainForLevels([0],2),/non validi/);
+});
