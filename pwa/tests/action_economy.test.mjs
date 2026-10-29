@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {battleResourcePowers,persistentBattleAbility,spellCastingTimeLabel} from '../sheet_rules_view.js';
-import {actionEntries as project,battleActionPanels,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants,actionGlyph} from '../action_economy.js';
+import {actionEntries as project,battleActionPanels,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants,actionGlyph,attackRowGlyphKey} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const classFeatures=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
@@ -566,11 +566,13 @@ test('improvised shield offhand is usable through feat only in 2014 rules',()=>{
   {attacks:[main,shield]},[],[],catalog.actions).offhandEligibility.feat_available,false);
 });
 
-test('damaging physical attacks precede non-damaging main-hand moves without changing the priority within groups',()=>{
+test('non-base attacks precede improvised and unarmed regardless of damage, preserving normal attack priorities',()=>{
  const computed={attacks:[
   {id:'item:empty',name:'Arma senza danni',slot:'main',melee:true,range_feet:5,hit:3},
   {id:'monster:action:0',name:'Morso',melee:true,range_feet:5,hit:4,damage:'2d6 + 1'},
   {id:'item:blade',name:'Lama',slot:'main',melee:true,range_feet:5,hit:5,damage:'1d8 + 3'},
+  {id:'item:bow',name:'Arco',slot:'main',melee:false,range_feet:80,hit:4,damage:'1d6'},
+  {id:'shield:improvised:main:sh',name:'Scudo improvvisato',slot:'shield',melee:true,range_feet:5,damage:'1d4'},
   {id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,range_feet:5,hit:3,damage:'4'}
  ]};
  const rows=doc(battleActionPanels({},computed,[],[],catalog.actions).attacks);
@@ -579,10 +581,21 @@ test('damaging physical attacks precede non-damaging main-hand moves without cha
   'Damaging main-hand weapon keeps precedence among damaging attacks');
  assert(ids.indexOf('monster:action:0')<ids.indexOf('item:empty'),
   'A damaging monster attack precedes a non-damaging main-hand weapon');
- assert(ids.indexOf('unarmed')<ids.indexOf('item:empty'),
-  'Unarmed damage precedes non-damaging entries');
- assert(ids.indexOf('item:empty')<ids.indexOf('grapple'),
-  'The existing equipment order stays stable inside the non-damaging group');
+ assert(ids.indexOf('item:empty')<ids.indexOf('improvised'),
+  'Even non-damaging non-base attacks precede improvised attacks');
+ assert(ids.indexOf('improvised')<ids.indexOf('unarmed'),
+  'Improvised and unarmed attacks remain at the bottom');
+ assert.equal(ids.at(-2),'improvised');
+ assert.equal(ids.at(-1),'unarmed');
+ assert.equal(attackRowGlyphKey({melee:true}),'sword');
+ assert.equal(attackRowGlyphKey({melee:false}),'target');
+ const sword=rows.querySelector('[data-attack-id="item:blade"] summary>.vtt-action-glyph');
+ const bow=rows.querySelector('[data-attack-id="item:bow"] summary>.vtt-action-glyph');
+ assert.equal(sword.className,/class="([^"]+)"/.exec(actionGlyph('sword'))[1],
+  'Melee attacks use the melee icon');
+ assert.equal(bow.className,/class="([^"]+)"/.exec(actionGlyph('target'))[1],
+  'Ranged attacks use the ranged icon');
+ assert.notEqual(bow.className,sword.className);
 });
 test('Prova abilità is a basic capacity without a duplicate timed action',()=>{
  const panels=battleActionPanels({}, {attacks:[]},[],[],catalog.actions);
