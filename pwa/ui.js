@@ -58,7 +58,7 @@ import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment,minimumXpForLevel} from "./character_core.js";
 import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
-import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,permanentSubtraitsForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
@@ -2672,6 +2672,13 @@ async function traitsView(c){
   const benefitCount=(benefitsByTrait.get(trait.key)||[])
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
+  const subtraits=permanentSubtraitsForTrait(trait,c,state.calculated?.pending_choices||[],state.calculated?.power_selections||[]);
+  const nested=subtraits.length?'<div class="trait-subtraits" aria-label="Sotto-tratti e scelte permanenti">'+subtraits.map(sub=>
+   '<button type="button" class="trait-subtrait trait-subtrait--depth-'+Math.min(2,sub.depth)+'" data-act="'+(sub.kind==='power'?'power-selection-open':'pending-choice-open')+'"'+
+   (sub.kind==='power'?' data-power-selection-id="'+esc(sub.model_id)+'" data-power-stage="'+esc(sub.stage)+'"':
+    ' data-choice-id="'+esc(sub.choice_id)+'"')+(active?'':' disabled')+'>'+ 
+    '<span class="trait-subtrait-mark" aria-hidden="true">└</span><span class="trait-subtrait-copy"><span class="trait-subtrait-title">'+esc(sub.title)+'</span>'+ 
+    '<small>'+esc(sub.selection)+'</small></span><span class="trait-subtrait-chevron" aria-hidden="true">›</span></button>').join('')+'</div>':'';
   // Panoramica retains general origin benefits in the same editable popup.
   const benefitButton='<button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
    (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>';
@@ -2685,7 +2692,7 @@ async function traitsView(c){
       (trait.description_html?'<div class="trait-description trait-state-description">'+trait.description_html+'</div>':
        description?'<p class="trait-description">'+esc(description)+'</p>':'')+
       (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
-    '</div></details></div>';
+    '</div></details>'+nested+'</div>';
  };
  const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
  const originKind=(category,origin)=>{
@@ -3154,7 +3161,7 @@ function learningSelectionDialogBody({title,closeAction,summary,searchLabel,sear
    '<div class="actions"><button type="button" class="btn" data-act="'+esc(closeAction)+'">Chiudi</button></div></div>';
 }
 function genericPowerSelectionPanels(c,calculated){
- return (calculated.power_selections||[]).filter(model=>model.ui==='generic').map(model=>{
+ return (calculated.power_selections||[]).filter(model=>model.ui==='generic'&&model.selection_kind!=='subtrait').map(model=>{
   const stages=Object.entries(model.layers||{}).filter(([,layer])=>layer.enabled);
   return panel(model.title,stages.map(([stage,layer])=>{
    const selected=layer.selected||[],optionById=new Map((model.options||[]).map(option=>[option.id,option]));
@@ -3203,7 +3210,8 @@ async function openGenericPowerSelectionDialog(id,stage){
     fields+'<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
     '" data-act="power-selection-toggle" data-power-option-id="'+esc(option.id)+'"'+
     (required?' disabled title="Opzione obbligatoria"':'')+' aria-pressed="'+owned+'">'+
-    (required?'Obbligatoria':owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
+    (required?'Obbligatoria':model.selection_kind==='subtrait'?(owned?(sub?'Aggiorna':'Rimuovi'):'Scegli'):
+     owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
      stage==='learned'?'+ Impara':stage==='prepared'?'+ Prepara':'+ Applica')+'</button>'+
     (owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
     ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':'')+'</div>';
@@ -3220,7 +3228,8 @@ async function openGenericPowerSelectionDialog(id,stage){
   (record.inventory||[]).flatMap((item,index)=>Number(item.quantity??1)>0?
    ['<option value="'+index+'">'+esc(item.name||item.id||'Oggetto')+'</option>']:[]).join('')+
   '</select></label>':'';
- const stageTitle=stage==='learned'?'Impara '+model.title:
+ const stageTitle=model.selection_kind==='subtrait'?'Scegli · '+model.title:
+  stage==='learned'?'Impara '+model.title:
   stage==='prepared'?'Prepara '+model.title:'Applica '+model.title;
  dialog.innerHTML=learningSelectionDialogBody({
   title:stageTitle,closeAction:'power-selection-close',
