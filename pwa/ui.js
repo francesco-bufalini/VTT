@@ -5695,14 +5695,14 @@ function openLevelUpPlaceholder(className,level){
 async function openLevelUpClassDialog(){
  const record=state.editor?.read();
  if(!record||record.kind==='monster'||record.variant_rules_kind==='monster')return;
- const owned=rowsFor(record,'classes').filter(row=>row.name);
+ const owned=rowsFor(record,'classes').map((row,index)=>({...row,index})).filter(row=>row.name);
  const level=owned.reduce((n,row)=>n+Number(row.level||1),0);
  if(level>=20)throw Error('Il personaggio è già al livello massimo.');
  const all=state.referenceCatalogs.classes||await catalogEntries('classes');
  state.referenceCatalogs.classes=all;
  const choices=all.filter(row=>row.name&&isContentAvailableForRules(row,record.rules_version));
  const idOf=row=>String(row.id||row.name+'|'+row.source);
- const existing=owned.map((row,index)=>({value:'owned:'+index,
+ const existing=owned.map(row=>({value:'owned:'+row.index,
    label:row.name+' · '+(row.source||'Fonte non specificata')+' (livello '+row.level+' → '+(Number(row.level||1)+1)+')'}));
  const remaining=choices.filter(row=>!owned.some(member=>member.name.toLowerCase()===row.name.toLowerCase()));
  const unique=new Map();
@@ -9429,12 +9429,7 @@ function listen(){
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.matches('[data-hp-autosave]')){
-      // Current and temporary HP are one editable snapshot. A shared debounce
-      // prevents two timers from persisting overlapping stale editor revisions.
-      for(const field of target.closest('#hp-adjust-dialog')?.querySelectorAll('[data-hp-autosave]')||[]){
-        clearTimeout(pendingFieldTimers.get(field));
-        pendingFieldTimers.delete(field);
-      }
+      clearTimeout(pendingFieldTimers.get(target));
       const editor=state.editor;
       pendingFieldTimers.set(target,setTimeout(()=>{
         pendingFieldTimers.delete(target);
