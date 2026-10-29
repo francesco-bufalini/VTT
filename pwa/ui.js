@@ -5008,7 +5008,7 @@ async function handleField(target) {
       if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
-    if(['rules_version','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
+    if(['rules_version','xp','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
     if(key==='primary_class_level'&&Number(value)>Number(rowsFor(creature,'classes')[0]?.level||1))
       openLevelUpPlaceholder(creature.class,Number(value));
     if(key==="name"){
@@ -5197,14 +5197,18 @@ function organizeSheetPanels(){
     const root=app.querySelector('#sheet-play-view');
     const choices=state.calculated.pending_choices||[];
     const missing=choices.filter(choice=>choice.remaining>0);
-    if(root&&missing.length){
-      const total=missing.reduce((n,choice)=>n+choice.remaining,0);
+    const levelReady=canLevelUp(state.editor.read());
+    if(root&&(missing.length||levelReady)){
+      const total=missing.reduce((n,choice)=>n+choice.remaining,0)+(levelReady?1:0);
       const notice=document.createElement('section');
       notice.className='pending-choices-notice';
       notice.setAttribute('aria-label','Scelte del personaggio da completare');
       notice.innerHTML='<div class="pending-choices-notice-head"><span aria-hidden="true">◇</span>'+
         '<strong>'+total+' '+(total===1?'scelta da completare':'scelte da completare')+'</strong></div>'+
-        '<div class="pending-choices-notice-list">'+missing.map(choice=>
+        '<div class="pending-choices-notice-list">'+
+        (levelReady?'<button type="button" data-act="level-up-open"><span>Level up <small>· Scegli la classe da livellare</small></span>'+
+          '<span>↑ <span aria-hidden="true">›</span></span></button>':'')+
+        missing.map(choice=>
           '<button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'">'+
           '<span>'+esc(choice.name)+' <small>· '+esc(choice.label)+'</small></span>'+
           '<span>'+esc(choice.selected.length)+'/'+esc(choice.count)+' <span aria-hidden="true">›</span></span></button>').join('')+
@@ -5219,7 +5223,7 @@ function organizeSheetPanels(){
     // Align the privilege-choice shortcut to the right of the Info title,
     // using the same page-header button treatment as the other sheets.
     const pageHead=app.querySelector('.page-head');
-    if(pageHead&&choices.length){
+    if(pageHead&&(choices.length||levelReady)){
       pageHead.classList.add('play-info-page-title');
       const manage=document.createElement('button');
       manage.type='button';manage.className='play-button pending-choices-manage';
@@ -5757,7 +5761,8 @@ async function openLevelUpClassDialog(){
 }
 function openPendingChoicesIndex(){
  const choices=state.calculated?.pending_choices||[];
- if(!choices.length)return;
+ const levelReady=canLevelUp(state.editor?.read()||{});
+ if(!choices.length&&!levelReady)return;
  app.querySelector('#pending-choice-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='pending-choice-dialog';
@@ -5765,6 +5770,8 @@ function openPendingChoicesIndex(){
  dialog.innerHTML='<header class="sheet-context-head"><h2>Scelte dei privilegi</h2>'+
    dialogCloseButton('pending-choice-close','Chiudi','play-button')+'</header>'+
    '<div class="pending-choice-dialog-body pending-choices-notice-list">'+
+   (levelReady?'<button type="button" data-act="level-up-open"><span>Level up <small>· Scegli la classe da livellare</small></span>'+
+     '<span>↑ <span aria-hidden="true">›</span></span></button>':'')+
    choices.map(choice=>'<button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'">'+
      '<span>'+esc(choice.name)+' <small>· '+esc(choice.label)+'</small></span>'+
      '<span>'+esc(choice.selected.length)+'/'+esc(choice.count)+' <span aria-hidden="true">›</span></span></button>').join('')+
@@ -6285,6 +6292,7 @@ async function handleAction(target){
     dialog.remove();await patch(changes);await render();return;
   }
   if(act==='level-up-open'){
+    closeDialog(app.querySelector('#pending-choice-dialog'),{remove:true});
     await openLevelUpClassDialog();return;
   }
   if(act==='pending-choice-manage'){
