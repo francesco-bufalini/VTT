@@ -5,7 +5,7 @@ import {normalizeEffectExtension} from './effect_extensions.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 export const BENEFIT_TYPES=[
- ['bonus','Bonus'],['base_override','Sostituzione valore base'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],['senses','Sensi'],
+ ['bonus','Bonus'],['base_override','Sostituzione valore base'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['d20_reroll','Ritiro d20'],['proficiency','Competenza'],['senses','Sensi'],
  ['defenses','Resistenza / immunità / vulnerabilità'],['resources','Risorsa'],
  ['spells','Incantesimo'],['actions','Azione'],['effect_extensions','Estensione di incantesimo o capacità']
 ];
@@ -71,7 +71,7 @@ export function removeBenefitPatch(record,trait,item){
  const id=String(item.id);
  const collection={base_overrides:'base_value_overrides',bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
   proficiency:'proficiency_choices',senses:'sense_grants',defenses:'damage_defense_entries',
-  resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants',
+  resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants',d20_rerolls:'d20_reroll_grants',
   attack_count:'attack_count_grants',effect_extensions:'effect_extensions'}[item.type];
  const original=rows(record[collection]);
  const idx=collection?original.findIndex(row=>{
@@ -80,6 +80,7 @@ export function removeBenefitPatch(record,trait,item){
   if(item.type==='bonus')return 'bonus:'+String(row.id||'')===id&&!row.automatic;
   if(item.type==='dice')return 'dice:'+String(row.id||'')===id;
   if(item.type==='roll_modes')return 'roll_mode:'+String(row.id||'')===id;
+  if(item.type==='d20_rerolls')return 'd20_reroll:'+String(row.id||'')===id;
   if(item.type==='proficiency')return 'proficiency:'+String(row.origin_id||'')+':'+row.kind+':'+norm(row.key)===id;
   if(item.type==='senses')return 'sense:'+String(row.id||'')===id;
   if(item.type==='defenses')return 'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)===id;
@@ -193,6 +194,19 @@ export function addBenefitPatch(record,trait,kind,values={},id){
     throw Error('Vantaggio/svantaggio applicabile solo ai tiri d20');
   row={...common,target,mode,trait_key:trait.key,
     parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||''};
+ }else if(kind==='d20_reroll'){
+  const target=required('target'),tracker_id=String(values.tracker_id||'').trim();
+  if(!['any_d20','ability_check','saving_throw','attack_roll','spell_attack','initiative'].includes(target)&&
+     !/^(ability_check:|skill:|save:|attack_hit:|casting_hit:)/.test(target))
+   throw Error('Ritiro applicabile solo ai tiri d20');
+  const cost=Number(values.tracker_cost||1);
+  if(tracker_id&&(!/^[\\w:|.-]{1,160}$/.test(tracker_id)||
+      !Number.isInteger(cost)||cost<1||cost>100))throw Error('Tracker o costo non valido');
+  const trigger=String(values.trigger||'after_roll');
+  if(!['after_roll','on_one'].includes(trigger))throw Error('Condizione del ritiro non valida');
+  field='d20_reroll_grants';row={...common,targets:[target],trigger,
+   ...(tracker_id?{tracker_id,tracker_cost:cost}:{}),
+   trait_key:trait.key,parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||''};
  }else if(kind==='proficiency'){
   field='proficiency_choices';row={...common,kind:required('proficiency_kind'),key:norm(required('key'))};
   if(!PROFICIENCY_KINDS.some(([x])=>x===row.kind))throw Error('Tipo competenza non valido');
