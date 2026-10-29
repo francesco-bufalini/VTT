@@ -77,11 +77,15 @@ export function hpGainForLevels(rolls,constitutionModifier){
    return sum+Math.max(1,roll+con);
  },0);
 }
-export function levelUpHpPatch(record,rolls,constitutionModifier){
+export function levelUpHpPatch(record,rolls,constitutionModifier,{firstCharacterLevel=false}={}){
  const gained=hpGainForLevels(rolls,constitutionModifier);
  const base=Number(record.max_hp_base??record.max_hp??0);
  const current=Number(record.current_hp??0);
  if(!Number.isFinite(base)||base<0||!Number.isFinite(current)||current<0)
    throw Error('PF attuali non validi.');
- return {max_hp_base:base+gained,current_hp:current+gained};
+ // A new character starts with the archive's provisional 1 HP, not an
+ // additional class-level HP. Preserve any intentionally customized value.
+ const replaceDefault=firstCharacterLevel&&base===1&&current===1;
+ return {max_hp_base:base+(replaceDefault?gained-1:gained),
+   current_hp:current+(replaceDefault?gained-1:gained)};
 }
