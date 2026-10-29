@@ -549,6 +549,35 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
  return rows;
 }
 
+// Distinguish actual resource powers without assigning an icon to counters.
+// Explicit structured ability kinds win; known themed actions reuse the shared
+// gold atlas, and otherwise the action economy determines the icon.
+export function resourceAbilityGlyphKey(row={}){
+ if(row.kind==='spell')return 'spell_cast';
+ const power=row.power||{},action=row.classAction||{};
+ if(power.roll_attack||action.roll_attack||action.attack_id)return 'weapon';
+ if(power.companion_command||action.companion_command)return 'talk';
+ if(power.companion_rule_id||action.companion_rule_id)return 'summon';
+ if(power.infusion_action||action.infusion_action)return 'magic_item';
+ const specific=actionGlyphKey({...action,...power,name:row.name,type:'Capacità'});
+ if(specific!=='action'&&specific!=='proficiency')return specific;
+ if(persistentBattleAbility(row))return 'buff';
+ const timing=String(row.timing||power.action_type||power.activation_mode||action.time||'').toLowerCase().trim();
+ return ({action:'action',bonus:'bonus',reaction:'reaction_trigger',
+  free:'free',movement:'speed',contextual:'spark'})[timing]||'spark';
+}
+
+// Roll bonuses are powers attached to a tracker, not tracker icons.
+export function resourceRollBonusGlyphKey(row={}){
+ const targets=(Array.isArray(row.targets)?row.targets:[row.target]).map(String);
+ if(targets.some(target=>/^(attack_hit:|attack_damage:|attack_roll$|damage_roll$|spell_attack$|spell_damage$)/.test(target)))
+  return 'attack_bonus';
+ if(targets.some(target=>target==='saving_throw'||target.startsWith('save:')))return 'save_throw';
+ if(targets.some(target=>target==='ability_check'||target.startsWith('ability_check:')||target.startsWith('skill:')))
+  return 'skill';
+ return 'buff';
+}
+
 // A subclass trait that owns a tracker is usable even if its effects are not
 // automated. Its payment is user-confirmed, allowing pooled/variable costs.
 // No tracker and no modeled action means no Resources entry.
@@ -691,8 +720,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const originId=row.origin_id||'';
    const content='<span><strong>'+esc(value+' · '+(row.name||'Bonus'))+'</strong><small>'+esc(trackerRollBonusTargets(row,d))+'</small></span>';
    return '<div class="play-resource-power-row play-resource-bonus-row" data-roll-bonus-id="'+esc(row.id||row.name||'')+'">'+
-    (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+icon('proficiency')+content+'</button>':
-      '<span class="play-resource-power-open">'+icon('proficiency')+content+'</span>')+'</div>';
+    (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+icon(resourceRollBonusGlyphKey(row))+content+'</button>':
+      '<span class="play-resource-power-open">'+icon(resourceRollBonusGlyphKey(row))+content+'</span>')+'</div>';
   }).join('');
   const traits=view.battleTraits||[];
   const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
@@ -737,8 +766,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    // Spells still require the normal resource check.
    const disabled=(row.kind==='spell'||row.power?.infusion_action)&&row.cost>0&&
     (!tracker||tracker.disabled||available<row.cost);
-   const glyph=icon(row.kind==='spell'?'spell_cast':
-     actionGlyphKey({...row.classAction,...row.power,name:row.name,type:'Capacità'}));
+   const glyph=icon(resourceAbilityGlyphKey(row));
    const caption=row.kind==='spell'?row.casting_time_label:
      ((row.power?.roll_attack||row.classAction?.roll_attack)&&row.timing==='action'?'Azione di attacco':
        timeLabels[row.timing]||row.timing||'Secondo il privilegio');
@@ -793,7 +821,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const linked=resourceLinkedSubclassTrait(t,d.features||[],powerRows,d);
    const reference=linked?'<div class="play-resource-power-row" data-linked-subclass-resource="'+esc(t.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(linked.origin_id)+'"'+
-    ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon('proficiency')+
+    ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon(resourceAbilityGlyphKey({name:linked.name,timing:linked.action_type||'contextual'}))+
     '<span><strong>'+esc(linked.name)+'</strong><small>Capacità di sottoclasse · '+esc(trackerRecoveryText(t))+'</small></span></button>'+
     '<button type="button" class="play-resource-use" data-act="tracker-trait-use" data-tracker-id="'+esc(t.id)+'"'+
     ' data-origin-id="'+esc(linked.origin_id)+'"'+/* Alternative slot payments may be available even with zero tracker uses.
