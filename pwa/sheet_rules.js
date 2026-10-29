@@ -1579,7 +1579,9 @@ function calculateSheetValues(record={},catalogs={}){
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),
       passive_investigation:safe("passive_skill:investigation"),
-      speeds,hovering:!!dragonbornFlight,automatic_hp:automaticHP,hit_dice:dice.available?dice.parts.map(p=>p.count+'d'+p.die+' ('+p.name+')').join(', '):record.hit_dice||'',
+      speeds,hovering:!!dragonbornFlight,automatic_hp:automaticHP,
+      hit_dice:companionValues.hit_dice||(
+        dice.available&&dice.parts.length?dice.parts.map(p=>p.count+'d'+p.die+' ('+p.name+')').join(', '):record.hit_dice||''),
       jumps:{long:Math.max(0,abilities.str.score??0),high:Math.max(0,3+(abilities.str.modifier??0))}},
     spell_slots:slots,pact_slots:{base:Math.max(0,useSaved?int(record.pact_slots_total):progression.pact_total),total:pactTotal,spent:Math.max(0,Math.min(pactTotal,int(record.pact_slots_spent))),
       level:useSaved?int(record.pact_slot_level,1):progression.pact_level},
