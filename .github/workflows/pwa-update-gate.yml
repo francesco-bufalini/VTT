@@ -12,4 +12,4 @@ jobs:
           node-version: '22'
       - run: node scripts/check_pwa_assets.mjs
       - run: node --test pwa/tests/pwa_asset_gate.test.mjs pwa/tests/startup_module_routes.test.mjs pwa/tests/offline_cache_policy.test.mjs pwa/tests/version_gate.test.mjs
-      - run: node --test pwa/tests/sheet_rules.test.mjs pwa/tests/selection_benefit_contract.test.mjs
+      - run: node --test pwa/tests/sheet_rules.test.mjs pwa/tests/selection_benefit_contract.test.mjs pwa/tests/action_economy.test.mjs
