@@ -11,4 +11,6 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/check_pwa_assets.mjs
+      - run: python3 scripts/build_selection_effects.py --check
+      - run: node --test pwa/tests/optional_combat_benefits.test.mjs pwa/tests/optional_feature_progression.test.mjs pwa/tests/selection_benefit_contract.test.mjs
       - run: node --test pwa/tests/pwa_asset_gate.test.mjs pwa/tests/startup_module_routes.test.mjs pwa/tests/offline_cache_policy.test.mjs pwa/tests/version_gate.test.mjs
