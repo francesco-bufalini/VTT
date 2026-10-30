@@ -778,14 +778,16 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
    // Abilities can confirm "Nessun tracker" even if their resource is spent.
    // Spells still require the normal resource check.
-   const disabled=(row.kind==='spell'||row.power?.infusion_action||row.classAction?.monster_action)&&row.cost>0&&
+   const disabled=row.classAction?.available===false||
+    (row.kind==='spell'||row.power?.infusion_action||row.classAction?.monster_action)&&row.cost>0&&
     (!tracker||tracker.disabled||available<row.cost);
    const glyphKey=resourceAbilityGlyphKey(row,d);
    const glyph=glyphKey==='dice'?diceGlyph():icon(glyphKey);
    const caption=row.kind==='spell'?row.casting_time_label:
      ((row.power?.roll_attack||row.classAction?.roll_attack)&&row.timing==='action'?'Azione di attacco':
        timeLabels[row.timing]||row.timing||'Secondo il privilegio');
-   const note=row.kind==='spell'?(row.cost>1?' · Costo '+row.cost:''):
+   const note=row.classAction?.available===false?' · Requisiti non soddisfatti':
+     row.kind==='spell'?(row.cost>1?' · Costo '+row.cost:''):
      (row.cost?' · Costo '+row.cost:'');
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+
@@ -822,7 +824,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const monsterPayment=action.monster_action&&row.cost>0;
    const useAction=monsterPayment?'monster-action-use':'battle-use-ability';
    const useIdentity=monsterPayment?' data-monster-action-id="'+esc(action.id)+'"':' data-ability-id="'+esc(useId)+'"';
-   return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+
+   return '<div class="play-resource-power-row'+(row.classAction?.available===false?' play-resource-power--unavailable':'')+'" data-ability-id="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
