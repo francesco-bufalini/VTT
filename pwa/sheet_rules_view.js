@@ -907,13 +907,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    spell_cast:'Lanciare un incantesimo',two_weapon:'Attacco con arma secondaria',
    ability_checks:'Prova abilità'
   };
+  const movedRuleIds=new Set((view.battleActions?.modifiedActions||
+   view.battleActions?.overriddenActions||[]).map(row=>row.id));
   const rulesOfBase=[
    ['attack','action'],['opportunity','reaction'],
    ['spell_cast','action'],['two_weapon','bonus'],['ability_checks','action'],
    ...basic.filter(row=>['legendary_action','legendary_resistance','lair_action'].includes(row.id)).map(row=>[row.id,row.time])
   ];
   const basicRules=privilegeGroup('basic-rules','Regole di base',
-   rulesOfBase.map(([id,time])=>{
+   rulesOfBase.filter(([id])=>!movedRuleIds.has(id)).map(([id,time])=>{
     const row=base(id),available=row.available!==false;
     const hint=id==='spell_cast'?'Slot':
      id==='attack'?(maxCount>1?(row.grant_description||maxTrait?.description||'Azione').replace(/^(?:[^·]+\s*·\s*)?(?:\\?\{@i\s*)?\d+(?:st|nd|rd|th)[- ]level\s+[^:]+?\s+feature(?:\})?\s*[:·-]?\s*/i,'').trim()||'Azione':'Azione'):
@@ -936,24 +938,39 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    actionLink('two_weapon','Attacco con arma secondaria','bonus',!!offhand.feat_available,
     offhand.feat_available?'Azione bonus':offhand.feat_reason||'Equipaggiamento non idoneo'),
    featId,'Talento · combattimento con due armi')]:[];
-  // Trait-specific timing overrides (for example Cunning Action) are
-  // capacities of the feature that changes the normal action economy.
+  // Action-time and explicit action-damage benefits share one source-owned
+  // group. The action stays in Actions but moves out of the basic Rules group.
   const changedByTrait=new Map();
-  for(const action of view.battleActions?.overriddenActions||[]){
+  for(const action of view.battleActions?.modifiedActions||
+    view.battleActions?.overriddenActions||[]){
    const id=action.action_change_origin,trait=featureFor([id],action.action_change_feature);
    const key=trait?.origin_id||id;
-   if(!key||!action.id||changedByTrait.get(key)?.some(a=>a.id===action.id))continue;
+   if(!key||!action.id)continue;
    if(!changedByTrait.has(key))changedByTrait.set(key,[]);
-   changedByTrait.get(key).push(action);
+   const existing=changedByTrait.get(key).find(row=>row.id===action.id);
+   if(existing){
+    existing.action_damage=[...(existing.action_damage||[]),...(action.action_damage||[])];
+    if(action.time!==action.original_time){
+     existing.time=action.time;existing.original_time=action.original_time;
+    }
+   }else changedByTrait.get(key).push({...action,action_damage:[...(action.action_damage||[])]});
   }
   const overriddenPrivileges=[...changedByTrait.entries()].map(([id,actions])=>{
    const trait=featureFor([id],actions[0].action_change_feature);
    const title=trait?.name||actions[0].action_change_feature||'Privilegio';
    const names={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Nessun costo',movement:'Movimento'};
+   const details=action=>{
+    const parts=[];
+    if(action.time!==action.original_time)
+     parts.push((names[action.original_time]||'Azione')+' → '+(names[action.time]||action.time));
+    for(const bonus of action.action_damage||[])
+     parts.push('Danni '+bonus.formula+(bonus.damage_type?' · '+bonus.damage_type:''));
+    return parts.join(' · ');
+   };
    return privilegeGroup('timing:'+id,title,actions.map(action=>
-    actionLink(action.id,action.name,action.time,true,
-     (names[action.original_time]||'Azione')+' → '+(names[action.time]||action.time))).join(''),
-    trait?.origin_id||id,'Modifica il tipo di azione');
+    actionLink(action.id,action.name,action.time,true,details(action))).join(''),
+    trait?.origin_id||id,actions.some(row=>row.action_damage?.length)?
+     'Modifica i danni delle azioni':'Modifica il tipo di azione');
   });
   // Missing trackers are exceptional and must remain visible, not be
   // misrepresented as cost-free privileges.
