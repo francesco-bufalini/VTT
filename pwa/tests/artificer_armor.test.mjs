@@ -81,6 +81,7 @@ test('Defensive Field requires guardian armor and keeps the larger temporary HP 
 test('Armor Model is a source-bound, reversible and exclusive state privilege',()=>{
  const r=sheet('Artificer',8,'TCE','Armorer');
  r.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
+ r.power_applications={arcane_armor:[{id:'arcane_armor',target_item_id:'armor'}]};
  const catalog=catalogs.traitStates;
  let calculated=calculateSheet(r,catalogs);
  assert.ok(calculated.state_actions.some(row=>row.state_id==='armor_model:guardian'));

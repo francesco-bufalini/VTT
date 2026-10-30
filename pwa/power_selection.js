@@ -78,6 +78,9 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
   if(template.source==='casting_classes')
    models.push(...spellcastingModels(record,calculated,template));
  for(const rule of rows(catalog.selections)){
+  const parent=rule.requires_application;
+  const binding=parent?rows(record.power_applications?.[parent.selection]||models.find(row=>row.id===parent.selection)?.layers.applied?.selected).find(row=>!parent.bound||row.target_item_id):null;
+  if(parent&&!binding)continue;
   const owner=ownerFeature(record,calculated.features,rule.owner);
   if(!owner)continue;
   const source=rule.source||{},stageRules=rule.layers||{},layers={};
@@ -88,7 +91,11 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
    const saved=record.power_selections?.[rule.id]||{};
    for(const stage of STAGES){
     if(!stageRules[stage])continue;
-    const source=stage==='applied'?record.power_applications?.[rule.id]:saved[stage];
+    let source=stage==='applied'?record.power_applications?.[rule.id]:saved[stage];
+    if(stage==='applied'&&source===undefined&&rule.legacy_selection_group&&record.trait_state_selection?.[rule.legacy_selection_group]){
+     const item=rows(record.inventory).find(row=>rows(row.equipped_slots).includes('body'));
+     if(item)source=[{id:options[0].id,target_item_id:item.instance_id||item.id}];
+    }
     const selected=rows(source).filter(row=>options.some(opt=>opt.id===(typeof row==='string'?row:row?.id)));
     layers[stage]=stageView(stageRules[stage],selected,
       powerSelectionLimit(stageRules[stage].limit,owner.level));
@@ -118,10 +125,31 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
   }
   if(!Object.keys(layers).length)continue;
   models.push({id:rule.id,title:rule.title||owner.name,description:rule.description||'',
-   origin_id:owner.origin_id,level:owner.level,option_kind:rule.option_kind||'feature',
-   on_apply:rule.on_apply||'',source_type:source.type,benefit_type:rule.benefit_type||'option_selection',options,layers,ui:rule.ui||'generic',
+   source_origin_id:owner.origin_id,origin_id:binding?'item:'+(rows(record.inventory).find(item=>(item.instance_id||item.id)===binding.target_item_id)?.id||binding.target_item_id):owner.origin_id,level:owner.level,option_kind:rule.option_kind||'feature',
+   granted_trait:rule.granted_trait||null,on_apply:rule.on_apply||'',source_type:source.type,benefit_type:rule.benefit_type||'option_selection',options,layers,ui:rule.ui||'generic',
    selection_kind:rule.selection_kind||'power'});
  }
+ for(const model of models){
+  if(!model.granted_trait)continue;
+  const saved=[...rows(record.power_applications?.[model.id])];
+  for(const application of model.layers.applied.selected){
+   if(saved.some(row=>row.id===savedIdentity(application)))continue;
+   const option=model.options.find(row=>row.id===savedIdentity(application));
+   if(option)saved.push({...application,trait:{name:option.name,description:option.description||'',details:option.details,origin_id:'application:'+model.id+':'+option.id,benefits:model.granted_trait.benefits}});
+  }
+  const projected=saved.map(row=>row.trait?row:{...row,trait:{name:model.options.find(option=>option.id===row.id)?.name||model.title,origin_id:'application:'+model.id+':'+row.id,benefits:model.granted_trait.benefits}});
+  model.layers.applied={...model.layers.applied,selected:projected,used:projected.length};
+ }
+ const extensions=[];
+ for(const parent of models)for(const applied of rows(parent.layers.applied?.selected)){
+  const selection=parent.id;
+  for(const benefit of rows(applied.trait?.benefits))if(benefit.type==='object_extension'){
+   extensions.push({id:'extension:'+selection+':'+applied.id,title:applied.trait.name,benefit_type:'object_extension',
+    origin_id:applied.trait.origin_id,on_apply:parent.on_apply,extension_of:{selection,option:applied.id},options:[{...parent.options.find(option=>option.id===applied.id),id:applied.id,name:applied.trait.name,description:applied.trait.description}],
+    layers:{applied:stageView({target:benefit.target},applied.target_item_id?[{id:applied.id,target_item_id:applied.target_item_id,inventory_index:rows(record.inventory).findIndex(item=>(item.instance_id||item.id)===applied.target_item_id)}]:[],1)}});
+  }
+ }
+ models.push(...extensions);
  models.push(...optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}));
  return models;
 }
@@ -171,7 +199,7 @@ export function powerSelectionPatch(record,calculated,catalog,id,stage,optionId,
   const option=model?.options.find(row=>row.id===optionId);
   if(!option)throw Error('Opzione non disponibile.');
   const known=learnedInfusions(record,calculated.infusion_catalog||[]).find(row=>row.id===optionId);
-  return known?forgetInfusionPatch(record,known):learnInfusionPatch(record,option,calculated.infusion_catalog,calculated.infusion_mechanics,-1,calculated.features||[]);
+  return known?{...forgetInfusionPatch(record,known),power_applications:{...(record.power_applications||{}),[id]:rows(record.power_applications?.[id]).filter(row=>row.id!==optionId)}}:learnInfusionPatch(record,option,calculated.infusion_catalog,calculated.infusion_mechanics,-1,calculated.features||[]);
  }
  if(!definition||definition.source?.type!=='inline'||
    !['learned','prepared'].includes(stage)||!definition.layers?.[stage])
@@ -223,7 +251,7 @@ export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,opt
 // Generic 'applied' stage for future source-backed option lists. A counted
 // application reserves one tracker charge, and removing it refunds exactly one.
 // No spell/metamagic application layer is created.
-export function powerApplicationPatch(record,calculated,catalog,id,optionId,apply,{itemIndex=-1,effectChoice={}}={}){
+function legacyApplicationPatch(record,calculated,catalog,id,optionId,apply,{itemIndex=-1,effectChoice={}}={}){
  if(optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}).some(row=>row.id===id))
   return optionalFeatureApplicationPatch(record,calculated,catalog.optionalFeatureProgressions,id,optionId,apply);
  const model=powerSelectionModels(record,calculated,catalog).find(row=>row.id===id);
@@ -236,7 +264,7 @@ export function powerApplicationPatch(record,calculated,catalog,id,optionId,appl
    if(item?.infusion?.id!==optionId||item.infusion.creator_id!==record.id)throw Error('Applicazione non disponibile.');
    return clearInfusionPatch(record,itemIndex);
   }
-  if(!powerSelectionTargets(record,model,option).some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
+  if(!powerSelectionTargets(record,{...model,layers:{applied:{target:rule.granted_trait?.benefits?.[0]?.target||layer.target}}},option).some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
   const known=learnedInfusions(record,calculated.infusion_catalog).find(row=>row.id===optionId);
   return applyInfusionPatch(record,known,calculated.infusion_catalog,calculated.infusion_mechanics,itemIndex,calculated.features||[],effectChoice);
  }
@@ -305,4 +333,51 @@ export function powerSelectionTargets(record,model,option){
   const bound=target.option_item_id&&option[target.option_item_id];
   return !bound||item.id===bound;
  });
+}
+
+// Applying grants a trait. Object selection is a benefit owned by that trait.
+export function powerApplicationPatch(record,calculated,catalog,id,optionId,apply,settings={}){
+ const model=powerSelectionModels(record,calculated,catalog).find(row=>row.id===id);
+ if(!model)throw Error('Beneficio non disponibile.');
+ if(model.extension_of){
+  const {selection,option}=model.extension_of;
+  const parent=powerSelectionModels(record,calculated,catalog).find(row=>row.id===selection);
+  let item=rows(record.inventory)[settings.itemIndex];
+  if(apply&&(!item||Number(item.quantity??1)<=0))throw Error('Scegli un oggetto.');
+  let patch={};
+  if(parent?.source_type==='infusion_catalog'){
+   let current=record;
+   const previous=rows(parent.layers.applied.selected).find(row=>row.id===option)?.target_item_id;
+   const oldIndex=rows(record.inventory).findIndex(item=>(item.instance_id||item.id)===previous);
+   if(apply&&oldIndex>=0&&oldIndex!==settings.itemIndex)current={...record,...clearInfusionPatch(record,oldIndex)};
+   patch=legacyApplicationPatch(current,calculated,catalog,selection,option,apply,settings);
+  }
+  if(apply&&parent?.source_type!=='infusion_catalog'){
+   const inventory=structuredClone(rows(record.inventory));item=inventory[settings.itemIndex];
+   if(Number(item.quantity??1)>1){
+    const remaining={...structuredClone(item),quantity:Number(item.quantity)-1,instance_id:'instance_'+crypto.randomUUID()};
+    inventory.splice(settings.itemIndex+1,0,remaining);item.quantity=1;
+   }
+   item.instance_id=item.instance_id||'instance_'+crypto.randomUUID();patch.inventory=inventory;
+  }
+  const applications=rows(parent?.layers.applied.selected).map(row=>row.id===option?
+   {...row,target_item_id:apply?(item.instance_id||item.id):''}:row);
+  return {...patch,power_applications:{...(record.power_applications||{}),[selection]:applications}};
+ }
+ if(!model.granted_trait)return legacyApplicationPatch(record,calculated,catalog,id,optionId,apply,settings);
+ const option=model.options.find(row=>row.id===optionId);
+ if(!option)throw Error('Opzione non disponibile.');
+ const old=rows(model.layers.applied.selected);
+ if(apply&&model.layers.learned&&!model.layers.learned.selected.some(row=>savedIdentity(row)===optionId))throw Error('Impara prima questa opzione.');
+ if(apply&&!old.some(row=>row.id===optionId)&&model.layers.applied.limit!==null&&old.length>=model.layers.applied.limit)throw Error('Numero massimo di applicazioni raggiunto.');
+ let patch={};
+ if(!apply){
+  const bound=old.find(row=>row.id===optionId)?.target_item_id;
+  const index=rows(record.inventory).findIndex(item=>(item.instance_id||item.id)===bound);
+  if(model.source_type==='infusion_catalog'&&index>=0)patch=clearInfusionPatch(record,index);
+ }
+ const next=old.filter(row=>row.id!==optionId);
+ if(apply)next.push({id:optionId,trait:{name:option.name,description:option.description||'',details:option.details,
+  origin_id:'application:'+id+':'+optionId,benefits:model.granted_trait.benefits}});
+ return {...patch,power_applications:{...(record.power_applications||{}),[id]:next}};
 }

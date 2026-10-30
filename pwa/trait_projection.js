@@ -220,7 +220,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   infusionDefinitions.some(def=>def.id===option.id||
     same(def.name,option.name)&&same(option.source||'TCE',def.source||'TCE'))));
  for(const optional of arr(record.optional_features_catalog)){
-  if(!optional?.name||isInfusionOption(optional))continue;
+  if(!optional?.name||isInfusionOption(optional)||optional.application_managed&&optional.disabled)continue;
   const ownId=optional.origin_id||'optional|'+norm(optional.source)+'|'+norm(optional.name);
   const details=await lookup('optional_features',optional.name,optional.source)||optional;
   add({name:optional.name,entries:details.entries??details.description??optional.entries??'',
@@ -229,6 +229,15 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     resource_name:optional.resource_name||details.resource_name||''},
     {category:'altro',origin:'Privilegio opzionale · '+optional.name,
      origin_key:ownId,level:0,rank:2,inactive:!!optional.disabled});
+ }
+ const appliedTraits=arr(calculated.power_selections).flatMap(model=>arr(model.layers?.applied?.selected)
+  .filter(row=>row.trait).map(row=>({...row,selection_id:model.id})));
+ for(const application of appliedTraits){
+  const trait=application.trait,reference=trait.details;
+  const detail=reference?await lookup(reference.category,reference.name,reference.source):null;
+  add({name:trait.name,entries:detail?.entries||detail?.description||trait.description,
+   feature_origin:trait.origin_id,benefits:trait.benefits},
+   {category:'altro',origin:'Opzione applicata · '+trait.name,origin_key:trait.origin_id,rank:2,level:0});
  }
  for(const origin of arr(record.proficiency_origins)){
   if(origin?.group!=='spell'||!String(origin.id||'').startsWith('spell:'))continue;
@@ -263,7 +272,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const infusionName=infusion?
     infusionDefinitions.find(def=>def.id===infusion.id)?.name||infusion.name||'Infusione':'';
   const instanceOrigin=infusion?infusionInstanceOrigin(item,index):'';
-  const groupKey=infusion?id+'|'+instanceOrigin:id;
+  const extension=appliedTraits.find(row=>row.target_item_id===(item.instance_id||item.id));
+  const groupKey=infusion?id+'|'+instanceOrigin:extension?id+'|'+extension.trait.origin_id:id;
   const group=groupedItems.get(groupKey)||{item,quantity:0,activeQuantity:0,
    slotted,needsAttunement:false,indices:[],infusionName,infusionOrigin:''};
   group.indices.push(index);
@@ -283,7 +293,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const info=await lookup('items',item.name||id,item.source||'',id)||item;
   if(isDocument(info))continue;
   const name=item.name||info.name||id,infused=Boolean(group.infusionName);
-  const displayName=infused?name+' - '+group.infusionName:name;
+  let displayName=infused?name+' - '+group.infusionName:name;
   const originKey='item:'+groupKey;
   const options={category:'oggetti',origin:'Oggetto · '+displayName,
    origin_key:originKey,level:0,inactive:group.activeQuantity===0};
@@ -297,8 +307,27 @@ export async function collectTraitRows(record={},calculated={},providers={}){
       itemDescription?[itemDescription]:[]),
       ...(Array.isArray(infusionDescription)?infusionDescription:[infusionDescription])];
   }
+  const extensions=appliedTraits.filter(row=>row.target_item_id&&(row.target_item_id===(item.instance_id||item.id)));
+  for(const row of extensions){
+   // Legacy infusion descriptions are already included by the inventory adapter.
+   if(item.infusion?.id===row.id)continue;
+   displayName+=' - '+row.trait.name;
+   const reference=row.trait.details,detail=reference?await lookup(reference.category,reference.name,reference.source):null;
+   const text=detail?.entries||detail?.description||row.trait.description;
+   description=[...(Array.isArray(description)?description:[description]),...(Array.isArray(text)?text:[text])].filter(Boolean);
+  }
+  for(const model of arr(calculated.power_selections).filter(row=>row.origin_id==='item:'+id))for(const selected of arr(model.layers.applied?.selected)){
+   const option=model.options.find(row=>row.id===(typeof selected==='string'?selected:selected.id));
+   if(option?.description)description=[...(Array.isArray(description)?description:[description]),option.description];
+  }
   add({name:displayName,entries:description,source:info.source||item.source,
    item_id:id,item_inventory_indices:group.indices,
+   extension_origin_ids:arr(calculated.power_selections).filter(model=>model.origin_id==='item:'+id).flatMap(model=>[model.source_origin_id,
+    ...arr(model.layers.applied?.selected).flatMap(selected=>{
+      const option=model.options.find(row=>row.id===(typeof selected==='string'?selected:selected.id));
+      const names=[...arr(option?.granted_features),...arr(option?.attacks).map(row=>row.trait)];
+      return arr(calculated.features).filter(feature=>names.includes(feature.name)).map(feature=>feature.origin_id);
+    })]).filter(Boolean),
    item_base_origin:'item:'+id,infusion_origin_id:group.infusionOrigin,
    item_quantity:group.quantity,item_active_quantity:group.activeQuantity,
    item_requires_attunement:group.needsAttunement,

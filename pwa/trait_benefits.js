@@ -62,7 +62,7 @@ export function signedTraitFormula(expression){
  return raw&&!/^[+\-−]/.test(raw)?'+'+raw:raw;
 }
 export function traitBenefitSources(trait={},record={}){
- const ids=new Set([trait.feature_origin,trait.proficiency_origin,
+ const ids=new Set([trait.feature_origin,trait.proficiency_origin,...rows(trait.extension_origin_ids),
   ...rows(trait.monster_legacy_keys).flatMap(key=>['feature:'+key,'feature:trait:'+key]),
   ...(trait.key?['feature:trait:'+trait.key]:[]),
   ...(trait.rank===0?[trait.origin_key]:[]),

@@ -2679,12 +2679,18 @@ async function traitsView(c){
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
   const subtraits=pendingChoicesModule.permanentSubtraitsForTrait?.(trait,c,state.calculated?.pending_choices||[])||[];
-  const nested=subtraits.length?'<div class="trait-subtraits" aria-label="Sotto-tratti e scelte permanenti">'+subtraits.map(sub=>
+  let nested=subtraits.length?'<div class="trait-subtraits" aria-label="Sotto-tratti e scelte permanenti">'+subtraits.map(sub=>
    '<button type="button" class="trait-subtrait trait-subtrait--depth-'+Math.min(2,sub.depth)+'" data-act="pending-choice-open"'+
     ' data-choice-id="'+esc(sub.choice_id)+'"'+(active?'':' disabled')+'>'+
     '<span class="trait-subtrait-mark" aria-hidden="true">└</span><span class="trait-subtrait-copy"><span class="trait-subtrait-title">'+esc(sub.title)+'</span>'+ 
     '<small>'+esc(sub.selection)+'</small></span><span class="trait-subtrait-chevron" aria-hidden="true">›</span></button>').join('')+'</div>':'';
   // Panoramica retains general origin benefits in the same editable popup.
+  const selectionBenefits=(state.calculated?.power_selections||[]).filter(model=>
+    [trait.feature_origin,trait.item_base_origin].filter(Boolean).includes(model.origin_id));
+  const benefitChoices=selectionBenefits.map(model=>model.benefit_type==='object_extension'?
+   '<button type="button" class="trait-subtrait" data-act="benefit-option-open" data-power-selection-id="'+esc(model.id)+'" data-power-option-id="'+esc(model.options[0].id)+'">Scegli oggetto · '+esc(model.title)+'</button>':
+   model.benefit_type==='option_selection'?'<button type="button" class="trait-subtrait" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+(model.layers.learned?'learned':'applied')+'">Scelte · '+esc(model.title)+'</button>':'').join('');
+  nested+=benefitChoices;
   const benefitButton='<button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
    (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>';
   return '<div class="trait-row'+(active?'':' trait-row--inactive')+'" data-trait-enabled="'+String(active)+'">'+benefitButton+
@@ -9033,8 +9039,13 @@ async function handleAction(target){
       if(state.editor?.read()?.id!==record.id)throw Error('La scheda è cambiata: riapri il beneficio.');
       await patch(changes);if(state.saveError)throw Error(state.saveError);await state.editor.flush();
       closeDialog(dialog,{remove:true});
-      if(apply&&model.on_apply==='companion_grant')await createOptionCompanion(state.editor.read(),option,await computeLocalData(state.editor.read()));
+      if(apply&&model.extension_of&&model.on_apply==='companion_grant')await createOptionCompanion(state.editor.read(),option,await computeLocalData(state.editor.read()));
       await render();
+      if(apply&&!model.extension_of){
+       const fresh=await computeLocalData(state.editor.read());
+       const extension=fresh.power_selections.find(row=>row.extension_of?.selection===id&&row.extension_of.option===optionId);
+       if(extension)await openBenefitOptionDialog(extension.id,optionId);
+      }
     }catch(info){target.disabled=false;error.hidden=false;error.textContent=errorMessage(info);}
     return;
   }

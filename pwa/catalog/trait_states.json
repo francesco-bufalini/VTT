@@ -120,10 +120,7 @@
       "class_source": "TCE",
       "subclass": "Armorer",
       "require_equipped": {
-        "slot": "body",
-        "kinds": [
-          "armor"
-        ]
+        "extension_selection": "arcane_armor"
       },
       "summary": "Armatura Arcana · Guardiano; guanti del tuono (svantaggio condizionale sul bersaglio colpito) e Campo difensivo.",
       "attacks": [
@@ -165,10 +162,7 @@
       "class_source": "TCE",
       "subclass": "Armorer",
       "require_equipped": {
-        "slot": "body",
-        "kinds": [
-          "armor"
-        ]
+        "extension_selection": "arcane_armor"
       },
       "summary": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini, Passi Potenziati e vantaggio alle prove di Furtività.",
       "attacks": [

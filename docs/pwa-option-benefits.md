@@ -43,3 +43,18 @@ solo quando i dati del bersaglio la consentono.
 finestra comune, i diversi requisiti di bersaglio e gli effetti effettivi dei
 modelli di armatura. I test browser di Fighting Style e infusioni verificano
 apprendimento, applicazione, rimozione e persistenza.
+
+## Applicazione e tratti concessi
+
+L’applicazione concede un tratto salvato nell’applicazione generica. Il contratto
+`granted_trait.benefits` dichiara i benefici di quel tratto. Un beneficio
+`object_extension` possiede la scelta dell’oggetto e gli eventuali benefici da
+aggiungere all’oggetto. Il suo `target` descrive la scelta; non appartiene allo
+stadio di applicazione dell’opzione originale. Poteri apre la scelta come
+scorciatoia, mentre la stessa scelta rimane accessibile dal tratto in Info.
+
+Armatura Arcana è un’opzione fissa, senza progressione di apprendimento e con
+una sola applicazione. La sua estensione ammette qualunque oggetto e concede
+un beneficio `option_selection` per il modello. Il modello non richiede un’altra
+scelta di oggetti. I salvataggi precedenti con un modello e un’armatura già
+configurati restano leggibili attraverso la proiezione di compatibilità.

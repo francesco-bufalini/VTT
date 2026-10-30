@@ -55,8 +55,7 @@ try{
  assert.equal(await modelDialog.locator('[data-ability-payment]').count(),0,'No activation tracker is offered');
  assert.match(await modelCard.innerText(),/Riposo breve/i);
   assert.doesNotMatch(await modelCard.innerText(),/Modello applicato/i);
-  assert.equal(await modelDialog.locator('[data-act="benefit-option-apply"]').isEnabled(),false);
- await modelDialog.locator('[data-act="benefit-target-choose"][data-index="0"]').click();
+  assert.equal(await modelDialog.locator('[data-benefit-target-search]').count(),0);
  assert.equal(await modelDialog.locator('[data-act="benefit-option-apply"]').isEnabled(),true);
  await modelDialog.locator('[data-act="benefit-option-apply"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');

@@ -155,7 +155,7 @@ export function optionalFeatureSelectionPatch(record,calculated,catalog,id,stage
   existing=[...existing,{name:option.name,source:option.source||'HOMEBREW',
    ...(option._homebrew?{_homebrew:true}:{}),
    ...(option._homebrew&&option.description?{entries:[option.description]}:{}),
-   optional_progression_id:id,...(model.layers.applied&&!model.layers.applied.automatic?{disabled:true}:{})}];
+   optional_progression_id:id,...(model.layers.applied&&!model.layers.applied.automatic?{disabled:true,application_managed:true}:{})}];
  }
  const fighting_styles=rows(record.fighting_styles).filter(row=>{
   if(!present)return true;
@@ -183,10 +183,10 @@ export function optionalFeatureApplicationPatch(record,calculated,catalog,id,opt
  let found=false;
  const optional_features_catalog=rows(record.optional_features_catalog).map(row=>{
   if(!same(row.name,option.name)||!same(row.source||'HB',option.source||'HB'))return row;
-  found=true;return {...row,disabled:!active};
+  found=true;return {...row,disabled:!active,application_managed:true};
  });
  if(!found)optional_features_catalog.push({name:option.name,source:option.source||'HOMEBREW',
-  optional_progression_id:id,disabled:!active,
+  optional_progression_id:id,disabled:!active,application_managed:true,
   ...(option._homebrew?{_homebrew:true,entries:[option.description||'']}: {})});
  const fighting_styles=rows(record.fighting_styles).filter(row=>
   !same(typeof row==='string'?row:row?.name,option.name));

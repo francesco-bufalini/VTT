@@ -51,20 +51,78 @@
           "limit": "infusion_active",
           "trigger": "long_rest",
           "storage": "inventory.infusion",
-          "target": {
-            "kind": "item",
-            "selector": "option.item_selector",
-            "label": "Oggetto compatibile",
-            "allow_catalog": true,
-            "extension_field": "infusion",
-            "option_item_id": "plan_item_id"
-          },
           "refund_on_remove": true
         }
       },
       "ui": "generic",
       "benefit_type": "option_selection",
-      "on_apply": "companion_grant"
+      "on_apply": "companion_grant",
+      "granted_trait": {
+        "benefits": [
+          {
+            "type": "object_extension",
+            "target": {
+              "kind": "item",
+              "selector": "option.item_selector",
+              "label": "Oggetto compatibile",
+              "allow_catalog": true,
+              "extension_field": "infusion",
+              "option_item_id": "plan_item_id"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "arcane_armor",
+      "title": "Armatura Arcana",
+      "owner": {
+        "class_name": "Artificer",
+        "class_source": "TCE",
+        "subclass": "Armorer",
+        "trait": "Arcane Armor"
+      },
+      "benefit_type": "option_selection",
+      "source": {
+        "type": "inline",
+        "options": [
+          {
+            "id": "arcane_armor",
+            "name": "Armatura Arcana",
+            "details": {
+              "category": "class_features",
+              "name": "Arcane Armor",
+              "source": "TCE"
+            },
+            "description": "Armatura Arcana: l’oggetto riceve i benefici del privilegio e permette di scegliere un modello."
+          }
+        ]
+      },
+      "layers": {
+        "applied": {
+          "limit": 1,
+          "storage": "power_applications"
+        }
+      },
+      "granted_trait": {
+        "benefits": [
+          {
+            "type": "object_extension",
+            "target": {
+              "kind": "item",
+              "label": "Oggetto da estendere",
+              "allow_catalog": true
+            },
+            "benefits": [
+              {
+                "type": "option_selection",
+                "selection_id": "armor_model"
+              }
+            ]
+          }
+        ]
+      },
+      "legacy_selection_group": "armor_model"
     },
     {
       "id": "armor_model",
@@ -85,20 +143,15 @@
           "limit": 1,
           "trigger": "short_rest",
           "storage": "trait_state_selection.armor_model",
-          "target": {
-            "kind": "equipped_item",
-            "slot": "body",
-            "kinds": [
-              "armor"
-            ],
-            "label": "Armatura equipaggiata",
-            "allow_catalog": false
-          },
           "refund_on_remove": true
         }
       },
       "ui": "generic",
-      "benefit_type": "option_selection"
+      "benefit_type": "option_selection",
+      "requires_application": {
+        "selection": "arcane_armor",
+        "bound": true
+      }
     },
     {
       "id": "ranger_favored_enemy_phb",
@@ -160,7 +213,7 @@
           },
           {
             "id": "monstrosities",
-            "name": "Mostruosità"
+            "name": "MostruositÃ "
           },
           {
             "id": "oozes",
@@ -199,7 +252,7 @@
         }
       },
       "ui": "generic",
-      "description": "Scegli un tipo di creatura, oppure due razze di umanoidi, al 1°, 6° e 14° livello da Ranger. La scelta è permanente secondo le regole; l'interfaccia non impone quando cambiarla.",
+      "description": "Scegli un tipo di creatura, oppure due razze di umanoidi, al 1Â°, 6Â° e 14Â° livello da Ranger. La scelta Ã¨ permanente secondo le regole; l'interfaccia non impone quando cambiarla.",
       "selection_kind": "subtrait",
       "benefit_type": "permanent_choice"
     }

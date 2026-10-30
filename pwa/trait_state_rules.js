@@ -22,7 +22,11 @@ function eligible(record,features,rule) {
   const trait=owningTrait(record,features,rule);
   if(!trait)return null;
   const requirement=rule.require_equipped;
-  if(requirement&&!arr(record.inventory).some(saved=>{
+  if(requirement?.extension_selection){
+    const legacy=!Object.hasOwn(record.power_applications||{},requirement.extension_selection)&&selection(record,rule)&&arr(record.inventory).some(item=>arr(item.equipped_slots).includes('body')&&['MA','LA','HA'].includes(String(item.type).split('|')[0]));
+    if(!legacy&&!arr(record.power_applications?.[requirement.extension_selection]).some(row=>row.target_item_id&&
+      arr(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id&&Number(item.quantity??1)>0)))return null;
+  }else if(requirement&&!arr(record.inventory).some(saved=>{
     const item=resolveOwnedItem(saved);
     const type=String(item.type||'').split('|')[0].toUpperCase();
     const kind=['LA','MA','HA'].includes(type)?'armor':type==='S'?'shield':'other';

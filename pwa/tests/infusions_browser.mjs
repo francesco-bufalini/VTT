@@ -30,6 +30,9 @@ try{
  await actionDialog.waitFor({state:'visible'});
  assert.match(await actionDialog.locator('.magic-spell-description').innerText(),/spell|attack|bonus/i);
  assert.equal((await actionDialog.locator('[data-act="benefit-option-apply"]').innerText()).trim(),'Applica');
+ assert(await actionDialog.locator('[data-act="benefit-option-apply"]').isEnabled());
+ await actionDialog.locator('[data-act="benefit-option-apply"]').click();
+ await page.waitForFunction(()=>document.querySelector('#benefit-option-dialog [data-benefit-target-search]'));
  assert(await actionDialog.locator('[data-act="benefit-option-apply"]').isDisabled());
  assert.equal(await actionDialog.locator('[data-act="benefit-target-choose"][data-index="0"]').count(),1,
    'All compatible owned items must be visible without searching');
@@ -47,9 +50,11 @@ try{
  await actionDialog.locator('[data-act="benefit-option-apply"]').click();
  await actionDialog.waitFor({state:'detached'});
  assert.equal(await infusion.locator('.play-infusion-state').getAttribute('title'),'Attiva');
- await infusion.click();
+ await sheet('info');
+ await page.locator('[data-act="benefit-option-open"][data-power-selection-id^="extension:artificer_infusions:"]').first().click();
  assert.equal(await actionDialog.locator('[data-act="benefit-option-remove"]').count(),1);
  await actionDialog.locator('[data-act="benefit-option-close"]').first().click();
+ await sheet('magic');
  // Replicate is learned as a separate infusion choice for each item type.
  await page.locator('#sheet-play-view [data-act="power-selection-open"][data-power-selection-id="artificer_infusions"][data-power-stage="learned"]').click();
  await learner.locator('[data-power-search]').fill('Replicate Magic Item');
