@@ -30,7 +30,8 @@
           },
           "prepared": {
             "limit": {
-              "formula": "class_level_artificer / 2 + int_mod"
+              "formula": "class_level_artificer / 2 + int_mod",
+              "minimum": 1
             },
             "storage": "prepared_spells",
             "trigger": "long_rest"
@@ -357,7 +358,8 @@
           },
           "prepared": {
             "limit": {
-              "formula": "class_level_cleric + wis_mod"
+              "formula": "class_level_cleric + wis_mod",
+              "minimum": 1
             },
             "storage": "prepared_spells",
             "trigger": "long_rest"
@@ -480,7 +482,8 @@
           },
           "prepared": {
             "limit": {
-              "formula": "class_level_druid + wis_mod"
+              "formula": "class_level_druid + wis_mod",
+              "minimum": 1
             },
             "storage": "prepared_spells",
             "trigger": "long_rest"
@@ -603,7 +606,8 @@
           },
           "prepared": {
             "limit": {
-              "formula": "class_level_paladin / 2 + cha_mod"
+              "formula": "class_level_paladin / 2 + cha_mod",
+              "minimum": 1
             },
             "storage": "prepared_spells",
             "trigger": "long_rest"
@@ -1506,7 +1510,8 @@
           },
           "prepared": {
             "limit": {
-              "formula": "class_level_wizard + int_mod"
+              "formula": "class_level_wizard + int_mod",
+              "minimum": 1
             },
             "storage": "prepared_spells",
             "trigger": "long_rest"
