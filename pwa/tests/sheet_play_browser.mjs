@@ -1286,7 +1286,10 @@ try{
  await page.locator('.play-info-traits .trait-card[data-trait-key="state|rage"][open]').waitFor();
  await sheet('battle');
  const ragePanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
- await ragePanel.locator('summary.play-battle-summary').click();
+ // Resources is expanded by default: toggling its summary blindly closes
+ // the panel and makes the otherwise valid Rage button unclickable.
+ if((await ragePanel.getAttribute('open'))===null)
+  await ragePanel.locator('summary.play-battle-summary').click();
  const rage=ragePanel.locator('.play-resource-power-row').filter({has:page.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]')});
  assert.equal(await rage.count(),1,'Rage has a single Disattiva button when active');
  await rage.locator('[data-act="condition-remove-ability"]').click();
