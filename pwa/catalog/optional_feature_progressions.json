@@ -1288,7 +1288,17 @@
         "FS:F",
         "FS:R"
       ],
-      "description": "You gain a +2 bonus to attack rolls you make with ranged weapons."
+      "description": "You gain a +2 bonus to attack rolls you make with ranged weapons.",
+      "effects": [
+        {
+          "type": "bonus",
+          "target": "attack_hit:*",
+          "expression": "2",
+          "attack_filter": {
+            "weapon_mode": "ranged"
+          }
+        }
+      ]
     },
     {
       "id": "optional:tce:armor-of-magical-strength",
@@ -1542,7 +1552,16 @@
         "FS:P",
         "FS:R"
       ],
-      "description": "You have {@sense blindsight} with a range of 10 feet. Within that range, you can effectively see anything that isn't behind {@quickref Cover||3||total cover}, even if you're {@condition blinded} or in darkness. Moreover,"
+      "description": "You have {@sense blindsight} with a range of 10 feet. Within that range, you can effectively see anything that isn't behind {@quickref Cover||3||total cover}, even if you're {@condition blinded} or in darkness. Moreover,",
+      "effects": [
+        {
+          "type": "senses",
+          "data": {
+            "type": "blindsight",
+            "range_feet": 10
+          }
+        }
+      ]
     },
     {
       "id": "optional:tce:bond-of-the-talisman",
@@ -1842,7 +1861,17 @@
         "FS:P",
         "FS:R"
       ],
-      "description": "While you are wearing armor, you gain a +1 bonus to AC."
+      "description": "While you are wearing armor, you gain a +1 bonus to AC.",
+      "effects": [
+        {
+          "type": "bonus",
+          "target": "ac",
+          "expression": "1",
+          "requirements": {
+            "equipped_kind": "armor"
+          }
+        }
+      ]
     },
     {
       "id": "optional:phb:devil-s-sight",
@@ -1990,7 +2019,19 @@
         "FS:P",
         "FS:R"
       ],
-      "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon."
+      "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon.",
+      "effects": [
+        {
+          "type": "bonus",
+          "target": "attack_damage:*",
+          "expression": "2",
+          "attack_filter": {
+            "weapon_mode": "melee",
+            "one_handed": true,
+            "no_other_weapon": true
+          }
+        }
+      ]
     },
     {
       "id": "optional:tce:eldritch-mind",
@@ -4828,7 +4869,17 @@
         "FS:F",
         "FS:R"
       ],
-      "description": "You can draw a weapon that has the thrown property as part of the attack you make with the weapon."
+      "description": "You can draw a weapon that has the thrown property as part of the attack you make with the weapon.",
+      "effects": [
+        {
+          "type": "bonus",
+          "target": "attack_damage:*",
+          "expression": "2",
+          "attack_filter": {
+            "weapon_mode": "thrown"
+          }
+        }
+      ]
     },
     {
       "id": "optional:xge:tomb-of-levistus",
@@ -4940,7 +4991,22 @@
       "types": [
         "FS:F"
       ],
-      "description": "Your unarmed strikes can deal bludgeoning damage equal to {@damage 1d6} + your Strength modifier on a hit. If you aren't wielding any weapons or a {@item shield|phb} when you make the attack roll, the {@damage d6} become"
+      "description": "Your unarmed strikes can deal bludgeoning damage equal to {@damage 1d6} + your Strength modifier on a hit. If you aren't wielding any weapons or a {@item shield|phb} when you make the attack roll, the {@damage d6} become",
+      "effects": [
+        {
+          "type": "base_override",
+          "target": "attack_damage_base:unarmed",
+          "mode": "alternative",
+          "expression": "1d6"
+        },
+        {
+          "type": "base_override",
+          "target": "attack_damage_base:unarmed",
+          "mode": "alternative",
+          "expression": "1d8",
+          "no_weapon_or_shield": true
+        }
+      ]
     },
     {
       "id": "optional:phb:unbroken-air",
