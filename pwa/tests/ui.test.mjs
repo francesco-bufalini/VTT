@@ -652,14 +652,14 @@ test("inline spell catalog adds available and spellbook choices without divergin
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector('[data-act="magic-select-spells"]'));
-  const classEye=document.querySelector('[data-act="casting-stats-toggle"][data-casting-visibility-section^="class|"]');
-  assert.equal(classEye?.getAttribute('aria-pressed'),'true');
+  const classEye=document.querySelector('#sheet-play-view .play-magic-eye[data-casting-visibility-section^="class|"]');
+  assert.equal(classEye?.getAttribute('aria-pressed'),'true','Eye must be present in the visible class card');
   classEye.click();
-  await until(()=>document.querySelector('[data-casting-visibility-section^="class|"][aria-pressed="false"]'));
-  assert.equal(document.querySelector('.magic-source .casting-statistics'),null);
+  await until(()=>document.querySelector('#sheet-play-view .play-magic-eye[data-casting-visibility-section^="class|"][aria-pressed="false"]'));
+  assert.equal(document.querySelector('#sheet-play-view .play-magic-class-card .casting-statistics'),null);
   assert.equal((await loadCreature(saved.data.id)).data.spellcasting_section_visibility?.[classEye.dataset.castingVisibilitySection],false);
-  click('[data-act="casting-stats-toggle"][data-casting-visibility-section^="class|"]');
-  await until(()=>document.querySelector('.magic-source .casting-statistics'));
+  click('#sheet-play-view .play-magic-eye[data-casting-visibility-section^="class|"]');
+  await until(()=>document.querySelector('#sheet-play-view .play-magic-class-card .casting-statistics'));
   click('[data-act="magic-select-spells"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const preparationDialog=document.querySelector('#magic-tools-dialog[open]');
@@ -816,12 +816,17 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
     'Origins without a required casting ability keep the existing hidden default');
   assert.equal(first.querySelector('[data-act="casting-stats-toggle"]')?.getAttribute('aria-pressed'),'false');
   assert.equal(groups.find(g=>g!==first)?.querySelectorAll('[data-casting-section]').length,1);
-  first.querySelector('[data-act="casting-stats-toggle"]').click();
-  await until(()=>document.querySelector('[data-magic-origin="custom:first"] .casting-statistics'));
+  const visibleEye=document.querySelector('#sheet-play-view .play-magic-eye[data-casting-visibility-section="origin:custom:first"]');
+  assert.equal(visibleEye?.getAttribute('aria-pressed'),'false','Hidden-origin eye must be visible in the actual source card');
+  visibleEye.click();
+  await until(()=>document.querySelector('#sheet-play-view .play-magic-eye[data-casting-visibility-section="origin:custom:first"][aria-pressed="true"]'));
+  assert.ok(document.querySelector('#sheet-play-view .play-magic-granted-card .casting-statistics'),
+    'Showing the eye reveals the real visible CD row');
   assert.equal((await loadCreature(id)).data.spellcasting_section_visibility?.['origin:custom:first'],true,
     'Showing a hidden casting statistic persists on the creature');
-  click('[data-act="casting-stats-toggle"][data-casting-visibility-section="origin:custom:first"]');
-  await until(()=>document.querySelector('[data-magic-origin="custom:first"] .casting-statistics')===null);
+  click('#sheet-play-view .play-magic-eye[data-casting-visibility-section="origin:custom:first"]');
+  await until(()=>document.querySelector('#sheet-play-view .play-magic-eye[data-casting-visibility-section="origin:custom:first"][aria-pressed="false"]'));
+  assert.equal(document.querySelector('[data-magic-origin="custom:first"] .casting-statistics'),null);
   assert.equal((await loadCreature(id)).data.spellcasting_section_visibility?.['origin:custom:first'],false);
   assert.ok(groups.every(g=>g.querySelectorAll('.magic-level').length>0),
     'Granted spells keep the same level-group layout as class spells');

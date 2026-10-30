@@ -5404,6 +5404,20 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
 #sheet-play-view .play-magic-class-card>.play-card-head>h2{
  flex:0 1 auto;min-width:0;overflow-wrap:anywhere;
 }
+#sheet-play-view .play-magic-eye{
+ position:relative;display:grid;place-items:center;flex:0 0 30px;
+ width:30px;min-width:30px;height:30px;min-height:30px;padding:4px;
+ margin:0;border:0;border-radius:7px;background:transparent;color:#d6b98c;
+}
+#sheet-play-view .play-magic-eye .vtt-action-glyph{width:20px;height:20px}
+#sheet-play-view .play-magic-eye[aria-pressed="false"]{opacity:.5}
+#sheet-play-view .play-magic-eye[aria-pressed="false"]::after{
+ content:"";position:absolute;width:19px;border-top:2px solid currentColor;
+ transform:rotate(-43deg);pointer-events:none;
+}
+#sheet-play-view .play-magic-eye:hover,#sheet-play-view .play-magic-eye:focus-visible{
+ opacity:1;background:#8e683e3d;outline-offset:1px;
+}
 #sheet-play-view .play-magic-source-resources{
  display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;
  gap:5px;min-width:0;margin-left:auto;

@@ -1112,12 +1112,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    // The casting selector and actions share the same per-source editor, both
    // for class spells and for grants from items, traits and other origins.
    const castingDetails=source.querySelector('.casting-statistics')?.outerHTML||'';
+   const toggle=source.querySelector('.magic-source-visibility');
+   const eye=toggle?'<button type="button" class="play-button play-magic-eye"'+
+     ' data-act="casting-stats-toggle" data-casting-visibility-section="'+esc(toggle.dataset.castingVisibilitySection)+'"'+
+     ' data-casting-default-visible="'+esc(toggle.dataset.castingDefaultVisible)+'"'+
+     ' aria-pressed="'+esc(toggle.getAttribute('aria-pressed'))+'"'+
+     ' aria-label="'+esc(toggle.getAttribute('aria-label'))+'" title="'+esc(toggle.title)+'">'+icon('eye')+'</button>':'';
    const choices=[...source.querySelectorAll('.magic-source-controls .magic-selection-button')]
      .map(node=>proxy(node,node.textContent.trim(),'book','<span>'+esc(node.textContent.trim())+'</span>')).join('');
    html+=card(title,'<div class="play-magic-inline-casting">'+castingDetails+'</div>'+
      (choices?'<div class="play-magic-selection">'+choices+'</div>':'')+
      (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),
-     resources?'<div class="play-magic-source-resources" aria-label="Risorse di lancio">'+resources+'</div>':'',
+     eye+(resources?'<div class="play-magic-source-resources" aria-label="Risorse di lancio">'+resources+'</div>':''),
      'play-magic-class-card'+(granted?' play-magic-granted-card':''),
      granted&&trackerId?'data-magic-origin-tracker="'+esc(trackerId)+'"':'');
   }

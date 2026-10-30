@@ -7151,7 +7151,7 @@ async function handleAction(target){
   if(act==='casting-stats-toggle'){
     if(state.sheet!=='magic'||!state.editor)return;
     const section=target.dataset.castingVisibilitySection;
-    if(!section||!target.closest('.magic-source'))return;
+    if(!section||!target.closest('.magic-source,.play-magic-class-card'))return;
     const creature=state.editor.read();
     const visible=castingStatisticsVisible(creature,section,target.dataset.castingDefaultVisible==='true');
     await patch({spellcasting_section_visibility:{
