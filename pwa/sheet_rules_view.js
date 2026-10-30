@@ -498,8 +498,10 @@ export function trackerRollBonusTargets(row={},calculated={}){
 export function battleResourcePowers(calculated={},classAbilities=[],activated=[],spells=[]){
  const trackers=(calculated.trackers||[]).filter(row=>!row.disabled);
  const keyFor=(cost,trackerId)=>{
-  if(!cost)return 'free';
-  return trackers.some(t=>String(t.id)===String(trackerId||''))?'tracker:'+trackerId:'missing';
+  // A bonus-paid action stays under its shared resource without charging
+  // that resource twice when the bonus is selected in the roll dialog.
+  if(!trackerId)return cost?'missing':'free';
+  return trackers.some(t=>String(t.id)===String(trackerId))?'tracker:'+trackerId:'missing';
  };
  const rows=[];
  for(const power of activated){
