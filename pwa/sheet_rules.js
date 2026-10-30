@@ -826,7 +826,8 @@ export function calculateSheet(record={},catalogs={}){
   const selectionRecord=effective;
   const withScalingDice=calculated=>{
     const dice=scalingDiceFor(effective,catalogs.scalingDice?.dice||[],calculated.features);
-    const resolve=row=>resolveScalingDieBenefit(row,dice,calculated.trackers);
+    const resolve=row=>resolveScalingDieBenefit(row,dice,calculated.trackers,
+      expression=>formulaValue(expression,calculated));
     return {...calculated,scaling_dice:dice,selection_record:{
       ...selectionRecord,
       dice_bonuses:arr(selectionRecord.dice_bonuses).map(resolve),
