@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits,normalizeSelectionRecord,powerStateActivationPatch} from '../power_selection.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '../spell_selection.js';
+import {actionEntries,battleActionPanels} from '../action_economy.js';
+import {battleResourcePowers} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
@@ -216,4 +218,25 @@ test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker
   assert(!c.origin_spells.some(row=>row.spell_id===spell.id),'An unapplied style cannot still cast its granted cantrips');
   assert(!c.origin_choices.some(row=>row.id===choice.id));
  }
+});
+
+test('equipment-conditioned powers stay in their existing Resources group while locked',()=>{
+ const grant={id:'selection:protection',origin_id:'feature:class|phb|fighter|fighting-style',
+  name:'Protection',action_type:'reaction',type:'Capacità',
+  requirements:{equipment:{kind:'shield'}},description:'Reaction while wielding a shield'};
+ const base={rules_version:'2014',inventory:[]};
+ const projection={attacks:[],trackers:[],selection_record:{...base,action_grants:[grant]},equipped_items:[]};
+ const entries=actionEntries(base,projection,[],[],[]);
+ assert.equal(entries.find(row=>row.id===grant.id)?.available,false);
+ const panels=battleActionPanels(base,projection,[],[],[]);
+ assert.equal(panels.abilityEntries.find(row=>row.id===grant.id)?.available,false);
+ assert(battleResourcePowers(projection,panels.abilityEntries)
+  .some(row=>row.classAction?.id===grant.id&&row.classAction.available===false));
+ const shield={id:'sh',name:'Shield',type:'S',custom_item_type:'shield',quantity:1,equipped_slots:['off']};
+ const equipped={...base,inventory:[shield]};
+ const active=battleActionPanels(equipped,{...projection,selection_record:{...equipped,action_grants:[grant]}},[],[],[]);
+ assert.equal(active.abilityEntries.find(row=>row.id===grant.id)?.available,true);
+ const unequipped={...equipped,inventory:[{...shield,equipped_slots:[]}]};
+ const inactive=battleActionPanels(unequipped,{...projection,selection_record:{...unequipped,action_grants:[grant]}},[],[],[]);
+ assert.equal(inactive.abilityEntries.find(row=>row.id===grant.id)?.available,false);
 });
