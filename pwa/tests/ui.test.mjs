@@ -694,9 +694,9 @@ test("inline spell catalog adds available and spellbook choices without divergin
   const learnSearch=learningDialog.querySelector('#spell-search');
   learnSearch.value='Shield';
   learnSearch.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  await until(()=>learningDialog.querySelector('.magic-catalog-owned'));
-  assert.equal(learningDialog.querySelector('.magic-catalog-owned')?.textContent,'Già posseduta');
-  assert.equal(learningDialog.querySelector('[data-act="spell-known-toggle"]'),null,
+  const ownedRow=await until(()=>learningDialog.querySelector('.magic-catalog-row.is-selected'));
+  assert.equal(ownedRow.querySelector('.magic-catalog-owned')?.textContent,'Già posseduta');
+  assert.equal(ownedRow.querySelector('[data-act="spell-known-toggle"]'),null,
     'An already learned spell cannot be selected again');
   click('[data-act="magic-tool-close"]');
   await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
