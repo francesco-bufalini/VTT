@@ -233,7 +233,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
     feature.requirements||{},'',null,calculated.equipped_items);
   add(feature.name||feature.title,activation,feature.type||feature.action_kind||'Capacità',
       feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost??(feature.tracker_id?1:0))||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),origin_id:String(feature.origin_id||feature.origin_key||''),
-       available,unavailable_reason:available?'':'Equipaggiamento richiesto non presente.',
+       available:available&&feature.disabled!==true,unavailable_reason:feature.unavailable_reason||(available?'':'Equipaggiamento richiesto non presente.'),
+       ...(feature.dice?{dice:feature.dice}:{}),
        ...(feature.attack_selector?{attack_selector:feature.attack_selector}:{}),
        ...(feature.action_id?{action_id:feature.action_id}:{}),
        alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
