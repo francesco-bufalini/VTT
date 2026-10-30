@@ -4,7 +4,7 @@ import {knownClassSpellIds,knownClassCantripIds,knownSpellProgress,sessionSpellE
   changeKnownClassSpell,addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 
 const cleric={id:'class|phb|cleric',name:'Cleric',mode:'Preparati',max_level:3,book:false};
-const wizard={id:'class|phb|wizard',name:'Wizard',mode:'Preparati',max_level:3,book:true};
+const wizard={id:'class|phb|wizard',name:'Wizard',mode:'Preparati',max_level:3,book:true,known_limit:12};
 const bard={id:'class|phb|bard',name:'Bard',mode:'Conosciuti',max_level:3,book:false};
 const catalog=[
  {id:'cure',name:'Cure Wounds',source:'PHB',level:1,classes:['Cleric']},
