@@ -108,8 +108,8 @@ export function castingSources(entry,classes,catalog=[]){
  const matches=classes.filter(member=>spellEligible(definition||{},member));
  return matches.length===1?[matches[0].id]:[];
 }
-// The benefit chooses whether learned spells come from a class list or from
-// manual selection. The same learned/prepared flow applies to every class.
+// A class-list benefit automatically knows its eligible spells; otherwise
+// known spells come from the existing saved selections.
 // Cantrips are learned, not prepared. An explicit learned override or a
 // legacy cantrip saved in prepared_spells makes one known; never assume the
 // entire class cantrip catalogue has been learned.
@@ -132,23 +132,17 @@ export function knownClassSpellIds(creature={},member,catalog=[]){
  if(!member)return new Set();
  if(member.mode!=='Preparati')return new Set(availableSpells(creature)
    .filter(row=>castingSources(row,[member],catalog).includes(member.id)).map(spellId));
- const cantrips=knownClassCantripIds(creature,member,catalog);
  const overrides=creature.known_spell_overrides?.[member.id]||{};
- const options=spellsForEdition(catalog,creature.rules_version||'2014');
+ const classList=member.selection_layers?.learned?.mode==='class_list';
+ const learned=classList?
+   spellsForEdition(catalog,creature.rules_version||'2014')
+     .filter(spell=>Number(spell.level)>0&&spellEligible(spell,member)).map(spellId):
+   // Read older saves without introducing a second way to learn spells.
+   [...arr(creature.spellbook_spells),...availableSpells(creature).filter(spell=>
+     castingSources(spell,[member],catalog).includes(member.id))].map(spellId);
  const removed=new Set(arr(overrides.removed));
- if(member.selection_layers?.learned?.mode==='manual'){
-   // Previously saved book entries or prepared spells remain learned, but
-   // all new learning uses the ordinary known_spell_overrides store.
-   const legacy=[...arr(creature.spellbook_spells),
-     ...availableSpells(creature).filter(spell=>
-       castingSources(spell,[member],catalog).includes(member.id))];
-   return new Set([...legacy.map(spellId),...arr(overrides.added),...cantrips]
-     .filter(id=>id&&!removed.has(id)));
- }
- return new Set([...options.filter(spell=>Number(spell.level)>0&&
-   spellEligible(spell,member)&&!removed.has(spell.id)).map(spellId),
-   ...arr(overrides.added).filter(id=>Number(options.find(spell=>spellId(spell)===id)?.level)>0),
-   ...cantrips]);
+ return new Set([...learned,...arr(overrides.added),
+   ...knownClassCantripIds(creature,member,catalog)].filter(id=>id&&!removed.has(id)));
 }
 export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
  if(!member||member.mode!=='Preparati')
@@ -158,13 +152,14 @@ export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
    throw Error('Incantesimo non disponibile per questo livello.');
  const map=structuredClone(creature.known_spell_overrides||{});
  const entry=map[member.id]||{},added=new Set(arr(entry.added)),removed=new Set(arr(entry.removed));
- const manuallyLearned=member.selection_layers?.learned?.mode==='manual';
+ const automatic=member.selection_layers?.learned?.mode==='class_list'&&
+   Number(spell.level)>0&&spellEligible(spell,member);
  if(known){
    removed.delete(id);
-   if(manuallyLearned||Number(spell.level)===0||!spellEligible(spell,member))added.add(id);
+   if(!automatic)added.add(id);
  }else{
    added.delete(id);
-   if(manuallyLearned||Number(spell.level)===0||spellEligible(spell,member))removed.add(id);
+   removed.add(id);
  }
  map[member.id]={added:[...added],removed:[...removed]};
  return {known_spell_overrides:map};
@@ -177,13 +172,10 @@ export function knownSpellProgress(creature={},member,classes=[],catalog=[]){
      [...arr(creature.spellbook_spells),...availableSpells(creature)].find(spell=>spellId(spell)===id);
    return Number(row?.level||0);
  };
- const manual=member.mode==='Preparati'&&member.selection_layers?.learned?.mode==='manual';
- const known=manual?[...knownClassSpellIds(creature,member,catalog)]
-     .filter(id=>levelOf(id)>0).length:
-   member.mode==='Conosciuti'?availableSpells(creature).filter(row=>
-     levelOf(spellId(row))>0&&castingSources(row,classes,catalog).includes(member.id)).length:null;
- if(known===null)return null;
- const expected=manual?member.learned_limit:member.limit;
+ if(member.mode==='Preparati'&&member.selection_layers?.learned?.mode==='class_list')return null;
+ const known=[...knownClassSpellIds(creature,member,catalog)]
+   .filter(id=>levelOf(id)>0).length;
+ const expected=member.mode==='Preparati'?member.learned_limit:member.limit;
  const minimum=Number.isInteger(expected)&&expected>=0?expected:null;
  return {known,minimum};
 }

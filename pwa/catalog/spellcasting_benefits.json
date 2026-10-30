@@ -1502,7 +1502,6 @@
         "knowledge_mode": "prepared",
         "layers": {
           "learned": {
-            "mode": "manual",
             "limit": {
               "formula": "6 + 2 * (class_level_wizard - 1)"
             },
@@ -3635,7 +3634,6 @@
         "knowledge_mode": "prepared",
         "layers": {
           "learned": {
-            "mode": "manual",
             "limit": {
               "formula": "6 + 2 * (class_level_wizard - 1)"
             },

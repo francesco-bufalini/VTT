@@ -27,7 +27,8 @@ test('2014 caster types, lists, ability and preparation come from their active b
  assert.equal(w.level_class_name,'Wizard');
  assert.equal(w.ability,'int');
  assert.equal(w.knowledge_mode,'prepared');
- assert.equal(w.selection_layers.learned.mode,'manual');
+ assert.equal(w.selection_layers.learned.mode,undefined,
+   'Learned spells use the existing manual choice behavior by default');
  assert.equal(w.selection_layers.learned.storage,'known_spell_overrides');
  assert.equal(w.learned_limit,14);
  assert.equal(w.limit,8);

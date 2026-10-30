@@ -2509,8 +2509,8 @@ async function editorView() {
             (member.mode==='Preparati'?
               '<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="prepared_spells">Prepara incantesimi</button>':'')+
             '<button type="button" class="btn small magic-selection-button" data-act="magic-learn-select" data-magic-class="'+esc(member.id)+'">'+
-              (member.mode==='Conosciuti'||member.selection_layers?.learned?.mode==='manual'?
-                'Impara / Dimentica incantesimi':'Gestisci incantesimi conosciuti')+'</button>'+
+              (member.selection_layers?.learned?.mode==='class_list'?
+                'Gestisci incantesimi conosciuti':'Impara / Dimentica incantesimi')+'</button>'+
             '</div>'+
             spellList(c,'prepared_spells',member.id,calculated.casting_classes,{includeSlots:false})+'</section>';
         }).join('')+
