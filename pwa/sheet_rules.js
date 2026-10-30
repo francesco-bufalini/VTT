@@ -18,7 +18,7 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
@@ -66,12 +66,13 @@ export function classLevel(record,name,source=""){
   const row=classes.find(c=>same(c.name,name)&&(!source||!c.source||same(c.source,source)));
   return Math.max(0,int(row?.level));
 }
-export function requirementsAllow(record,row){
+export function requirementsAllow(record,row,context={}){
   const gate=row?.requirements&&typeof row.requirements==="object"&&!Array.isArray(row.requirements)?row.requirements:{};
   const lvl=gate.scope==="class"?
     classLevel(record,gate.class_name,gate.class_source):int(record.level,1);
   const lo=Math.max(0,int(gate.min_level??row?.min_level,0));
-  return lvl>=lo&&(gate.max_level===undefined||lvl<=int(gate.max_level));
+  return lvl>=lo&&(gate.max_level===undefined||lvl<=int(gate.max_level))&&
+    equipmentRequirementMatches(record,gate,context.target,context.attack,context.equipped);
 }
 export function parseArithmetic(expression,variable,{round=godotRound}={}){
   const raw=String(expression??"").trim().toLowerCase();
@@ -181,7 +182,9 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
    }).filter(row=>row&&(validBonusDice(row.dice)||
      Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0));
  const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&
-   (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&fits(row))
+   (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&fits(row)&&
+   requirementsAllow(record,row,{target,attack:arr(calculated?.attacks).find(attack=>
+     target==='attack_hit:'+attack.id||target==='attack_damage:'+attack.id)}))
    .flatMap(row=>{
     const id=String(row.origin_id||'');
     const fromItem=id.startsWith('item:')||id.startsWith('feature:trait:item:');
@@ -660,20 +663,20 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  const append=(attack,ability,proficient,damage,baseHit=null)=>{
   const settings=record.attack_overrides?.[attack.id]||{};
   const modifier=abilities[ability]?.modifier??0;
-  const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id);
+  const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id,attack);
   let damageMod=baseHit!==null||attack.damage_ability_modifier===false?0:modifier;
   if(attack.slot==='off'&&offAllowed&&!style)damageMod=Math.min(0,damageMod);
   const damageAbilityModifier=damageMod;
   const featureDamage=classFeatureDamage(record,featureContext,attack,ability);
-  const damageExtraModifier=bonus('attack_damage:'+attack.id)+featureDamage;
+  const damageExtraModifier=bonus('attack_damage:'+attack.id,attack)+featureDamage;
   damageMod+=damageExtraModifier;
-  const range=clamp(int(settings.range_feet,attack.range_feet)+bonus('attack_range:'+attack.id),5,1000);
-  const longRange=attack.melee||!attack.long_range_feet?0:clamp(int(settings.long_range_feet,attack.long_range_feet)+bonus('attack_long_range:'+attack.id),5,5000);
+  const range=clamp(int(settings.range_feet,attack.range_feet)+bonus('attack_range:'+attack.id,attack),5,1000);
+  const longRange=attack.melee||!attack.long_range_feet?0:clamp(int(settings.long_range_feet,attack.long_range_feet)+bonus('attack_long_range:'+attack.id,attack),5,5000);
   const usedBase=featureContext.damageBase?featureContext.damageBase(attack.id,damage):damage;
   out.push({...attack,ability,proficient,hit,damage:usedBase?usedBase+sign(damageMod):'Come da bestiario',
     damage_base_formula:usedBase||'',damage_ability_modifier:damageAbilityModifier,
     damage_extra_modifier:damageExtraModifier,range_feet:range,long_range_feet:longRange,
-    explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id),
+    explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id,attack),
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
     offhand_bonus:attack.slot==='off'||attack.slot==='shield'&&attack.hand==='off'});
  };
@@ -722,7 +725,8 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   if(slot==='main'&&!physicalOff&&hasProperty(item,'V')&&record.hand_grip_two_handed&&item.versatile_damage)damage=item.versatile_damage;
   const size=item.instance_overrides?.weapon_size||record.size_name||'Medium',factor=({Large:2,Huge:3,Gargantuan:4})[size]||1;
   if(factor>1)damage=damage.replace(/^(\s*)(\d+)d(\d+)/,(_,space,count,die)=>space+(Number(count)*factor)+'d'+die);
-  const attack={id:'item:'+(slot==='off'?'off:':'')+item.id,name:item.name+(slot==='off'?' · secondaria':''),slot,melee:!ranged,range_feet:ranged?Math.max(5,ranges[0]||0):reach,long_range_feet:ranged?ranges[1]||0:0,damage_type:item.damage_type||''};
+  const attack={id:'item:'+(slot==='off'?'off:':'')+item.id,name:item.name+(slot==='off'?' · secondaria':''),slot,melee:!ranged,range_feet:ranged?Math.max(5,ranges[0]||0):reach,long_range_feet:ranged?ranges[1]||0:0,damage_type:item.damage_type||'',
+    weapon_type:ranged?'ranged':'melee',weapon_properties:arr(item.properties).map(p=>String(p).split('|')[0].toUpperCase()),equipped_item_id:item.instance_id||item.id};
   append(attack,ability,proficient,damage);
   if(!ranged&&hasProperty(item,'T')&&ranges[0]>0)append({...attack,id:'item:throw:'+slot+':'+item.id,name:attack.name+' · lancio',melee:false,range_feet:ranges[0],long_range_feet:ranges[1]||0},ability,proficient,damage);
  }
@@ -1297,12 +1301,15 @@ function calculateSheetValues(record={},catalogs={}){
     const refs=[...nativeDependencies(current),...grants.filter(r=>r.target===current&&!r.disabled&&sourceEnabled(r)).flatMap(r=>dependencies(r.expression))];
     return refs.some(ref=>reaches(ref,wanted,visited));
   };
-  const cycleCache=new Map();
+  const cycleCache=new Map(),attackContexts=new Map(),equippedFacts=equippedItemFacts(record);
   const explanations={},components={},rollComponents={};
   function sumGrants(target,stack){
     let total=0;
     for(const row of grants){
-      if(row?.target!==target||row.disabled||!requirementsAllow(record,row)||!sourceEnabled(row))continue;
+      const genericAttack=target.startsWith('attack_hit:')?'attack_hit:*':
+        target.startsWith('attack_damage:')?'attack_damage:*':'';
+      if(!(row?.target===target||genericAttack&&row?.target===genericAttack)||
+        row.disabled||!requirementsAllow(record,row,{target,attack:attackContexts.get(target),equipped:equippedFacts})||!sourceEnabled(row))continue;
       try{
         if(!cycleCache.has(row))cycleCache.set(row,dependencies(row.expression).some(ref=>reaches(ref,target)));
         if(cycleCache.get(row))throw Error('Dipendenza circolare: '+target);
@@ -1483,7 +1490,10 @@ function calculateSheetValues(record={},catalogs={}){
     featAttacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   featureContext.companionAttacks=arr(companionValues.attacks);
-  const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
+  const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],(target,attack)=>{
+    if(attack)attackContexts.set(target,attack);
+    return safe(target)??0;
+  },featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const effect_extensions=equippedExtensions;
   const originMap=new Map();
@@ -1567,7 +1577,7 @@ function calculateSheetValues(record={},catalogs={}){
       })),
     casting_classes:spellClasses,
     class_levels:Object.fromEntries(classes.map(row=>[classSymbol(row.name),Math.max(0,int(row.level))])),
-    trackers,attacks,damage_defense_entries,
+    trackers,attacks,equipped_items:equippedFacts,damage_defense_entries,
     feature_item_grants:featureItemGrants(record,features,catalogs.featureItemGrants||catalogs.classMechanics?.feature_item_grants||[]),
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
     racial_abilities:racialPowers.abilities,
