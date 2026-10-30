@@ -133,10 +133,15 @@ export function addBenefitPatch(record,trait,kind,values={},id){
     parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||''};
  }else if(kind==='bonus'){
   const target=required('target'),expression=required('expression',200).replace(/\s+/g,'');
+  const actionDamage=target.startsWith('action_damage:');
+  if(actionDamage&&!/^action_damage:[a-z0-9_:-]+$/i.test(target))
+    throw Error('Azione di base non valida');
+  if(actionDamage&&String(values.tracker_id||'').trim())
+    throw Error('I danni delle azioni di base non consumano un tracker');
   const diceMatch=expression.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
   if(diceMatch&&Number(diceMatch[1])<=100){
    const rollable=['ability_check','saving_throw','attack_roll','damage_roll','any_d20','initiative','spell_attack'].includes(target)||
-     /^(ability_check:|skill:|save:|attack_hit:|attack_damage:|casting_hit:|feature_roll:)/.test(target);
+     /^(ability_check:|skill:|save:|attack_hit:|attack_damage:|action_damage:|casting_hit:|feature_roll:)/.test(target);
    if(rollable){
     field='dice_bonuses';row={...common,target,dice:expression};
     const tracker=String(values.tracker_id||'').trim(),cost=Number(values.tracker_cost||1);
@@ -164,6 +169,15 @@ export function addBenefitPatch(record,trait,kind,values={},id){
    field='formula_bonuses';row={...common,target,expression};
    if(!/^[a-z0-9_+*\-/. ()]+$/i.test(row.expression))throw Error('Formula non valida');
   }
+  if(actionDamage){
+   row.parent_origin=trait.feature_origin||trait.proficiency_origin||trait.origin_key||'';
+   row.origin_name=trait.name||origin_name;
+   const damageType=norm(values.damage_type);
+   if(damageType){
+    if(!DAMAGE_TYPES.includes(damageType))throw Error('Tipo di danno non valido');
+    row.damage_type=damageType;
+   }
+  }
  }else if(kind==='attack_count'){
   const value=Number(values.attacks_per_action);
   if(!Number.isSafeInteger(value)||value<2||value>99)throw Error('Numero di attacchi non valido (2–99)');
@@ -184,6 +198,12 @@ export function addBenefitPatch(record,trait,kind,values={},id){
   if(damageType){
    if(!DAMAGE_TYPES.includes(damageType))throw Error('Tipo di danno non valido');
    row.damage_type=damageType;
+  }
+  if(row.target.startsWith('action_damage:')){
+   row.parent_origin=trait.feature_origin||trait.proficiency_origin||trait.origin_key||'';
+   row.origin_name=trait.name||origin_name;
+   if(String(values.tracker_id||'').trim())
+    throw Error('I danni delle azioni di base non consumano un tracker');
   }
  }else if(kind==='roll_mode'){
   field='roll_mode_grants';
