@@ -42,7 +42,7 @@ test('known-spell overrides can remove class spells and add non-class spells',()
 test('wizard spellbook stays the source of known spells and known-only preparation',()=>{
  const base={rules_version:'2014',prepared_spells:[],spellbook_spells:[]};
  assert.throws(()=>addSelectedSpell(base,catalog[1],'prepared_spells',
-   {member:wizard,classes:[wizard],catalog}),/libro/);
+   {member:wizard,classes:[wizard],catalog}),/Impara prima/);
  const book=addSelectedSpell(base,catalog[1],'spellbook_spells',
    {member:wizard,classes:[wizard],catalog});
  let record={...base,...book};
