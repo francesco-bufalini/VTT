@@ -9295,7 +9295,7 @@ async function handleAction(target){
     if(!spell)throw Error('Incantesimo non trovato.');
     const wasKnown=target.dataset.known==='true';
     let change;
-    if(member.mode==='Conosciuti'){    }else if(member.mode==='Conosciuti'){
+    if(member.mode==='Conosciuti'){
       const index=availableSpells(creature).findIndex(row=>spellId(row)===spell.id&&
         castingSources(row,classes,state.spellCatalog||[]).includes(member.id));
       change=wasKnown?removeSelectedSpell(creature,'prepared_spells',index,
