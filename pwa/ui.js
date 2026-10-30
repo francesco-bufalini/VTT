@@ -2348,7 +2348,6 @@ async function editorView() {
   if(state.sheet==='inventory'&&inventoryVisibleSections(c).includes('scrolls'))
     requireFullSpellsForPicker();
   if(state.sheet==='magic'&&state.magicPopup){
-    const member=calculated.casting_classes.find(row=>row.id===state.spellClass);
     if(['choices','learn','catalog'].includes(state.magicPopup))
       requireFullSpellsForPicker();
   }
@@ -4152,7 +4151,7 @@ function renderSpellResults(){
   const filterClass=String(state.spellLearnFilter||'all').toLowerCase();
   const matchesClassFilter=spell=>filterClass==='all'||
     (filterClass===String(member?.spell_list_class_name||member?.name||'').toLowerCase()&&spellEligible(spell,member))||
-    arr(spell.classes).some(name=>
+    (Array.isArray(spell.classes)?spell.classes:[]).some(name=>
       String(typeof name==='string'?name:name?.name).toLowerCase()===filterClass);
   const filtered=rows.filter(spell=>allowed.has(spell)&&!spell.internal_grant&&
     (preparing?Number(spell.level)>0&&Number(spell.level)<=member.max_level&&
@@ -4166,7 +4165,7 @@ function renderSpellResults(){
       String(a.name||'').localeCompare(String(b.name||''),'it',{sensitivity:'base'}));
   const {items:found,shown,total}=pageResults(filtered,state.spellResultLimit);
   if(!found.length)return '<p class="hint">'+(preparing?
-    'Nessun incantesimo conosciuto corrispondente. Puoi impararne altri dal pulsante in alto.':
+    'Nessun incantesimo conosciuto corrispondente. Puoi impararne altri con Impara incantesimi.':
     'Nessun incantesimo corrispondente.')+'</p>';
   return groupedMagicSpells(found.map(spell=>({spell,info:magicSpellInfo(spell)})),({spell,info})=>{
     const already=selected.has(spell.id);
@@ -4199,7 +4198,7 @@ function renderSpellResults(){
         esc(grant.origin_name||grant.origin_id||'Altra origine')+'">Sempre disponibile</button>':
         '<button class="magic-catalog-action'+(owned?' is-selected':'')+
         '" type="button" aria-pressed="'+owned+'" data-act="'+action+'"'+attrs+
-        ' aria-label="'+esc(label.replace(/^\\+ /,'')+' '+info.name)+'">'+esc(label)+'</button>')+
+        ' aria-label="'+esc((label.startsWith('+ ')?label.slice(2):label)+' '+info.name)+'">'+esc(label)+'</button>')+
       '</div>';
   })+resultsFooter('spell-results-more',shown,total,60);
 }
