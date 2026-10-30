@@ -69,9 +69,9 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
            storage:spec.storage||null};
        }
      }else for(const [stage,spec] of Object.entries(template.layers||{})){
-       if(stage==='learned'&&(member.book||member.mode==='Conosciuti')||
+       if(stage==='learned'&&member.mode==='Conosciuti'||
          stage==='prepared'&&member.mode==='Preparati')
-         layers[stage]={enabled:true,selected:[],limit:member.book&&stage==='learned'?null:member.limit,
+         layers[stage]={enabled:true,selected:[],limit:member.limit,
            trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger)};
      }
      models.push({id:template.id+':'+member.id,title:member.name+' · Incantesimi',

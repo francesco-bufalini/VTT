@@ -108,9 +108,8 @@ export function castingSources(entry,classes,catalog=[]){
  const matches=classes.filter(member=>spellEligible(definition||{},member));
  return matches.length===1?[matches[0].id]:[];
 }
-// Preparing casters normally know their class list. A per-class override records
-// only deliberate additions/removals, so existing characters need no migration.
-// Wizards instead know exactly the spells recorded in their spellbook.
+// The benefit chooses whether learned spells come from a class list or from
+// manual selection. The same learned/prepared flow applies to every class.
 // Cantrips are learned, not prepared. An explicit learned override or a
 // legacy cantrip saved in prepared_spells makes one known; never assume the
 // entire class cantrip catalogue has been learned.
@@ -135,44 +134,56 @@ export function knownClassSpellIds(creature={},member,catalog=[]){
    .filter(row=>castingSources(row,[member],catalog).includes(member.id)).map(spellId));
  const cantrips=knownClassCantripIds(creature,member,catalog);
  const overrides=creature.known_spell_overrides?.[member.id]||{};
- if(member.book)return new Set([...arr(creature.spellbook_spells).map(spellId),...cantrips,
-   ...arr(overrides.added)]);
  const options=spellsForEdition(catalog,creature.rules_version||'2014');
  const removed=new Set(arr(overrides.removed));
+ if(member.selection_layers?.learned?.mode==='manual'){
+   // Previously saved book entries or prepared spells remain learned, but
+   // all new learning uses the ordinary known_spell_overrides store.
+   const legacy=[...arr(creature.spellbook_spells),
+     ...availableSpells(creature).filter(spell=>
+       castingSources(spell,[member],catalog).includes(member.id))];
+   return new Set([...legacy.map(spellId),...arr(overrides.added),...cantrips]
+     .filter(id=>id&&!removed.has(id)));
+ }
  return new Set([...options.filter(spell=>Number(spell.level)>0&&
    spellEligible(spell,member)&&!removed.has(spell.id)).map(spellId),
    ...arr(overrides.added).filter(id=>Number(options.find(spell=>spellId(spell)===id)?.level)>0),
    ...cantrips]);
 }
 export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
- if(!member||member.mode!=='Preparati'||member.book&&Number(spell?.level)>0)
+ if(!member||member.mode!=='Preparati')
    throw Error('Questa lista di incantesimi conosciuti non è modificabile qui.');
  const id=spellId(spell);
  if(!id||spell.internal_grant||!catalog.some(row=>spellId(row)===id)||Number(spell.level)>member.max_level)
    throw Error('Incantesimo non disponibile per questo livello.');
  const map=structuredClone(creature.known_spell_overrides||{});
  const entry=map[member.id]||{},added=new Set(arr(entry.added)),removed=new Set(arr(entry.removed));
+ const manuallyLearned=member.selection_layers?.learned?.mode==='manual';
  if(known){
    removed.delete(id);
-   if(Number(spell.level)===0||!spellEligible(spell,member))added.add(id);
+   if(manuallyLearned||Number(spell.level)===0||!spellEligible(spell,member))added.add(id);
  }else{
    added.delete(id);
-   if(Number(spell.level)===0||spellEligible(spell,member))removed.add(id);
+   if(manuallyLearned||Number(spell.level)===0||spellEligible(spell,member))removed.add(id);
  }
  map[member.id]={added:[...added],removed:[...removed]};
  return {known_spell_overrides:map};
 }
-// Learned spell counts come from the owning structured benefit; the learned
-// stage remains independent from preparation for book-style casters.
+// Learned counts use the benefit's advisory limit for any caster.
 export function knownSpellProgress(creature={},member,classes=[],catalog=[]){
  if(!member)return null;
- const known=member.book?new Set(arr(creature.spellbook_spells).filter(row=>
-     Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0)>0).map(spellId)).size:
+ const levelOf=id=>{
+   const row=catalog.find(spell=>spellId(spell)===id)||
+     [...arr(creature.spellbook_spells),...availableSpells(creature)].find(spell=>spellId(spell)===id);
+   return Number(row?.level||0);
+ };
+ const manual=member.mode==='Preparati'&&member.selection_layers?.learned?.mode==='manual';
+ const known=manual?[...knownClassSpellIds(creature,member,catalog)]
+     .filter(id=>levelOf(id)>0).length:
    member.mode==='Conosciuti'?availableSpells(creature).filter(row=>
-     Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0)>0&&
-     castingSources(row,classes,catalog).includes(member.id)).length:null;
+     levelOf(spellId(row))>0&&castingSources(row,classes,catalog).includes(member.id)).length:null;
  if(known===null)return null;
- const expected=member.book?member.learned_limit:member.limit;
+ const expected=manual?member.learned_limit:member.limit;
  const minimum=Number.isInteger(expected)&&expected>=0?expected:null;
  return {known,minimum};
 }
@@ -194,25 +205,21 @@ export function classSelectionWarnings(member,count){
    ' ('+(actual<max?'ne mancano '+(max-actual):(actual-max)+' in eccesso')+')');
 }
 export function addSelectedSpell(creature,entry,target="prepared_spells",{member,classes=[],catalog=[],grantedSpells=[],allowNonClass=false}={}){
-  if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");
+  if(target!=="prepared_spells")throw Error("Elenco non valido.");
   if(!isContentAvailableForRules(entry,creature?.rules_version))
     throw Error('Questa fonte non è disponibile per le regole 2014.');
-  const spell=spellRecord(entry),rows=target==="prepared_spells"?
-    availableSpells(creature):arr(creature.spellbook_spells).slice();
-  if(target==='prepared_spells'&&member&&arr(grantedSpells).some(grant=>
+  const spell=spellRecord(entry),rows=availableSpells(creature);
+ if(target==='prepared_spells'&&member&&arr(grantedSpells).some(grant=>
     String(grant.spell_id||grant.id||'')===spell.id))
     throw Error('Incantesimo sempre disponibile da un’altra origine: non serve prepararlo.');
   if(member?.mode==='Preparati'&&spell.level===0&&target==='prepared_spells')
     throw Error('I trucchetti si imparano e sono sempre pronti: non si preparano.');
   if(member){
-    if(!spellEligible(entry,member)&&!(member.mode==='Preparati'&&!entry.internal_grant&&spell.level<=member.max_level&&
-      (target==='spellbook_spells'||knownClassSpellIds(creature,member,catalog).has(spell.id)))&&
-      !(allowNonClass&&!entry.internal_grant&&spell.level<=member.max_level))
+    if(spell.level>member.max_level||
+      (member.mode==='Preparati'?
+        !knownClassSpellIds(creature,member,catalog).has(spell.id):
+        !spellEligible(entry,member)&&!(allowNonClass&&!entry.internal_grant)))
       throw Error('Incantesimo non conosciuto o non disponibile per questo livello.');
-    if(target==='spellbook_spells'&&!member.book)throw Error('Questa lista non permette di imparare incantesimi separatamente.');
-    if(target==='prepared_spells'){
-      if(member.book&&spell.level>0&&!arr(creature.spellbook_spells).some(row=>spellId(row)===spell.id))throw Error('Impara prima l’incantesimo.');
-    }
     spell.casting_classes=[member.id];
   }
   const existing=rows.findIndex(row=>spellId(row)===spell.id);
@@ -221,20 +228,20 @@ export function addSelectedSpell(creature,entry,target="prepared_spells",{member
     if(!member||sources.includes(member.id))throw Error('Incantesimo già presente.');
     const old=rows[existing];
     rows[existing]={...(typeof old==='object'?old:spell),casting_classes:[...sources,member.id]};
-    return target==='prepared_spells'?{prepared_spells:rows,spells:rows}:{spellbook_spells:rows};
+    return {prepared_spells:rows,spells:rows};
   }
   rows.push(spell);
-  return target==="prepared_spells"?{prepared_spells:rows,spells:rows}:{spellbook_spells:rows};
+  return {prepared_spells:rows,spells:rows};
 }
 export function removeSelectedSpell(creature,target,index,{classId,classes=[],catalog=[]}={}){
-  if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");
-  const rows=target==="prepared_spells"?availableSpells(creature):arr(creature.spellbook_spells).slice();
+  if(target!=="prepared_spells")throw Error("Elenco non valido.");
+  const rows=availableSpells(creature);
   if(!Number.isInteger(index)||index<0||index>=rows.length)throw Error("Incantesimo assente.");
   const sources=castingSources(rows[index],classes,catalog);
   if(classId&&!sources.includes(classId))throw Error('Incantesimo non assegnato alla classe.');
   if(classId&&sources.length>1)rows[index]={...rows[index],casting_classes:sources.filter(id=>id!==classId)};
   else rows.splice(index,1);
-  return target==="prepared_spells"?{prepared_spells:rows,spells:rows}:{spellbook_spells:rows};
+  return {prepared_spells:rows,spells:rows};
 }
 
 

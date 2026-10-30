@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet,castingClasses,spellProgression,formulaValue} from '../sheet_rules.js';
-import {spellEligible,knownSpellProgress} from '../spell_selection.js';
+import {spellEligible,knownSpellProgress,knownClassSpellIds,changeKnownClassSpell,
+  addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 
 const load=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={
@@ -25,7 +26,9 @@ test('2014 caster types, lists, ability and preparation come from their active b
  assert.equal(w.spell_list_class_name,'Wizard');
  assert.equal(w.level_class_name,'Wizard');
  assert.equal(w.ability,'int');
- assert.equal(w.knowledge_mode,'book');
+ assert.equal(w.knowledge_mode,'prepared');
+ assert.equal(w.selection_layers.learned.mode,'manual');
+ assert.equal(w.selection_layers.learned.storage,'known_spell_overrides');
  assert.equal(w.learned_limit,14);
  assert.equal(w.limit,8);
  assert.deepEqual(wizard.spell_slots.slice(0,3).map(s=>s.total),[4,3,2]);
@@ -136,4 +139,46 @@ test('prepared spell minimum is read from benefit data, not a caster name',()=>{
  const [caster]=castingClasses({classes:[{name:'Cleric',source:'PHB',level:1}],abilities:{wis:1}},
    null,{wis:-5},[trait]);
  assert.equal(caster.limit,1);
+});
+
+test('learned and prepared spells share class-agnostic operations without a book',()=>{
+ const [,caster]=member('Wizard',5);
+ const [,automatic]=member('Cleric',5);
+ const catalog=Array.from({length:18},(_,i)=>({
+   id:'test_spell_'+i,name:'Test spell '+i,source:'PHB',level:1,classes:['Wizard','Cleric']
+ }));
+ let saved={rules_version:'2014',prepared_spells:[],spells:[],known_spell_overrides:{}};
+ assert.deepEqual([...knownClassSpellIds(saved,caster,catalog)],[]);
+ assert.equal(knownClassSpellIds(saved,automatic,catalog).size,18);
+ for(const spell of catalog.slice(0,16))
+   saved={...saved,...changeKnownClassSpell(saved,caster,spell,true,catalog)};
+ assert.equal(knownClassSpellIds(saved,caster,catalog).size,16);
+ assert.deepEqual(knownSpellProgress(saved,caster,[caster],catalog),{known:16,minimum:14},
+   'learned limits remain advisory');
+ assert.equal(saved.spellbook_spells,undefined,'learning never creates a book');
+ saved={...saved,...addSelectedSpell(saved,catalog[0],'prepared_spells',
+   {member:caster,classes:[caster],catalog})};
+ assert.equal(saved.prepared_spells.length,1);
+ assert.deepEqual(saved.prepared_spells,saved.spells);
+ assert.throws(()=>addSelectedSpell(saved,catalog[17],'prepared_spells',
+   {member:caster,classes:[caster],catalog}),/non conosciuto/);
+ saved={...saved,...changeKnownClassSpell(saved,caster,catalog[0],false,catalog)};
+ saved={...saved,...removeSelectedSpell(saved,'prepared_spells',0,
+   {classId:caster.id,classes:[caster],catalog})};
+ assert.equal(knownClassSpellIds(saved,caster,catalog).has(catalog[0].id),false);
+ assert.equal(saved.prepared_spells.length,0);
+});
+
+test('legacy saved book entries remain learnable through the generic manual layer',()=>{
+ const [,caster]=member('Wizard',5);
+ const spell={id:'shield_legacy',name:'Shield',level:1,source:'PHB',classes:['Wizard']};
+ const catalog=[spell];
+ let saved={rules_version:'2014',spellbook_spells:[spell],
+   known_spell_overrides:{},prepared_spells:[]};
+ assert.equal(knownClassSpellIds(saved,caster,catalog).has(spell.id),true);
+ saved={...saved,...changeKnownClassSpell(saved,caster,spell,false,catalog)};
+ assert.equal(knownClassSpellIds(saved,caster,catalog).has(spell.id),false);
+ saved={...saved,...changeKnownClassSpell(saved,caster,spell,true,catalog)};
+ assert.equal(knownClassSpellIds(saved,caster,catalog).has(spell.id),true);
+ assert.equal(saved.spellbook_spells.length,1,'legacy data remains untouched');
 });

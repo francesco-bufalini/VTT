@@ -531,7 +531,7 @@ function ensureVisibleSpells(creature,calculated){
     state.spellTarget==='prepared_spells'){
     const member=(calculated.casting_classes||[]).find(row=>row.id===state.spellClass);
     if(member?.mode==='Preparati')scopes.push({
-      name:member.name,max_level:member.book?0:member.max_level
+      name:member.name,max_level:member.max_level
     });
   }
   if(!ids.size&&!scopes.length)return null;
@@ -2509,7 +2509,8 @@ async function editorView() {
             (member.mode==='Preparati'?
               '<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="prepared_spells">Prepara incantesimi</button>':'')+
             '<button type="button" class="btn small magic-selection-button" data-act="magic-learn-select" data-magic-class="'+esc(member.id)+'">'+
-              (member.book?'Impara incantesimi':member.mode==='Conosciuti'?'Impara / Dimentica incantesimi':'Gestisci incantesimi conosciuti')+'</button>'+
+              (member.mode==='Conosciuti'||member.selection_layers?.learned?.mode==='manual'?
+                'Impara / Dimentica incantesimi':'Gestisci incantesimi conosciuti')+'</button>'+
             '</div>'+
             spellList(c,'prepared_spells',member.id,calculated.casting_classes,{includeSlots:false})+'</section>';
         }).join('')+
@@ -4135,18 +4136,15 @@ function renderSpellResults(){
   const classes=state.calculated?.casting_classes||[];
   const member=classes.find(row=>row.id===state.spellClass);
   const learning=state.magicPopup==='learn'&&Boolean(member);
-  const target=learning&&member.book?'spellbook_spells':
-    ((!member||member.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells');
+  const target='prepared_spells';
   const preparing=member?.mode==='Preparati'&&target==='prepared_spells'&&!learning;
   if(!member&&!query)return '<p class="hint">Cerca un incantesimo per aggiungerlo alle concessioni della scheda.</p>';
   const prepared=availableSpells(record);
   const known=knownClassSpellIds(record,member,rows);
-  const knownBook=new Set((record.spellbook_spells||[]).map(spellId));
   const granted=new Map((state.calculated?.origin_spells||[]).filter(row=>row.spell_id)
     .map(row=>[String(row.spell_id),row]));
-  const selected=target==='spellbook_spells'?knownBook:
-    new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
-  const selectedRows=target==='spellbook_spells'?(record.spellbook_spells||[]):prepared;
+  const selected=new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
+  const selectedRows=prepared;
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
   const filterClass=String(state.spellLearnFilter||'all').toLowerCase();
   const matchesClassFilter=spell=>filterClass==='all'||
@@ -4159,7 +4157,6 @@ function renderSpellResults(){
       learning?Number(spell.level)<=member.max_level:
       !member||spellEligible(spell,member))&&
     matchesClassFilter(spell)&&
-    (target!=='spellbook_spells'||Number(spell.level)>0||learning)&&
     matchesSearch(query,spell.name,spell.source))
     .sort((a,b)=>Number(a.level||0)-Number(b.level||0)||
       String(a.name||'').localeCompare(String(b.name||''),'it',{sensitivity:'base'}));
@@ -4171,18 +4168,14 @@ function renderSpellResults(){
     const already=selected.has(spell.id);
     const preparedIndex=prepared.findIndex(row=>spellId(row)===spell.id&&
       (!member||castingSources(row,classes,rows).includes(member.id)));
-    const bookIndex=(record.spellbook_spells||[]).findIndex(row=>spellId(row)===spell.id);
     const details=preparedIndex>=0?
       ' data-spell-key="prepared_spells" data-spell-index="'+preparedIndex+
       '" data-casting-class="'+esc(member?.id||'manual')+'"':
-      bookIndex>=0?' data-spell-key="spellbook_spells" data-spell-index="'+bookIndex+'"':
-        ' data-spell-id="'+esc(spell.id)+'"';
+      ' data-spell-id="'+esc(spell.id)+'"';
     const name='<button type="button" class="magic-catalog-name" data-act="power-spell"'+details+
       ' aria-label="Dettagli di '+esc(info.name)+'">'+esc(info.name)+'</button>';
     // Shared row template; the current selection stage controls the action.
-    const owned=learning?
-      (member.book&&Number(spell.level)>0?knownBook.has(spell.id):known.has(spell.id)):
-      already;
+    const owned=learning?known.has(spell.id):already;
     const grant=preparing?granted.get(spell.id):null;
     const action=learning?'spell-known-toggle':owned?'remove-spell':'spell-pick';
     const actionIndex=owned?selectedRows.findIndex(row=>spellId(row)===spell.id):rows.indexOf(spell);
@@ -7188,8 +7181,7 @@ async function handleAction(target){
       const classes=state.calculated?.casting_classes||[];
       state.spellClass=act==='magic-select-spells'?target.dataset.magicClass||classes[0]?.id||'manual':
         classes.some(row=>row.id===state.spellClass)?state.spellClass:classes[0]?.id||'manual';
-      state.spellTarget=act==='magic-select-spells'&&target.dataset.magicTarget==='spellbook_spells'?
-        'spellbook_spells':'prepared_spells';
+      state.spellTarget='prepared_spells';
       state.spellLearnFilter='all';
       state.spellQuery='';state.spellResultLimit=60;
       state.spellKnownView=classes.find(row=>row.id===state.spellClass)?.mode==='Preparati'?'known':'all';
@@ -7263,15 +7255,14 @@ async function handleAction(target){
     const index=Number(target.dataset.spellIndex);
     const grantId=String(target.dataset.grantId||'');
     const classId=String(target.dataset.castingClass||'');
-    const saved=key==='spellbook_spells'?record.spellbook_spells?.[index]:
-      key==='prepared_spells'?availableSpells(record)[index]:null;
+    const saved=key==='prepared_spells'?availableSpells(record)[index]:null;
     const grant=key==='origin'?calculated.origin_spells?.find(row=>row.id===grantId):null;
     const id=key==='origin'?grant?.spell_id:key?spellId(saved):target.dataset.spellId;
     if(!id)throw Error('Incantesimo non disponibile.');
     const entries=sessionSpellEntries(record,calculated,state.spellCatalog||[]);
     const entry=entries.find(row=>row.id===id&&String(row.grant_id||'')===grantId&&
       (key==='origin'||String(row.casting_class||'')===(classId==='manual'?'':classId)))||
-      (key==='spellbook_spells'?entries.find(row=>row.id===id):null);
+      null;
     const catalogSpell=(state.spellCatalog||[]).find(row=>row.id===id);
     const stored=typeof saved==='object'&&saved?saved:{};
     const spell=entry||catalogSpell||stored;
@@ -9302,14 +9293,9 @@ async function handleAction(target){
     if(!member)throw Error('Lista di classe non disponibile.');
     const spell=state.spellCatalog?.[Number(target.dataset.spellIndex)];
     if(!spell)throw Error('Incantesimo non trovato.');
-    const wasKnown=target.dataset.known==='true',book=member.book&&Number(spell.level)>0;
+    const wasKnown=target.dataset.known==='true';
     let change;
-    if(book){
-      const index=(creature.spellbook_spells||[]).findIndex(row=>spellId(row)===spell.id);
-      change=wasKnown?removeSelectedSpell(creature,'spellbook_spells',index):
-        addSelectedSpell(creature,spell,'spellbook_spells',
-          {member,classes,catalog:state.spellCatalog||[],allowNonClass:!spellEligible(spell,member)});
-    }else if(member.mode==='Conosciuti'){
+    if(member.mode==='Conosciuti'){    }else if(member.mode==='Conosciuti'){
       const index=availableSpells(creature).findIndex(row=>spellId(row)===spell.id&&
         castingSources(row,classes,state.spellCatalog||[]).includes(member.id));
       change=wasKnown?removeSelectedSpell(creature,'prepared_spells',index,
@@ -10055,7 +10041,7 @@ function listen(){
     }
     if(target?.id==="scroll-spell-select"){updateScrollSpellLevels();return;}
     if(target?.id==="spell-target"){
-      state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";
+      state.spellTarget='prepared_spells';
       render().catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==='spell-learn-filter'){

@@ -1499,13 +1499,14 @@
           "multiclass_round": "floor"
         },
         "ability": "int",
-        "knowledge_mode": "book",
+        "knowledge_mode": "prepared",
         "layers": {
           "learned": {
+            "mode": "manual",
             "limit": {
               "formula": "6 + 2 * (class_level_wizard - 1)"
             },
-            "storage": "spellbook_spells",
+            "storage": "known_spell_overrides",
             "trigger": null
           },
           "prepared": {
@@ -3631,13 +3632,14 @@
           "multiclass_round": "floor"
         },
         "ability": "int",
-        "knowledge_mode": "book",
+        "knowledge_mode": "prepared",
         "layers": {
           "learned": {
+            "mode": "manual",
             "limit": {
               "formula": "6 + 2 * (class_level_wizard - 1)"
             },
-            "storage": "spellbook_spells",
+            "storage": "known_spell_overrides",
             "trigger": null
           },
           "prepared": {

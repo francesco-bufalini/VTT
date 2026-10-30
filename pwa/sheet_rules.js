@@ -487,7 +487,7 @@ export function castingClasses(record,catalog,abilityModifiers={},features=[]){
        spell_list_source:{type:'spell_catalog',...benefit.source,
          class_name:benefit.spell_list_class_name||name},
        slot_progression:progression,selection_layers:layers,knowledge_mode:knowledge,
-       mode:knowledge==='known'?'Conosciuti':'Preparati',book:knowledge==='book',
+       mode:knowledge==='known'?'Conosciuti':'Preparati',
        learned_limit:layers.learned?.limit??null,limit:limit??-1,
        cantrips:limitOf(benefit.cantrips?.limit,level)??0,
        max_level:maxLevel,ability:benefit.ability||'int',
