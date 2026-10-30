@@ -143,7 +143,8 @@ test('Maneuvers and Artificer infusions may exceed known counts but application 
   const after=owned(record,id);
   assert.equal(after.layers.learned.used,options.length);
   assert.equal(after.layers.learned.limit,before.layers.learned.limit);
-  assert.equal(after.layers.applied.used,0,'Learning does not apply any option');
+  assert.equal(after.layers.applied.used,after.layers.applied.automatic?options.length:0,
+   'Automatic maneuvers mirror knowledge, while infusions remain unapplied');
   record={...record,...powerSelectionPatch(record,context,catalog,id,'learned',options[0].id)};
   assert.equal(owned(record,id).layers.learned.used,options.length-1);
  }
