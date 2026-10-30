@@ -794,6 +794,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
 // independent of the chat transport and of the visible panel: every editor
 // mutation, including autosaved fields, can share the same activity vocabulary.
 const ACTIVITY_LABELS={
+ str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma',
  name:'Nome',level:'Livello',xp:'Esperienza',alignment:'Allineamento',
  species:'Specie',subrace:'Sottospecie',background:'Background',class:'Classe',
  subclass:'Sottoclasse',rules_version:'Edizione',party_id:'Fazione',
@@ -813,6 +814,12 @@ const ACTIVITY_LABELS={
  attunement_max_base:'Massimo sintonia',death_save_successes:'TS morte riusciti',
  death_save_failures:'TS morte falliti'
 };
+// Narrative and binary fields must not leak their raw content to a shared party chat.
+const PRIVATE_ACTIVITY_FIELDS=new Set([
+ 'sheet_portrait_data','appearance','notes','background_personality',
+ 'personality_traits','ideals','bonds','flaws','additional_traits','documents',
+ 'description','symbol'
+]);
 const activityEqual=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const activityShort=v=>{
  if(v===null||v===undefined||v==='')return 'nessuno';
@@ -840,8 +847,6 @@ function activityList(before=[],after=[],label){
 }
 function activityInventory(before=[],after=[]){
  const old=Array.isArray(before)?before:[],now=Array.isArray(after)?after:[];
- const identity=(item,index)=>String(item?.instance_id||item?.owned_id||item?.id||item?.name||'oggetto')+
-  '#'+String(index);
  // Match repeated names by occurrence, so inserting a row does not masquerade
  // as equipping every subsequent item.
  const indexed=arr=>{
@@ -883,6 +888,7 @@ export function describeSheetActivity(before={},after={},requested=null){
   const prev=before[key],next=after[key];
   if(activityEqual(prev,next))continue;
   const label=activityTitle(key);
+  if(PRIVATE_ACTIVITY_FIELDS.has(key)){out.push(label+': aggiornato');continue;}
   if(key==='inventory'){out.push(activityInventory(prev,next));continue;}
   if(key==='resource_tracker_spent'&&next&&typeof next==='object'){
    const ids=new Set([...Object.keys(prev||{}),...Object.keys(next)]);
