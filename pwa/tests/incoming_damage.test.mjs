@@ -112,3 +112,17 @@ test('native HP dialog renders selectable typed bonuses, defenses and permanent 
  assert.match(html,/id="hp-adjust-ignore-permanent"/);
  assert.match(html,/id="hp-adjust-damage-preview"/);
 });
+
+test('conditional resistance is displayed but applied only when explicitly selected',()=>{
+ const defense={key:'fire',rank:1,origin_name:'Warded',condition_label:'Solo contro danni non magici'};
+ const record={};
+ const calculated=mk([], [defense]);
+ const option=incomingDamageOptions(record,calculated,'fire')
+  .find(row=>row.kind==='defense');
+ assert(option.optional);
+ assert.equal(resolveIncomingDamage(record,calculated,{amount:12,damage_type:'fire'}).damage,12);
+ assert.equal(resolveIncomingDamage(record,calculated,{
+  amount:12,damage_type:'fire',selected_ids:[option.id]}).damage,6);
+ assert.equal(resolveIncomingDamage(record,calculated,{
+  amount:12,damage_type:'fire',ignore_permanent:true,selected_ids:[option.id]}).damage,6);
+});
