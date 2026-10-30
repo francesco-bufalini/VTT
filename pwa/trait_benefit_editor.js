@@ -5,7 +5,7 @@ import {normalizeEffectExtension} from './effect_extensions.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 export const BENEFIT_TYPES=[
- ['bonus','Bonus'],['base_override','Sostituzione valore base'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['d20_reroll','Ritiro d20'],['proficiency','Competenza'],['senses','Sensi'],
+ ['bonus','Bonus'],['incoming_damage','Danni subiti'],['base_override','Sostituzione valore base'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['d20_reroll','Ritiro d20'],['proficiency','Competenza'],['senses','Sensi'],
  ['defenses','Resistenza / immunità / vulnerabilità'],['resources','Risorsa'],
  ['spells','Incantesimo'],['actions','Azione'],['effect_extensions','Estensione di incantesimo o capacità']
 ];
@@ -71,7 +71,7 @@ export function removeBenefitPatch(record,trait,item){
  const id=String(item.id);
  const collection={base_overrides:'base_value_overrides',bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
   proficiency:'proficiency_choices',senses:'sense_grants',defenses:'damage_defense_entries',
-  resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants',d20_rerolls:'d20_reroll_grants',
+  resources:'resource_trackers',incoming_damage:'incoming_damage_modifiers',spells:'origin_spell_grants',actions:'action_grants',d20_rerolls:'d20_reroll_grants',
   attack_count:'attack_count_grants',effect_extensions:'effect_extensions'}[item.type];
  const original=rows(record[collection]);
  const idx=collection?original.findIndex(row=>{
@@ -85,6 +85,7 @@ export function removeBenefitPatch(record,trait,item){
   if(item.type==='senses')return 'sense:'+String(row.id||'')===id;
   if(item.type==='defenses')return 'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)===id;
   if(item.type==='resources')return 'tracker:'+String(row.id||'')===id;
+  if(item.type==='incoming_damage')return 'incoming_damage:'+String(row.id||'')===id;
   if(item.type==='spells')return 'spell:'+String(row.origin_id||'')+':'+String(row.spell_id||'')===id;
   if(item.type==='actions')return 'action:'+String(row.id||'')===id;
   if(item.type==='attack_count')return 'attack_count:'+String(row.id||'')===id;
@@ -178,6 +179,26 @@ export function addBenefitPatch(record,trait,kind,values={},id){
     row.damage_type=damageType;
    }
   }
+ }else if(kind==='incoming_damage'){
+  const expression=required('expression',120).replace(/\s+/g,'');
+  const dice=/^([+-]?)([1-9]\d*)d(4|6|8|10|12|20|100)$/i.exec(expression);
+  if(dice&&Number(dice[2])>100)throw Error('Massimo 100 dadi per beneficio');
+  if(!dice&&(!/^[a-z0-9_+*/().-]+$/i.test(expression)||/\d*d\d+/i.test(expression)))
+    throw Error('Formula dei danni subiti non valida');
+  const mode=String(values.mode||'permanent'),optional=mode==='optional';
+  if(!['permanent','optional'].includes(mode))throw Error('Modalità del beneficio non valida');
+  const damage_type=norm(values.damage_type);
+  if(damage_type&&!DAMAGE_TYPES.includes(damage_type))
+    throw Error('Tipo di danno non valido');
+  const tracker_id=String(values.tracker_id||'').trim(),tracker_cost=Number(values.tracker_cost||1);
+  if(tracker_id&&(!optional||!/^[\w:|.-]{1,160}$/.test(tracker_id)||
+     !Number.isInteger(tracker_cost)||tracker_cost<1||tracker_cost>100))
+    throw Error('Tracker o costo non valido');
+  field='incoming_damage_modifiers';
+  row={...common,origin_name:trait.name||origin_name,
+    parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||'',
+    trait_key:trait.key,expression,damage_type,optional,
+    ...(tracker_id?{tracker_id,tracker_cost}:{})};
  }else if(kind==='attack_count'){
   const value=Number(values.attacks_per_action);
   if(!Number.isSafeInteger(value)||value<2||value>99)throw Error('Numero di attacchi non valido (2–99)');
