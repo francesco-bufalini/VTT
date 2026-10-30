@@ -1,3 +1,4 @@
+import {armorStrengthRequirement,armorStealthDisadvantage} from './armor_rules.js';
 // Native-compatible inventory item instance helpers.
 // Keep the mobile spell-scroll inventory in parity with the desktop table.
 // These are display helpers: scrolls remain ordinary owned inventory instances.
@@ -505,7 +506,11 @@ export function equippedItemFacts(record={}){
    if(!(slot==='body'&&kind==='armor'||['main','off'].includes(slot)&&['weapon','shield'].includes(kind)))continue;
    out.push({id:String(item.id||''),instance_id:String(item.instance_id||item.id||''),
     name:item.name||'',slot,kind,type,weapon_type:type==='R'?'ranged':type==='M'?'melee':'',
-    weapon_category:item.weapon_category||'',properties,damage_type:String(item.damage_type||'').toLowerCase()});
+    weapon_category:item.weapon_category||'',properties,damage_type:String(item.damage_type||'').toLowerCase(),
+    armor_class:kind==='armor'?Number(item.ac)||0:0,
+    armor_strength_required:kind==='armor'?armorStrengthRequirement(item):0,
+    armor_stealth_disadvantage:kind==='armor'&&armorStealthDisadvantage(item),
+    material:String(item.material||item.armor_material||''),weight:Number(item.weight)||0});
   }
  }
  return out;
@@ -515,7 +520,8 @@ const selected=(actual,wanted)=>wanted===undefined||
   String(actual).toLowerCase()===String(wanted).toLowerCase());
 function equipmentSelectorMatches(item,selector={}){
  if(!item||!selector||typeof selector!=='object')return false;
- if(!['id','instance_id','slot','kind','type','weapon_type','weapon_category','damage_type']
+ if(!['id','instance_id','slot','kind','type','weapon_type','weapon_category','damage_type',
+   'armor_class','armor_strength_required','armor_stealth_disadvantage','material','weight']
    .every(field=>selected(item[field],selector[field])))return false;
  const props=item.properties||[];
  if(array(selector.properties).some(p=>!props.includes(String(p).toUpperCase())))return false;
@@ -551,7 +557,7 @@ export function equipmentRequirementMatches(record={},requirements={},target='',
   attackId.startsWith('natural:')?'natural':attack?'other':'');
  const mode=thrown?'thrown':attack?.melee===true?'melee':attack?.melee===false?'ranged':
   item?.weapon_type==='ranged'?'ranged':item?.weapon_type==='melee'||kind==='unarmed'?'melee':'';
- const range=mode==='thrown'||mode==='ranged'?'ranged':'melee';
+ const range=mode==='thrown'||mode==='ranged'?'ranged':mode==='melee'?'melee':'';
  if(!selected(kind,rule.kind)||!selected(mode,rule.mode)||!selected(range,rule.range_kind)||
     !selected(item?.weapon_type||'',rule.weapon_type)||
     !selected(item?.slot||'',rule.slot)||
