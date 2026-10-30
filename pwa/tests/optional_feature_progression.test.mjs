@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {optionalFeatureSelectionModels} from '../optional_feature_progression.js';
-import {powerSelectionModels,powerSelectionPatch,powerSelectionCustomPatch} from '../power_selection.js';
+import {powerSelectionModels,powerSelectionPatch,powerSelectionCustomPatch,powerApplicationPatch} from '../power_selection.js';
 
 const optional=JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'));
 const catalog={optionalFeatureProgressions:optional,selections:[],templates:[]};
@@ -18,43 +18,52 @@ test('Ranger fighting styles come from 5etools FS:R and respect the level cap',(
  assert.ok(model.options.every(o=>o.source!=='XPHB'));
  assert.equal(owned(character('Ranger',1),id),undefined);
 });
-test('Learned Fighting Styles are all applied automatically through the generic stage',()=>{
+test('Fighting Styles are learned separately and applied explicitly without targets or an active limit',()=>{
  const id='optional:class:phb:ranger:fs-r';
  let r=character('Ranger');
- const empty=owned(r,id);
- assert.deepEqual(empty.layers.applied.selected,[]);
- assert.equal(empty.layers.applied.automatic,true);
- assert.equal(empty.layers.applied.limit,null,'no separate applied-style cap');
- const archery=empty.options.find(o=>o.name==='Archery');
+ const empty=owned(r,id),archery=empty.options.find(o=>o.name==='Archery');
+ assert.equal(empty.layers.applied.automatic,false);
+ assert.equal(empty.layers.applied.limit,null);
+ assert.equal(empty.layers.applied.target,undefined);
+ assert.throws(()=>powerApplicationPatch(r,{},catalog,id,archery.id,true),/prima imparare/);
  r={...r,...powerSelectionPatch(r,{},catalog,id,'learned',archery.id)};
- const learned=owned(r,id);
- assert.deepEqual(learned.layers.applied.selected,[archery.id]);
- assert.equal(learned.layers.applied.used,1);
- assert.equal(r.power_applications,undefined,'no second application record');
- assert.throws(()=>powerSelectionPatch(r,{},catalog,id,'applied',archery.id),/soltanto/);
+ assert.deepEqual(owned(r,id).layers.applied.selected,[]);
+ assert.equal(r.optional_features_catalog[0].disabled,true);
+ r={...r,...powerApplicationPatch(r,{},catalog,id,archery.id,true)};
+ assert.deepEqual(owned(r,id).layers.applied.selected,[archery.id]);
+ assert.equal(r.optional_features_catalog[0].disabled,false);
+ r=JSON.parse(JSON.stringify(r));
+ r={...r,...powerApplicationPatch(r,{},catalog,id,archery.id,false)};
+ assert.deepEqual(owned(r,id).layers.learned.selected,[archery.id]);
+ assert.deepEqual(owned(r,id).layers.applied.selected,[]);
+ assert.equal(r.optional_features_catalog[0].disabled,true);
+ r={...r,...powerApplicationPatch(r,{},catalog,id,archery.id,true)};
  r={...r,...powerSelectionPatch(r,{},catalog,id,'learned',archery.id)};
- assert.deepEqual(owned(r,id).layers.applied.selected,[],'forgetting removes application');
-
- const champion=character('Fighter',10,{classes:[{name:'Fighter',source:'PHB',
-  subclass:'Champion',subclass_source:'PHB',level:10}]});
- const [base,extra]=powerSelectionModels(champion,{features:[]},catalog)
-  .filter(row=>row.title==='Fighting Style');
- const first=base.options.find(o=>o.name==='Archery');
- const second=extra.options.find(o=>o.name==='Defense');
- let c={...champion,...powerSelectionPatch(champion,{},catalog,base.id,'learned',first.id)};
- c={...c,...powerSelectionPatch(c,{},catalog,extra.id,'learned',second.id)};
- const styles=powerSelectionModels(c,{features:[]},catalog).filter(row=>row.title==='Fighting Style');
- assert.deepEqual(styles.map(row=>row.layers.learned.used),[1,1]);
- assert.deepEqual(styles.map(row=>row.layers.applied.used),[1,1]);
- assert.ok(styles.every(row=>row.layers.applied.limit===null));
+ assert.deepEqual(owned(r,id).layers.applied.selected,[]);
+ assert.deepEqual(r.power_applications[id],[]);
+ assert.deepEqual(r.optional_features_catalog,[]);
 });
-test('Every PHB Fighting Style progression declares automatic application, unlike other option lists',()=>{
+test('all Fighting Style lists use the same manual learned/applied contract',()=>{
  const styles=optional.progressions.filter(row=>row.feature_types.some(type=>type.startsWith('FS:')));
  assert.equal(styles.length,5);
- assert.ok(styles.every(row=>row.layers?.applied?.mode==='automatic'&&row.layers.applied.from==='learned'));
- const warlock=owned(character('Warlock',2),'optional:class:phb:warlock:ei');
- assert.equal(warlock.layers.applied,undefined,'non-style options retain their existing mechanics');
+ assert.ok(styles.every(row=>row.layers?.applied?.mode==='manual'&&row.layers.applied.from==='learned'));
+ assert.equal(owned(character('Warlock',2),'optional:class:phb:warlock:ei').layers.applied,undefined);
 });
+test('legacy active styles remain active and can be deactivated without forgetting; multiple learned styles can all apply',()=>{
+ const id='optional:class:phb:ranger:fs-r';
+ let r=character('Ranger',2,{fighting_styles:['Archery','Defense'],power_applications:{other:[{id:'keep'}]}});
+ const selected=owned(r,id).layers.learned.selected;
+ assert.equal(selected.length,2);
+ assert.deepEqual(owned(r,id).layers.applied.selected,selected);
+ r={...r,...powerApplicationPatch(r,{},catalog,id,selected[0],false)};
+ assert.deepEqual(owned(r,id).layers.learned.selected,selected);
+ assert.deepEqual(owned(r,id).layers.applied.selected,[selected[1]]);
+ r={...r,...powerApplicationPatch(r,{},catalog,id,selected[0],true)};
+ assert.equal(owned(r,id).layers.applied.used,2);
+ assert.deepEqual(r.power_applications.other,[{id:'keep'}]);
+ assert.equal(r.inventory,undefined);
+});
+
 test('Warlock level-one vs level-two progression and Champion additional style',()=>{
  const id='optional:class:phb:warlock:ei';
  assert.equal(owned(character('Warlock',1),id),undefined);

@@ -15,28 +15,25 @@ try{
   const saved=await createCreature('character','Ranger fighting style layout');
   await saveCreature({...saved.data,rules_version:'2014',
    class:'Ranger',class_source:'PHB',level:2,
-   classes:[{name:'Ranger',source:'PHB',level:2}],
+   classes:[{name:'Ranger',source:'PHB',level:2},{name:'Artificer',source:'TCE',level:2}],
+   attack_ability:'dex',inventory:['main','off'].map(slot=>({id:'blade-'+slot,name:'Lama '+slot,
+    custom_item_type:'weapon',type:'M',weapon_category:'simple',properties:['L','F'],damage:'1d6',quantity:1,equipped_slots:[slot]})),
    abilities:{str:12,dex:16,con:13,int:10,wis:14,cha:8}},'default',saved.revision);
  });
  await page.reload();
  await page.locator('[data-act="open"]').click();
  await sheet('magic');
 
- // This editor presents optional choices through both the native Powers
- // projection and nested Info traits. Exercise the shared delegated chooser
- // directly when the current sheet does not expose a shortcut.
  const opener=page.locator('#sheet-play-view [data-act="power-selection-open"]'+
   '[data-power-selection-id="'+progression+'"][data-power-stage="learned"]');
- const openPicker=async()=>{
-  if(await opener.count())return opener.click();
-  await page.evaluate(id=>{
-   const app=document.querySelector('#app');
-   const button=document.createElement('button');
-   button.type='button';button.dataset.act='power-selection-open';
-   button.dataset.powerSelectionId=id;button.dataset.powerStage='learned';
-   app.append(button);button.click();button.remove();
-  },progression);
- };
+ const openPicker=()=>opener.click();
+ const snapshot=()=>page.evaluate(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  const {calculateSheet,loadRuleCatalogs}=await import('/sheet_rules.js');
+  const record=(await listCreatures())[0].creature;
+  const calculated=calculateSheet(record,await loadRuleCatalogs());
+  return {record,offhand:calculated.attacks.find(row=>row.id==='item:off:blade-off')?.damage};
+ });
  for(const [width,height] of [[390,844],[1440,900]]){
   await page.setViewportSize({width,height});
   await openPicker();
@@ -85,6 +82,34 @@ try{
    await page.locator('#power-selection-dialog [data-act="power-selection-close"]').last().click();
   }else await dialog.locator('[data-act="power-selection-close"]').last().click();
  }
+ // Learning does not apply effects. The learned entry is the same clickable
+ // card row as an infusion and exposes application without an object picker.
+ await page.setViewportSize({width:390,height:844});
+ const style=page.locator('#sheet-play-view [data-act="learned-power-open"]');
+ assert.equal(await style.count(),1);
+ const styleCard=style.locator('xpath=ancestor::section[contains(@class,"play-card")][1]');
+ const infusionCard=page.locator('#sheet-play-view .play-infusion-card').filter({has:page.getByRole('heading',{name:'Infusioni',exact:true})});
+ assert.equal(await styleCard.getAttribute('class'),await infusionCard.getAttribute('class'));
+ assert.equal((await snapshot()).offhand,'1d6');
+ assert.equal((await snapshot()).record.optional_features_catalog[0].disabled,true);
+ await style.click();
+ const action=page.locator('#learned-power-action-dialog');
+ await action.waitFor({state:'visible'});
+ assert.equal(await action.locator('input,select,[data-infusion-object-search]').count(),0);
+ await action.locator('[data-act="learned-power-apply"]').click();
+ await action.waitFor({state:'detached'});
+ assert.equal((await snapshot()).offhand,'1d6 + 3');
+ assert.equal((await snapshot()).record.power_applications[progression].length,1);
+ await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
+ assert.equal(await style.locator('.play-infusion-state.is-active').count(),1);
+ await style.click();
+ assert.equal(await action.locator('[data-act="learned-power-apply"]').innerText(),'Disattiva');
+ await action.locator('[data-act="learned-power-apply"]').click();await action.waitFor({state:'detached'});
+ assert.equal((await snapshot()).offhand,'1d6');
+ assert.equal((await snapshot()).record.power_selections[progression].learned.length,1);
+ assert.equal((await snapshot()).record.power_applications[progression].length,0);
+ await f.shot('fighting-style-infusion-shared-mobile');
+ await page.setViewportSize({width:1440,height:900});await f.shot('fighting-style-infusion-shared-desktop');
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
- console.log('PASS: Fighting Style learning shows and scrolls all rows on mobile/desktop, searches and saves selections');
+ console.log('PASS: Fighting Styles and infusions share visible cards and learners; manual application changes real effects, persists and needs no object');
 }finally{await f.close();}

@@ -56,7 +56,7 @@
       ],
       "layers": {
         "applied": {
-          "mode": "automatic",
+          "mode": "manual",
           "from": "learned"
         }
       },
@@ -79,7 +79,7 @@
       ],
       "layers": {
         "applied": {
-          "mode": "automatic",
+          "mode": "manual",
           "from": "learned"
         }
       },
@@ -126,7 +126,7 @@
       ],
       "layers": {
         "applied": {
-          "mode": "automatic",
+          "mode": "manual",
           "from": "learned"
         }
       },
@@ -265,7 +265,7 @@
       ],
       "layers": {
         "applied": {
-          "mode": "automatic",
+          "mode": "manual",
           "from": "learned"
         }
       },
@@ -288,7 +288,7 @@
       ],
       "layers": {
         "applied": {
-          "mode": "automatic",
+          "mode": "manual",
           "from": "learned"
         }
       },

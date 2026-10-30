@@ -3190,6 +3190,18 @@ function learningPickerOptionGroups(options,renderRow,levelOf,minLevel=0) {
 }
 function genericPowerSelectionPanels(c,calculated){
  return (calculated.power_selections||[]).filter(model=>model.ui==='generic'&&model.selection_kind!=='subtrait').map(model=>{
+  if(model.layers.learned&&model.layers.applied&&!model.layers.applied.automatic&&
+     model.source_type==='optionalfeature_progression'){
+   const known=model.layers.learned.selected,active=new Set(model.layers.applied.selected.map(selectedPowerId));
+   const byId=new Map(model.options.map(option=>[option.id,option]));
+   return panel(model.title,'<div class="learned-applied-options" data-selection-id="'+esc(model.id)+'">'+
+    '<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+model.layers.learned.limit+
+    '</strong><span>Applicate '+active.size+'</span></div>'+known.map(id=>{
+     const option=byId.get(selectedPowerId(id));
+     return '<div class="magic-spell-row infusion-entry" data-power-option-id="'+esc(option.id)+
+      '" data-option-active="'+active.has(option.id)+'"><span class="magic-spell-open">'+esc(option.name)+'</span></div>';
+    }).join('')+'</div>');
+  }
   const automaticallyApplied=model.layers?.applied?.automatic&&model.layers?.learned;
   // An automatically derived application is part of the learned choice;
   // displaying it again would duplicate rows and expose a meaningless toggle.
@@ -3279,6 +3291,29 @@ async function openGenericPowerSelectionDialog(id,stage){
   results.innerHTML=renderChoices(choices.filter(row=>
    matchesSearch(input.value,row.name,row.source)));
  });
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
+}
+async function openLearnedPowerActionDialog(selectionId,optionId){
+ const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
+ const calculated=await computeLocalData(record);
+ const model=calculated.power_selections.find(row=>row.id===selectionId);
+ const option=model?.options.find(row=>row.id===optionId);
+ if(!option||!model.layers.learned.selected.some(row=>selectedPowerId(row)===optionId))
+  throw Error('Opzione conosciuta non disponibile.');
+ const applied=model.layers.applied.selected.some(row=>selectedPowerId(row)===optionId);
+ let description=option.description||'';
+ if(!option._homebrew){
+  const detail=await detailedEntry('optional_features',{name:option.name,source:option.source,_category:'optional_features'});
+  description=flattenDescription(detail)||description;
+ }
+ app.querySelector('#learned-power-action-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='learned-power-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
+ dialog.dataset.powerSelectionId=selectionId;dialog.dataset.powerOptionId=optionId;dialog.dataset.creatureId=record.id;
+ dialog.innerHTML=actionDialogIntro(option.name,[{label:'Stato',value:applied?'Applicata':'Conosciuta'}],
+  description||'Descrizione non disponibile nel catalogo.',model.title,'learned-power-close')+
+  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="learned-power-apply">'+
+   (applied?'Disattiva':'Applica')+'</button><button type="button" class="btn" data-act="learned-power-close">Chiudi</button></div>';
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
 }
 async function openGenericPowerOptionPreview(id){
@@ -9213,6 +9248,21 @@ async function handleAction(target){
     return;
   }
 
+  if(act==='learned-power-open'){
+    await openLearnedPowerActionDialog(target.dataset.powerSelectionId,target.dataset.powerOptionId);return;
+  }
+  if(act==='learned-power-close'){
+    closeDialog(app.querySelector('#learned-power-action-dialog'),{remove:true});return;
+  }
+  if(act==='learned-power-apply'){
+    const dialog=app.querySelector('#learned-power-action-dialog'),record=state.editor?.read();
+    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)throw Error('Riapri il privilegio.');
+    const calculated=await computeLocalData(record),id=dialog.dataset.powerSelectionId,optionId=dialog.dataset.powerOptionId;
+    const model=calculated.power_selections.find(row=>row.id===id);
+    const applied=model?.layers.applied.selected.some(row=>selectedPowerId(row)===optionId);
+    await patch(powerApplicationPatch(record,calculated,calculated.power_selection_catalog,id,optionId,!applied));
+    closeDialog(dialog,{remove:true});await render();return;
+  }
   if(act==='power-selection-preview-close'){
     closeDialog(app.querySelector('#power-selection-preview'),{remove:true});return;
   }

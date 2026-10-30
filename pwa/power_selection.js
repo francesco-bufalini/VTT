@@ -2,7 +2,7 @@
 // spellbooks remain authoritative; adapters project them into one JSON contract.
 // A trigger describes when rules permit changing a choice, but never gates UI.
 import {infusionLimits,infusionGrantingTrait,learnedInfusions} from './item_controls.js';
-import {optionalFeatureSelectionModels,optionalFeatureSelectionPatch} from './optional_feature_progression.js';
+import {optionalFeatureSelectionModels,optionalFeatureSelectionPatch,optionalFeatureApplicationPatch} from './optional_feature_progression.js';
 
 const rows=value=>Array.isArray(value)?value:[];
 const low=value=>String(value??'').trim().toLowerCase();
@@ -215,6 +215,8 @@ export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,opt
 // application reserves one tracker charge, and removing it refunds exactly one.
 // No spell/metamagic application layer is created.
 export function powerApplicationPatch(record,calculated,catalog,id,optionId,apply,{itemIndex=-1}={}){
+ if(optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}).some(row=>row.id===id))
+  return optionalFeatureApplicationPatch(record,calculated,catalog.optionalFeatureProgressions,id,optionId,apply);
  const model=powerSelectionModels(record,calculated,catalog).find(row=>row.id===id);
  const rule=rows(catalog.selections).find(row=>row.id===id);
  const layer=model?.layers.applied,option=model?.options.find(row=>row.id===optionId);

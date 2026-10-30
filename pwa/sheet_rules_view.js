@@ -1119,6 +1119,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      granted&&trackerId?'data-magic-origin-tracker="'+esc(trackerId)+'"':'');
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
+  // Infusions and other learned/applied powers share the actual visible card.
+  const learnedOptionCard=(title,entries,controls,counters,empty)=>card(title,
+   '<div class="play-magic-selection">'+controls+'</div>'+entries.map(entry=>{
+    const status=entry.applied?'Attiva':'Conosciuta';
+    return '<div class="play-spell play-infusion-row"><button type="button" class="play-button" '+entry.attrs+
+     ' aria-label="Apri '+esc(entry.name)+' · '+status+'">'+icon('infusion')+
+     '<span class="play-infusion-name">'+esc(entry.name)+(entry.itemName?'<small>'+esc(entry.itemName)+'</small>':'')+'</span>'+
+     '<span class="play-infusion-state'+(entry.applied?' is-active':'')+'" title="'+status+'" aria-label="'+status+'">'+
+     '<span aria-hidden="true">'+(entry.applied?'✓':'○')+'</span></span></button></div>';
+   }).join('')+(entries.length?'':'<p class="play-empty">'+esc(empty)+'</p>'),
+   counters?'<div class="play-magic-source-resources" aria-label="Riepilogo '+esc(title)+'">'+counters+'</div>':'',
+   'play-magic-class-card play-infusion-card');
   originPanels.forEach((node,i)=>{
    if(heading(node).startsWith('Modelli di armatura')){
      bind('armor-models',node);
@@ -1142,6 +1154,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
        'play-magic-class-card play-infusion-card play-armor-model-card');
      return;
    }
+   if(node.querySelector('.learned-applied-options')){
+     const source=node.querySelector('.learned-applied-options'),id=source.dataset.selectionId;
+     bind('selection:'+i,node);
+     const counters=[...source.querySelector('.infusion-overview')?.children||[]]
+      .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
+     const entries=[...source.querySelectorAll('.infusion-entry')].map(row=>({
+      name:row.querySelector('.magic-spell-open').textContent.trim(),applied:row.dataset.optionActive==='true',
+      attrs:'data-act="learned-power-open" data-power-selection-id="'+esc(id)+'" data-power-option-id="'+esc(row.dataset.powerOptionId)+'"'
+     }));
+     html+=learnedOptionCard(heading(node),entries,
+      btn('Impara '+heading(node),'book','data-act="power-selection-open" data-power-selection-id="'+esc(id)+'" data-power-stage="learned"','<span>Impara</span>'),
+      counters,'Nessuna opzione conosciuta.');
+     return;
+   }
    if(node.querySelector('.power-selection-stage')){
      bind('selection:'+i,node);
      const controls=[...node.querySelectorAll('[data-act="power-selection-open"]')]
@@ -1159,25 +1185,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      bind('infusions',node);
      const counters=[...node.querySelector('.infusion-overview')?.children||[]]
        .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
-     const known=[...node.querySelectorAll('.infusion-entry')];
-     const rows=known.map(row=>{
-       const index=row.dataset.infusionIndex;
-       const applied=row.dataset.infusionActive==='true';
-       const name=row.querySelector('.magic-spell-open')?.firstChild?.textContent?.trim()||'Infusione';
-       const itemName=row.querySelector('.magic-spell-open>small:not(.infusion-status)')?.textContent.trim()||'';
-       const status=applied?'Attiva':'Conosciuta';
-       return '<div class="play-spell play-infusion-row"><button type="button" class="play-button" data-act="infusion-open" data-index="'+esc(index)+'" aria-label="Apri '+esc(name)+' · '+status+'">'+
-         icon('infusion')+'<span class="play-infusion-name">'+esc(name)+
-         (itemName?'<small>'+esc(itemName)+'</small>':'')+'</span>'+
-         '<span class="play-infusion-state'+(applied?' is-active':'')+'" title="'+status+'" aria-label="'+status+'"><span aria-hidden="true">'+(applied?'✓':'○')+'</span></span>'+
-         '</button></div>';
-     }).join('');
-     html+=card('Infusioni',
-       '<div class="play-magic-selection">'+
-       btn('Impara infusioni','book','data-act="infusion-picker-open" data-mode="learn"','<span>Impara</span>')+'</div>'+
-       (rows||'<p class="play-empty">Nessuna infusione conosciuta.</p>'),
-       counters?'<div class="play-magic-source-resources" aria-label="Riepilogo infusioni">'+counters+'</div>':'',
-       'play-magic-class-card play-infusion-card');
+     const entries=[...node.querySelectorAll('.infusion-entry')].map(row=>({
+      name:row.querySelector('.magic-spell-open')?.firstChild?.textContent?.trim()||'Infusione',
+      itemName:row.querySelector('.magic-spell-open>small:not(.infusion-status)')?.textContent.trim()||'',
+      applied:row.dataset.infusionActive==='true',attrs:'data-act="infusion-open" data-index="'+esc(row.dataset.infusionIndex)+'"'
+     }));
+     html+=learnedOptionCard('Infusioni',entries,
+      btn('Impara infusioni','book','data-act="infusion-picker-open" data-mode="learn"','<span>Impara</span>'),
+      counters,'Nessuna infusione conosciuta.');
      return;
    }
    const key='power:'+i;

@@ -615,7 +615,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
    record.hand_grip_two_handed&&hasProperty(main,'V'))&&record.hand_off_with_two_handed!==true);
  const off=offBlocked?null:physicalOff;
  const offAllowed=offhandAttackAllowed(record,main,off);
- const style=record.two_weapon_fighting||['fighting_styles','proficiency_choices','proficiency_origins','selected_features','feats_catalog','trait_choices'].some(field=>arr(record[field]).some(row=>{
+ const style=record.two_weapon_fighting||['fighting_styles','optional_features_catalog','proficiency_choices','proficiency_origins','selected_features','feats_catalog','trait_choices'].some(field=>arr(record[field]).some(row=>{
    if(row?.disabled)return false;
    const label=typeof row==='string'?row:[row?.name||row?.label||row?.key||'',...['fighting_style','fightingStyle','selected_style','selected','choice'].map(k=>typeof row?.[k]!=='boolean'?row?.[k]||'':'')].join(' ');
    return label.toLowerCase().includes('two-weapon fighting');
