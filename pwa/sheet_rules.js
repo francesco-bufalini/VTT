@@ -1350,8 +1350,9 @@ function calculateSheetValues(record={},catalogs={}){
   // A class table defines progression, never the entitlement to cast.
   // If class-feature metadata is missing offline, fail closed instead of
   // granting class slots from class and level alone.
-  const spellcastingMembers=castingClasses(record,classesCatalog,
-    Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])),features);
+  const spellcastingMembers=catalogs.classFeatures?
+    castingClasses(record,classesCatalog,
+      Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])),features):[];
   if(classes.length&&!catalogs.classFeatures)
     warnings.add('Catalogo tratti di classe non disponibile: slot di classe sospesi');
   const progression=spellProgression(record,spellcastingMembers);
