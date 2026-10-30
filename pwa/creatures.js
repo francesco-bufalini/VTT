@@ -68,8 +68,14 @@ export async function saveCreature(creature, scope = "default", expectedRevision
   } else if (expectedRevision !== null && expectedRevision !== 0) {
     throw new Error("Creature no longer exists");
   }
-  return putRecord(requiredScope(scope), CREATURE_TYPE, record.id, record,
+  if(globalThis.__vttHpTrace)globalThis.__vttHpTrace.push({step:'save start',
+    hp:record.current_hp,temp:record.temporary_hp,revision:expectedRevision,
+    at:performance.now(),stack:new Error().stack?.split('\n').slice(2,6)});
+  const saved=await putRecord(requiredScope(scope), CREATURE_TYPE, record.id, record,
     expectedRevision === null ? 0 : expectedRevision);
+  if(globalThis.__vttHpTrace)globalThis.__vttHpTrace.push({step:'save end',
+    hp:saved.data.current_hp,temp:saved.data.temporary_hp,revision:saved.revision,at:performance.now()});
+  return saved;
 }
 
 export async function createCreature(kind = "character", name = "Nuova creatura", scope = "default", miniature = null) {
