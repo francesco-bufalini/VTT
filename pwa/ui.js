@@ -3084,15 +3084,19 @@ const selectedPowerLabel=(option,selection)=>{
  return label+(details?' · '+details:'');
 };
 const powerLayerNames={learned:'Imparati',prepared:'Preparati',applied:'Applicati'};
-function learningSelectionDialogBody({title,closeAction,summary,searchLabel,searchAttribute,resultsClass,results='',extra=''}) {
+function learningSelectionDialogBody({title,closeAction,summary='',searchLabel,searchAttribute,resultsClass='',resultsId='',results='',filters='',extra='',footer=true}) {
  return '<div class="magic-tools-head"><h2>'+esc(title)+'</h2>'+
    dialogCloseButton(closeAction,'Chiudi','magic-tool-close')+'</div>'+
-   '<div class="magic-tools-body"><p class="magic-selection-warning">'+esc(summary)+'</p>'+
+   '<div class="magic-tools-body">'+
+   (summary?'<p class="magic-selection-warning" role="status">'+esc(summary)+'</p>':'')+
+   (filters?filters:'')+
    '<label class="vtt-list-search magic-editor-search">'+esc(searchLabel)+
    '<input type="search" '+searchAttribute+' autocomplete="off" placeholder="Nome o fonte"></label>'+
-   '<div class="catalog-results vtt-selection-list magic-editor-results '+esc(resultsClass)+
+   '<div '+(resultsId?'id="'+esc(resultsId)+'" ':'')+
+   'class="catalog-results vtt-selection-list magic-editor-results '+esc(resultsClass)+
    '" role="list">'+results+'</div>'+extra+
-   '<div class="actions"><button type="button" class="btn" data-act="'+esc(closeAction)+'">Chiudi</button></div></div>';
+   (footer?'<div class="actions"><button type="button" class="btn" data-act="'+esc(closeAction)+'">Chiudi</button></div>':'')+
+   '</div>';
 }
 // The Fighting Style chooser uses exactly the same option rows and level
 // grouping as the Artificer's infusion learner; only its actions differ.
@@ -3125,7 +3129,7 @@ function optionBenefitPanels(c,calculated){
    '<span>'+esc(powerLayerNames[stage]||stage)+' '+layer.selected.length+(layer.limit===null?'':' / '+layer.limit)+
    (layer.change_label?' · '+esc(layer.change_label):'')+'</span>').join('');
   const controls=Object.entries(model.layers).filter(([stage,layer])=>stage!=='applied'&&layer.enabled&&!layer.automatic).map(([stage])=>
-   '<button type="button" class="btn" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+stage+'">'+
+   '<button type="button" class="btn small magic-selection-button" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+stage+'">'+
    (stage==='learned'?'Impara':'Prepara')+'</button>').join('');
   return panel(model.title,'<div class="benefit-option-list" data-selection-id="'+esc(model.id)+'">'+
    '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(id=>{
@@ -3187,8 +3191,8 @@ async function openBenefitSelectionDialog(id,stage){
   searchLabel:'Cerca '+model.title,searchAttribute:'data-power-search',
   resultsClass:'learning-picker-results power-selection-results',
   results:renderChoices(choices),
-  extra:(model.description?'<p class="hint">'+esc(model.description)+'</p>':'')+
-   (model.allow_custom&&stage==='learned'?'<div class="benefit-custom-option"><label>Nome capacità homebrew<input data-power-custom-name maxlength="80"></label><label>Descrizione<textarea data-power-custom-description maxlength="2000"></textarea></label><button type="button" class="btn" data-act="power-selection-custom">Aggiungi capacità homebrew</button></div>':'')
+  extra:stage==='learned'?'':(model.description?'<p class="hint">'+esc(model.description)+'</p>':''),
+  footer:stage!=='learned'
  });
  // Render filtered choices just like the infusion learner. Hiding individual
  // rows is unreliable because the shared list stylesheet uses display:grid!important.
@@ -3838,12 +3842,10 @@ function magicToolsDialog(c,calculated){
    {current:knownProgress.known,expected:knownProgress.minimum}:null;
  const knownCantrips=selectedMember&&Number.isInteger(selectedMember.cantrips)&&selectedMember.cantrips>=0?
    {current:counts.cantrips,expected:selectedMember.cantrips}:null;
- const learningWarn=Boolean((knownLevels&&knownLevels.current!==knownLevels.expected)||
-   (knownCantrips&&knownCantrips.current!==knownCantrips.expected));
- const learningWarning=selectedMember&&learningWarn?'<p class="magic-selection-warning" role="status">'+
-   [knownLevels?'Conosciuti: '+knownLevels.current+' / '+knownLevels.expected:'',
-    knownCantrips?'Trucchetti conosciuti: '+knownCantrips.current+' / '+knownCantrips.expected:'']
-    .filter(Boolean).join(' · ')+'</p>':'';
+ const learningSummary=[
+   knownLevels?'Conosciuti: '+knownLevels.current+' / '+knownLevels.expected:'',
+   knownCantrips?'Trucchetti conosciuti: '+knownCantrips.current+' / '+knownCantrips.expected:''
+  ].filter(Boolean).join(' · ');
  const learnClassFilter='<label class="magic-learn-filter"><span>Filtra per classe</span>'+
    '<select id="spell-learn-filter" aria-label="Filtra per classe">'+
    spellLearningFilterOptions()+'</select></label>';
@@ -3852,17 +3854,13 @@ function magicToolsDialog(c,calculated){
    '<div id="spell-results" class="catalog-results vtt-selection-list magic-editor-results">'+renderSpellResults()+'</div>';
  const preparation=
    (selectedMember?
-     '<button type="button" class="magic-learn-link" data-act="magic-learn-open">'+
-     actionGlyph('book')+'<span>Impara / dimentica incantesimi</span><span aria-hidden="true">›</span></button>':'')+
+     '<button type="button" class="btn small magic-selection-button" data-act="magic-learn-open">Impara / dimentica incantesimi</button>':'')+
    preparationWarning+
    '<section class="magic-selection-current"><h3>'+esc(selectedMember?.mode==='Preparati'?'Preparati':'Conosciuti / disponibili')+'</h3>'+
    spellList(c,selectedTarget,selectedMember?.id||null,calculated.casting_classes,
      {includeSlots:false,minLevel:selectedMember?.mode==='Preparati'?1:0})+'</section>'+
    searchInput+searchResults;
- const learning=learningWarning+
-   '<div class="magic-editor-filters">'+learnClassFilter+searchInput+'</div>'+
-   searchResults;
- const catalog=kind==='learn'?learning:preparation;
+ const catalog=preparation;
  const chosenLevel=Number(state.magicSlotLevel);
  const chosenPact=Boolean(state.magicSlotPact);
  const chosenSlot=chosenPact?calculated.pact_slots:
@@ -3909,6 +3907,17 @@ function magicToolsDialog(c,calculated){
  };
  if(!views[kind])return '';
  const [title,content]=views[kind];
+ if(kind==='learn'){
+  // The same known-options picker is used by spells, infusions, styles and maneuvers.
+  return '<dialog id="magic-tools-dialog" class="sheet-roll-dialog magic-tools-dialog benefit-selection-dialog" aria-label="'+esc(title)+'">'+
+   learningSelectionDialogBody({
+    title,closeAction:'magic-tool-close',summary:learningSummary,
+    filters:learnClassFilter,searchLabel:'Cerca incantesimo',
+    searchAttribute:'id="spell-search" value="'+esc(state.spellQuery)+'"',
+    resultsId:'spell-results',resultsClass:'learning-picker-results',
+    results:renderSpellResults(),footer:false
+   })+'</dialog>';
+ }
  return '<dialog id="magic-tools-dialog" class="sheet-roll-dialog magic-tools-dialog" aria-label="'+esc(title)+'">'+
    '<div class="magic-tools-head"><h2>'+esc(title)+'</h2>'+
    dialogCloseButton('magic-tool-close','Chiudi '+title,'magic-tool-close')+'</div>'+

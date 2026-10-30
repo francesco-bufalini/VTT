@@ -39,6 +39,10 @@ try{
   await openPicker();
   const dialog=page.locator('#power-selection-dialog');
   await dialog.waitFor({state:'visible'});
+  assert.equal(await dialog.locator('.benefit-custom-option, [data-power-custom-name]').count(),0,
+    'No homebrew creator below the known-options list');
+  assert.equal(await dialog.locator('[data-act="power-selection-close"]').count(),1,
+    'The header close control is sufficient; no footer follows the list');
   const results=dialog.locator('.learning-picker-results');
   const geometry=await results.evaluate(root=>{
    const r=root.getBoundingClientRect(),rows=[...root.querySelectorAll('.magic-catalog-row')];
@@ -108,8 +112,36 @@ try{
  assert.equal((await snapshot()).offhand,'1d6');
  assert.equal((await snapshot()).record.power_selections[progression].learned.length,1);
  assert.equal((await snapshot()).record.power_applications[progression].length,0);
+ const featureOpenerClass=await opener.getAttribute('class');
  await f.shot('fighting-style-infusion-shared-mobile');
  await page.setViewportSize({width:1440,height:900});await f.shot('fighting-style-infusion-shared-desktop');
+ // A separate Wizard checks the spell picker without changing Fighting Style data.
+ await page.goto(origin);
+ await page.evaluate(async()=>{
+  const {createCreature,saveCreature}=await import('/creatures.js');
+  const saved=await createCreature('character','Spell learner layout');
+  await saveCreature({...saved.data,rules_version:'2014',class:'Wizard',class_source:'PHB',
+   level:5,classes:[{name:'Wizard',source:'PHB',level:5}],
+   abilities:{str:10,dex:14,con:12,int:18,wis:12,cha:10}},'default',saved.revision);
+ });
+ await page.reload();
+ await page.locator('[data-act="open"][aria-label="Apri scheda di Spell learner layout"]').click();
+ await sheet('magic');
+ // The visible sheet proxies the native spell action via data-act=sheet-proxy.
+ const spellOpen=page.locator('#sheet-play-view .play-magic-class-card:not(.play-infusion-card) .play-magic-selection .play-button')
+  .filter({hasText:/Gestisci incantesimi conosciuti|Impara.*incantesimi/i}).first();
+ assert.equal(await spellOpen.getAttribute('class'),featureOpenerClass,
+  'Spells and optional features use the same opener button styling');
+ await spellOpen.click();
+ const spellPicker=page.locator('#magic-tools-dialog');
+ await spellPicker.waitFor({state:'visible'});
+ assert.equal(await spellPicker.locator('.learning-picker-results').count(),1,
+  'Spells use the same grouped, scrolling learning list');
+ assert.equal(await spellPicker.locator('#spell-search').count(),1);
+ assert.equal(await spellPicker.locator('#spell-learn-filter').count(),1);
+ assert.equal(await spellPicker.locator('.magic-tools-body > .actions').count(),0,
+  'The spell learner has no footer below the choices');
+ await spellPicker.locator('[data-act="magic-tool-close"]').first().click();
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
  console.log('PASS: Fighting Styles and infusions share visible cards and learners; manual application changes real effects, persists and needs no object');
 }finally{await f.close();}
