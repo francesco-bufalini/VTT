@@ -2680,11 +2680,10 @@ async function traitsView(c){
   const benefitCount=(benefitsByTrait.get(trait.key)||[])
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
-  const subtraits=pendingChoicesModule.permanentSubtraitsForTrait?.(trait,c,state.calculated?.pending_choices||[],state.calculated?.power_selections||[])||[];
+  const subtraits=pendingChoicesModule.permanentSubtraitsForTrait?.(trait,c,state.calculated?.pending_choices||[])||[];
   const nested=subtraits.length?'<div class="trait-subtraits" aria-label="Sotto-tratti e scelte permanenti">'+subtraits.map(sub=>
-   '<button type="button" class="trait-subtrait trait-subtrait--depth-'+Math.min(2,sub.depth)+'" data-act="'+(sub.kind==='power'?'power-selection-open':'pending-choice-open')+'"'+
-   (sub.kind==='power'?' data-power-selection-id="'+esc(sub.model_id)+'" data-power-stage="'+esc(sub.stage)+'"':
-    ' data-choice-id="'+esc(sub.choice_id)+'"')+(active?'':' disabled')+'>'+ 
+   '<button type="button" class="trait-subtrait trait-subtrait--depth-'+Math.min(2,sub.depth)+'" data-act="pending-choice-open"'+
+    ' data-choice-id="'+esc(sub.choice_id)+'"'+(active?'':' disabled')+'>'+
     '<span class="trait-subtrait-mark" aria-hidden="true">└</span><span class="trait-subtrait-copy"><span class="trait-subtrait-title">'+esc(sub.title)+'</span>'+ 
     '<small>'+esc(sub.selection)+'</small></span><span class="trait-subtrait-chevron" aria-hidden="true">›</span></button>').join('')+'</div>':'';
   // Panoramica retains general origin benefits in the same editable popup.
@@ -3196,6 +3195,8 @@ function genericPowerSelectionPanels(c,calculated){
 async function openGenericPowerSelectionDialog(id,stage){
  const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(record);
+ const permanent=calculated.pending_choices.find(choice=>choice.model_id===id&&choice.stage===stage);
+ if(permanent)return openCharacterChoice(permanent);
  const model=calculated.power_selections?.find(row=>row.id===id&&row.ui==='generic');
  const layer=model?.layers?.[stage];
  if(!layer||layer.automatic||!['learned','prepared','applied'].includes(stage))
@@ -3225,8 +3226,7 @@ async function openGenericPowerSelectionDialog(id,stage){
     fields+'<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
     '" data-act="power-selection-toggle" data-power-option-id="'+esc(option.id)+'"'+
     (required?' disabled title="Opzione obbligatoria"':'')+' aria-pressed="'+owned+'">'+
-    (required?'Obbligatoria':model.selection_kind==='subtrait'?(owned?(sub?'Aggiorna':'Rimuovi'):'Scegli'):
-     owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
+    (required?'Obbligatoria':owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
      stage==='learned'?'+ Impara':stage==='prepared'?'+ Prepara':'+ Applica')+'</button>'+
     (owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
     ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':'')+'</div>';
@@ -3247,8 +3247,7 @@ async function openGenericPowerSelectionDialog(id,stage){
   (record.inventory||[]).flatMap((item,index)=>Number(item.quantity??1)>0?
    ['<option value="'+index+'">'+esc(item.name||item.id||'Oggetto')+'</option>']:[]).join('')+
   '</select></label>':'';
- const stageTitle=model.selection_kind==='subtrait'?'Scegli · '+model.title:
-  stage==='learned'?'Impara '+model.title:
+ const stageTitle=stage==='learned'?'Impara '+model.title:
   stage==='prepared'?'Prepara '+model.title:'Applica '+model.title;
  dialog.innerHTML=learningSelectionDialogBody({
   title:stageTitle,closeAction:'power-selection-close',
@@ -6437,7 +6436,11 @@ function openPendingChoiceDialog(choice){
      '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
      '><span class="vtt-choice-check" aria-hidden="true">✓</span><span>'+esc(label)+'</span>'+
      (known.has(key)?'<span class="pending-choice-known" title="Competenza già posseduta" aria-label="Competenza già posseduta">✓</span>':'')+
-     '</label>';
+     '</label>'+Array.from({length:choice.option_rows?.[key]?.subchoices?.count||0},(_,i)=>
+       '<label class="pending-choice-detail" data-pending-detail-for="'+esc(key)+'">'+
+       esc(choice.option_rows[key].subchoices.placeholder||'Scelta')+' '+(i+1)+
+       '<input type="text" maxlength="70" data-pending-option="'+esc(key)+'" data-pending-detail="'+i+'" value="'+
+       esc(choice.subchoices?.[key]?.[i]||'')+'"></label>').join('');
  }).join('');
  const customValues=choice.custom_values||[];
  const customRow=choice.custom_allowed?
@@ -6470,7 +6473,11 @@ function openPendingChoiceDialog(choice){
    const customNames=customChecked?(custom?.value||'').split(',').map(x=>x.trim()).filter(Boolean):[];
    if(custom)custom.disabled=!customChecked;
    const total=checked.filter(row=>row.value!=='__custom__').length+customNames.length;
-   const invalid=(customChecked&&(!customNames.length||customNames.some(name=>name.length>80)))||
+   const detailsInvalid=[...dialog.querySelectorAll('[data-pending-detail-for]')].map(row=>{
+     const chosen=checked.some(input=>input.value===row.dataset.pendingDetailFor);
+     row.hidden=!chosen;return chosen&&!row.querySelector('input').value.trim();
+   }).some(Boolean);
+   const invalid=detailsInvalid||(customChecked&&(!customNames.length||customNames.some(name=>name.length>80)))||
      total>choice.count||new Set(customNames.map(x=>x.toLowerCase())).size!==customNames.length;
    const progress=dialog.querySelector('.pending-choice-progress');
    if(progress)progress.textContent=total+' / '+choice.count+' selezionate'+
@@ -6482,6 +6489,7 @@ function openPendingChoiceDialog(choice){
    if(save)save.disabled=invalid;
  };
  dialog.addEventListener('change',update);
+ dialog.addEventListener('input',update);
  dialog.querySelector('[data-pending-filter]')?.addEventListener('input',event=>{
    const query=String(event.target.value||'').trim().toLocaleLowerCase();
    for(const row of dialog.querySelectorAll('.pending-choice-options .pending-choice-option'))
@@ -6963,7 +6971,10 @@ async function handleAction(target){
     const fresh=await computeLocalData(current);
     const live=fresh.pending_choices.find(row=>row.id===choice.id);
     if(!live)throw Error('Il privilegio non concede più questa scelta.');
-    const update=savePendingChoice(current,live,selected);
+    const details=Object.fromEntries(selected.map(id=>[id,
+      [...dialog.querySelectorAll('[data-pending-option]')].filter(input=>input.dataset.pendingOption===id)
+        .map(input=>input.value)]));
+    const update=savePendingChoice(current,live,selected,details);
     await patch(update);
     dialog.remove();await render();
     if(live.kind==='subclass'||live.kind==='subrace')return;

@@ -107,6 +107,8 @@ export function addFeatWithOrigin(record={},entry={},selectedOrigin='',calculate
   changes.advancement_choices=[
    ...rows(record.advancement_choices).filter(row=>row.origin_id!==origin.id),
    {origin_id:origin.id,mode:'feat'}];
+  changes.formula_bonuses=rows(record.formula_bonuses).filter(row=>
+   !String(row.id||'').startsWith('trait:choice:ability:'+origin.id+':'));
   changes.origin_ability_choices=rows(record.origin_ability_choices)
    .filter(row=>row.origin_id!==origin.id);
   if(previous){

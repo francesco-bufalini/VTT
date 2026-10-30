@@ -1,3 +1,4 @@
+import {migrateAdvancementBonuses} from './ability_choice_rules.js';
 import {monsterTraits,bindMonsterTrackers,monsterAttackOwner} from './monster_traits.js';
 import {SKILLS} from './skill_definitions.js';
 import {variantFamilyAbilityGrants} from './species_variant_families.js';
@@ -862,9 +863,10 @@ function calculateSheetValues(record={},catalogs={}){
       return [...activeItemCopies.keys()].find(id=>sid.startsWith('feature:trait:'+id+'|'))||'';
     return '';
   };
+  const features=collectStructuredFeatures(record,catalogs);
+  record={...record,...migrateAdvancementBonuses(record,features,index||{})};
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
-  const features=collectStructuredFeatures(record,catalogs);
   features.push(...racialBonusFeatures(record,catalogs.speciesConditionalBonuses||{},features));
   const racialPowers=racialPowerProjection(record,catalogs.speciesPowers||{},features);
   features.push(...racialPowers.features);
@@ -902,21 +904,8 @@ function calculateSheetValues(record={},catalogs={}){
       ['spellcasting','pact magic'].includes(String(feature.name||'').toLowerCase())&&
       featureEnabled(record,feature));
   };
-  // Each class advancement belongs to its own level-specific ASI feature.
-  const advancements=features.flatMap(feature=>{
-    if(!featureEnabled(record,feature))return [];
-    const policy=arr(index?.advancement_rules).find(rule=>
-      same(rule.feature_name,feature.name)&&arr(rule.sources).some(source=>
-      same(source,feature.class_source||String(feature.origin_key||'').split('|')[1])));
-    if(!policy)return [];
-    const owned=arr(record.advancement_choices).find(row=>row.origin_id===feature.origin_id);
-    if(owned?.mode!=='ability')return [];
-    return effectiveAllocations(record,feature.origin_id,allocationVariants(policy.ability_choices))
-      .map(({ability,amount})=>numericGrant(feature.origin_id,
-        'Tratto · '+feature.name,'advancement','ability:'+ability,amount)).filter(Boolean);
-  });
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...advancements,...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows),...barbarian.numeric_grants];
+    ...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows),...barbarian.numeric_grants];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
@@ -1216,7 +1205,12 @@ function calculateSheetValues(record={},catalogs={}){
            (!source||!x.source||same(x.source,source))))return false;
       }
     }
-    if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
+    if(sid.startsWith('feature:')){
+      const owner=features.find(feature=>feature.origin_id===sid);
+      if(owner)return featureEnabled(record,owner);
+      return !sid.startsWith('feature:class|');
+    }
+    if(sid.startsWith('tracker:auto:'))return true;
     // A generated infusion is a separate, verifiable equipment origin, not
     // an unknown manual bonus or an unconditional class privilege.
     if(sid.startsWith("infusion:"))return activeInfusions(record,index?.artificer_infusions||[],features)

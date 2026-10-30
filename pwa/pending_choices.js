@@ -1,3 +1,4 @@
+import {permanentPowerChoices,savePermanentPowerChoice} from './power_selection.js';
 import {expandedSpellFeatOptions} from './feat_picker.js';
 import {FEATURE_FEAT_GRANTS} from './catalog/feature_feat_grants.js';
 // Structured, still-unresolved character choices. Mirrors the native
@@ -8,11 +9,10 @@ import {SKILLS,localClasses} from './sheet_rules.js';
 import {referencePatch,rowReferencePatch} from './native_sheet.js';
 import {traitBenefitSources} from './trait_benefits.js';
 import {contentForRules} from './source_edition.js';
-import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants,savedAllocation} from './ability_choice_rules.js';
+import {migrateAdvancementBonuses,originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants} from './ability_choice_rules.js';
 import {selectedSpeciesDefenseRules} from './species_defenses.js';
 import {classDefenseChoices} from './class_defenses.js';
 import {dragonbornFtdChoice,dragonbornFtdSaveChoice} from './dragonborn_ftd.js';
-
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
 const abilities=['str','dex','con','int','wis','cha'];
@@ -45,7 +45,6 @@ const presentRows=(record,id,kind)=>arr(record.proficiency_choices).filter(row=>
   row?.origin_id===id&&row.kind===kind&&!row.disabled&&
   !(kind==='language'&&norm(row.key)==='other'));
 const unique=values=>[...new Set(values.filter(Boolean))];
-
 // The native picker combines the canonical catalogs with explicit "from"
 // values. Supplement its small vocabularies for unrestricted 5etools choices.
 const languageCatalog=(record,index)=>contentForRules(arr(index?.languages),record?.rules_version||'2014');
@@ -158,7 +157,6 @@ export function singleNewPendingChoice(before=[],after=[],completed={}){
  const fresh=next.filter(row=>row?.id&&!seen.has(row.id)&&Number(row.remaining)>0);
  return fresh.length===1?fresh[0]:null;
 }
-
 export function pendingLineageChoices(record={},calculated={},catalogs={}){
  const result=[],classes=localClasses(record);
  const subclasses=contentForRules(arr(catalogs.subclasses),record.rules_version);
@@ -208,6 +206,8 @@ export function pendingLineageChoices(record={},calculated={},catalogs={}){
  return result;
 }
 export function pendingCharacterChoices(record={},calculated={},catalogs={}){
+ const migration=migrateAdvancementBonuses(record,arr(calculated.features),catalogs.abilityGrants||{});
+ record={...record,...migration};
  const result=pendingLineageChoices(record,calculated,catalogs),
    index=calculated.proficiency_catalog_overrides||catalogs.proficiencyGrants||{};
  for(const source of selectedSources(record,index,calculated.features??null)){
@@ -339,27 +339,37 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
   if(!rule)continue;
   const sid=feature.origin_id,owned=arr(record.advancement_choices).find(x=>x.origin_id===sid);
   const mode=owned?.mode,variants=allocationVariants(rule.ability_choices);
-  // The choice of a sub-trait is a single permanent decision. Existing
-  // advancement_choices and origin_ability_choices remain the source of truth.
-  const direct=rule.feat_alternative===true&&variants.length>0;
-  const variant=direct?savedAllocation(record,sid,variants).variant:-1;
-  const selected=direct?
-    mode==='feat'?['feat']:mode==='ability'&&variant>=0?['ability:'+variant]:[]:
-    mode?[mode]:[];
+  // Older sheets retain their allocation until the next explicit save. New
+  // choices use normal formula bonuses, never origin_ability_choices.
+  const variant=Number.isInteger(owned?.variant)?owned.variant:-1;
+  const selected=mode==='feat'?['feat']:mode==='ability'&&variant>=0?['ability:'+variant]:[];
   result.push({id:'advancement-mode:'+sid,kind:'advancement_mode',origin_id:sid,
     name:feature.name+' · livello '+feature.level,
-    label:'Scegli sotto-tratto',count:1,subtrait_variant:direct,
-    selected,options:direct?[...variants.map((_,i)=>'ability:'+i),'feat']:
-      rule.feat_alternative?['ability','feat']:['ability'],
-    option_labels:direct?Object.fromEntries([
+    label:'Scegli sotto-tratto',count:1,
+    selected,options:[...variants.map((_,i)=>'ability:'+i),...(rule.feat_alternative?['feat']:[])],
+    option_labels:Object.fromEntries([
       ...variants.map((v,i)=>['ability:'+i,v.parts.map(part=>'+'
         +part.amount+' a '+part.count+
         (part.count===1?' caratteristica':' caratteristiche')).join(' e ')]),
       ['feat','Talento'+(rule.feat_optional?' (regola opzionale)':'')]
-    ]):{ability:'Incrementa le caratteristiche',feat:'Scegli un talento'+(rule.feat_optional?' (regola opzionale)':'')},
-    remaining:selected.length?0:1});
-  if(mode==='ability')result.push(...allocationChoiceRows(record,sid,feature.name,variants)
-    .filter(choice=>!direct||choice.kind!=='ability_mode'));
+    ]),remaining:selected.length?0:1});
+  if(mode==='ability'&&variants[variant]){
+   const parts=variants[variant].parts;
+   const selectedParts=parts.map((part,i)=>{
+    const id='ability:'+sid+':'+i;
+    return arr(record.formula_bonuses)
+      .filter(row=>String(row.id||'').startsWith('trait:choice:'+id+':')&&!row.disabled).map(row=>String(row.target).slice('ability:'.length));
+   });
+   for(const [part,partRule] of parts.entries())result.push({
+    id:'ability:'+sid+':'+part,kind:'bonus',origin_id:sid,name:feature.name,
+    label:'Incremento +'+partRule.amount,amount:partRule.amount,
+    requirements:{scope:'class',class_name:feature.class_name||String(feature.origin_key||'').split('|')[2],
+      class_source:feature.class_source||String(feature.origin_key||'').split('|')[1],min_level:feature.level},
+    target_prefix:'ability:',count:partRule.count,options:partRule.options,
+    selected:selectedParts[part],remaining:Math.max(0,partRule.count-selectedParts[part].length),
+    exclusive:variants[variant].distinct,
+    used_elsewhere:selectedParts.flatMap((values,i)=>i===part?[]:values)});
+  }
   if(mode==='feat'){
    const baseAvailable=Object.entries(catalogs.originDetails?.feats||{}).map(([key])=>{
     const cut=key.lastIndexOf('|');return cut<0?null:
@@ -442,7 +452,8 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
       .map(row=>row.spell_id),options:[],remaining:Math.max(0,Number(choice.remaining)||0),
     source_choice_id:choice.id});
  }
- return result;
+ result.push(...permanentPowerChoices(record,calculated,catalogs.powerSelections||{}));
+ return Object.keys(migration).length?result.map(choice=>({...choice,migration_patch:migration})):result;
 }
 // A choice picker may contain already-owned proficiencies from any source,
 // including fixed grants and the current character's selected proficiencies.
@@ -461,8 +472,12 @@ export function choicesForTrait(trait,record,choices=[]){
  const origins=traitBenefitSources(trait,record);
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
-export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace'].includes(choice.kind))throw Error('Scelta non valida.');
+export function savePendingChoice(record,choice,values=[],details={}){
+ if(choice?.migration_patch){
+  const {migration_patch,...current}=choice;
+  return {...migration_patch,...savePendingChoice({...record,...migration_patch},current,values,details)};
+ }
+ if(!choice||!['permanent_power','bonus','ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):
    ['subclass','subrace'].includes(choice.kind)?String(value):strip(value)));
@@ -479,6 +494,7 @@ export function savePendingChoice(record,choice,values=[]){
        /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||
        arr(choice.excluded_options).includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
+ if(choice.kind==='permanent_power')return savePermanentPowerChoice(record,choice,selected,details);
  if(choice.kind==='subclass'||choice.kind==='subrace'){
    if(selected.length!==1||!choice.options.includes(selected[0])||!choice.option_rows?.[selected[0]])
      throw Error('Scegli una variante valida.');
@@ -497,22 +513,16 @@ export function savePendingChoice(record,choice,values=[]){
   const advancements=arr(record.advancement_choices).filter(row=>row.origin_id!==choice.origin_id);
   const otherFeats=arr(record.feats_catalog).filter(row=>row?.granted_by!==choice.origin_id);
   if(choice.kind==='advancement_mode'){
-   const picked=selected[0]||'',direct=choice.subtrait_variant===true;
-   const mode=direct?(picked.startsWith('ability:')?'ability':picked):picked;
-   if(mode)advancements.push({origin_id:choice.origin_id,mode});
-   const original=arr(record.origin_ability_choices);
-   const prior=original.find(row=>row.origin_id===choice.origin_id);
-   const remaining=original.filter(row=>row.origin_id!==choice.origin_id);
-   if(direct&&mode==='ability'){
-    const variant=Number(picked.slice('ability:'.length));
-    if(!Number.isInteger(variant)||variant<0||!choice.options.includes(picked))
-     throw Error('Sotto-tratto non valido.');
-    remaining.push(prior?.variant===variant&&previous?.mode==='ability'?prior:
-      {origin_id:choice.origin_id,variant,allocations:[]});
-   }
-   return {advancement_choices:advancements,feats_catalog:mode==='feat'&&previous?.mode==='feat'?
-     arr(record.feats_catalog):otherFeats,
-     origin_ability_choices:remaining};
+   const picked=selected[0]||'';
+   const mode=picked.startsWith('ability:')?'ability':picked;
+   const variant=mode==='ability'?Number(picked.slice('ability:'.length)):undefined;
+   if(mode)advancements.push({origin_id:choice.origin_id,mode,...(mode==='ability'?{variant}: {})});
+   const unchanged=previous?.mode===mode&&previous?.variant===variant;
+   return {advancement_choices:advancements,
+     feats_catalog:mode==='feat'&&previous?.mode==='feat'?arr(record.feats_catalog):otherFeats,
+     formula_bonuses:arr(record.formula_bonuses).filter(row=>
+       !String(row.id||'').startsWith('trait:choice:ability:'+choice.origin_id+':')||unchanged),
+     origin_ability_choices:arr(record.origin_ability_choices).filter(row=>row.origin_id!==choice.origin_id)};
   }
   if(selected.length){
    const [source,...parts]=selected[0].split('|');
@@ -550,6 +560,15 @@ export function savePendingChoice(record,choice,values=[]){
     !choice.options.includes(selected[0]))throw Error('Scegli una caratteristica da incantatore valida.');
   return {spellcasting_section_abilities:{...(record.spellcasting_section_abilities||{}),
     ['origin:'+(choice.casting_ability_origin_id||choice.origin_id)]:selected[0]}};
+ }
+ if(choice.kind==='bonus'){
+  if(choice.exclusive&&selected.some(value=>arr(choice.used_elsewhere).includes(value)))
+   throw Error('Ogni incremento deve scegliere una caratteristica differente.');
+  return {formula_bonuses:[...arr(record.formula_bonuses).filter(row=>!String(row.id||'').startsWith('trait:choice:'+choice.id+':')),
+    ...selected.map(value=>({id:'trait:choice:'+choice.id+':'+value,
+      origin_id:choice.origin_id,origin_name:'Tratto · '+choice.name,
+      target:choice.target_prefix+value,expression:String(choice.amount),
+      requirements:choice.requirements,disabled:false,automatic:false}))]};
  }
  if(choice.kind==='ability_mode')return saveAllocationChoice(record,choice,selected);
  if(choice.kind==='ability'){
@@ -613,48 +632,30 @@ export function removeOwnedFeatPatch(record={},originKey=''){
      row?.origin_id!==sourceId&&row?.origin_id!==originKey),
    origin_enabled};
 }
-
 /**
  * A permanent sub-trait is a chosen branch of an owned trait, not another
  * independently activated benefit. Its existing source remains authoritative
  * for score bonuses, feats and other effects. Rest selections are excluded.
  */
-export function permanentSubtraitsForTrait(trait={},record={},choices=[],powers=[]){
+export function permanentSubtraitsForTrait(trait={},record={},choices=[]){
  const owner=traitBenefitSources(trait,record),all=arr(choices).filter(choice=>
    owner.has(choice.origin_id)&&
-   ['advancement_mode','ability_mode','ability','advancement_feat'].includes(choice.kind));
+   ['permanent_power','advancement_mode','ability_mode','ability','bonus','advancement_feat'].includes(choice.kind));
  const hasAdvancement=all.some(choice=>choice.kind==='advancement_mode');
  const hasVariant=all.some(choice=>choice.kind==='ability_mode');
  const names={str:'Forza',dex:'Destrezza',con:'Costituzione',
    int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
- const result=all.filter(choice=>!['ability','advancement_feat'].includes(choice.kind)||
+ const result=all.filter(choice=>!['ability','bonus','advancement_feat'].includes(choice.kind)||
     hasVariant||hasAdvancement).map(choice=>{
    const depth=choice.kind==='advancement_mode'?0:
      choice.kind==='ability_mode'&&hasAdvancement?1:
-     choice.kind==='ability'&&hasVariant?(hasAdvancement?2:1):
-     ['ability','advancement_feat'].includes(choice.kind)?1:0;
+     ['ability','bonus'].includes(choice.kind)&&hasVariant?(hasAdvancement?2:1):
+     ['ability','bonus','advancement_feat'].includes(choice.kind)?1:0;
    const selection=arr(choice.selected).map(value=>
-     choice.option_labels?.[value]||names[value]||value).join(' · ');
+     (choice.option_labels?.[value]||names[value]||value)+(choice.subchoices?.[value]?.length?' · '+choice.subchoices[value].join(', '):'')).join(' · ');
    return {id:'choice:'+choice.id,kind:'pending',origin_id:choice.origin_id,
      depth,title:choice.label,selection:selection||'Da scegliere',
      remaining:choice.remaining,choice_id:choice.id};
  });
- for(const model of arr(powers)){
-  if(model.selection_kind!=='subtrait'||!owner.has(model.origin_id))continue;
-  const options=new Map(arr(model.options).map(option=>[option.id,option]));
-  for(const [stage,layer] of Object.entries(model.layers||{})){
-   if(!layer?.enabled||layer.trigger)continue;
-   const items=arr(layer.selected).map(value=>{
-    const option=options.get(typeof value==='string'?value:value?.id);
-    const details=arr(value?.subchoices).join(', ');
-    return (option?.name||String(value?.id||value||''))+(details?' · '+details:'');
-   });
-   result.push({id:'power:'+model.id+':'+stage,kind:'power',
-     origin_id:model.origin_id,depth:0,title:model.title,
-     selection:items.join(' · ')||'Da scegliere',
-     remaining:layer.limit===null?0:Math.max(0,layer.limit-items.length),
-     model_id:model.id,stage});
-  }
- }
  return result;
 }
