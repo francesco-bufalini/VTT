@@ -6,7 +6,7 @@ import {recoveryPatch,requirementPatch,nativeRows,nativeRowPatch,spellCastPlan} 
 import {sessionSpellEntries} from '../spell_selection.js';
 const load=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:load('class_mechanics'),abilityGrants:load('ability_grants'),proficiencyGrants:load('proficiency_grants')};
-const casterCatalogs={...catalogs,classFeatures:load('classes')};
+const casterCatalogs={...catalogs,classFeatures:load('classes'),spellcastingBenefits:load('spellcasting_benefits')};
 const base={kind:'character',level:8,class:'Wizard',class_source:'PHB',abilities:{str:10,dex:14,con:12,int:16,wis:10,cha:16}};
 
 test('tracker formulas, additive bonuses and requirement toggles preserve stable saved consumption',()=>{
