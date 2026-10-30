@@ -114,8 +114,8 @@ try{
      assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
      assert.equal(await actionSection.locator('[data-attack-id="two_weapon"]').count(),1,
       'Secondary attack always remains in Azioni');
-     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"] .play-battle-unavailable-reason').count(),1,
-      'Unavailable secondary attacks explain their unmet requirement');
+     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"] .play-battle-unavailable-reason').count(),0,
+      'Two equipped Light shortswords make the secondary attack available');
      const movement=page.locator('[data-battle-action="others"]');
      await movement.locator('summary.play-battle-summary').click();
      const groups=movement.locator('.play-battle-action-group[data-action-timing]');
