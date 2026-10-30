@@ -4,29 +4,12 @@
   "templates": [
     {
       "id": "class_spellcasting",
-      "source": "casting_classes",
+      "source": "spell_selection",
       "title": "Incantesimi",
       "option_kind": "spell",
-      "layers": {
-        "learned": {
-          "when": "book_or_known",
-          "limit": "spell_known",
-          "trigger": "level_up",
-          "storage": "existing_spell_selection"
-        },
-        "prepared": {
-          "when": "prepared",
-          "limit": "spell_prepared",
-          "trigger": "long_rest",
-          "storage": "prepared_spells"
-        }
-      },
-      "cantrips": {
-        "layer": "learned",
-        "limit": "cantrips"
-      },
+      "benefit_type": "spell_selection",
       "ui": "existing",
-      "benefit_type": "spell_selection"
+      "description": "Le fasi e i limiti derivano dal beneficio spell_selection del privilegio attivo."
     }
   ],
   "selections": [
