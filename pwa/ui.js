@@ -2348,7 +2348,7 @@ async function editorView() {
   if(state.sheet==='inventory'&&inventoryVisibleSections(c).includes('scrolls'))
     requireFullSpellsForPicker();
   if(state.sheet==='magic'&&state.magicPopup){
-    if(['choices','learn','catalog'].includes(state.magicPopup))
+    if(['choices','learn'].includes(state.magicPopup))
       requireFullSpellsForPicker();
   }
   let featDetails;
@@ -3887,7 +3887,7 @@ function magicToolsDialog(c,calculated){
   concentration:['Concentrazione',concentration],
   slots:['Slot · Classi / Patto',slots],
   catalog:['Prepara incantesimi',''],
-  learn:['Impara nuovi incantesimi',catalog],
+  learn:['Impara nuovi incantesimi',''],
   choices:['Scelte dalle origini',originChoicesView(calculated)||'<p class="hint">Nessuna scelta di incantesimi in sospeso.</p>']
  };
  if(!views[kind])return '';
