@@ -26,6 +26,7 @@ const itemContainerId=inventoryModule.itemContainerId||((item={},containers=[])=
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml,exhaustionLevel,exhaustionConditionRows} from "./condition_catalog.js";
 import {matchesSearch} from './ui_primitives.js';
+import {render5etoolsInline} from './5etools_inline.js';
 
 /** Compact class/subclass caption for the character identity and Build panel. */
 export function classIdentitySummary(members=[]){
@@ -763,7 +764,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const label=origin?.name||tracker.origin_name||'';
    const detail='<section class="play-resource-origin-details">'+
      (label?'<div class="play-resource-origin-facts"><span>Tratto di origine</span><strong>'+esc(label)+'</strong></div>':'')+
-     (origin?.description?'<p class="trait-description">'+esc(origin.description)+'</p>':'')+
+     (origin?.description?'<p class="trait-description">'+render5etoolsInline(origin.description)+'</p>':'')+
      (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'')+
      '<button type="button" class="play-resource-reset" data-act="tracker-reset" data-tracker-id="'+esc(tracker.id)+'"'+
      (Number(tracker.spent||0)===0?' disabled':'')+'>Ripristina tutti gli utilizzi</button></section>';
@@ -883,7 +884,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-power-open" data-act="'+
     (id==='spell_cast'?'action-open-spells':'battle-action-jump')+'" data-action-id="'+esc(id)+'"'+
     ' aria-label="'+esc(name)+'">'+icon(id==='ability_checks'?'skill':actionGlyphKey({id,name,time}))+
-    '<span><strong>'+esc(name)+'</strong><small>'+esc(extra||(
+    '<span><strong>'+esc(name)+'</strong><small>'+render5etoolsInline(extra||(
      available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):
      'Non disponibile'))+'</small></span></button>'+
     (count>1?(grantId?'<button type="button" class="play-battle-attacks-per-action" data-act="power-trait"'+
@@ -913,7 +914,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    rulesOfBase.map(([id,time])=>{
     const row=base(id),available=row.available!==false;
     const hint=id==='spell_cast'?'Slot':
-     id==='attack'?(row.grant_description||maxTrait?.description||'Attaccare con un’arma o con un colpo senz’armi.'):
+     id==='attack'?(maxCount>1?(row.grant_description||maxTrait?.description||'Azione').replace(/^(?:[^·]+\s*·\s*)?(?:\\?\{@i\s*)?\d+(?:st|nd|rd|th)[- ]level\s+[^:]+?\s+feature(?:\})?\s*[:·-]?\s*/i,'').trim()||'Azione':'Azione'):
      ['legendary_action','legendary_resistance','lair_action'].includes(id)?'1 '+({legendary_action:'Azione leggendaria',legendary_resistance:'Resistenza leggendaria',lair_action:'Azione di tana'}[id]):
      !available?(row.unavailable_reason||
       (id==='opportunity'?'È necessario poter effettuare un attacco in mischia.':
