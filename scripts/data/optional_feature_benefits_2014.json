@@ -1,0 +1,68 @@
+{
+  "optional:phb:archery": [
+    {
+      "type": "bonus",
+      "target": "attack_hit:*",
+      "expression": "2",
+      "attack_filter": {
+        "weapon_mode": "ranged"
+      }
+    }
+  ],
+  "optional:tce:blind-fighting": [
+    {
+      "type": "senses",
+      "data": {
+        "type": "blindsight",
+        "range_feet": 10
+      }
+    }
+  ],
+  "optional:phb:defense": [
+    {
+      "type": "bonus",
+      "target": "ac",
+      "expression": "1",
+      "requirements": {
+        "equipped_kind": "armor"
+      }
+    }
+  ],
+  "optional:phb:dueling": [
+    {
+      "type": "bonus",
+      "target": "attack_damage:*",
+      "expression": "2",
+      "attack_filter": {
+        "weapon_mode": "melee",
+        "one_handed": true,
+        "no_other_weapon": true
+      }
+    }
+  ],
+  "optional:tce:thrown-weapon-fighting": [
+    {
+      "type": "bonus",
+      "target": "attack_damage:*",
+      "expression": "2",
+      "attack_filter": {
+        "weapon_mode": "thrown"
+      }
+    }
+  ],
+  "optional:tce:unarmed-fighting": [
+    {
+      "type": "base_override",
+      "target": "attack_damage_base:unarmed",
+      "mode": "alternative",
+      "expression": "1d6"
+    },
+    {
+      "type": "base_override",
+      "target": "attack_damage_base:unarmed",
+      "mode": "alternative",
+      "expression": "1d8",
+      "no_weapon_or_shield": true
+    }
+  ]
+}
