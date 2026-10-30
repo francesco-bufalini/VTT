@@ -88,7 +88,9 @@ test('Official options use the common learned state without materializing traits
  assert.equal(owned(extra,id).layers.learned.used,2,'Learning beyond the suggested count is allowed');
  const cleared={...extra,...powerSelectionPatch(extra,context,catalog,id,'learned',archery.id)};
  assert.deepEqual(cleared.optional_features_catalog,[]);
- assert.deepEqual(owned(cleared,id).layers.learned.selected,[]);
+ assert.deepEqual(owned(cleared,id).layers.learned.selected,[dueling.id]);
+ const empty={...cleared,...powerSelectionPatch(cleared,context,catalog,id,'learned',dueling.id)};
+ assert.deepEqual(owned(empty,id).layers.learned.selected,[]);
 });
 test('Legacy choices are projected without migration and can be changed',()=>{
  const r=character('Ranger',2,{fighting_styles:['Archery']});
