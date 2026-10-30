@@ -632,30 +632,18 @@ try{
  await sheet('info');await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="others"]').getAttribute('open'),'');
  await hpCard.click({position:{x:22,y:80}});
- await page.evaluate(()=>{window.__vttHpTrace=[];});
  await page.locator('#hp-adjust-current').fill('39');
  await page.locator('#hp-adjust-temporary').fill('5');
- await page.waitForFunction(async creatureId=>{
-  const {loadCreature}=await import('/creatures.js');
-  const creature=(await loadCreature(creatureId))?.data;
-  if(creature?.current_hp===39&&creature?.temporary_hp===5){
-   window.__vttHpTrace?.push({step:'wait success',revision:(await loadCreature(creatureId))?.revision,
-    hp:creature.current_hp,temp:creature.temporary_hp,at:performance.now()});
-   return true;
-  }
-  return false;
- },seededCreatureId);
- console.log('HPDEBUG',JSON.stringify(await page.evaluate(async id=>{
-  const {loadCreature}=await import('/creatures.js');
-  const stored=await loadCreature(id);
-  const dialog=document.querySelector('#hp-adjust-dialog');
-  return {persisted:{hp:stored?.data?.current_hp,temp:stored?.data?.temporary_hp,revision:stored?.revision},
-   ui:{current:dialog?.querySelector('#hp-adjust-current')?.value,
-    temporary:dialog?.querySelector('#hp-adjust-temporary')?.value,
-    connected:dialog?.isConnected,open:dialog?.open},
-   sheet:document.querySelector('#app')?.dataset.renderedSheet,
-   trace:window.__vttHpTrace};
- },seededCreatureId)));
+ // Autosave is debounced. Poll the same persistent archive interface used by
+ // the final assertion rather than asserting before the pending write starts.
+ let savedHp=null;
+ for(let attempt=0;attempt<40;attempt++){
+  savedHp=await record();
+  if(savedHp?.current_hp===39&&savedHp?.temporary_hp===5)break;
+  await page.waitForTimeout(100);
+ }
+ assert.deepEqual([savedHp?.current_hp,savedHp?.temporary_hp],[39,5],
+  'Both HP edits must reach IndexedDB, not just the editable input fields');
  assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
  // A delayed second-field save must not restore an obsolete current HP.
