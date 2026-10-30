@@ -993,8 +993,14 @@ try{
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view .inventory-play-coins .inventory-coin-total')?.textContent.includes('12 mo'));
  assert.match(await inlineCoins.locator('.inventory-coin-total').textContent(),/12 mo/);
  assert.equal(await page.locator('#sheet-context-dialog').count(),0,'Saving coins must stay on the page');
+ // Inventory sections are independent multi-select toggles, not exclusive tabs.
+ // Start with Zaino only, then select Documenti and deselect Zaino.
+ await page.locator('#sheet-play-view [data-act="inventory-toggle-all"]').click();
  await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();
- assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,'Objects must not leak into Documents');
+ await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="items"]').click();
+ assert.equal(await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').getAttribute('aria-pressed'),'true');
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,
+  'Inventory objects disappear only when their section is deselected');
  await popup('inventory-add');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
  assert(await page.locator('#sheet-play-view').textContent().then(t=>t.includes('Lettera della Luna')));
  await sheet('conditions');assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 2/);
