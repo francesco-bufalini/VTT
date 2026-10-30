@@ -35,7 +35,7 @@ import {applicableSpeciesRollModes} from './species_roll_modes.js';
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
-import { exportBackup, importBackup, getRecord } from "./storage.js";
+import { exportBackup, importBackup, getRecord, setting } from "./storage.js";
 import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
@@ -43,7 +43,7 @@ import { calculateSheet, loadRuleCatalogs, localClasses, classMechanicsRow, vali
 import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
 import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} from './feature_rolls.js';
 import {availableZeroHpResponses,resolveZeroHpDamage} from './zero_hp_responses.js';
-import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
+import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan,describeSheetActivity} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
@@ -261,7 +261,7 @@ const sections = new Set(["library", "catalog", "session"]);
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
-  after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
+  after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, sessionPane:"", disclosureState:new Map(),
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
@@ -4244,27 +4244,84 @@ function openDiceDialog(){
   dlg.addEventListener("close",()=>dlg.remove(),{once:true});document.body.append(dlg);
   openDialog(dlg);
 }
+
+// Activity belongs to the local archive, not to the life of a network session.
+// Server echoes have the same IDs and are folded into the displayed timeline.
+const LOCAL_CHAT_KEY='vtt-sheet-chat-history-v1';
+let localChatWrite=Promise.resolve();
+function redrawChatEvents(){
+ const container=document.querySelector('#events');
+ if(container){container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight;}
+}
+function rememberChatEvent(event,{send=false}={}){
+ if(!event?.id||state.localMessages.some(row=>row.id===event.id))return;
+ state.localMessages.push(event);
+ state.localMessages=state.localMessages.slice(-250);
+ const snapshot=state.localMessages.slice();
+ localChatWrite=localChatWrite.catch(()=>{}).then(()=>setting(LOCAL_CHAT_KEY,snapshot))
+  .catch(error=>console.warn('Cronologia chat locale non salvata',error));
+ redrawChatEvents();
+ if(send&&state.paired&&state.online){
+  locallySentEventIds.add(event.id);
+  // Local writes must never depend on the desktop or block the sheet autosave.
+  void action('chat_send',{event}).then(result=>{
+   if(!result.ok)throw Error(result.error||'Evento non inviato');
+  }).catch(error=>console.warn('Evento conservato solo in locale:',error));
+ }
+}
+function sheetActivityAuthor(record){
+ return String(record?.name||state.editor?.read()?.name||'Giocatore').slice(0,80);
+}
+function recordSheetAction(text,record=null){
+ const body=String(text||'').trim();
+ if(!body)return;
+ rememberChatEvent({id:'pwa_'+crypto.randomUUID(),kind:'action',author:sheetActivityAuthor(record),
+  timestamp:Math.floor(Date.now()/1000),text:body.slice(0,1000)},{send:true});
+}
+function recordSheetChange(before,after,requested){
+ const changes=describeSheetActivity(before,after,requested);
+ if(changes.length)recordSheetAction(changes.join(' · '),after);
+}
+const IGNORED_SHEET_CLICK=/^(?:sheet|session-pane|close-|.*-close|.*-cancel|.*-more|.*-retry|.*-range|battle-attack-map|state-trait-jump|tracker-item|tracker-powers|power-trait|roll-origin-open|inventory-search-result|inventory-select|library-.*|toggle-chat-notifications|open-chat-dice|select-die|check|disconnect|sheet-roll-open-tracker)$/;
+function sheetClickLabel(button){
+ const raw=String(button.getAttribute('aria-label')||button.getAttribute('title')||
+   button.textContent||button.dataset.act||'Azione').replace(/\s+/g,' ').trim().slice(0,95);
+ const row=button.closest('.trait-card,.magic-spell-row,.inventory-play-item,.list-item');
+ const context=String(row?.querySelector('.trait-title,.magic-catalog-name,.inventory-play-item-name,strong')?.textContent||'')
+   .replace(/\s+/g,' ').trim().slice(0,70);
+ return 'Interazione: '+raw+(context&&!raw.includes(context)?' · '+context:'');
+}
+function sheetClickEligible(button){
+ const act=String(button.dataset.act||'');
+ return Boolean(state.editor&&state.page==='library'&&!state.libraryMode&&act&&
+   !IGNORED_SHEET_CLICK.test(act)&&!button.dataset.nav&&
+   !button.closest('[data-session-content],#chat-dice-dialog'));
+}
+
 function chatView(){
   return panel("Chat della partita",
     '<div class="row between chat-toolbar"><span class="chat-caption">'+
-    (state.paired&&state.online?'Messaggi e tiri della partita':'Chat disponibile con una partita collegata')+
+    (state.paired&&state.online?'Messaggi e tiri della partita · registro locale attivo':
+      'Registro locale · le azioni restano visibili anche senza partita')+
     '</span>'+(notificationsSupported()?'<button type="button" class="btn chat-notify-toggle" data-act="toggle-chat-notifications" aria-label="Notifiche chat" title="Notifiche di sistema (mentre la PWA è attiva)">'+(notificationsEnabled()?'🔔 Attive':Notification.permission==='default'?'🔔 Autorizza':'🔕 Notifiche')+'</button>':'')+'<button type="button" class="btn chat-dice-trigger" data-act="open-chat-dice" aria-label="Apri lanciadadi" title="Lancia i dadi">🎲</button></div>'+
-    (state.paired?
     '<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
     '<form id="chat-form" class="stack" autocomplete="off">'+
     '<label>Scrivi come <select id="chat-author"><option value=""'+(!state.chatAuthor?' selected':'')+'>Giocatore</option>'+
     (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'"'+(state.chatAuthor===x.name?' selected':'')+'>'+esc(x.name)+'</option>').join("")+
-    '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio alla partita…" required></textarea></label>'+
-    '<button type="submit" class="btn primary full"'+(state.online?'':' disabled')+'>Invia messaggio</button></form>':''));
+    '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio o nota locale…" required></textarea></label>'+
+    '<button type="submit" class="btn primary full">'+(state.paired&&state.online?'Invia messaggio':'Aggiungi alla chat locale')+'</button></form>');
 }
-function renderEvents() {
-  return state.messages.length ? state.messages.slice(-80).map(e=>
+function renderEvents(){
+  const all=new Map();
+  for(const event of [...state.messages,...state.localMessages])if(event?.id)all.set(event.id,event);
+  const rows=[...all.values()].sort((a,b)=>(Number(a.timestamp)||0)-(Number(b.timestamp)||0)).slice(-80);
+  return rows.length?rows.map(e=>
     '<article class="event"><div class="meta"><strong>'+esc(e.author||"Giocatore")+'</strong><span>'+
     esc(e.kind==="roll"?"Dadi":e.kind==="action"?"Azione":"Chat")+'</span></div>'+
     '<div class="body">'+esc(e.kind==="roll" ? ((e.label||e.die||"Tiro")+": "+e.total) :
       (e.text||""))+(e.kind==="roll"&&e.detail?'<div class="hint roll-event-detail">'+esc(e.detail)+'</div>':'')+
       '</div></article>').join("") :
-    '<p class="hint">Nessun evento recente. La cronologia è disponibile mentre il desktop è collegato.</p>';
+    '<p class="hint">Nessun evento recente. Le azioni della scheda saranno registrate qui anche offline.</p>';
 }
 function sessionTokenDetails(token) {
   const edition=token.rules_version==="2024"?"2024":"2014";
@@ -4701,31 +4758,31 @@ async function roll(sides) {
   state.roll={sides,count,modifier,rolls,total,notation,detail:rolls.join(" + ")+
     (modifier?(" "+(modifier>0?"+ ":"− ")+Math.abs(modifier)):"")};
   state.rollHistory.unshift(state.roll);
-  state.roll.chatStatus=state.paired&&state.online?'Invio in chat…':'Tiro locale · partita non collegata.';
+  state.roll.chatStatus=state.paired&&state.online?'Invio in chat…':'Tiro registrato nella chat locale.';
   const feedback=document.querySelector("#dice-feedback");if(feedback)feedback.innerHTML=diceResult();
-  if(state.paired&&state.online){
-    const currentRoll=state.roll;
-    try{
-      await shareRoll({quiet:true});
-      currentRoll.chatStatus='✓ Inviato in chat';
-      await fetchChat();
-    }catch(error){
-      currentRoll.chatStatus='Invio in chat non riuscito: '+errorMessage(error);
-    }
-    if(state.roll===currentRoll&&feedback)feedback.innerHTML=diceResult();
+  const currentRoll=state.roll;
+  try{
+    await shareRoll({quiet:true});
+    currentRoll.chatStatus=state.paired&&state.online?'✓ Inviato in chat':'✓ Salvato nella chat locale';
+    if(state.paired&&state.online)await fetchChat();
+  }catch(error){
+    currentRoll.chatStatus='Tiro locale salvato · invio chat fallito: '+errorMessage(error);
   }
+  if(state.roll===currentRoll&&feedback)feedback.innerHTML=diceResult();
 }
 async function shareRoll({quiet=false,roll=null}={}) {
   if(!roll&&!state.roll) return;
-  if(!state.paired||!state.online) throw new Error("Collega prima una partita.");
   const r=roll||state.roll;
   const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:(document.querySelector("#chat-author")?.value||state.chatAuthor||"Giocatore").slice(0,80),
     timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,
     ...sheetRollChatFields(r)};
-  locallySentEventIds.add(event.id);
-  const result=await action("chat_send",{event});
-  if(!result.ok) throw new Error(result.error||"Tiro non inviato");
-  if(!quiet)message("Tiro condiviso nella chat.");
+  rememberChatEvent(event);
+  if(state.paired&&state.online){
+    locallySentEventIds.add(event.id);
+    const result=await action("chat_send",{event});
+    if(!result.ok)throw new Error(result.error||"Tiro non inviato");
+    if(!quiet)message("Tiro condiviso nella chat.");
+  }else if(!quiet)message("Tiro salvato nella chat locale.");
 }
 async function patch(patchValue,{syncPresentation=true}={}) {
   if(!state.editor) return;
@@ -4751,6 +4808,8 @@ async function patch(patchValue,{syncPresentation=true}={}) {
     if(syncPresentation&&['name','current_miniature_id','size_name','footprint'].some(k=>before[k]!==current[k]))
       try{await syncFormPresentation(current);}catch(error){message('Scheda salvata. '+errorMessage(error),true);}
     if(status){ status.textContent="✓ Salvato in locale"; status.classList.remove("error"); }
+    // Record only the actual committed difference, never a failed or no-op edit.
+    if(state.editor===editor)recordSheetChange(before,editor.read(),patchValue);
   }catch(error) {
     state.saveError=errorMessage(error);
     if(status){ status.textContent="Errore salvataggio";status.classList.add("error"); }
@@ -5505,7 +5564,7 @@ function refreshD20RerollChoices(dialog,record,calculated){
  container.hidden=!choices.length&&!current;
 }
 async function announcePostRollBonus(updated){
- if(!updated||!state.paired||!state.online)return;
+ if(!updated)return;
  try{
   // The earlier chat event remains immutable: publish an explicit revision.
   await shareRoll({quiet:true,roll:{...updated,label:'Tiro aggiornato · '+updated.label}});
@@ -8024,13 +8083,8 @@ async function handleAction(target){
       dialog.renderRollFormula?.();
       if(dialog.dataset.rollKind==='d20')
         refreshD20RerollChoices(dialog,state.editor.read(),calculatedAfter);
-      if(state.paired&&state.online){
-        try{await shareRoll({quiet:true});}
-        catch(error){
-
-          message('Invio chat non riuscito: '+errorMessage(error),true);
-        }
-      }
+      try{await shareRoll({quiet:true});}
+      catch(error){message('Tiro salvato localmente; invio chat non riuscito: '+errorMessage(error),true);}
     }finally{
       delete dialog.dataset.rolling;
       if(button&&button.isConnected)button.disabled=dialog.dataset.rollKind==='feature'&&!!dialog.rollOutcome;
@@ -9556,10 +9610,14 @@ async function handleSubmit(form){
     state.chatAuthor=author==="Giocatore"?"":author;
     const event={id:"pwa_"+crypto.randomUUID(),kind:"chat",author:author.slice(0,80),
       timestamp:Math.floor(Date.now()/1000),text:body};
-    const result=await action("chat_send",{event});
-    if(!result.ok)throw new Error(result.error||"Messaggio rifiutato");
+    rememberChatEvent(event);
+    if(state.paired&&state.online){
+      locallySentEventIds.add(event.id);
+      const result=await action("chat_send",{event});
+      if(!result.ok)throw new Error(result.error||"Messaggio conservato solo in locale");
+      await fetchChat();
+    }
     document.querySelector("#chat-message").value="";
-    await fetchChat();
   }
 }
 
@@ -9849,8 +9907,14 @@ function listen(){
       // actions preserve their existing behavior across field autosaves.
       if(closeAction==='trait-benefits-remove-request'&&!button.isConnected)return;
       const isDestination=Boolean(button.dataset.nav)||button.dataset.act==='sheet';
+      const logClick=sheetClickEligible(button);
+      const clickedLabel=logClick?sheetClickLabel(button):'';
+      const previousLogCount=state.localMessages.length;
+      const clickedRecord=logClick?state.editor.read():null;
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
+      if(logClick&&state.localMessages.length===previousLogCount)
+        recordSheetAction(clickedLabel,clickedRecord);
       if(isDestination){window.scrollTo(0,0);app.focus({preventScroll:true});}
     }catch(error){message(errorMessage(error),true);}
     finally{if(button.isConnected&&!button.hasAttribute('data-roll-used'))button.disabled=false;}
@@ -10162,6 +10226,11 @@ export async function mount(){
   state.paired=await hasPairingCredential();
   if(qrCode){state.page="session";state.sessionPane="connection";}
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+  try{
+    const saved=await setting(LOCAL_CHAT_KEY);
+    state.localMessages=Array.isArray(saved)?saved.filter(event=>
+      event&&typeof event.id==='string'&&['chat','roll','action'].includes(event.kind)).slice(-250):[];
+  }catch(error){console.warn('Cronologia chat locale non disponibile',error);}
   await render();
   if(typeof globalThis.vttDesktopSaveFile!=='function')
     void serverBackups.start();
