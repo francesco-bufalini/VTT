@@ -47,3 +47,12 @@ test('tracker spending, slots and learned spells give descriptive events',()=>{
  assert(lines.some(s=>s.includes('Slot livello 1: 0 → 1 utilizzati')));
  assert(lines.some(s=>s.includes('aggiunto Shield')));
 });
+
+
+test('private notes and portraits never enter shared activity messages',()=>{
+ const before={notes:'Il mio segreto',sheet_portrait_data:'data:image/png;base64,oldimage'};
+ const after={notes:'Un altro segreto',sheet_portrait_data:'data:image/png;base64,newimage'};
+ const lines=describeSheetActivity(before,after,after).join(' · ');
+ assert.match(lines,/Notes|Notes|Note|Portrait|Sheet portrait data|Sheet Portrait Data|Ritratto|Foto/);
+ assert.doesNotMatch(lines,/segreto|base64|oldimage|newimage/i);
+});
