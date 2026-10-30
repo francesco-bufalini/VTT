@@ -369,6 +369,9 @@ export function collectStructuredFeatures(record,catalogs={}){
      (!rule.subclass||originSubclass&&subclassKey(rule.subclass)===subclassKey(originSubclass)));
    return Number(found?.attacks_per_action)||0;
   };
+  const spellcastingBenefits=new Map(array(catalogs.spellcastingBenefits?.grants)
+    .filter(row=>row?.feature_id&&row?.benefit?.type==='class_spellcasting')
+    .map(row=>[row.feature_id,row.benefit]));
   const members=classMembers(record),total=Number(record.level??members.reduce((n,c)=>n+Math.max(0,Number(c.level)||0),0)??1)||1;
   const classLevel=(name,source)=>members.filter(c=>match(c.name,name)&&(!source||!c.source||match(c.source,source)))
     .reduce((n,c)=>Math.max(n,Number(c.level)||0),0);
@@ -380,8 +383,10 @@ export function collectStructuredFeatures(record,catalogs={}){
     const id=String(row.id||"").trim()||origin+"|"+level+"|"+norm(row.name);
     const key=row.feature_key||origin+"|"+id;if(seen.has(key))return;seen.add(key);
     const attacksPerAction=attackCount(row,origin,level,className,classSource);
+    const structuredBenefit=spellcastingBenefits.get(row.id);
     results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
       level,requirements:gate,inactive:inactive||row.inactive===true,
+      ...(structuredBenefit?{benefits:[...array(row.benefits),structuredBenefit]}:{}),
       bonuses:array(row.bonuses),
       ...(attacksPerAction>=2?{attacks_per_action:attacksPerAction}:{}),
       action_type:row.action_type||row.activation_type||row.activation||row.time||"",
