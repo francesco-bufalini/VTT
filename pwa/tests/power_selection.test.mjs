@@ -53,9 +53,12 @@ test('Favored Enemy tracks chosen creature types and two humanoid races',()=>{
 
 test('class spellcasting projects optional learned and prepared layers',()=>{
  const calculated={casting_classes:[
-  {id:'wizard',name:'Wizard',level:7,book:true,mode:'Preparati',limit:10,cantrips:4},
-  {id:'druid',name:'Druid',level:7,book:false,mode:'Preparati',limit:10},
-  {id:'sorcerer',name:'Sorcerer',level:7,book:false,mode:'Conosciuti',limit:8}
+  {id:'wizard',name:'Wizard',level:7,book:true,mode:'Preparati',limit:10,cantrips:4,
+   selection_layers:{learned:{limit:null,trigger:null},prepared:{limit:10,trigger:'long_rest'}}},
+  {id:'druid',name:'Druid',level:7,book:false,mode:'Preparati',limit:10,
+   selection_layers:{prepared:{limit:10,trigger:'long_rest'}}},
+  {id:'sorcerer',name:'Sorcerer',level:7,book:false,mode:'Conosciuti',limit:8,
+   selection_layers:{learned:{limit:8,trigger:'level_up'}}}
  ]};
  const [wizard,druid,sorcerer]=powerSelectionModels({},calculated,data);
  assert.deepEqual(Object.keys(wizard.layers),['learned','prepared']);
