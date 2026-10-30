@@ -1,4 +1,3 @@
-import {permanentPowerChoices,savePermanentPowerChoice} from './power_selection.js';
 import {expandedSpellFeatOptions} from './feat_picker.js';
 import {FEATURE_FEAT_GRANTS} from './catalog/feature_feat_grants.js';
 // Structured, still-unresolved character choices. Mirrors the native
@@ -345,7 +344,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
   const selected=mode==='feat'?['feat']:mode==='ability'&&variant>=0?['ability:'+variant]:[];
   result.push({id:'advancement-mode:'+sid,kind:'advancement_mode',origin_id:sid,
     name:feature.name+' · livello '+feature.level,
-    label:'Scegli sotto-tratto',count:1,
+    label:'Incremento caratteristiche o talento',count:1,
     selected,options:[...variants.map((_,i)=>'ability:'+i),...(rule.feat_alternative?['feat']:[])],
     option_labels:Object.fromEntries([
       ...variants.map((v,i)=>['ability:'+i,v.parts.map(part=>'+'
@@ -452,7 +451,6 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
       .map(row=>row.spell_id),options:[],remaining:Math.max(0,Number(choice.remaining)||0),
     source_choice_id:choice.id});
  }
- result.push(...permanentPowerChoices(record,calculated,catalogs.powerSelections||{}));
  return Object.keys(migration).length?result.map(choice=>({...choice,migration_patch:migration})):result;
 }
 // A choice picker may contain already-owned proficiencies from any source,
@@ -477,7 +475,7 @@ export function savePendingChoice(record,choice,values=[],details={}){
   const {migration_patch,...current}=choice;
   return {...migration_patch,...savePendingChoice({...record,...migration_patch},current,values,details)};
  }
- if(!choice||!['permanent_power','bonus','ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['bonus','ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):
    ['subclass','subrace'].includes(choice.kind)?String(value):strip(value)));
@@ -494,7 +492,6 @@ export function savePendingChoice(record,choice,values=[],details={}){
        /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||
        arr(choice.excluded_options).includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
- if(choice.kind==='permanent_power')return savePermanentPowerChoice(record,choice,selected,details);
  if(choice.kind==='subclass'||choice.kind==='subrace'){
    if(selected.length!==1||!choice.options.includes(selected[0])||!choice.option_rows?.[selected[0]])
      throw Error('Scegli una variante valida.');
@@ -631,31 +628,4 @@ export function removeOwnedFeatPatch(record={},originKey=''){
    proficiency_choices:arr(record.proficiency_choices).filter(row=>
      row?.origin_id!==sourceId&&row?.origin_id!==originKey),
    origin_enabled};
-}
-/**
- * A permanent sub-trait is a chosen branch of an owned trait, not another
- * independently activated benefit. Its existing source remains authoritative
- * for score bonuses, feats and other effects. Rest selections are excluded.
- */
-export function permanentSubtraitsForTrait(trait={},record={},choices=[]){
- const owner=traitBenefitSources(trait,record),all=arr(choices).filter(choice=>
-   owner.has(choice.origin_id)&&
-   ['permanent_power','advancement_mode','ability_mode','ability','bonus','advancement_feat'].includes(choice.kind));
- const hasAdvancement=all.some(choice=>choice.kind==='advancement_mode');
- const hasVariant=all.some(choice=>choice.kind==='ability_mode');
- const names={str:'Forza',dex:'Destrezza',con:'Costituzione',
-   int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
- const result=all.filter(choice=>!['ability','bonus','advancement_feat'].includes(choice.kind)||
-    hasVariant||hasAdvancement).map(choice=>{
-   const depth=choice.kind==='advancement_mode'?0:
-     choice.kind==='ability_mode'&&hasAdvancement?1:
-     ['ability','bonus'].includes(choice.kind)&&hasVariant?(hasAdvancement?2:1):
-     ['ability','bonus','advancement_feat'].includes(choice.kind)?1:0;
-   const selection=arr(choice.selected).map(value=>
-     (choice.option_labels?.[value]||names[value]||value)+(choice.subchoices?.[value]?.length?' · '+choice.subchoices[value].join(', '):'')).join(' · ');
-   return {id:'choice:'+choice.id,kind:'pending',origin_id:choice.origin_id,
-     depth,title:choice.label,selection:selection||'Da scegliere',
-     remaining:choice.remaining,choice_id:choice.id};
- });
- return result;
 }

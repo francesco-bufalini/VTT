@@ -59,7 +59,6 @@ import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,cl
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment,minimumXpForLevel} from "./character_core.js";
 import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
 import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
-import * as pendingChoicesModule from './pending_choices.js';
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
@@ -2685,19 +2684,6 @@ async function traitsView(c){
   const benefitCount=(benefitsByTrait.get(trait.key)||[])
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
-  const subtraits=pendingChoicesModule.permanentSubtraitsForTrait?.(trait,c,state.calculated?.pending_choices||[])||[];
-  let nested=subtraits.length?'<div class="trait-subtraits" aria-label="Sotto-tratti e scelte permanenti">'+subtraits.map(sub=>
-   '<button type="button" class="trait-subtrait trait-subtrait--depth-'+Math.min(2,sub.depth)+'" data-act="pending-choice-open"'+
-    ' data-choice-id="'+esc(sub.choice_id)+'"'+(active?'':' disabled')+'>'+
-    '<span class="trait-subtrait-mark" aria-hidden="true">└</span><span class="trait-subtrait-copy"><span class="trait-subtrait-title">'+esc(sub.title)+'</span>'+ 
-    '<small>'+esc(sub.selection)+'</small></span><span class="trait-subtrait-chevron" aria-hidden="true">›</span></button>').join('')+'</div>':'';
-  // Panoramica retains general origin benefits in the same editable popup.
-  const selectionBenefits=(state.calculated?.power_selections||[]).filter(model=>
-    [trait.feature_origin,trait.extension_choice_origin].filter(Boolean).includes(model.origin_id));
-  const benefitChoices=selectionBenefits.map(model=>model.benefit_type==='object_extension'?
-   '<button type="button" class="trait-subtrait" data-act="benefit-option-open" data-power-selection-id="'+esc(model.id)+'" data-power-option-id="'+esc(model.options[0].id)+'">Scegli oggetto · '+esc(model.title)+'</button>':
-   model.benefit_type==='option_selection'?'<button type="button" class="trait-subtrait" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+(model.layers.learned?'learned':'applied')+'">Scelte · '+esc(model.title)+'</button>':'').join('');
-  nested+=benefitChoices;
   const benefitButton='<button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
    (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>';
   return '<div class="trait-row'+(active?'':' trait-row--inactive')+'" data-trait-enabled="'+String(active)+'">'+benefitButton+
@@ -2710,7 +2696,7 @@ async function traitsView(c){
       (trait.description_html?'<div class="trait-description trait-state-description">'+trait.description_html+'</div>':
        description?'<p class="trait-description">'+esc(description)+'</p>':'')+
       (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
-    '</div></details>'+nested+'</div>';
+    '</div></details></div>';
  };
  const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
  const originKind=(category,origin)=>{
@@ -3169,8 +3155,6 @@ function optionBenefitPanels(c,calculated){
 async function openBenefitSelectionDialog(id,stage){
  const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(record);
- const permanent=calculated.pending_choices.find(choice=>choice.model_id===id&&choice.stage===stage);
- if(permanent)return openCharacterChoice(permanent);
  const model=calculated.power_selections?.find(row=>row.id===id&&row.benefit_type==='option_selection');
  const layer=model?.layers?.[stage];
  if(!layer||layer.automatic||!['learned','prepared','applied'].includes(stage))
@@ -3195,8 +3179,7 @@ async function openBenefitSelectionDialog(id,stage){
    Array.from({length:sub.count},(_,i)=>'<label>'+esc(sub.label||'Sotto-opzione')+' '+(i+1)+
     '<input type="text" data-power-subchoice="'+i+'" data-power-option="'+esc(option.id)+'" maxlength="70" value="'+
     esc(current?.subchoices?.[i]||'')+'" placeholder="'+esc(sub.placeholder||'Sotto-opzione')+'"'+(locked?' disabled':'')+'></label>').join('')+'</div>':'';
-  const label=required?'Obbligatoria':model.selection_kind==='subtrait'?
-   (owned?(sub?'Aggiorna':'Rimuovi'):'Scegli'):
+  const label=required?'Obbligatoria':
    owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
    stage==='learned'?'+ Impara':stage==='prepared'?'+ Prepara':'+ Applica';
   return learningPickerOptionRow({
@@ -6288,11 +6271,7 @@ function openPendingChoiceDialog(choice){
      '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
      '><span class="vtt-choice-check" aria-hidden="true">✓</span><span>'+esc(label)+'</span>'+
      (known.has(key)?'<span class="pending-choice-known" title="Competenza già posseduta" aria-label="Competenza già posseduta">✓</span>':'')+
-     '</label>'+Array.from({length:choice.option_rows?.[key]?.subchoices?.count||0},(_,i)=>
-       '<label class="pending-choice-detail" data-pending-detail-for="'+esc(key)+'">'+
-       esc(choice.option_rows[key].subchoices.placeholder||'Scelta')+' '+(i+1)+
-       '<input type="text" maxlength="70" data-pending-option="'+esc(key)+'" data-pending-detail="'+i+'" value="'+
-       esc(choice.subchoices?.[key]?.[i]||'')+'"></label>').join('');
+     '</label>';
  }).join('');
  const customValues=choice.custom_values||[];
  const customRow=choice.custom_allowed?
@@ -6325,11 +6304,7 @@ function openPendingChoiceDialog(choice){
    const customNames=customChecked?(custom?.value||'').split(',').map(x=>x.trim()).filter(Boolean):[];
    if(custom)custom.disabled=!customChecked;
    const total=checked.filter(row=>row.value!=='__custom__').length+customNames.length;
-   const detailsInvalid=[...dialog.querySelectorAll('[data-pending-detail-for]')].map(row=>{
-     const chosen=checked.some(input=>input.value===row.dataset.pendingDetailFor);
-     row.hidden=!chosen;return chosen&&!row.querySelector('input').value.trim();
-   }).some(Boolean);
-   const invalid=detailsInvalid||(customChecked&&(!customNames.length||customNames.some(name=>name.length>80)))||
+   const invalid=(customChecked&&(!customNames.length||customNames.some(name=>name.length>80)))||
      total>choice.count||new Set(customNames.map(x=>x.toLowerCase())).size!==customNames.length;
    const progress=dialog.querySelector('.pending-choice-progress');
    if(progress)progress.textContent=total+' / '+choice.count+' selezionate'+
@@ -6823,10 +6798,7 @@ async function handleAction(target){
     const fresh=await computeLocalData(current);
     const live=fresh.pending_choices.find(row=>row.id===choice.id);
     if(!live)throw Error('Il privilegio non concede più questa scelta.');
-    const details=Object.fromEntries(selected.map(id=>[id,
-      [...dialog.querySelectorAll('[data-pending-option]')].filter(input=>input.dataset.pendingOption===id)
-        .map(input=>input.value)]));
-    const update=savePendingChoice(current,live,selected,details);
+    const update=savePendingChoice(current,live,selected);
     await patch(update);
     dialog.remove();await render();
     if(live.kind==='subclass'||live.kind==='subrace')return;

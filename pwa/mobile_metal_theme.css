@@ -6118,25 +6118,6 @@ dialog.benefit-selection-dialog .magic-editor-search{width:100%;min-width:0;box-
 .library-bestiary-pagination{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:36px}
 .library-bestiary-progress{color:#c7ac89;font:500 11px/1.4 system-ui,sans-serif}
 .library-bestiary-choices .hint{margin:7px 2px;font-size:12px}
-/* Permanent alternatives share the trait list's restrained appearance. */
-.play-info-traits .trait-row>.trait-subtraits{grid-column:2;min-width:0;padding:0 4px 3px 0}
-.play-info-traits .trait-subtrait{
- display:flex;align-items:center;gap:6px;width:100%;min-width:0;
- margin:0;padding:4px 6px;border:0;border-left:1px solid #a37b4733;
- background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit;
-}
-.play-info-traits .trait-subtrait:hover,.play-info-traits .trait-subtrait:focus-visible{background:#a9815115;outline-offset:-2px}
-.play-info-traits .trait-subtrait--depth-1{margin-left:10px;width:calc(100% - 10px)}
-.play-info-traits .trait-subtrait--depth-2{margin-left:20px;width:calc(100% - 20px)}
-.play-info-traits .trait-subtrait-mark{flex:none;font-size:12px;color:#ab895d}
-.play-info-traits .trait-subtrait-copy{display:flex;align-items:baseline;flex-wrap:wrap;min-width:0;gap:2px 6px;flex:1}
-.play-info-traits .trait-subtrait-title{font:500 12px/1.35 system-ui;color:inherit}
-.play-info-traits .trait-subtrait-copy small{font:12px/1.35 system-ui;color:#c2aa8b;overflow-wrap:anywhere}
-.play-info-traits .trait-subtrait-chevron{font-size:16px;color:#ab895d}
-.play-info-traits .trait-subtrait:disabled{opacity:.5;cursor:default}
-.pending-choice-detail{display:flex;align-items:center;gap:8px;padding:3px 12px 6px;font-size:12px}
-.pending-choice-detail[hidden]{display:none}
-.pending-choice-detail input{min-width:0;flex:1}
 
 
 /* Incoming damage uses the existing HP modal, not a second resource dialog. */

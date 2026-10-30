@@ -102,10 +102,10 @@ export function powerSelectionPatch(raw,calculated,catalog,id,stage,optionId,det
  if(!exists&&model.unique_across_selections&&powerSelectionModels(record,calculated,catalog).some(other=>other.id!==id&&other.layers.learned?.selected.some(row=>identity(row)===optionId)))throw Error('Opzione già scelta in un altro privilegio.');
  if(!exists&&option.min_level>model.level)throw Error('Livello insufficiente.');
  // Learned counts are guidance (as for spells); prepared choices retain their capacity.
-  if(!exists&&stage!=='learned'&&!(model.selection_kind==='subtrait'&&layer.limit===1)&&layer.limit!==null&&old.length>=layer.limit)throw Error('Numero massimo di opzioni raggiunto.');
+  if(!exists&&stage!=='learned'&&layer.limit!==null&&old.length>=layer.limit)throw Error('Numero massimo di opzioni raggiunto.');
  let value=optionId;
  if(option.subchoices){const names=rows(details).map(v=>String(v).trim());if(names.length!==option.subchoices.count||new Set(names.map(low)).size!==names.length||names.some(n=>!n||n.length>70||/[<>{}]/.test(n)))throw Error('Specifica tutte le sotto-opzioni richieste, senza duplicati.');value={id:optionId,subchoices:names};}
- record.power_selections={...record.power_selections,[id]:{...record.power_selections?.[id],[stage]:exists&&!updating?old.filter(row=>identity(row)!==optionId):[...(model.selection_kind==='subtrait'&&layer.limit===1?[]:old.filter(row=>identity(row)!==optionId)),value]}};
+ record.power_selections={...record.power_selections,[id]:{...record.power_selections?.[id],[stage]:exists&&!updating?old.filter(row=>identity(row)!==optionId):[...(old.filter(row=>identity(row)!==optionId)),value]}};
  if(exists&&!updating)record.power_applications={...record.power_applications,[id]:rows(record.power_applications?.[id]).filter(row=>row.id!==optionId)};
  return statePatch({...record,inventory:projectSelectionBenefits(record,{powerSelections:catalog,optionalFeatureProgressions:catalog.optionalFeatureProgressions},calculated.features||[]).inventory});
 }
@@ -162,16 +162,6 @@ export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,opt
  if(!(model?.allow_custom||model?.source?.type==='inline')||!/^homebrew:[a-z0-9-]{8,80}$/.test(optionId)||!String(name).trim())throw Error('Opzione homebrew non valida.');
  const custom={...(record.power_selection_custom_options||{}),[id]:[...rows(record.power_selection_custom_options?.[id]),{id:optionId,name:String(name).trim(),description,source:'HOMEBREW',_homebrew:true}]};
  return {...powerSelectionPatch({...record,power_selection_custom_options:custom},calculated,catalog,id,stage,optionId),power_selection_custom_options:custom};
-}
-export function permanentPowerChoices(record,calculated,catalog){return powerSelectionModels(record,calculated,catalog).filter(m=>m.selection_kind==='subtrait').flatMap(model=>Object.entries(model.layers).filter(([,layer])=>!layer.trigger).map(([stage,layer])=>({id:'power:'+model.id+':'+stage,kind:'permanent_power',origin_id:model.origin_id,name:model.title,label:'Scegli sotto-tratto',count:layer.limit,selected:layer.selected.map(identity),options:model.options.map(o=>o.id),option_rows:Object.fromEntries(model.options.map(o=>[o.id,o])),option_labels:Object.fromEntries(model.options.map(o=>[o.id,o.name])),subchoices:Object.fromEntries(layer.selected.filter(o=>o.subchoices).map(o=>[o.id,o.subchoices])),remaining:Math.max(0,layer.limit-layer.selected.length),model_id:model.id,stage})));}
-export function savePermanentPowerChoice(record,choice,selected,details={}){
- const values=selected.map(id=>{const option=choice.option_rows[id];if(!option)throw Error('Opzione non valida.');
-  if(!option.subchoices)return id;
-  const names=rows(details[id]).map(value=>String(value).trim());
-  if(names.length!==option.subchoices.count||new Set(names.map(low)).size!==names.length||names.some(name=>!name||name.length>70||/[<>{}]/.test(name)))throw Error('Specifica tutte le sotto-opzioni richieste, senza duplicati.');
-  return {id,subchoices:names};
- });
- return {power_selections:{...record.power_selections,[choice.model_id]:{...record.power_selections?.[choice.model_id],[choice.stage]:values}}};
 }
 // Project effects of every applied option to its declared recipient, never a new trait.
 export function projectSelectionBenefits(raw,catalogs,features=[]){

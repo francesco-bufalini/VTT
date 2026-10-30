@@ -321,8 +321,7 @@
       },
       "ui": "generic",
       "description": "Scegli un tipo di creatura, oppure due razze di umanoidi, al 1Â°, 6Â° e 14Â° livello da Ranger. La scelta Ã¨ permanente secondo le regole; l'interfaccia non impone quando cambiarla.",
-      "selection_kind": "subtrait",
-      "benefit_type": "permanent_choice"
+      "benefit_type": "option_selection"
     }
   ]
 }
