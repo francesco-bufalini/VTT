@@ -863,6 +863,7 @@ function calculateSheetValues(record={},catalogs={}){
   record={...record,
    formula_bonuses:arr(record.formula_bonuses).filter(r=>!suppressed.has('bonus:'+r.id)),
    dice_bonuses:arr(record.dice_bonuses).filter(r=>!suppressed.has('dice:'+String(r.id||[r.origin_id,r.target,r.dice].join('|')))),
+   incoming_damage_modifiers:arr(record.incoming_damage_modifiers).filter(r=>!suppressed.has('incoming_damage:'+r.id)),
    damage_defense_entries:arr(record.damage_defense_entries).filter(r=>!suppressed.has('defense:'+String(r.origin_id||'')+':'+r.rank+':'+String(r.key||'').toLowerCase())),
    resource_trackers:arr(record.resource_trackers).filter(r=>!suppressed.has('tracker:'+r.id)),
    origin_spell_grants:arr(record.origin_spell_grants).filter(r=>!suppressed.has('spell:'+r.origin_id+':'+r.spell_id)),
@@ -1570,6 +1571,28 @@ function calculateSheetValues(record={},catalogs={}){
     }else if(!validBonusDice(formula))return [];
     return [{...row,action_id:target.slice('action_damage:'.length),formula}];
   });
+  // Incoming damage is resolved only when the player confirms an HP change.
+  // Source eligibility and dynamic numeric expressions are resolved here,
+  // while dice are deliberately left unrolled until that confirmation.
+  const incoming_damage_modifiers=arr(record.incoming_damage_modifiers).flatMap(row=>{
+    const expression=String(row?.expression||'').replace(/\s+/g,'');
+    if(!expression||row.disabled||!sourceEnabled(row)||
+       row.trait_key&&record.trait_enabled?.[row.trait_key]===false||
+       row.parent_origin&&!sourceEnabled({origin_id:row.parent_origin})||
+       !requirementsAllow(record,row))return [];
+    const dice=/^([+-]?)([1-9]\d*)d(4|6|8|10|12|20|100)$/i.exec(expression);
+    if(dice){
+      if(Number(dice[2])>100)return [];
+      return [{...row,formula:dice[2]+'d'+dice[3],sign:dice[1]==='-'?-1:1}];
+    }
+    try{
+      const value=parseArithmetic(expression,name=>resolveSymbol(name,resolve,new Set()));
+      return Number.isSafeInteger(value)?[{...row,value}]:[];
+    }catch(error){
+      warnings.add('Danni subiti '+(row.origin_name||row.id||'')+': '+error.message);
+      return [];
+    }
+  });
   const senses=calculateSenses(record,features,catalogs.senseGrants||{},sourceEnabled);
   return {source:"local",schema:1,abilities,saves,skills,senses,
     values:Object.fromEntries(memo),explanations,
@@ -1588,7 +1611,7 @@ function calculateSheetValues(record={},catalogs={}){
       })),
     casting_classes:spellClasses,
     class_levels:Object.fromEntries(classes.map(row=>[classSymbol(row.name),Math.max(0,int(row.level))])),
-    trackers,attacks,damage_defense_entries,action_damage_bonuses,
+    trackers,attacks,damage_defense_entries,action_damage_bonuses,incoming_damage_modifiers,
     feature_item_grants:featureItemGrants(record,features,catalogs.featureItemGrants||catalogs.classMechanics?.feature_item_grants||[]),
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
     racial_abilities:racialPowers.abilities,
