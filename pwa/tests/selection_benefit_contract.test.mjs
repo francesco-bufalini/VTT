@@ -156,3 +156,26 @@ test('import preserves spent item charges and consumes old model toggles at the 
  assert(migrated.active_class_features.other);
  assert.equal(migrated.power_applications.armor_model[0].id,'armor_model:guardian');
 });
+
+test('real Archery catalog entry applies only while the learned style is active and weapon is ranged',()=>{
+ const id='optional:class:phb:ranger:fs-r',option='optional:phb:archery';
+ const bow={id:'shortbow',custom_item_type:'weapon',type:'R',name:'Shortbow',
+  damage:'1d6',damage_type:'piercing',range:'80/320',properties:['2H','A'],quantity:1,equipped_slots:['main']};
+ let r={...record(),classes:[{name:'Ranger',source:'PHB',level:2}],
+  abilities:{str:10,dex:16,con:12,int:10,wis:14,cha:10},inventory:[bow]};
+ const hit=calculated=>calculated.attacks.find(a=>a.id==='item:shortbow')?.hit;
+ let c=calculateSheet(r,completeCatalogs),before=hit(c);
+ assert(Number.isFinite(before));
+ r={...r,...powerSelectionPatch(r,c,combined,id,'learned',option)};
+ c=calculateSheet(r,completeCatalogs);
+ assert.equal(hit(c),before,'Learning without applying must not grant numeric bonuses');
+ r={...r,...powerApplicationPatch(r,c,combined,id,option,true)};
+ c=calculateSheet(r,completeCatalogs);
+ assert.equal(hit(c),before+2,'The catalog effect is applied to the equipped bow');
+ assert(c.roll_components['attack_hit:item:shortbow']?.some(row=>row.value===2&&row.origin_name==='Archery'));
+ const noWeapon=calculateSheet({...r,inventory:[{...bow,equipped_slots:[]}]},completeCatalogs);
+ assert(!noWeapon.attacks.some(a=>a.id==='item:shortbow'),'No attack is created for an unequipped bow');
+ r={...r,...powerApplicationPatch(r,c,combined,id,option,false)};
+ c=calculateSheet(r,completeCatalogs);
+ assert.equal(hit(c),before,'Unapplying the same style withdraws the bonus');
+});
