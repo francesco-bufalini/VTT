@@ -14,7 +14,7 @@ test('committed HP edits, inspiration and ability scores are human readable',()=
  const lines=describeSheetActivity(before,after,{current_hp:8,inspiration:false,abilities:after.abilities});
  assert(lines.some(s=>s.includes('PF attuali: 12 → 8')));
  assert(lines.some(s=>s.includes('Ispirazione: disattivato')));
- assert(lines.some(s=>s.includes('Caratteristica Str: 12 → 14')));
+ assert(lines.some(s=>s.includes('Caratteristica Forza: 12 → 14')));
 });
 
 test('equipment and item quantity changes identify the item',()=>{
