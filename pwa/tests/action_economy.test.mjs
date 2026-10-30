@@ -655,3 +655,30 @@ test('Prova abilità is a basic capacity without a duplicate timed action',()=>{
  assert.equal(doc(panels.checks).querySelectorAll('[data-action-ability]').length,6);
  assert.equal(doc(panels.others).querySelector('[data-attack-id="ability_checks"]'),null);
 });
+
+test('conditional action grants remain in Battle and Resources, unavailable without the required equipment',()=>{
+ const grant={id:'selection:protection',origin_id:'feature:class|phb|fighter|fighting-style',
+  name:'Protection',action_type:'reaction',type:'Capacità',
+  requirements:{equipment:{kind:'shield'}},description:'Reaction while wielding a shield'};
+ const bare={rules_version:'2014',inventory:[]};
+ const calculated={attacks:[],trackers:[],selection_record:{...bare,action_grants:[grant]},equipped_items:[]};
+ const blocked=actionEntries(bare,calculated);
+ const style=blocked.find(row=>row.id===grant.id);
+ assert(style,'The selected action remains present');
+ assert.equal(style.available,false);
+ const panels=battleActionPanels(bare,calculated,[],[],catalog.actions);
+ const row=doc(panels.others).querySelector('[data-attack-id="selection:protection"]');
+ assert(row?.classList.contains('play-battle-attack-unavailable'));
+ assert.match(row.textContent,/Equipaggiamento richiesto/);
+ const resource=battleResourcePowers(calculated,panels.abilityEntries);
+ assert(resource.some(row=>row.classAction?.id===grant.id&&row.classAction.available===false));
+ const shield={id:'shield',name:'Shield',type:'S',custom_item_type:'shield',quantity:1,equipped_slots:['off']};
+ const armed={...bare,inventory:[shield]};
+ const available=battleActionPanels(armed,{...calculated,selection_record:{...armed,action_grants:[grant]}},[],[],catalog.actions);
+ const enabled=doc(available.others).querySelector('[data-attack-id="selection:protection"]');
+ assert(enabled&&!enabled.classList.contains('play-battle-attack-unavailable'));
+ assert.equal(available.abilityEntries.find(row=>row.id===grant.id)?.available,true);
+ const unequipped={...armed,inventory:[{...shield,equipped_slots:[]}]};
+ const again=battleActionPanels(unequipped,{...calculated,selection_record:{...unequipped,action_grants:[grant]}},[],[],catalog.actions);
+ assert.equal(again.abilityEntries.find(row=>row.id===grant.id)?.available,false);
+});
