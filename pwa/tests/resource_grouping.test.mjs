@@ -240,3 +240,26 @@ test('health presents temporary HP alongside current HP and active defenses belo
   assert(health.querySelector('progress').compareDocumentPosition(summary)&4);
  });
 });
+test('an explicit action-damage trait bonus moves its basic action into the owning Resource group',()=>{
+ const record={...sheet('Bard','College of Creation'),dice_bonuses:[{
+  id:'dash-damage',target:'action_damage:attack',dice:'1d6',damage_type:'fire',
+  origin_id:'class|phb|bard',origin_name:'Bard',
+  parent_origin:'class|phb|bard'
+ }]};
+ const calculated=project(record);
+ assert.equal(calculated.action_damage_bonuses?.[0]?.formula,'1d6');
+ const owner=calculated.features.find(row=>row.origin_id);
+ calculated.action_damage_bonuses[0].parent_origin=owner?.origin_id||'class|phb|bard';
+ calculated.action_damage_bonuses[0].origin_name=owner?.name||'Bard';
+ render(record,calculated,app=>{
+  const group=[...app.querySelectorAll('[data-resource-privilege^="timing:"]')]
+   .find(node=>node.querySelector('[data-rule-action="attack"]'));
+  assert(group,'Modified Attack action must be present under its originating privilege');
+  assert.match(group.textContent,/Danni 1d6/);
+  assert.equal(app.querySelector('[data-resource-privilege="basic-rules"] [data-rule-action="attack"]'),null,
+   'A modified base action is not duplicated under basic rules');
+  const action=app.querySelector('[data-attack-id="attack"]');
+  assert(action.querySelector('[data-effect-kind="damage"]'),
+   'The action also shows its explicit damage in the Actions panel');
+ });
+});
