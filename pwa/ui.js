@@ -10171,7 +10171,14 @@ function listen(){
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.matches('[data-hp-autosave]')){
-      clearTimeout(pendingFieldTimers.get(target));
+      // The two HP fields are one draft. One timer per field can race a
+      // repaint/another write and restore the older current HP. Every input
+      // replaces the pending HP commit, which snapshots both fields together.
+      const dialog=target.closest('#hp-adjust-dialog');
+      for(const input of dialog?.querySelectorAll('[data-hp-autosave]')||[]){
+        clearTimeout(pendingFieldTimers.get(input));
+        pendingFieldTimers.delete(input);
+      }
       const editor=state.editor;
       pendingFieldTimers.set(target,setTimeout(()=>{
         pendingFieldTimers.delete(target);
