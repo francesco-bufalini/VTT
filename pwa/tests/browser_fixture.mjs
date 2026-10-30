@@ -1,7 +1,7 @@
 import {createServer} from 'node:http';
 import {readFile,mkdir} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
-import {chromium} from 'playwright';
+import {chromium,webkit} from 'playwright';
 export async function browserFixture({live=false,imagePolicy=false,additionalSpells=[]}={}){
  const root=new URL('../../',import.meta.url),artifacts=new URL('../.test-artifacts/',import.meta.url);
  await mkdir(artifacts,{recursive:true});
@@ -40,7 +40,9 @@ export async function browserFixture({live=false,imagePolicy=false,additionalSpe
  }catch{res.writeHead(404);res.end();}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const origin=live&&process.env.VTT_PWA_TEST_ORIGIN||'http://127.0.0.1:'+server.address().port;
- const browser=await chromium.launch({headless:true,...(process.platform==='win32'?{executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{})});
+ const engine=process.env.PWA_BROWSER==='webkit'?webkit:chromium;
+ const browser=await engine.launch({headless:true,...(engine===chromium&&process.platform==='win32'?
+  {executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{})});
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true}),page=await context.newPage();
  page.setDefaultTimeout(12000);
  const errors=[],missing=[],writes=[];

@@ -206,6 +206,7 @@ jobs:
           set -euo pipefail
           cd pwa
           PWA_BROWSER=webkit node tests/startup_browser.mjs
+          PWA_BROWSER=webkit node tests/fighting_styles_browser.mjs
 
   native-loopback:
     runs-on: ubuntu-latest
