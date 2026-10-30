@@ -136,6 +136,7 @@ const FILES := {
 	"/catalog/class_mechanics.json": ["res://pwa/catalog/class_mechanics.json", "application/json; charset=utf-8"],
 	"/catalog/trait_states.json": ["res://pwa/catalog/trait_states.json", "application/json; charset=utf-8"],
 	"/catalog/power_selections.json": ["res://pwa/catalog/power_selections.json", "application/json; charset=utf-8"],
+	"/catalog/spellcasting_benefits.json": ["res://pwa/catalog/spellcasting_benefits.json", "application/json; charset=utf-8"],
 	"/catalog/optional_feature_progressions.json": ["res://pwa/catalog/optional_feature_progressions.json", "application/json; charset=utf-8"],
 	"/catalog/feature_slot_spells.json": ["res://pwa/catalog/feature_slot_spells.json", "application/json; charset=utf-8"],
 	"/catalog/roll_bonus_rules.json": ["res://pwa/catalog/roll_bonus_rules.json", "application/json; charset=utf-8"],
