@@ -5,7 +5,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import {pendingCharacterChoices} from '../pending_choices.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
-const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
+const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),spellcastingBenefits:read('spellcasting_benefits'),
   abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants')};
 const character=(klass,subclass='',subclassSource='PHB',level=3)=>({
   kind:'character',rules_version:'2014',class:klass,class_source:'PHB',level,
