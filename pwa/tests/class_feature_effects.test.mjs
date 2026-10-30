@@ -9,7 +9,8 @@ import {spellCastPlan,recoveryPatch,hitPointPatch} from '../native_sheet.js';
 import {rollSheetDice,sheetRollFormula} from '../sheet_rules_view.js';
 import {actionEntries} from '../action_economy.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
-const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),spellcastingBenefits:read('spellcasting_benefits'),
+const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
+  spellcastingBenefits:read('spellcasting_benefits'),spellcastingBenefits:read('spellcasting_benefits'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
  featureRules:JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'))};
 const sheet=(name,level=5,edition='2014')=>({kind:'character',rules_version:edition,class:name,
