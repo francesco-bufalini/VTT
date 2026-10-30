@@ -1004,7 +1004,7 @@ function calculateSheetValues(record={},catalogs={}){
     ...baseRows.filter(row=>!excludedBases.has(row.id)&&!suppressed.has('base_override:'+row.id))
   ];
   const baseFor=target=>baseOverrides.filter(row=>row?.target===target&&!row.disabled&&
-    requirementsAllow(record,row)&&sourceEnabled(row)&&
+    requirementsAllow(record,row,{target})&&sourceEnabled(row)&&
     (!row.parent_origin||sourceEnabled({origin_id:row.parent_origin})))
     .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||
       String(a.id||'').localeCompare(String(b.id||'')));
@@ -1306,8 +1306,8 @@ function calculateSheetValues(record={},catalogs={}){
   function sumGrants(target,stack){
     let total=0;
     for(const row of grants){
-      const genericAttack=target.startsWith('attack_hit:')?'attack_hit:*':
-        target.startsWith('attack_damage:')?'attack_damage:*':'';
+      const genericAttack=/^attack_(?:hit|damage|range|long_range):/.test(target)?
+        target.split(':')[0]+':*':'';
       if(!(row?.target===target||genericAttack&&row?.target===genericAttack)||
         row.disabled||!requirementsAllow(record,row,{target,attack:attackContexts.get(target),equipped:equippedFacts})||!sourceEnabled(row))continue;
       try{
@@ -1560,6 +1560,11 @@ function calculateSheetValues(record={},catalogs={}){
     explanations[target]=target+': '+total+(parts.length?' · '+parts.join(' · '):' · Nessun bonus aggiuntivo');
   }
   const senses=calculateSenses(record,features,catalogs.senseGrants||{},sourceEnabled);
+  // Keep attack-specific requirements visible in benefit inspectors even
+  // though they are applied only when evaluating a concrete attack.
+  const projectionRequirementsAllow=row=>row?.requirements?.attack?
+    requirementsAllow(record,{...row,requirements:{...row.requirements,attack:undefined}}):
+    requirementsAllow(record,row);
   return {source:"local",schema:1,abilities,saves,skills,senses,
     values:Object.fromEntries(memo),explanations,
     roll_components:Object.fromEntries(Object.entries(rollComponents).map(([target,rows])=>[target,[...rows.values()]])),
@@ -1628,8 +1633,8 @@ function calculateSheetValues(record={},catalogs={}){
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
     origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
     origin_spell_variant_choices:additional.variant_choices,
-    automatic_bonuses:automatic.filter(row=>!suppressed.has('bonus:'+row.id)&&requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
-    bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
+    automatic_bonuses:automatic.filter(row=>!suppressed.has('bonus:'+row.id)&&projectionRequirementsAllow(row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
+    bonuses:grants.filter(r=>!r.disabled&&projectionRequirementsAllow(r)&&sourceEnabled(r)),
     companion_owner_values:Object.keys(companionValues).length?companionValues:null,
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),
