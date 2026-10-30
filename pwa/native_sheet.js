@@ -4,6 +4,7 @@ import {identityEntries} from './identity_aliases.js';
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue,SKILLS} from './sheet_rules.js';
+import {incomingDamageOptions,INCOMING_DAMAGE_TYPES,incomingDamageTypeLabel} from './defense_summary.js';
 import {contentForRules} from './source_edition.js';
 import {featOriginLabel,featTraitOriginKey} from './feat_picker.js';
 import {itemKind,resolveOwnedItem,armorDexterityBonus,armorDexterityLimit} from './item_controls.js';
@@ -749,6 +750,30 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       '<output>'+esc(acFormula)+'</output></div>'+
 
     '</div>';
+  const damageModifiers=incomingDamageOptions(c,calculated);
+  const damageModifierRows=damageModifiers.map(row=>{
+   const type=row.damage_type?' · '+incomingDamageTypeLabel(row.damage_type):' · Ogni danno';
+   const caption=row.kind==='defense'?
+    ({1:'Danni ×½',2:'Danni azzerati',[-1]:'Danni ×2'}[row.rank]||'Difesa'):
+    (row.formula?(row.sign<0?'−':'+')+row.formula:
+      (row.value>=0?'+':'')+row.value)+' danni';
+   const name=row.kind==='defense'?row.name:
+    row.name+(row.optional?' · Utilizzabile':' · Permanente');
+   const tracker=(calculated.trackers||[]).find(t=>t.id===row.tracker_id);
+   const uses=row.optional&&row.tracker_id?
+    ' · Tracker '+(tracker?.name||row.tracker_id)+' (−'+row.tracker_cost+')':'';
+   return '<label class="hp-damage-modifier'+(!row.matches?' hp-damage-modifier--inapplicable':'')+
+     '" data-hp-damage-row data-damage-type="'+esc(row.damage_type||'')+'">'+
+     (row.kind==='modifier'&&row.optional?
+       '<input type="checkbox" data-hp-damage-bonus value="'+esc(row.id)+'"'+
+       (!row.available?' disabled':'')+'>':
+       '<span class="hp-damage-modifier-icon" aria-hidden="true">'+
+       (row.kind==='defense'?'◈':'●')+'</span>')+
+     '<span class="hp-damage-modifier-copy"><strong>'+esc(name)+'</strong>'+
+     '<small>'+esc(caption+type+uses+(row.available?'':' · Utilizzi insufficienti'))+
+     (row.kind==='defense'&&row.origin_name?' · '+esc(row.origin_name):'')+
+     '</small></span></label>';
+  }).join('');
   return '<div class="battle-root">'+
    panel('Punti ferita',
     '<dialog id="hp-adjust-dialog" class="sheet-roll-dialog hp-adjust-dialog" aria-labelledby="hp-adjust-title">'+
@@ -767,6 +792,16 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
        '<input id="hp-adjust-amount" type="number" inputmode="numeric" step="1" min="1" max="99999" placeholder="Quantità" aria-label="Quantità di PF" value="">'+
        '<button type="button" class="btn danger" data-act="hp-adjust-apply" data-hp-mode="damage">− Danni</button>'+
        '<button type="button" class="btn primary" data-act="hp-adjust-apply" data-hp-mode="heal">＋ Cura</button>'+
+      '</div>'+
+      '<div class="hp-damage-controls">'+
+       '<label for="hp-adjust-damage-type">Tipo di danno'+
+        '<select id="hp-adjust-damage-type"><option value="">Non specificato</option>'+
+        INCOMING_DAMAGE_TYPES.map(id=>'<option value="'+esc(id)+'">'+esc(incomingDamageTypeLabel(id))+'</option>').join('')+
+        '</select></label>'+
+       '<div class="hp-damage-modifiers"><strong>Modificatori ai danni subiti</strong>'+
+        (damageModifierRows||'<p class="hint">Nessun beneficio o difesa attiva.</p>')+'</div>'+
+       '<label class="hp-damage-ignore"><input type="checkbox" id="hp-adjust-ignore-permanent">Ignora bonus permanenti, resistenze e vulnerabilità</label>'+
+       '<output id="hp-adjust-damage-preview" role="status" aria-live="polite"></output>'+
       '</div></div>'+
     '</dialog>',
     'battle-hp-panel')+
