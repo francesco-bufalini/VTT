@@ -44,10 +44,50 @@ Armatura Arcana ha una scelta fissa e un’applicazione. I modelli sono una
 selezione esclusiva disponibile dopo il legame a un oggetto; la loro applicazione
 non crea tratti. Le identità e i limiti provengono dai dati.
 
-Il lancio degli incantesimi, slot, libro e regole delle liste rimangono nel
-sottosistema `spell_selection`: questa modifica unifica le selezioni dei privilegi,
-non sostituisce il motore degli incantesimi. Il modello delle classi lancianti
-rimane una proiezione in sola lettura di quel dominio.
+## Beneficio spell_selection: incantesimi di classe
+
+`pwa/catalog/spellcasting_benefits.json` dichiara un beneficio
+`{type: "spell_selection"}` per il privilegio esatto che concede la capacità di
+lanciare incantesimi (`Spellcasting`, `Pact Magic` oppure il corrispondente
+privilegio di sottoclasse). `collectStructuredFeatures` lo inserisce fra i
+`benefits` del tratto posseduto. Senza tale tratto attivo non si generano
+incantesimi di classe né slot automatici.
+
+Ogni beneficio dichiara:
+
+- `level_class_name`: quale classe posseduta fornisce il livello, anche per
+  privilegi di sottoclasse;
+- `spell_list_class_name`: la lista di riferimento esattamente come presente
+  nel campo `classes` degli incantesimi 5eTools; ad esempio una sottoclasse può
+  usare la lista di una classe diversa;
+- `source.type: "spell_catalog"`: il catalogo di opzioni, anziché le capacità
+  opzionali delle manovre/infusioni;
+- `slot_progression`: `pool: "shared"` con divisore e arrotondamenti
+  indipendenti per singola progressione e multiclasse, oppure
+  `pool: "pact"` con `slot_count` e `slot_level` per livello;
+- `knowledge_mode` e `layers.learned/prepared/applied`: limiti (formule o
+  tabelle `by_class_level`), trigger e destinazioni di persistenza;
+- `cantrips.limit` e `ability`: quantità di trucchetti e caratteristica
+  incantatrice, senza mappature per nome di classe nel motore.
+
+Le espressioni aritmetiche della scheda possono utilizzare generalmente
+`class_level_<classe>`, con il nome normalizzato in minuscolo e underscore,
+ad esempio `class_level_fighter`. La variabile è risolta dal livello reale
+nella lista multiclasse. I limiti degli incantesimi preparati o imparati
+riutilizzano lo stesso parser di formule dei bonus della scheda.
+
+`powerSelectionModels` proietta il beneficio nelle normali fasi
+`learned/prepared/applied`, come per manovre e infusioni. Il selettore
+degli incantesimi continua a usare `spell_selection.js` e i campi esistenti
+(`prepared_spells`, `spellbook_spells`, `known_spell_overrides`), per
+mantenere compatibili le schede senza alterare la GUI. Nel pannello utente
+non appare più «Libro» per imparare gli incantesimi della classe che usa
+`spellbook_spells`: il controllo è «Impara incantesimi».
+
+La progressione e le sottoclassi PHB 2014 sono oggetto dei test di regressione.
+Le definizioni 2024 sono mantenute nel catalogo per evitare perdite di
+funzionalità, ma il loro allineamento alle regole 2024 non fa parte di questa
+verifica.
 
 ## Verifica
 
