@@ -13,7 +13,7 @@ Stage definitions include \`limit\` (number, a symbolic projection like \`infusi
 The **catalog is declarative**. Its \`source.type\` dispatches to shared adapters, rather than recognizing concrete class/feature names in the runtime. Existing storage is deliberately authoritative to keep old characters usable:
 
 * \`casting_classes\` uses the existing spellbook, known/prepared-spell pickers, and spell slot logic. Wizard has learned + prepared; Druid prepared; Sorcerer learned. Spellbook learning is not hard-capped. Cantrips have a separate progression.
-* \`infusion_catalog\` uses \`optional_features_catalog\` for learned infusions, \`inventory.infusion\` for applications. Known and active maxima still come from existing Artificer progression and bonus capacity. Removing an infusion releases its applied slot and clears infusion-specific charges through the existing inventory patch.
+* \`infusion_catalog\` uses the shared learned selections for known infusions and inventory-backed applications. The known count from Artificer progression is advisory; the applied capacity remains enforced.
 * \`trait_states\` uses \`trait_state_selection.armor_model\`. The Armor Model card and confirmation dialog remain visually unchanged. Choosing Guardiano/Infiltratore is exclusive; switching needs an equipped armor and is not locked by the **short-rest** label.
 * \`inline\` adds generic saved \`power_selections[id][learned|prepared]\` with validation, nested free-text subchoices, and optional \`power_applications[id]\` for active powers. A generic applied power can bind to an inventory item; any spent application tracker use is refunded on removal.
 
@@ -23,12 +23,12 @@ The **catalog is declarative**. Its \`source.type\` dispatches to shared adapter
 
 The normalized descriptors are now shared by casting, infusions, models, and Favored Enemy. **Do not migrate old spellbook/infusion/state storage wholesale**: their existing specialist execution paths are mature, and descriptor adapters prevent duplicating them or corrupting old records. Adding future option groups means defining a new origin, list source and stage policies; no additional source-specific panel is required for an \`inline\` selection.
 
-Triggers are **guidance only**, even for supposedly permanent choices. Limits are real selection capacities. The generic application engine supports a tracker reserve/refund, but it does not infer mechanical effects from prose: those must be declared and projected through existing structured benefit systems.
+Triggers are **guidance only**, even for supposedly permanent choices. The \`learned\` count is also advisory (as for known spells), so maneuvers, fighting styles and infusions may exceed their progression. Limits for \`prepared\` and nonexclusive \`applied\` stages remain enforced; permanent one-choice subtraits still replace the previous choice. The generic application engine uses existing structured benefits rather than inferring mechanics from prose.
 
 Automated checks: \`node --test pwa/tests/power_selection.test.mjs\`; the legacy Armor Model browser regression should also be rerun when an interactive browser is available.
 
 ## 5eTools optional-feature progressions / homebrew
 
-The generated `pwa/catalog/optional_feature_progressions.json` is a snapshot of source class/subclass `optionalfeatureProgression` entries joined to `optionalfeatures.json` by `featureType`. The shared picker computes limits from the selected class level. Required options are reserved, and the class-level prerequisites are checked. Non-level prerequisites require human judgment. The existing Infusions picker/application stays intact rather than appearing twice. Selected optional features are also stored in `optional_features_catalog` so their existing traits/benefits continue to work, while older `fighting_styles` and `optional_features_catalog` entries are recognized without migration.
+The picker preserves choices in \`power_selections\`, while older \`fighting_styles\` and \`optional_features_catalog\` entries remain recognized without migration.
 
-Every generic selection popup accepts a custom homebrew name and description, stored on the creature in `power_selection_custom_options`. Homebrew and official choices use the same limits; regenerated source catalogs never overwrite personal options.
+Known-option popups (including spell learning) share the same search, grouped results, compact opener and header close control. There are no attribution notes, homebrew-creation forms, or footer actions beneath the learned-options list. Previously saved custom options in \`power_selection_custom_options\` remain supported by the underlying model; regenerated catalogs do not overwrite them.
