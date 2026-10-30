@@ -2793,7 +2793,19 @@ function mountTraitBenefitDialog(){
  const featureRollTargets=featureRollOptions.filter(([id])=>{
    if(featureRollSeen.has(id))return false;featureRollSeen.add(id);return true;
  });
- const targets=[...BONUS_TARGETS,...featureRollTargets,['attack_roll','Tiro per colpire'],['damage_roll','Tiri di danno'],['any_d20','Qualunque d20']];
+ const edition=record.rules_version==='2024'?'2024':'2014';
+ const actionOptions=[
+  ['attack','Azione di attacco'],['opportunity','Attacco di opportunità'],
+  ['two_weapon','Attacco con arma secondaria'],['spell_cast','Lanciare un incantesimo'],
+  ['ability_checks','Prova abilità'],
+  ...(state.generalActionSupplements||[])
+   .filter(rule=>rule.edition===edition&&(!rule.variant_id||readActionVariants().includes(rule.variant_id)))
+   .map(rule=>[String(rule.id||''),rule.name||rule.id])
+ ];
+ const uniqueActions=new Map(actionOptions.filter(([id])=>id));
+ const actionDamageTargets=[...uniqueActions].map(([id,name])=>['action_damage:'+id,'Danno azione · '+name]);
+ const targets=[...BONUS_TARGETS,...featureRollTargets,...actionDamageTargets,
+  ['attack_roll','Tiro per colpire'],['damage_roll','Tiri di danno'],['any_d20','Qualunque d20']];
  const diceTargets=[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']];
  for(const choices of [targets,diceTargets])if(draftTarget&&!choices.some(([id])=>id===draftTarget))
    choices.unshift([draftTarget,'Questo tiro · '+draftTarget]);
@@ -2816,7 +2828,7 @@ function mountTraitBenefitDialog(){
   ['attack_count',formInput('Numero totale di attacchi con Azione','attacks_per_action','Es. 2','number')],
   ['bonus',formSelect('Tiro o valore','target',targets).replace('name="target"','name="target" data-trait-target')+
      formInput('Bonus (numero, formula o dadi)','expression','Es. +2, proficiency, 1d4')+
-     '<details class="trait-bonus-extra"><summary>Opzioni per dadi nei tiri</summary>'+
+     '<details class="trait-bonus-extra"><summary>Opzioni per danni e dadi</summary>'+
      formSelect('Tipo di danno (facoltativo)','damage_type',[['','Nessuno'],...DAMAGE_TYPES.map(id=>[id,rollDamageName(id)])])+
      formSelect('Tracker associato','tracker_id',trackerOptions)+
      formInput('Utilizzi consumati','tracker_cost','1','number')+'</details>'],
