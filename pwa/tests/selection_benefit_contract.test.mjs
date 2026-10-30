@@ -333,3 +333,33 @@ test('all modeled PHB/TCE Battle Master maneuvers link a real die with one payme
   }else assert.equal(action.tracker_cost,1,option.name+' manual action must pay once');
  }
 });
+
+test('an arbitrary option can grant a named scaling die used by its own optional roll',()=>{
+ const catalog=schema('origin'),definition=catalog.selections[0].source.options[0];
+ definition.effects=[
+  {type:'scaling_die',key:'training_die',name:'Training die',class_name:'Ranger',by_class_level:[[2,4],[5,6]]},
+  {type:'dice',dice_ref:'training_die',targets:['skill:stealth'],tracker_name:'Training',
+   tracker_cost:1,strict_tracker:true}
+ ];
+ let r=record();
+ r={...r,...powerSelectionPatch(r,{features:[feature]},catalog,'data-choice','learned','option')};
+ r={...r,...powerApplicationPatch(r,{features:[feature]},catalog,'data-choice','option',true)};
+ let effective=projectSelectionBenefits(r,{powerSelections:catalog},[feature]);
+ assert.equal(effective.scaling_dice[0].key,'training_die');
+ let resolved=scalingDiceFor(effective,[],[feature]);
+ assert.equal(resolved[0].dice,'1d4');
+ const bonus=resolveScalingDieBenefit(effective.dice_bonuses[0],resolved,[{id:'training-pool',name:'Training',max:2}],
+  expression=>expression==='dex_mod'?2:NaN);
+ assert.equal(bonus.dice,'1d4');
+ assert.equal(bonus.tracker_id,'training-pool');
+ const boosted=resolveScalingDieBenefit({...effective.dice_bonuses[0],dice_add:'dex_mod'},resolved,
+  [{id:'training-pool',name:'Training',max:2}],expression=>expression==='dex_mod'?2:NaN);
+ assert.equal(boosted.dice,'1d4+2');
+ r={...r,classes:[{name:'Ranger',source:'PHB',level:5}]};
+ effective=projectSelectionBenefits(r,{powerSelections:catalog},[feature]);
+ resolved=scalingDiceFor(effective,[],[feature]);
+ assert.equal(resolved[0].dice,'1d6');
+ r={...r,...powerApplicationPatch(r,{features:[feature]},catalog,'data-choice','option',false)};
+ effective=projectSelectionBenefits(r,{powerSelections:catalog},[feature]);
+ assert.equal(effective.scaling_dice.length,0);
+});
