@@ -34,7 +34,7 @@ test('damage-taken modifiers are stored as trait-owned benefits and can be remov
 });
 
 test('permanent reduction applies first and defenses are applied once per damage type',()=>{
- const computed=mk([benefit('flat','-2')],[
+ const computed=mk([benefit('flat','-2',false,{value:-2})],[
   {key:'fire',rank:1,origin_name:'A'}, {key:'fire',rank:1,origin_name:'B'},
   {key:'fire',rank:-1,origin_name:'C'}]);
  const record={};
