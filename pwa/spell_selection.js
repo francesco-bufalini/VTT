@@ -45,7 +45,7 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
   // granting Spellcasting/Pact Magic trait is currently unavailable.
   if(arr(stored.casting_classes).length&&!members.length)continue;
   for(const member of members.length?members:[null])entries.push({...definition,...stored,casting_class:member?.id||'',
-    granting_trait_id:member?.granting_trait_id||'',caster_ability:(member&&creature.spellcasting_section_abilities?.[member.id])||member?.ability||creature.spellcasting_section_abilities?.manual||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',pact:member?.name.toLowerCase()==='warlock',casting_label:member?.name||'Scheda'});
+    granting_trait_id:member?.granting_trait_id||'',caster_ability:(member&&creature.spellcasting_section_abilities?.[member.id])||member?.ability||creature.spellcasting_section_abilities?.manual||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',pact:member?.slot_progression?.kind==='pact',casting_label:member?.name||'Scheda'});
  }
  // Learned cantrips for preparing classes are ready without being saved in
  // the prepared-spell list. Preserve legacy saved cantrips without duplicates.
@@ -58,7 +58,7 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
      granting_trait_id:member.granting_trait_id||'',
      caster_ability:creature.spellcasting_section_abilities?.[member.id]||
        member.ability||creature.spellcasting_ability||'int',
-     pact:member.name.toLowerCase()==='warlock',casting_label:member.name||'Scheda'});
+     pact:member.slot_progression?.kind==='pact',casting_label:member.name||'Scheda'});
   }
  }
  for(const grant of calculated.origin_spells){
@@ -93,7 +93,7 @@ export function spellRecord(value){
 }
 export function spellEligible(entry,member){
  if(!member||entry.internal_grant||Number(entry.level||0)>member.max_level)return false;
- return arr(entry.classes).some(name=>String(typeof name==='string'?name:name?.name).toLowerCase()===member.name.toLowerCase())||
+ return arr(entry.classes).some(name=>String(typeof name==='string'?name:name?.name).toLowerCase()===String(member.spell_list_class||member.name).toLowerCase())||
   arr(member.expanded_spell_ids).includes(spellId(entry));
 }
 export function spellsForEdition(catalog,edition='2014'){
@@ -162,9 +162,8 @@ export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
  map[member.id]={added:[...added],removed:[...removed]};
  return {known_spell_overrides:map};
 }
-// For spells-known casters the progression gives the expected minimum learned
-// spells; a wizard's starting spellbook has six spells and gains two per level.
-// Knowledge is separate from preparation: only learned (book) spells count.
+// Expected learned spell counts come from the feature's structured benefit.
+// Knowledge is separate from preparation for any book-based benefit.
 export function knownSpellProgress(creature={},member,classes=[],catalog=[]){
  if(!member)return null;
  const known=member.book?new Set(arr(creature.spellbook_spells).filter(row=>
@@ -173,7 +172,7 @@ export function knownSpellProgress(creature={},member,classes=[],catalog=[]){
      Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0)>0&&
      castingSources(row,classes,catalog).includes(member.id)).length:null;
  if(known===null)return null;
- const minimum=member.book?6+2*(Math.max(1,Number(member.level)||1)-1):
+ const minimum=member.book?(Number.isInteger(member.known_limit)?member.known_limit:null):
    Number.isInteger(member.limit)&&member.limit>=0?member.limit:null;
  return {known,minimum};
 }
