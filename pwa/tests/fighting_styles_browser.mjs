@@ -1,7 +1,7 @@
 // Regression: generic Fighting Style learning must use the same fully
 // scrollable catalog list and search behavior as Artificer infusion learning.
 import assert from 'node:assert/strict';
-import {browserFixture} from './browser_fixture.mjs';
+import {browserFixture,seedPlayCreature} from './browser_fixture.mjs';
 
 const f=await browserFixture();
 const {page,origin,sheet}=f;
@@ -112,8 +112,15 @@ try{
  assert.equal((await snapshot()).offhand,'1d6');
  assert.equal((await snapshot()).record.power_selections[progression].learned.length,1);
  assert.equal((await snapshot()).record.power_applications[progression].length,0);
+ const featureOpenerClass=await opener.getAttribute('class');
+ await f.shot('fighting-style-infusion-shared-mobile');
+ await page.setViewportSize({width:1440,height:900});await f.shot('fighting-style-infusion-shared-desktop');
+ // Use the existing Wizard browser fixture: the Fighting Style character
+ // intentionally has no spell-learning selector available on its sheet.
+ await seedPlayCreature(page,origin);
+ await sheet('magic');
  const spellOpen=page.locator('#sheet-play-view [data-act="magic-learn-select"]').first();
- assert.equal(await spellOpen.getAttribute('class'),await opener.getAttribute('class'),
+ assert.equal(await spellOpen.getAttribute('class'),featureOpenerClass,
   'Spells and optional features use the same opener button styling');
  await spellOpen.click();
  const spellPicker=page.locator('#magic-tools-dialog');
@@ -125,8 +132,6 @@ try{
  assert.equal(await spellPicker.locator('.magic-tools-body > .actions').count(),0,
   'The spell learner has no footer below the choices');
  await spellPicker.locator('[data-act="magic-tool-close"]').first().click();
- await f.shot('fighting-style-infusion-shared-mobile');
- await page.setViewportSize({width:1440,height:900});await f.shot('fighting-style-infusion-shared-desktop');
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
  console.log('PASS: Fighting Styles and infusions share visible cards and learners; manual application changes real effects, persists and needs no object');
 }finally{await f.close();}
