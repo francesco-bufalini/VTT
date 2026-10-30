@@ -913,7 +913,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    rulesOfBase.map(([id,time])=>{
     const row=base(id),available=row.available!==false;
     const hint=id==='spell_cast'?'Slot':
-     id==='attack'?(row.grant_description||maxTrait?.description||'Attaccare con un’arma o con un colpo senz’armi.'):
+     id==='attack'?(maxCount>1?(row.grant_description||maxTrait?.description||'Azione'):'Azione'):
      ['legendary_action','legendary_resistance','lair_action'].includes(id)?'1 '+({legendary_action:'Azione leggendaria',legendary_resistance:'Resistenza leggendaria',lair_action:'Azione di tana'}[id]):
      !available?(row.unavailable_reason||
       (id==='opportunity'?'È necessario poter effettuare un attacco in mischia.':
