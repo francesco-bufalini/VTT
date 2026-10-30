@@ -107,7 +107,7 @@ test('known-spell limits appear for spontaneous casters; wizard book is the know
  const sc={prepared_spells:[{...sorcery,casting_classes:[sorcerer.id]}]};
  assert.deepEqual(knownSpellProgress(sc,sorcerer,[sorcerer],[sorcery]),{known:1,minimum:4});
  const wc={spellbook_spells:[catalog[1]],prepared_spells:[]};
- assert.deepEqual(knownSpellProgress(wc,{...wizard,level:4},[wizard],catalog),{known:1,minimum:12});
+ assert.deepEqual(knownSpellProgress(wc,{...wizard,level:4,learned_limit:12},[wizard],catalog),{known:1,minimum:12});
 });
 test('preparing a spell granted by another origin cannot duplicate it',()=>{
  const c={prepared_spells:[],spells:[]};
