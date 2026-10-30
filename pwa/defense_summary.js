@@ -1,3 +1,4 @@
+import {spendTrackerUses} from './character_core.js';
 // Compact, source-aware read-only defense summary for the Info quick-stat popup.
 const arr=value=>Array.isArray(value)?value:[];
 const low=value=>String(value??'').trim().toLowerCase();
@@ -43,4 +44,91 @@ export function characterDefenseSummary(record={},computed={}){
   count:new Set(rows.map(r=>r.rank+':'+r.key)).size,
   groups:CATEGORIES.map(({rank,title})=>({rank,title,items:rows.filter(x=>x.rank===rank)
    .sort((a,b)=>a.label.localeCompare(b.label,'it'))}))};
+}
+
+
+// The HP popup uses the same source-aware defense data as the sheet. Unlike
+// attack damage, these modifiers apply to damage received, before HP changes.
+export function incomingDamageOptions(record={},computed={},damageType=''){
+ const kind=low(damageType),trackers=new Map(arr(computed.trackers).map(t=>[String(t.id),t]));
+ const bonuses=arr(computed.incoming_damage_modifiers).filter(row=>!row.disabled).map(row=>{
+  const tracker=row.tracker_id?trackers.get(String(row.tracker_id)):null;
+  const cost=Math.max(1,Number(row.tracker_cost)||1);
+  const available=!row.optional||!row.tracker_id||!!tracker&&!tracker.disabled&&
+   Math.max(0,Number(tracker.max)||0)-Math.max(Number(tracker.spent)||0,
+    Number(record.resource_tracker_spent?.[tracker.id])||0)>=cost;
+  return {id:String(row.id),kind:'modifier',name:row.origin_name||'Beneficio',
+   expression:String(row.expression||row.formula||row.value||'0'),
+   damage_type:low(row.damage_type),matches:!row.damage_type||kind===low(row.damage_type),
+   optional:!!row.optional,tracker_id:row.tracker_id||'',tracker_cost:cost,
+   available,formula:row.formula||'',sign:row.sign||1,
+   value:Number(row.value)||0,origin_id:row.origin_id||''};
+ });
+ const defenses=characterDefenseSummary(record,computed).groups
+  .filter(group=>[1,2,-1].includes(group.rank))
+  .flatMap(group=>group.items.map(item=>({
+   id:'defense:'+group.rank+':'+item.key+':'+String(item.id||''),
+   kind:'defense',rank:group.rank,damage_type:item.key,
+   name:group.title+' · '+item.label,
+   origin_name:item.origin_name,optional:false,
+   matches:!!kind&&kind===low(item.key),available:true
+  })));
+ return [...bonuses,...defenses];
+}
+
+// Computes the final damage and the full resource patch without side effects.
+// Optional benefits are not consumed if another selected benefit is invalid.
+export function resolveIncomingDamage(record={},computed={},{
+ amount,damage_type='',ignore_permanent=false,selected_ids=[]
+}={},rollDie=sides=>1+Math.floor(Math.random()*sides)){
+ if(!Number.isSafeInteger(amount)||amount<1||amount>99999)
+  throw Error('Danni in arrivo non validi.');
+ const options=incomingDamageOptions(record,computed,damage_type);
+ const selected=new Set(arr(selected_ids).map(String));
+ const chosen=options.filter(row=>row.kind==='modifier'&&row.optional&&selected.has(row.id));
+ if(chosen.length!==selected.size||chosen.some(row=>!row.matches||!row.available))
+  throw Error('Bonus ai danni subiti non disponibile per questo danno.');
+ let trackerPatch={},nextRecord=record;
+ for(const row of chosen)if(row.tracker_id){
+  const cost=Number(row.tracker_cost);
+  const tracker=arr(computed.trackers).find(t=>String(t.id)===String(row.tracker_id));
+  if(!tracker||tracker.disabled)throw Error('Tracker del bonus non disponibile.');
+  const payment=spendTrackerUses(nextRecord,row.tracker_id,cost,computed.trackers);
+  trackerPatch={...trackerPatch,...payment};
+  nextRecord={...nextRecord,...payment};
+ }
+ const active=options.filter(row=>row.kind==='modifier'&&row.matches&&
+  (row.optional?selected.has(row.id):!ignore_permanent));
+ let adjustment=0;
+ const applied=[];
+ for(const row of active){
+  let value=row.value;
+  if(row.formula){
+   const match=/^([1-9]\d*)d(4|6|8|10|12|20|100)$/i.exec(row.formula);
+   if(!match||Number(match[1])>100)throw Error('Formula dei dadi non disponibile.');
+   value=0;
+   for(let i=0;i<Number(match[1]);i++){
+    const die=Number(rollDie(Number(match[2])));
+    if(!Number.isInteger(die)||die<1||die>Number(match[2]))
+     throw Error('Risultato del dado non valido.');
+    value+=die;
+   }
+   value*=row.sign;
+  }
+  adjustment+=value;
+  applied.push({id:row.id,label:row.name,value,kind:'modifier'});
+ }
+ let damage=Math.max(0,Math.min(99999,amount+adjustment));
+ const defenses=ignore_permanent?[]:options.filter(row=>row.kind==='defense'&&row.matches);
+ const ranks=new Set(defenses.map(row=>row.rank));
+ if(ranks.has(2))damage=0;
+ else{
+  if(ranks.has(1))damage=Math.floor(damage/2);
+  if(ranks.has(-1))damage=Math.min(99999,damage*2);
+ }
+ for(const row of defenses)applied.push({
+  id:row.id,label:row.name,kind:'defense',rank:row.rank
+ });
+ return {damage,adjustment,applied,resource_patch:trackerPatch,
+  ignored_permanent:!!ignore_permanent};
 }
