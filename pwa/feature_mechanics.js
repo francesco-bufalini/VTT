@@ -79,13 +79,35 @@ export function classFeatureEntries(record={},calculated={}){
    low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(rule.class_name)&&
    (!rule.class_source||low(f.class_source||String(f.origin_key).split('|')[1])===low(rule.class_source)));
   if(!feature)continue;
-  const tracker=rows(calculated.trackers).find(t=>!t.disabled&&
-   low(t.name)===low(rule.resource_name)&&
+  const member=rows(record.classes?.length?record.classes:[{name:record.class,subclass:record.subclass}])
+   .find(row=>low(row.name)===low(rule.class_name));
+  if(rule.subclass_name&&low(member?.subclass)!==low(rule.subclass_name))continue;
+  // Option-owned roll effects require the exact applied option, never merely
+  // the class feature that offered the selection.
+  let selectedOption=null;
+  if(rule.required_optional_feature){
+   const found=rows(calculated.selection_models).some(model=>model.source_origin_id===feature.origin_id&&
+    rows(model.layers?.applied?.selected).some(id=>{
+     const option=rows(model.options).find(o=>o.id===(id?.id||id));
+     if(low(option?.name)!==low(rule.required_optional_feature)||
+       rule.optional_source&&low(option?.source)!==low(rule.optional_source))return false;
+     selectedOption=option;return true;
+    }));
+   if(!found){
+    const legacy=rows(calculated.selection_record?.optional_features_catalog||record.optional_features_catalog)
+     .find(row=>!row.disabled&&low(row.name)===low(rule.required_optional_feature)&&
+       (!rule.optional_source||low(row.source)===low(rule.optional_source)));
+    if(!legacy)continue;
+    selectedOption=legacy;
+   }
+  }
+  const names=[rule.resource_name,...rows(rule.resource_aliases)].map(low).filter(Boolean);
+  const tracker=rows(calculated.trackers).find(t=>!t.disabled&&names.includes(low(t.name))&&
    (!t.origin_class||low(t.origin_class)===low(rule.class_name)));
   output.push({id:'class_feature:'+rule.id,class_feature_id:rule.id,name:rule.label||feature.name,
    time:rule.time||'contextual',type:'Capacità',mode:rule.mode||'context',
    roll_only:rule.roll_only===true,
-   description:feature.entries??feature.description??'',class_name:rule.class_name,
+   description:selectedOption?.description||feature.entries||feature.description||'',class_name:rule.class_name,
    resource_name:rule.resource_name||'',tracker:tracker?.name||rule.resource_name||'',
    tracker_id:tracker?.id||'',cost:Math.max(0,Number(rule.cost)||0),
    origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
@@ -111,7 +133,11 @@ export function classFeatureRollResourceBonuses(record={},calculated={}){
   const modifier=String(bonus.ability_modifier||'');
   const value=modifier?Number(calculated.values?.['ability_mod:'+modifier]):Number(bonus.flat_bonus);
   const flat=Number.isFinite(value)?Math.max(Number(bonus.minimum??-Infinity),value):NaN;
-  const dice=String(bonus.dice||'').trim();
+  let dice=String(bonus.dice||'').trim();
+  const sourceLevel=rows(record.classes?.length?record.classes:[{name:record.class,level:record.level}])
+   .find(row=>low(row.name)===low(ability.class_name))?.level||0;
+  for(const [minimum,formula] of rows(bonus.dice_by_class_level))
+   if(sourceLevel>=Number(minimum))dice=String(formula).trim();
   const rollMode=['advantage','disadvantage'].includes(bonus.roll_mode)?bonus.roll_mode:'';
   if(!rollMode&&!Number.isFinite(flat)&&!/^[1-9]\d*d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/.test(dice))return [];
   return [{id:ability.id,class_feature_id:ability.class_feature_id,
