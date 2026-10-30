@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionPatch,powerApplicationPatch,powerSelectionModels,projectSelectionBenefits} from '../power_selection.js';
-import {requirementsAllow} from '../sheet_rules.js';
+import {requirementsAllow,calculateSheet} from '../sheet_rules.js';
 import {classFeatureRollResourceBonuses} from '../feature_mechanics.js';
 
 const optional=JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'));
@@ -80,4 +80,54 @@ test('a selected Feinting Attack exposes contextual advantage, not unconditional
  assert.equal(advantage.roll_mode,'advantage');
  assert.equal(advantage.tracker_cost,1);
  assert.deepEqual(advantage.targets,['attack_roll']);
+});
+
+const full=()=>({optionalFeatureProgressions:optional,powerSelections:{selections:[],templates:[]},
+ classFeatures:JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8')),
+ classMechanics:JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8')),
+ abilityGrants:JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8')),
+ proficiencyGrants:JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8')),
+ traitStates:JSON.parse(readFileSync(new URL('../catalog/trait_states.json',import.meta.url),'utf8')).states});
+const weapon=(id,type,properties=[])=>({id,name:id,type,custom_item_type:'weapon',weapon_category:'martial',
+ damage:'1d8',quantity:1,properties,range:type==='R'?'150/600':'20/60',equipped_slots:['main']});
+const play=(inventory)=>({...fighter(3),abilities:{str:16,dex:16,con:14,int:10,wis:12,cha:10},inventory});
+const withStyle=(record,catalog,option)=>{
+ let sheet=calculateSheet(record,catalog);
+ assert(sheet.selection_models.some(model=>model.id===fighterStyleId),'Fighting Style owner must be present');
+ record={...record,...powerSelectionPatch(record,sheet,selections,fighterStyleId,'learned',option)};
+ sheet=calculateSheet(record,catalog);
+ record={...record,...powerApplicationPatch(record,sheet,selections,fighterStyleId,option,true)};
+ return calculateSheet(record,catalog);
+};
+test('applied styles change real ranged/melee/thrown hits and damage without affecting unrelated attacks',()=>{
+ const catalog=full();
+ const bow=play([weapon('bow','R',['2H'])]);
+ const baseBow=calculateSheet(bow,catalog),archery=withStyle(bow,catalog,'optional:phb:archery');
+ assert.equal(archery.attacks.find(a=>a.id==='item:bow').hit-baseBow.attacks.find(a=>a.id==='item:bow').hit,2);
+ const sword=play([weapon('sword','M')]);
+ const baseSword=calculateSheet(sword,catalog),dueling=withStyle(sword,catalog,'optional:phb:dueling');
+ assert.equal(dueling.attacks.find(a=>a.id==='item:sword').damage_extra_modifier-
+  baseSword.attacks.find(a=>a.id==='item:sword').damage_extra_modifier,2);
+ const swordAndOff=play([weapon('sword','M'),{...weapon('dagger','M',['F','T']),equipped_slots:['off']}]);
+ const blocked=withStyle(swordAndOff,catalog,'optional:phb:dueling');
+ const blockedBase=calculateSheet(swordAndOff,catalog);
+ assert.equal(blocked.attacks.find(a=>a.id==='item:sword').damage_extra_modifier,
+  blockedBase.attacks.find(a=>a.id==='item:sword').damage_extra_modifier);
+ const spear=play([weapon('spear','M',['T'])]);
+ const baseSpear=calculateSheet(spear,catalog),thrown=withStyle(spear,catalog,'optional:tce:thrown-weapon-fighting');
+ assert.equal(thrown.attacks.find(a=>a.id==='item:throw:main:spear').damage_extra_modifier-
+  baseSpear.attacks.find(a=>a.id==='item:throw:main:spear').damage_extra_modifier,2);
+ assert.equal(thrown.attacks.find(a=>a.id==='item:spear').damage_extra_modifier,
+  baseSpear.attacks.find(a=>a.id==='item:spear').damage_extra_modifier);
+});
+test('passive defense, sight and unarmed base alternatives are reflected in sheet calculations',()=>{
+ const catalog=full(),armor={id:'leather',name:'Leather armor',type:'LA',quantity:1,ac:11,equipped_slots:['body']};
+ const worn=play([armor]),base=calculateSheet(worn,catalog),defense=withStyle(worn,catalog,'optional:phb:defense');
+ assert.equal(defense.values.ac-base.values.ac,1);
+ const blind=withStyle(play([]),catalog,'optional:tce:blind-fighting');
+ assert.equal(blind.senses.distances.blindsight,10);
+ const fists=withStyle(play([]),catalog,'optional:tce:unarmed-fighting');
+ assert.equal(fists.attacks.find(row=>row.id==='unarmed').damage_base_formula,'1d8');
+ const armed=withStyle(play([weapon('sword','M')]),catalog,'optional:tce:unarmed-fighting');
+ assert.equal(armed.attacks.find(row=>row.id==='unarmed').damage_base_formula,'1d6');
 });
