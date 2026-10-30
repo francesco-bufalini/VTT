@@ -454,7 +454,7 @@ export function castingClasses(record,catalog,abilityModifiers={},features=[]){
    if(spec==null)return null;
    if(typeof spec==='number')return spec;
    if(spec.formula){
-     try{return Math.max(0,parseArithmetic(spec.formula,key=>{
+     try{return Math.max(Number(spec.minimum??0),parseArithmetic(spec.formula,key=>{
        if(key==='level'||key==='class_level')return level;
        if(key.startsWith('class_level_'))return levelOf(key.slice(12));
        if(key.endsWith('_mod')&&key.length===7){
