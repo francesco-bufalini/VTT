@@ -788,3 +788,139 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  }
  return null;
 }
+
+
+// Describe committed *sheet changes*, not input gestures. This is deliberately
+// independent of the chat transport and of the visible panel: every editor
+// mutation, including autosaved fields, can share the same activity vocabulary.
+const ACTIVITY_LABELS={
+ str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma',
+ name:'Nome',level:'Livello',xp:'Esperienza',alignment:'Allineamento',
+ species:'Specie',subrace:'Sottospecie',background:'Background',class:'Classe',
+ subclass:'Sottoclasse',rules_version:'Edizione',party_id:'Fazione',
+ current_hp:'PF attuali',max_hp:'PF massimi',max_hp_base:'PF massimi base',
+ temporary_hp:'PF temporanei',inspiration:'Ispirazione',exhaustion:'Indebolimento',
+ armor_class_base:'Classe armatura',speed_base:'Velocità',coins:'Monete',
+ spells:'Incantesimi',prepared_spells:'Incantesimi preparati',
+ spellbook_spells:'Libro degli incantesimi',spell_slots_total:'Slot disponibili',
+ spell_slots_spent:'Slot utilizzati',pact_slots_spent:'Slot del Patto utilizzati',
+ resource_tracker_spent:'Utilizzi risorse',resource_trackers:'Risorse',
+ feats_catalog:'Talenti',formula_bonuses:'Bonus',dice_bonuses:'Bonus ai dadi',
+ proficiency_choices:'Competenze',conditions:'Condizioni',concentrating_spell_id:'Concentrazione',
+ active_class_features:'Privilegi attivi',origin_enabled:'Origini abilitate',
+ identity_factions:'Fazioni',identity_names:'Nomi',inventory:'Inventario',
+ inventory_containers:'Sezioni inventario',hand_grip_two_handed:'Impugnatura a due mani',
+ hand_main_special:'Mano principale',hand_off_special:'Mano secondaria',
+ attunement_max_base:'Massimo sintonia',death_save_successes:'TS morte riusciti',
+ death_save_failures:'TS morte falliti'
+};
+// Narrative and binary fields must not leak their raw content to a shared party chat.
+const PRIVATE_ACTIVITY_FIELDS=new Set([
+ 'sheet_portrait_data','appearance','notes','background_personality',
+ 'personality_traits','ideals','bonds','flaws','additional_traits','documents',
+ 'description','symbol'
+]);
+const activityEqual=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const activityShort=v=>{
+ if(v===null||v===undefined||v==='')return 'nessuno';
+ if(typeof v==='boolean')return v?'sì':'no';
+ if(typeof v==='number')return String(v);
+ if(typeof v==='string')return v.length>72?v.slice(0,69)+'…':v;
+ return 'modificato';
+};
+const activityName=v=>String(
+ typeof v==='object'&&v!==null?(v.name||v.title||v.spell_name||v.spell_id||v.id||v.value||'voce'):v
+ ||'voce').slice(0,72);
+const activityTitle=k=>ACTIVITY_LABELS[k]||String(k).replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
+function activityList(before=[],after=[],label){
+ const old=Array.isArray(before)?before:[],now=Array.isArray(after)?after:[];
+ const counts=arr=>{
+  const m=new Map();
+  for(const x of arr){const name=activityName(x);m.set(name,(m.get(name)||0)+1);}
+  return m;
+ };
+ const a=counts(old),b=counts(now),change=[];
+ for(const [name,n] of b)if(n>(a.get(name)||0))change.push('aggiunto '+name+(n-(a.get(name)||0)>1?' ×'+(n-(a.get(name)||0)):''));
+ for(const [name,n] of a)if(n>(b.get(name)||0))change.push('rimosso '+name+(n-(b.get(name)||0)>1?' ×'+(n-(b.get(name)||0)):''));
+ if(!change.length)change.push('aggiornato');
+ return label+': '+change.slice(0,3).join(', ');
+}
+function activityInventory(before=[],after=[]){
+ const old=Array.isArray(before)?before:[],now=Array.isArray(after)?after:[];
+ // Match repeated names by occurrence, so inserting a row does not masquerade
+ // as equipping every subsequent item.
+ const indexed=arr=>{
+  const counts=new Map(),rows=new Map();
+  for(const row of arr){
+   const id=String(row?.instance_id||row?.owned_id||row?.id||row?.name||'oggetto');
+   const number=counts.get(id)||0;counts.set(id,number+1);
+   rows.set(id+'#'+number,row);
+  }
+  return rows;
+ };
+ const a=indexed(old),b=indexed(now),out=[];
+ for(const [id,row] of b)if(!a.has(id))out.push('aggiunto '+activityName(row));
+ for(const [id,row] of a)if(!b.has(id))out.push('rimosso '+activityName(row));
+ for(const [id,row] of b){
+  const prev=a.get(id);
+  if(!prev)continue;
+  const name=activityName(row);
+  const equipped=x=>Boolean(x?.equipped||(Array.isArray(x?.equipped_slots)&&x.equipped_slots.length));
+  if(equipped(prev)!==equipped(row))out.push((equipped(row)?'equipaggiato ':'disequipaggiato ')+name);
+  else if(!activityEqual(prev?.equipped_slots,row?.equipped_slots))
+   out.push('equipaggiamento di '+name+' modificato');
+  if(Boolean(prev.attuned)!==Boolean(row.attuned))out.push((row.attuned?'sintonizzato ':'rimossa sintonia: ')+name);
+  const qty=x=>x?.quantity??x?.count??1;
+  if(qty(prev)!==qty(row))out.push(name+': quantità '+activityShort(qty(prev))+' → '+activityShort(qty(row)));
+  if(!activityEqual(prev,row)&&!out.some(x=>x.includes(name)))
+   out.push(name+': proprietà aggiornate');
+ }
+ return out.length?'Inventario: '+out.slice(0,4).join(', '):'Inventario aggiornato';
+}
+/** Human-readable activity lines for successful character changes; empty for no-ops. */
+export function describeSheetActivity(before={},after={},requested=null){
+ if(!before||!after)return [];
+ const keys=requested&&typeof requested==='object'&&!Array.isArray(requested)?
+  Object.keys(requested):Object.keys(after);
+ const out=[];
+ for(const key of keys){
+  if(key==='id'||key==='owner_id'||key==='transfer_revision')continue;
+  const prev=before[key],next=after[key];
+  if(activityEqual(prev,next))continue;
+  const label=activityTitle(key);
+  if(PRIVATE_ACTIVITY_FIELDS.has(key)){out.push(label+': aggiornato');continue;}
+  if(key==='inventory'){out.push(activityInventory(prev,next));continue;}
+  if(key==='resource_tracker_spent'&&next&&typeof next==='object'){
+   const ids=new Set([...Object.keys(prev||{}),...Object.keys(next)]);
+   for(const id of ids){
+    if(Number(prev?.[id]||0)===Number(next?.[id]||0))continue;
+    const tracker=[...(before.resource_trackers||[]),...(after.resource_trackers||[])].find(x=>x.id===id);
+    out.push('Risorsa '+(tracker?.name||id)+': '+Number(prev?.[id]||0)+' → '+Number(next?.[id]||0)+' utilizzi spesi');
+   }
+   continue;
+  }
+  if(key==='spell_slots_spent'&&Array.isArray(next)){
+   for(let i=0;i<next.length;i++)if(Number(prev?.[i]||0)!==Number(next[i]||0))
+    out.push('Slot livello '+i+': '+Number(prev?.[i]||0)+' → '+Number(next[i]||0)+' utilizzati');
+   continue;
+  }
+  if(Array.isArray(next)||Array.isArray(prev)){
+   if(['conditions','prepared_spells','spellbook_spells','spells','feats_catalog'].includes(key))
+    out.push(activityList(prev,next,label));
+   else out.push(label+': '+(Array.isArray(prev)?prev.length:0)+' → '+(Array.isArray(next)?next.length:0)+
+     (Array.isArray(prev)&&Array.isArray(next)&&prev.length===next.length?' (modificato)':''));
+   continue;
+  }
+  if(next&&typeof next==='object'){
+   const changed=[...new Set([...Object.keys(prev||{}),...Object.keys(next)])]
+    .filter(k=>!activityEqual(prev?.[k],next[k]));
+   if(key==='abilities')for(const ability of changed)
+    out.push('Caratteristica '+activityTitle(ability)+': '+activityShort(prev?.[ability])+' → '+activityShort(next[ability]));
+   else out.push(label+': '+changed.slice(0,3).map(k=>activityTitle(k)).join(', ')+(changed.length>3?'…':'')+' modificati');
+   continue;
+  }
+  if(typeof next==='boolean')out.push(label+': '+(next?'attivato':'disattivato'));
+  else out.push(label+': '+activityShort(prev)+' → '+activityShort(next));
+ }
+ return out.slice(0,8);
+}
