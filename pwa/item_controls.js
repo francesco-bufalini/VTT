@@ -544,7 +544,8 @@ export function equipmentRequirementMatches(record={},requirements={},target='',
   e.slot==='off'&&attackId==='item:off:'+e.id||
   attackId==='item:throw:'+e.slot+':'+e.id));
  if(!item)item=gear.find(e=>e.kind==='shield'&&attackId==='shield:improvised:'+e.slot+':'+e.id);
- const thrown=attackId.startsWith('item:throw:');
+ const thrown=attackId.startsWith('item:throw:')||
+  item?.kind==='weapon'&&item.weapon_type==='ranged'&&item.properties.includes('T')&&attack?.melee===false;
  const kind=item?.kind|| (attackId.startsWith('unarmed')?'unarmed':
   attackId.startsWith('natural:')?'natural':attack?'other':'');
  const mode=thrown?'thrown':attack?.melee===true?'melee':attack?.melee===false?'ranged':
