@@ -10,7 +10,8 @@ const members=record=>rows(record.classes).length?record.classes:
 export function scalingDiceFor(record={},definitions=[],features=[]){
  const result=new Map();
  for(const rule of [...rows(definitions),...rows(record.scaling_dice)]){
-  if(!rule?.id||rule.disabled)continue;
+  const dieId=rule?.key||rule?.id;
+  if(!dieId||rule.disabled)continue;
   const owner=rule.owner||{},className=owner.class_name||rule.class_name;
   const member=className?members(record).find(m=>low(m.name)===low(className)&&
    (!owner.class_source||low(m.source||record.class_source)===low(owner.class_source))&&
@@ -29,9 +30,9 @@ export function scalingDiceFor(record={},definitions=[],features=[]){
    if(Number.isInteger(at)&&level>=at&&allowed.has(value))sides=value;
   }
   if(!sides)continue;
-  const prior=result.get(rule.id),priority=Number(rule.priority)||0;
+  const prior=result.get(dieId),priority=Number(rule.priority)||0;
   if(!prior||priority>prior.priority||priority===prior.priority&&sides>prior.sides)
-   result.set(rule.id,{id:rule.id,name:rule.name||rule.id,sides,dice:'1d'+sides,
+   result.set(dieId,{id:dieId,name:rule.name||dieId,sides,dice:'1d'+sides,
     class_name:className||'',class_level:level,
     origin_id:feature?.origin_id||rule.origin_id||'',
     origin_name:feature?.name||rule.origin_name||rule.name||rule.id,priority});
@@ -41,18 +42,22 @@ export function scalingDiceFor(record={},definitions=[],features=[]){
 
 // Resolve a named die and its payment tracker *before* it enters the existing
 // optional bonus roller. A missing die or resource fails closed, never as free 1d6.
-export function resolveScalingDieBenefit(row={},dice=[],trackers=[]){
+export function resolveScalingDieBenefit(row={},dice=[],trackers=[],evaluate=()=>NaN){
  if(!row?.dice_ref&&!row?.tracker_name)return row;
  const die=rows(dice).find(d=>d.id===row.dice_ref);
  const count=row.count===undefined?1:Number(row.count);
  if(row.dice_ref&&(!die||!Number.isSafeInteger(count)||count<1||count>100))
   return {...row,disabled:true,unavailable_reason:'Dado progressivo non disponibile.'};
+ const extra=row.dice_add?Number(evaluate(row.dice_add)):0;
+ if(row.dice_ref&&!Number.isSafeInteger(extra))
+  return {...row,disabled:true,unavailable_reason:'Modificatore del dado non disponibile.'};
  const tracker=row.tracker_name?rows(trackers).find(t=>!t.disabled&&
   low(t.name)===low(row.tracker_name)&&
   (!row.tracker_class||low(t.origin_class)===low(row.tracker_class))):null;
  if(row.tracker_name&&!tracker)
   return {...row,disabled:true,unavailable_reason:'Tracker del dado non disponibile.'};
- return {...row,...(die?{dice:count+'d'+die.sides,die_sides:die.sides}:{}),
+ return {...row,...(die?{dice:count+'d'+die.sides+
+    (extra?(extra>0?'+':'')+extra:''),die_sides:die.sides}:{}),
   ...(tracker?{tracker_id:tracker.id}:{}),
   ...(tracker&&row.tracker_cost===undefined?{tracker_cost:1}:{})};
 }
