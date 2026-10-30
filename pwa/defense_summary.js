@@ -23,20 +23,20 @@ export function characterDefenseSummary(record={},computed={}){
  const disabled=new Set(arr(record.proficiency_origins).filter(x=>x?.disabled).map(x=>x.id));
  const hidden=new Set(Object.values(record.trait_benefit_removed||{}).flatMap(arr));
  const rows=[],seen=new Set();
- const include=(rank,key,origin_name='',id='',origin_id='',parent_origin='')=>{
+ const include=(rank,key,origin_name='',id='',origin_id='',parent_origin='',condition_label='')=>{
   rank=Number(rank);key=low(key);if(!CATEGORIES.some(x=>x.rank===rank)||!key)return;
   if((id&&hidden.has(id))||[origin_id,parent_origin].some(x=>x&&(origins[x]===false||disabled.has(x))))return;
   if(origin_id.startsWith('feature:trait:')&&
    record.trait_enabled?.[origin_id.slice('feature:trait:'.length)]===false)return;
   const title=rank===3?CONDITIONS[key]||key:DAMAGE[key]||key;
-  const unique=rank+':'+key+':'+origin_name;
+  const unique=rank+':'+key+':'+origin_name+':'+condition_label;
   if(seen.has(unique))return;seen.add(unique);
-  rows.push({rank,key,label:title,origin_name:origin_name||'Scheda',id});
+  rows.push({rank,key,label:title,origin_name:origin_name||'Scheda',id,condition_label});
  };
  for(const row of arr(computed.damage_defense_entries)){
   if(row.disabled)continue;
   const id=String(row.benefit_id||'defense:'+String(row.origin_id||'')+':'+row.rank+':'+low(row.key));
-  include(row.rank,row.key,row.origin_name,id,String(row.origin_id||''),String(row.origin_parent_id||row.parent_origin||''));
+  include(row.rank,row.key,row.origin_name,id,String(row.origin_id||''),String(row.origin_parent_id||row.parent_origin||''),String(row.condition_label||''));
  }
  for(const type of arr(computed.feature_damage_resistances))
   include(1,type,'Ira');
@@ -72,7 +72,8 @@ export function incomingDamageOptions(record={},computed={},damageType=''){
    id:'defense:'+group.rank+':'+item.key+':'+String(item.id||''),
    kind:'defense',rank:group.rank,damage_type:item.key,
    name:group.title+' · '+item.label,
-   origin_name:item.origin_name,optional:false,
+   origin_name:item.origin_name,optional:!!item.condition_label,
+   condition_label:item.condition_label||'',
    matches:!!kind&&kind===low(item.key),available:true
   })));
  return [...bonuses,...defenses];
@@ -87,7 +88,7 @@ export function resolveIncomingDamage(record={},computed={},{
   throw Error('Danni in arrivo non validi.');
  const options=incomingDamageOptions(record,computed,damage_type);
  const selected=new Set(arr(selected_ids).map(String));
- const chosen=options.filter(row=>row.kind==='modifier'&&row.optional&&selected.has(row.id));
+ const chosen=options.filter(row=>row.optional&&selected.has(row.id));
  if(chosen.length!==selected.size||chosen.some(row=>!row.matches||!row.available))
   throw Error('Bonus ai danni subiti non disponibile per questo danno.');
  let trackerPatch={},nextRecord=record;
@@ -121,7 +122,8 @@ export function resolveIncomingDamage(record={},computed={},{
   applied.push({id:row.id,label:row.name,value,kind:'modifier'});
  }
  let damage=Math.max(0,Math.min(99999,amount+adjustment));
- const defenses=ignore_permanent?[]:options.filter(row=>row.kind==='defense'&&row.matches);
+ const defenses=options.filter(row=>row.kind==='defense'&&row.matches&&
+  (row.optional?selected.has(row.id):!ignore_permanent));
  const ranks=new Set(defenses.map(row=>row.rank));
  if(ranks.has(2))damage=0;
  else{
