@@ -3089,7 +3089,7 @@ function learningSelectionDialogBody({title,closeAction,summary='',searchLabel,s
    dialogCloseButton(closeAction,'Chiudi','magic-tool-close')+'</div>'+
    '<div class="magic-tools-body">'+
    (summary?'<p class="magic-selection-warning" role="status">'+esc(summary)+'</p>':'')+
-   (filters?'<div class="magic-editor-filters">'+filters+'</div>':'')+
+   (filters?filters:'')+
    '<label class="vtt-list-search magic-editor-search">'+esc(searchLabel)+
    '<input type="search" '+searchAttribute+' autocomplete="off" placeholder="Nome o fonte"></label>'+
    '<div '+(resultsId?'id="'+esc(resultsId)+'" ':'')+
