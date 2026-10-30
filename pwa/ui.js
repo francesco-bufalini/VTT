@@ -2833,6 +2833,14 @@ function mountTraitBenefitDialog(){
      formSelect('Tipo di danno (facoltativo)','damage_type',[['','Nessuno'],...DAMAGE_TYPES.map(id=>[id,rollDamageName(id)])])+
      formSelect('Tracker associato','tracker_id',trackerOptions)+
      formInput('Utilizzi consumati','tracker_cost','1','number')+'</details>'],
+  ['incoming_damage',
+    formSelect('Applicazione','mode',[['permanent','Permanente'],['optional','Facoltativo, al momento del danno']])
+      .replace('name="mode"','name="mode" data-incoming-damage-mode')+
+    formInput('Modificatore (numero, formula o dadi)','expression','Es. -2, -proficiency, -1d6')+
+    formSelect('Tipo di danno','damage_type',[['','Tutti i danni'],...DAMAGE_TYPES.map(id=>[id,rollDamageName(id)])])+
+    formSelect('Tracker (per uso facoltativo)','tracker_id',trackerOptions)+
+    formInput('Costo in utilizzi','tracker_cost','1','number')+
+    '<p class="hint">Valori negativi riducono i danni, positivi li aumentano. I dadi vengono tirati quando applichi il danno.</p>'],
   ['roll_mode',formSelect('Modalità','mode',[['advantage','Vantaggio'],['disadvantage','Svantaggio']])+
      formSelect('Tipo di tiro','target',[
       ['ability_check','Prove di caratteristica (incl. iniziativa)'],['saving_throw','Tiri salvezza'],
@@ -2976,6 +2984,8 @@ function mountTraitBenefitDialog(){
  }
  const trackerCost=dialog.querySelector('[data-trait-fields="bonus"] [name="tracker_cost"]');
  if(trackerCost)trackerCost.value='1';
+ const incomingCost=dialog.querySelector('[data-trait-fields="incoming_damage"] [name="tracker_cost"]');
+ if(incomingCost)incomingCost.value='1';
  dialog.addEventListener('cancel',event=>{event.preventDefault();dismissTraitBenefitDialog();});
  dialog.addEventListener('click',event=>{
   if(event.target!==dialog)return;
