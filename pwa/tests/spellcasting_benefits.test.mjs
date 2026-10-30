@@ -72,6 +72,7 @@ test('half and one-third caster progressions include only their subclass benefit
  assert.equal(fk.casting_classes.length,1);
  assert.equal(fk.casting_classes[0].spell_list_class_name,'Wizard');
  assert.equal(fk.casting_classes[0].level_class_name,'Fighter');
+ assert.equal(fk.casting_classes[0].learned_limit,5);
  assert.equal(fk.spell_slots[0].total,4);
  assert.equal(fk.spell_slots[1].total,2);
  assert.equal(spellEligible({id:'s',name:'Shield',level:1,classes:['Wizard']},
