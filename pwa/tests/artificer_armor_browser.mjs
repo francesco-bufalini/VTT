@@ -38,31 +38,33 @@ try{
  assert.match(await lightningResource.locator('.play-resource-bonus-row').innerText(),/\+1d6[\s\S]*Danni/);
  // The rest label does not block an immediate model switch.
   assert.equal(await page.locator('#sheet-play-view [data-resource-tracker="feature:armor_model:activation"]').count(),0);
-  // Armor Models are displayed and activated from their dedicated Powers card.
+ // Armor Models use the same option-benefit card and application dialog.
  await sheet('magic');
- const modelCard=page.locator('#sheet-play-view .armor-model-panel');
- assert.equal(await modelCard.locator('.armor-model-entry[role="button"]').count(),2);
- const guardian=modelCard.locator('[data-armor-model-id="armor_model:guardian"]');
- const infiltrator=modelCard.locator('[data-armor-model-id="armor_model:infiltrator"]');
- assert.equal(await infiltrator.getAttribute('data-armor-model-active'),'true');
- assert.equal(await guardian.getAttribute('data-armor-model-active'),'false');
+ const modelCard=page.locator('#sheet-play-view .play-infusion-card').filter({has:page.getByRole('heading',{name:'Modelli di armatura',exact:true})});
+ assert.equal(await modelCard.locator('[data-act="benefit-option-open"]').count(),2);
+ const guardian=modelCard.locator('[data-power-option-id="armor_model:guardian"]');
+ const infiltrator=modelCard.locator('[data-power-option-id="armor_model:infiltrator"]');
+ assert.equal(await infiltrator.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'true');
+ assert.equal(await guardian.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'false');
  await guardian.click();
- const modelDialog=page.locator('#armor-model-dialog');
- await modelDialog.locator('[data-act="armor-model-apply"]').waitFor();
+ const modelDialog=page.locator('#benefit-option-dialog');
+ await modelDialog.locator('[data-act="benefit-option-apply"]').waitFor();
  assert.equal((await record()).trait_state_selection?.armor_model,'armor_model:infiltrator','No switch before confirmation');
  assert.match(await modelDialog.locator('.magic-spell-description').innerText(),/Guardiano|guanti|Campo difensivo/i);
- assert.equal(await modelDialog.locator('.armor-model-benefits .infusion-dialog-item').count(),2);
+ assert.equal(await modelDialog.locator('.infusion-dialog-active p').count(),2);
  assert.equal(await modelDialog.locator('[data-ability-payment]').count(),0,'No activation tracker is offered');
  assert.match(await modelCard.innerText(),/Riposo breve/i);
   assert.doesNotMatch(await modelCard.innerText(),/Modello applicato/i);
-  assert.equal(await modelDialog.locator('[data-act="armor-model-apply"]').isEnabled(),true);
- await modelDialog.locator('[data-act="armor-model-apply"]').click();
+  assert.equal(await modelDialog.locator('[data-act="benefit-option-apply"]').isEnabled(),false);
+ await modelDialog.locator('[data-act="benefit-target-choose"][data-index="0"]').click();
+ assert.equal(await modelDialog.locator('[data-act="benefit-option-apply"]').isEnabled(),true);
+ await modelDialog.locator('[data-act="benefit-option-apply"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
    return (await listCreatures())[0].creature.trait_state_selection?.armor_model==='armor_model:guardian';});
  assert.equal((await record()).resource_tracker_spent?.['feature:armor_model:activation'],undefined);
  assert.equal((await record()).rest_selection_available?.armor_model,undefined);
- assert.equal(await guardian.getAttribute('data-armor-model-active'),'true');
- assert.equal(await infiltrator.getAttribute('data-armor-model-active'),'false');
+ assert.equal(await guardian.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'true');
+ assert.equal(await infiltrator.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'false');
  await sheet('battle');
  await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').waitFor({state:"attached"});
  assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').count(),0);
@@ -97,9 +99,11 @@ try{
  const total=Number(await rollDialog.locator('.dice-result').textContent());
  const firstD20=Number(await rollDialog.locator('.sheet-roll-dice-group').first().locator('.sheet-roll-die-value').first().textContent());
  assert.equal(total,firstD20+modifier+4,'Flash of Genius applies its flat Intelligence modifier');
- assert.equal(await flashRow.locator('[data-act="sheet-roll-use-bonus"]').textContent(),'Usa',
+ assert.equal(await flashRow.locator('[data-act="sheet-roll-use-bonus"]').textContent(),'Usato',
   'each reaction applies to one roll only');
- // The no-tracker choice must still apply the bonus without spending another use.
+ // A fresh roll may choose the no-tracker payment without spending another use.
+ await page.locator('[data-act="close-sheet-roll"]').click();
+ await saveButton.click();
  await flashRow.locator('[data-act="sheet-roll-use-bonus"]').click();
  await flashDialog.locator('[data-ability-payment]').selectOption('');
  await flashDialog.locator('[data-feature-confirm]').click();

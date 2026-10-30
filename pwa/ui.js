@@ -8,7 +8,7 @@ import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeatu
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, monsterActionOptionsMarkup, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { activeInfusions, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, infusionEligible, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
+import { activeInfusions, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, targetableInventoryItems, clearInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -48,8 +48,8 @@ import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayRe
 import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
-import {selectedTraitState,traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
-import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerSelectionTriggerLabel} from './power_selection.js';
+import {traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
+import {powerSelectionModels,powerSelectionTargets,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch} from './power_selection.js';
 import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -136,7 +136,7 @@ async function askCompanionRest(row){
  const editor=await openCreatureEditor(row.id),record=editor.read(),calculated=await computeLocalData(record);
  await editor.update(completeRest(record,'long_rest',calculated).patch);await editor.flush();
 }
-async function createInfusionCompanion(owner,infusion,calculated){
+async function createOptionCompanion(owner,infusion,calculated){
  const data=await companionRules(),rule=infusionCompanionRule(data,calculated.infusion_catalog,infusion.id,owner);
  if(!rule)return null;
  const choice=companionSources(rule,data,[],owner)[0];
@@ -2185,7 +2185,7 @@ function ensureInventorySearchCatalog(){
   inventoryCatalogRequest=catalogEntries('items').then(rows=>{
     state.referenceCatalogs.items=rows;
     paintInventorySearchResults();
-    app.querySelector('#infusion-action-dialog [data-infusion-object-search]')?.dispatchEvent(new Event('input'));
+    app.querySelector('#benefit-option-dialog [data-benefit-target-search]')?.dispatchEvent(new Event('input'));
   }).catch(error=>{
     state.inventorySearchCatalogError=errorMessage(error);
     paintInventorySearchResults();
@@ -2512,9 +2512,7 @@ async function editorView() {
         originPowersView(c,calculated)+
         manualMagicSources(c,calculated),
         'magic-panel')+
-      infusionPanel(c,calculated)+
-      armorModelPanel(c,calculated)+
-      genericPowerSelectionPanels(c,calculated)+
+      optionBenefitPanels(c,calculated)+
        racialRestTrainingPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
@@ -3069,87 +3067,6 @@ async function openRacialRestTrainingDialog(group){
  openDialog(dialog);
 }
 
-function armorModels(c,calculated){
- const rules=(calculated.trait_state_catalog||[]).filter(row=>row.group==='armor_model');
- if(!rules.length)return [];
- const members=Array.isArray(c.classes)&&c.classes.length?c.classes:[{
-   name:c.class,source:c.class_source,subclass:c.subclass,level:c.level
- }];
- const match=(a,b)=>String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
- return rules.filter(row=>
-   members.some(member=>match(member.name,row.class_name)&&
-     (!row.class_source||match(member.source||c.class_source,row.class_source))&&
-     (!row.subclass||match(member.subclass||c.subclass,row.subclass)))&&
-   (calculated.features||[]).some(feature=>match(feature.name,row.trait)&&
-     !feature.inactive&&!feature.disabled&&
-     match(feature.class_name||String(feature.origin_key||'').split('|')[2],row.class_name)&&
-     c.origin_enabled?.[feature.origin_id]!==false&&c.origin_enabled?.[feature.origin_key]!==false));
-}
-function armorModelPanel(c,calculated){
- const rules=armorModels(c,calculated);
- if(!rules.length)return '';
- const selected=selectedTraitState(c,rules);
- const activeRules=new Set(calculated.active_trait_state_ids||[]);
- const model=calculated.power_selections?.find(row=>row.id==='armor_model');
- const recovery=powerSelectionTriggerLabel(model?.layers.applied?.trigger)||
-  selectionRestLabel(rules[0].selection_recovery||'short_rest');
- const summary='<div class="infusion-overview"><span class="power-selection-rest">'+esc(recovery)+'</span></div>';
- return panel('Modelli di armatura',summary+rules.map(rule=>{
-   const available=(calculated.state_actions||[]).some(action=>action.state_id===rule.id);
-   const active=available&&activeRules.has(rule.id);
-   const label=active?'Attivo':selected===rule.id?'Selezionato':'Selezionabile';
-   return '<div class="magic-spell-row armor-model-entry" role="button" tabindex="0" data-armor-model-id="'+esc(rule.id)+
-     '" data-armor-model-active="'+active+'" data-armor-model-available="'+available+'">'+
-     '<span class="magic-spell-open">'+esc(rule.name.replace(/^Modello armatura · /,''))+
-     '<small class="infusion-status">'+label+(available?'':' · Armatura richiesta')+'</small></span></div>';
- }).join(''),'armor-model-panel');
-}
-async function openArmorModelDialog(id){
- const creature=state.editor?.read();
- if(!creature)throw Error('Apri prima una creatura.');
- const calculated=await computeLocalData(creature),rules=armorModels(creature,calculated);
- const rule=rules.find(row=>row.id===id);
- if(!rule)throw Error('Modello di armatura non disponibile.');
- const selected=selectedTraitState(creature,rules),available=(calculated.state_actions||[])
-  .some(action=>action.state_id===id);
- const active=selected===id&&available;
- const model=calculated.power_selections?.find(row=>row.id==='armor_model');
- const rest=powerSelectionTriggerLabel(model?.layers.applied?.trigger)||
-  selectionRestLabel(rule.selection_recovery||'short_rest');
- const description=String(rule.summary||'').trim();
- const benefits=[
-   ...(rule.attacks||[]).map(attack=>({name:attack.name||attack.trait,detail:attack.damage?
-     attack.damage+' · '+(attack.range_feet?attack.range_feet+' ft':''):''})),
-   ...(rule.granted_features||[]).map(name=>({name})),
-   ...(rule.numeric_grants||[]).map(grant=>({name:grant.trait||grant.id,detail:'+'+grant.amount+' · '+grant.target}))
- ];
- app.querySelector('#armor-model-dialog')?.remove();
- const dialog=document.createElement('dialog');
- dialog.id='armor-model-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog armor-model-dialog';
- dialog.dataset.armorModelId=id;dialog.dataset.creatureId=creature.id;
- dialog.innerHTML=actionDialogIntro(rule.name,[
-   {label:'Stato',value:active?'Attivo':selected===id?'Selezionato':'Non attivo'},
-   {label:'Azione',value:'Gratuita'},
-   {label:'Cambio del modello',value:rest},
-   {label:'Origine',value:rule.trait||'Privilegio di sottoclasse'},
-   {label:'Oggetto',value:available?'Armatura equipaggiata':'Richiede un’armatura equipaggiata'}
- ],description,'Artificer · '+(rule.subclass||'Armorer'),'armor-model-close')+
- (benefits.length?'<section class="infusion-dialog-active armor-model-benefits"><h3>Benefici del modello</h3>'+
-   benefits.map(row=>'<div class="infusion-dialog-item"><span>'+esc(row.name)+
-     (row.detail?'<small>'+esc(row.detail)+'</small>':'')+'</span></div>').join('')+'</section>':'')+
- (!available?'<p class="hint armor-model-unavailable">Equipaggia un’armatura per utilizzare questo modello.</p>':'')+
- '<p class="hint armor-model-error" data-armor-model-error role="status" hidden></p>'+
- '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="armor-model-apply"'+
-   (available?'':' disabled')+'>'+(active?'Disattiva':'Usa')+'</button>'+
- '<button type="button" class="btn" data-act="armor-model-close">Chiudi</button></div>';
- app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
- openDialog(dialog);
-}
-
-
-// Source-qualified, three-layer selection list. The existing spell, infusion
-// and Armor Model presentations are kept intact; inline catalog choices use
-// this shared view without naming a class or privilege in their UI logic.
 const selectedPowerId=row=>typeof row==='string'?row:String(row?.id||'');
 const selectedPowerLabel=(option,selection)=>{
  const label=option?.name||selectedPowerId(selection);
@@ -3188,58 +3105,41 @@ function learningPickerOptionGroups(options,renderRow,levelOf,minLevel=0) {
   options.filter(row=>Math.max(minLevel,Number(levelOf(row))||minLevel)===level)
    .map(renderRow).join('')+'</div></section>').join('')+'</div>';
 }
-function genericPowerSelectionPanels(c,calculated){
- return (calculated.power_selections||[]).filter(model=>model.ui==='generic'&&model.selection_kind!=='subtrait').map(model=>{
-  if(model.layers.learned&&model.layers.applied&&!model.layers.applied.automatic&&
-     model.source_type==='optionalfeature_progression'){
-   const known=model.layers.learned.selected,active=new Set(model.layers.applied.selected.map(selectedPowerId));
-   const byId=new Map(model.options.map(option=>[option.id,option]));
-   return panel(model.title,'<div class="learned-applied-options" data-selection-id="'+esc(model.id)+'">'+
-    '<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+model.layers.learned.limit+
-    '</strong><span>Applicate '+active.size+'</span></div>'+known.map(id=>{
-     const option=byId.get(selectedPowerId(id));
-     return '<div class="magic-spell-row infusion-entry" data-power-option-id="'+esc(option.id)+
-      '" data-option-active="'+active.has(option.id)+'"><span class="magic-spell-open">'+esc(option.name)+'</span></div>';
-    }).join('')+'</div>');
-  }
-  const automaticallyApplied=model.layers?.applied?.automatic&&model.layers?.learned;
-  // An automatically derived application is part of the learned choice;
-  // displaying it again would duplicate rows and expose a meaningless toggle.
-  const stages=Object.entries(model.layers||{}).filter(([stage,layer])=>
-   layer.enabled&&!(automaticallyApplied&&stage==='applied'));
-  return panel(model.title,stages.map(([stage,layer])=>{
-   const selected=layer.selected||[],optionById=new Map((model.options||[]).map(option=>[option.id,option]));
-   const rows=selected.map(item=>'<div class="magic-spell-row infusion-entry"><span class="magic-spell-open">'+
-    esc(selectedPowerLabel(optionById.get(selectedPowerId(item)),item))+'</span></div>').join('');
-   const trigger=layer.change_label?'<span class="power-selection-rest">'+esc(layer.change_label)+'</span>':'';
-   const autoStatus=stage==='learned'&&automaticallyApplied?
-    '<span class="power-selection-rest">Applicati automaticamente · '+
-    model.layers.applied.selected.length+'</span>':'';
-   const action=stage==='learned'?'Impara / Dimentica':stage==='prepared'?'Prepara / Rimuovi':'Applica / Rimuovi';
-   return '<section class="power-selection-stage"><div class="infusion-overview"><strong>'+
-    esc(powerLayerNames[stage]||stage)+' '+selected.length+(layer.limit!==null?' / '+layer.limit:'')+
-    '</strong>'+trigger+autoStatus+'</div>'+
-    (layer.automatic?'':'<div class="magic-source-controls"><button type="button" class="btn small magic-selection-button" data-act="power-selection-open"'+
-    ' data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+esc(stage)+'">'+action+'</button></div>')+
-    (rows||'<p class="hint">Nessuna opzione selezionata.</p>')+'</section>';
-  }).join(''));
+function optionBenefitPanels(c,calculated){
+ return (calculated.power_selections||[]).filter(model=>model.benefit_type==='option_selection').map(model=>{
+  const primary=model.layers.learned||model.layers.prepared;
+  const byId=new Map(model.options.map(option=>[option.id,option]));
+  const entries=primary?primary.selected.map(selectedPowerId):model.options.map(option=>option.id);
+  const active=model.layers.applied?.selected||[];
+  const summary=Object.entries(model.layers).filter(([,layer])=>layer.enabled).map(([stage,layer])=>
+   '<span>'+esc(powerLayerNames[stage]||stage)+' '+layer.selected.length+(layer.limit===null?'':' / '+layer.limit)+
+   (layer.change_label?' · '+esc(layer.change_label):'')+'</span>').join('');
+  const controls=Object.entries(model.layers).filter(([stage,layer])=>stage!=='applied'&&layer.enabled&&!layer.automatic).map(([stage])=>
+   '<button type="button" class="btn" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+stage+'">'+
+   (stage==='learned'?'Impara':'Prepara')+'</button>').join('');
+  return panel(model.title,'<div class="benefit-option-list" data-selection-id="'+esc(model.id)+'">'+
+   '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(id=>{
+    const option=byId.get(id);if(!option)return '';
+    return '<div class="magic-spell-row" data-power-option-id="'+esc(id)+'" data-option-active="'+
+     active.some(row=>selectedPowerId(row)===id)+'"><span class="magic-spell-open">'+esc(option.name)+'</span></div>';
+   }).join('')+'</div>');
  }).join('');
 }
-async function openGenericPowerSelectionDialog(id,stage){
+async function openBenefitSelectionDialog(id,stage){
  const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(record);
  const permanent=calculated.pending_choices.find(choice=>choice.model_id===id&&choice.stage===stage);
  if(permanent)return openCharacterChoice(permanent);
- const model=calculated.power_selections?.find(row=>row.id===id&&row.ui==='generic');
+ const model=calculated.power_selections?.find(row=>row.id===id&&row.benefit_type==='option_selection');
  const layer=model?.layers?.[stage];
  if(!layer||layer.automatic||!['learned','prepared','applied'].includes(stage))
   throw Error('Selezione del privilegio non disponibile.');
  app.querySelector('#power-selection-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='power-selection-dialog';
- dialog.className='sheet-roll-dialog magic-tools-dialog infusion-picker-dialog';
+ dialog.className='sheet-roll-dialog magic-tools-dialog benefit-selection-dialog';
  dialog.dataset.powerSelectionId=id;dialog.dataset.powerStage=stage;
- dialog.dataset.creatureId=record.id;
+ dialog.dataset.creatureId=record.id;dialog.dataset.benefitType=model.benefit_type;
  const selected=new Map((layer.selected||[]).map(row=>[selectedPowerId(row),row]));
  const learned=stage==='prepared'&&model.layers.learned?
   new Set((model.layers.learned.selected||[]).map(selectedPowerId)):null;
@@ -3266,11 +3166,7 @@ async function openGenericPowerSelectionDialog(id,stage){
   });
  };
  const renderChoices=shown=>learningPickerOptionGroups(shown,choiceRow,row=>row.min_level||0);
- const targetPicker=stage==='applied'&&layer.target&&model.source_type==='inline'?
-  '<label>Oggetto a cui applicare<select data-power-target-index>'+
-  (record.inventory||[]).flatMap((item,index)=>Number(item.quantity??1)>0?
-   ['<option value="'+index+'">'+esc(item.name||item.id||'Oggetto')+'</option>']:[]).join('')+
-  '</select></label>':'';
+
  const stageTitle=stage==='learned'?'Impara '+model.title:
   stage==='prepared'?'Prepara '+model.title:'Applica '+model.title;
  dialog.innerHTML=learningSelectionDialogBody({
@@ -3281,7 +3177,7 @@ async function openGenericPowerSelectionDialog(id,stage){
   searchLabel:'Cerca '+model.title,searchAttribute:'data-power-search',
   resultsClass:'learning-picker-results power-selection-results',
   results:renderChoices(choices),
-  extra:targetPicker+(model.description?'<p class="hint">'+esc(model.description)+'</p>':'')
+  extra:(model.description?'<p class="hint">'+esc(model.description)+'</p>':'')
  });
  // Render filtered choices just like the infusion learner. Hiding individual
  // rows is unreliable because the shared list stylesheet uses display:grid!important.
@@ -3293,223 +3189,65 @@ async function openGenericPowerSelectionDialog(id,stage){
  });
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
 }
-async function openLearnedPowerActionDialog(selectionId,optionId){
+async function benefitOptionDescription(option){
+ if(!option.details)return option.description||'';
+ const ref=option.details;
+ const detail=await detailedEntry(ref.category,{name:ref.name,source:ref.source,_category:ref.category});
+ return flattenDescription(detail)||option.description||'';
+}
+async function openBenefitOptionDialog(selectionId,optionId){
  const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
- const calculated=await computeLocalData(record);
- const model=calculated.power_selections.find(row=>row.id===selectionId);
+ const calculated=await computeLocalData(record),model=calculated.power_selections.find(row=>row.id===selectionId);
  const option=model?.options.find(row=>row.id===optionId);
- if(!option||!model.layers.learned.selected.some(row=>selectedPowerId(row)===optionId))
-  throw Error('Opzione conosciuta non disponibile.');
- const applied=model.layers.applied.selected.some(row=>selectedPowerId(row)===optionId);
- let description=option.description||'';
- if(!option._homebrew){
-  const detail=await detailedEntry('optional_features',{name:option.name,source:option.source,_category:'optional_features'});
-  description=flattenDescription(detail)||description;
- }
- app.querySelector('#learned-power-action-dialog')?.remove();
- const dialog=document.createElement('dialog');
- dialog.id='learned-power-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
- dialog.dataset.powerSelectionId=selectionId;dialog.dataset.powerOptionId=optionId;dialog.dataset.creatureId=record.id;
- dialog.innerHTML=actionDialogIntro(option.name,[{label:'Stato',value:applied?'Applicata':'Conosciuta'}],
-  description||'Descrizione non disponibile nel catalogo.',model.title,'learned-power-close')+
-  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="learned-power-apply">'+
-   (applied?'Disattiva':'Applica')+'</button><button type="button" class="btn" data-act="learned-power-close">Chiudi</button></div>';
- app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
-}
-async function openGenericPowerOptionPreview(id){
- const dialog=app.querySelector('#power-selection-dialog');
- const record=state.editor?.read();if(!dialog?.open||!record)return;
- const calculated=await computeLocalData(record);
- const model=calculated.power_selections?.find(row=>row.id===dialog.dataset.powerSelectionId);
- const option=model?.options.find(row=>row.id===id);
- if(!option)return;
- let description=option.description||'';
- if(model.source_type==='optionalfeature_progression'&&!option._homebrew){
-  try{
-   const detail=await detailedEntry('optional_features',
-    {name:option.name,source:option.source,_category:'optional_features'});
-   description=flattenDescription(detail)||description;
-  }catch{}
- }
- const preview=document.createElement('dialog');
- preview.id='power-selection-preview';
- preview.className='sheet-roll-dialog magic-spell-dialog';
- preview.innerHTML=actionDialogIntro(option.name,[{label:'Origine',value:option.source||model.title}],
-   description||'Descrizione non disponibile nel catalogo.',
-   model.title,'power-selection-preview-close')+
-   '<div class="actions"><button type="button" class="btn" data-act="power-selection-preview-close">Chiudi</button></div>';
- app.querySelector('#power-selection-preview')?.remove();
- app.append(preview);preview.addEventListener('close',()=>preview.remove(),{once:true});openDialog(preview);
-}
-
-
-// Slot-spending features are spell-like uses, never additional known spells.
-
-function infusionPanel(c,calculated){
- const caps=infusionLimits(c,calculated.infusion_mechanics,calculated.features||[]);
- if(!caps.level)return "";
- const trait=infusionGrantingTrait(c,calculated.features||[]);
- const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
- const active=(c.inventory||[]).filter(item=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
- const selection=calculated.power_selections?.find(row=>row.id==='artificer_infusions');
- const knownTrigger=selection?.layers.learned?.change_label||'';
- const activeTrigger=selection?.layers.applied?.change_label||'Riposo lungo';
- const summary='<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+caps.known+
-   '</strong><span>Applicate '+active.length+' / '+caps.active+'</span>'+
-   (knownTrigger?'<span class="power-selection-rest">'+esc(knownTrigger)+' · imparare</span>':'')+
-   (activeTrigger?'<span class="power-selection-rest">'+esc(activeTrigger)+' · applicare</span>':'')+'</div>';
- const levels=[...new Set(known.map(row=>Math.max(2,Number(row.min_level)||2)))].sort((a,b)=>a-b);
- const learned=levels.map(level=>'<section class="infusion-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div>'+
-   known.map((entry,index)=>({entry,index})).filter(({entry})=>Math.max(2,Number(entry.min_level)||2)===level).map(({entry,index})=>{
-     const applied=active.filter(item=>item.infusion?.id===entry.id&&
-       (!entry.plan_item_id||item.infusion?.plan_item_id===entry.plan_item_id));
-     return '<div class="magic-spell-row infusion-entry" data-infusion-index="'+index+
-       '" data-infusion-active="'+Boolean(applied.length)+'"><span class="magic-spell-open">'+esc(entry.name)+
-       (entry.plan_item_name?'<small>'+esc(entry.plan_item_name)+'</small>':'')+
-       '<small class="infusion-status">'+(applied.length?'Applicata a '+esc(applied.map(item=>item.name||item.id).join(', ')):'Conosciuta')+
-       '</small></span></div>';
-   }).join('')+'</section>').join('')||'<p class="hint">Nessuna infusione conosciuta.</p>';
- return panel('Infusioni',summary+
-   (!trait?'<p class="warning">Il tratto Infuse Item non è disponibile o è disattivato.</p>':learned)+
-   (known.length>caps.known?'<p class="warning">Infusioni conosciute oltre il massimo: '+known.length+' / '+caps.known+'.</p>':'')+
-   (!definitions.length?'<p class="warning">Indice delle infusioni non caricato.</p>':''));
-}
-
-function selectableInfusions(mode,creature,calculated){
- const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
- const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
- return (calculated.infusion_catalog||[]).filter(row=>!row.legacy_replicate&&
-   caps.level>=Math.max(2,Number(row.min_level)||2))
-   .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
-    String(a.name).localeCompare(String(b.name),"it"));
-}
-async function openInfusionPicker(mode){
- if(mode!=="learn")throw Error("Selezione non valida.");
- const creature=state.editor?.read();if(!creature)throw Error("Scheda non disponibile.");
- const calculated=await computeLocalData(creature),options=selectableInfusions(mode,creature,calculated);
- const known=learnedInfusions(creature,calculated.infusion_catalog||[]);
- const caps=infusionLimits(creature,calculated.infusion_mechanics,calculated.features||[]);
- const count=known.length+" / "+caps.known;
- app.querySelector("#infusion-picker-dialog")?.remove();
- const dialog=document.createElement("dialog");dialog.id="infusion-picker-dialog";
- dialog.dataset.mode=mode;dialog.className="sheet-roll-dialog magic-tools-dialog infusion-picker-dialog";
- dialog.innerHTML=learningSelectionDialogBody({
-   title:'Impara infusioni',closeAction:'infusion-picker-close',
-   summary:'Conosciute '+count,searchLabel:'Cerca infusione',
-   searchAttribute:'data-infusion-search',resultsClass:'learning-picker-results infusion-picker-results'
- });
- const input=dialog.querySelector("[data-infusion-search]");
- const results=dialog.querySelector(".infusion-picker-results");
- const paint=()=>{
-  const shown=options.filter(row=>matchesSearch(input.value,row.name,row.source,row.replicates_item_name));
-  results.innerHTML=learningPickerOptionGroups(shown,row=>{
-   const owned=known.some(entry=>entry.id===row.id);
-   return learningPickerOptionRow({id:row.id,name:row.name,owned,
-    detailsAction:'infusion-picker-details',toggleAction:'infusion-picker-select',
-    idAttribute:'data-infusion-id',label:owned?'Dimentica':'+ Impara'});
-  },row=>row.min_level,2);
- };
- input.addEventListener("input",paint);paint();
- app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
-}
-
-
-async function openInfusionPickerPreview(id){
- const c=state.editor?.read();if(!c)throw Error("Scheda non disponibile.");
- const d=await computeLocalData(c),entry=(d.infusion_catalog||[]).find(row=>row.id===id);
- if(!entry)throw Error("Infusione non disponibile.");
- app.querySelector("#infusion-preview-dialog")?.remove();
- const dialog=document.createElement("dialog");dialog.id="infusion-preview-dialog";
- dialog.className="sheet-roll-dialog magic-spell-dialog infusion-preview-dialog";
- const detail=await detailedEntry('optional_features',{
-   name:entry.description_source_name||entry.name,
-   source:entry.description_source||entry.source||'TCE',_category:'optional_features'});
- dialog.innerHTML=actionDialogIntro(entry.name,[
-  {label:"Livello richiesto",value:String(Math.max(2,Number(entry.min_level)||2))},
-  ...(entry.item_prerequisite?[{label:"Oggetto richiesto",value:entry.item_prerequisite}]:[]),
-  ...(entry.replicates_item_name?[{label:"Oggetto replicato",value:entry.replicates_item_name}]:[])
- ],flattenDescription(detail)||"Descrizione 5etools non disponibile nel catalogo offline.",
-  "Infusione dell’Artefice · "+(entry.source||"TCE"),"infusion-preview-close")+
-  '<div class="actions"><button type="button" class="btn" data-act="infusion-preview-close">Chiudi</button></div>';
- app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
-}
-async function openInfusionActionDialog(index){
- const creature=state.editor?.read();
- if(!creature)throw Error('Apri prima la scheda di una creatura.');
- const calculated=await computeLocalData(creature),definitions=calculated.infusion_catalog||[];
- const entry=learnedInfusions(creature,definitions)[index];
- if(!entry)throw Error('Infusione non più disponibile.');
- const applied=(creature.inventory||[]).map((item,itemIndex)=>({item,index:itemIndex}))
-  .filter(({item})=>Number(item.quantity??1)>0&&item.infusion?.creator_id===creature.id&&
-   item.infusion.id===entry.id&&(!entry.plan_item_id||item.infusion.plan_item_id===entry.plan_item_id));
- const targets=compatibleInfusionTargets(creature,entry,definitions,calculated.features||[]);
- const facts=[
-  {label:'Stato',value:applied.length?'Attiva su '+applied.length+(applied.length===1?' oggetto':' oggetti'):'Conosciuta'},
-  ...(entry.item_prerequisite?[{label:'Oggetto richiesto',value:entry.item_prerequisite}]:[]),
-  {label:'Sintonia',value:entry.requires_attunement?'Richiesta per beneficiare degli effetti':'Non richiesta'}
- ];
- const detail=await detailedEntry('optional_features',{
-   name:entry.description_source_name||entry.name,
-   source:entry.description_source||entry.source||'TCE',_category:'optional_features'});
- const description=flattenDescription(detail)||'Descrizione 5etools non disponibile nel catalogo offline.';
- app.querySelector('#infusion-action-dialog')?.remove();
- const dialog=document.createElement('dialog');
- dialog.id='infusion-action-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog infusion-action-dialog';
- dialog.dataset.infusionIndex=String(index);dialog.dataset.selectedItem='';dialog.dataset.selectedCatalogIndex='';
- const options=(entry.effect_choice?.options||[]);
- dialog.innerHTML=actionDialogIntro(entry.name,facts,description,
-   'Infusione dell’artefice'+(entry.source?' · '+entry.source:''),
-   'infusion-dialog-close')+
-   (applied.length?'<section class="infusion-dialog-active"><h3>Oggetti infusi</h3>'+
-     applied.map(({item,index:itemIndex})=>'<div class="infusion-dialog-item"><span>'+esc(item.name||item.id)+
-       '<small>Infusione applicata</small></span><button type="button" class="btn" data-act="infusion-dialog-remove" data-index="'+itemIndex+'">Disattiva</button></div>').join('')+
-     '</section>':'')+
-   '<label class="vtt-list-search inventory-global-search infusion-target-search">'+
-     '<input type="search" data-infusion-object-search aria-label="Cerca oggetto compatibile" placeholder="Cerca oggetto compatibile" autocomplete="off"></label>'+
-   '<div class="inventory-search-results vtt-selection-list infusion-target-results" role="list" aria-label="Oggetti compatibili"></div>'+
-   (options.length?
-     '<label>'+esc(entry.effect_choice.label||'Scelta effetto')+'<select data-infusion-dialog-effect>'+
-     options.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
-   '<div class="actions magic-dialog-actions">'+
-    '<button type="button" class="btn primary" data-act="infusion-dialog-activate" disabled>Usa</button>'+
-    '<button type="button" class="btn" data-act="infusion-dialog-close">Chiudi</button></div>';
- const results=dialog.querySelector('.infusion-target-results'),search=dialog.querySelector('[data-infusion-object-search]');
- if(results&&search){
+ if(!option)throw Error('Opzione non disponibile.');
+ const layer=model.layers.applied,target=layer?.target;
+ const known=!model.layers.learned||model.layers.learned.selected.some(row=>selectedPowerId(row)===optionId);
+ const applications=(layer?.selected||[]).filter(row=>selectedPowerId(row)===optionId);
+ const active=applications.length>0,description=await benefitOptionDescription(option);
+ if(state.editor?.read()?.id!==record.id)return;
+ app.querySelector('#benefit-option-dialog')?.remove();
+ const dialog=document.createElement('dialog');dialog.id='benefit-option-dialog';
+ dialog.className='sheet-roll-dialog magic-spell-dialog benefit-option-dialog';
+ dialog.dataset.powerSelectionId=selectionId;dialog.dataset.powerOptionId=optionId;
+ dialog.dataset.creatureId=record.id;dialog.dataset.benefitType=model.benefit_type;dialog.dataset.selectedItem='';dialog.dataset.selectedCatalogIndex='';
+ const facts=[{label:'Stato',value:active?'Applicata':known?'Conosciuta':'Da imparare'},
+  ...(option.min_level?[{label:'Livello richiesto',value:String(option.min_level)}]:[]),
+  ...(target?[{label:'Bersaglio',value:target.label||'Oggetto'}]:[]),
+  ...(layer?.change_label?[{label:'Quando cambiare',value:layer.change_label}]:[])];
+ const benefits=[...(option.attacks||[]).map(row=>row.name||row.trait),...(option.granted_features||[]),
+  ...(option.numeric_grants||[]).map(row=>row.trait||row.id)];
+ dialog.innerHTML=actionDialogIntro(option.name,facts,description||'Descrizione non disponibile nel catalogo.',model.title,'benefit-option-close')+
+  (benefits.length?'<section class="infusion-dialog-active"><h3>Benefici</h3>'+benefits.map(name=>'<p>'+esc(name)+'</p>').join('')+'</section>':'')+
+  (applications.length&&target?'<section class="infusion-dialog-active"><h3>Applicazioni attive</h3>'+applications.map(row=>
+    '<div class="infusion-dialog-item"><span>'+esc(row.target_name||'Applicazione attiva')+'</span><button type="button" class="btn" '+
+    'data-act="benefit-option-remove" data-index="'+(row.inventory_index??-1)+'">Disattiva</button></div>').join('')+'</section>':'')+
+  (known&&target?'<label class="vtt-list-search inventory-global-search benefit-target-search"><input type="search" data-benefit-target-search '+
+    'aria-label="'+esc(target.label||'Oggetto compatibile')+'" placeholder="'+esc(target.label||'Oggetto compatibile')+'" autocomplete="off"></label>'+
+    '<div class="inventory-search-results vtt-selection-list benefit-target-results" role="list"></div>':'')+
+  (known&&option.effect_choice?'<label>'+esc(option.effect_choice.label||'Scelta effetto')+'<select data-benefit-effect>'+option.effect_choice.options.map(value=>
+   '<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
+  '<p class="hint" data-benefit-error role="status" hidden></p><div class="actions magic-dialog-actions">'+
+  (known&&layer&&!layer.automatic?'<button type="button" class="btn primary" data-act="benefit-option-apply"'+(target?' disabled':'')+'>'+
+   (active&&!target?'Disattiva':'Applica')+'</button>':'')+
+  '<button type="button" class="btn" data-act="benefit-option-close">Chiudi</button></div>';
+ if(known&&target){
+  const input=dialog.querySelector('[data-benefit-target-search]'),results=dialog.querySelector('.benefit-target-results');
   const paint=()=>{
-   const query=search.value.trim();
-   const owned=targets.filter(({item})=>matchesSearch(query,item.name,item.source,item.id));
-   const catalog=(state.referenceCatalogs.items||[]).map((item,index)=>({item,index}))
-    .filter(({item})=>query.length>=2&&item?.id&&item?.name&&matchesSearch(query,item.name,item.source)&&
-      isContentAvailableForRules(item,creature.rules_version)&&
-      !creature.inventory?.some(owned=>owned.id===item.id)&&
-      infusionEligible(entry,createOwnedItem(item,"infusion-preview")))
-    .slice(0,60);
-   const rows=owned.map(({item,index:itemIndex})=>{
-    const active=dialog.dataset.selectedItem===String(itemIndex)&&!dialog.dataset.selectedCatalogIndex;
-    return '<button type="button" class="inventory-search-result vtt-selectable'+(active?' is-selected':'')+
-      '" data-act="infusion-object-choose" data-index="'+itemIndex+'" aria-pressed="'+active+'">'+
-      '<span class="inventory-search-result-count'+(active?'':' is-add')+'" aria-hidden="true">'+(active?'✓':'×'+Math.max(1,Number(item.quantity)||1))+'</span>'+
-      '<span class="inventory-search-result-copy"><strong>'+esc(item.name||item.id)+'</strong>'+
-      (item.source?'<small>'+esc(item.source)+'</small>':'')+'</span>'+
-      '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
-   });
-   rows.push(...catalog.map(({item,index})=>{
-    const active=dialog.dataset.selectedCatalogIndex===String(index);
-    return '<button type="button" class="inventory-search-result vtt-selectable'+(active?' is-selected':'')+
-      '" data-act="infusion-object-choose" data-catalog-index="'+index+'" aria-pressed="'+active+'">'+
-      '<span class="inventory-search-result-count'+(active?'':' is-add')+'" aria-hidden="true">'+(active?'✓':'+')+'</span>'+
-      '<span class="inventory-search-result-copy"><strong>'+esc(item.name||item.id)+'</strong>'+
-      '<small>'+esc(item.source||"Catalogo")+'</small></span>'+
-      '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>';
-   }));
-   results.innerHTML=rows.length?rows.join(''):'<p class="inventory-search-notice">'+
-     (query.length<2?'Cerca un oggetto nel catalogo o scegli un oggetto posseduto.':'Nessun oggetto compatibile trovato.')+'</p>';
+   const candidates=powerSelectionTargets(record,model,option).filter(({item})=>matchesSearch(input.value,item.name,item.source)).map(({item,index})=>({item,index}));
+   if(target.allow_catalog&&input.value.trim().length>=2)candidates.push(...(state.referenceCatalogs.items||[]).map((entry,index)=>({entry,index})).filter(({entry})=>
+    matchesSearch(input.value,entry.name,entry.source)&&isContentAvailableForRules(entry,record.rules_version)&&
+    !record.inventory?.some(item=>item.id===entry.id)&&
+    powerSelectionTargets({...record,inventory:[createOwnedItem(entry,'preview')]},model,option).length).slice(0,60).map(({entry,index})=>({item:entry,index,catalog:true})));
+   results.innerHTML=candidates.map(({item,index,catalog})=>'<button type="button" class="inventory-search-result vtt-selectable" '+
+    'data-act="benefit-target-choose" '+(catalog?'data-catalog-index':'data-index')+'="'+index+'"><span class="inventory-search-result-count" aria-hidden="true">'+
+    (catalog?'+':'×'+Math.max(1,Number(item.quantity)||1))+'</span><span class="inventory-search-result-copy"><strong>'+esc(item.name||item.id)+
+    '</strong>'+(item.source?'<small>'+esc(item.source)+'</small>':'')+'</span><span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>').join('')||
+    '<p class="inventory-search-notice">'+(target.allow_catalog?'Scegli un oggetto posseduto o cercane uno nel catalogo.':'Nessun oggetto equipaggiato compatibile.')+'</p>';
   };
-  search.addEventListener('input',paint);paint();
+  input.addEventListener('input',paint);paint();
+  if(target.allow_catalog)ensureInventorySearchCatalog();
  }
- app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
- openDialog(dialog);
- ensureInventorySearchCatalog();
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
 }
 
 const INVENTORY_PROPERTY_LABELS={
@@ -9248,29 +8986,60 @@ async function handleAction(target){
     return;
   }
 
-  if(act==='learned-power-open'){
-    await openLearnedPowerActionDialog(target.dataset.powerSelectionId,target.dataset.powerOptionId);return;
+  if(act==='benefit-option-open'){
+    await openBenefitOptionDialog(target.dataset.powerSelectionId,target.dataset.powerOptionId);return;
   }
-  if(act==='learned-power-close'){
-    closeDialog(app.querySelector('#learned-power-action-dialog'),{remove:true});return;
-  }
-  if(act==='learned-power-apply'){
-    const dialog=app.querySelector('#learned-power-action-dialog'),record=state.editor?.read();
-    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)throw Error('Riapri il privilegio.');
-    const calculated=await computeLocalData(record),id=dialog.dataset.powerSelectionId,optionId=dialog.dataset.powerOptionId;
-    const model=calculated.power_selections.find(row=>row.id===id);
-    const applied=model?.layers.applied.selected.some(row=>selectedPowerId(row)===optionId);
-    await patch(powerApplicationPatch(record,calculated,calculated.power_selection_catalog,id,optionId,!applied));
-    closeDialog(dialog,{remove:true});await render();return;
-  }
-  if(act==='power-selection-preview-close'){
-    closeDialog(app.querySelector('#power-selection-preview'),{remove:true});return;
+  if(act==='benefit-option-close'){
+    closeDialog(app.querySelector('#benefit-option-dialog'),{remove:true});return;
   }
   if(act==='power-selection-details'){
-    await openGenericPowerOptionPreview(String(target.dataset.powerOptionId||''));return;
+    const dialog=app.querySelector('#power-selection-dialog');
+    if(dialog?.open)await openBenefitOptionDialog(dialog.dataset.powerSelectionId,target.dataset.powerOptionId);
+    return;
+  }
+  if(act==='benefit-target-choose'){
+    const dialog=app.querySelector('#benefit-option-dialog');if(!dialog?.open)throw Error('Riapri il beneficio.');
+    dialog.dataset.selectedItem=target.dataset.index??'';
+    dialog.dataset.selectedCatalogIndex=target.dataset.catalogIndex??'';
+    for(const row of dialog.querySelectorAll('[data-act="benefit-target-choose"]')){
+      const selected=row===target;row.classList.toggle('is-selected',selected);row.setAttribute('aria-pressed',String(selected));
+    }
+    dialog.querySelector('[data-act="benefit-option-apply"]').disabled=false;return;
+  }
+  if(act==='benefit-option-apply'||act==='benefit-option-remove'){
+    const dialog=app.querySelector('#benefit-option-dialog'),record=state.editor?.read();
+    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)throw Error('Riapri il beneficio.');
+    const error=dialog.querySelector('[data-benefit-error]');target.disabled=true;
+    try{
+      const calculated=await computeLocalData(record),id=dialog.dataset.powerSelectionId,optionId=dialog.dataset.powerOptionId;
+      const model=calculated.power_selections.find(row=>row.id===id),option=model?.options.find(row=>row.id===optionId);
+      if(!option||!model.layers.applied)throw Error('Beneficio non più disponibile.');
+      const targetRule=model.layers.applied.target;
+      const active=model.layers.applied.selected.some(row=>selectedPowerId(row)===optionId);
+      const apply=act==='benefit-option-remove'?false:targetRule?true:!active;
+      let itemIndex=act==='benefit-option-remove'?Number(target.dataset.index??-1):Number(dialog.dataset.selectedItem||-1),current=record;
+      if(apply&&targetRule){
+        if(dialog.dataset.selectedCatalogIndex!==''){
+          const entry=state.referenceCatalogs.items?.[Number(dialog.dataset.selectedCatalogIndex)];
+          if(!targetRule.allow_catalog||!entry||!isContentAvailableForRules(entry,record.rules_version))throw Error('Oggetto non disponibile.');
+          current={...record,inventory:[...(record.inventory||[]),createOwnedItem(entry,'pwa_'+crypto.randomUUID())]};
+          itemIndex=current.inventory.length-1;
+        }
+        if(!powerSelectionTargets(current,model,option).some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
+      }
+      const selection=option.effect_choice,value=dialog.querySelector('[data-benefit-effect]')?.value;
+      const changes=powerApplicationPatch(current,calculated,calculated.power_selection_catalog,id,optionId,apply,
+        {itemIndex,effectChoice:selection?{[selection.key]:value}:{}});
+      if(state.editor?.read()?.id!==record.id)throw Error('La scheda è cambiata: riapri il beneficio.');
+      await patch(changes);if(state.saveError)throw Error(state.saveError);await state.editor.flush();
+      closeDialog(dialog,{remove:true});
+      if(apply&&model.on_apply==='companion_grant')await createOptionCompanion(state.editor.read(),option,await computeLocalData(state.editor.read()));
+      await render();
+    }catch(info){target.disabled=false;error.hidden=false;error.textContent=errorMessage(info);}
+    return;
   }
   if(act==='power-selection-open'){
-    await openGenericPowerSelectionDialog(target.dataset.powerSelectionId,target.dataset.powerStage);return;
+    await openBenefitSelectionDialog(target.dataset.powerSelectionId,target.dataset.powerStage);return;
   }
   if(act==='power-selection-close'){
     closeDialog(app.querySelector('#power-selection-dialog'),{remove:true});return;
@@ -9288,7 +9057,7 @@ async function handleAction(target){
         itemIndex:Number(dialog.querySelector('[data-power-target-index]')?.value??-1)
       });
     await patch(changes);closeDialog(dialog,{remove:true});await render();
-    await openGenericPowerSelectionDialog(id,stage);return;
+    await openBenefitSelectionDialog(id,stage);return;
   }
   if(act==='power-selection-toggle'){
     const dialog=app.querySelector('#power-selection-dialog');
@@ -9299,138 +9068,12 @@ async function handleAction(target){
     const stage=dialog.dataset.powerStage,model=calculated.power_selections?.find(row=>row.id===id);
     const option=model?.options.find(row=>row.id===target.dataset.powerOptionId);
     if(!option)throw Error('Opzione non disponibile.');
+    if(stage==='applied'){await openBenefitOptionDialog(id,option.id);return;}
     const subchoices=option.subchoices&&target.dataset.powerRemove!=='true'?
-      [...dialog.querySelectorAll('[data-power-subchoice][data-power-option="'+option.id+'"]')]
-        .map(input=>input.value):[];
-    const changes=stage==='applied'&&model.source_type==='trait_states'?
-      traitStateActivationPatch(record,calculated.features,calculated.trait_state_catalog,
-        option.id,calculated.trackers):
-      stage==='applied'?powerApplicationPatch(record,calculated,calculated.power_selection_catalog,id,option.id,
-        !(model.layers.applied.selected||[]).some(row=>selectedPowerId(row)===option.id),{
-          itemIndex:Number(dialog.querySelector('[data-power-target-index]')?.value??-1)
-        }):
-      powerSelectionPatch(record,calculated,calculated.power_selection_catalog,id,stage,option.id,subchoices);
+      [...dialog.querySelectorAll('[data-power-subchoice][data-power-option="'+option.id+'"]')].map(input=>input.value):[];
+    const changes=powerSelectionPatch(record,calculated,calculated.power_selection_catalog,id,stage,option.id,subchoices);
     await patch(changes);closeDialog(dialog,{remove:true});await render();
-    await openGenericPowerSelectionDialog(id,stage);return;
-  }
-  if(act==='armor-model-open'){
-    await openArmorModelDialog(String(target.dataset.armorModelId||''));return;
-  }
-  if(act==='armor-model-close'){
-    closeDialog(app.querySelector('#armor-model-dialog'),{remove:true});return;
-  }
-  if(act==='armor-model-apply'){
-    const dialog=app.querySelector('#armor-model-dialog');
-    const record=state.editor?.read();
-    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)
-      throw Error('Riapri il modello dalla scheda.');
-    const error=dialog.querySelector('[data-armor-model-error]');
-    target.disabled=true;
-    try{
-      const fresh=await computeLocalData(record),rule=armorModels(record,fresh)
-        .find(row=>row.id===dialog.dataset.armorModelId);
-      if(!rule||(fresh.state_actions||[]).every(action=>action.state_id!==rule.id))
-        throw Error('Equipaggia l’armatura per usare il modello.');
-      const changes=traitStateActivationPatch(record,fresh.features,fresh.trait_state_catalog,rule.id,
-        fresh.trackers);
-      await patch(changes);
-      if(state.saveError)throw Error(state.saveError);
-      closeDialog(dialog,{remove:true});await render();return;
-    }catch(errorInfo){
-      target.disabled=false;
-      error.hidden=false;error.textContent=errorMessage(errorInfo);
-      return;
-    }
-  }
-  if(act==='infusion-picker-open'){
-    await openInfusionPicker(target.dataset.mode);return;
-  }
-  if(act==='infusion-picker-close'){
-    closeDialog(app.querySelector("#infusion-picker-dialog"),{remove:true});return;
-  }
-  if(act==='infusion-picker-details'){
-    await openInfusionPickerPreview(target.dataset.infusionId);return;
-  }
-  if(act==='infusion-preview-close'){
-    closeDialog(app.querySelector("#infusion-preview-dialog"),{remove:true});return;
-  }
-  if(act==='infusion-picker-select'){
-    const dialog=app.querySelector("#infusion-picker-dialog"),record=state.editor?.read();
-    if(!dialog?.open||!record)throw Error("Riapri la selezione delle infusioni.");
-    const d=await computeLocalData(record),mode=dialog.dataset.mode;
-    const option=selectableInfusions(mode,record,d).find(row=>row.id===target.dataset.infusionId);
-    if(!option)throw Error("Infusione non disponibile.");
-    const already=learnedInfusions(record,d.infusion_catalog).find(row=>row.id===option.id);
-    const changes=already?
-      forgetInfusionPatch(record,already):
-      learnInfusionPatch(record,option,d.infusion_catalog,d.infusion_mechanics,-1,d.features||[]);
-    await patch(changes);closeDialog(dialog,{remove:true});await render();
-    await openInfusionPicker(mode);return;
-  }
-  if(act==='infusion-open'){
-    await openInfusionActionDialog(Number(target.dataset.index));return;
-  }
-  if(act==='infusion-object-choose'){
-    const dialog=app.querySelector('#infusion-action-dialog');
-    if(!dialog?.open)throw Error('Riapri la selezione dell’oggetto.');
-    dialog.dataset.selectedCatalogIndex=target.dataset.catalogIndex||'';
-    dialog.dataset.selectedItem=target.dataset.catalogIndex?'':target.dataset.index;
-    for(const row of dialog.querySelectorAll('[data-act="infusion-object-choose"]')){
-      const active=dialog.dataset.selectedCatalogIndex?
-        row.dataset.catalogIndex===dialog.dataset.selectedCatalogIndex:
-        !row.dataset.catalogIndex&&row.dataset.index===dialog.dataset.selectedItem;
-      row.classList.toggle('is-selected',active);
-      row.setAttribute('aria-pressed',String(active));
-      row.querySelector('.inventory-search-result-count').textContent=active?'✓':
-        row.dataset.catalogIndex?'+':'×'+Math.max(1,Number(state.editor?.read()?.inventory?.[Number(row.dataset.index)]?.quantity)||1);
-    }
-    dialog.querySelector('[data-act="infusion-dialog-activate"]').disabled=false;return;
-  }
-  if(act==='infusion-dialog-close'){
-    closeDialog(app.querySelector('#infusion-action-dialog'),{remove:true});return;
-  }
-  if(['infusion-dialog-activate','infusion-dialog-remove'].includes(act)){
-    const dialog=app.querySelector('#infusion-action-dialog');
-    const creature=state.editor?.read();
-    if(!dialog?.open||!creature)throw Error('Riapri l’infusione dalla scheda.');
-    const calculated=await computeLocalData(creature),definitions=calculated.infusion_catalog||[];
-    const index=Number(dialog.dataset.infusionIndex),entry=learnedInfusions(creature,definitions)[index];
-    if(!entry)throw Error('Infusione non più disponibile.');
-    let changes;
-    if(act==='infusion-dialog-activate'){
-      let itemIndex=Number(dialog.dataset.selectedItem),targetRecord=creature;
-      if(dialog.dataset.selectedCatalogIndex){
-        const catalogIndex=Number(dialog.dataset.selectedCatalogIndex);
-        const candidate=state.referenceCatalogs.items?.[catalogIndex];
-        if(!candidate||!isContentAvailableForRules(candidate,creature.rules_version))
-          throw Error('Oggetto del catalogo non disponibile.');
-        const owned=createOwnedItem(candidate,'pwa_'+crypto.randomUUID());
-        if(!infusionEligible(entry,owned))throw Error('Oggetto non compatibile.');
-        targetRecord={...creature,inventory:[...(creature.inventory||[]),owned]};
-        itemIndex=targetRecord.inventory.length-1;
-      }
-      const eligible=compatibleInfusionTargets(targetRecord,entry,definitions,calculated.features||[]);
-      if((!dialog.dataset.selectedItem&&!dialog.dataset.selectedCatalogIndex)||
-         !eligible.some(row=>row.index===itemIndex))
-        throw Error('Scegli un oggetto compatibile.');
-      const choice=entry.effect_choice;
-      const value=dialog.querySelector('[data-infusion-dialog-effect]')?.value||'';
-      changes=applyInfusionPatch(targetRecord,entry,definitions,calculated.infusion_mechanics,itemIndex,
-        calculated.features||[],choice?{[choice.key]:value}:{});
-    }else{
-      const itemIndex=Number(target.dataset.index),item=creature.inventory?.[itemIndex];
-      if(!item?.infusion||item.infusion.creator_id!==creature.id||
-         item.infusion.id!==entry.id||entry.plan_item_id&&item.infusion.plan_item_id!==entry.plan_item_id)
-        throw Error('L’oggetto non ha più questa infusione.');
-      changes=clearInfusionPatch(creature,itemIndex);
-    }
-    await patch(changes);
-    if(state.saveError)throw Error(state.saveError);
-    await state.editor.flush();
-    closeDialog(dialog,{remove:true});
-    if(act==='infusion-dialog-activate')
-      await createInfusionCompanion(state.editor.read(),entry,await computeLocalData(state.editor.read()));
-    await render();return;
+    await openBenefitSelectionDialog(id,stage);return;
   }
   if(act==='infusion-clear'){
     const creature=state.editor?.read();
@@ -10097,13 +9740,6 @@ function listen(){
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button){
-      // The styled model row remains the click target; keep the same visual UI.
-      const armorRow=e.target.closest?.('.armor-model-entry[data-armor-model-id]');
-      if(armorRow){
-        try{await flushPendingFields();await handleAction({dataset:{act:'armor-model-open',armorModelId:armorRow.dataset.armorModelId}});}
-        catch(error){message(errorMessage(error),true);}
-        return;
-      }
       // An HP card is a single click target, except for its own controls.
       const card=e.target.closest('#sheet-play-view .play-health[data-act="hp-adjust-open"],#sheet-play-view .play-character-portrait[data-sheet-context="identity"]');
       if(card&&!e.target.closest('button,input,select,textarea,a,[role="button"]:not(.play-health):not(.play-character-portrait)')){
@@ -10205,10 +9841,6 @@ function listen(){
     }
   },true);
   document.addEventListener('keydown',e=>{
-    const row=e.target.closest?.('.armor-model-entry[role="button"]');
-    if(row&&e.target===row&&['Enter',' '].includes(e.key)){
-      e.preventDefault();row.click();return;
-    }
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"],#sheet-play-view .play-character-portrait[role="button"]');
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();

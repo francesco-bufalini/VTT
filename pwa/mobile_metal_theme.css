@@ -5619,85 +5619,85 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
 #sheet-play-view .play-infusion-state.is-active{
  border-color:#deb77a;background:#83603973;color:#f8deb0
 }
-.infusion-action-dialog .infusion-dialog-active{margin:15px 16px 12px}
-.infusion-action-dialog .infusion-dialog-active h3{margin:0 0 8px;color:#edcea0;font-size:13px}
-.infusion-action-dialog .infusion-dialog-item{
+.benefit-option-dialog .infusion-dialog-active{margin:15px 16px 12px}
+.benefit-option-dialog .infusion-dialog-active h3{margin:0 0 8px;color:#edcea0;font-size:13px}
+.benefit-option-dialog .infusion-dialog-item{
  display:flex;align-items:center;justify-content:space-between;gap:10px;
  padding:9px 0;border-bottom:1px solid #a27b4a3c
 }
-.infusion-action-dialog .infusion-dialog-item span{min-width:0;overflow-wrap:anywhere;font-size:13px}
-.infusion-action-dialog .infusion-dialog-item small{display:block;color:#ae997e;font-size:11px}
-.infusion-action-dialog .infusion-dialog-item .btn{flex:none;min-height:38px}
-.infusion-action-dialog>label{display:grid;gap:6px;margin-top:12px}
-.infusion-action-dialog>label select{width:100%;min-width:0}
+.benefit-option-dialog .infusion-dialog-item span{min-width:0;overflow-wrap:anywhere;font-size:13px}
+.benefit-option-dialog .infusion-dialog-item small{display:block;color:#ae997e;font-size:11px}
+.benefit-option-dialog .infusion-dialog-item .btn{flex:none;min-height:38px}
+.benefit-option-dialog>label{display:grid;gap:6px;margin-top:12px}
+.benefit-option-dialog>label select{width:100%;min-width:0}
 
 /* Infusion learning/preparation uses the spell manager's shared chrome.
    The item chooser reuses the inventory's actual result-row treatment. */
-dialog.infusion-picker-dialog .magic-selection-warning{margin:9px 0 7px}
-dialog.infusion-picker-dialog .magic-editor-search{display:flex;align-items:center;gap:8px}
-dialog.infusion-picker-dialog .magic-editor-search input{flex:1;min-width:0}
+dialog.benefit-selection-dialog .magic-selection-warning{margin:9px 0 7px}
+dialog.benefit-selection-dialog .magic-editor-search{display:flex;align-items:center;gap:8px}
+dialog.benefit-selection-dialog .magic-editor-search input{flex:1;min-width:0}
 /* The infusion learner is the only scroll box for all learn/forget pickers.
    Prefer natural block flow to nested grid/flex sizing, especially in WebKit.
    No level or row can collapse when the dialog is shorter than its contents. */
-dialog.infusion-picker-dialog .learning-picker-results{
+dialog.benefit-selection-dialog .learning-picker-results{
   display:block;box-sizing:border-box;width:100%;height:auto;min-height:0;
   max-height:min(48dvh,500px);overflow-y:auto;overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
 }
-dialog.infusion-picker-dialog .learning-picker-results .magic-groups{
+dialog.benefit-selection-dialog .learning-picker-results .magic-groups{
   display:block;min-height:0;
 }
-dialog.infusion-picker-dialog .learning-picker-results .magic-level{
+dialog.benefit-selection-dialog .learning-picker-results .magic-level{
   display:block;min-height:0;overflow:visible;
 }
-dialog.infusion-picker-dialog .learning-picker-results .magic-level+.magic-level{margin-top:10px}
-dialog.infusion-picker-dialog .learning-picker-results .magic-entries{
+dialog.benefit-selection-dialog .learning-picker-results .magic-level+.magic-level{margin-top:10px}
+dialog.benefit-selection-dialog .learning-picker-results .magic-entries{
   display:block;min-height:0;
 }
-dialog.infusion-picker-dialog .learning-picker-results .magic-catalog-row{
+dialog.benefit-selection-dialog .learning-picker-results .magic-catalog-row{
   display:grid!important;min-height:40px;
 }
-dialog.infusion-picker-dialog .learning-picker-results>.inventory-search-result{
+dialog.benefit-selection-dialog .learning-picker-results>.inventory-search-result{
  width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #a37b473b;
  border-radius:0;cursor:pointer
 }
-dialog.infusion-picker-dialog .learning-picker-results>.inventory-search-result:hover,
-dialog.infusion-picker-dialog .learning-picker-results>.inventory-search-result:focus-visible{
+dialog.benefit-selection-dialog .learning-picker-results>.inventory-search-result:hover,
+dialog.benefit-selection-dialog .learning-picker-results>.inventory-search-result:focus-visible{
  background:#87613a37
 }
-dialog.infusion-action-dialog .infusion-target-search{display:flex;align-items:center;gap:8px;margin:12px 16px 0}
-dialog.infusion-action-dialog .infusion-target-search input{min-width:0;flex:1}
-dialog.infusion-action-dialog .infusion-target-results{margin:0 16px 12px;max-height:34dvh;overflow-y:auto}
-dialog.infusion-action-dialog .infusion-target-results>.inventory-search-result{
+dialog.benefit-option-dialog .benefit-target-search{display:flex;align-items:center;gap:8px;margin:12px 16px 0}
+dialog.benefit-option-dialog .benefit-target-search input{min-width:0;flex:1}
+dialog.benefit-option-dialog .benefit-target-results{margin:0 16px 12px;max-height:34dvh;overflow-y:auto}
+dialog.benefit-option-dialog .benefit-target-results>.inventory-search-result{
  width:100%;text-align:left
 }
-dialog.infusion-action-dialog .infusion-target-results>.inventory-search-result.is-selected{
+dialog.benefit-option-dialog .benefit-target-results>.inventory-search-result.is-selected{
  background:#74533383;border-color:#e0b778
 }
 
 /* Keep infusion search inside the same narrow dialog content area as spells.
    Compatible owned inventory rows remain visible before entering a query. */
-dialog.infusion-action-dialog{box-sizing:border-box;max-width:100%;overflow-x:hidden}
-dialog.infusion-action-dialog .infusion-target-search{
+dialog.benefit-option-dialog{box-sizing:border-box;max-width:100%;overflow-x:hidden}
+dialog.benefit-option-dialog .benefit-target-search{
  display:block;width:auto;max-width:calc(100% - 32px);
  min-width:0;margin:12px 16px 0;box-sizing:border-box;
 }
-dialog.infusion-action-dialog .infusion-target-search input{
+dialog.benefit-option-dialog .benefit-target-search input{
  display:block;width:100%;max-width:100%;min-width:0;
  box-sizing:border-box;min-height:43px;margin:0;
 }
-dialog.infusion-action-dialog .infusion-target-results{
+dialog.benefit-option-dialog .benefit-target-results{
  box-sizing:border-box;width:auto;max-width:calc(100% - 32px);
  min-width:0;margin:0 16px 12px;overflow-x:hidden;
 }
-dialog.infusion-action-dialog .infusion-target-results .inventory-search-result{
+dialog.benefit-option-dialog .benefit-target-results .inventory-search-result{
  min-width:0;max-width:100%;box-sizing:border-box
 }
-dialog.infusion-action-dialog .infusion-target-results .inventory-search-result-copy{
+dialog.benefit-option-dialog .benefit-target-results .inventory-search-result-copy{
  flex:1 1 auto;min-width:0;overflow-wrap:anywhere
 }
-dialog.infusion-picker-dialog .magic-tools-body{min-width:0}
-dialog.infusion-picker-dialog .magic-editor-search{width:100%;min-width:0;box-sizing:border-box}
+dialog.benefit-selection-dialog .magic-tools-body{min-width:0}
+dialog.benefit-selection-dialog .magic-editor-search{width:100%;min-width:0;box-sizing:border-box}
 
 /* Rest-affiliated choices in Powers. These labels are not resource counters. */
 .power-selection-rest,.magic-selection-rest{

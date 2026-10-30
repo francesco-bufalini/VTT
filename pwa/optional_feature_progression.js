@@ -86,7 +86,8 @@ export function optionalFeatureSelectionModels(record={},calculated={},catalog={
   const previously=new Set(saved.map(identity));
   const options=[...sourceOptions.filter(entry=>rows(entry.types).some(t=>rows(rule.feature_types).includes(t))&&
     (isContentAvailableForRules(entry,record.rules_version)||previously.has(entry.id))).map(entry=>({
-     id:entry.id,name:entry.name,source:entry.source,min_level:optionLevel(entry,rule.owner),
+     id:entry.id,name:entry.name,source:entry.source,
+     details:{category:'optional_features',name:entry.name,source:entry.source},min_level:optionLevel(entry,rule.owner),
      description:entry.description||'',prerequisite:entry.prerequisite||[]
    })),...custom];
   const byId=new Map(options.map(row=>[row.id,row]));
@@ -115,7 +116,7 @@ export function optionalFeatureSelectionModels(record={},calculated={},catalog={
     available:true,automatic,refundable:false};
   }
   result.push({id:rule.id,title:rule.title,origin_id:feature?.origin_id||'',
-    source_type:'optionalfeature_progression',option_kind:'optional_feature',
+    benefit_type:rule.benefit_type||catalog.benefit_type||'option_selection',source_type:'optionalfeature_progression',option_kind:'optional_feature',
     description:'Opzioni da 5eTools · puoi aggiungere capacità homebrew.',
     level,ui:'generic',options,required,layers});
  }

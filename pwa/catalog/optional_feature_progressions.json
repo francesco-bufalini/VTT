@@ -3463,5 +3463,6 @@
   ],
   "external_feature_types": [
     "AI"
-  ]
+  ],
+  "benefit_type": "option_selection"
 }

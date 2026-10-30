@@ -53,12 +53,18 @@
           "storage": "inventory.infusion",
           "target": {
             "kind": "item",
-            "selector": "infusion.item_selector"
+            "selector": "option.item_selector",
+            "label": "Oggetto compatibile",
+            "allow_catalog": true,
+            "extension_field": "infusion",
+            "option_item_id": "plan_item_id"
           },
           "refund_on_remove": true
         }
       },
-      "ui": "existing"
+      "ui": "generic",
+      "benefit_type": "option_selection",
+      "on_apply": "companion_grant"
     },
     {
       "id": "armor_model",
@@ -81,12 +87,18 @@
           "storage": "trait_state_selection.armor_model",
           "target": {
             "kind": "equipped_item",
-            "slot": "body"
+            "slot": "body",
+            "kinds": [
+              "armor"
+            ],
+            "label": "Armatura equipaggiata",
+            "allow_catalog": false
           },
           "refund_on_remove": true
         }
       },
-      "ui": "existing"
+      "ui": "generic",
+      "benefit_type": "option_selection"
     },
     {
       "id": "ranger_favored_enemy_phb",
@@ -188,7 +200,8 @@
       },
       "ui": "generic",
       "description": "Scegli un tipo di creatura, oppure due razze di umanoidi, al 1°, 6° e 14° livello da Ranger. La scelta è permanente secondo le regole; l'interfaccia non impone quando cambiarla.",
-      "selection_kind": "subtrait"
+      "selection_kind": "subtrait",
+      "benefit_type": "permanent_choice"
     }
   ]
 }

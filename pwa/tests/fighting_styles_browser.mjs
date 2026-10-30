@@ -85,7 +85,7 @@ try{
  // Learning does not apply effects. The learned entry is the same clickable
  // card row as an infusion and exposes application without an object picker.
  await page.setViewportSize({width:390,height:844});
- const style=page.locator('#sheet-play-view [data-act="learned-power-open"]');
+ const style=page.locator('#sheet-play-view [data-act="benefit-option-open"]');
  assert.equal(await style.count(),1);
  const styleCard=style.locator('xpath=ancestor::section[contains(@class,"play-card")][1]');
  const infusionCard=page.locator('#sheet-play-view .play-infusion-card').filter({has:page.getByRole('heading',{name:'Infusioni',exact:true})});
@@ -93,18 +93,18 @@ try{
  assert.equal((await snapshot()).offhand,'1d6');
  assert.equal((await snapshot()).record.optional_features_catalog[0].disabled,true);
  await style.click();
- const action=page.locator('#learned-power-action-dialog');
+ const action=page.locator('#benefit-option-dialog');
  await action.waitFor({state:'visible'});
  assert.equal(await action.locator('input,select,[data-infusion-object-search]').count(),0);
- await action.locator('[data-act="learned-power-apply"]').click();
+ await action.locator('[data-act="benefit-option-apply"]').click();
  await action.waitFor({state:'detached'});
  assert.equal((await snapshot()).offhand,'1d6 + 3');
  assert.equal((await snapshot()).record.power_applications[progression].length,1);
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
  assert.equal(await style.locator('.play-infusion-state.is-active').count(),1);
  await style.click();
- assert.equal(await action.locator('[data-act="learned-power-apply"]').innerText(),'Disattiva');
- await action.locator('[data-act="learned-power-apply"]').click();await action.waitFor({state:'detached'});
+ assert.equal(await action.locator('[data-act="benefit-option-apply"]').innerText(),'Disattiva');
+ await action.locator('[data-act="benefit-option-apply"]').click();await action.waitFor({state:'detached'});
  assert.equal((await snapshot()).offhand,'1d6');
  assert.equal((await snapshot()).record.power_selections[progression].learned.length,1);
  assert.equal((await snapshot()).record.power_applications[progression].length,0);

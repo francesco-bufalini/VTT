@@ -1132,67 +1132,19 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    counters?'<div class="play-magic-source-resources" aria-label="Riepilogo '+esc(title)+'">'+counters+'</div>':'',
    'play-magic-class-card play-infusion-card');
   originPanels.forEach((node,i)=>{
-   if(heading(node).startsWith('Modelli di armatura')){
-     bind('armor-models',node);
-     const counters=[...node.querySelector('.infusion-overview')?.children||[]]
-       .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
-     const rows=[...node.querySelectorAll('.armor-model-entry')].map(row=>{
-       const id=row.dataset.armorModelId||'';
-       const active=row.dataset.armorModelActive==='true';
-       const available=row.dataset.armorModelAvailable==='true';
-       const name=row.querySelector('.magic-spell-open')?.firstChild?.textContent?.trim()||'Modello';
-       const status=active?'Attivo':available?'Non attivo':'Armatura richiesta';
-       return '<div class="play-spell play-infusion-row play-armor-model-row">'+
-        '<button type="button" class="play-button" data-act="armor-model-open" data-armor-model-id="'+esc(id)+
-         '" aria-label="Apri modello '+esc(name)+' · '+status+'">'+
-        icon('shield')+'<span class="play-infusion-name">'+esc(name)+'</span>'+
-        '<span class="play-infusion-state'+(active?' is-active':'')+'" title="'+status+'" aria-label="'+status+'">'+
-         '<span aria-hidden="true">'+(active?'✓':'○')+'</span></span></button></div>';
-     }).join('');
-     html+=card('Modelli di armatura',rows||'<p class="play-empty">Nessun modello disponibile.</p>',
-       counters?'<div class="play-magic-source-resources" aria-label="Stato modelli di armatura">'+counters+'</div>':'',
-       'play-magic-class-card play-infusion-card play-armor-model-card');
-     return;
-   }
-   if(node.querySelector('.learned-applied-options')){
-     const source=node.querySelector('.learned-applied-options'),id=source.dataset.selectionId;
+   if(node.querySelector('.benefit-option-list')){
+     const source=node.querySelector('.benefit-option-list'),id=source.dataset.selectionId;
      bind('selection:'+i,node);
      const counters=[...source.querySelector('.infusion-overview')?.children||[]]
       .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
-     const entries=[...source.querySelectorAll('.infusion-entry')].map(row=>({
+     const entries=[...source.querySelectorAll('[data-power-option-id]')].map(row=>({
       name:row.querySelector('.magic-spell-open').textContent.trim(),applied:row.dataset.optionActive==='true',
-      attrs:'data-act="learned-power-open" data-power-selection-id="'+esc(id)+'" data-power-option-id="'+esc(row.dataset.powerOptionId)+'"'
+      attrs:'data-act="benefit-option-open" data-power-selection-id="'+esc(id)+'" data-power-option-id="'+esc(row.dataset.powerOptionId)+'"'
      }));
-     html+=learnedOptionCard(heading(node),entries,
-      btn('Impara '+heading(node),'book','data-act="power-selection-open" data-power-selection-id="'+esc(id)+'" data-power-stage="learned"','<span>Impara</span>'),
-      counters,'Nessuna opzione conosciuta.');
-     return;
-   }
-   if(node.querySelector('.power-selection-stage')){
-     bind('selection:'+i,node);
-     const controls=[...node.querySelectorAll('[data-act="power-selection-open"]')]
-       .map(button=>proxy(button,button.textContent.trim(),'book',
-        '<span>'+esc(button.textContent.trim())+'</span>')).join('');
-     const rows=[...node.querySelectorAll('.power-selection-stage .magic-spell-row')].map(row=>
-       '<div class="play-spell play-infusion-row"><span class="play-infusion-name">'+
-       esc(row.textContent.trim())+'</span></div>').join('');
-     html+=card(heading(node),'<div class="play-magic-selection">'+controls+'</div>'+
-       (rows||'<p class="play-empty">Nessuna opzione selezionata.</p>'),
-       '', 'play-magic-class-card play-infusion-card');
-     return;
-   }
-   if(heading(node).startsWith('Infusioni')){
-     bind('infusions',node);
-     const counters=[...node.querySelector('.infusion-overview')?.children||[]]
-       .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
-     const entries=[...node.querySelectorAll('.infusion-entry')].map(row=>({
-      name:row.querySelector('.magic-spell-open')?.firstChild?.textContent?.trim()||'Infusione',
-      itemName:row.querySelector('.magic-spell-open>small:not(.infusion-status)')?.textContent.trim()||'',
-      applied:row.dataset.infusionActive==='true',attrs:'data-act="infusion-open" data-index="'+esc(row.dataset.infusionIndex)+'"'
-     }));
-     html+=learnedOptionCard('Infusioni',entries,
-      btn('Impara infusioni','book','data-act="infusion-picker-open" data-mode="learn"','<span>Impara</span>'),
-      counters,'Nessuna infusione conosciuta.');
+     const controls=[...source.querySelectorAll('.benefit-option-controls button')].map(button=>
+      btn(button.textContent.trim()+' '+heading(node),'book','data-act="power-selection-open" data-power-selection-id="'+esc(id)+
+       '" data-power-stage="'+esc(button.dataset.powerStage)+'"','<span>'+esc(button.textContent.trim())+'</span>')).join('');
+     html+=learnedOptionCard(heading(node),entries,controls,counters,'Nessuna opzione conosciuta.');
      return;
    }
    const key='power:'+i;

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerSelectionLimit,
-  powerApplicationPatch} from '../power_selection.js';
+  powerApplicationPatch,powerSelectionTargets} from '../power_selection.js';
 const data=JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8'));
 const owner=(className,source,name)=>({name,origin_id:'feature:'+name,
  origin_key:'class|'+source.toLowerCase()+'|'+className.toLowerCase(),
@@ -142,4 +142,22 @@ test('a permanent one-choice sub-trait replaces its previous branch without affe
  character={...character,...powerSelectionPatch(character,ctx,data,id,'prepared','beasts')};
  assert.deepEqual(pick(character,ctx).layers.prepared.selected,['beasts']);
  assert.equal(pick(character,ctx).layers.prepared.limit,1);
+});
+
+test('option benefit targets are defined by data, including equipped armor and optional object extensions',()=>{
+ const inventory=[
+  {id:'armor-a',name:'Armor A',type:'MA',rarity:'none',quantity:1,equipped_slots:['body']},
+  {id:'armor-b',name:'Armor B',type:'MA',rarity:'none',quantity:1,equipped_slots:[]},
+  {id:'weapon-a',name:'Sword',type:'M',rarity:'none',quantity:1,equipped_slots:['main']}
+ ];
+ const record={id:'owner',inventory},option={id:'any-option',item_selector:{kinds:['armor'],nonmagical:true}};
+ const target={kind:'equipped_item',slot:'body',kinds:['armor']};
+ assert.deepEqual(powerSelectionTargets(record,{layers:{applied:{target}}},option).map(row=>row.index),[0]);
+ assert.deepEqual(powerSelectionTargets(record,{layers:{applied:{}}},option),[]);
+ const extension={kind:'item',selector:'option.item_selector',extension_field:'infusion'};
+ const model={layers:{applied:{target:extension}}};
+ assert.deepEqual(powerSelectionTargets(record,model,option).map(row=>row.index),[0,1]);
+ assert.deepEqual(powerSelectionTargets({...record,inventory:inventory.map(item=>({...item,
+  infusion:{creator_id:'someone-else'}}))},model,option),[]);
+ assert.deepEqual(powerSelectionTargets({...record,inventory:inventory.map(item=>({...item,disabled:true}))},model,option),[]);
 });

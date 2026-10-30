@@ -1,7 +1,8 @@
+import {traitStateActivationPatch} from './trait_state_rules.js';
 // Three-layer, origin-bound power choices. Domain-specific inventories and
 // spellbooks remain authoritative; adapters project them into one JSON contract.
 // A trigger describes when rules permit changing a choice, but never gates UI.
-import {infusionLimits,infusionGrantingTrait,learnedInfusions} from './item_controls.js';
+import {infusionLimits,infusionGrantingTrait,learnedInfusions,learnInfusionPatch,forgetInfusionPatch,applyInfusionPatch,clearInfusionPatch,targetableInventoryItems,infusionEligible} from './item_controls.js';
 import {optionalFeatureSelectionModels,optionalFeatureSelectionPatch,optionalFeatureApplicationPatch} from './optional_feature_progression.js';
 
 const rows=value=>Array.isArray(value)?value:[];
@@ -94,10 +95,10 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
    }
   }else if(source.type==='trait_states'){
    options=rows(calculated.trait_state_catalog).filter(row=>row.group===source.group)
-    .map(row=>({id:row.id,name:row.name,description:row.summary||'',require_equipped:row.require_equipped}));
+    .map(row=>({...row,description:row.summary||''}));
    const selected=record.trait_state_selection?.[source.group]||'';
    if(stageRules.applied)layers.applied=stageView(stageRules.applied,
-    selected&&options.some(opt=>opt.id===selected)?[selected]:[],
+    selected&&(!Array.isArray(calculated.active_trait_state_ids)||calculated.active_trait_state_ids.includes(selected))&&options.some(opt=>opt.id===selected)?[selected]:[],
     powerSelectionLimit(stageRules.applied.limit,owner.level));
   }else if(source.type==='infusion_catalog'){
    const known=learnedInfusions(record,calculated.infusion_catalog||[]);
@@ -105,19 +106,20 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
    if(!infusionGrantingTrait(record,calculated.features||[]))continue;
    values.infusion_known=limits.known;values.infusion_active=limits.active;
    options=rows(calculated.infusion_catalog).filter(row=>!row.legacy_replicate)
-    .map(row=>({id:row.id,name:row.name,min_level:row.min_level||2}));
+    .map(row=>({...row,min_level:row.min_level||2,details:{category:'optional_features',
+      name:row.description_source_name||row.name,source:row.description_source||row.source||rule.owner.class_source}}));
    if(stageRules.learned)layers.learned=stageView(stageRules.learned,
     known.map(row=>row.id),powerSelectionLimit(stageRules.learned.limit,owner.level,values));
    if(stageRules.applied)layers.applied=stageView(stageRules.applied,
-    rows(record.inventory).filter(item=>item.infusion?.creator_id===record.id&&
-       Number(item.quantity??1)>0).map(item=>({id:item.infusion.id,
-      target_item_id:item.instance_id||item.id})),
+    rows(record.inventory).flatMap((item,index)=>item.infusion?.creator_id===record.id&&
+       Number(item.quantity??1)>0?[{id:item.infusion.id,inventory_index:index,
+       target_item_id:item.instance_id||item.id,target_name:item.name||item.id}]:[]),
     powerSelectionLimit(stageRules.applied.limit,owner.level,values));
   }
   if(!Object.keys(layers).length)continue;
   models.push({id:rule.id,title:rule.title||owner.name,description:rule.description||'',
    origin_id:owner.origin_id,level:owner.level,option_kind:rule.option_kind||'feature',
-   source_type:source.type,options,layers,ui:rule.ui||'generic',
+   on_apply:rule.on_apply||'',source_type:source.type,benefit_type:rule.benefit_type||'option_selection',options,layers,ui:rule.ui||'generic',
    selection_kind:rule.selection_kind||'power'});
  }
  models.push(...optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}));
@@ -164,6 +166,13 @@ export function powerSelectionPatch(record,calculated,catalog,id,stage,optionId,
  const optional=optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}).find(row=>row.id===id);
  if(optional)return optionalFeatureSelectionPatch(record,calculated,catalog.optionalFeatureProgressions,id,stage,optionId);
  const definition=rows(catalog.selections).find(rule=>rule.id===id);
+ if(definition?.source?.type==='infusion_catalog'&&stage==='learned'){
+  const model=powerSelectionModels(record,calculated,catalog).find(row=>row.id===id);
+  const option=model?.options.find(row=>row.id===optionId);
+  if(!option)throw Error('Opzione non disponibile.');
+  const known=learnedInfusions(record,calculated.infusion_catalog||[]).find(row=>row.id===optionId);
+  return known?forgetInfusionPatch(record,known):learnInfusionPatch(record,option,calculated.infusion_catalog,calculated.infusion_mechanics,-1,calculated.features||[]);
+ }
  if(!definition||definition.source?.type!=='inline'||
    !['learned','prepared'].includes(stage)||!definition.layers?.[stage])
   throw Error('Lista dei poteri non disponibile.');
@@ -214,12 +223,31 @@ export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,opt
 // Generic 'applied' stage for future source-backed option lists. A counted
 // application reserves one tracker charge, and removing it refunds exactly one.
 // No spell/metamagic application layer is created.
-export function powerApplicationPatch(record,calculated,catalog,id,optionId,apply,{itemIndex=-1}={}){
+export function powerApplicationPatch(record,calculated,catalog,id,optionId,apply,{itemIndex=-1,effectChoice={}}={}){
  if(optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}).some(row=>row.id===id))
   return optionalFeatureApplicationPatch(record,calculated,catalog.optionalFeatureProgressions,id,optionId,apply);
  const model=powerSelectionModels(record,calculated,catalog).find(row=>row.id===id);
  const rule=rows(catalog.selections).find(row=>row.id===id);
  const layer=model?.layers.applied,option=model?.options.find(row=>row.id===optionId);
+ if(rule?.source?.type==='infusion_catalog'){
+  if(!option||!layer)throw Error('Opzione non disponibile.');
+  if(!apply){
+   const item=rows(record.inventory)[itemIndex];
+   if(item?.infusion?.id!==optionId||item.infusion.creator_id!==record.id)throw Error('Applicazione non disponibile.');
+   return clearInfusionPatch(record,itemIndex);
+  }
+  if(!powerSelectionTargets(record,model,option).some(row=>row.index===itemIndex))throw Error('Scegli un oggetto compatibile.');
+  const known=learnedInfusions(record,calculated.infusion_catalog).find(row=>row.id===optionId);
+  return applyInfusionPatch(record,known,calculated.infusion_catalog,calculated.infusion_mechanics,itemIndex,calculated.features||[],effectChoice);
+ }
+ if(rule?.source?.type==='trait_states'){
+  if(!option||!layer)throw Error('Opzione non disponibile.');
+  if(apply&&layer.target&&!powerSelectionTargets(record,model,option).some(row=>row.index===itemIndex))
+   throw Error('Scegli un oggetto equipaggiato compatibile.');
+  const active=layer.selected.some(row=>savedIdentity(row)===optionId);
+  if(active===apply)return {};
+  return traitStateActivationPatch(record,calculated.features,calculated.trait_state_catalog,optionId,calculated.trackers);
+ }
  if(rule?.source?.type!=='inline'||!layer||!option)
   throw Error('Applicazione del potere non disponibile.');
  const apps={...(record.power_applications||{})},saved=rows(apps[id]);
@@ -262,4 +290,19 @@ export function powerApplicationPatch(record,calculated,catalog,id,optionId,appl
   saved.filter((_,i)=>i!==index);
  return {power_applications:{...apps,[id]:next},
   ...(trackerId?{resource_tracker_spent:spent}:{})};
+}
+
+// A target is a property of the benefit's data contract, never of its view.
+export function powerSelectionTargets(record,model,option){
+ const target=model?.layers?.applied?.target;
+ if(!target)return [];
+ return targetableInventoryItems(record,target,(item)=>{
+  if(item.disabled)return false;
+  if(target.kind==='equipped_item'&&!rows(item.equipped_slots).includes(target.slot))return false;
+  if(target.selector==='option.item_selector'&&!infusionEligible(option,item))return false;
+  const extension=target.extension_field&&item[target.extension_field];
+  if(extension?.creator_id&&extension.creator_id!==record.id)return false;
+  const bound=target.option_item_id&&option[target.option_item_id];
+  return !bound||item.id===bound;
+ });
 }
