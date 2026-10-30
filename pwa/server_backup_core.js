@@ -17,8 +17,13 @@ export async function backupRequest(route,payload,token) {
     const response=await fetch('/api/backup/'+route,{method:'POST',cache:'no-store',credentials:'omit',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
       body:JSON.stringify(payload),signal:controller.signal});
-    const data=await response.json();
-    if(!response.ok){const error=Error(data.error||'Backup server non disponibile');error.status=response.status;throw error;}
+    // Preserve the HTTP status even when a proxy sends HTML or no error body.
+    // Successful responses still require valid JSON.
+    const data = await response.json().catch(error => {
+      if (response.ok) throw error;
+      return null;
+    });
+    if(!response.ok){const error=Error(data?.error||'Backup server non disponibile');error.status=response.status;throw error;}
     return data;
   } finally {clearTimeout(timer);}
 }
