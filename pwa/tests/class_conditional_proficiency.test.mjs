@@ -80,7 +80,7 @@ test('Rune Knight Fire Rune requires an owned option and tool proficiency and do
 });
 
 test('2014 class catalogs expose Tool Expertise at level 6 and do not project it before level 6',()=>{
- const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
+ const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),spellcastingBenefits:read('spellcasting_benefits'),
   proficiencyGrants:read('proficiency_grants'),rollBonusRules:rules};
  const r=record('Artificer','TCE');
  const low={...r,level:5,classes:[{...r.classes[0],level:5}]};
