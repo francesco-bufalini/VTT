@@ -12,7 +12,10 @@ import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
 import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 import {readFileSync,existsSync} from 'node:fs';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
+const classFeatures=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
+const spellcastingBenefits=JSON.parse(readFileSync(new URL('../catalog/spellcasting_benefits.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:mechanics};
+const castingCatalogs={...catalogs,classFeatures,spellcastingBenefits};
 
 test('resource recovery caption reflects each tracker recovery rule',()=>{
  assert.equal(trackerRecoveryText({recharge:'short_rest'}),'Recupero: riposo breve');
@@ -264,11 +267,11 @@ test('all sheet readouts expose effective values and native bonus targets, inclu
 });
 test('native casting tables preserve editions, class ownership, cantrip limits and wizard spellbook',()=>{
  const c={rules_version:'2014',classes:[{name:'Wizard',source:'PHB',level:5},{name:'Warlock',source:'PHB',level:3}],abilities:{int:16,cha:14}};
- const members=castingClasses(c,mechanics,{int:3,cha:2});
+ const members=castingClasses(c,castingCatalogs,{int:3,cha:2});
  const [wizard,warlock]=members;
  assert.deepEqual([wizard.limit,wizard.cantrips,wizard.max_level,wizard.book],[8,4,3,true]);
  assert.deepEqual([warlock.limit,warlock.max_level],[4,2]);
- const modern=castingClasses({...c,rules_version:'2024',classes:[{name:'Wizard',source:'XPHB',level:5}]},mechanics,{int:5});
+ const modern=castingClasses({...c,rules_version:'2024',classes:[{name:'Wizard',source:'XPHB',level:5}]},castingCatalogs,{int:5});
  assert.equal(modern[0].limit,9,'2024 uses its table rather than ability + level');
  const spell={id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard','Warlock']};
  const options={member:wizard,classes:members,catalog:[spell]};
@@ -284,7 +287,7 @@ test('native casting tables preserve editions, class ownership, cantrip limits a
 });
 test('slot counters distinguish class/pact, keep manual totals and recover without changing spell selections',()=>{
  const c={class:'Wizard',level:5,classes:[{name:'Wizard',level:5},{name:'Warlock',level:3}],spell_slots_spent:[0,1],pact_slots_spent:1,prepared_spells:[{id:'keep'}]};
- const withTraits={...catalogs,classFeatures:JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'))};
+ const withTraits=castingCatalogs;
  const missing=calculateSheet(c,catalogs);
  assert.equal(missing.spell_slots[0].total,0,'missing trait catalog grants no class slots');
  assert.equal(missing.pact_slots.total,0,'missing Pact Magic trait grants no pact slots');
@@ -302,7 +305,7 @@ test('slot counters distinguish class/pact, keep manual totals and recover witho
 });
 test('resources use native IDs, formulas, subclass gating and explicit rest recovery',()=>{
  const c={class:'Bard',class_source:'PHB',level:5,abilities:{cha:16},resource_trackers:[{id:'custom',name:'Personal',max:1,max_formula:'proficiency + 1',recharge:'manual'}],resource_tracker_spent:{'class:bard:phb:bardic_inspiration':2,custom:1,unknown:4}};
- const out=calculateSheet(c,{...catalogs,classFeatures:JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'))});
+ const out=calculateSheet(c,castingCatalogs);
  const inspiration=out.trackers.find(t=>t.id==='class:bard:phb:bardic_inspiration');
  assert.ok(inspiration);
  assert.equal(inspiration.max,3);
