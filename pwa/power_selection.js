@@ -53,12 +53,20 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   models.push({...rule,benefit_type:rule.benefit_type||'option_selection',source_type:'option_catalog',ui:'generic',options,layers,level,
    origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required});
  }
- for(const template of rows(catalog.templates))if(template.source==='casting_classes')for(const member of rows(calculated.casting_classes)){
-  const layers={};for(const [stage,spec] of Object.entries(template.layers||{})){
-   if(stage==='learned'&&(member.book||member.mode==='Conosciuti')||stage==='prepared'&&member.mode==='Preparati')layers[stage]={enabled:true,selected:[],limit:member.book?null:member.limit,trigger:stage==='learned'&&member.book?null:spec.trigger||null,change_label:stage==='learned'&&member.book?'':powerSelectionTriggerLabel(spec.trigger)};
-  }
-  models.push({id:template.id+':'+member.id,title:member.name+' · Incantesimi',source_type:'casting_classes',ui:'existing',options:[],layers,cantrips:member.cantrips});
- }
+ for(const template of rows(catalog.templates))if(template.source==='casting_classes')
+   for(const member of rows(calculated.casting_classes)){
+    const layers={};
+    for(const [stage,spec] of Object.entries(member.selection_layers||{})){
+     const fallback=template.layers?.[stage]||{};
+     layers[stage]={enabled:true,selected:[],limit:spec.limit??null,
+       trigger:spec.trigger??fallback.trigger??null,
+       change_label:powerSelectionTriggerLabel(spec.trigger??fallback.trigger)};
+    }
+    models.push({id:template.id+':'+member.id,title:member.name+' · Incantesimi',
+      source_type:'casting_classes',benefit_type:'class_spellcasting',ui:'existing',
+      options:[],layers,cantrips:member.cantrips,spell_list_class:member.spell_list_class,
+      granting_trait_id:member.granting_trait_id});
+   }
  // Dependent choices require an available, applied parent, including its source gates.
  let available=models;
  for(let pass=0;pass<models.length;pass++){
