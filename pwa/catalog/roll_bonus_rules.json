@@ -281,6 +281,678 @@
         "condition_label": "Solo ai tiri salvezza per evitare di cadere dalla cavalcatura."
       },
       "roll_only": true
+    },
+    {
+      "id": "battle_master_maneuver_ambush",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Ambush",
+      "optional_source": "TCE",
+      "label": "Manovra · Ambush",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Ambush",
+        "targets": [
+          "skill:stealth",
+          "initiative"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo per Furtività o iniziativa, se non sei incapacitato. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_commanding_presence",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Commanding Presence",
+      "optional_source": "TCE",
+      "label": "Manovra · Commanding Presence",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Commanding Presence",
+        "targets": [
+          "skill:intimidation",
+          "skill:performance",
+          "skill:persuasion"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo per prove di Intimidire, Intrattenere o Persuasione. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_tactical_assessment",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Tactical Assessment",
+      "optional_source": "TCE",
+      "label": "Manovra · Tactical Assessment",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Tactical Assessment",
+        "targets": [
+          "skill:investigation",
+          "skill:history",
+          "skill:insight"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo per prove di Indagare, Storia o Intuizione. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_precision_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Precision Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Precision Attack",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Precision Attack",
+        "targets": [
+          "attack_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo per un tiro per colpire con arma, prima che l'attacco venga risolto. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_grappling_strike",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Grappling Strike",
+      "optional_source": "TCE",
+      "label": "Manovra · Grappling Strike",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Grappling Strike",
+        "targets": [
+          "skill:athletics"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo alla prova di Atletica per afferrare dopo aver colpito in mischia; richiede un'azione bonus. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_disarming_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Disarming Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Disarming Attack",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Disarming Attack",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sul colpo con arma che tenta di disarmare; il bersaglio effettua il TS di Forza. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_distracting_strike",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Distracting Strike",
+      "optional_source": "PHB",
+      "label": "Manovra · Distracting Strike",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Distracting Strike",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sul colpo che distrae il bersaglio; il successivo attacco di un alleato può avere vantaggio. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_goading_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Goading Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Goading Attack",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Goading Attack",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sul colpo che provoca il bersaglio; il TS di Saggezza e l'eventuale svantaggio restano contestuali. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_lunging_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Lunging Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Lunging Attack",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Lunging Attack",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sull'attacco in mischia con portata estesa di 5 ft; non è un bonus permanente alla portata. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_maneuvering_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Maneuvering Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Maneuvering Attack",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Maneuvering Attack",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sul colpo che consente a un alleato di muoversi usando la sua reazione. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_menacing_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Menacing Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Menacing Attack",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Menacing Attack",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sul colpo che tenta di spaventare il bersaglio; applicare il TS di Saggezza separatamente. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_pushing_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Pushing Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Pushing Attack",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Pushing Attack",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sul colpo che tenta di spingere il bersaglio Grande o inferiore; applicare il TS di Forza separatamente. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_trip_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Trip Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Trip Attack",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Trip Attack",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sul colpo che tenta di buttare prono il bersaglio Grande o inferiore; applicare il TS di Forza separatamente. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_riposte",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Riposte",
+      "optional_source": "PHB",
+      "label": "Manovra · Riposte",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Riposte",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sul colpo della reazione dopo un attacco nemico mancato in mischia. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_brace",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Brace",
+      "optional_source": "TCE",
+      "label": "Manovra · Brace",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Brace",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sull'attacco di reazione quando una creatura entra nella portata dell'arma impugnata. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_quick_toss",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Quick Toss",
+      "optional_source": "TCE",
+      "label": "Manovra · Quick Toss",
+      "time": "contextual",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Quick Toss",
+        "targets": [
+          "damage_roll"
+        ],
+        "dice_by_class_level": [
+          [
+            3,
+            "1d8"
+          ],
+          [
+            10,
+            "1d10"
+          ],
+          [
+            18,
+            "1d12"
+          ]
+        ],
+        "condition_label": "Solo sull'attacco a distanza con arma da lancio eseguito come azione bonus. Consuma un dado superiorità."
+      }
+    },
+    {
+      "id": "battle_master_maneuver_feinting_attack",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "subclass_name": "Battle Master",
+      "feature_name": "Maneuvers",
+      "required_optional_feature": "Feinting Attack",
+      "optional_source": "PHB",
+      "label": "Manovra · Feinting Attack",
+      "time": "bonus",
+      "mode": "context",
+      "resource_name": "Superiority Dice",
+      "resource_aliases": [
+        "Superiority Die",
+        "Combat Superiority"
+      ],
+      "cost": 1,
+      "roll_only": true,
+      "bonus": {
+        "name": "Feinting Attack",
+        "targets": [
+          "attack_roll"
+        ],
+        "roll_mode": "advantage",
+        "condition_label": "Solo al prossimo attacco contro la creatura scelta entro 5 ft in questo turno, dopo aver speso un dado e un'azione bonus; se colpisce, aggiungi il dado ai danni manualmente."
+      }
     }
   ]
 }
