@@ -59,8 +59,8 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
     for(const [stage,spec] of Object.entries(member.selection_layers||{})){
      const fallback=template.layers?.[stage]||{};
      layers[stage]={enabled:true,selected:[],limit:spec.limit??null,
-       trigger:spec.trigger??fallback.trigger??null,
-       change_label:powerSelectionTriggerLabel(spec.trigger??fallback.trigger)};
+       trigger:spec.trigger===undefined?fallback.trigger??null:spec.trigger,
+       change_label:powerSelectionTriggerLabel(spec.trigger===undefined?fallback.trigger:spec.trigger)};
     }
     models.push({id:template.id+':'+member.id,title:member.name+' · Incantesimi',
       source_type:'casting_classes',benefit_type:'class_spellcasting',ui:'existing',
