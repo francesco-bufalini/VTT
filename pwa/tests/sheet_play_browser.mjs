@@ -222,6 +222,8 @@ try{
  const competenceDialog=page.locator('#sheet-context-dialog');
  assert(await competenceDialog.isVisible());
  assert.match(await competenceDialog.textContent(),/Altre competenze/);
+ assert.match(await competenceDialog.textContent(),/Armi/);
+ assert.match(await competenceDialog.textContent(),/Armature/);
  await competenceDialog.locator('[data-act="sheet-context-close"]').click();
  await competenceDialog.waitFor({state:'detached'});
  assert.equal(await page.locator('#sheet-play-view[data-sheet="battle"]').count(),1,'Closing proficiency summary returns to Actions');
@@ -953,10 +955,6 @@ try{
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
- await popup('tools');
- assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
- assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
- await dismiss();
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  const skillMarker=key=>page.locator('#sheet-play-view .play-skills [data-target="skill:'+key+'"] .play-skill-rank');
  assert.equal(await skillMarker('arcana').getAttribute('aria-label'),'Competenza');
