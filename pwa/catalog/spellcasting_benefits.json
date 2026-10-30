@@ -1,0 +1,1416 @@
+{
+  "version": 1,
+  "description": "Benefici strutturati dei privilegi Spellcasting/Pact Magic. Associazioni tramite feature_id 5eTools, nessuna classe speciale nel runtime. Le classi della progressione e della lista degli incantesimi sono indipendenti; le formule supportano class_level e class_level_<nomeclasse>.",
+  "grants": [
+    {
+      "feature_id": "5etools:class_features:efa:spellcasting:artificer:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Artificer",
+        "spell_list_class": "Artificer",
+        "casting_ability": "int",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.5,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "ceil"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "formula": "class_level / 2 + int_mod",
+            "min": 1
+          },
+          "cantrips_limit": {
+            "by_level": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:tce:spellcasting:artificer:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Artificer",
+        "spell_list_class": "Artificer",
+        "casting_ability": "int",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.5,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "ceil"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "formula": "class_level / 2 + int_mod",
+            "min": 1
+          },
+          "cantrips_limit": {
+            "by_level": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:phb:spellcasting:bard:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Bard",
+        "spell_list_class": "Bard",
+        "casting_ability": "cha",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              14,
+              15,
+              15,
+              16,
+              18,
+              19,
+              19,
+              20,
+              22,
+              22,
+              22
+            ]
+          },
+          "prepared_limit": null,
+          "cantrips_limit": {
+            "by_level": [
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:xphb:spellcasting:bard:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Bard",
+        "spell_list_class": "Bard",
+        "casting_ability": "cha",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "by_level": [
+              4,
+              5,
+              6,
+              7,
+              9,
+              10,
+              11,
+              12,
+              14,
+              15,
+              16,
+              16,
+              17,
+              17,
+              18,
+              18,
+              19,
+              20,
+              21,
+              22
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:phb:spellcasting:cleric:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Cleric",
+        "spell_list_class": "Cleric",
+        "casting_ability": "wis",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "formula": "class_level + wis_mod",
+            "min": 1
+          },
+          "cantrips_limit": {
+            "by_level": [
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:xphb:spellcasting:cleric:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Cleric",
+        "spell_list_class": "Cleric",
+        "casting_ability": "wis",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "by_level": [
+              4,
+              5,
+              6,
+              7,
+              9,
+              10,
+              11,
+              12,
+              14,
+              15,
+              16,
+              16,
+              17,
+              17,
+              18,
+              18,
+              19,
+              20,
+              21,
+              22
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:phb:spellcasting:druid:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Druid",
+        "spell_list_class": "Druid",
+        "casting_ability": "wis",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "formula": "class_level + wis_mod",
+            "min": 1
+          },
+          "cantrips_limit": {
+            "by_level": [
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:xphb:spellcasting:druid:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Druid",
+        "spell_list_class": "Druid",
+        "casting_ability": "wis",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "by_level": [
+              4,
+              5,
+              6,
+              7,
+              9,
+              10,
+              11,
+              12,
+              14,
+              15,
+              16,
+              16,
+              17,
+              17,
+              18,
+              18,
+              19,
+              20,
+              21,
+              22
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:phb:spellcasting:paladin:2",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Paladin",
+        "spell_list_class": "Paladin",
+        "casting_ability": "cha",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.5,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "formula": "class_level / 2 + cha_mod",
+            "min": 1
+          },
+          "cantrips_limit": null
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:xphb:spellcasting:paladin:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Paladin",
+        "spell_list_class": "Paladin",
+        "casting_ability": "cha",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.5,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "ceil"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "by_level": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              6,
+              7,
+              7,
+              9,
+              9,
+              10,
+              10,
+              11,
+              11,
+              12,
+              12,
+              14,
+              14,
+              15,
+              15
+            ]
+          },
+          "cantrips_limit": null
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:phb:spellcasting:ranger:2",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Ranger",
+        "spell_list_class": "Ranger",
+        "casting_ability": "wis",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.5,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              0,
+              2,
+              3,
+              3,
+              4,
+              4,
+              5,
+              5,
+              6,
+              6,
+              7,
+              7,
+              8,
+              8,
+              9,
+              9,
+              10,
+              10,
+              11,
+              11
+            ]
+          },
+          "prepared_limit": null,
+          "cantrips_limit": null
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:xphb:spellcasting:ranger:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Ranger",
+        "spell_list_class": "Ranger",
+        "casting_ability": "wis",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.5,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "ceil"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "by_level": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              6,
+              7,
+              7,
+              9,
+              9,
+              10,
+              10,
+              11,
+              11,
+              12,
+              12,
+              14,
+              14,
+              15,
+              15
+            ]
+          },
+          "cantrips_limit": null
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:phb:spellcasting:sorcerer:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Sorcerer",
+        "spell_list_class": "Sorcerer",
+        "casting_ability": "cha",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              12,
+              13,
+              13,
+              14,
+              14,
+              15,
+              15,
+              15,
+              15
+            ]
+          },
+          "prepared_limit": null,
+          "cantrips_limit": {
+            "by_level": [
+              4,
+              4,
+              4,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:xphb:spellcasting:sorcerer:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Sorcerer",
+        "spell_list_class": "Sorcerer",
+        "casting_ability": "cha",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "by_level": [
+              2,
+              4,
+              6,
+              7,
+              9,
+              10,
+              11,
+              12,
+              14,
+              15,
+              16,
+              16,
+              17,
+              17,
+              18,
+              18,
+              19,
+              20,
+              21,
+              22
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              4,
+              4,
+              4,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6,
+              6
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:phb:pact%20magic:warlock:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Warlock",
+        "spell_list_class": "Warlock",
+        "casting_ability": "cha",
+        "slot_progression": {
+          "kind": "pact",
+          "slots_by_level": [
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4
+          ],
+          "slot_levels_by_level": [
+            1,
+            1,
+            2,
+            2,
+            3,
+            3,
+            4,
+            4,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5
+          ]
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              10,
+              11,
+              11,
+              12,
+              12,
+              13,
+              13,
+              14,
+              14,
+              15,
+              15
+            ]
+          },
+          "prepared_limit": null,
+          "cantrips_limit": {
+            "by_level": [
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:xphb:pact%20magic:warlock:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Warlock",
+        "spell_list_class": "Warlock",
+        "casting_ability": "cha",
+        "slot_progression": {
+          "kind": "pact",
+          "slots_by_level": [
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4
+          ],
+          "slot_levels_by_level": [
+            1,
+            1,
+            2,
+            2,
+            3,
+            3,
+            4,
+            4,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5
+          ]
+        },
+        "selection": {
+          "mode": "prepared",
+          "known_limit": null,
+          "prepared_limit": {
+            "by_level": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              10,
+              11,
+              11,
+              12,
+              12,
+              13,
+              13,
+              14,
+              14,
+              15,
+              15
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:phb:spellcasting:wizard:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Wizard",
+        "spell_list_class": "Wizard",
+        "casting_ability": "int",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "book",
+          "known_limit": {
+            "formula": "6 + 2 * (class_level - 1)"
+          },
+          "prepared_limit": {
+            "formula": "class_level + int_mod",
+            "min": 1
+          },
+          "cantrips_limit": {
+            "by_level": [
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:class_features:xphb:spellcasting:wizard:1",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Wizard",
+        "spell_list_class": "Wizard",
+        "casting_ability": "int",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 1,
+          "single_rounding": "floor",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "book",
+          "known_limit": {
+            "formula": "6 + 2 * (class_level - 1)"
+          },
+          "prepared_limit": {
+            "by_level": [
+              4,
+              5,
+              6,
+              7,
+              9,
+              10,
+              11,
+              12,
+              14,
+              15,
+              16,
+              16,
+              17,
+              18,
+              19,
+              21,
+              22,
+              23,
+              24,
+              25
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:subclass_features:fighter%7Cphb%7Celdritch%20knight%7Cphb%7C3%7Cphb%7Cspellcasting",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Fighter",
+        "spell_list_class": "Wizard",
+        "casting_ability": "int",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.3333333333333333,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              0,
+              0,
+              3,
+              4,
+              4,
+              4,
+              5,
+              6,
+              6,
+              7,
+              8,
+              8,
+              9,
+              10,
+              10,
+              11,
+              11,
+              11,
+              12,
+              13
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              0,
+              0,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:subclass_features:fighter%7Cxphb%7Celdritch%20knight%7Cxphb%7C3%7Cxphb%7Cspellcasting",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Fighter",
+        "spell_list_class": "Wizard",
+        "casting_ability": "int",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.3333333333333333,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              0,
+              0,
+              3,
+              4,
+              4,
+              4,
+              5,
+              6,
+              6,
+              7,
+              8,
+              8,
+              9,
+              10,
+              10,
+              11,
+              11,
+              11,
+              12,
+              13
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              0,
+              0,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:subclass_features:monk%7Cxphb%7Cmystic%20arts%7Cau%7C3%7Cau%7Cspellcasting",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Monk",
+        "spell_list_class": "Sorcerer",
+        "casting_ability": "wis",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.3333333333333333,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              0,
+              0,
+              3,
+              4,
+              4,
+              4,
+              5,
+              6,
+              6,
+              7,
+              8,
+              8,
+              9,
+              10,
+              10,
+              11,
+              11,
+              11,
+              12,
+              13
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              0,
+              0,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:subclass_features:rogue%7Cphb%7Carcane%20trickster%7Cphb%7C3%7Cphb%7Cspellcasting",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Rogue",
+        "spell_list_class": "Wizard",
+        "casting_ability": "int",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.3333333333333333,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              0,
+              0,
+              3,
+              4,
+              4,
+              4,
+              5,
+              6,
+              6,
+              7,
+              8,
+              8,
+              9,
+              10,
+              10,
+              11,
+              11,
+              11,
+              12,
+              13
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              0,
+              0,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "feature_id": "5etools:subclass_features:rogue%7Cxphb%7Carcane%20trickster%7Cxphb%7C3%7Cxphb%7Cspellcasting",
+      "benefit": {
+        "type": "class_spellcasting",
+        "level_class": "Rogue",
+        "spell_list_class": "Wizard",
+        "casting_ability": "int",
+        "slot_progression": {
+          "kind": "shared",
+          "fraction": 0.3333333333333333,
+          "single_rounding": "ceil",
+          "multiclass_rounding": "floor"
+        },
+        "selection": {
+          "mode": "known",
+          "known_limit": {
+            "by_level": [
+              0,
+              0,
+              3,
+              4,
+              4,
+              4,
+              5,
+              6,
+              6,
+              7,
+              8,
+              8,
+              9,
+              10,
+              10,
+              11,
+              11,
+              11,
+              12,
+              13
+            ]
+          },
+          "cantrips_limit": {
+            "by_level": [
+              0,
+              0,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
