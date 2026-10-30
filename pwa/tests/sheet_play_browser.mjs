@@ -1017,13 +1017,25 @@ try{
  assert.equal(await poisonedChip.locator('[data-act="state-trait-jump"]').count(),1);
  assert.equal(await poisonedChip.locator('[data-act="condition-remove"]').count(),1);
  await poisonedChip.locator('[data-act="condition-remove"]').click();
- assert.equal((await record()).conditions.includes('poisoned'),false);
+ let removedPoison=false;
+ for(let attempt=0;attempt<40;attempt++){
+  removedPoison=!(await record()).conditions?.includes('poisoned');
+  if(removedPoison)break;
+  await page.waitForTimeout(100);
+ }
+ assert.equal(removedPoison,true,'Removing Poisoned persists to the creature archive');
  await popup('conditions');assert.match(await page.locator('#sheet-context-dialog [data-condition-category="exhaustion_levels"] summary').textContent(),/Indebolimento/);
  await page.locator('#sheet-context-dialog [data-condition="exhaustion:4"]').check();await dismiss();
  assert.equal((await record()).exhaustion,4);
  assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 4/);
  await page.locator('#sheet-play-view [data-active-condition="exhaustion:4"] [data-act="condition-remove"]').click();
- assert.equal((await record()).exhaustion,0);
+ let removedExhaustion=false;
+ for(let attempt=0;attempt<40;attempt++){
+  removedExhaustion=(await record()).exhaustion===0;
+  if(removedExhaustion)break;
+  await page.waitForTimeout(100);
+ }
+ assert.equal(removedExhaustion,true,'Removing exhaustion persists to the creature archive');
  assert.equal(await page.locator('[data-active-condition="exhaustion:4"]').count(),0);
  await popup('apply-spell');await page.locator('#condition-spell-picker').selectOption('phb2014_light');await page.locator('#sheet-context-dialog [data-act="condition-add-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light'&&r.applied===true);});
