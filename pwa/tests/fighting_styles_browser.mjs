@@ -1,7 +1,7 @@
 // Regression: generic Fighting Style learning must use the same fully
 // scrollable catalog list and search behavior as Artificer infusion learning.
 import assert from 'node:assert/strict';
-import {browserFixture,seedPlayCreature} from './browser_fixture.mjs';
+import {browserFixture} from './browser_fixture.mjs';
 
 const f=await browserFixture();
 const {page,origin,sheet}=f;
@@ -115,9 +115,17 @@ try{
  const featureOpenerClass=await opener.getAttribute('class');
  await f.shot('fighting-style-infusion-shared-mobile');
  await page.setViewportSize({width:1440,height:900});await f.shot('fighting-style-infusion-shared-desktop');
- // Use the existing Wizard browser fixture: the Fighting Style character
- // intentionally has no spell-learning selector available on its sheet.
- await seedPlayCreature(page,origin);
+ // A separate Wizard checks the spell picker without changing Fighting Style data.
+ await page.goto(origin);
+ await page.evaluate(async()=>{
+  const {createCreature,saveCreature}=await import('/creatures.js');
+  const saved=await createCreature('character','Spell learner layout');
+  await saveCreature({...saved.data,rules_version:'2014',class:'Wizard',class_source:'PHB',
+   level:5,classes:[{name:'Wizard',source:'PHB',level:5}],
+   abilities:{str:10,dex:14,con:12,int:18,wis:12,cha:10}},'default',saved.revision);
+ });
+ await page.reload();
+ await page.locator('[data-act="open"][aria-label="Apri scheda di Spell learner layout"]').click();
  await sheet('magic');
  const spellOpen=page.locator('#sheet-play-view [data-act="magic-learn-select"]').first();
  assert.equal(await spellOpen.getAttribute('class'),featureOpenerClass,
