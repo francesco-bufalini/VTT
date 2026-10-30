@@ -14,7 +14,8 @@ const catalogs={
  classFeatures:json('../catalog/classes.json'),
  abilityGrants:json('../catalog/ability_grants.json'),
  proficiencyGrants:json('../catalog/proficiency_grants.json'),
- featureRules:json('../../vtt/data/feature_timing_recovery_rules.json')
+ featureRules:json('../../vtt/data/feature_timing_recovery_rules.json'),
+ scalingDice:json('../catalog/scaling_dice.json')
 };
 const bard=edition=>({
  id:'bard-'+edition,name:'Bardo',kind:'character',rules_version:edition==='PHB'?'2014':'2024',
@@ -36,6 +37,8 @@ for(const edition of ['PHB','XPHB']){
   assert.equal(bardic.exclude_self,true);
   assert.equal(bardic.resource_cost,1);
   assert(bardic.tracker_id);
+  assert.equal(bardic.dice_ref,'bardic_inspiration_die');
+  assert.equal(bardic.die,'1d8');
   const panels=battleActionPanels(creature,calculated,[],[],[],[],[bardic]);
   assert(panels.abilityEntries.some(row=>row.name==='Bardic Inspiration'&&row.time==='bonus'));
   const resource=battleResourcePowers(calculated,panels.abilityEntries,[bardic])
@@ -81,4 +84,14 @@ test('Token selection rejects caster and blanks without making API calls or spen
  await viewer.tap([50,40]);
  assert.deepEqual(picked,[{id:'ally',name:'Alleata'}]);
  assert.equal(viewer.abilityTarget,null);
+});
+
+test('Bardic Inspiration die upgrades for both 2014 and 2024 bards without a separate roller',()=>{
+ for(const edition of ['PHB','XPHB'])for(const [level,die] of [[1,'1d6'],[4,'1d6'],[5,'1d8'],[9,'1d8'],[10,'1d10'],[14,'1d10'],[15,'1d12'],[20,'1d12']]){
+  const creature=bard(edition);creature.level=level;creature.classes[0].level=level;
+  const calculated=calculateSheet(creature,catalogs);
+  const power=abilitiesForCreature(creature,[],calculated).find(row=>row.id==='vtt_bardic_inspiration');
+  assert.equal(power?.die,die,edition+' Bard '+level);
+  assert.equal(calculated.scaling_dice.find(row=>row.id==='bardic_inspiration_die')?.dice,die);
+ }
 });
