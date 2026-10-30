@@ -315,7 +315,8 @@ test("battle damage rolls use bounded dice notation and desktop-compatible chat 
 });
 
 test("declarative equipment rules track active armor, slots and instance properties",()=>{
- const worn={id:"armor",name:"Plate",custom_item_type:"armor",type:"HA",ac:18,quantity:1,equipped_slots:["body"]};
+ const worn={id:"armor",name:"Plate",custom_item_type:"armor",type:"HA",ac:18,
+   strength:15,stealth:true,material:"iron",quantity:1,equipped_slots:["body"]};
  const shield={id:"shield",custom_item_type:"shield",type:"S",quantity:1,equipped_slots:["off"]};
  const dagger={id:"dagger",instance_id:"dagger-copy",custom_item_type:"weapon",type:"M",
    damage:"1d4",properties:["F|PHB","T|PHB"],instance_overrides:{properties:["F|PHB"]},
@@ -324,6 +325,10 @@ test("declarative equipment rules track active armor, slots and instance propert
  const equipped=equippedItemFacts(record);
  assert.deepEqual(equipped.map(row=>row.slot),["body","off","main"]);
  assert.deepEqual(equipped.find(row=>row.id==="dagger").properties,["F"]);
+ assert.equal(equipped.find(row=>row.id==="armor").armor_class,18);
+ assert.equal(equipped.find(row=>row.id==="armor").armor_strength_required,15);
+ assert.equal(equipped.find(row=>row.id==="armor").armor_stealth_disadvantage,true);
+ assert.equal(equipmentRequirementMatches(record,{equipment:{kind:"armor",armor_stealth_disadvantage:true,material:"iron"}}),true);
  assert.equal(equipmentRequirementMatches(record,{equipment:{all:[{kind:"armor",type:"HA",slot:"body"}],none:[{kind:"weapon",properties:["2H"]}]}}),true);
  assert.equal(equipmentRequirementMatches(record,{equipment:{none:[{kind:"shield"}]}}),false);
  assert.equal(equipmentRequirementMatches(record,{equipment:{any:[{kind:"weapon",properties:["T"]}]}}),false);
