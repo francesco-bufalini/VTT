@@ -453,7 +453,8 @@ export function trackerRollBonusRows(record={},calculated={}){
  const attacks=(calculated.trait_state_optional_dice||[]).map(row=>({
   ...row,name:row.name||row.origin_name||'Danno aggiuntivo',
   targets:['attack_damage:'+row.attack_id]}));
- const user=[...(record.dice_bonuses||[]),...(record.formula_bonuses||[])]
+ const source=calculated.selection_record||record;
+ const user=[...(source.dice_bonuses||[]),...(source.formula_bonuses||[])]
   .filter(row=>row?.tracker_id&&enabled(row))
   .flatMap(row=>{
    const dice=String(row.dice||'').trim(),flat=Number(row.flat_bonus??row.expression);
@@ -786,9 +787,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const caption=row.kind==='spell'?row.casting_time_label:
      ((row.power?.roll_attack||row.classAction?.roll_attack)&&row.timing==='action'?'Azione di attacco':
        timeLabels[row.timing]||row.timing||'Secondo il privilegio');
-   const note=row.classAction?.available===false?' · Requisiti non soddisfatti':
+   const note=(row.classAction?.available===false?' · Requisiti non soddisfatti':
      row.kind==='spell'?(row.cost>1?' · Costo '+row.cost:''):
-     (row.cost?' · Costo '+row.cost:'');
+     (row.cost?' · Costo '+row.cost:''))+
+     (row.power?.die||row.classAction?.dice?' · Dado '+(row.power?.die||row.classAction?.dice):'');
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong><small>'+esc(caption+note)+'</small></span></button>'+
@@ -807,6 +809,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<dl class="power-privilege-facts">'+
      '<div><dt>Origine</dt><dd>'+esc(originLabel||'Non specificata')+'</dd></div>'+
      '<div><dt>Attivazione</dt><dd>'+esc(caption)+'</dd></div>'+
+     (power.die||action.dice?'<div><dt>Dado</dt><dd>'+esc(power.die||action.dice)+'</dd></div>':'')+
      (row.cost?'<div><dt>Costo</dt><dd>'+esc(row.cost+' utilizzi'+(tracker?' · '+tracker.name:''))+'</dd></div>':'')+'</dl>'+
     (description?'<div class="power-privilege-description"><h3>Descrizione del tratto</h3><p class="trait-description">'+esc(description)+'</p></div>':'')+
     monsterActionOptionsMarkup({...action,id:'resource:'+String(action.id||row.id)})+
