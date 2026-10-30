@@ -641,6 +641,10 @@ try{
  },seededCreatureId);
  assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
+ // A delayed second-field save must not restore an obsolete current HP.
+ await page.waitForTimeout(700);
+ assert.deepEqual([(await record()).current_hp,(await record()).temporary_hp],[39,5],
+  'Temporary HP edits cannot overwrite current HP after the debounce interval');
  await page.locator('#hp-adjust-dialog [data-act="hp-adjust-cancel"]').click();
  await hpCard.click({position:{x:22,y:80}});
  assert.equal(await page.locator('#hp-adjust-amount').inputValue(),'','Damage amount starts empty');
