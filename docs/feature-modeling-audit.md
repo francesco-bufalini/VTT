@@ -7,6 +7,30 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-30: Bard XGE, College of Whispers
+
+Esaminate una per una le **5 voci** `subclassFeature` di College of Whispers
+con `classSource=PHB` in
+[5etools `class-bard.json`](https://github.com/5etools-mirror-3/5etools-src/blob/main/data/class/class-bard.json)
+(`cb4136e93fcf3d1636f738bc5ec2131ec6f3144a`) e
+[FightClub5eXML `class-bard-xge.xml`](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-bard-xge.xml)
+(`5d6841bbf8c57945731e2a5f3ee0e422b8da5430`). La sottoclasse
+XGE non dichiara `reprintedAs` verso il 2024; il record di compatibilità
+con Bard XPHB mantiene un'identità distinta.
+
+| Tratto (livello) | Esito |
+| --- | --- |
+| College of Whispers (3) | Intestazione della sottoclasse. |
+| Psychic Blades (3) | Spende un uso di Bardic Inspiration dopo un colpo con arma, una volta nel proprio turno per round; dado di danno crescente. Non è una risorsa autonoma. |
+| Words of Terror (3) | **Ora strutturato:** un uso per riposo breve. Richiede un colloquio solitario di almeno un minuto con un umanoide; TS, bersaglio e Frightened restano contestuali. |
+| Mantle of Whispers (6) | **Ora strutturati:** un uso per riposo breve e reazione alla morte di un umanoide entro 30 piedi per catturarne l'ombra. Uso successivo dell'ombra, travestimento e durata richiedono stato. |
+| Shadow Lore (14) | **Ora strutturati:** azione e un uso per riposo lungo. Creatura entro 30 piedi, udito, lingua condivisa, TS, Charmed e durata richiedono il bersaglio effettivo. |
+
+I tre contatori seguono i limiti espliciti nell'XML. Il contatore di Mantle
+copre soltanto la **cattura** dell'ombra, non l'azione successiva per
+indossarne il travestimento. Nessun effetto contestuale viene applicato
+in anticipo; i punti aperti sono nella lista separata.
+
 ## Lotto 2026-10-29: Monk XGE, Way of the Sun Soul
 
 Esaminate una per una le **5 voci** `subclassFeature` XGE della Way of the

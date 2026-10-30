@@ -381,7 +381,8 @@
     "FightClub5eXML/class-bard-phb.xml",
     "FightClub5eXML/class-wizard-xge.xml",
     "FightClub5eXML/class-warlock-xge.xml",
-    "FightClub5eXML/class-monk-xge.xml"
+    "FightClub5eXML/class-monk-xge.xml",
+    "FightClub5eXML/class-bard-xge.xml"
   ],
   "note": "Validated class/edition/subclass activation alternatives and full/partial/limited recovery. Runtime uses exact structured identifiers; text and tags are informative only. Partial recovery is not a short-rest reset. Optional recovery requires explicit use. Attack-count benefits use their granting feature and never stack: highest active attacks_per_action wins.",
   "actions": [
@@ -419,6 +420,36 @@
       "target_range_feet": 60,
       "exclude_self": true,
       "detail": "Bardic Inspiration (2014): scegli una creatura diversa da te entro 60 ft in grado di percepire la tua ispirazione. Consuma un utilizzo confermato; l'applicazione del dado rimane manuale.",
+      "priority": 0
+    },
+    {
+      "id": "bard_phb_xge_whispers_mantle_capture",
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "min_level": 6,
+      "subclass": "College of Whispers",
+      "feature": "Mantle of Whispers",
+      "action_id": "mantle_of_whispers_capture",
+      "name": "Cattura l'ombra",
+      "activation": "reaction",
+      "tracker_name": "Mantle of Whispers",
+      "detail": "Reazione e un uso quando un umanoide muore entro 30 piedi: catturi la sua ombra. L'ombra conservata, il travestimento e la sua durata richiedono stato separato.",
+      "kind": "activation",
+      "priority": 0
+    },
+    {
+      "id": "bard_phb_xge_whispers_shadow_lore",
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "min_level": 14,
+      "subclass": "College of Whispers",
+      "feature": "Shadow Lore",
+      "action_id": "shadow_lore",
+      "name": "Conoscenza dell'ombra",
+      "activation": "action",
+      "tracker_name": "Shadow Lore",
+      "detail": "Azione e un uso: sussurri a una creatura entro 30 piedi che possa sentirti. Lingua condivisa, TS SAG, Charm, durata e condizioni di fine richiedono il bersaglio effettivo.",
+      "kind": "activation",
       "priority": 0
     },
     {

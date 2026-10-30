@@ -137,6 +137,27 @@ test('XGE Sun Soul Sunburst exposes only its 2014 action timing',()=>{
  assert.equal(matching(creature('Monk','2024',11,'Way of the Sun Soul')).length,0);
 });
 
+test('XGE Whispers counters and two activation timings belong to the 2014 Bard traits',()=>{
+ const own=creature('Bard','2014',14,'College of Whispers');
+ const trackers=calculateSheet(own,catalogs).trackers;
+ for(const [name,recharge] of [['Words of Terror','short_rest'],['Mantle of Whispers','short_rest'],['Shadow Lore','long_rest']]){
+  const row=trackers.find(t=>t.name===name);
+  assert.equal(row?.max,1,name);
+  assert.equal(row?.recharge,recharge,name);
+  assert.equal(row?.origin_name,`Tratto · ${name}`,name);
+ }
+ const actions=actionsFor(own,trackers).filter(a=>a.rule_id.startsWith('bard_phb_xge_whispers_'));
+ assert.deepEqual(actions.map(a=>a.time),['reaction','action']);
+ assert.equal(actions[0].tracker,'Mantle of Whispers');
+ assert.equal(actions[1].tracker,'Shadow Lore');
+ assert(!actions.some(a=>a.feature==='Words of Terror'));
+ const muted={...own,origin_enabled:{[trackers.find(t=>t.name==='Shadow Lore').origin_id]:false}};
+ assert(!actionsFor(muted,calculateSheet(muted,catalogs).trackers).some(a=>a.rule_id==='bard_phb_xge_whispers_shadow_lore'));
+ assert(!calculateSheet(creature('Bard','2014',5,'College of Whispers'),catalogs).trackers.some(t=>t.name==='Mantle of Whispers'));
+ assert(!calculateSheet(creature('Bard','2014',14,'College of Swords'),catalogs).trackers.some(t=>t.name==='Words of Terror'));
+ assert(!calculateSheet(creature('Bard','2024',14,'College of Whispers'),catalogs).trackers.some(t=>t.name==='Words of Terror'));
+});
+
 test('non-reprinted SCAG Monk and Paladin actions require their own 2014 subclass traits',()=>{
  const longDeath=creature('Monk','2014',6,'Long Death');
  const hour=actionsFor(longDeath,calculateSheet(longDeath,catalogs).trackers)

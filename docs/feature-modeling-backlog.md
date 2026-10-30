@@ -24,6 +24,7 @@ persistiti e verifica con entrambe le interfacce; resta aperto.
 
 | Fonte e tratti | Parte ancora da rappresentare fedelmente |
 | --- | --- |
+| Bard PHB/XGE, College of Whispers: Psychic Blades, Words of Terror, Mantle of Whispers, Shadow Lore | Colpo reale e spesa condivisa di Bardic Inspiration con limite una volta nel round e danno progressivo; colloquio solitario di un minuto, TS e Frightened; ombra catturata, sua spesa per il travestimento, durata e prova contrapposta; bersaglio che sente e comprende Shadow Lore, TS, Charmed e condizioni di fine. I tre limiti d'uso, la reazione di cattura e l'azione di Shadow Lore sono già modellati. |
 | Bard PHB/XGE, College of Swords: Fighting Style, Blade Flourish e varianti | Stile scelto; spesa di Bardic Inspiration, tiro, bersaglio e spostamento del singolo colpo. Armatura media e scimitarra di Bonus Proficiencies sono già attribuite al tratto. |
 | Cleric PHB/XGE, Forge Domain: Blessing of the Forge e Soul of the Forge | Oggetto realmente scelto e incantato dopo riposo lungo; bonus all'armatura soltanto quando indossata, resistenza al fuoco e stato dell'armatura. Armatura pesante e strumenti da fabbro di Bonus Proficiency sono già attribuiti al tratto. |
 | Monk PHB/XGE, Drunken Master: Drunken Technique, Tipsy Sway e Intoxicated Frenzy | Spesa di Ki e Flurry of Blows effettiva, Disengage/velocità temporanei, reazione e attacco deviato verso bersaglio idoneo, attacchi aggiuntivi solo contro creature distinte. Performance e strumenti da birraio sono già attribuiti al tratto. |
