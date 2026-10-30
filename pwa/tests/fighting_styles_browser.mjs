@@ -127,7 +127,9 @@ try{
  await page.reload();
  await page.locator('[data-act="open"][aria-label="Apri scheda di Spell learner layout"]').click();
  await sheet('magic');
- const spellOpen=page.locator('#sheet-play-view [data-act="magic-learn-select"]').first();
+ // The visible sheet proxies the native spell action via data-act=sheet-proxy.
+ const spellOpen=page.locator('#sheet-play-view .play-magic-class-card:not(.play-infusion-card) .play-magic-selection .play-button')
+  .filter({hasText:/Gestisci incantesimi conosciuti|Impara.*incantesimi/i}).first();
  assert.equal(await spellOpen.getAttribute('class'),featureOpenerClass,
   'Spells and optional features use the same opener button styling');
  await spellOpen.click();
