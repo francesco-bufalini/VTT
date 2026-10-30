@@ -4282,21 +4282,6 @@ function recordSheetChange(before,after,requested){
  const changes=describeSheetActivity(before,after,requested);
  if(changes.length)recordSheetAction(changes.join(' · '),after);
 }
-const IGNORED_SHEET_CLICK=/^(?:sheet|session-pane|close-|.*-close|.*-cancel|.*-more|.*-retry|.*-range|battle-attack-map|state-trait-jump|tracker-item|tracker-powers|power-trait|roll-origin-open|inventory-search-result|inventory-select|library-.*|toggle-chat-notifications|open-chat-dice|select-die|check|disconnect|sheet-roll-open-tracker)$/;
-function sheetClickLabel(button){
- const raw=String(button.getAttribute('aria-label')||button.getAttribute('title')||
-   button.textContent||button.dataset.act||'Azione').replace(/\s+/g,' ').trim().slice(0,95);
- const row=button.closest('.trait-card,.magic-spell-row,.inventory-play-item,.list-item');
- const context=String(row?.querySelector('.trait-title,.magic-catalog-name,.inventory-play-item-name,strong')?.textContent||'')
-   .replace(/\s+/g,' ').trim().slice(0,70);
- return 'Interazione: '+raw+(context&&!raw.includes(context)?' · '+context:'');
-}
-function sheetClickEligible(button){
- const act=String(button.dataset.act||'');
- return Boolean(state.editor&&state.page==='library'&&!state.libraryMode&&act&&
-   !IGNORED_SHEET_CLICK.test(act)&&!button.dataset.nav&&
-   !button.closest('[data-session-content],#chat-dice-dialog'));
-}
 
 function chatView(){
   return panel("Chat della partita",
@@ -7702,7 +7687,6 @@ async function handleAction(target){
       dialog.usedRollBonuses=chosenRollBonuses(dialog).filter(item=>item.selectionId!==row.selectionId);
       target.dataset.rollUsed='false';target.textContent='Usa';
       dialog.renderRollFormula?.();
-      recordSheetAction('Bonus rimosso dal tiro: '+String(row.origin_name||row.name||row.id||'Bonus'));
       return;
     }
     if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
@@ -7747,7 +7731,6 @@ async function handleAction(target){
           if(!revised)dialog.usedRollBonuses.push(selected);
           target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
           dialog.renderRollFormula?.();
-          recordSheetAction('Bonus applicato al tiro: '+String(row.origin_name||row.name||action.name||'Bonus'));
           if(revised)void announcePostRollBonus(revised);
         }
       });
@@ -7790,7 +7773,6 @@ async function handleAction(target){
       target.textContent=row.tracker_id?'Attivo':'Rimuovi';
       target.dataset.rollUsed='true';target.disabled=!!row.tracker_id;
       dialog.renderRollFormula?.();
-      recordSheetAction('Modalità del tiro: '+String(row.origin_name||row.name||row.roll_mode));
       return;
     }
     const revised=applyPostRollBonus(dialog,row);
@@ -7801,8 +7783,6 @@ async function handleAction(target){
     }
     target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
     dialog.renderRollFormula?.();
-    recordSheetAction('Bonus applicato al tiro: '+String(row.origin_name||row.name||row.id||'Bonus')+
-      (row.dice?' · '+row.dice:Object.hasOwn(row,'flat_bonus')?' · '+row.flat_bonus:''));
     if(revised)await announcePostRollBonus(revised);
     return;
   }
@@ -7915,8 +7895,6 @@ async function handleAction(target){
     dialog.addEventListener('change',event=>{
       if(event.target.matches('[data-roll-mode]')){
         dialog.renderRollFormula();
-        const chosen=event.target.selectedOptions?.[0]?.textContent||event.target.value;
-        recordSheetAction('Modalità tiro selezionata: '+chosen,creature);
       }
     });
     return;
@@ -9916,14 +9894,8 @@ function listen(){
       // actions preserve their existing behavior across field autosaves.
       if(closeAction==='trait-benefits-remove-request'&&!button.isConnected)return;
       const isDestination=Boolean(button.dataset.nav)||button.dataset.act==='sheet';
-      const logClick=sheetClickEligible(button);
-      const clickedLabel=logClick?sheetClickLabel(button):'';
-      const previousLogCount=state.localMessages.length;
-      const clickedRecord=logClick?state.editor.read():null;
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
-      if(logClick&&state.localMessages.length===previousLogCount)
-        recordSheetAction(clickedLabel,clickedRecord);
       if(isDestination){window.scrollTo(0,0);app.focus({preventScroll:true});}
     }catch(error){message(errorMessage(error),true);}
     finally{if(button.isConnected&&!button.hasAttribute('data-roll-used'))button.disabled=false;}

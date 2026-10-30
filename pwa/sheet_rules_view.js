@@ -294,7 +294,9 @@ export function sheetRollChatFields(result){
    total:result.total,notation:result.notation,detail:result.detail};
  if(!Array.isArray(result.parts)||result.parts.length<=1)
   return {...base,die:'d'+result.sides};
- const terms=result.parts.map(part=>{
+ // Flat bonuses change the modifier, not the number of dice. They have no
+ // dN notation and must not be serialized as a dice term in chat.
+ const terms=result.parts.filter(part=>part.kind!=='flat').map(part=>{
   const match=String(part.notation||'').match(/d([0-9]+)/i);
   const sides=Number(match?.[1]);
   if(!Number.isInteger(sides)||sides<2||sides>1000)throw Error('Dado del tiro non valido');

@@ -1,6 +1,8 @@
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {describeSheetActivity} from '../native_sheet.js';
+import {rollSheetDice,appendRollBonus,sheetRollChatFields} from '../sheet_rules_view.js';
 
 test('no log for unchanged or navigation-only editor state',()=>{
  const before={name:'Arlen',current_hp:12,inventory:[]};
@@ -55,4 +57,39 @@ test('private notes and portraits never enter shared activity messages',()=>{
  const lines=describeSheetActivity(before,after,after).join(' · ');
  assert.match(lines,/Notes|Notes|Note|Portrait|Sheet portrait data|Sheet Portrait Data|Ritratto|Foto/);
  assert.doesNotMatch(lines,/segreto|base64|oldimage|newimage/i);
+});
+
+test('popup openings and uncommitted roll options never write chat actions',()=>{
+ const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
+ // The only action event writer is the committed before/after sheet diff;
+ // opening a score, a roll, or changing a draft roll option must not log.
+ assert.equal((ui.match(/\brecordSheetAction\(/g)||[]).length,2);
+ assert.doesNotMatch(ui,/sheetClickEligible|sheetClickLabel|Interazione:/);
+ const clickStart=ui.indexOf('document.addEventListener("click", async e=>{');
+ const clickEnd=ui.indexOf("document.addEventListener('keydown',e=>{",clickStart);
+ assert(clickStart>=0&&clickEnd>clickStart);
+ assert.doesNotMatch(ui.slice(clickStart,clickEnd),/recordSheetAction|rememberChatEvent|recordSheetChange/);
+ assert.match(ui,/if\(state\.editor===editor\)recordSheetChange\(before,editor\.read\(\),patchValue\)/);
+ assert.match(ui,/await shareRoll\(\{quiet:true\}\)/);
+});
+
+test('flat and dice bonuses update the shared roll total and source',()=>{
+ const initial=rollSheetDice(3,[],()=>12);
+ assert.equal(initial.total,15);
+ const withFlat=appendRollBonus(initial,{origin_name:'Guida',flat_bonus:2},()=>{
+  throw Error('Un bonus fisso non deve lanciare dadi');
+ });
+ const flatEvent=sheetRollChatFields(withFlat);
+ assert.equal(flatEvent.total,17);
+ assert.equal(flatEvent.modifier,5);
+ assert.equal(flatEvent.count,1);
+ assert.deepEqual(flatEvent.terms,[{count:1,sides:20,sign:1,rolls:[12]}]);
+ assert.match(flatEvent.detail,/Guida/);
+ const withDice=appendRollBonus(withFlat,{origin_name:'Ispirazione',dice:'1d4'},()=>3);
+ const diceEvent=sheetRollChatFields(withDice);
+ assert.equal(diceEvent.total,20);
+ assert.equal(diceEvent.count,2);
+ assert.equal(diceEvent.modifier,5);
+ assert.deepEqual(diceEvent.terms[1],{count:1,sides:4,sign:1,rolls:[3]});
+ assert.match(diceEvent.detail,/Ispirazione/);
 });
