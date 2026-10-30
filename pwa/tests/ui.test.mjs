@@ -680,7 +680,8 @@ test("inline spell catalog adds available and spellbook choices without divergin
     'Preparing a spell does not reset the modal scroll');
   assert.equal(document.querySelector('#magic-tools-dialog[open] #spell-results').scrollTop,41,
     'Preparing a spell preserves the inner results scroll');
-  assert.equal(document.querySelector('#magic-tools-dialog [data-act="remove-spell"]')?.textContent,'Rimuovi');
+  assert.equal(document.querySelector('#magic-tools-dialog [data-act="remove-spell"]'),null);
+  assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-owned')?.textContent,'Già posseduta');
   click('[data-act="magic-tool-close"]');
   await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   click('[data-act="magic-learn-select"]');
@@ -693,8 +694,10 @@ test("inline spell catalog adds available and spellbook choices without divergin
   const learnSearch=learningDialog.querySelector('#spell-search');
   learnSearch.value='Shield';
   learnSearch.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  await until(()=>learningDialog.querySelector('[data-act="spell-known-toggle"]'));
-  assert.equal(learningDialog.querySelector('[data-act="spell-known-toggle"]')?.textContent,'Dimentica');
+  await until(()=>learningDialog.querySelector('.magic-catalog-owned'));
+  assert.equal(learningDialog.querySelector('.magic-catalog-owned')?.textContent,'Già posseduta');
+  assert.equal(learningDialog.querySelector('[data-act="spell-known-toggle"]'),null,
+    'An already learned spell cannot be selected again');
   click('[data-act="magic-tool-close"]');
   await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   const preparedRow=document.querySelector('.magic-spell-open[data-spell-key="prepared_spells"]');
@@ -705,11 +708,9 @@ test("inline spell catalog adds available and spellbook choices without divergin
   assert.match(document.querySelector('#action-cast-dialog').textContent,/Shield/);
   click('[data-act="action-cast-cancel"]');
   await until(()=>!document.querySelector('#action-cast-dialog'));
-  click('[data-act="remove-spell"][data-key="prepared_spells"]');
-  await until(async()=>{
-    const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
-    return current?.prepared_spells?.length===0 && current?.spells?.length===0;
-  });
+  const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
+  assert.equal(current?.prepared_spells?.[0]?.id,'phb2014_shield',
+    'Already prepared spells are preserved by the locked selection row');
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -749,7 +750,8 @@ test("slot popup casts inline while compact search opens the existing spell deta
   await until(()=>document.querySelector('#magic-tools-dialog .magic-catalog-row .magic-catalog-name')).catch(error=>{
     throw Error(error.message+' — Incantesimi: '+document.querySelector('#magic-tools-dialog')?.textContent.slice(0,1000));
   });
-  assert.equal(document.querySelectorAll('#magic-tools-dialog .magic-catalog-row .magic-catalog-action').length,1);
+  assert.equal(document.querySelectorAll('#magic-tools-dialog .magic-catalog-row .magic-catalog-action').length,0);
+  assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-owned')?.textContent,'Già posseduta');
   click('#magic-tools-dialog .magic-catalog-row .magic-catalog-name');
   await until(()=>document.querySelector('#action-cast-dialog[open]'));
   assert.match(document.querySelector('#action-cast-dialog').textContent,/Shield/);

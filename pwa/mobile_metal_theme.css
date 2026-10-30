@@ -4133,6 +4133,11 @@ dialog.magic-tools-dialog{
 .magic-editor-results .magic-catalog-action.is-selected{
   border-color:#a48f7260;background:#3d39319e;color:#d2c4a9;
 }
+.magic-editor-results .magic-catalog-owned{
+  justify-self:end;color:var(--muted);font:600 10px/1.2 system-ui,sans-serif;
+  white-space:nowrap;
+}
+.magic-editor-results .magic-catalog-row.is-selected .magic-catalog-name{opacity:.7}
 .magic-editor-results .magic-catalog-action:hover,.magic-editor-results .magic-catalog-action:focus-visible{
   border-color:#e0b77a;background:#775637;color:#ffe2b6;
 }
