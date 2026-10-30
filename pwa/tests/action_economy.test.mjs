@@ -655,3 +655,32 @@ test('Prova abilità is a basic capacity without a duplicate timed action',()=>{
  assert.equal(doc(panels.checks).querySelectorAll('[data-action-ability]').length,6);
  assert.equal(doc(panels.others).querySelector('[data-attack-id="ability_checks"]'),null);
 });
+test('basic actions never show unarmed damage unless a benefit explicitly targets the action',()=>{
+ const unarmed={id:'unarmed',name:'Colpo senz’armi',melee:true,range_feet:5,
+   damage:'1d4+3',damage_type:'bludgeoning',hit:5};
+ const computed={attacks:[unarmed],spell_slots:[],trackers:[]};
+ const base=battleActionPanels({rules_version:'2014'},computed,[],[],catalog.actions);
+ const actions=doc(base.others);
+ for(const id of ['attack','opportunity','two_weapon','dash','disengage']){
+  const row=actions.querySelector('[data-attack-id="'+id+'"]');
+  assert(row,'Expected abstract action '+id);
+  assert.equal(row.querySelector('[data-effect-kind="damage"]'),null,
+   id+' must not use the unarmed strike damage');
+ }
+ assert(actions.querySelector('[data-attack-id="dash"] [data-effect-kind="movement"]'));
+ assert(doc(base.attacks).querySelector('[data-attack-id="unarmed"] [data-effect-kind="damage"]'),
+  'The actual unarmed strike keeps its damage');
+ const grant={id:'bonus-dash',action_id:'dash',formula:'1d6',damage_type:'fire',
+   origin_id:'feature:test',origin_name:'Fiery Dash'};
+ const withDamage=battleActionPanels({rules_version:'2014'},
+  {...computed,action_damage_bonuses:[grant]},[],[],catalog.actions);
+ const dash=doc(withDamage.others).querySelector('[data-attack-id="dash"]');
+ assert.equal(dash.querySelector('[data-effect-kind="damage"] [data-damage-formula]').dataset.damageFormula,'1d6');
+ assert.equal(dash.querySelector('[data-damage-attack-id]').dataset.damageAttackId,'',
+  'A generic damage roll cannot masquerade as an unarmed strike');
+ assert(dash.querySelector('[data-effect-kind="movement"]'),
+  'A damage benefit does not erase the basic action effect');
+ assert.equal(doc(withDamage.others).querySelector('[data-attack-id="attack"] [data-effect-kind="damage"]'),null);
+ assert(withDamage.modifiedActions.some(row=>row.id==='dash'&&
+  row.action_change_origin==='feature:test'&&row.action_damage[0].formula==='1d6'));
+});
