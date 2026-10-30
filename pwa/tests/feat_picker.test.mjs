@@ -170,3 +170,10 @@ test('feat search remains a single 42px flex row despite global stacked label st
  assert.match(ui,/<label class="feat-picker-search"/);
  assert.match(ui,/data-feat-search/);
 });
+
+test('the feat picker revokes generic bonuses of its ASI without deleting unrelated bonuses',()=>{
+ const c={...record(),formula_bonuses:[
+  {id:'trait:choice:ability:'+id+':0:str',origin_id:id,target:'ability:str',expression:'2'},
+  {id:'manual-other',target:'ability:wis',expression:'1'}]};
+ assert.deepEqual(addFeatWithOrigin(c,entry,id,calculated,policy).formula_bonuses.map(row=>row.id),['manual-other']);
+});

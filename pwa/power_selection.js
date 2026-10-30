@@ -2,7 +2,7 @@
 // spellbooks remain authoritative; adapters project them into one JSON contract.
 // A trigger describes when rules permit changing a choice, but never gates UI.
 import {infusionLimits,infusionGrantingTrait,learnedInfusions} from './item_controls.js';
-import {optionalFeatureSelectionModels,optionalFeatureSelectionPatch} from './optional_feature_progression.js';
+import {optionalFeatureSelectionModels,optionalFeatureSelectionPatch,optionalFeatureApplicationPatch} from './optional_feature_progression.js';
 
 const rows=value=>Array.isArray(value)?value:[];
 const low=value=>String(value??'').trim().toLowerCase();
@@ -123,6 +123,29 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
  models.push(...optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}));
  return models;
 }
+// Permanent inline selections use the ordinary character choice view. Their
+// established power_selections storage remains the only saved selection.
+export function permanentPowerChoices(record,calculated,catalog){
+ return powerSelectionModels(record,calculated,catalog).flatMap(model=>
+  model.selection_kind!=='subtrait'||model.source_type!=='inline'?[]:
+  Object.entries(model.layers).flatMap(([stage,layer])=>!layer.enabled||layer.trigger?[]:[{
+   id:'power:'+model.id+':'+stage,kind:'permanent_power',origin_id:model.origin_id,
+   name:model.title,label:'Scegli sotto-tratto',count:layer.limit??model.options.length,
+   selected:layer.selected.map(savedIdentity),options:model.options.map(option=>option.id),
+   option_labels:Object.fromEntries(model.options.map(option=>[option.id,option.name])),
+   option_rows:Object.fromEntries(model.options.map(option=>[option.id,option])),
+   subchoices:Object.fromEntries(layer.selected.filter(value=>value?.subchoices)
+     .map(value=>[value.id,value.subchoices])),
+   remaining:Math.max(0,(layer.limit??0)-layer.selected.length),
+   model_id:model.id,stage
+  }])
+ );
+}
+export function savePermanentPowerChoice(record,choice,selected,details={}){
+ const next=selected.map(id=>selectedDetails(choice.option_rows[id],details[id]));
+ return {power_selections:{...(record.power_selections||{}),[choice.model_id]:{
+  ...(record.power_selections?.[choice.model_id]||{}),[choice.stage]:next}}};
+}
 function savedIdentity(row){return typeof row==='string'?row:String(row?.id||'');}
 function selectedDetails(option,subchoices){
  const source=option?.subchoices;
@@ -192,6 +215,8 @@ export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,opt
 // application reserves one tracker charge, and removing it refunds exactly one.
 // No spell/metamagic application layer is created.
 export function powerApplicationPatch(record,calculated,catalog,id,optionId,apply,{itemIndex=-1}={}){
+ if(optionalFeatureSelectionModels(record,calculated,catalog.optionalFeatureProgressions||{}).some(row=>row.id===id))
+  return optionalFeatureApplicationPatch(record,calculated,catalog.optionalFeatureProgressions,id,optionId,apply);
  const model=powerSelectionModels(record,calculated,catalog).find(row=>row.id===id);
  const rule=rows(catalog.selections).find(row=>row.id===id);
  const layer=model?.layers.applied,option=model?.options.find(row=>row.id===optionId);

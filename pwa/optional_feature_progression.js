@@ -104,13 +104,16 @@ export function optionalFeatureSelectionModels(record={},calculated={},catalog={
   const layers={learned:{enabled:true,selected,limit,used:selected.length,
    trigger:rule.trigger||null,change_label:rule.trigger==='level_up'?'Passaggio di livello':'',
    storage:'optional_features_catalog',available:true}};
-  // Always-on options use the same learned/applied stages as other powers.
-  // Their application is derived from knowledge: no second user selection,
-  // active-style cap, persisted toggles or special Fighting Style handler.
-  if(rule.layers?.applied?.mode==='automatic'&&rule.layers.applied.from==='learned')
-   layers.applied={enabled:true,selected:[...selected],limit:null,used:selected.length,
-    trigger:null,change_label:'',storage:'derived:learned',available:true,
-    automatic:true,refundable:false};
+  if(rule.layers?.applied?.from==='learned'){
+   const automatic=rule.layers.applied.mode==='automatic';
+   const explicit=Object.hasOwn(record.power_applications||{},rule.id);
+   const applied=automatic?selected:explicit?rows(record.power_applications[rule.id]).map(identity):
+    legacyChoices(record,options,new Set(),rule.id);
+   const active=selected.filter(id=>applied.includes(id));
+   layers.applied={enabled:true,selected:active,limit:null,used:active.length,
+    trigger:null,change_label:'',storage:automatic?'derived:learned':'power_applications',
+    available:true,automatic,refundable:false};
+  }
   result.push({id:rule.id,title:rule.title,origin_id:feature?.origin_id||'',
     source_type:'optionalfeature_progression',option_kind:'optional_feature',
     description:'Opzioni da 5eTools · puoi aggiungere capacità homebrew.',
@@ -151,12 +154,42 @@ export function optionalFeatureSelectionPatch(record,calculated,catalog,id,stage
   existing=[...existing,{name:option.name,source:option.source||'HOMEBREW',
    ...(option._homebrew?{_homebrew:true}:{}),
    ...(option._homebrew&&option.description?{entries:[option.description]}:{}),
-   optional_progression_id:id}];
+   optional_progression_id:id,...(model.layers.applied&&!model.layers.applied.automatic?{disabled:true}:{})}];
  }
  const fighting_styles=rows(record.fighting_styles).filter(row=>{
   if(!present)return true;
   const name=typeof row==='string'?row:row?.name;
   return !same(name,previously.name)||inUse(optionId);
  });
- return {power_selections:saved,optional_features_catalog:existing,fighting_styles};
+ return {power_selections:saved,optional_features_catalog:existing,fighting_styles,
+  ...(model.layers.applied&&!model.layers.applied.automatic?{power_applications:{...(record.power_applications||{}),
+   [id]:model.layers.applied.selected.filter(key=>!present||key!==optionId).map(id=>({id}))}}:{})};
+}
+
+// Application uses the same saved optional traits as their existing effects.
+// Knowledge is independent; an unapplied option remains available to learn UI.
+export function optionalFeatureApplicationPatch(record,calculated,catalog,id,optionId,apply){
+ const model=optionalFeatureSelectionModels(record,calculated,catalog).find(row=>row.id===id);
+ const layer=model?.layers.applied,option=model?.options.find(row=>row.id===optionId);
+ if(!layer||layer.automatic||!option)throw Error('Applicazione del privilegio non disponibile.');
+ if(apply&&!model.layers.learned.selected.includes(optionId))throw Error('Devi prima imparare questa opzione.');
+ if(apply&&option.min_level>model.level)throw Error('Livello insufficiente per questa opzione.');
+ const selected=new Set(layer.selected);
+ if(apply)selected.add(optionId);else selected.delete(optionId);
+ const power_applications={...(record.power_applications||{}),[id]:[...selected].map(id=>({id}))};
+ const models=optionalFeatureSelectionModels({...record,power_applications},calculated,catalog);
+ const active=models.some(row=>row.layers.applied?.selected.includes(optionId));
+ let found=false;
+ const optional_features_catalog=rows(record.optional_features_catalog).map(row=>{
+  if(!same(row.name,option.name)||!same(row.source||'HB',option.source||'HB'))return row;
+  found=true;return {...row,disabled:!active};
+ });
+ if(!found)optional_features_catalog.push({name:option.name,source:option.source||'HOMEBREW',
+  optional_progression_id:id,disabled:!active,
+  ...(option._homebrew?{_homebrew:true,entries:[option.description||'']}: {})});
+ const fighting_styles=rows(record.fighting_styles).filter(row=>
+  !same(typeof row==='string'?row:row?.name,option.name));
+ return {power_applications,optional_features_catalog,fighting_styles,
+  power_selections:{...(record.power_selections||{}),[id]:{
+   ...(record.power_selections?.[id]||{}),learned:model.layers.learned.selected.filter(key=>!model.required.includes(key))}}};
 }

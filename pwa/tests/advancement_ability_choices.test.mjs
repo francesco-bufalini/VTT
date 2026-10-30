@@ -134,7 +134,7 @@ test('saving ASI choice automatically exposes exactly one dependent modal at eac
  const main=find(pending(c,index),'advancement-mode:'+sid);
  const second=saved(main,['ability:0']);
  assert(second,'the ASI branch directly opens its one-part score picker');
- assert.equal(second.kind,'ability');
+ assert.equal(second.kind,'bonus');
  assert.equal(second.origin_id,sid);
  assert.equal(second.count,1);
  assert.equal(second.amount,2);
@@ -191,16 +191,93 @@ test('permanent choice branches appear nested only under their owning trait',()=
  assert(shown.slice(1).every(x=>x.depth===1&&x.kind==='pending'));
  const origin='feature:class|phb|ranger|favored-enemy:1';
  const trait={category:'classi',rank:2,origin_key:'class|phb|ranger',feature_origin:origin};
- const power={id:'ranger_favored_enemy_phb',selection_kind:'subtrait',
-  origin_id:origin,title:'Nemici prescelti',options:[{id:'humanoids',name:'Umanoidi'}],
-  layers:{prepared:{enabled:true,trigger:null,limit:1,
-   selected:[{id:'humanoids',subchoices:['Orc','Goblin']}]}}};
- shown=permanentSubtraitsForTrait(trait,c,[],[power]);
+ const powerCatalog=JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8'));
+ const record={...c,classes:[{name:'Ranger',source:'PHB',level:1}],
+  power_selections:{ranger_favored_enemy_phb:{prepared:[{id:'humanoids',subchoices:['Orc','Goblin']}]}}};
+ const context={features:[{name:'Favored Enemy',origin_id:origin,
+  origin_key:'class|phb|ranger',class_name:'Ranger',class_source:'PHB'}]};
+ const choices=pendingCharacterChoices(record,context,{powerSelections:powerCatalog});
+ shown=permanentSubtraitsForTrait(trait,record,choices);
  assert.equal(shown.length,1);
  assert.equal(shown[0].selection,'Umanoidi · Orc, Goblin');
- assert.equal(shown[0].model_id,power.id);
- assert.equal(permanentSubtraitsForTrait(stranger,c,[],[power]).length,0);
- assert.equal(permanentSubtraitsForTrait(trait,c,[],[{
-   ...power,layers:{prepared:{...power.layers.prepared,trigger:'long_rest'}}
- }]).length,0,'choices that change on a rest are not permanent sub-traits');
+ assert.equal(shown[0].kind,'pending');
+ assert.equal(shown[0].choice_id,'power:ranger_favored_enemy_phb:prepared');
+ assert.equal(permanentSubtraitsForTrait(stranger,record,choices).length,0);
+ const restCatalog=structuredClone(powerCatalog);
+ restCatalog.selections.find(row=>row.id==='ranger_favored_enemy_phb').layers.prepared.trigger='long_rest';
+ assert.equal(permanentSubtraitsForTrait(trait,record,
+  pendingCharacterChoices(record,context,{powerSelections:restCatalog})).length,0);
+});
+
+const asiFixture=()=>{
+ const feature={id:'5etools:class_features:phb:ability%20score%20improvement:fighter:4',
+  name:'Ability Score Improvement',class_name:'Fighter',class_source:'PHB',source:'PHB',level:4};
+ const index={...catalogs,classFeatures:{class_features:[feature],subclass_features:[]}};
+ const record={...base(),classes:[{name:'Fighter',source:'PHB',level:4}]};
+ const id=calc(record,index).features.find(row=>row.name===feature.name).origin_id;
+ return {record,index,id};
+};
+test('ASI writes ordinary bonuses, survives JSON round trips and removes only its own bonuses',()=>{
+ let {record:c,index,id}=asiFixture();
+ c.formula_bonuses=[{id:'manual-other',target:'ability:wis',expression:'1'}];
+ c.origin_ability_choices=[{origin_id:'race|mpmm|elf',variant:0,allocations:[]}];
+ const root=()=>find(pending(c,index),'advancement-mode:'+id);
+ c={...c,...savePendingChoice(c,root(),['ability:1'])};
+ const bonus=find(pending(c,index),'ability:'+id+':0');
+ assert.equal(bonus.kind,'bonus');
+ assert.throws(()=>savePendingChoice(c,bonus,['str','dex','con']),/consentita/);
+ c={...c,...savePendingChoice(c,bonus,['str','con'])};
+ assert(!c.origin_ability_choices.some(row=>row.origin_id===id));
+ assert.equal(c.formula_bonuses.filter(row=>row.origin_id===id).length,2);
+ assert(c.formula_bonuses.filter(row=>row.origin_id===id).every(row=>!row.automatic));
+ c=JSON.parse(JSON.stringify(c));
+ assert.equal(calc(c,index).abilities.str.score,11);
+ assert.equal(calc({...c,origin_enabled:{[id]:false}},index).abilities.str.score,10);
+ assert.equal(calc({...c,classes:[{name:'Fighter',source:'PHB',level:3}]},index).abilities.str.score,10);
+ assert.equal(calc({...c,origin_enabled:{'class|phb|fighter':false}},index).abilities.str.score,10);
+ assert.deepEqual(find(pending(c,index),'ability:'+id+':0').selected,['str','con']);
+ c={...c,...savePendingChoice(c,root(),['ability:0'])};
+ assert.equal(calc(c,index).abilities.str.score,10);
+ c={...c,...savePendingChoice(c,find(pending(c,index),'ability:'+id+':0'),['dex'])};
+ assert.equal(calc(c,index).abilities.dex.score,12);
+ c={...c,...savePendingChoice(c,root(),['feat'])};
+ assert.equal(calc(c,index).abilities.dex.score,10);
+ assert.deepEqual(c.formula_bonuses.map(row=>row.id),['manual-other']);
+ assert.equal(c.origin_ability_choices.length,1,'species choices remain intact');
+});
+test('legacy ASIs convert on save without double bonuses or loss of other origins',()=>{
+ let {record:c,index,id}=asiFixture();
+ c.advancement_choices=[{origin_id:id,mode:'ability'}];
+ c.origin_ability_choices=[{origin_id:id,variant:1,allocations:[{part:0,ability:'str'},{part:0,ability:'con'}]},
+  {origin_id:'race|mpmm|elf',variant:0,allocations:[]}];
+ assert.equal(calc(c,index).abilities.str.score,11);
+ const root=find(pending(c,index),'advancement-mode:'+id);
+ assert.deepEqual(root.selected,['ability:1']);
+ c={...c,...savePendingChoice(c,root,['ability:1'])};
+ assert.equal(c.advancement_choices[0].variant,1);
+ assert.equal(c.origin_ability_choices.length,1);
+ assert.equal(c.formula_bonuses.length,2);
+ assert.equal(calc(c,index).abilities.str.score,11);
+ const patch=savePendingChoice(c,find(pending(c,index),'ability:'+id+':0'),['dex','wis']);
+ c={...c,...patch};
+ assert.equal(calc(c,index).abilities.str.score,10);
+ assert.equal(calc(c,index).abilities.dex.score,11);
+ assert.equal(c.formula_bonuses.length,2);
+});
+test('permanent power choices share the picker and preserve independent selections and humanoid details',()=>{
+ const powerCatalog=JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8'));
+ const id='ranger_favored_enemy_phb',context={features:[{name:'Favored Enemy',origin_id:'feature:ranger',
+  class_name:'Ranger',class_source:'PHB',origin_key:'class|phb|ranger'}]};
+ let c={...base(),classes:[{name:'Ranger',source:'PHB',level:6}],power_selections:{other:{learned:['keep']}}};
+ const choice=()=>find(pendingCharacterChoices(c,context,{powerSelections:powerCatalog}),'power:'+id+':prepared');
+ assert.equal(choice().kind,'permanent_power');
+ assert.throws(()=>savePendingChoice(c,choice(),['humanoids'],{humanoids:['Elf','elf']}),/sotto-opzioni/);
+ c={...c,...savePendingChoice(c,choice(),['dragons','humanoids'],{humanoids:['Elf','Orc']})};
+ assert.deepEqual(c.power_selections.other,{learned:['keep']});
+ assert.deepEqual(choice().subchoices.humanoids,['Elf','Orc']);
+ assert.throws(()=>savePendingChoice(c,choice(),['dragons','humanoids','beasts'],{humanoids:['Elf','Orc']}),/consentita/);
+ c={...c,...savePendingChoice(c,choice(),['beasts'])};
+ assert.deepEqual(c.power_selections[id].prepared,['beasts']);
+ c={...c,...savePendingChoice(c,choice(),[])};
+ assert.deepEqual(c.power_selections[id].prepared,[]);
 });

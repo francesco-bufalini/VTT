@@ -1315,8 +1315,8 @@ test('ASI opens its sole next picker automatically until ability allocation is c
  await selectAndSave('str');
  await until(()=>!document.querySelector('#pending-choice-dialog'));
  const stored=(await loadCreature(saved.data.id)).data;
- assert(stored.origin_ability_choices.some(row=>
-  row.allocations?.some(allocation=>allocation.ability==='str')));
+ assert(stored.formula_bonuses.some(row=>row.target==='ability:str'&&row.expression==='2'));
+ assert(!stored.origin_ability_choices?.some(row=>row.origin_id===first.dataset.choiceId.slice('advancement-mode:'.length)));
  click('[data-nav="library"]');
  await until(()=>document.querySelector('[data-act="create"]'));
 });

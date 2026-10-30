@@ -99,3 +99,38 @@ export function saveAllocationChoice(record,choice,selected=[]){
  }
  return {origin_ability_choices:rows};
 }
+
+// Compatibility boundary: once edited, old class ASIs become ordinary saved
+// bonuses. Species and feat allocation records keep their existing meaning.
+export function migrateAdvancementBonuses(record,features=[],catalog={}){
+ const advancements=arr(record.advancement_choices),legacy=advancements.filter(row=>
+   row.mode==='ability'&&!Number.isInteger(row.variant));
+ const converted=new Map(),bonuses=[];
+ for(const owned of legacy){
+  const feature=features.find(row=>row.origin_id===owned.origin_id);
+  const policy=arr(catalog.advancement_rules).find(rule=>
+   norm(rule.feature_name)===norm(feature?.name)&&arr(rule.sources).some(source=>
+    norm(source)===norm(feature?.class_source||String(feature?.origin_key||'').split('|')[1])));
+  if(!policy)continue;
+  const variants=allocationVariants(policy.ability_choices);
+  const state=savedAllocation(record,owned.origin_id,variants);
+  if(!variants[state.variant])continue;
+  converted.set(owned.origin_id,state.variant);
+  for(const allocation of state.allocations){
+   const part=variants[state.variant].parts[allocation.part];
+   if(!part?.options.includes(allocation.ability))continue;
+   const choice_id='ability:'+owned.origin_id+':'+allocation.part;
+   bonuses.push({id:'trait:choice:'+choice_id+':'+allocation.ability,
+    origin_id:owned.origin_id,origin_name:'Tratto \u00b7 '+feature.name,
+    requirements:{scope:'class',class_name:feature.class_name||String(feature.origin_key||'').split('|')[2],
+      class_source:feature.class_source||String(feature.origin_key||'').split('|')[1],min_level:feature.level},
+    target:'ability:'+allocation.ability,expression:String(part.amount),disabled:false,automatic:false});
+  }
+ }
+ if(!converted.size)return {};
+ return {advancement_choices:advancements.map(row=>converted.has(row.origin_id)?
+   {...row,variant:converted.get(row.origin_id)}:row),
+  origin_ability_choices:arr(record.origin_ability_choices).filter(row=>!converted.has(row.origin_id)),
+  formula_bonuses:[...arr(record.formula_bonuses),...bonuses.filter(row=>
+   !arr(record.formula_bonuses).some(saved=>saved.id===row.id))]};
+}
