@@ -1549,6 +1549,27 @@ function calculateSheetValues(record={},catalogs={}){
     const total=memo.get(target),parts=[...(components[target]?.values()||[])];
     explanations[target]=target+': '+total+(parts.length?' · '+parts.join(' · '):' · Nessun bonus aggiuntivo');
   }
+  // Explicit action damage is not weapon damage: numeric bonuses or dice
+  // targeting an action never inherit a computed attack's formula.
+  const action_damage_bonuses=[
+    ...arr(record.dice_bonuses).filter(row=>!suppressed.has('dice:'+String(row?.id||''))),
+    ...grants.filter(row=>!suppressed.has('bonus:'+String(row?.id||'')))
+  ].flatMap(row=>{
+    const target=String(row?.target||'');
+    if(!target.startsWith('action_damage:')||!target.slice('action_damage:'.length)||
+       row.disabled||!sourceEnabled(row)||!requirementsAllow(record,row)||
+       row.parent_origin&&!sourceEnabled({origin_id:row.parent_origin}))return [];
+    let formula=String(row.dice||'').replace(/\s+/g,'');
+    if(!formula){
+      try{
+        const value=parseArithmetic(String(row.expression||''),
+          name=>resolveSymbol(name,resolve,new Set()));
+        if(!Number.isFinite(value)||value<=0)return [];
+        formula=String(value);
+      }catch(error){warnings.add('Danno azione '+target+': '+error.message);return [];}
+    }else if(!validBonusDice(formula))return [];
+    return [{...row,action_id:target.slice('action_damage:'.length),formula}];
+  });
   const senses=calculateSenses(record,features,catalogs.senseGrants||{},sourceEnabled);
   return {source:"local",schema:1,abilities,saves,skills,senses,
     values:Object.fromEntries(memo),explanations,
@@ -1567,7 +1588,7 @@ function calculateSheetValues(record={},catalogs={}){
       })),
     casting_classes:spellClasses,
     class_levels:Object.fromEntries(classes.map(row=>[classSymbol(row.name),Math.max(0,int(row.level))])),
-    trackers,attacks,damage_defense_entries,
+    trackers,attacks,damage_defense_entries,action_damage_bonuses,
     feature_item_grants:featureItemGrants(record,features,catalogs.featureItemGrants||catalogs.classMechanics?.feature_item_grants||[]),
     trait_state_roll_modes:traitStateRollModes(record,features,catalogs.traitStates||[]),
     racial_abilities:racialPowers.abilities,
