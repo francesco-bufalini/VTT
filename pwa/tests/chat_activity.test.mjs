@@ -62,12 +62,12 @@ test('popup openings and uncommitted roll options never write chat actions',()=>
  const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
  // The only action event writer is the committed before/after sheet diff;
  // opening a score, a roll, or changing a draft roll option must not log.
- assert.equal((ui.match(/\\brecordSheetAction\\(/g)||[]).length,2);
+ assert.equal((ui.match(/\brecordSheetAction\(/g)||[]).length,2);
  assert.doesNotMatch(ui,/sheetClickEligible|sheetClickLabel|Interazione:/);
  const clickStart=ui.indexOf('document.addEventListener("click", async e=>{');
  const clickEnd=ui.indexOf("document.addEventListener('keydown',e=>{",clickStart);
  assert(clickStart>=0&&clickEnd>clickStart);
  assert.doesNotMatch(ui.slice(clickStart,clickEnd),/recordSheetAction|rememberChatEvent|recordSheetChange/);
- assert.match(ui,/if\\(state\\.editor===editor\\)recordSheetChange\\(before,editor\\.read\\(\\),patchValue\\)/);
- assert.match(ui,/await shareRoll\\(\\{quiet:true\\}\\)/);
+ assert.match(ui,/if\(state\.editor===editor\)recordSheetChange\(before,editor\.read\(\),patchValue\)/);
+ assert.match(ui,/await shareRoll\(\{quiet:true\}\)/);
 });
