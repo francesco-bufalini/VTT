@@ -356,7 +356,9 @@ export function collectStructuredFeatures(record,catalogs={}){
   if(record.stat_block)record={...record,stat_block:normalizeMonsterStatBlock(record.stat_block)};
   const results=[],seen=new Set();
   const attackRules=array(catalogs.featureRules?.attack_count_grants);
-  const spellcastingRules=array(catalogs.spellcastingBenefits?.grants);
+  // Partial class mechanics tables cannot grant slots without the full feature
+  // catalog; explicit homebrew feature.benefits remain usable independently.
+  const spellcastingRules=catalogs.classFeatures?array(catalogs.spellcastingBenefits?.grants):[];
   const subclassKey=value=>norm(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');
   const attackCount=(row,origin,level,className,classSource)=>{
    const direct=Number(row.attacks_per_action);
