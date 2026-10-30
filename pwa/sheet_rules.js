@@ -1,4 +1,5 @@
 import {projectSelectionBenefits} from './power_selection.js';
+import {scalingDiceFor,resolveScalingDieBenefit} from './scaling_dice.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
 import {monsterTraits,bindMonsterTrackers,monsterAttackOwner} from './monster_traits.js';
 import {SKILLS} from './skill_definitions.js';
@@ -137,6 +138,8 @@ export function validBonusDice(value){
  return !!match&&Number(match[1])<=100;
 }
 export function applicableDiceBonuses(record,target,spells=[],calculated=null){
+ // Projected selections own their level-resolved dice and payments.
+ record=calculated?.selection_record||record;
  const attunements=calculated?.attunements?.counts||inventoryAttunementCounts(record.inventory,
   calculated?.values?.attunement_max??record.attunement_max_base??3);
  record={...record,inventory:arr(record.inventory).map((item,i)=>
@@ -182,7 +185,8 @@ export function applicableDiceBonuses(record,target,spells=[],calculated=null){
    }).filter(row=>row&&(validBonusDice(row.dice)||
      Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0));
  const rows=[...arr(record.dice_bonuses),...racial].filter(row=>row&&!row.disabled&&
-   (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&fits(row)&&
+   (validBonusDice(row.dice)||Number.isSafeInteger(row.flat_bonus)&&row.flat_bonus>0)&&
+   (fits(row)||arr(row.targets).some(value=>fits({target:value})))&&
    requirementsAllow(record,row,{target,attack:arr(calculated?.attacks).find(attack=>
      target==='attack_hit:'+attack.id||target==='attack_damage:'+attack.id)}))
    .flatMap(row=>{
@@ -820,6 +824,14 @@ export function spellProgression(record,classes){
 export function calculateSheet(record={},catalogs={}){
   let effective=projectSelectionBenefits(record,catalogs,collectStructuredFeatures(record,catalogs));
   const selectionRecord=effective;
+  const withScalingDice=calculated=>{
+    const dice=scalingDiceFor(effective,catalogs.scalingDice?.dice||[],calculated.features);
+    const resolve=row=>resolveScalingDieBenefit(row,dice,calculated.trackers);
+    return {...calculated,scaling_dice:dice,selection_record:{
+      ...selectionRecord,
+      dice_bonuses:arr(selectionRecord.dice_bonuses).map(resolve),
+      action_grants:arr(selectionRecord.action_grants).map(resolve)}};
+  };
   // Imported or externally edited stacks can exceed the current capacity.
   // Bound their effective benefits without rewriting the owner's saved data.
   for(let pass=0;pass<8;pass++){
@@ -827,7 +839,7 @@ export function calculateSheet(record={},catalogs={}){
     const maximum=Math.max(0,Math.floor(Number(calculated.values.attunement_max)||0));
     const counts=inventoryAttunementCounts(effective.inventory,maximum);
     if(counts.every((count,i)=>count===itemAttunementCount(arr(effective.inventory)[i])))
-      return {...calculated,selection_record:selectionRecord,selection_models:selectionRecord.selection_models,attunements:{counts,maximum,used:counts.reduce((sum,n)=>sum+n,0)}};
+      return {...withScalingDice(calculated),selection_models:selectionRecord.selection_models,attunements:{counts,maximum,used:counts.reduce((sum,n)=>sum+n,0)}};
     effective={...effective,inventory:arr(effective.inventory).map((item,i)=>
       requiresAttunement(resolveOwnedItem(item))?{...item,attuned_count:counts[i],attuned:counts[i]>0}:item)};
   }
@@ -836,7 +848,7 @@ export function calculateSheet(record={},catalogs={}){
   const result=calculateSheetValues({...effective,inventory},catalogs);
   result.warnings.push('Sintonie sospese: il massimo dipende dalle stesse sintonie.');
   result.complete=false;
-  return {...result,attunements:{counts:inventory.map(()=>0),maximum:Math.max(0,Math.floor(result.values.attunement_max||0)),used:0}};
+  return {...withScalingDice(result),selection_models:selectionRecord.selection_models,attunements:{counts:inventory.map(()=>0),maximum:Math.max(0,Math.floor(result.values.attunement_max||0)),used:0}};
 }
 // 5etools stores monster defenses directly on the stat block. Qualified
 // entries are not silently turned into unconditional defenses.
@@ -1671,6 +1683,8 @@ export function loadRuleCatalogs(){
        {states:data.states,exhaustion:data.exhaustion||{}}:{states:[],exhaustion:{}}),
     fetch('/catalog/roll_bonus_rules.json').then(r=>{if(!r.ok)throw Error('Regole dei bonus ai tiri non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.features)?data.features:[]),
+    fetch('/catalog/scaling_dice.json').then(r=>r.ok?r.json():{}).then(data=>
+      data?.version===1&&Array.isArray(data.dice)?data:{dice:[]}).catch(()=>({dice:[]})),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
     // This catalog is supplemental. A missing/stale native host must not also
@@ -1712,11 +1726,11 @@ export function loadRuleCatalogs(){
     fetch('/catalog/spellcasting_benefits.json').then(r=>{if(!r.ok)throw Error('Benefici incantatore non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.grants)?data:{grants:[]})
       .catch(()=>({grants:[]}))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits])=>({
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,featureRules:featureRules||{},
-    traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
+    traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
     featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
