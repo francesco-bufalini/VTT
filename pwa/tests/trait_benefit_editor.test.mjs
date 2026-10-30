@@ -173,3 +173,19 @@ test('custom spell benefits can declare tracker and alternative slots with const
  assert.throws(()=>addBenefitPatch({},trait,'spells',
    {spell_id:'gust',payment_mode:'slot',slot_alternative:'true'},'trait:invalid2'),/alternativi/i);
 });
+test('an explicit action-damage bonus keeps its owner, formula and damage type',()=>{
+ const dice=addBenefitPatch({},trait,'bonus',{
+  target:'action_damage:dash',expression:'1d6',damage_type:'fire'},'trait:actiond6').dice_bonuses[0];
+ assert.equal(dice.target,'action_damage:dash');
+ assert.equal(dice.dice,'1d6');
+ assert.equal(dice.damage_type,'fire');
+ assert.equal(dice.parent_origin,trait.feature_origin);
+ assert.equal(dice.origin_name,trait.name);
+ const flat=addBenefitPatch({},trait,'bonus',{
+  target:'action_damage:attack',expression:'proficiency',damage_type:'force'},'trait:actionflat').formula_bonuses[0];
+ assert.equal(flat.expression,'proficiency');
+ assert.equal(flat.parent_origin,trait.feature_origin);
+ assert.equal(flat.damage_type,'force');
+ assert.throws(()=>addBenefitPatch({},trait,'bonus',{
+  target:'action_damage:dash',expression:'1d6',tracker_id:'limited'},'trait:invalid1'),/tracker/);
+});
