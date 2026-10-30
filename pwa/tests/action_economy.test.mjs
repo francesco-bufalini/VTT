@@ -676,6 +676,7 @@ test('basic actions never show unarmed damage unless a benefit explicitly target
   {...computed,action_damage_bonuses:[grant]},[],[],catalog.actions);
  const dash=doc(withDamage.others).querySelector('[data-attack-id="dash"]');
  assert.equal(dash.querySelector('[data-effect-kind="damage"] [data-damage-formula]').dataset.damageFormula,'1d6');
+ assert.equal(dash.querySelector('[data-damage-action-id]').dataset.damageActionId,'dash');
  assert.equal(dash.querySelector('[data-damage-attack-id]').dataset.damageAttackId,'',
   'A generic damage roll cannot masquerade as an unarmed strike');
  assert(dash.querySelector('[data-effect-kind="movement"]'),
