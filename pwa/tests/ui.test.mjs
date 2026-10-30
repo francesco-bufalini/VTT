@@ -651,17 +651,7 @@ test("inline spell catalog adds available and spellbook choices without divergin
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="magic"]');
-  await until(()=>document.querySelector('[data-act="magic-select-spells"]')).catch(async error=>{
-    const {calculateSheet,loadRuleCatalogs}=await import('../sheet_rules.js');
-    const current=(await loadCreature(saved.data.id)).data;
-    const catalogs=await loadRuleCatalogs();
-    const sheet=calculateSheet(current,catalogs);
-    throw Error(error.message+' · caster='+JSON.stringify(sheet.casting_classes)+
-      ' · traits='+JSON.stringify(sheet.features.filter(x=>x.name==='Spellcasting').map(x=>({
-        origin:x.origin_key,inactive:x.inactive,benefits:x.benefits?.map(y=>y.type)})))+
-      ' · catalog='+catalogs.spellcastingBenefits?.grants?.length+
-      ' · magic='+document.querySelector('#sheet-play-view')?.textContent.slice(0,400));
-  });
+  await until(()=>document.querySelector('[data-act="magic-select-spells"]'));
   click('[data-act="magic-select-spells"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const search=document.querySelector('#spell-search');
