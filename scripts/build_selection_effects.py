@@ -10,7 +10,10 @@ def build():
  catalog=read('pwa/catalog/optional_feature_progressions.json')
  definitions=read('vtt/data/artificer_infusions_5etools.json')['infusions']
  effects=read('pwa/catalog/effect_extensions.json')['extensions']
+ option_benefits=read('scripts/data/optional_feature_benefits_2014.json')
  for option in catalog['options']:
+  if option['id'] in option_benefits:
+   option['effects']=option_benefits[option['id']]
   aliases=option.get('legacy_ids',[])
   original=next((row for row in definitions if row['id'] in aliases),None)
   if original:
