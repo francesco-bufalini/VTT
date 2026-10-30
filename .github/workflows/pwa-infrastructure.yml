@@ -59,6 +59,7 @@ jobs:
             /scripts/check_pwa_assets.mjs
             /vtt/icons/
             /assets/creature_info/
+            /tests/fixtures/monster_traits.json
       - name: Parse browser ES modules and Service Worker
         shell: bash
         run: |
