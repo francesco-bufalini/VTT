@@ -639,6 +639,16 @@ try{
   const creature=(await loadCreature(creatureId))?.data;
   return creature?.current_hp===39&&creature?.temporary_hp===5;
  },seededCreatureId);
+ console.log('HPDEBUG',JSON.stringify(await page.evaluate(async id=>{
+  const {loadCreature}=await import('/creatures.js');
+  const stored=await loadCreature(id);
+  const dialog=document.querySelector('#hp-adjust-dialog');
+  return {persisted:{hp:stored?.data?.current_hp,temp:stored?.data?.temporary_hp,revision:stored?.revision},
+   ui:{current:dialog?.querySelector('#hp-adjust-current')?.value,
+    temporary:dialog?.querySelector('#hp-adjust-temporary')?.value,
+    connected:dialog?.isConnected,open:dialog?.open},
+   sheet:document.querySelector('#app')?.dataset.renderedSheet};
+ },seededCreatureId)));
  assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
  // A delayed second-field save must not restore an obsolete current HP.
