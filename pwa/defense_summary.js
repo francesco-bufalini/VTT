@@ -8,6 +8,8 @@ const DAMAGE={
  force:'Forza',lightning:'Fulmine',necrotic:'Necrotici',piercing:'Perforanti',
  poison:'Veleno',psychic:'Psichici',radiant:'Radianti',slashing:'Taglienti',thunder:'Tuono'
 };
+export const INCOMING_DAMAGE_TYPES=Object.keys(DAMAGE).filter(key=>key!=='spell_damage');
+export const incomingDamageTypeLabel=key=>DAMAGE[low(key)]||String(key||'');
 const CONDITIONS={
  blinded:'Accecato',charmed:'Affascinato',deafened:'Assordato',frightened:'Spaventato',
  disease:'Malattie',exhaustion:'Indebolimento',grappled:'Afferrato',incapacitated:'Incapacitato',invisible:'Invisibile',
