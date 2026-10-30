@@ -373,7 +373,7 @@ test("generic AC and one-handed melee requirements follow real armor and occupie
  ];
  const run=(inventory,extra={})=>calculateSheet(character({inventory,formula_bonuses:grants,...extra}),catalogs);
  const naked=run([blade]),coat=run([armor,blade]),shielded=run([armor,blade,shield]);
- assert.equal(coat.stats.armor_class-naked.stats.armor_class,2,"Armor replaces base AC and grants Defense");
+ assert.equal(coat.stats.armor_class-naked.stats.armor_class,5,"Medium armor replaces unarmored AC and Defense adds 1");
  const withoutDefense=calculateSheet(character({inventory:[armor,blade],formula_bonuses:grants.slice(1)}),catalogs);
  assert.equal(coat.stats.armor_class-withoutDefense.stats.armor_class,1);
  assert.equal(coat.attacks.find(a=>a.id==="item:blade").damage_extra_modifier,5);
