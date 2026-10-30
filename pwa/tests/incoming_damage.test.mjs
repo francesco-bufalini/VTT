@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {incomingDamageOptions,resolveIncomingDamage} from '../defense_summary.js';
 import {addBenefitPatch,removeBenefitPatch} from '../trait_benefit_editor.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {nativeSection} from '../native_sheet.js';
 
 const mk=(mods=[],defenses=[],trackers=[])=>({
  incoming_damage_modifiers:mods,damage_defense_entries:defenses,trackers
@@ -91,4 +92,23 @@ test('calculated incoming modifiers observe source and individual trait activati
  assert(!projected.incoming_damage_modifiers.some(row=>row.id==='disabled'));
  const off=calculateSheet({...record,trait_enabled:{'damage-ward':false}},{});
  assert.equal(off.incoming_damage_modifiers.length,0);
+});
+
+test('native HP dialog renders selectable typed bonuses, defenses and permanent bypass',()=>{
+ const record={kind:'character',current_hp:18,temporary_hp:4,inventory:[],abilities:{dex:10}};
+ const calculated={stats:{max_hp:22},values:{ac:10},
+  incoming_damage_modifiers:[
+   benefit('always','-2',false,{value:-2}),
+   benefit('optional','-1d6',true,{formula:'1d6',sign:-1,tracker_id:'guard',tracker_cost:1})
+  ],damage_defense_entries:[{key:'fire',rank:1,origin_name:'Test'}],
+  trackers:[{id:'guard',name:'Guard charges',max:2,spent:0}]};
+ const html=nativeSection(record,'battle',{
+  panel:(_title,body)=>body,field:()=>'',area:()=>'',resources:'',calculated
+ });
+ assert.match(html,/id="hp-adjust-damage-type"/);
+ assert.match(html,/value="fire"/);
+ assert.match(html,/data-hp-damage-bonus value="optional"/);
+ assert.match(html,/Danni ×½/);
+ assert.match(html,/id="hp-adjust-ignore-permanent"/);
+ assert.match(html,/id="hp-adjust-damage-preview"/);
 });
