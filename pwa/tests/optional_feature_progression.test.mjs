@@ -11,7 +11,7 @@ const character=(name,level=2,extra={})=>({id:'a',rules_version:'2014',
  classes:[{name,source:'PHB',level}],...extra});
 const owned=(c,id)=>powerSelectionModels(c,context,catalog).find(r=>r.id===id);
 
-test('Ranger fighting styles come from 5etools FS:R and respect the level cap',()=>{
+test('Ranger fighting styles come from 5etools FS:R with an advisory level count',()=>{
  const id='optional:class:phb:ranger:fs-r',r=character('Ranger');
  const model=owned(r,id);assert.equal(model.layers.learned.limit,1);
  assert.ok(model.options.some(o=>o.name==='Archery'&&o.source==='PHB'));
@@ -82,9 +82,11 @@ test('Official options use the common learned state without materializing traits
  assert.deepEqual(updated.optional_features_catalog,[]);
  assert.equal(updated.power_selections[id].learned[0],archery.id);
  assert.deepEqual(owned(updated,id).layers.learned.selected,[archery.id]);
- assert.throws(()=>powerSelectionPatch(updated,context,catalog,id,'learned',
-  owned(updated,id).options.find(o=>o.name==='Dueling').id),/massimo/);
- const cleared={...updated,...powerSelectionPatch(updated,context,catalog,id,'learned',archery.id)};
+ const dueling=owned(updated,id).options.find(o=>o.name==='Dueling');
+ const extra={...updated,...powerSelectionPatch(updated,context,catalog,id,'learned',dueling.id)};
+ assert.equal(owned(extra,id).layers.learned.limit,1,'The suggested count is still visible');
+ assert.equal(owned(extra,id).layers.learned.used,2,'Learning beyond the suggested count is allowed');
+ const cleared={...extra,...powerSelectionPatch(extra,context,catalog,id,'learned',archery.id)};
  assert.deepEqual(cleared.optional_features_catalog,[]);
  assert.deepEqual(owned(cleared,id).layers.learned.selected,[]);
 });
@@ -103,8 +105,9 @@ test('Homebrew options are created and learned atomically without changing the o
  assert.ok(owned(updated,id).options.some(o=>o.id===custom&&o._homebrew));
  assert.deepEqual(updated.optional_features_catalog,[]);
  assert.equal(updated.power_selection_custom_options[id][0].description,'Bonus narrativo');
- assert.throws(()=>powerSelectionCustomPatch(updated,context,catalog,id,'learned',
-  'homebrew:aaaaaaaa','Secondo stile'),/massimo/);
+ const extra={...updated,...powerSelectionCustomPatch(updated,context,catalog,id,'learned',
+  'homebrew:aaaaaaaa','Secondo stile')};
+ assert.equal(owned(extra,id).layers.learned.used,2);
 });
 test('Required Elemental Attunement consumes a selection and is not removable',()=>{
  const r=character('Monk',3,{classes:[{name:'Monk',source:'PHB',
@@ -120,6 +123,32 @@ test('Infusions are supplied by the common optional progression catalog',()=>{
  assert.equal(models.length,1);assert.equal(models[0].id,'artificer_infusions');
  assert.equal(models[0].layers.learned.limit,4);assert.equal(models[0].application.destination,'item');
 });
+test('Maneuvers and Artificer infusions may exceed known counts but application remains separate',()=>{
+ const cases=[
+  {id:'optional:subclass:phb:fighter:phb:battle-master:mv-b',
+   record:character('Fighter',3,{classes:[{name:'Fighter',source:'PHB',
+    subclass:'Battle Master',subclass_source:'PHB',level:3}]})},
+  {id:'artificer_infusions',
+   record:{rules_version:'2014',classes:[{name:'Artificer',source:'TCE',level:5}]}}
+ ];
+ for(const {id,record:initial} of cases){
+  let record=initial;
+  const before=owned(record,id);
+  assert(before,'The feature progression must be available');
+  const options=before.options.filter(row=>row.min_level<=before.level)
+   .slice(0,before.layers.learned.limit+1);
+  assert.equal(options.length,before.layers.learned.limit+1,'Need an extra eligible choice');
+  for(const option of options)
+   record={...record,...powerSelectionPatch(record,context,catalog,id,'learned',option.id)};
+  const after=owned(record,id);
+  assert.equal(after.layers.learned.used,options.length);
+  assert.equal(after.layers.learned.limit,before.layers.learned.limit);
+  assert.equal(after.layers.applied.used,0,'Learning does not apply any option');
+  record={...record,...powerSelectionPatch(record,context,catalog,id,'learned',options[0].id)};
+  assert.equal(owned(record,id).layers.learned.used,options.length-1);
+ }
+});
+
 test('Inline choices such as Favored Enemy also accept homebrew',()=>{
  const inline={...catalog,selections:[{id:'favored',owner:{class_name:'Ranger',
   class_source:'PHB',trait:'Favored Enemy'},source:{type:'inline',
