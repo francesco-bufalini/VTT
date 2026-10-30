@@ -2,7 +2,7 @@ import {SKILL_ABILITY} from './skill_definitions.js';
 import {createVariant} from './creature_variants.js';
 // Offline structured class-feature mechanics shared by the PWA sheet and actions.
 // No regex matching feature prose; no network access in the evaluation path.
-import {resolveOwnedItem,hasProperty,itemKind} from './item_controls.js';
+import {resolveOwnedItem,hasProperty,itemKind,equipmentRequirementMatches} from './item_controls.js';
 import {exhaustionRollModes} from './exhaustion_rules.js';
 import {speciesRollModeMatches} from './species_roll_modes.js';
 import {attackHitRollSources} from './attack_hit_effects.js';
@@ -90,7 +90,7 @@ export function classFeatureEntries(record={},calculated={}){
    tracker_id:tracker?.id||'',cost:Math.max(0,Number(rule.cost)||0),
    origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
    feature_name:feature.name,origin_name:'Tratto · '+feature.name,
-   roll_bonus:rule.bonus});
+   roll_bonus:rule.bonus,requirements:rule.requirements||rule.bonus.requirements||{}});
  }
  for(const option of metamagicOptions(record)){
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)==='sorcery points'&&low(t.origin_class)==='sorcerer');
@@ -119,7 +119,8 @@ export function classFeatureRollResourceBonuses(record={},calculated={}){
    name:bonus.name||ability.name,description:ability.description,
    ...(rollMode?{roll_mode:rollMode,benefit_id:'class-roll:'+ability.class_feature_id,
       granting_trait:ability.feature_name}:Number.isFinite(flat)?{flat_bonus:flat}:{dice}),
-   targets:bonus.targets,condition_label:bonus.condition_label||'',tracker_id:ability.tracker_id,
+   targets:bonus.targets,requirements:bonus.requirements||ability.requirements||{},
+   condition_label:bonus.condition_label||'',tracker_id:ability.tracker_id,
    tracker_cost:Math.max(0,Number(ability.cost)||0),optional:true}];
  });
 }
@@ -152,7 +153,9 @@ export function passiveClassRollBonuses(record={},calculated={},target=''){
    low(row.requirements?.class_name||row.class_name||String(row.origin_key||'').split('|')[2])===low(rule.class_name)&&
    (!rule.class_source||low(row.class_source||String(row.origin_key||'').split('|')[1])===low(rule.class_source))&&
    (!rule.subclass_name||String(row.origin_key||'').includes('|subclass|')));
-  if(!feature)continue;
+  if(!feature||!equipmentRequirementMatches(record,rule.bonus.requirements||rule.requirements||{},target,
+    rows(calculated.attacks).find(a=>target==='attack_hit:'+a.id||target==='attack_damage:'+a.id),
+    calculated.equipped_items))continue;
   let originId=feature.origin_id,originName='Tratto · '+feature.name;
   if(rule.required_optional_feature){
    const optional=rows(record.optional_features_catalog).find(row=>!row.disabled&&
@@ -205,7 +208,10 @@ export function classFeatureRollBonuses(record={},calculated={},target=''){
   value==='attack_roll'&&/^(?:attack_hit:|casting_hit:)/.test(target)||
   value==='damage_roll'&&/^(?:attack_damage:|spell_damage)/.test(target)||
   value==='any_d20'&&(target==='initiative'||/^(?:skill:|ability_check:|ability_mod:|save:|attack_hit:|casting_hit:)/.test(target)));
- return [...classFeatureRollResourceBonuses(record,calculated).filter(row=>applicable(row.targets))
+ const attack=rows(calculated.attacks).find(row=>target==='attack_hit:'+row.id||
+   target==='attack_damage:'+row.id);
+ return [...classFeatureRollResourceBonuses(record,calculated).filter(row=>
+    applicable(row.targets)&&equipmentRequirementMatches(record,row.requirements,target,attack,calculated.equipped_items))
   .map(row=>({...row,target})),...passiveClassRollBonuses(record,calculated,target)];
 }
 export function classFeatureLevel(record,name){
