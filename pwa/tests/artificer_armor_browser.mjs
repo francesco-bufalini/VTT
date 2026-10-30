@@ -59,7 +59,7 @@ try{
  assert.equal(await modelDialog.locator('[data-act="benefit-option-apply"]').isEnabled(),true);
  await modelDialog.locator('[data-act="benefit-option-apply"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
-   return (await listCreatures())[0].creature.trait_state_selection?.armor_model==='armor_model:guardian';});
+   return (await listCreatures())[0].creature.power_applications?.armor_model?.[0]?.id==='armor_model:guardian';});
  assert.equal((await record()).resource_tracker_spent?.['feature:armor_model:activation'],undefined);
  assert.equal((await record()).rest_selection_available?.armor_model,undefined);
  assert.equal(await guardian.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'true');

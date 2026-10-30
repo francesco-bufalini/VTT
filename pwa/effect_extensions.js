@@ -1,4 +1,4 @@
-import {activeInfusions} from './item_controls.js';
+import {activeItemOptionEffects} from './item_controls.js';
 // Typed extensions to spells, magical abilities and infused inventory items. All effects originate from
 // explicit catalog rules or trait-owned records: never parse feature prose.
 const rows=value=>Array.isArray(value)?value:[];
@@ -88,7 +88,7 @@ export function collectEffectExtensions(record={},catalog=[],features=[],infusio
  const excluded=new Set(Object.values(record.trait_benefit_removed||{}).flatMap(rows));
  for(const rule of rows(catalog)){
   if(rule.rules_version&&String(record.rules_version||'2014')!==String(rule.rules_version))continue;
-  if(rule.owner?.kind==='infusion')continue;
+  if(rule.owner?.kind==='infusion'||rule.compatibility_selection_id&&rows(record.selection_models).some(model=>model.id===rule.compatibility_selection_id))continue;
   if(rule.require_active_state_group&&!rows(activeStateIds).some(id=>
     String(id).startsWith(rule.require_active_state_group+':')))continue;
   const owner=catalogOwner(record,features,rule);
@@ -107,22 +107,22 @@ export function collectEffectExtensions(record={},catalog=[],features=[],infusio
   if(row&&!excluded.has('effect_extension:'+row.id))result.push(row);
  }
  // Each infusion targets exactly its physical inventory copy. Ordinary numeric
- // infusion grants remain in infusionNumericBonuses: do not stack them twice.
- for(const active of activeInfusions(record,infusionDefinitions,features)){
+ // infusion grants remain in itemOptionNumericBonuses: do not stack them twice.
+ for(const active of activeItemOptionEffects(record,infusionDefinitions,features)){
   const {item,infusion,definition,index}=active;
-  for(const rule of rows(catalog)){
-   if(rule.owner?.kind!=='infusion'||rule.target_kind!=='item'||
+  for(const rule of rows(definition.effect_extensions||catalog)){
+   if(!definition.effect_extensions&&(rule.owner?.kind!=='infusion'||rule.target_kind!=='item'||
       rule.rules_version&&String(rule.rules_version)!==String(record.rules_version||'2014')||
       rule.owner.id&&rule.owner.id!==definition.id||
-      rule.owner.name&&norm(rule.owner.name)!==norm(definition.name))continue;
+      rule.owner.name&&norm(rule.owner.name)!==norm(definition.name)))continue;
    const choiceKey=String(rule.value_from_item_choice||'');
    const value=choiceKey?infusion.effect_choice?.[choiceKey]:rule.value;
    if(choiceKey&&!value)continue;
    const parent=rows(record.optional_features_catalog).find(row=>row.id===definition.id);
    const origin_id=active.id,id=String(rule.id)+'|'+origin_id;
    const row=normalizeEffectExtension({...rule,id,origin_id,
-    parent_origin:parent?.origin_id||'optional|'+norm(definition.source)+'|'+norm(definition.name),
-    origin_name:'Infusione · '+definition.name,
+    parent_origin:active.origin_id||parent?.origin_id||'optional|'+norm(definition.source)+'|'+norm(definition.name),
+    origin_name:'Oggetto · '+(active.name||definition.name),
     target_name:item.name||item.id,target_id:item.id,
     target_instance_id:item.instance_id||'',target_inventory_index:index,value});
    if(row&&!excluded.has('effect_extension:'+id)&&enabled(record,row))result.push(row);

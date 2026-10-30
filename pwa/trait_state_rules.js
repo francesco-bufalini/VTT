@@ -1,6 +1,6 @@
 // Generic, data-driven state privileges. Individual class/subclass effects live
 // in catalog/trait_states.json; this runtime never recognizes a trait by name.
-import {resolveOwnedItem} from './item_controls.js';
+import {resolveOwnedItem,activeItemOptionEffects} from './item_controls.js';
 const arr = value => Array.isArray(value) ? value : [];
 const norm = value => String(value ?? '').trim().toLowerCase();
 const members = record => (arr(record.classes).length ? record.classes : [{name:record.class,source:record.class_source,subclass:record.subclass,level:record.level}]).map(member=>({...member,source:member.source||record.class_source||'TCE',subclass:member.subclass||(norm(member.name)===norm(record.class)?record.subclass:'')}));
@@ -23,6 +23,8 @@ function eligible(record,features,rule) {
   if(!trait)return null;
   const requirement=rule.require_equipped;
   if(requirement?.extension_selection){
+    if(arr(record.selection_definition_ids).includes(requirement.extension_selection)&&
+      !activeItemOptionEffects(record,[],features).some(effect=>effect.infusion.selection_id===requirement.extension_selection))return null;
     const legacy=!Object.hasOwn(record.power_applications||{},requirement.extension_selection)&&selection(record,rule)&&arr(record.inventory).some(item=>arr(item.equipped_slots).includes('body')&&['MA','LA','HA'].includes(String(item.type).split('|')[0]));
     if(!legacy&&!arr(record.power_applications?.[requirement.extension_selection]).some(row=>row.target_item_id&&
       arr(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id&&Number(item.quantity??1)>0)))return null;

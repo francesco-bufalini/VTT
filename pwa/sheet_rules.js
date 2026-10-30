@@ -1,3 +1,4 @@
+import {projectSelectionBenefits} from './power_selection.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
 import {monsterTraits,bindMonsterTrackers,monsterAttackOwner} from './monster_traits.js';
 import {SKILLS} from './skill_definitions.js';
@@ -17,7 +18,7 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,activeInfusions,infusionChargeTrackers,armorDexterityBonus,infusionInstanceOrigin} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
@@ -343,8 +344,7 @@ function itemRows(record,warnings,infusionCatalog=[],features=[],itemGrants=[]){
     const rule=arr(itemGrants).find(entry=>arr(entry.names).some(name=>same(name,item.name))&&
       (!arr(entry.sources).length||arr(entry.sources).some(source=>same(source,item.source))));
     const supplemental=rule?.bonuses||{};
-    const infusion=infusionNumericBonuses(record,item,infusionCatalog,features);
-    const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
+    const optionEffects=itemOptionNumericEffects(record,item,infusionCatalog,features);
     const add=(target,field,snake,camel)=>{
       const raw=item?.[snake]??item?.[camel]??supplemental[target];
       const grant=numericGrant(sid,"Oggetto · "+(item.name||item.id),field,target,raw,suffix);
@@ -365,23 +365,24 @@ function itemRows(record,warnings,infusionCatalog=[],features=[],itemGrants=[]){
           ["bonus_weapon_attack","bonus_weapon_attack","bonusWeaponAttack","attack_hit:"+attack],
           ["bonus_weapon_damage","bonus_weapon_damage","bonusWeaponDamage","attack_damage:"+attack]
         ])add(target,field,snake,camel);
-        if(Number.isFinite(infusion.bonus_weapon)){
+        for(const effect of optionEffects)if(Number.isFinite(effect.bonuses.bonus_weapon)){
           for(const type of ["attack_hit:","attack_damage:"]){
-            const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,type+attack,infusion.bonus_weapon);
+            const grant=numericGrant(effect.id,effect.name,"item-option:"+effect.option_id,type+attack,effect.bonuses.bonus_weapon);
             if(grant)rows.push(grant);
           }
         }
       }
     }
-    // General infusion grants are per active item, while weapon grants
-    // above follow the actual equipped hand and thrown-attack identities.
-    if(infusion.bonus_ac!==undefined&&["armor","shield"].includes(kind)){
-      const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,"ac",infusion.bonus_ac);
-      if(grant)rows.push(grant);
-    }
-    if(infusion.bonus_spell_attack!==undefined){
-      const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
-      if(grant)rows.push(grant);
+    // Each applied option retains its exact item-bound benefit origin.
+    for(const effect of optionEffects){
+      if(effect.bonuses.bonus_ac!==undefined&&['armor','shield'].includes(kind)){
+        const grant=numericGrant(effect.id,effect.name,'item-option:'+effect.option_id,'ac',effect.bonuses.bonus_ac);
+        if(grant)rows.push(grant);
+      }
+      if(effect.bonuses.bonus_spell_attack!==undefined){
+        const grant=numericGrant(effect.id,effect.name,'item-option:'+effect.option_id,'spell_attack',effect.bonuses.bonus_spell_attack);
+        if(grant)rows.push(grant);
+      }
     }
     if(seen.has(sid)&&!ordinary)continue;
     seen.add(sid);
@@ -774,7 +775,8 @@ export function spellProgression(record,classes){
     pact_level:warlock?Math.min(5,Math.ceil(warlock/2)):1,caster_level:caster,warnings};
 }
 export function calculateSheet(record={},catalogs={}){
-  let effective=record;
+  let effective=projectSelectionBenefits(record,catalogs,collectStructuredFeatures(record,catalogs));
+  const selectionRecord=effective;
   // Imported or externally edited stacks can exceed the current capacity.
   // Bound their effective benefits without rewriting the owner's saved data.
   for(let pass=0;pass<8;pass++){
@@ -782,7 +784,7 @@ export function calculateSheet(record={},catalogs={}){
     const maximum=Math.max(0,Math.floor(Number(calculated.values.attunement_max)||0));
     const counts=inventoryAttunementCounts(effective.inventory,maximum);
     if(counts.every((count,i)=>count===itemAttunementCount(arr(effective.inventory)[i])))
-      return {...calculated,attunements:{counts,maximum,used:counts.reduce((sum,n)=>sum+n,0)}};
+      return {...calculated,selection_record:selectionRecord,selection_models:selectionRecord.selection_models,attunements:{counts,maximum,used:counts.reduce((sum,n)=>sum+n,0)}};
     effective={...effective,inventory:arr(effective.inventory).map((item,i)=>
       requiresAttunement(resolveOwnedItem(item))?{...item,attuned_count:counts[i],attuned:counts[i]>0}:item)};
   }
@@ -944,7 +946,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(!optional?.name||optional.disabled)continue;
     const source=optional.source||'TCE';
     const rule=arr(nativeBases.optional_features).find(row=>same(row.name,optional.name)&&same(row.source,source));
-    if(rule)baseAdd(rule,'optional|'+norm(source)+'|'+norm(optional.name),'Stile · '+optional.name);
+    if(rule)baseAdd(rule,optional.origin_id||'optional|'+norm(source)+'|'+norm(optional.name),'Stile · '+optional.name);
   }
   for(const feature of features){
     if(!featureEnabled(record,feature))continue;
@@ -1185,6 +1187,10 @@ function calculateSheetValues(record={},catalogs={}){
         !arr(record.proficiency_origins).some(origin=>origin?.id===sid&&origin.disabled);
     }
     if(!sid)return true;
+    if(sid.startsWith('item-instance:')){
+      const item=arr(record.inventory).find(item=>'item-instance:'+(item.instance_id||item.id)===sid);
+      return !!item&&itemActive(resolveOwnedItem(item),record);
+    }
     const saved=arr(record.proficiency_origins).find(x=>x?.id===sid);
     if(saved?.disabled)return false;
     if(record.origin_enabled?.[sid]===false)return false;
@@ -1213,7 +1219,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(sid.startsWith('tracker:auto:'))return true;
     // A generated infusion is a separate, verifiable equipment origin, not
     // an unknown manual bonus or an unconditional class privilege.
-    if(sid.startsWith("infusion:"))return activeInfusions(record,index?.artificer_infusions||[],features)
+    if(sid.startsWith("infusion:")||sid.startsWith("item-option:"))return activeItemOptionEffects(record,index?.artificer_infusions||[],features)
       .some(infused=>infused.id===sid&&itemActive(resolveOwnedItem(infused.item),record));
     if(sid.startsWith("item:"))
       return inventory.some(it=>"item:"+it.id===sid&&itemActive(it,record));

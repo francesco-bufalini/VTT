@@ -1,60 +1,59 @@
-# Benefici di selezione nella PWA
+# Contratto unico delle selezioni PWA
 
-`benefit_type: "option_selection"` identifica un beneficio che offre opzioni
-imparabili, preparabili o applicabili. La GUI è scelta da questo tipo, senza
-controlli sul nome della classe, sul titolo del privilegio o sul catalogo sorgente.
-Fighting Style, infusioni e modelli dell’Armatura Arcana usano lo stesso pannello,
-lo stesso selettore e la stessa finestra di applicazione.
+`power_selection.js` gestisce tutte le selezioni non magiche del tipo
+`option_selection`: nessun dispatch di apprendimento o applicazione per classe,
+feature type o sorgente del catalogo. `optional_feature_progression.js` resta
+soltanto un export di compatibilità, senza algoritmi.
 
-## Contratto dei dati
+## Dati
 
-- `source` indica l’adattatore del catalogo. Gli adattatori proiettano le opzioni
-  e conservano i salvataggi esistenti; non scelgono la presentazione.
-- `layers.learned`, `layers.prepared`, `layers.applied` dichiarano i passaggi
-  disponibili, i limiti e i trigger descrittivi. L’assenza di uno stadio lo elimina
-  dalla GUI. Un limite nullo non introduce una capacità massima aggiuntiva.
-- Un’opzione può contenere `details: {category, name, source}` per la descrizione
-  del compendio, oppure una descrizione già disponibile nel catalogo.
-- `effect_choice: {key, label, options}` dichiara una scelta dell’effetto da salvare
-  con l’applicazione, per esempio il tipo di danno di un’armatura resistente.
-- `layers.applied.target` dichiara la necessità di scegliere un oggetto:
-  `kind`, `slot`, `kinds`, `selector`, `allow_catalog`, `label` descrivono i vincoli
-  e i controlli. Se manca `target`, la finestra non mostra una scelta di oggetti.
-- `selector: "option.item_selector"` usa il selettore strutturato dell’opzione.
-  `extension_field` e `option_item_id` conservano i vincoli di proprietà e gli
-  eventuali piani già associati a un oggetto.
-- `on_apply` può dichiarare un effetto successivo all’applicazione, come la
-  creazione di una sottocreatura; non cambia la finestra.
+Le opzioni AI sono nel medesimo catalogo delle capacità opzionali. La progressione
+`layers.learned.limit.by_class_level` è letta con lo stesso valutatore dei Fighting
+Style. Il limite di applicazione è indipendente e dichiarato in `layers.applied`.
+Le definizioni fisse e le progressioni vengono risolte nello stesso contratto.
+Anche l’anteprima del passaggio di livello legge questi modelli e non ricalcola
+limiti o cataloghi per le infusioni separatamente.
 
-## Persistenza e verifiche
+`application.destination` vale `origin` oppure `item`. Nel secondo caso
+`application.target` dichiara la scelta dell’oggetto. L’applicazione è salvata solo
+dopo una scelta valida; annullare il popup non modifica lo stato né i limiti.
+Non esistono tratti di estensione o tratti opzionali creati dall’applicazione.
 
-`power_selection.js` espone lettura, apprendimento, bersagli e applicazione.
-Gli adattatori conservano rispettivamente `optional_features_catalog`,
-`power_selections`, `power_applications`, `inventory.infusion` e
-`trait_state_selection`. La GUI non scrive direttamente i dati specifici
-di infusioni o modelli di armatura.
+Le opzioni applicate al destinatario `origin` aggiungono descrizione e benefici
+al tratto proprietario della selezione. Le opzioni applicate a `item` estendono
+soltanto la copia individuata da `target_item_id`, separandola da una pila se
+necessario e mantenendo sintonie ed equipaggiamento delle copie.
 
-I bersagli vengono ricalcolati prima del salvataggio. L’apprendimento è distinto
-dall’applicazione; i modelli esclusivi continuano a cambiare atomicamente tramite
-il motore generico degli stati. La selezione di un oggetto del catalogo è offerta
-solo quando i dati del bersaglio la consentono.
+`effects` contiene benefici primitivi strutturati: bonus, competenze, tracker,
+incantesimi concessi, azioni, sensi, difese, estensioni e selezioni esclusive di
+stato. I profili `item_effects` usano gli stessi effetti sugli oggetti senza
+scrivere `inventory.infusion`. `scripts/build_selection_effects.py` rigenera i
+profili qualificati per fonte dai dati strutturati già esistenti; non legge prosa
+per dedurre effetti. Descrizione del selettore e `allow_custom` sono dati, non
+stringhe aggiunte da un adattatore.
 
-`pwa/tests/benefit_option_ui_browser.mjs` verifica nello stesso personaggio la
-finestra comune, i diversi requisiti di bersaglio e gli effetti effettivi dei
-modelli di armatura. I test browser di Fighting Style e infusioni verificano
-apprendimento, applicazione, rimozione e persistenza.
+## Stato e compatibilità
 
-## Applicazione e tratti concessi
+Le nuove scritture usano `selection_state_version: 2`, `power_selections`,
+`power_applications` e gli effetti destinatari `inventory.option_extensions`.
+`selection_compatibility.js` legge i vecchi campi e li converte al confine; non è
+un secondo motore di selezione. Gli effetti primitivi vengono proiettati nelle
+collezioni di benefici esistenti durante il calcolo, senza creare tratti aggiuntivi.
 
-L’applicazione concede un tratto salvato nell’applicazione generica. Il contratto
-`granted_trait.benefits` dichiara i benefici di quel tratto. Un beneficio
-`object_extension` possiede la scelta dell’oggetto e gli eventuali benefici da
-aggiungere all’oggetto. Il suo `target` descrive la scelta; non appartiene allo
-stadio di applicazione dell’opzione originale. Poteri apre la scelta come
-scorciatoia, mentre la stessa scelta rimane accessibile dal tratto in Info.
+Armatura Arcana ha una scelta fissa e un’applicazione. I modelli sono una
+selezione esclusiva disponibile dopo il legame a un oggetto; la loro applicazione
+non crea tratti. Le identità e i limiti provengono dai dati.
 
-Armatura Arcana è un’opzione fissa, senza progressione di apprendimento e con
-una sola applicazione. La sua estensione ammette qualunque oggetto e concede
-un beneficio `option_selection` per il modello. Il modello non richiede un’altra
-scelta di oggetti. I salvataggi precedenti con un modello e un’armatura già
-configurati restano leggibili attraverso la proiezione di compatibilità.
+Il lancio degli incantesimi, slot, libro e regole delle liste rimangono nel
+sottosistema `spell_selection`: questa modifica unifica le selezioni dei privilegi,
+non sostituisce il motore degli incantesimi. Il modello delle classi lancianti
+rimane una proiezione in sola lettura di quel dominio.
+
+## Verifica
+
+`selection_benefit_contract.test.mjs` usa anche un beneficio arbitrario, senza
+nomi di privilegi, per verificare lo stesso percorso sui due destinatari.
+`benefit_option_ui_browser.mjs` controlla scelta, annullamento, oggetti liberi,
+modelli esclusivi, rimozione dagli Stati e persistenza; `fighting_styles_browser.mjs` verifica gli effetti
+reali sul combattimento senza nuovi tratti. I vecchi costruttori di record si trovano soltanto nelle fixture dei test,
+per verificare import/parità; la suite Godot completa non è coperta dai soli test PWA.

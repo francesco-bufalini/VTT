@@ -91,7 +91,7 @@ try{
  const infusionCard=page.locator('#sheet-play-view .play-infusion-card').filter({has:page.getByRole('heading',{name:'Infusioni',exact:true})});
  assert.equal(await styleCard.getAttribute('class'),await infusionCard.getAttribute('class'));
  assert.equal((await snapshot()).offhand,'1d6');
- assert.equal((await snapshot()).record.optional_features_catalog[0].disabled,true);
+ assert.equal((await snapshot()).record.optional_features_catalog.length,0,'Learning creates no separate optional trait');
  await style.click();
  const action=page.locator('#benefit-option-dialog');
  await action.waitFor({state:'visible'});

@@ -45,6 +45,7 @@ export function companionGrantActive(owner={},child={}){
  if(child.companion_selected===false)return false;
  const grant=child.companion_grant;
  if(!grant?.kind)return true;
+ if(grant.kind==='item_option')return rows(owner.inventory).some(item=>Number(item.quantity??1)>0&&rows(item.option_extensions).some(option=>option.id===grant.id));
  if(grant.kind==='inventory_infusion')return rows(owner.inventory).some(item=>
   Number(item?.quantity??1)>0&&item?.infusion?.id===grant.id&&!item.disabled);
  if(grant.kind==='spell_effect')return rows(owner.proficiency_origins).some(row=>

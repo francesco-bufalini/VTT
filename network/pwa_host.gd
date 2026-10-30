@@ -117,6 +117,7 @@ const FILES := {
 	"/chat_notifications.js": ["res://pwa/chat_notifications.js", "text/javascript; charset=utf-8"],
 	"/feature_mechanics.js": ["res://pwa/feature_mechanics.js", "text/javascript; charset=utf-8"],
 	"/trait_state_rules.js": ["res://pwa/trait_state_rules.js", "text/javascript; charset=utf-8"],
+	"/selection_compatibility.js": ["res://pwa/selection_compatibility.js", "text/javascript; charset=utf-8"],
 	"/power_selection.js": ["res://pwa/power_selection.js", "text/javascript; charset=utf-8"],
 	"/optional_feature_progression.js": ["res://pwa/optional_feature_progression.js", "text/javascript; charset=utf-8"],
 	"/action_economy.js": ["res://pwa/action_economy.js", "text/javascript; charset=utf-8"],

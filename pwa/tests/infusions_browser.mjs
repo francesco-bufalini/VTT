@@ -15,10 +15,10 @@ try{
  const learner=page.locator('#power-selection-dialog');
  await learner.waitFor({state:'visible'});
  await learner.locator('[data-power-search]').fill('Enhanced Arcane Focus');
- await learner.locator('[data-act="power-selection-details"][data-power-option-id="infusion|tce|enhanced arcane focus"]').click();
+ await learner.locator('[data-act="power-selection-details"][data-power-option-id="optional:tce:enhanced-arcane-focus"]').click();
  assert.match(await page.locator('#benefit-option-dialog .magic-spell-description').innerText(),/spell|attack|bonus/i);
  await page.locator('#benefit-option-dialog [data-act="benefit-option-close"]').first().click();
- await learner.locator('[data-act="power-selection-toggle"][data-power-option-id="infusion|tce|enhanced arcane focus"]').click();
+ await learner.locator('[data-act="power-selection-toggle"][data-power-option-id="optional:tce:enhanced-arcane-focus"]').click();
  await learner.locator('[data-act="power-selection-close"]').first().click();
  const infusion=page.locator('#sheet-play-view [data-act="benefit-option-open"]');
  assert.equal(await infusion.count(),1,'Known infusion appears once with spell-like UI');
@@ -30,9 +30,7 @@ try{
  await actionDialog.waitFor({state:'visible'});
  assert.match(await actionDialog.locator('.magic-spell-description').innerText(),/spell|attack|bonus/i);
  assert.equal((await actionDialog.locator('[data-act="benefit-option-apply"]').innerText()).trim(),'Applica');
- assert(await actionDialog.locator('[data-act="benefit-option-apply"]').isEnabled());
- await actionDialog.locator('[data-act="benefit-option-apply"]').click();
- await page.waitForFunction(()=>document.querySelector('#benefit-option-dialog [data-benefit-target-search]'));
+ assert(await actionDialog.locator('[data-act="benefit-option-apply"]').isDisabled());
  assert(await actionDialog.locator('[data-act="benefit-option-apply"]').isDisabled());
  assert.equal(await actionDialog.locator('[data-act="benefit-target-choose"][data-index="0"]').count(),1,
    'All compatible owned items must be visible without searching');
@@ -50,18 +48,17 @@ try{
  await actionDialog.locator('[data-act="benefit-option-apply"]').click();
  await actionDialog.waitFor({state:'detached'});
  assert.equal(await infusion.locator('.play-infusion-state').getAttribute('title'),'Attiva');
- await sheet('info');
- await page.locator('[data-act="benefit-option-open"][data-power-selection-id^="extension:artificer_infusions:"]').first().click();
+ await infusion.click();
  assert.equal(await actionDialog.locator('[data-act="benefit-option-remove"]').count(),1);
  await actionDialog.locator('[data-act="benefit-option-close"]').first().click();
  await sheet('magic');
  // Replicate is learned as a separate infusion choice for each item type.
  await page.locator('#sheet-play-view [data-act="power-selection-open"][data-power-selection-id="artificer_infusions"][data-power-stage="learned"]').click();
  await learner.locator('[data-power-search]').fill('Replicate Magic Item');
- assert(await learner.locator('[data-power-option-id^="infusion|tce|replicate magic item|"]').count()>10);
- assert.equal(await learner.locator('[data-power-option-id="infusion|tce|replicate magic item"]').count(),0);
+ assert(await learner.locator('[data-power-option-id^="optional:tce:replicate-magic-item|"]').count()>10);
+ assert.equal(await learner.locator('[data-power-option-id="optional:tce:replicate-magic-item"]').count(),0);
  await learner.locator('[data-act="power-selection-close"]').first().click();
- await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !!(await listCreatures())[0].creature.inventory[0].infusion;});
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !!(await listCreatures())[0].creature.inventory[0].option_extensions?.length;});
  const inspect=()=>page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');const {calculateSheet,loadRuleCatalogs}=await import('/sheet_rules.js');const c=(await listCreatures())[0].creature;return {c,d:calculateSheet(c,await loadRuleCatalogs())};});
  assert.equal((await inspect()).d.values.spell_attack,0);
  await page.evaluate(async()=>{const {listCreatures,saveCreature}=await import('/creatures.js');const s=(await listCreatures())[0];s.creature.inventory[0].attuned=true;await saveCreature(s.creature,'default',s.revision);});

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerSelectionLimit,
   powerApplicationPatch,powerSelectionTargets} from '../power_selection.js';
-const data=JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8'));
+const data={...JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8')),optionalFeatureProgressions:JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'))};
 const owner=(className,source,name)=>({name,origin_id:'feature:'+name,
  origin_key:'class|'+source.toLowerCase()+'|'+className.toLowerCase(),
  requirements:{class_name:className,class_source:source}});
@@ -162,23 +162,20 @@ test('option benefit targets are defined by data, including equipped armor and o
  assert.deepEqual(powerSelectionTargets({...record,inventory:inventory.map(item=>({...item,disabled:true}))},model,option),[]);
 });
 
-test('Arcane Armor grants a trait before its unconstrained object extension; fixed count and per-copy binding',()=>{
- const context={features:[owner('Artificer','TCE','Arcane Armor'),owner('Artificer','TCE','Armor Model')],trait_state_catalog:[]};
- let record={id:'owner',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],
-  inventory:[{id:'free-item',name:'Free object',custom_item_type:'other',quantity:3}]};
- let model=powerSelectionModels(record,context,data).find(row=>row.id==='arcane_armor');
+test('targeted options are not applied before object choice and extend only the selected copy',()=>{
+ const context={features:[owner('Artificer','TCE','Arcane Armor'),owner('Artificer','TCE','Armor Model')]};
+ let record={id:'owner',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],inventory:[{id:'free',name:'Any object',quantity:3}]};
+ const model=powerSelectionModels(record,context,data).find(m=>m.id==='arcane_armor');
  assert.equal(model.layers.learned,undefined);assert.equal(model.layers.applied.limit,1);
- record={...record,...powerApplicationPatch(record,context,data,model.id,'arcane_armor',true)};
- const applied=record.power_applications.arcane_armor[0];
- assert.equal(applied.target_item_id,undefined);
- assert.equal(applied.trait.benefits[0].type,'object_extension');
- assert(!powerSelectionModels(record,context,data).some(row=>row.id==='armor_model'));
- model=powerSelectionModels(record,context,data).find(row=>row.extension_of?.selection==='arcane_armor');
- assert.equal(powerSelectionTargets(record,model,model.options[0]).length,1);
- record={...record,...powerApplicationPatch(record,context,data,model.id,'arcane_armor',true,{itemIndex:0})};
- assert.deepEqual(record.inventory.map(row=>row.quantity),[1,2]);
- assert.equal(record.power_applications.arcane_armor[0].target_item_id,record.inventory[0].instance_id);
- assert(powerSelectionModels(record,context,data).some(row=>row.id==='armor_model'));
+ assert.throws(()=>powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',true),/oggetto/);
+ assert.equal(record.power_applications,undefined);
+ record={...record,...powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',true,{itemIndex:0})};
+ assert.deepEqual(record.inventory.map(i=>i.quantity),[1,2]);
+ const application=record.power_applications.arcane_armor[0];assert.equal(application.trait,undefined);
+ assert.equal(application.target_item_id,record.inventory[0].instance_id);
+ assert.equal(record.inventory[0].option_extensions[0].name,'Armatura Arcana');
+ assert(powerSelectionModels(record,context,data).some(m=>m.id==='armor_model'));
  record={...record,...powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',false)};
- assert(!powerSelectionModels(record,context,data).some(row=>row.id==='armor_model'));
+ assert(!powerSelectionModels(record,context,data).some(m=>m.id==='armor_model'));
+ assert.deepEqual(record.inventory[0].option_extensions,[]);
 });

@@ -174,16 +174,20 @@ export function levelUpProjectionChanges(before={},after={},context={}){
  add(difference('Slot del Patto',before.pact_slots?.total,after.pact_slots?.total));
  if(number(after.pact_slots?.total)>0||number(before.pact_slots?.total)>0)
    add(difference('Livello degli slot del Patto',before.pact_slots?.level,after.pact_slots?.level));
- const oldCaps=context.beforeInfusions||{},newCaps=context.afterInfusions||{};
- add(difference('Infusioni conosciute · massimo',oldCaps.known,newCaps.known));
- add(difference('Infusioni applicabili · massimo',oldCaps.active,newCaps.active));
- const oldOptions=new Set(list(context.beforeInfusionOptions).map(row=>String(row.id||row.name)));
- const infusions=list(context.afterInfusionOptions).filter(row=>
-   !oldOptions.has(String(row.id||row.name)));
- if(infusions.length)changes.push({
-   label:'Nuove infusioni selezionabili',from:0,to:infusions.length,
-   options:optionLabels(infusions.map(row=>row.name))
- });
+ const oldSelections=new Map(list(before.selection_models).map(model=>[model.id,model]));
+ const stageLabels={learned:'Opzioni imparabili',prepared:'Opzioni preparabili',applied:'Opzioni applicabili'};
+ for(const model of list(after.selection_models)){
+   if(model.benefit_type==='spell_selection')continue;
+   const old=oldSelections.get(model.id);
+   for(const [stage,layer] of Object.entries(model.layers||{})){
+     if(layer.limit===null||layer.automatic)continue;
+     add(difference(model.title+' · '+stageLabels[stage]+' · massimo',old?.layers?.[stage]?.limit,layer.limit));
+   }
+   const eligible=row=>list(row?.options).filter(option=>number(option.min_level)<=number(row.level));
+   const previousIds=new Set(eligible(old).map(option=>option.id));
+   const added=eligible(model).filter(option=>!previousIds.has(option.id));
+   if(added.length)changes.push({label:model.title+' · Nuove opzioni selezionabili',from:0,to:added.length,options:optionLabels(added.map(option=>option.name))});
+ }
  const oldGrants=new Set(list(before.origin_spells).map(row=>String(row.id||row.origin_id+'|'+row.spell_id)));
  const newGrants=list(after.origin_spells).filter(row=>
    !oldGrants.has(String(row.id||row.origin_id+'|'+row.spell_id)));
@@ -220,30 +224,23 @@ export function levelUpProjectionChanges(before={},after={},context={}){
  return changes;
 }
 /** Compute every gained level from the same structured calculator used by the sheet. */
-export function levelUpProgressionImpact(record,plan,catalogs,calculate,infusionCaps=()=>({})){
+export function levelUpProgressionImpact(record,plan,catalogs,calculate){
  if(typeof calculate!=='function')throw Error('Calcolo del personaggio non disponibile.');
  const length=Number(plan.toLevel)-Number(plan.fromLevel);
  if(!Number.isInteger(length)||length<1||length>20)return [];
- const infusionOptions=list(catalogs?.abilityGrants?.artificer_infusions);
- const eligible=(rec,caps)=>positive(caps.known)>0?infusionOptions.filter(row=>
-   !row.legacy_replicate&&positive(caps.level)>=Math.max(2,Number(row.min_level)||2)):[];
- let previousRecord=record,previous=calculate(record,catalogs);
+ let previous=calculate(record,catalogs);
  const result=[];
  for(let gained=1;gained<=length;gained++){
    const updatedRecord=levelUpProjectedRecord(record,plan,gained);
    const next=calculate(updatedRecord,catalogs);
-   const oldCaps=infusionCaps(previousRecord,catalogs.classMechanics,previous.features);
-   const newCaps=infusionCaps(updatedRecord,catalogs.classMechanics,next.features);
    result.push({
      level:Number(plan.fromLevel)+gained,totalLevel:updatedRecord.level,
      features:uniqueFeatures(previous.features,next.features,plan.className,plan.classSource),
      changes:levelUpProjectionChanges(previous,next,{
-       beforeInfusions:oldCaps,afterInfusions:newCaps,
-       beforeInfusionOptions:eligible(previousRecord,oldCaps),
-       afterInfusionOptions:eligible(updatedRecord,newCaps),spells:catalogs.spells
+       spells:catalogs.spells
      })
    });
-   previousRecord=updatedRecord;previous=next;
+   previous=next;
  }
  return result;
 }

@@ -6,40 +6,213 @@
   },
   "progressions": [
     {
-      "id": "optional:class:tce:artificer:ai",
-      "title": "Infusions",
+      "id": "artificer_infusions",
+      "title": "Infusioni",
       "owner": {
         "class_name": "Artificer",
         "class_source": "TCE",
-        "trait": "Infusions"
+        "trait": "Infuse Item"
       },
       "feature_types": [
         "AI"
       ],
-      "progression": {
-        "1": 0,
-        "2": 4,
-        "3": 4,
-        "4": 4,
-        "5": 4,
-        "6": 6,
-        "7": 6,
-        "8": 6,
-        "9": 6,
-        "10": 8,
-        "11": 8,
-        "12": 8,
-        "13": 8,
-        "14": 10,
-        "15": 10,
-        "16": 10,
-        "17": 10,
-        "18": 12,
-        "19": 12,
-        "20": 12
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                6
+              ],
+              [
+                8,
+                6
+              ],
+              [
+                9,
+                6
+              ],
+              [
+                10,
+                8
+              ],
+              [
+                11,
+                8
+              ],
+              [
+                12,
+                8
+              ],
+              [
+                13,
+                8
+              ],
+              [
+                14,
+                10
+              ],
+              [
+                15,
+                10
+              ],
+              [
+                16,
+                10
+              ],
+              [
+                17,
+                10
+              ],
+              [
+                18,
+                12
+              ],
+              [
+                19,
+                12
+              ],
+              [
+                20,
+                12
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                5
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                16,
+                5
+              ],
+              [
+                17,
+                5
+              ],
+              [
+                18,
+                6
+              ],
+              [
+                19,
+                6
+              ],
+              [
+                20,
+                6
+              ]
+            ]
+          },
+          "trigger": "long_rest"
+        }
+      },
+      "application": {
+        "destination": "item",
+        "target": {
+          "kind": "item",
+          "label": "Oggetto da estendere",
+          "allow_catalog": true
+        },
+        "effects": [
+          {
+            "type": "item_effects"
+          }
+        ]
+      },
+      "legacy_ids": [
+        "optional:class:tce:artificer:ai"
+      ],
+      "capacity_bonus_field": "infusion_capacity_bonus",
+      "on_apply": "companion_grant"
     },
     {
       "id": "optional:subclass:phb:bard:xge:college-of-swords:fs-b",
@@ -55,16 +228,34 @@
         "FS:B"
       ],
       "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                1
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
         "applied": {
           "mode": "manual",
-          "from": "learned"
+          "from": "learned",
+          "limit": null
         }
       },
-      "progression": {
-        "3": 1
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:class:phb:fighter:fs-f",
@@ -78,16 +269,34 @@
         "FS:F"
       ],
       "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                1
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
         "applied": {
           "mode": "manual",
-          "from": "learned"
+          "from": "learned",
+          "limit": null
         }
       },
-      "progression": {
-        "1": 1
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:subclass:phb:fighter:phb:battle-master:mv-b",
@@ -102,14 +311,47 @@
       "feature_types": [
         "MV:B"
       ],
-      "progression": {
-        "3": 3,
-        "7": 5,
-        "10": 7,
-        "15": 9
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                3
+              ],
+              [
+                7,
+                5
+              ],
+              [
+                10,
+                7
+              ],
+              [
+                15,
+                9
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:subclass:phb:fighter:phb:champion:fs-f",
@@ -119,22 +361,40 @@
         "class_source": "PHB",
         "subclass": "Champion",
         "subclass_source": "PHB",
-        "trait": "Fighting Style"
+        "trait": "Additional Fighting Style"
       },
       "feature_types": [
         "FS:F"
       ],
       "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                10,
+                1
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
         "applied": {
           "mode": "manual",
-          "from": "learned"
+          "from": "learned",
+          "limit": null
         }
       },
-      "progression": {
-        "10": 1
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:subclass:phb:fighter:xge:arcane-archer:as",
@@ -144,20 +404,56 @@
         "class_source": "PHB",
         "subclass": "Arcane Archer",
         "subclass_source": "XGE",
-        "trait": "Arcane Shots"
+        "trait": "Arcane Shot"
       },
       "feature_types": [
         "AS"
       ],
-      "progression": {
-        "3": 2,
-        "7": 3,
-        "10": 4,
-        "15": 5,
-        "18": 6
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                2
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                18,
+                6
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:subclass:phb:fighter:tce:rune-knight:rn",
@@ -167,19 +463,52 @@
         "class_source": "PHB",
         "subclass": "Rune Knight",
         "subclass_source": "TCE",
-        "trait": "Runes"
+        "trait": "Rune Carver"
       },
       "feature_types": [
         "RN"
       ],
-      "progression": {
-        "3": 2,
-        "7": 3,
-        "10": 4,
-        "15": 5
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                2
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                15,
+                5
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:subclass:xphb:fighter:xphb:battle-master:mv-b",
@@ -189,19 +518,52 @@
         "class_source": "XPHB",
         "subclass": "Battle Master",
         "subclass_source": "XPHB",
-        "trait": "Maneuvers"
+        "trait": "Maneuver Options"
       },
       "feature_types": [
         "MV:B"
       ],
-      "progression": {
-        "3": 3,
-        "7": 5,
-        "10": 7,
-        "15": 9
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                3
+              ],
+              [
+                7,
+                5
+              ],
+              [
+                10,
+                7
+              ],
+              [
+                15,
+                9
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:subclass:xphb:fighter:au:arcane-archer:as",
@@ -211,20 +573,56 @@
         "class_source": "XPHB",
         "subclass": "Arcane Archer",
         "subclass_source": "AU",
-        "trait": "Arcane Shots"
+        "trait": "Arcane Shot"
       },
       "feature_types": [
         "AS"
       ],
-      "progression": {
-        "3": 2,
-        "7": 3,
-        "10": 4,
-        "15": 5,
-        "18": 6
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                2
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                18,
+                6
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:subclass:phb:monk:phb:way-of-the-four-elements:ed",
@@ -239,18 +637,51 @@
       "feature_types": [
         "ED"
       ],
-      "progression": {
-        "3": 2,
-        "6": 3,
-        "11": 4,
-        "17": 5
-      },
       "required": {
         "3": [
           "Elemental Attunement|PHB"
         ]
       },
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                2
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                17,
+                5
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:class:phb:paladin:fs-p",
@@ -264,16 +695,34 @@
         "FS:P"
       ],
       "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                2,
+                1
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
         "applied": {
           "mode": "manual",
-          "from": "learned"
+          "from": "learned",
+          "limit": null
         }
       },
-      "progression": {
-        "2": 1
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:class:phb:ranger:fs-r",
@@ -287,16 +736,34 @@
         "FS:R"
       ],
       "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                2,
+                1
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
         "applied": {
           "mode": "manual",
-          "from": "learned"
+          "from": "learned",
+          "limit": null
         }
       },
-      "progression": {
-        "2": 1
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:class:phb:sorcerer:mm",
@@ -309,13 +776,43 @@
       "feature_types": [
         "MM"
       ],
-      "progression": {
-        "3": 2,
-        "10": 3,
-        "17": 4
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                2
+              ],
+              [
+                10,
+                3
+              ],
+              [
+                17,
+                4
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:class:xphb:sorcerer:mm",
@@ -328,13 +825,43 @@
       "feature_types": [
         "MM"
       ],
-      "progression": {
-        "2": 2,
-        "10": 4,
-        "17": 6
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                2,
+                2
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                17,
+                6
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:class:phb:warlock:ei",
@@ -347,30 +874,111 @@
       "feature_types": [
         "EI"
       ],
-      "progression": {
-        "1": 0,
-        "2": 2,
-        "3": 2,
-        "4": 2,
-        "5": 3,
-        "6": 3,
-        "7": 4,
-        "8": 4,
-        "9": 5,
-        "10": 5,
-        "11": 5,
-        "12": 6,
-        "13": 6,
-        "14": 6,
-        "15": 7,
-        "16": 7,
-        "17": 7,
-        "18": 8,
-        "19": 8,
-        "20": 8
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                5
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                5
+              ],
+              [
+                12,
+                6
+              ],
+              [
+                13,
+                6
+              ],
+              [
+                14,
+                6
+              ],
+              [
+                15,
+                7
+              ],
+              [
+                16,
+                7
+              ],
+              [
+                17,
+                7
+              ],
+              [
+                18,
+                8
+              ],
+              [
+                19,
+                8
+              ],
+              [
+                20,
+                8
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:class:phb:warlock:pb",
@@ -383,11 +991,35 @@
       "feature_types": [
         "PB"
       ],
-      "progression": {
-        "3": 1
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                3,
+                1
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     },
     {
       "id": "optional:class:xphb:warlock:ei",
@@ -400,30 +1032,111 @@
       "feature_types": [
         "EI"
       ],
-      "progression": {
-        "1": 1,
-        "2": 3,
-        "3": 3,
-        "4": 3,
-        "5": 5,
-        "6": 5,
-        "7": 6,
-        "8": 6,
-        "9": 7,
-        "10": 7,
-        "11": 7,
-        "12": 8,
-        "13": 8,
-        "14": 8,
-        "15": 9,
-        "16": 9,
-        "17": 9,
-        "18": 10,
-        "19": 10,
-        "20": 10
-      },
       "required": {},
-      "trigger": "level_up"
+      "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+      "allow_custom": true,
+      "layers": {
+        "learned": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                5
+              ],
+              [
+                7,
+                6
+              ],
+              [
+                8,
+                6
+              ],
+              [
+                9,
+                7
+              ],
+              [
+                10,
+                7
+              ],
+              [
+                11,
+                7
+              ],
+              [
+                12,
+                8
+              ],
+              [
+                13,
+                8
+              ],
+              [
+                14,
+                8
+              ],
+              [
+                15,
+                9
+              ],
+              [
+                16,
+                9
+              ],
+              [
+                17,
+                9
+              ],
+              [
+                18,
+                10
+              ],
+              [
+                19,
+                10
+              ],
+              [
+                20,
+                10
+              ]
+            ]
+          },
+          "trigger": "level_up"
+        },
+        "applied": {
+          "mode": "automatic",
+          "from": "learned",
+          "limit": null
+        }
+      },
+      "application": {
+        "destination": "origin",
+        "effects": [
+          {
+            "type": "catalog_feature"
+          }
+        ]
+      }
     }
   ],
   "options": [
@@ -510,7 +1223,62 @@
           ]
         }
       ],
-      "description": "The wearer of this armor gains these benefits:"
+      "description": "The wearer of this armor gains these benefits:",
+      "legacy_ids": [
+        "infusion|tce|arcane propulsion armor"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|arcane propulsion armor",
+        "name": "Arcane Propulsion Armor",
+        "source": "TCE",
+        "min_level": 14,
+        "item_prerequisite": "A suit of armor (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Arcane Propulsion Armor (Level 14)",
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "armor"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-arcane-propulsion-armor-grant_property-0",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|arcane propulsion armor"
+            },
+            "target_kind": "item",
+            "operation": "grant_property",
+            "trigger": "passive",
+            "frequency": "each",
+            "description": "L'armatura diventa solidale con il corpo e non può essere rimossa contro la volontà del portatore"
+          },
+          {
+            "id": "infusion-arcane-propulsion-armor-add_effect-1",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|arcane propulsion armor"
+            },
+            "target_kind": "item",
+            "operation": "add_effect",
+            "trigger": "passive",
+            "frequency": "each",
+            "description": "La velocità sul terreno aumenta di 5 ft; i guanti diventano armi magiche da mischia 1d8 forza, lanciabili a 20/60 ft"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 14,
+      "details": {
+        "category": "optional_features",
+        "name": "Arcane Propulsion Armor",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:phb:archery",
@@ -536,7 +1304,62 @@
           ]
         }
       ],
-      "description": "This armor has 6 charges. The wearer can expend the armor's charges in the following ways:"
+      "description": "This armor has 6 charges. The wearer can expend the armor's charges in the following ways:",
+      "legacy_ids": [
+        "infusion|tce|armor of magical strength"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|armor of magical strength",
+        "name": "Armor of Magical Strength",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "A suit of armor (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Armor of Magical Strength",
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "armor"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-armor-of-magical-strength-grant_action-2",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|armor of magical strength"
+            },
+            "target_kind": "item",
+            "operation": "grant_action",
+            "trigger": "reaction",
+            "frequency": "each",
+            "description": "6 cariche: usa una carica per aggiungere Intelligenza a una prova di Forza o a un tiro salvezza di Forza"
+          },
+          {
+            "id": "infusion-armor-of-magical-strength-grant_action-3",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|armor of magical strength"
+            },
+            "target_kind": "item",
+            "operation": "grant_action",
+            "trigger": "reaction",
+            "frequency": "each",
+            "description": "6 cariche: usa una reazione e una carica per evitare di essere buttato prono; recupera 1d6 cariche all'alba"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Armor of Magical Strength",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:phb:armor-of-shadows",
@@ -776,7 +1599,49 @@
           ]
         }
       ],
-      "description": "While wearing these boots, a creature can teleport up to 15 feet as a bonus action to an unoccupied space the creature can see. The creature must have occupied that space at some point during the current turn."
+      "description": "While wearing these boots, a creature can teleport up to 15 feet as a bonus action to an unoccupied space the creature can see. The creature must have occupied that space at some point during the current turn.",
+      "legacy_ids": [
+        "infusion|tce|boots of the winding path"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|boots of the winding path",
+        "name": "Boots of the Winding Path",
+        "source": "TCE",
+        "min_level": 6,
+        "item_prerequisite": "A pair of boots (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Boots of the Winding Path (Level 6)",
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "name_contains_any": [
+            "boot"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-boots-of-the-winding-path-grant_action-4",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|boots of the winding path"
+            },
+            "target_kind": "item",
+            "operation": "grant_action",
+            "trigger": "on_use",
+            "frequency": "each",
+            "description": "Azione bonus: teletrasporto fino a 15 ft verso uno spazio non occupato già occupato durante il turno corrente"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 6,
+      "details": {
+        "category": "optional_features",
+        "name": "Boots of the Winding Path",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:tce:brace",
@@ -1301,7 +2166,55 @@
           ]
         }
       ],
-      "description": "While holding this item, a creature gains a +1 bonus to spell attack rolls. In addition, the creature ignores {@quickref Cover||3||half cover} when making a spell attack."
+      "description": "While holding this item, a creature gains a +1 bonus to spell attack rolls. In addition, the creature ignores {@quickref Cover||3||half cover} when making a spell attack.",
+      "legacy_ids": [
+        "infusion|tce|enhanced arcane focus"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|enhanced arcane focus",
+        "name": "Enhanced Arcane Focus",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "A rod, staff, or wand (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Enhanced Arcane Focus",
+        "numeric_item_bonuses": {
+          "bonus_spell_attack": 1,
+          "upgrade_level": 10
+        },
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "name_contains_any": [
+            "rod",
+            "staff",
+            "wand"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-enhanced-arcane-focus-add_effect-5",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|enhanced arcane focus"
+            },
+            "target_kind": "item",
+            "operation": "add_effect",
+            "trigger": "passive",
+            "frequency": "each",
+            "description": "Gli attacchi con incantesimi ignorano la mezza copertura quando si impugna questo focus"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Enhanced Arcane Focus",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:tce:enhanced-defense",
@@ -1317,7 +2230,40 @@
           ]
         }
       ],
-      "description": "A creature gains a +1 bonus to Armor Class while wearing (armor) or wielding (shield) the infused item."
+      "description": "A creature gains a +1 bonus to Armor Class while wearing (armor) or wielding (shield) the infused item.",
+      "legacy_ids": [
+        "infusion|tce|enhanced defense"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|enhanced defense",
+        "name": "Enhanced Defense",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "A suit of armor or a shield",
+        "requires_attunement": false,
+        "fightclub_name": "Infusion: Enhanced Defense",
+        "numeric_item_bonuses": {
+          "bonus_ac": 1,
+          "upgrade_level": 10
+        },
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "armor",
+            "shield"
+          ]
+        },
+        "effect_extensions": []
+      },
+      "requires_attunement": false,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Enhanced Defense",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:tce:enhanced-weapon",
@@ -1333,7 +2279,39 @@
           ]
         }
       ],
-      "description": "This magic weapon grants a +1 bonus to attack and damage rolls made with it."
+      "description": "This magic weapon grants a +1 bonus to attack and damage rolls made with it.",
+      "legacy_ids": [
+        "infusion|tce|enhanced weapon"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|enhanced weapon",
+        "name": "Enhanced Weapon",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "A simple or martial weapon",
+        "requires_attunement": false,
+        "fightclub_name": "Infusion: Enhanced Weapon",
+        "numeric_item_bonuses": {
+          "bonus_weapon": 1,
+          "upgrade_level": 10
+        },
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "weapon"
+          ]
+        },
+        "effect_extensions": []
+      },
+      "requires_attunement": false,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Enhanced Weapon",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:phb:eternal-mountain-defense",
@@ -1824,7 +2802,63 @@
           ]
         }
       ],
-      "description": "While wearing this helmet, a creature has advantage on initiative rolls. In addition, the wearer can't be {@status surprised}, provided it isn't {@condition incapacitated}."
+      "description": "While wearing this helmet, a creature has advantage on initiative rolls. In addition, the wearer can't be {@status surprised}, provided it isn't {@condition incapacitated}.",
+      "legacy_ids": [
+        "infusion|tce|helm of awareness"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|helm of awareness",
+        "name": "Helm of Awareness",
+        "source": "TCE",
+        "min_level": 10,
+        "item_prerequisite": "A helmet (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Helm of Awareness (Level 10)",
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "name_contains_any": [
+            "helm"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-helm-of-awareness-roll_mode-6",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|helm of awareness"
+            },
+            "target_kind": "item",
+            "operation": "roll_mode",
+            "trigger": "initiative",
+            "frequency": "each",
+            "description": "Vantaggio ai tiri di iniziativa mentre l'elmo è indossato",
+            "value": "advantage"
+          },
+          {
+            "id": "infusion-helm-of-awareness-add_effect-7",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|helm of awareness"
+            },
+            "target_kind": "item",
+            "operation": "add_effect",
+            "trigger": "passive",
+            "frequency": "each",
+            "description": "Il portatore non può essere sorpreso mentre è cosciente"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 10,
+      "details": {
+        "category": "optional_features",
+        "name": "Helm of Awareness",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:tce:hill-rune",
@@ -1863,7 +2897,50 @@
           ]
         }
       ],
-      "description": "You learn intricate methods for magically creating a special {@creature Homunculus Servant|TCE|homunculus} that serves you. The item you infuse serves as the creature's heart, around which the creature's body instantly f"
+      "description": "You learn intricate methods for magically creating a special {@creature Homunculus Servant|TCE|homunculus} that serves you. The item you infuse serves as the creature's heart, around which the creature's body instantly f",
+      "legacy_ids": [
+        "infusion|tce|homunculus servant"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|homunculus servant",
+        "name": "Homunculus Servant",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "A gem or crystal worth at least 100 gp",
+        "requires_attunement": false,
+        "fightclub_name": "Infusion: Homunculus Servant",
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "other",
+            "tool"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-homunculus-servant-add_effect-8",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|homunculus servant"
+            },
+            "target_kind": "item",
+            "operation": "add_effect",
+            "trigger": "passive",
+            "frequency": "each",
+            "description": "Il gioiello infuso funge da cuore di un servitore omuncolo; la creatura associata è gestita separatamente"
+          }
+        ]
+      },
+      "requires_attunement": false,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Homunculus Servant",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:xge:improved-pact-weapon",
@@ -2168,7 +3245,52 @@
           ]
         }
       ],
-      "description": "The infused item can send a jolt to the wearer to refocus their mind. The item has 4 charges. When the wearer fails a Constitution saving throw to maintain {@status concentration} on a spell, the wearer can use its react"
+      "description": "The infused item can send a jolt to the wearer to refocus their mind. The item has 4 charges. When the wearer fails a Constitution saving throw to maintain {@status concentration} on a spell, the wearer can use its react",
+      "legacy_ids": [
+        "infusion|tce|mind sharpener"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|mind sharpener",
+        "name": "Mind Sharpener",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "A suit of armor or robes",
+        "requires_attunement": false,
+        "fightclub_name": "Infusion: Mind Sharpener",
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "armor"
+          ],
+          "name_contains_any": [
+            "robe"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-mind-sharpener-grant_action-9",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|mind sharpener"
+            },
+            "target_kind": "item",
+            "operation": "grant_action",
+            "trigger": "concentration_fail",
+            "frequency": "each",
+            "description": "Reazione: usa una delle 4 cariche per riuscire un tiro salvezza di concentrazione fallito; recupera 1d4 cariche all'alba"
+          }
+        ]
+      },
+      "requires_attunement": false,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Mind Sharpener",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:phb:minions-of-chaos",
@@ -2570,7 +3692,65 @@
           ]
         }
       ],
-      "description": "This magic weapon grants a +1 bonus to attack and damage rolls made with it. While holding it, the wielder can take a bonus action to cause it to shed bright light in a 30-foot radius and dim light for an additional 30 f"
+      "description": "This magic weapon grants a +1 bonus to attack and damage rolls made with it. While holding it, the wielder can take a bonus action to cause it to shed bright light in a 30-foot radius and dim light for an additional 30 f",
+      "legacy_ids": [
+        "infusion|tce|radiant weapon"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|radiant weapon",
+        "name": "Radiant Weapon",
+        "source": "TCE",
+        "min_level": 6,
+        "item_prerequisite": "A simple or martial weapon (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Radiant Weapon (Level 6)",
+        "numeric_item_bonuses": {
+          "bonus_weapon": 1
+        },
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "weapon"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-radiant-weapon-grant_property-10",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|radiant weapon"
+            },
+            "target_kind": "item",
+            "operation": "grant_property",
+            "trigger": "passive",
+            "frequency": "each",
+            "description": "L'arma emette luce intensa per 30 ft e luce fioca per altri 30 ft, disattivabile"
+          },
+          {
+            "id": "infusion-radiant-weapon-grant_action-11",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|radiant weapon"
+            },
+            "target_kind": "item",
+            "operation": "grant_action",
+            "trigger": "reaction",
+            "frequency": "each",
+            "description": "4 cariche: dopo essere colpito da un attacco, una reazione e una carica per accecare l'attaccante (TS Costituzione); recupera 1d4 cariche all'alba"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 6,
+      "details": {
+        "category": "optional_features",
+        "name": "Radiant Weapon",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:phb:rally",
@@ -2657,7 +3837,60 @@
           ]
         }
       ],
-      "description": "This magic weapon grants a +1 bonus to attack and damage rolls made with it when it's used to make a ranged attack, and it ignores the loading property if it has it."
+      "description": "This magic weapon grants a +1 bonus to attack and damage rolls made with it when it's used to make a ranged attack, and it ignores the loading property if it has it.",
+      "legacy_ids": [
+        "infusion|tce|repeating shot"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|repeating shot",
+        "name": "Repeating Shot",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "A simple or martial weapon with the ammunition property (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Repeating Shot",
+        "numeric_item_bonuses": {
+          "bonus_weapon": 1,
+          "item_selector": {
+            "item_types": [
+              "R"
+            ]
+          }
+        },
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "weapon"
+          ],
+          "properties_all": [
+            "A"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-repeating-shot-grant_property-12",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|repeating shot"
+            },
+            "target_kind": "item",
+            "operation": "grant_property",
+            "trigger": "passive",
+            "frequency": "each",
+            "description": "Ignora la proprietà Ricarica (Loading); l'arma produce munizioni magiche quando è usata per un attacco a distanza"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Repeating Shot",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:phb:repelling-blast",
@@ -2710,7 +3943,239 @@
       "types": [
         "AI"
       ],
-      "description": "Using this infusion, you replicate a particular magic item. You can learn this infusion multiple times; each time you do so, choose a magic item that you can make with it, picking from the Replicable Items tables below. "
+      "description": "Using this infusion, you replicate a particular magic item. You can learn this infusion multiple times; each time you do so, choose a magic item that you can make with it, picking from the Replicable Items tables below. ",
+      "legacy_ids": [
+        "infusion|tce|replicate magic item"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item",
+        "name": "Replicate Magic Item",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "",
+        "requires_attunement": false,
+        "fightclub_name": "Infusion: Replicate Magic Item",
+        "replicable_items": [
+          {
+            "name": "Alchemy jug",
+            "level": 2
+          },
+          {
+            "name": "Bag of holding",
+            "level": 2
+          },
+          {
+            "name": "Cap of water breathing",
+            "level": 2
+          },
+          {
+            "name": "Goggles of night",
+            "level": 2
+          },
+          {
+            "name": "Rope of climbing",
+            "level": 2
+          },
+          {
+            "name": "Sending stones",
+            "level": 2
+          },
+          {
+            "name": "Wand of magic detection",
+            "level": 2
+          },
+          {
+            "name": "Wand of secrets",
+            "level": 2
+          },
+          {
+            "name": "Boots of elvenkind",
+            "level": 6
+          },
+          {
+            "name": "Cloak of elvenkind",
+            "level": 6
+          },
+          {
+            "name": "Cloak of the manta ray",
+            "level": 6
+          },
+          {
+            "name": "Eyes of charming",
+            "level": 6
+          },
+          {
+            "name": "Gloves of thievery",
+            "level": 6
+          },
+          {
+            "name": "Lantern of revealing",
+            "level": 6
+          },
+          {
+            "name": "Pipes of haunting",
+            "level": 6
+          },
+          {
+            "name": "Ring of water walking",
+            "level": 6
+          },
+          {
+            "name": "Boots of striding and springing",
+            "level": 10
+          },
+          {
+            "name": "Boots of the Winterlands",
+            "level": 10
+          },
+          {
+            "name": "Bracers of archery",
+            "level": 10
+          },
+          {
+            "name": "Brooch of shielding",
+            "level": 10
+          },
+          {
+            "name": "Cloak of protection",
+            "level": 10
+          },
+          {
+            "name": "Eyes of the eagle",
+            "level": 10
+          },
+          {
+            "name": "Gauntlets of ogre power",
+            "level": 10
+          },
+          {
+            "name": "Gloves of missile snaring",
+            "level": 10
+          },
+          {
+            "name": "Gloves of swimming and climbing",
+            "level": 10
+          },
+          {
+            "name": "Hat of disguise",
+            "level": 10
+          },
+          {
+            "name": "Headband of intellect",
+            "level": 10
+          },
+          {
+            "name": "Helm of telepathy",
+            "level": 10
+          },
+          {
+            "name": "Medallion of thoughts",
+            "level": 10
+          },
+          {
+            "name": "Necklace of adaptation",
+            "level": 10
+          },
+          {
+            "name": "Periapt of wound closure",
+            "level": 10
+          },
+          {
+            "name": "Pipes of the sewers",
+            "level": 10
+          },
+          {
+            "name": "Quiver of Ehlonna",
+            "level": 10
+          },
+          {
+            "name": "Ring of jumping",
+            "level": 10
+          },
+          {
+            "name": "Ring of mind shielding",
+            "level": 10
+          },
+          {
+            "name": "Slippers of spider climbing",
+            "level": 10
+          },
+          {
+            "name": "Ventilating lungs",
+            "level": 10
+          },
+          {
+            "name": "Winged boots",
+            "level": 10
+          },
+          {
+            "name": "Amulet of health",
+            "level": 14
+          },
+          {
+            "name": "Arcane propulsion arm",
+            "level": 14
+          },
+          {
+            "name": "Belt of hill giant strength",
+            "level": 14
+          },
+          {
+            "name": "Boots of levitation",
+            "level": 14
+          },
+          {
+            "name": "Boots of speed",
+            "level": 14
+          },
+          {
+            "name": "Bracers of defense",
+            "level": 14
+          },
+          {
+            "name": "Cloak of the bat",
+            "level": 14
+          },
+          {
+            "name": "Dimensional shackles",
+            "level": 14
+          },
+          {
+            "name": "Gem of seeing",
+            "level": 14
+          },
+          {
+            "name": "Horn of blasting",
+            "level": 14
+          },
+          {
+            "name": "Ring of free action",
+            "level": 14
+          },
+          {
+            "name": "Ring of protection",
+            "level": 14
+          },
+          {
+            "name": "Ring of the ram",
+            "level": 14
+          }
+        ],
+        "application_kind": "replicate",
+        "item_selector": {
+          "id_prefix": "magic_item:"
+        },
+        "effect_extensions": []
+      },
+      "requires_attunement": false,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_selector": {},
+      "hidden": true
     },
     {
       "id": "optional:tce:repulsion-shield",
@@ -2733,7 +4198,52 @@
           ]
         }
       ],
-      "description": "A creature gains a +1 bonus to Armor Class while wielding this shield."
+      "description": "A creature gains a +1 bonus to Armor Class while wielding this shield.",
+      "legacy_ids": [
+        "infusion|tce|repulsion shield"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|repulsion shield",
+        "name": "Repulsion Shield",
+        "source": "TCE",
+        "min_level": 6,
+        "item_prerequisite": "A shield (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Repulsion Shield (Level 6)",
+        "numeric_item_bonuses": {
+          "bonus_ac": 1
+        },
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "shield"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-repulsion-shield-grant_action-14",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|repulsion shield"
+            },
+            "target_kind": "item",
+            "operation": "grant_action",
+            "trigger": "reaction",
+            "frequency": "each",
+            "description": "4 cariche: dopo essere colpito da un attacco in mischia, una reazione e una carica per spingere l'attaccante fino a 15 ft; recupera 1d4 cariche all'alba"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 6,
+      "details": {
+        "category": "optional_features",
+        "name": "Repulsion Shield",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:tce:resistant-armor",
@@ -2756,7 +4266,82 @@
           ]
         }
       ],
-      "description": "While wearing this armor, a creature has resistance to one of the following damage types, which you choose when you infuse the item: acid, cold, fire, force, lightning, necrotic, poison, psychic, radiant, or thunder."
+      "description": "While wearing this armor, a creature has resistance to one of the following damage types, which you choose when you infuse the item: acid, cold, fire, force, lightning, necrotic, poison, psychic, radiant, or thunder.",
+      "legacy_ids": [
+        "infusion|tce|resistant armor"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|resistant armor",
+        "name": "Resistant Armor",
+        "source": "TCE",
+        "min_level": 6,
+        "item_prerequisite": "A suit of armor (requires attunement)",
+        "requires_attunement": true,
+        "effect_choice": {
+          "key": "damage_type",
+          "label": "Tipo di resistenza",
+          "options": [
+            "acid",
+            "cold",
+            "fire",
+            "force",
+            "lightning",
+            "necrotic",
+            "poison",
+            "psychic",
+            "radiant",
+            "thunder"
+          ]
+        },
+        "fightclub_name": "Infusion: Resistant Armor (Level 6)",
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "armor"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-resistant-armor-resistance-15",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|resistant armor"
+            },
+            "target_kind": "item",
+            "operation": "resistance",
+            "trigger": "passive",
+            "frequency": "each",
+            "description": "Conferisce resistenza al tipo di danno scelto al momento dell'infusione",
+            "value_from_item_choice": "damage_type"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 6,
+      "details": {
+        "category": "optional_features",
+        "name": "Resistant Armor",
+        "source": "TCE"
+      },
+      "item_selector": {},
+      "effect_choice": {
+        "key": "damage_type",
+        "label": "Tipo di resistenza",
+        "options": [
+          "acid",
+          "cold",
+          "fire",
+          "force",
+          "lightning",
+          "necrotic",
+          "poison",
+          "psychic",
+          "radiant",
+          "thunder"
+        ]
+      }
     },
     {
       "id": "optional:tce:returning-weapon",
@@ -2772,7 +4357,55 @@
           ]
         }
       ],
-      "description": "This magic weapon grants a +1 bonus to attack and damage rolls made with it, and it returns to the wielder's hand immediately after it is used to make a ranged attack."
+      "description": "This magic weapon grants a +1 bonus to attack and damage rolls made with it, and it returns to the wielder's hand immediately after it is used to make a ranged attack.",
+      "legacy_ids": [
+        "infusion|tce|returning weapon"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|returning weapon",
+        "name": "Returning Weapon",
+        "source": "TCE",
+        "min_level": 2,
+        "item_prerequisite": "A simple or martial weapon with the thrown property",
+        "requires_attunement": false,
+        "fightclub_name": "Infusion: Returning Weapon",
+        "numeric_item_bonuses": {
+          "bonus_weapon": 1
+        },
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "kinds": [
+            "weapon"
+          ],
+          "properties_all": [
+            "T"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-returning-weapon-grant_property-13",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|returning weapon"
+            },
+            "target_kind": "item",
+            "operation": "grant_property",
+            "trigger": "on_throw",
+            "frequency": "each",
+            "description": "L'arma ritorna nella mano dell'utilizzatore immediatamente dopo l'attacco a distanza con lancio"
+          }
+        ]
+      },
+      "requires_attunement": false,
+      "min_level": 2,
+      "details": {
+        "category": "optional_features",
+        "name": "Returning Weapon",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:phb:ride-the-wind",
@@ -2986,7 +4619,49 @@
           ]
         }
       ],
-      "description": "While wearing this ring, the creature can recover one expended spell slot as an action. The recovered slot can be of 3rd level or lower. Once used, the ring can't be used again until the next dawn."
+      "description": "While wearing this ring, the creature can recover one expended spell slot as an action. The recovered slot can be of 3rd level or lower. Once used, the ring can't be used again until the next dawn.",
+      "legacy_ids": [
+        "infusion|tce|spell-refueling ring"
+      ],
+      "item_effects": {
+        "id": "infusion|tce|spell-refueling ring",
+        "name": "Spell-Refueling Ring",
+        "source": "TCE",
+        "min_level": 6,
+        "item_prerequisite": "A ring (requires attunement)",
+        "requires_attunement": true,
+        "fightclub_name": "Infusion: Spell-Refueling Ring (Level 6)",
+        "application_kind": "enhancement",
+        "item_selector": {
+          "nonmagical": true,
+          "name_contains_any": [
+            "ring"
+          ]
+        },
+        "effect_extensions": [
+          {
+            "id": "infusion-spell-refueling-ring-grant_action-16",
+            "rules_version": "2014",
+            "owner": {
+              "kind": "infusion",
+              "id": "infusion|tce|spell-refueling ring"
+            },
+            "target_kind": "item",
+            "operation": "grant_action",
+            "trigger": "on_use",
+            "frequency": "each",
+            "description": "Una volta all'alba: con un'azione, recupera uno slot incantesimo speso di livello massimo 3"
+          }
+        ]
+      },
+      "requires_attunement": true,
+      "min_level": 6,
+      "details": {
+        "category": "optional_features",
+        "name": "Spell-Refueling Ring",
+        "source": "TCE"
+      },
+      "item_selector": {}
     },
     {
       "id": "optional:tce:stone-rune",
@@ -3459,10 +5134,1231 @@
         }
       ],
       "description": "You have {@sense Truesight|XPHB} with a range of 30 feet."
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|alchemy-jug",
+      "name": "Replicate Magic Item · Alchemy jug",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 2,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|alchemy-jug"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|alchemy-jug",
+        "name": "Replicate Magic Item · Alchemy jug",
+        "source": "TCE",
+        "min_level": 2,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|bag-of-holding",
+      "name": "Replicate Magic Item · Bag of holding",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 2,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|bag-of-holding"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|bag-of-holding",
+        "name": "Replicate Magic Item · Bag of holding",
+        "source": "TCE",
+        "min_level": 2,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|cap-of-water-breathing",
+      "name": "Replicate Magic Item · Cap of water breathing",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 2,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|cap-of-water-breathing"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|cap-of-water-breathing",
+        "name": "Replicate Magic Item · Cap of water breathing",
+        "source": "TCE",
+        "min_level": 2,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|goggles-of-night",
+      "name": "Replicate Magic Item · Goggles of night",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 2,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|goggles-of-night"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|goggles-of-night",
+        "name": "Replicate Magic Item · Goggles of night",
+        "source": "TCE",
+        "min_level": 2,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|rope-of-climbing",
+      "name": "Replicate Magic Item · Rope of climbing",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 2,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|rope-of-climbing"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|rope-of-climbing",
+        "name": "Replicate Magic Item · Rope of climbing",
+        "source": "TCE",
+        "min_level": 2,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|sending-stones",
+      "name": "Replicate Magic Item · Sending stones",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 2,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|sending-stones"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|sending-stones",
+        "name": "Replicate Magic Item · Sending stones",
+        "source": "TCE",
+        "min_level": 2,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|wand-of-magic-detection",
+      "name": "Replicate Magic Item · Wand of magic detection",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 2,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|wand-of-magic-detection"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|wand-of-magic-detection",
+        "name": "Replicate Magic Item · Wand of magic detection",
+        "source": "TCE",
+        "min_level": 2,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|wand-of-secrets",
+      "name": "Replicate Magic Item · Wand of secrets",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 2,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|wand-of-secrets"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|wand-of-secrets",
+        "name": "Replicate Magic Item · Wand of secrets",
+        "source": "TCE",
+        "min_level": 2,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|boots-of-elvenkind",
+      "name": "Replicate Magic Item · Boots of elvenkind",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 6,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|boots-of-elvenkind"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|boots-of-elvenkind",
+        "name": "Replicate Magic Item · Boots of elvenkind",
+        "source": "TCE",
+        "min_level": 6,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|cloak-of-elvenkind",
+      "name": "Replicate Magic Item · Cloak of elvenkind",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 6,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|cloak-of-elvenkind"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|cloak-of-elvenkind",
+        "name": "Replicate Magic Item · Cloak of elvenkind",
+        "source": "TCE",
+        "min_level": 6,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|cloak-of-the-manta-ray",
+      "name": "Replicate Magic Item · Cloak of the manta ray",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 6,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|cloak-of-the-manta-ray"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|cloak-of-the-manta-ray",
+        "name": "Replicate Magic Item · Cloak of the manta ray",
+        "source": "TCE",
+        "min_level": 6,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|eyes-of-charming",
+      "name": "Replicate Magic Item · Eyes of charming",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 6,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|eyes-of-charming"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|eyes-of-charming",
+        "name": "Replicate Magic Item · Eyes of charming",
+        "source": "TCE",
+        "min_level": 6,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|gloves-of-thievery",
+      "name": "Replicate Magic Item · Gloves of thievery",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 6,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|gloves-of-thievery"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|gloves-of-thievery",
+        "name": "Replicate Magic Item · Gloves of thievery",
+        "source": "TCE",
+        "min_level": 6,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|lantern-of-revealing",
+      "name": "Replicate Magic Item · Lantern of revealing",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 6,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|lantern-of-revealing"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|lantern-of-revealing",
+        "name": "Replicate Magic Item · Lantern of revealing",
+        "source": "TCE",
+        "min_level": 6,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|pipes-of-haunting",
+      "name": "Replicate Magic Item · Pipes of haunting",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 6,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|pipes-of-haunting"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|pipes-of-haunting",
+        "name": "Replicate Magic Item · Pipes of haunting",
+        "source": "TCE",
+        "min_level": 6,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|ring-of-water-walking",
+      "name": "Replicate Magic Item · Ring of water walking",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 6,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|ring-of-water-walking"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|ring-of-water-walking",
+        "name": "Replicate Magic Item · Ring of water walking",
+        "source": "TCE",
+        "min_level": 6,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|boots-of-striding-and-springing",
+      "name": "Replicate Magic Item · Boots of striding and springing",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|boots-of-striding-and-springing"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|boots-of-striding-and-springing",
+        "name": "Replicate Magic Item · Boots of striding and springing",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|boots-of-the-winterlands",
+      "name": "Replicate Magic Item · Boots of the Winterlands",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|boots-of-the-winterlands"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|boots-of-the-winterlands",
+        "name": "Replicate Magic Item · Boots of the Winterlands",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|bracers-of-archery",
+      "name": "Replicate Magic Item · Bracers of archery",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|bracers-of-archery"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|bracers-of-archery",
+        "name": "Replicate Magic Item · Bracers of archery",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|brooch-of-shielding",
+      "name": "Replicate Magic Item · Brooch of shielding",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|brooch-of-shielding"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|brooch-of-shielding",
+        "name": "Replicate Magic Item · Brooch of shielding",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|cloak-of-protection",
+      "name": "Replicate Magic Item · Cloak of protection",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|cloak-of-protection"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|cloak-of-protection",
+        "name": "Replicate Magic Item · Cloak of protection",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|eyes-of-the-eagle",
+      "name": "Replicate Magic Item · Eyes of the eagle",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|eyes-of-the-eagle"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|eyes-of-the-eagle",
+        "name": "Replicate Magic Item · Eyes of the eagle",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|gauntlets-of-ogre-power",
+      "name": "Replicate Magic Item · Gauntlets of ogre power",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|gauntlets-of-ogre-power"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|gauntlets-of-ogre-power",
+        "name": "Replicate Magic Item · Gauntlets of ogre power",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|gloves-of-missile-snaring",
+      "name": "Replicate Magic Item · Gloves of missile snaring",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|gloves-of-missile-snaring"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|gloves-of-missile-snaring",
+        "name": "Replicate Magic Item · Gloves of missile snaring",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|gloves-of-swimming-and-climbing",
+      "name": "Replicate Magic Item · Gloves of swimming and climbing",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|gloves-of-swimming-and-climbing"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|gloves-of-swimming-and-climbing",
+        "name": "Replicate Magic Item · Gloves of swimming and climbing",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|hat-of-disguise",
+      "name": "Replicate Magic Item · Hat of disguise",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|hat-of-disguise"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|hat-of-disguise",
+        "name": "Replicate Magic Item · Hat of disguise",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|headband-of-intellect",
+      "name": "Replicate Magic Item · Headband of intellect",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|headband-of-intellect"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|headband-of-intellect",
+        "name": "Replicate Magic Item · Headband of intellect",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|helm-of-telepathy",
+      "name": "Replicate Magic Item · Helm of telepathy",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|helm-of-telepathy"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|helm-of-telepathy",
+        "name": "Replicate Magic Item · Helm of telepathy",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|medallion-of-thoughts",
+      "name": "Replicate Magic Item · Medallion of thoughts",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|medallion-of-thoughts"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|medallion-of-thoughts",
+        "name": "Replicate Magic Item · Medallion of thoughts",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|necklace-of-adaptation",
+      "name": "Replicate Magic Item · Necklace of adaptation",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|necklace-of-adaptation"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|necklace-of-adaptation",
+        "name": "Replicate Magic Item · Necklace of adaptation",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|periapt-of-wound-closure",
+      "name": "Replicate Magic Item · Periapt of wound closure",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|periapt-of-wound-closure"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|periapt-of-wound-closure",
+        "name": "Replicate Magic Item · Periapt of wound closure",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|pipes-of-the-sewers",
+      "name": "Replicate Magic Item · Pipes of the sewers",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|pipes-of-the-sewers"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|pipes-of-the-sewers",
+        "name": "Replicate Magic Item · Pipes of the sewers",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|quiver-of-ehlonna",
+      "name": "Replicate Magic Item · Quiver of Ehlonna",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|quiver-of-ehlonna"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|quiver-of-ehlonna",
+        "name": "Replicate Magic Item · Quiver of Ehlonna",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|ring-of-jumping",
+      "name": "Replicate Magic Item · Ring of jumping",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|ring-of-jumping"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|ring-of-jumping",
+        "name": "Replicate Magic Item · Ring of jumping",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|ring-of-mind-shielding",
+      "name": "Replicate Magic Item · Ring of mind shielding",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|ring-of-mind-shielding"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|ring-of-mind-shielding",
+        "name": "Replicate Magic Item · Ring of mind shielding",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|slippers-of-spider-climbing",
+      "name": "Replicate Magic Item · Slippers of spider climbing",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|slippers-of-spider-climbing"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|slippers-of-spider-climbing",
+        "name": "Replicate Magic Item · Slippers of spider climbing",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|ventilating-lungs",
+      "name": "Replicate Magic Item · Ventilating lungs",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|ventilating-lungs"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|ventilating-lungs",
+        "name": "Replicate Magic Item · Ventilating lungs",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|winged-boots",
+      "name": "Replicate Magic Item · Winged boots",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 10,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|winged-boots"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|winged-boots",
+        "name": "Replicate Magic Item · Winged boots",
+        "source": "TCE",
+        "min_level": 10,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|amulet-of-health",
+      "name": "Replicate Magic Item · Amulet of health",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|amulet-of-health"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|amulet-of-health",
+        "name": "Replicate Magic Item · Amulet of health",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|arcane-propulsion-arm",
+      "name": "Replicate Magic Item · Arcane propulsion arm",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|arcane-propulsion-arm"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|arcane-propulsion-arm",
+        "name": "Replicate Magic Item · Arcane propulsion arm",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|belt-of-hill-giant-strength",
+      "name": "Replicate Magic Item · Belt of hill giant strength",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|belt-of-hill-giant-strength"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|belt-of-hill-giant-strength",
+        "name": "Replicate Magic Item · Belt of hill giant strength",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|boots-of-levitation",
+      "name": "Replicate Magic Item · Boots of levitation",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|boots-of-levitation"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|boots-of-levitation",
+        "name": "Replicate Magic Item · Boots of levitation",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|boots-of-speed",
+      "name": "Replicate Magic Item · Boots of speed",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|boots-of-speed"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|boots-of-speed",
+        "name": "Replicate Magic Item · Boots of speed",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|bracers-of-defense",
+      "name": "Replicate Magic Item · Bracers of defense",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|bracers-of-defense"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|bracers-of-defense",
+        "name": "Replicate Magic Item · Bracers of defense",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|cloak-of-the-bat",
+      "name": "Replicate Magic Item · Cloak of the bat",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|cloak-of-the-bat"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|cloak-of-the-bat",
+        "name": "Replicate Magic Item · Cloak of the bat",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|dimensional-shackles",
+      "name": "Replicate Magic Item · Dimensional shackles",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|dimensional-shackles"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|dimensional-shackles",
+        "name": "Replicate Magic Item · Dimensional shackles",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|gem-of-seeing",
+      "name": "Replicate Magic Item · Gem of seeing",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|gem-of-seeing"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|gem-of-seeing",
+        "name": "Replicate Magic Item · Gem of seeing",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|horn-of-blasting",
+      "name": "Replicate Magic Item · Horn of blasting",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|horn-of-blasting"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|horn-of-blasting",
+        "name": "Replicate Magic Item · Horn of blasting",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|ring-of-free-action",
+      "name": "Replicate Magic Item · Ring of free action",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|ring-of-free-action"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|ring-of-free-action",
+        "name": "Replicate Magic Item · Ring of free action",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|ring-of-protection",
+      "name": "Replicate Magic Item · Ring of protection",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|ring-of-protection"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|ring-of-protection",
+        "name": "Replicate Magic Item · Ring of protection",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
+    },
+    {
+      "id": "optional:tce:replicate-magic-item|ring-of-the-ram",
+      "name": "Replicate Magic Item · Ring of the ram",
+      "source": "TCE",
+      "types": [
+        "AI"
+      ],
+      "min_level": 14,
+      "legacy_ids": [
+        "infusion|tce|replicate magic item|ring-of-the-ram"
+      ],
+      "details": {
+        "category": "optional_features",
+        "name": "Replicate Magic Item",
+        "source": "TCE"
+      },
+      "item_effects": {
+        "id": "infusion|tce|replicate magic item|ring-of-the-ram",
+        "name": "Replicate Magic Item · Ring of the ram",
+        "source": "TCE",
+        "min_level": 14,
+        "effect_extensions": []
+      }
     }
-  ],
-  "external_feature_types": [
-    "AI"
   ],
   "benefit_type": "option_selection"
 }

@@ -1,4 +1,3 @@
-import {featureItemGrants} from "./feature_item_grants.js";
 // Native-compatible inventory item instance helpers.
 // Keep the mobile spell-scroll inventory in parity with the desktop table.
 // These are display helpers: scrolls remain ordinary owned inventory instances.
@@ -143,7 +142,7 @@ export function armorDexterityLabel(armor={}){
 }
 // Presentation only: keep item catalog identity and editable base name intact.
 export function ownedItemDisplayName(item={}){
- const base=String(item.name||item.id||'Oggetto'),extension=String(item.infusion?.name||'').trim();
+ const base=String(item.name||item.id||'Oggetto'),extension=[item.infusion?.name,...array(item.option_extensions).map(e=>e.name)].filter(Boolean).join(' · ');
  return extension?base+' - '+extension:base;
 }
 export function resolveOwnedItem(saved={}){
@@ -151,7 +150,7 @@ export function resolveOwnedItem(saved={}){
   if(overrides&&typeof overrides==="object"&&!Array.isArray(overrides))
     for(const key of ITEM_INSTANCE_FIELDS)
       if(Object.hasOwn(overrides,key))effective[key]=structuredClone(overrides[key]);
-  if(saved?.infusion?.requires_attunement===true)effective.req_attune=true;
+  if(saved?.infusion?.requires_attunement===true||array(saved?.option_extensions).some(effect=>effect.requires_attunement===true))effective.req_attune=true;
   return effective;
 }
 // Fold truly identical owned copies into one stack. An instance ID identifies
@@ -280,8 +279,9 @@ export function changeEquippedWeaponSize(inventory,slot,size){
 }
 
 export function requiresAttunement(item={}){
+  if(item.infusion?.requires_attunement===true||array(item.option_extensions).some(effect=>effect.requires_attunement===true))return true;
   const v=item.req_attune??item.reqAttune??item.requires_attunement??
-    item.requiresAttunement??item.infusion?.requires_attunement??false;
+    item.requiresAttunement??false;
   return v===true||(typeof v==="string"&&v.trim().length>0);
 }
 // A legacy boolean attunes one physical copy, never the entire stack.
@@ -365,19 +365,6 @@ export function infusionGrantingTrait(record={},features=null){
    return null;
  return feature;
 }
-export function infusionLimits(record={},classMechanics={},features=[]){
- const level=artificerLevel(record);
- const cls=array(classMechanics?.classes).find(c=>sameText(c.name,"Artificer")&&sameText(c.source,"TCE"));
- const column=array(cls?.columns).find(c=>sameText(c.name,"Infused Items"));
- const enabled=!!infusionGrantingTrait(record,features);
- const base=level<2||!enabled?0:Math.max(0,Number(array(column?.levels)[level-1])||0);
- // Extra infusion capacity comes from an owned, enabled feature benefit.
- // It never grants extra infusions known and imposes no armor-part restriction.
- const extra=enabled?featureItemGrants(record,features,classMechanics?.feature_item_grants||[])
-  .reduce((sum,grant)=>sum+Math.max(0,Number(grant.infusion_capacity_bonus)||0),0):0;
- return {level,active:base+extra,known:base*2};
-}
-
 /** One selectable infusion per Replicate Magic Item catalog choice.
  * The original definition remains resolvable for existing saved characters. */
 export function expandedInfusionDefinitions(definitions=[]){
@@ -399,39 +386,6 @@ export function expandedInfusionDefinitions(definitions=[]){
  return result;
 }
 
-export function learnedInfusions(record={},definitions=[]){
- return array(record.optional_features_catalog).flatMap((saved,index)=>{
-   const option=array(definitions).find(row=>row.id===saved?.id);
-   return option?[{...option,plan_item_id:saved.plan_item_id||"",plan_item_name:saved.plan_item_name||"",saved_index:index}]:[];
- });
-}
-// The original item selector is authoritative for actual armor, weapon and
-// shield requirements. Non-equipment examples (boots, rods, rings, gems, etc.)
-// are advisory: any nonmagical object may receive those infusions.
-export function infusionEligible(option,owned){
- if(!option||!owned||typeof owned!=="object")return false;
- const entry=resolveOwnedItem(owned),selector=option.item_selector||{};
- const kind=itemKind(entry),name=String(entry.name||"").toLowerCase(),id=String(owned.id||"");
- if(selector.id_prefix&&!id.startsWith(selector.id_prefix))return false;
- if(selector.nonmagical&&(id.startsWith("magic_item:")||entry.magic===true||
-    !["","none","unknown","—"].includes(String(entry.rarity||"").toLowerCase())))return false;
- const kinds=array(selector.kinds),strict=kinds.some(k=>["armor","weapon","shield"].includes(k));
- const names=array(selector.name_contains_any),matchesName=names.some(part=>name.includes(String(part).toLowerCase()));
- if(strict){
-   // Armor-or-robes (Mind Sharpener) accepts either side of the requirement.
-   if(!kinds.includes(kind)&&!matchesName)return false;
-   if(kinds.includes(kind)&&names.length&&!matchesName&&!(kinds.includes("armor")&&kind==="armor"))
-     return false;
-   if(array(selector.properties_all).length&&!array(selector.properties_all).every(code=>hasProperty(entry,code)))return false;
- }
- return true;
-}
-
-function replicableItem(option,entry,level){
- if(!entry||!String(entry.id||"").startsWith("magic_item:"))return false;
- if(array(option.replicable_items).some(row=>sameText(row.name,entry.name)&&level>=Number(row.level||99)))return true;
- return String(entry.rarity||"").toLowerCase()==="common"&&!["P","SC"].includes(String(entry.type||"").toUpperCase());
-}
 // Generic learnt/prepared feature selections; other nonspell features may reuse
 // this collection instead of masquerading as class spells or trackers.
 const preparationIdentity=row=>[String(row?.kind||""),String(row?.id||""),String(row?.plan_item_id||"")].join("|");
@@ -448,24 +402,6 @@ export function featurePreparationPatch(record,choice,enabled,known=[]){
  if(enabled&&!present)choices.push(item);
  if(!enabled&&present)return {prepared_features:choices.filter(row=>preparationIdentity(row)!==key)};
  return {prepared_features:choices};
-}
-export function learnInfusionPatch(record,option,definitions,classMechanics,itemIndex=-1,features=[]){
- const caps=infusionLimits(record,classMechanics,features),known=learnedInfusions(record,definitions);
- if(!option?.id||!array(definitions).some(row=>row.id===option.id)||caps.level<Math.max(2,Number(option.min_level)||2)||
-    known.length>=caps.known)throw Error("Infusione non disponibile o limite di conoscenza raggiunto.");
- let plan_item_id="",plan_item_name="";
- if(option.application_kind==="replicate"){
-   const item=array(record.inventory)[itemIndex];
-   if(!replicableItem(option,item,caps.level))throw Error("Oggetto magico non replicabile al livello attuale.");
-   plan_item_id=item.id;plan_item_name=item.name||"";
- }
- if(known.some(row=>row.id===option.id&&row.plan_item_id===plan_item_id))throw Error("Infusione già conosciuta.");
- const trait=features===null?null:infusionGrantingTrait(record,features);
- return {optional_features_catalog:[...array(record.optional_features_catalog),
-   {id:option.id,name:option.name,source:option.source||"TCE",
-    ...(trait?{origin_id:trait.origin_id}:{}),...(plan_item_id?{plan_item_id,plan_item_name}:{})}],
-   // Infusions become usable immediately upon learning.
-   prepared_features:array(record.prepared_features).filter(row=>row?.kind!=="infusion")};
 }
 // Reusable inventory targeting contract for infusions and object-targeting spells.
 // Eligibility comes exclusively from typed selectors, never narrative text.
@@ -484,62 +420,6 @@ export function targetableInventoryItems(record,selector={},predicate=()=>true){
    return predicate(item,index)?[{item,index}]:[];
  });
 }
-export function compatibleInfusionTargets(record,option,definitions=[],features=[]){
- if(!infusionGrantingTrait(record,features)||!learnedInfusions(record,definitions).some(row=>
-   row.id===option?.id&&String(row.plan_item_id||"")===String(option.plan_item_id||"")))return [];
- // Preserve the generic inventory targeting utility for spells. Infusions use
- // their own typed eligibility so non-equipment examples can be bypassed.
- return targetableInventoryItems(record,{},(item)=>
-   infusionEligible(option,item)&&
-   (option.application_kind!=="replicate"||option.plan_item_id===item.id)&&
-   (!item.infusion?.id||item.infusion.creator_id===record.id));
-}
-export function applyInfusionPatch(record,known,definitions,classMechanics,index,features=[],effectChoice={}){
- const caps=infusionLimits(record,classMechanics,features),items=structuredClone(array(record.inventory));
- const option=array(definitions).find(row=>row.id===known?.id),item=items[index];
- if(!option||!item||!array(record.optional_features_catalog).some(row=>
-   row.id===option.id&&String(row.plan_item_id||"")===String(known.plan_item_id||"")))
-   throw Error("Infusione non conosciuta oppure oggetto non disponibile.");
-  if(caps.level<Math.max(2,Number(option.min_level)||2)||!infusionEligible(option,item))
-   throw Error("Oggetto incompatibile o tratto Infuse Item non disponibile.");
- if(option.application_kind==="replicate"&&(!known.plan_item_id||known.plan_item_id!==item.id))
-   throw Error("Questo piano replica un altro oggetto.");
- for(const [i,other] of items.entries()){
-   const inf=other?.infusion;
-   if(i!==index&&inf?.creator_id===record.id&&inf?.id===option.id&&
-      String(inf.plan_item_id||"")===String(known.plan_item_id||""))
-     throw Error("Infusione già applicata a un altro oggetto.");
- }
- const selection=option.effect_choice;
- const selected=selection?String(effectChoice?.[selection.key]||
-   (item.infusion?.id===option.id?item.infusion.effect_choice?.[selection.key]:'')||''):'';
- if(selection&&(!array(selection.options).includes(selected)||!selection.key))
-   throw Error('Seleziona una delle opzioni previste per l’effetto dell’infusione.');
- const old=item.infusion,oldChargeId=old?.id?infusionChargeTrackerId(item,index):'';
- if(old&&Object.keys(old).length&&old.creator_id!==record.id)throw Error("Infusione appartenente a un altro Artefice.");
- const active=items.filter(row=>Number(row?.quantity??1)>0&&row?.infusion?.creator_id===record.id).length;
- if(!old?.id&&active>=caps.active)throw Error("Limite di oggetti infusi raggiunto.");
- if(Number(item.quantity??1)>1){
-   const attuned=itemAttunementCount(item);
-   const remaining=structuredClone(item);
-   remaining.quantity=Number(item.quantity)-1;remaining.equipped_slots=[];
-   remaining.equipped=false;remaining.attuned=false;delete remaining.infusion;
-   if(requiresAttunement(item)){
-     remaining.attuned_count=Math.max(0,attuned-1);remaining.attuned=remaining.attuned_count>0;
-     item.attuned_count=Math.min(1,attuned);item.attuned=item.attuned_count>0;
-   }
-   remaining.instance_id="pwa_instance_"+crypto.randomUUID();
-   items.splice(index+1,0,remaining);item.quantity=1;
- }
- const trait=features===null?null:infusionGrantingTrait(record,features);
- item.infusion={id:option.id,name:option.name,source:"TCE",level:caps.level,
-   creator_id:record.id,plan_item_id:known.plan_item_id||"",
-   ...(trait?{origin_id:trait.origin_id}:{}),
-   requires_attunement:Boolean(option.requires_attunement),
-   ...(selection?{effect_choice:{[selection.key]:selected}}:{})};
- return {inventory:items,...clearInfusionChargeSpent(record,
-   [oldChargeId,infusionChargeTrackerId(item,index)])};
-}
 export function clearInfusionPatch(record,index){
  const items=structuredClone(array(record.inventory));
  if(!items[index]?.infusion?.id)throw Error("Nessuna infusione da rimuovere.");
@@ -547,32 +427,14 @@ export function clearInfusionPatch(record,index){
  delete items[index].infusion;items[index].attuned=false;items[index].attuned_count=0;
  return {inventory:items,...clearInfusionChargeSpent(record,[chargeId])};
 }
-export function forgetInfusionPatch(record,known){
- const current=array(record.optional_features_catalog);
- const index=current.findIndex(row=>row.id===known?.id&&
-   String(row.plan_item_id||"")===String(known.plan_item_id||""));
- if(index<0)throw Error("Infusione non trovata.");
- const updated=structuredClone(current);updated.splice(index,1);
- const inventory=structuredClone(array(record.inventory)),removedChargeIds=[];
- for(const [itemIndex,item] of inventory.entries()){
-   const inf=item.infusion||{};
-   if(inf.creator_id===record.id&&inf.id===known.id&&
-     String(inf.plan_item_id||"")===String(known.plan_item_id||"")){
-     removedChargeIds.push(infusionChargeTrackerId(item,itemIndex));
-     delete item.infusion;item.attuned=false;item.attuned_count=0;
-   }
- }
- return {optional_features_catalog:updated,inventory,
-   ...clearInfusionChargeSpent(record,removedChargeIds),
-   prepared_features:array(record.prepared_features).filter(row=>!(row?.kind==="infusion"&&row.id===known.id))};
-}
-
-export const infusionInstanceOrigin=(item,index=0)=>
-  "infusion:"+String(item?.infusion?.creator_id||"unknown")+"|"+
-  String(item?.infusion?.id||"unknown")+"|"+
-  String(item?.instance_id||item?.id||index);
-export const infusionChargeTrackerId=(item,index=0)=>
- 'infusion-charges:'+infusionInstanceOrigin(item,index);
+export const infusionInstanceOrigin=(item,index=0)=>item?.infusion?
+ 'infusion:'+String(item.infusion.creator_id||'unknown')+'|'+String(item.infusion.id||'unknown')+'|'+String(item.instance_id||item.id||index):
+ 'item-option:'+String(item?.instance_id||item?.id||index)+':'+String(array(item?.option_extensions)[0]?.id||'');
+export const itemOptionChargeTrackerId=(item,effect,index=0)=>
+ effect?.legacy?'infusion-charges:'+infusionInstanceOrigin(item,index):
+ 'item-option-charges:'+String(item.instance_id||item.id||index)+':'+String(effect?.id||'');
+export const infusionChargeTrackerId=(item,index=0)=>item.infusion?
+ 'infusion-charges:'+infusionInstanceOrigin(item,index):itemOptionChargeTrackerId(item,array(item.option_extensions)[0],index);
 function clearInfusionChargeSpent(record,ids=[]){
  const previous=record.resource_tracker_spent||{},removed=new Set(ids.filter(Boolean));
  if(![...removed].some(id=>Object.hasOwn(previous,id)))return {};
@@ -582,52 +444,47 @@ function clearInfusionChargeSpent(record,ids=[]){
 // Item-bound charges remain available in inventory even if an infused
 // shield, armor or weapon is temporarily not equipped or attuned.
 export function infusionChargeTrackers(record={},definitions=[],features=[]){
- const source=infusionGrantingTrait(record,features);
  return array(record.inventory).flatMap((item,index)=>{
-  const inf=item?.infusion;
-  if(!inf?.id||Number(item.quantity??1)<=0||item.disabled)return [];
-  if(inf.creator_id===record.id&&!source)return [];
-  const charge=array(definitions).find(row=>row.id===inf.id)?.charge_tracker;
-  const max=Number(charge?.max);
-  if(!charge||!Number.isSafeInteger(max)||max<1||max>1000)return [];
-  const id=infusionChargeTrackerId(item,index),name=ownedItemDisplayName(item);
-  return [{id,name:name+' · Cariche',max,recharge:'manual',
-   recharge_note:String(charge.recovery||''),automatic:true,
-   item_bound:true,infusion_id:inf.id,inventory_index:index,
-   origin_id:'tracker:auto:'+id,origin_name:'Oggetto · '+name}];
+  const effects=[...array(item.option_extensions),...(item.infusion?[{...item.infusion,definition:array(definitions).find(d=>d.id===item.infusion.id),legacy:true}]:[])];
+  return effects.flatMap(effect=>{
+   const charge=effect.definition?.charge_tracker,max=Number(charge?.max);
+   if(!Number.isSafeInteger(max)||max<1||max>1000||Number(item.quantity??1)<=0||item.disabled)return [];
+   if(effect.legacy&&effect.creator_id===record.id&&!infusionGrantingTrait(record,features))return [];
+   const id=itemOptionChargeTrackerId(item,effect,index),name=ownedItemDisplayName(item);
+   return [{id,name:name+' · Cariche',max,recharge:'manual',recharge_note:charge.recovery||'',automatic:true,item_bound:true,inventory_index:index,
+    origin_id:'tracker:auto:'+id,origin_name:'Oggetto · '+name}];
+  });
  });
 }
-export function activeInfusions(record={},definitions=[],features=[]){
- const source=infusionGrantingTrait(record,features);
+export function activeItemOptionEffects(record={},definitions=[],features=[]){
  return array(record.inventory).flatMap((owned,index)=>{
-   const inf=owned?.infusion;
-   if(!inf?.id||Number(owned.quantity??1)<=0||owned.disabled||owned.active===false)return [];
-   // Carried items without a slot are automatically in use.
-   if(["weapon","shield","armor"].includes(itemKind(owned))&&
-      !array(owned.equipped_slots).length)return [];
-   if(requiresAttunement(resolveOwnedItem(owned))&&!itemAttunementCount(owned))return [];
-   if(inf.creator_id===record.id&&!source)return [];
-   const definition=array(definitions).find(row=>row.id===inf.id);
-   if(!definition)return [];
-   return [{id:infusionInstanceOrigin(owned,index),index,item:owned,infusion:inf,
-     name:definition.name,definition,origin_id:inf.origin_id||source?.origin_id||""}];
+  if(Number(owned.quantity??1)<=0||owned.disabled||owned.active===false)return [];
+  if(['weapon','shield','armor'].includes(itemKind(owned))&&!array(owned.equipped_slots).length)return [];
+  if(requiresAttunement(owned)&&!itemAttunementCount(owned))return [];
+  const effects=[...array(owned.option_extensions),...(owned.infusion?[{...owned.infusion,definition:array(definitions).find(d=>d.id===owned.infusion.id),legacy:true}]:[])];
+  return effects.flatMap(effect=>{
+   if(effect.legacy&&effect.creator_id===record.id&&!infusionGrantingTrait(record,features))return [];
+   if(effect.origin_id&&(record.origin_enabled?.[effect.origin_id]===false||!features.some(f=>f.origin_id===effect.origin_id&&!f.disabled&&!f.inactive)))return [];
+   const definition=effect.definition;if(!definition)return [];
+   const id=effect.legacy?infusionInstanceOrigin(owned,index):'item-option:'+String(owned.instance_id||owned.id)+':'+effect.id;
+   return [{id,index,item:owned,option_id:effect.id,tracker_id:itemOptionChargeTrackerId(owned,effect,index),infusion:{...effect,id:definition.id,creator_id:effect.creator_id||record.id},name:effect.name||definition.name,definition,origin_id:effect.origin_id||''}];
+  });
  });
 }
-export function infusionNumericBonuses(record,item,definitions=[],features=[]){
- const inf=item?.infusion;
- if(!inf?.id||inf.creator_id===record.id&&!infusionGrantingTrait(record,features))return {};
- const row=array(definitions).find(r=>r.id===inf.id);
- const data=row?.numeric_item_bonuses;
- if(!data||!infusionEligible(row,item))return {};
- const level=inf.creator_id===record.id&&artificerLevel(record)>=2?
-   artificerLevel(record):Math.max(0,Number(inf.level)||0);
- if(level<Number(row.min_level||2))return {};
- const selector=data.item_selector||{};
- if(array(selector.item_types).length&&!selector.item_types.includes(String(item.type||"").split("|")[0].toUpperCase()))return {};
- const mult=level>=Number(data.upgrade_level||99)?2:1;
- return Object.fromEntries(["bonus_ac","bonus_weapon","bonus_spell_attack"]
-  .filter(key=>Number.isFinite(Number(data[key])))
-  .map(key=>[key,Number(data[key])*mult]));
+export const activeInfusions=activeItemOptionEffects;
+export function itemOptionNumericEffects(record,item,definitions=[],features=[]){
+ return activeItemOptionEffects({...record,inventory:[item]},definitions,features).flatMap(active=>{
+  const data=active.definition.numeric_item_bonuses;if(!data)return [];
+  const selector=data.item_selector||{};
+  if(array(selector.item_types).length&&!selector.item_types.includes(String(item.type||'').split('|')[0].toUpperCase()))return [];
+  const level=active.infusion.level||artificerLevel(record),mult=level>=Number(data.upgrade_level||99)?2:1;
+  return [{...active,bonuses:Object.fromEntries(['bonus_ac','bonus_weapon','bonus_spell_attack'].filter(key=>Number.isFinite(Number(data[key]))).map(key=>[key,Number(data[key])*mult]))}];
+ });
+}
+export function itemOptionNumericBonuses(record,item,definitions=[],features=[]){
+ const result={};for(const effect of itemOptionNumericEffects(record,item,definitions,features))
+  for(const [key,value] of Object.entries(effect.bonuses))result[key]=(result[key]||0)+value;
+ return result;
 }
 
 export function hasProperty(item,code){
@@ -698,3 +555,6 @@ export function setItemEquipped(inventory,index,enabled,{allowOffhandWithTwoHand
   item.equipped=true;
   return rows;
 }
+
+// Legacy API name retained for native/import parity tests.
+export const infusionNumericBonuses=itemOptionNumericBonuses;

@@ -8,7 +8,7 @@ import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeatu
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, monsterActionOptionsMarkup, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { activeInfusions, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, targetableInventoryItems, clearInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
+import { activeItemOptionEffects, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, targetableInventoryItems, clearInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
@@ -49,8 +49,8 @@ import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrai
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
-import {powerSelectionModels,powerSelectionTargets,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch} from './power_selection.js';
-import {claimFeatureItemPatch,featureItemPowers} from './feature_item_grants.js';
+import {powerSelectionModels,powerSelectionTargets,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerStateActivationPatch} from './power_selection.js';
+import {claimFeatureItemPatch,featureItemPowers,featureItemGrants} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
@@ -137,14 +137,14 @@ async function askCompanionRest(row){
  await editor.update(completeRest(record,'long_rest',calculated).patch);await editor.flush();
 }
 async function createOptionCompanion(owner,infusion,calculated){
- const data=await companionRules(),rule=infusionCompanionRule(data,calculated.infusion_catalog,infusion.id,owner);
+ const data=await companionRules(),rule=infusionCompanionRule(data,calculated.infusion_catalog,infusion.item_effects?.id||infusion.id,owner);
  if(!rule)return null;
  const choice=companionSources(rule,data,[],owner)[0];
  if(!choice)throw Error('Profilo della sottocreatura non disponibile.');
  const row=await summonSubcreature(owner.id,await choice.load(),{
   name:choice.name,source:choice.source,template_id:choice.template_id,rule_id:rule.id,
   origin_name:rule.names?.[0]||infusion.name,
-  limit_per_owner_rule:rule.limit_per_owner_rule??1,grant:{kind:'inventory_infusion',id:infusion.id}
+  limit_per_owner_rule:rule.limit_per_owner_rule??1,grant:{kind:infusion.item_effects?'item_option':'inventory_infusion',id:infusion.id}
  });
  await askCompanionRest(row);return row;
 }
@@ -1328,8 +1328,8 @@ async function computeLocalData(record){
   }
   const infusion_catalog=catalogs.abilityGrants?.artificer_infusions||[];
   const infusion_mechanics={...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]};
-  const powerSelectionCatalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{}};
-  const power_selections=powerSelectionModels(record,{...calculated,infusion_catalog,infusion_mechanics},powerSelectionCatalog);
+  const powerSelectionCatalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{},capacity_grants:featureItemGrants(record,calculated.features||[],catalogs.featureItemGrants||[])};
+  const power_selections=powerSelectionModels(record,calculated,powerSelectionCatalog);
   // Spell-like class privileges are ordinary levelled spell definitions. Keep
   // their catalog details available offline and after an asynchronous refresh.
   const featureSpells=catalogs.featureSlotSpells?.spells||[];
@@ -1366,6 +1366,10 @@ function abilityPaymentField(ability,calculated){
   '<option value="'+esc(id)+'">'+esc(tracker?.name||ability.tracker||ability.resource_name||'Tracker associato')+
   ' · '+remaining+' disponibili</option>'+
   '<option value="">Nessun tracker</option></select></label>';
+}
+function selectionStateActivationPatch(record,calculated,id,options={}){
+ return powerStateActivationPatch(record,calculated,calculated.power_selection_catalog||{},id)??
+  traitStateActivationPatch(record,calculated.features,calculated.trait_state_catalog,id,calculated.trackers,options);
 }
 function abilityPaymentChoice(dialog){return dialog.querySelector('[data-ability-payment]')?.value;}
 
@@ -1739,7 +1743,7 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
        (!ability.tracker_id||options.tracker_id===''||Number(ability.cost)<1))
       throw Error('La capacità richiede una risorsa associata per evocare la creatura.');
     const changes=ability.mode==='trait_state'?
-    traitStateActivationPatch(current,fresh.features,fresh.trait_state_catalog,ability.state_id,fresh.trackers,options):
+    selectionStateActivationPatch(current,fresh,ability.state_id,options):
     classAbilityActivationPatch(current,fresh,ability,options);
    if(itemGrant){
      const selected=dialog.querySelector('[data-feature-item-choice]')?.value;
@@ -3183,7 +3187,8 @@ async function openBenefitSelectionDialog(id,stage){
   searchLabel:'Cerca '+model.title,searchAttribute:'data-power-search',
   resultsClass:'learning-picker-results power-selection-results',
   results:renderChoices(choices),
-  extra:(model.description?'<p class="hint">'+esc(model.description)+'</p>':'')
+  extra:(model.description?'<p class="hint">'+esc(model.description)+'</p>':'')+
+   (model.allow_custom&&stage==='learned'?'<div class="benefit-custom-option"><label>Nome capacità homebrew<input data-power-custom-name maxlength="80"></label><label>Descrizione<textarea data-power-custom-description maxlength="2000"></textarea></label><button type="button" class="btn" data-act="power-selection-custom">Aggiungi capacità homebrew</button></div>':'')
  });
  // Render filtered choices just like the infusion learner. Hiding individual
  // rows is unreliable because the shared list stylesheet uses display:grid!important.
@@ -3208,7 +3213,7 @@ async function openBenefitOptionDialog(selectionId,optionId){
  if(!option)throw Error('Opzione non disponibile.');
  const layer=model.layers.applied,target=layer?.target;
  const known=!model.layers.learned||model.layers.learned.selected.some(row=>selectedPowerId(row)===optionId);
- const applications=(layer?.selected||[]).filter(row=>selectedPowerId(row)===optionId);
+ const applications=(layer?.selected||[]).filter(row=>selectedPowerId(row)===optionId).map(row=>{const index=(record.inventory||[]).findIndex(item=>(item.instance_id||item.id)===row.target_item_id);return {...(typeof row==='string'?{id:row}:row),inventory_index:index,target_name:record.inventory?.[index]?.name};});
  const active=applications.length>0,description=await benefitOptionDescription(option);
  if(state.editor?.read()?.id!==record.id)return;
  app.querySelector('#benefit-option-dialog')?.remove();
@@ -5985,12 +5990,10 @@ async function openLevelUpClassDialog(preset={}){
    return classHitDieFaces(row||{})||classHitDieFaces(selected.reference||{});
  };
  const rulesRequest=loadRuleCatalogs().then(rules=>{
-   const definitions=(inventoryModule.expandedInfusionDefinitions||((value)=>value))(
-     rules.abilityGrants?.artificer_infusions||[]);
    const visibleSpells=[...state.spellCatalog||[],
      ...record.prepared_spells||[],...record.spellbook_spells||[],
      ...record.known_spells||[]].filter(row=>row&&typeof row==='object'&&row.id);
-   return {...rules,abilityGrants:{...rules.abilityGrants,artificer_infusions:definitions},
+   return {...rules,
      spells:[...new Map([...(rules.spells||[]),...visibleSpells].map(row=>[row.id,row])).values()]};
  });
  let impactGeneration=0;
@@ -6003,7 +6006,7 @@ async function openLevelUpClassDialog(preset={}){
    const key=classSelect.value+'|'+count;
    if(!impactCache.has(key))impactCache.set(key,rulesRequest.then(rules=>
      levelUpProgressionImpact(record,projectionPlan(selected,count),rules,
-       calculateSheet,infusionLimits)));
+       calculateSheet)));
    return impactCache.get(key);
  };
  const refreshImpact=async()=>{
@@ -6937,7 +6940,7 @@ async function handleAction(target){
     const key=String(target.dataset.abilityKey||'');
     if(key.startsWith('trait_state:')){
       const calculated=await computeLocalData(c);
-      await patch(traitStateActivationPatch(c,calculated.features,calculated.trait_state_catalog,key.slice('trait_state:'.length)));
+      await patch(selectionStateActivationPatch(c,calculated,key.slice('trait_state:'.length)));
       await render();return;
     }
     if(!Object.hasOwn(c.active_class_features||{},key))throw Error('Capacità non attiva.');
@@ -8157,7 +8160,7 @@ async function handleAction(target){
     const cards=[...app.querySelectorAll('.play-info-traits .trait-card')];
     const destination=stateTraitNavigationKey(key,state.traitRows,
       key.startsWith('state|infusion:')?
-       activeInfusions(state.editor?.read()||{},state.calculated?.infusion_catalog||[],state.calculated?.features||[]):[]);
+       activeItemOptionEffects(state.editor?.read()||{},state.calculated?.infusion_catalog||[],state.calculated?.features||[]):[]);
     const match=cards.find(card=>card.dataset.traitKey===destination);
     if(!match){message('Tratto dello stato non disponibile.',true);return;}
     const disclosure=match.closest('.play-traits-disclosure');
@@ -9039,13 +9042,8 @@ async function handleAction(target){
       if(state.editor?.read()?.id!==record.id)throw Error('La scheda è cambiata: riapri il beneficio.');
       await patch(changes);if(state.saveError)throw Error(state.saveError);await state.editor.flush();
       closeDialog(dialog,{remove:true});
-      if(apply&&model.extension_of&&model.on_apply==='companion_grant')await createOptionCompanion(state.editor.read(),option,await computeLocalData(state.editor.read()));
+      if(apply&&model.on_apply==='companion_grant')await createOptionCompanion(state.editor.read(),option,await computeLocalData(state.editor.read()));
       await render();
-      if(apply&&!model.extension_of){
-       const fresh=await computeLocalData(state.editor.read());
-       const extension=fresh.power_selections.find(row=>row.extension_of?.selection===id&&row.extension_of.option===optionId);
-       if(extension)await openBenefitOptionDialog(extension.id,optionId);
-      }
     }catch(info){target.disabled=false;error.hidden=false;error.textContent=errorMessage(info);}
     return;
   }
@@ -9086,10 +9084,13 @@ async function handleAction(target){
     await patch(changes);closeDialog(dialog,{remove:true});await render();
     await openBenefitSelectionDialog(id,stage);return;
   }
-  if(act==='infusion-clear'){
+  if(act==='item-option-remove'||act==='infusion-clear'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
-    await patch(clearInfusionPatch(creature,Number(target.dataset.index)));
+    if(target.dataset.selectionId){
+      const calculated=await computeLocalData(creature);
+      await patch(powerApplicationPatch(creature,calculated,calculated.power_selection_catalog,target.dataset.selectionId,target.dataset.optionId,false));
+    }else await patch(clearInfusionPatch(creature,Number(target.dataset.index)));
     await render();return;
   }
   if(["inventory-container-add","inventory-container-rename","inventory-container-delete"].includes(act)){
