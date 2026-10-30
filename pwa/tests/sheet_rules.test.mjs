@@ -9,6 +9,10 @@ import {fixedProficiencies,structuredFeatureGrants,automaticId} from "../structu
 
 const load=file=>JSON.parse(readFileSync(fileURLToPath(new URL("../catalog/"+file+".json",import.meta.url)),"utf8"));
 const catalogs={abilityGrants:load("ability_grants"),classMechanics:load("class_mechanics"),proficiencyGrants:load("proficiency_grants")};
+const castingCatalogs={...catalogs,classFeatures:load("classes"),spellcastingBenefits:load("spellcasting_benefits")};
+const castingProfile=(name,source='PHB')=>castingCatalogs.spellcastingBenefits.grants.find(row=>
+  row.feature_id.startsWith('5etools:class_features:'+source.toLowerCase()+':')&&
+  row.benefit.level_class===name)?.benefit.slot_progression;
 const character=(overrides={})=>({kind:"character",level:1,abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:10},
   armor_class_base:10,max_hp_base:12,speed_base:30,inventory:[],...overrides});
 
@@ -100,13 +104,13 @@ test("automatic unarmed strikes and shield respect offhand availability",()=>{
 });
 
 test("2014/2024 full, half, pact and multiclass slot progressions match Godot tables",()=>{
-  const wizard=spellProgression(character(),[{name:"Wizard",level:5}]);
+  const wizard=spellProgression(character(),[{slot_progression:castingProfile("Wizard"),level:5}]);
   assert.deepEqual(wizard.slots.slice(0,4),[0,4,3,2]);
-  const multi=spellProgression({rules_version:"2014"},[{name:"Wizard",level:3},{name:"Paladin",level:3}]);
+  const multi=spellProgression({rules_version:"2014"},[{slot_progression:castingProfile("Wizard"),level:3},{slot_progression:castingProfile("Paladin"),level:3}]);
   assert.equal(multi.caster_level,4);
-  const modern=spellProgression({rules_version:"2024"},[{name:"Wizard",level:3},{name:"Paladin",level:3}]);
+  const modern=spellProgression({rules_version:"2024"},[{slot_progression:castingProfile("Wizard","XPHB"),level:3},{slot_progression:castingProfile("Paladin","XPHB"),level:3}]);
   assert.equal(modern.caster_level,5);
-  const warlock=spellProgression(character(),[{name:"Warlock",level:11}]);
+  const warlock=spellProgression(character(),[{slot_progression:castingProfile("Warlock"),level:11}]);
   assert.equal(warlock.pact_total,3);
   assert.equal(warlock.pact_level,5);
   assert.equal(warlock.caster_level,0);
@@ -115,11 +119,11 @@ test("2014/2024 full, half, pact and multiclass slot progressions match Godot ta
   assert.deepEqual(withoutTraits.spell_slots.slice(0,3).map(x=>x.total),[0,0,0],
     "Missing class-feature catalog cannot grant class slots from levels");
   assert.equal(withoutTraits.casting_classes.length,0);
-  const withTraits=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
+  const withTraits=calculateSheet(c,castingCatalogs);
   assert.deepEqual(withTraits.spell_slots.slice(0,3).map(x=>x.total),[4,3,2]);
   assert.equal(withTraits.casting_classes[0].granting_trait_name,"Spellcasting");
   const muted={...c,origin_enabled:{[withTraits.casting_classes[0].granting_trait_id]:false}};
-  assert.equal(calculateSheet(muted,{...catalogs,classFeatures:load("classes")}).spell_slots[0].total,0);
+  assert.equal(calculateSheet(muted,castingCatalogs).spell_slots[0].total,0);
 });
 test("5etools structured racial and feat ability increases apply without Godot",()=>{
   const c=character({species:"Aarakocra",species_source:"EEPC",feats_catalog:[{name:"Actor",source:"PHB"}]});
@@ -166,7 +170,7 @@ test("local derived values remain available offline without the obsolete summary
  assert.equal(typeof out.stats.armor_class,"number");
  assert.equal(typeof out.stats.proficiency,"number");
  assert.ok(Array.isArray(out.spell_slots));
- const withTraits=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
+ const withTraits=calculateSheet(c,castingCatalogs);
  assert.ok(withTraits.spell_slots.some(slot=>slot.total>0));
 });
 
