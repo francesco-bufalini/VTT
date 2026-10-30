@@ -71,6 +71,11 @@ export function requirementsAllow(record,row){
   const lvl=gate.scope==="class"?
     classLevel(record,gate.class_name,gate.class_source):int(record.level,1);
   const lo=Math.max(0,int(gate.min_level??row?.min_level,0));
+  if(gate.equipped_kind&&!arr(record.inventory).some(saved=>{
+    const item=resolveOwnedItem(saved);
+    return int(item?.quantity,1)>0&&itemKind(item)===gate.equipped_kind&&
+      arr(item.equipped_slots).includes(gate.equipped_kind==='armor'?'body':'main');
+  }))return false;
   return lvl>=lo&&(gate.max_level===undefined||lvl<=int(gate.max_level));
 }
 export function parseArithmetic(expression,variable,{round=godotRound}={}){
@@ -1299,10 +1304,34 @@ function calculateSheetValues(record={},catalogs={}){
   };
   const cycleCache=new Map();
   const explanations={},components={},rollComponents={};
+  // Scoped, typed attack grants are resolved by the existing equipment ID,
+  // never by the name of a Fighting Style or a new persistent toggle.
+  function attackGrantApplies(row,target){
+    const wildcard=/^(attack_hit|attack_damage):\*$/.exec(row?.target||'');
+    if(wildcard?!target.startsWith(wildcard[1]+':'):row?.target!==target)return false;
+    const filter=row.attack_filter;
+    if(!filter)return true;
+    const raw=target.slice(target.indexOf(':')+1);
+    const m=/^item:(?:(throw):(main|off):)?(?:(off):)?(.+)$/.exec(raw);
+    if(!m)return false;
+    const thrown=!!m[1],slot=m[2]||m[3]||'main',id=m[4];
+    const item=inventory.find(it=>String(it.id)===id&&itemKind(it)==='weapon'&&
+      arr(it.equipped_slots).includes(slot)&&int(it.quantity,1)>0);
+    if(!item)return false;
+    const ranged=String(item.type||'').split('|')[0].toUpperCase()==='R';
+    if(filter.weapon_mode==='ranged'&&(!ranged||thrown))return false;
+    if(filter.weapon_mode==='melee'&&(ranged||thrown))return false;
+    if(filter.weapon_mode==='thrown'&&!(thrown||ranged&&hasProperty(item,'T')))return false;
+    if(filter.one_handed&&(hasProperty(item,'2H')||
+      slot==='main'&&record.hand_grip_two_handed&&hasProperty(item,'V')))return false;
+    if(filter.no_other_weapon&&inventory.some(it=>itemKind(it)==='weapon'&&
+      int(it.quantity,1)>0&&arr(it.equipped_slots).includes(slot==='main'?'off':'main')))return false;
+    return true;
+  }
   function sumGrants(target,stack){
     let total=0;
     for(const row of grants){
-      if(row?.target!==target||row.disabled||!requirementsAllow(record,row)||!sourceEnabled(row))continue;
+      if(!attackGrantApplies(row,target)||row.disabled||!requirementsAllow(record,row)||!sourceEnabled(row))continue;
       try{
         if(!cycleCache.has(row))cycleCache.set(row,dependencies(row.expression).some(ref=>reaches(ref,target)));
         if(cycleCache.get(row))throw Error('Dipendenza circolare: '+target);
