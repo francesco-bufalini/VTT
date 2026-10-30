@@ -466,9 +466,9 @@ async function refreshCharacterHomebrewOptions(){
 function spellLearningClassNames(castingClasses=state.calculated?.casting_classes||[]){
   // The full catalogue loads lazily. Offer the ordinary class lists immediately
   // and add any other class names discovered when the catalogue finishes loading.
-  const names=new Set(['Artificer','Bard','Cleric','Druid','Paladin',
-    'Ranger','Sorcerer','Warlock','Wizard']);
-  for(const member of castingClasses)if(member.name)names.add(String(member.name));
+  const names=new Set(state.calculated?.spell_list_classes||[]);
+  for(const member of castingClasses)if(member.spell_list_class||member.name)
+    names.add(String(member.spell_list_class||member.name));
   for(const spell of state.spellCatalog||[]){
     for(const value of Array.isArray(spell.classes)?spell.classes:[]){
       const name=typeof value==='string'?value:value?.name;
@@ -1342,7 +1342,9 @@ async function computeLocalData(record){
     power_selections,power_selection_catalog:powerSelectionCatalog,
     pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
-    infusion_catalog,infusion_mechanics};
+    infusion_catalog,infusion_mechanics,
+    spell_list_classes:[...new Set((catalogs.spellcastingBenefits?.grants||[])
+      .map(row=>row.benefit?.spell_list_class).filter(Boolean))]};
 }
 
 // Spells and nonspell powers share their popup header, facts and description.
@@ -4213,7 +4215,7 @@ function renderSpellResults(){
       '" data-index="'+actionIndex+'"'+(already?
         ' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
       ' aria-label="'+(already?'Rimuovi':'Aggiungi')+' '+esc(info.name)+'">'+
-      (target==='spellbook_spells'?(already?'✓ Nel libro':'+ Impara'):
+      (target==='spellbook_spells'?(already?'✓ Appreso':'+ Impara'):
         member?.mode==='Conosciuti'?(already?'✓ Conosciuto':'+ Conosci'):
         already?'✓ Preparato':'+ Prepara')+'</button></div>';
   })+resultsFooter('spell-results-more',shown,total,60);
@@ -7299,7 +7301,7 @@ async function handleAction(target){
         '</ul></section>':'')+
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'"'+(value===clickedSlot?' selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>':
-        '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo dal libro, ma non lanciarlo.')+'</p>')+
+        '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo conosciuto ma non preparato: non puoi lanciarlo.')+'</p>')+
       (entry&&targetSelector?
         (targetItems.length?'<label>Oggetto bersaglio<select id="action-cast-item-target">'+
           targetItems.map(({item,index})=>'<option value="'+index+'">'+esc(item.name||item.id)+'</option>').join('')+'</select></label>':
