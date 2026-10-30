@@ -466,9 +466,11 @@ async function refreshCharacterHomebrewOptions(){
 function spellLearningClassNames(castingClasses=state.calculated?.casting_classes||[]){
   // The full catalogue loads lazily. Offer the ordinary class lists immediately
   // and add any other class names discovered when the catalogue finishes loading.
-  const names=new Set(['Artificer','Bard','Cleric','Druid','Paladin',
-    'Ranger','Sorcerer','Warlock','Wizard']);
-  for(const member of castingClasses)if(member.name)names.add(String(member.name));
+  const names=new Set();
+  for(const member of castingClasses){
+    if(member.spell_list_class_name||member.name)
+      names.add(String(member.spell_list_class_name||member.name));
+  }
   for(const spell of state.spellCatalog||[]){
     for(const value of Array.isArray(spell.classes)?spell.classes:[]){
       const name=typeof value==='string'?value:value?.name;
@@ -2509,7 +2511,7 @@ async function editorView() {
             (member.mode==='Preparati'?
               '<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="prepared_spells">Prepara incantesimi</button>':'')+
             '<button type="button" class="btn small magic-selection-button" data-act="magic-learn-select" data-magic-class="'+esc(member.id)+'">'+
-              (member.mode==='Conosciuti'?'Impara / Dimentica incantesimi':'Gestisci incantesimi conosciuti')+'</button>'+
+              (member.book?'Impara incantesimi':member.mode==='Conosciuti'?'Impara / Dimentica incantesimi':'Gestisci incantesimi conosciuti')+'</button>'+
             '</div>'+
             spellList(c,'prepared_spells',member.id,calculated.casting_classes,{includeSlots:false})+'</section>';
         }).join('')+
@@ -4169,7 +4171,7 @@ function renderSpellResults(){
         (known.has(spell.id)||granted.has(spell.id)):
       learning?Number(spell.level)<=member.max_level&&
         (state.spellLearnFilter==='all'||
-         (state.spellLearnFilter.toLowerCase()===member.name.toLowerCase()&&spellEligible(spell,member))||
+         (state.spellLearnFilter.toLowerCase()===String(member.spell_list_class_name||member.name).toLowerCase()&&spellEligible(spell,member))||
          (Array.isArray(spell.classes)&&spell.classes.some(name=>
           String(typeof name==='string'?name:name?.name).toLowerCase()===state.spellLearnFilter.toLowerCase()))):
       !member||spellEligible(spell,member))&&
@@ -4213,7 +4215,7 @@ function renderSpellResults(){
       '" data-index="'+actionIndex+'"'+(already?
         ' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
       ' aria-label="'+(already?'Rimuovi':'Aggiungi')+' '+esc(info.name)+'">'+
-      (target==='spellbook_spells'?(already?'✓ Nel libro':'+ Impara'):
+      (target==='spellbook_spells'?(already?'✓ Imparato':'+ Impara'):
         member?.mode==='Conosciuti'?(already?'✓ Conosciuto':'+ Conosci'):
         already?'✓ Preparato':'+ Prepara')+'</button></div>';
   })+resultsFooter('spell-results-more',shown,total,60);
@@ -7299,7 +7301,7 @@ async function handleAction(target){
         '</ul></section>':'')+
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'"'+(value===clickedSlot?' selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>':
-        '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo dal libro, ma non lanciarlo.')+'</p>')+
+        '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo tra quelli imparati, ma non lanciarlo.')+'</p>')+
       (entry&&targetSelector?
         (targetItems.length?'<label>Oggetto bersaglio<select id="action-cast-item-target">'+
           targetItems.map(({item,index})=>'<option value="'+index+'">'+esc(item.name||item.id)+'</option>').join('')+'</select></label>':
