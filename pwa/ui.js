@@ -3231,13 +3231,17 @@ async function openGenericPowerSelectionDialog(id,stage){
     (owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
     ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':'')+'</div>';
  };
- const hasLevelGroups=choices.some(row=>Number(row.min_level||0)>0);
  const groupRows=rows=>'<div class="magic-entries">'+rows.map(choiceRow).join('')+'</div>';
- const list=hasLevelGroups?'<div class="magic-groups">'+
-  [...new Set(choices.map(row=>Math.max(0,Number(row.min_level)||0)))].sort((a,b)=>a-b)
-   .map(level=>'<section class="magic-level"><div class="magic-level-heading"><h4>'+
-    (level?'Livello '+level:'Opzioni base')+'</h4></div>'+groupRows(choices.filter(row=>Math.max(0,Number(row.min_level)||0)===level))+'</section>')
-   .join('')+'</div>':groupRows(choices);
+ const renderChoices=shown=>{
+  if(!shown.length)return '<p class="hint">Nessuna opzione disponibile.</p>';
+  if(!shown.some(row=>Number(row.min_level||0)>0))return groupRows(shown);
+  return '<div class="magic-groups">'+
+   [...new Set(shown.map(row=>Math.max(0,Number(row.min_level)||0)))].sort((a,b)=>a-b)
+    .map(level=>'<section class="magic-level"><div class="magic-level-heading"><h4>'+
+     (level?'Livello '+level:'Opzioni base')+'</h4></div>'+
+     groupRows(shown.filter(row=>Math.max(0,Number(row.min_level)||0)===level))+'</section>')
+    .join('')+'</div>';
+ };
  const targetPicker=stage==='applied'&&layer.target&&model.source_type==='inline'?
   '<label>Oggetto a cui applicare<select data-power-target-index>'+
   (record.inventory||[]).flatMap((item,index)=>Number(item.quantity??1)>0?
@@ -3253,16 +3257,16 @@ async function openGenericPowerSelectionDialog(id,stage){
     (layer.change_label?' · '+layer.change_label:''),
   searchLabel:'Cerca '+model.title,searchAttribute:'data-power-search',
   resultsClass:'learning-picker-results power-selection-results',
-  results:list||'<p class="hint">Nessuna opzione disponibile.</p>',
+  results:renderChoices(choices),
   extra:targetPicker+(model.description?'<p class="hint">'+esc(model.description)+'</p>':'')
  });
- // An optional-feature, race or trait option is selected through the same
- // learn/forget action as a spell; homebrew support remains in storage, but
- // its additional form is intentionally not displayed here.
- dialog.querySelector('[data-power-search]')?.addEventListener('input',event=>{
-  const q=String(event.target.value||'').trim().toLocaleLowerCase('it');
-  for(const row of dialog.querySelectorAll('.power-selection-results .magic-catalog-row'))
-   row.hidden=!row.textContent.toLocaleLowerCase('it').includes(q);
+ // Render filtered choices just like the infusion learner. Hiding individual
+ // rows is unreliable because the shared list stylesheet uses display:grid!important.
+ const input=dialog.querySelector('[data-power-search]');
+ const results=dialog.querySelector('.power-selection-results');
+ input.addEventListener('input',()=>{
+  results.innerHTML=renderChoices(choices.filter(row=>
+   matchesSearch(input.value,row.name,row.source)));
  });
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
 }
