@@ -5636,16 +5636,27 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
 dialog.infusion-picker-dialog .magic-selection-warning{margin:9px 0 7px}
 dialog.infusion-picker-dialog .magic-editor-search{display:flex;align-items:center;gap:8px}
 dialog.infusion-picker-dialog .magic-editor-search input{flex:1;min-width:0}
-/* Shared learn/forget results must size rows by their content. A nested grid
-   with an overflow-hidden level was shrinking a long single-level list to the
-   viewport and clipping Fighting Style choices after the first row. */
+/* The infusion learner is the only scroll box for all learn/forget pickers.
+   Prefer natural block flow to nested grid/flex sizing, especially in WebKit.
+   No level or row can collapse when the dialog is shorter than its contents. */
 dialog.infusion-picker-dialog .learning-picker-results{
-  display:block;max-height:48dvh;min-height:0;overflow-y:auto;overscroll-behavior:contain
+  display:block;box-sizing:border-box;width:100%;height:auto;min-height:0;
+  max-height:min(48dvh,500px);overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
 }
 dialog.infusion-picker-dialog .learning-picker-results .magic-groups{
-  display:flex;flex-direction:column;gap:10px
+  display:block;min-height:0;
 }
-dialog.infusion-picker-dialog .learning-picker-results .magic-level{flex:0 0 auto}
+dialog.infusion-picker-dialog .learning-picker-results .magic-level{
+  display:block;min-height:0;overflow:visible;
+}
+dialog.infusion-picker-dialog .learning-picker-results .magic-level+.magic-level{margin-top:10px}
+dialog.infusion-picker-dialog .learning-picker-results .magic-entries{
+  display:block;min-height:0;
+}
+dialog.infusion-picker-dialog .learning-picker-results .magic-catalog-row{
+  display:grid!important;min-height:40px;
+}
 dialog.infusion-picker-dialog .learning-picker-results>.inventory-search-result{
  width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #a37b473b;
  border-radius:0;cursor:pointer
