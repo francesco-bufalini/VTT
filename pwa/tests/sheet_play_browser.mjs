@@ -995,7 +995,7 @@ try{
  assert.equal(await page.locator('#sheet-context-dialog').count(),0,'Saving coins must stay on the page');
  // Inventory sections are independent multi-select toggles, not exclusive tabs.
  // Start with Zaino only, then select Documenti and deselect Zaino.
- await page.locator('#sheet-play-view [data-act="inventory-toggle-all"]').click();
+ await page.locator('.play-inventory-page-title [data-act="inventory-toggle-all"]').click();
  await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();
  await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="items"]').click();
  assert.equal(await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').getAttribute('aria-pressed'),'true');
