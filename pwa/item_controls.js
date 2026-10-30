@@ -527,6 +527,7 @@ function equipmentSelectorMatches(item,selector={}){
 // base-value replacements and contextual roll benefits. Missing attack context
 // fails closed: an equipment-specific bonus must never affect an unrelated roll.
 export function equipmentRequirementMatches(record={},requirements={},target='',attack=null,equipped=null){
+ if(!requirements?.equipment&&!requirements?.attack)return true;
  const gear=equipped||equippedItemFacts(record),gate=requirements?.equipment;
  if(gate&&typeof gate==='object'){
   if(array(gate.all).some(selector=>!gear.some(item=>equipmentSelectorMatches(item,selector))))return false;
