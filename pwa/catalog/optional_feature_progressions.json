@@ -1565,7 +1565,19 @@
       "types": [
         "FS:P"
       ],
-      "description": "You learn two cantrips of your choice from the {@filter cleric spell list|spells|level=0|class=Cleric}. They count as paladin spells for you, and Charisma is your spellcasting ability for them. Whenever you gain a level "
+      "description": "You learn two cantrips of your choice from the {@filter cleric spell list|spells|level=0|class=Cleric}. They count as paladin spells for you, and Charisma is your spellcasting ability for them. Whenever you gain a level ",
+      "effects": [
+        {
+          "type": "spell_choice",
+          "mode": "known",
+          "stage": "0",
+          "filter": "level=0|class=cleric",
+          "count": 2,
+          "usage": "at_will",
+          "spellcasting_ability": "cha",
+          "description": "Scegli due trucchetti dalla lista del Chierico; Carisma è la caratteristica da incantatore."
+        }
+      ]
     },
     {
       "id": "optional:tce:blind-fighting",
@@ -1702,7 +1714,13 @@
           "action_type": "reaction",
           "tracker_cost": 1,
           "resource_name": "Superiority Dice",
-          "description": "Quando una creatura visibile entra nella portata dell'arma da mischia impugnata, effettua un attacco di reazione. Se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+          "description": "Quando una creatura visibile entra nella portata dell'arma da mischia impugnata, effettua un attacco di reazione. Se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "requirements": {
+            "equipment": {
+              "kind": "weapon",
+              "weapon_type": "melee"
+            }
+          }
         }
       ]
     },
@@ -2085,7 +2103,19 @@
       "types": [
         "FS:R"
       ],
-      "description": "You learn two cantrips of your choice from the {@filter druid spell list|spells|level=0|class=druid}. They count as ranger spells for you, and Wisdom is your spellcasting ability for them. Whenever you gain a level in th"
+      "description": "You learn two cantrips of your choice from the {@filter druid spell list|spells|level=0|class=druid}. They count as ranger spells for you, and Wisdom is your spellcasting ability for them. Whenever you gain a level in th",
+      "effects": [
+        {
+          "type": "spell_choice",
+          "mode": "known",
+          "stage": "0",
+          "filter": "level=0|class=druid",
+          "count": 2,
+          "usage": "at_will",
+          "spellcasting_ability": "wis",
+          "description": "Scegli due trucchetti dalla lista del Druido; Saggezza è la caratteristica da incantatore."
+        }
+      ]
     },
     {
       "id": "optional:phb:dueling",
@@ -3133,7 +3163,19 @@
           "name": "Interception",
           "action_type": "reaction",
           "tracker_cost": 0,
-          "description": "Reazione mentre impugni uno scudo o un'arma semplice/marziale: quando una creatura visibile colpisce un bersaglio diverso da te entro 5 ft, riduci i danni di 1d10 + bonus di competenza (minimo 0). La riduzione è manuale."
+          "description": "Reazione mentre impugni uno scudo o un'arma semplice/marziale: quando una creatura visibile colpisce un bersaglio diverso da te entro 5 ft, riduci i danni di 1d10 + bonus di competenza (minimo 0). La riduzione è manuale.",
+          "requirements": {
+            "equipment": {
+              "any": [
+                {
+                  "kind": "weapon"
+                },
+                {
+                  "kind": "shield"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -3832,7 +3874,12 @@
           "name": "Protection",
           "action_type": "reaction",
           "tracker_cost": 0,
-          "description": "Reazione mentre impugni uno scudo: imponi svantaggio all'attacco di una creatura che puoi vedere contro un bersaglio diverso da te entro 5 ft. La scelta del bersaglio e lo svantaggio restano manuali."
+          "description": "Reazione mentre impugni uno scudo: imponi svantaggio all'attacco di una creatura che puoi vedere contro un bersaglio diverso da te entro 5 ft. La scelta del bersaglio e lo svantaggio restano manuali.",
+          "requirements": {
+            "equipment": {
+              "kind": "shield"
+            }
+          }
         }
       ]
     },
@@ -3899,7 +3946,15 @@
           "action_type": "bonus",
           "tracker_cost": 1,
           "resource_name": "Superiority Dice",
-          "description": "Come azione bonus, estrai un'arma con proprietà Lancio ed effettua un attacco a distanza con essa; se colpisce, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+          "description": "Come azione bonus, estrai un'arma con proprietà Lancio ed effettua un attacco a distanza con essa; se colpisce, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "requirements": {
+            "equipment": {
+              "kind": "weapon",
+              "properties": [
+                "T"
+              ]
+            }
+          }
         }
       ]
     },
@@ -4704,7 +4759,13 @@
           "action_type": "reaction",
           "tracker_cost": 1,
           "resource_name": "Superiority Dice",
-          "description": "Quando una creatura ti manca con un attacco in mischia, effettua un attacco in mischia con arma usando la reazione; se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+          "description": "Quando una creatura ti manca con un attacco in mischia, effettua un attacco in mischia con arma usando la reazione; se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "requirements": {
+            "equipment": {
+              "kind": "weapon",
+              "weapon_type": "melee"
+            }
+          }
         }
       ]
     },
