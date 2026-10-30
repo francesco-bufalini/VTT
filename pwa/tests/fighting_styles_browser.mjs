@@ -75,8 +75,13 @@ try{
 
   if(width===390){
    await results.locator('[data-act="power-selection-toggle"]').click();
-   await page.waitForFunction(()=>document.querySelector('#power-selection-dialog')?.open);
-   assert.match(await page.locator('#sheet-play-view').innerText(),/Two-Weapon Fighting/);
+   // The picker saves and renders asynchronously before reopening. Waiting for
+   // the previous dialog's open flag would race the actual persistence.
+   await page.waitForFunction(async id=>{
+    const {listCreatures}=await import('/creatures.js');
+    return !!(await listCreatures())[0]?.creature?.power_selections?.[id]?.learned?.length;
+   },progression);
+   await page.locator('#sheet-play-view').getByText('Two-Weapon Fighting').waitFor();
    await page.locator('#power-selection-dialog [data-act="power-selection-close"]').click();
   }else await dialog.locator('[data-act="power-selection-close"]').click();
  }
