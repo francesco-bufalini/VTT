@@ -5306,6 +5306,20 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
 .magic-panel .magic-source-title{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;min-width:0}
 .magic-panel .magic-source-title h3{margin:0;color:#f3d9b1;font-size:14px;font-weight:750;overflow-wrap:anywhere}
 .magic-panel .magic-source-title .hint{font-size:11px}
+.magic-panel .magic-source-visibility{
+  position:relative;display:inline-grid;place-items:center;flex:0 0 28px;
+  width:28px;height:28px;padding:3px;border:0;border-radius:7px;
+  background:transparent;color:#d6b98c;cursor:pointer;
+}
+.magic-panel .magic-source-visibility .vtt-action-glyph{width:20px;height:20px}
+.magic-panel .magic-source-visibility[aria-pressed="false"]{opacity:.5}
+.magic-panel .magic-source-visibility[aria-pressed="false"]::after{
+  content:"";position:absolute;width:19px;border-top:2px solid currentColor;
+  transform:rotate(-43deg);pointer-events:none;
+}
+.magic-panel .magic-source-visibility:hover,.magic-panel .magic-source-visibility:focus-visible{
+  opacity:1;background:#8e683e3d;outline-offset:1px;
+}
 .magic-panel .magic-source-resources{
   display:flex;align-items:center;justify-content:flex-end;gap:5px;
   flex-wrap:wrap;min-width:0;margin-left:auto;

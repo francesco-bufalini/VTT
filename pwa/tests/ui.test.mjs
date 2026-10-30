@@ -652,6 +652,14 @@ test("inline spell catalog adds available and spellbook choices without divergin
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector('[data-act="magic-select-spells"]'));
+  const classEye=document.querySelector('[data-act="casting-stats-toggle"][data-casting-visibility-section^="class|"]');
+  assert.equal(classEye?.getAttribute('aria-pressed'),'true');
+  classEye.click();
+  await until(()=>document.querySelector('[data-casting-visibility-section^="class|"][aria-pressed="false"]'));
+  assert.equal(document.querySelector('.magic-source .casting-statistics'),null);
+  assert.equal((await loadCreature(saved.data.id)).data.spellcasting_section_visibility?.[classEye.dataset.castingVisibilitySection],false);
+  click('[data-act="casting-stats-toggle"][data-casting-visibility-section^="class|"]');
+  await until(()=>document.querySelector('.magic-source .casting-statistics'));
   click('[data-act="magic-select-spells"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const preparationDialog=document.querySelector('#magic-tools-dialog[open]');
@@ -786,7 +794,7 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
     spell_slots_spent:[0,1,0,0,0,0,0,0,0,0],
     origin_spell_grants:[
       {id:"grant:shield",origin_id:"custom:first",origin_name:"Prima origine",
-        spell_id:"spell:shield|phb",tracker_id:"shared-power-uses",payment_mode:"tracker",spellcasting_ability:"int"},
+        spell_id:"spell:shield|phb",tracker_id:"shared-power-uses",payment_mode:"tracker",spellcasting_ability:"int",casting_ability_not_required:true},
       {id:"grant:light",origin_id:"custom:second",origin_name:"Seconda origine",
         spell_id:"spell:light|phb",tracker_id:"shared-power-uses",payment_mode:"tracker",spellcasting_ability:"cha"},
       {id:"grant:second-shield",origin_id:"custom:second",origin_name:"Seconda origine",
@@ -803,8 +811,18 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
   assert.ok(groups.every(g=>g.closest('.magic-panel')?.textContent.includes('Incantesimi disponibili')),
     'Granting origins now use the same parent panel as class spell sections');
   assert.deepEqual(groups.map(g=>g.querySelectorAll('.magic-spell-open[data-spell-key="origin"]').length).sort(),[1,2]);
-  assert.ok(groups.every(g=>g.querySelectorAll('[data-casting-section]').length===1),
-    "each granting origin preserves its own casting statistic");
+  const first=groups.find(g=>g.querySelector('.magic-source-title h3')?.textContent==='Prima origine');
+  assert.equal(first.querySelector('.casting-statistics'),null,
+    'Origins without a required casting ability keep the existing hidden default');
+  assert.equal(first.querySelector('[data-act="casting-stats-toggle"]')?.getAttribute('aria-pressed'),'false');
+  assert.equal(groups.find(g=>g!==first)?.querySelectorAll('[data-casting-section]').length,1);
+  first.querySelector('[data-act="casting-stats-toggle"]').click();
+  await until(()=>document.querySelector('[data-magic-origin="custom:first"] .casting-statistics'));
+  assert.equal((await loadCreature(id)).data.spellcasting_section_visibility?.['origin:custom:first'],true,
+    'Showing a hidden casting statistic persists on the creature');
+  click('[data-act="casting-stats-toggle"][data-casting-visibility-section="origin:custom:first"]');
+  await until(()=>document.querySelector('[data-magic-origin="custom:first"] .casting-statistics')===null);
+  assert.equal((await loadCreature(id)).data.spellcasting_section_visibility?.['origin:custom:first'],false);
   assert.ok(groups.every(g=>g.querySelectorAll('.magic-level').length>0),
     'Granted spells keep the same level-group layout as class spells');
   const second=groups.find(g=>g.querySelector('.magic-source-title h3')?.textContent==='Seconda origine');

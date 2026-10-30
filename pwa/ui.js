@@ -2499,12 +2499,13 @@ async function editorView() {
         calculated.casting_classes.map(member=>{
           return '<section class="magic-source"><header class="magic-source-header">'+
             '<div class="magic-source-title"><h3>'+esc(member.name)+'</h3>'+
+            castingStatisticsToggle(c,member.id)+
             (member.source?'<span class="hint">'+esc(member.source)+'</span>':'')+'</div>'+
             '<div class="magic-source-resources" aria-label="Risorse di lancio">'+magicSlotUsageChip()+
             (member.mode==='Preparati'?'<span class="magic-source-resource magic-selection-rest" title="Puoi riselezionare gli incantesimi dopo un riposo lungo"><span class="magic-source-resource-label">Riposo lungo</span></span>':'')+
             (member.mode==='Conosciuti'?(()=>{const trigger=calculated.power_selections?.find(row=>row.id==='class_spellcasting:'+member.id)?.layers.learned?.change_label;return trigger?'<span class="magic-source-resource magic-selection-rest" title="Quando cambiare gli incantesimi conosciuti"><span class="magic-source-resource-label">'+esc(trigger)+'</span></span>':'';})():'')+
             '</div></header>'+
-            castingStatistics(c,member.id,member.ability)+
+            (castingStatisticsVisible(c,member.id)?castingStatistics(c,member.id,member.ability):'')+
             '<div class="magic-source-controls">'+
             (member.mode==='Preparati'?
               '<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="prepared_spells">Prepara incantesimi</button>':'')+
@@ -3643,6 +3644,17 @@ function listField(label,index,key,value,type="text") {
   return '<label>'+label+'<input type="'+type+'" data-item-index="'+index+'" data-item-key="'+key+
     '" value="'+esc(value)+'" '+(type==="number"?'min="0"':"")+'></label>';
 }
+function castingStatisticsVisible(c,section,defaultVisible=true){
+ const saved=c.spellcasting_section_visibility?.[section];
+ return typeof saved==='boolean'?saved:defaultVisible;
+}
+function castingStatisticsToggle(c,section,defaultVisible=true){
+ const visible=castingStatisticsVisible(c,section,defaultVisible);
+ const label=visible?'Nascondi CD e statistiche di lancio':'Mostra CD e statistiche di lancio';
+ return '<button type="button" class="magic-source-visibility" data-act="casting-stats-toggle"'+
+   ' data-casting-visibility-section="'+esc(section)+'" data-casting-default-visible="'+defaultVisible+
+   '" aria-pressed="'+visible+'" aria-label="'+label+'" title="'+label+'">'+actionGlyph('eye')+'</button>';
+}
 function castingStatistics(c,section,ability,permitted=null){
  const available=Array.isArray(permitted)&&permitted.length?permitted:Object.keys(abilities);
  const saved=c.spellcasting_section_abilities?.[section];
@@ -3738,9 +3750,11 @@ function originSpellSections(c,calculated,renderRow){
        (group.hasFree&&!group.usesSlots&&!group.trackers.size&&!group.missingTracker?
          '<span class="magic-source-resource magic-source-resource--free">Senza costo</span>':'');
      return '<section class="magic-source magic-origin-panel" data-magic-origin="'+esc(origin)+'">'+
-       '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(group.name)+'</h3></div>'+
+       '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(group.name)+'</h3>'+
+       castingStatisticsToggle(c,'origin:'+origin,group.showStats)+'</div>'+
        '<div class="magic-source-resources" aria-label="Risorse di lancio">'+badges+'</div></header>'+
-       (group.showStats?castingStatistics(c,'origin:'+origin,group.ability,group.allowed):'')+
+       (castingStatisticsVisible(c,'origin:'+origin,group.showStats)?
+         castingStatistics(c,'origin:'+origin,group.ability,group.allowed):'')+
        (calculated.active_celestial_form&&group.items.some(item=>
          item.grant.spell_id===calculated.active_celestial_form.spell_id)?
          '<div class="magic-active-form"><strong>Manifestazione attiva · 1 minuto</strong> '+
@@ -4091,8 +4105,10 @@ function manualMagicSources(c,calculated){
   }
   return [...groups.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
     .map(([id,meta])=>'<section class="magic-source magic-manual-source">'+
-      '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(meta.name)+'</h3></div></header>'+
-      castingStatistics(c,id==='manual'?'manual':'origin:'+id,meta.ability)+
+      '<header class="magic-source-header"><div class="magic-source-title"><h3>'+esc(meta.name)+'</h3>'+
+      castingStatisticsToggle(c,id==='manual'?'manual':'origin:'+id)+'</div></header>'+
+      (castingStatisticsVisible(c,id==='manual'?'manual':'origin:'+id)?
+        castingStatistics(c,id==='manual'?'manual':'origin:'+id,meta.ability):'')+
       spellList(c,'prepared_spells','manual',classes,{originId:id,includeSlots:false})+'</section>').join('');
 }
 function spellList(c,key,classId=null,classes=[],{includeSlots=true,originId=null,minLevel=0}={}) {
@@ -7131,6 +7147,17 @@ async function handleAction(target){
     openDialog(dialog);
     search.focus();
     return;
+  }
+  if(act==='casting-stats-toggle'){
+    if(state.sheet!=='magic'||!state.editor)return;
+    const section=target.dataset.castingVisibilitySection;
+    if(!section||!target.closest('.magic-source'))return;
+    const creature=state.editor.read();
+    const visible=castingStatisticsVisible(creature,section,target.dataset.castingDefaultVisible==='true');
+    await patch({spellcasting_section_visibility:{
+      ...creature.spellcasting_section_visibility,[section]:!visible
+    }});
+    await render();return;
   }
   if(act==='concentration-open'){
     if(state.sheet!=='magic')return;

@@ -100,7 +100,7 @@ export function initialCreature(kind,name,id,owner_id){
     proficiency_choices:[],origin_ability_choices:[],advancement_choices:[],formula_bonuses:[],base_value_overrides:[],dice_bonuses:[],
     d20_reroll_grants:[],resource_trackers:[],resource_tracker_spent:{},
     resource_recovery_ready:{},resource_recovery_used:{},origin_spell_grants:[],
-    origin_spell_configs:{},spellcasting_section_abilities:{},
+    origin_spell_configs:{},spellcasting_section_abilities:{},spellcasting_section_visibility:{},
     active_spell_context:{},conditions:[],concentrating_spell_id:"",
     damage_defense_overrides:{},condition_immunity_overrides:{},
     documents:[],inventory:[],weapons_catalog:[],armor_catalog:[],
