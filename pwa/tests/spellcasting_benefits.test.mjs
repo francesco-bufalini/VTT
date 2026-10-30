@@ -39,11 +39,12 @@ test('a class earns spell slots only from its active feature-level benefit',()=>
 test('full, half-round-down, half-round-up and pact progression come only from data',()=>{
  const old=sheet([klass('Wizard','PHB',3),klass('Paladin','PHB',3)]);
  assert.equal(old.casting_classes.length,2);
- assert.equal(old.spell_slots[2].total,3,'2014 total caster level four has three level-two slots');
+ assert.equal(old.spell_slots[1].total,3,'2014 total caster level four has three level-two slots');
+ assert.equal(old.spell_slots[2].total,0);
  const modern=sheet([klass('Wizard','XPHB',3),klass('Paladin','XPHB',3)],'2024');
- assert.equal(modern.spell_slots[2].total,3,'2024 half caster rounds up to caster level five');
+ assert.equal(modern.spell_slots[2].total,2,'2024 half caster rounds up to caster level five');
  assert.equal(modern.spell_slots[3].total,0);
- assert.equal(modern.spell_slots[2].base,3);
+ assert.equal(modern.spell_slots[2].base,2);
  const pact=sheet([klass('Warlock','PHB',11)]);
  assert.equal(pact.pact_slots.total,3);
  assert.equal(pact.pact_slots.level,5);
