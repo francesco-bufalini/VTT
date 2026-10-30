@@ -4,6 +4,7 @@ import {SKILLS} from './sheet_rules.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {offhandActionEligibility} from './offhand_rules.js';
+import {equipmentRequirementMatches} from './item_controls.js';
 import {monsterActions,monsterBasicRules,monsterTraits,monsterActionOptions as projectedMonsterActionOptions} from './monster_traits.js';
 export {offhandActionEligibility};
 
@@ -221,15 +222,18 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  }
  // Explicit typed grants only. Passive traits are not automatically actions.
  const abilitySeen=new Set();
- for(const feature of [...arr(record.action_grants),...arr(calculated.actions),...arr(calculated.feat_actions),...arr(calculated.features),...arr(record.selected_features),...arr(record.feats_catalog)]){
+ for(const feature of [...arr(calculated.selection_record?.action_grants||record.action_grants),...arr(calculated.actions),...arr(calculated.feat_actions),...arr(calculated.features),...arr(record.selected_features),...arr(record.feats_catalog)]){
   if(!feature||feature.disabled||feature.inactive||feature.origin_id&&record.origin_enabled?.[feature.origin_id]===false)continue;
   const activation=feature.action_type??feature.activation??feature.activation_type??feature.time;
   if(!specified(activation))continue;
   const identity=String(feature.key||feature.id||'')+'|'+String(feature.name||feature.title||'');
   if(abilitySeen.has(identity))continue;
   abilitySeen.add(identity);
+  const available=equipmentRequirementMatches(calculated.selection_record||record,
+    feature.requirements||{},'',null,calculated.equipped_items);
   add(feature.name||feature.title,activation,feature.type||feature.action_kind||'Capacità',
       feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost??(feature.tracker_id?1:0))||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),origin_id:String(feature.origin_id||feature.origin_key||''),
+       available,unavailable_reason:available?'':'Equipaggiamento richiesto non presente.',
        ...(feature.attack_selector?{attack_selector:feature.attack_selector}:{}),
        ...(feature.action_id?{action_id:feature.action_id}:{}),
        alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
