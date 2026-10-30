@@ -757,20 +757,20 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     ({1:'Danni ×½',2:'Danni azzerati',[-1]:'Danni ×2'}[row.rank]||'Difesa'):
     (row.formula?(row.sign<0?'−':'+')+row.formula:
       (row.value>=0?'+':'')+row.value)+' danni';
-   const name=row.kind==='defense'?row.name:
+   const name=row.kind==='defense'?row.name+(row.optional?' · Condizionale':''):
     row.name+(row.optional?' · Utilizzabile':' · Permanente');
    const tracker=(calculated.trackers||[]).find(t=>t.id===row.tracker_id);
    const uses=row.optional&&row.tracker_id?
     ' · Tracker '+(tracker?.name||row.tracker_id)+' (−'+row.tracker_cost+')':'';
    return '<label class="hp-damage-modifier'+(!row.matches?' hp-damage-modifier--inapplicable':'')+
      '" data-hp-damage-row data-damage-type="'+esc(row.damage_type||'')+'">'+
-     (row.kind==='modifier'&&row.optional?
+     (row.optional?
        '<input type="checkbox" data-hp-damage-bonus value="'+esc(row.id)+'"'+
        (!row.available?' disabled':'')+'>':
        '<span class="hp-damage-modifier-icon" aria-hidden="true">'+
        (row.kind==='defense'?'◈':'●')+'</span>')+
      '<span class="hp-damage-modifier-copy"><strong>'+esc(name)+'</strong>'+
-     '<small>'+esc(caption+type+uses+(row.available?'':' · Utilizzi insufficienti'))+
+     '<small>'+esc(caption+type+uses+(row.condition_label?' · '+row.condition_label:'')+(row.available?'':' · Utilizzi insufficienti'))+
      (row.kind==='defense'&&row.origin_name?' · '+esc(row.origin_name):'')+
      '</small></span></label>';
   }).join('');
