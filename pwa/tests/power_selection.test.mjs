@@ -51,19 +51,31 @@ test('Favored Enemy tracks chosen creature types and two humanoid races',()=>{
  assert.equal(record.rest_selection_available,undefined);
 });
 
-test('class spellcasting projects optional learned and prepared layers',()=>{
+test('spell selection benefits project the same stage and source contract as optional powers',()=>{
  const calculated={casting_classes:[
-  {id:'wizard',name:'Wizard',level:7,book:true,mode:'Preparati',limit:10,cantrips:4},
-  {id:'druid',name:'Druid',level:7,book:false,mode:'Preparati',limit:10},
-  {id:'sorcerer',name:'Sorcerer',level:7,book:false,mode:'Conosciuti',limit:8}
+  {id:'wizard',name:'Wizard',level:7,book:true,mode:'Preparati',limit:10,cantrips:4,
+   level_class_name:'Wizard',spell_list_class_name:'Wizard',
+   selection_layers:{learned:{limit:18,storage:'spellbook_spells'},
+     prepared:{limit:10,storage:'prepared_spells',trigger:'long_rest'}}},
+  {id:'druid',name:'Druid',level:7,book:false,mode:'Preparati',limit:10,
+   selection_layers:{learned:{mode:'class_list',storage:'known_spell_overrides'},
+     prepared:{limit:10,storage:'prepared_spells',trigger:'long_rest'}}},
+  {id:'sorcerer',name:'Sorcerer',level:7,book:false,mode:'Conosciuti',limit:8,
+   selection_layers:{learned:{limit:8,storage:'prepared_spells',trigger:'level_up'},
+     applied:{mode:'automatic',from:'learned'}}}
  ]};
  const [wizard,druid,sorcerer]=powerSelectionModels({},calculated,data);
+ assert.equal(wizard.benefit_type,'spell_selection');
+ assert.equal(wizard.source.type,'spell_catalog');
  assert.deepEqual(Object.keys(wizard.layers),['learned','prepared']);
- assert.equal(wizard.layers.learned.limit,null,'spellbook is not artificially capped');
+ assert.equal(wizard.layers.learned.limit,18);
+ assert.equal(wizard.layers.learned.storage,'spellbook_spells');
  assert.equal(wizard.layers.learned.trigger,null);
  assert.equal(wizard.layers.prepared.trigger,'long_rest');
- assert.deepEqual(Object.keys(druid.layers),['prepared']);
- assert.deepEqual(Object.keys(sorcerer.layers),['learned']);
+ assert.deepEqual(Object.keys(druid.layers),['learned','prepared']);
+ assert.equal(druid.layers.learned.automatic,true,'the full class list is learned automatically');
+ assert.deepEqual(Object.keys(sorcerer.layers),['learned','applied']);
+ assert.equal(sorcerer.layers.applied.automatic,true);
  assert.equal(sorcerer.layers.learned.trigger,'level_up');
 });
 

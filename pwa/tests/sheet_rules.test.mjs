@@ -2,13 +2,14 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
-import {calculateSheet,parseArithmetic,spellProgression,requirementsAllow,localClasses}
+import {calculateSheet,parseArithmetic,spellProgression,formulaValue,requirementsAllow,localClasses}
   from "../sheet_rules.js";
 import {rollBattleDamage,sheetRollChatFields} from "../sheet_rules_view.js";
 import {fixedProficiencies,structuredFeatureGrants,automaticId} from "../structured_effects.js";
 
 const load=file=>JSON.parse(readFileSync(fileURLToPath(new URL("../catalog/"+file+".json",import.meta.url)),"utf8"));
-const catalogs={abilityGrants:load("ability_grants"),classMechanics:load("class_mechanics"),proficiencyGrants:load("proficiency_grants")};
+const catalogs={abilityGrants:load("ability_grants"),classMechanics:load("class_mechanics"),
+  spellcastingBenefits:load("spellcasting_benefits"),proficiencyGrants:load("proficiency_grants")};
 const character=(overrides={})=>({kind:"character",level:1,abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:10},
   armor_class_base:10,max_hp_base:12,speed_base:30,inventory:[],...overrides});
 
@@ -99,25 +100,37 @@ test("automatic unarmed strikes and shield respect offhand availability",()=>{
   "Legacy manual unarmed selections must not cause duplicates");
 });
 
-test("2014/2024 full, half, pact and multiclass slot progressions match Godot tables",()=>{
-  const wizard=spellProgression(character(),[{name:"Wizard",level:5}]);
+test("2014 full, half, third and pact slots follow feature data, including multiclass rounding",()=>{
+  const rule=(name,subclass='')=>catalogs.spellcastingBenefits.grants.find(row=>
+    row.owner.class_name===name&&(row.owner.subclass||'')===subclass).benefit.slot_progression;
+  const wizard=spellProgression(character(),[{level:5,slot_progression:rule('Wizard')}]);
   assert.deepEqual(wizard.slots.slice(0,4),[0,4,3,2]);
-  const multi=spellProgression({rules_version:"2014"},[{name:"Wizard",level:3},{name:"Paladin",level:3}]);
+  const multi=spellProgression({rules_version:"2014"},[
+    {level:3,slot_progression:rule('Wizard')},{level:3,slot_progression:rule('Paladin')}]);
   assert.equal(multi.caster_level,4);
-  const modern=spellProgression({rules_version:"2024"},[{name:"Wizard",level:3},{name:"Paladin",level:3}]);
-  assert.equal(modern.caster_level,5);
-  const warlock=spellProgression(character(),[{name:"Warlock",level:11}]);
+  const artificer=spellProgression(character(),[{level:3,slot_progression:rule('Artificer')}]);
+  assert.equal(artificer.caster_level,2,'Artificer rounds up even when single');
+  const third=spellProgression(character(),[{level:4,slot_progression:rule('Fighter','Eldritch Knight')}]);
+  assert.equal(third.caster_level,2,'standalone third caster rounds up');
+  const combined=spellProgression(character(),[
+    {level:3,slot_progression:rule('Wizard')},
+    {level:7,slot_progression:rule('Fighter','Eldritch Knight')}]);
+  assert.equal(combined.caster_level,5,'multiclass third caster rounds down');
+  const warlock=spellProgression(character(),[{level:11,slot_progression:rule('Warlock')}]);
   assert.equal(warlock.pact_total,3);
   assert.equal(warlock.pact_level,5);
   assert.equal(warlock.caster_level,0);
-  const c=character({class:"Wizard",level:5,spell_slots_automatic:true,spell_slots_total:[0,4,3,2]});
+  const c=character({class:"Wizard",class_source:"PHB",level:5,spell_slots_automatic:true,
+    spell_slots_total:[0,4,3,2]});
   const withoutTraits=calculateSheet(c,catalogs);
   assert.deepEqual(withoutTraits.spell_slots.slice(0,3).map(x=>x.total),[0,0,0],
-    "Missing class-feature catalog cannot grant class slots from levels");
+    "A class cannot cast without the active feature");
   assert.equal(withoutTraits.casting_classes.length,0);
   const withTraits=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
   assert.deepEqual(withTraits.spell_slots.slice(0,3).map(x=>x.total),[4,3,2]);
   assert.equal(withTraits.casting_classes[0].granting_trait_name,"Spellcasting");
+  assert.equal(withTraits.casting_classes[0].learned_limit,14);
+  assert.equal(formulaValue('class_level_wizard + int_mod',withTraits),5);
   const muted={...c,origin_enabled:{[withTraits.casting_classes[0].granting_trait_id]:false}};
   assert.equal(calculateSheet(muted,{...catalogs,classFeatures:load("classes")}).spell_slots[0].total,0);
 });

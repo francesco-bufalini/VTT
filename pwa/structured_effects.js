@@ -356,6 +356,9 @@ export function collectStructuredFeatures(record,catalogs={}){
   if(record.stat_block)record={...record,stat_block:normalizeMonsterStatBlock(record.stat_block)};
   const results=[],seen=new Set();
   const attackRules=array(catalogs.featureRules?.attack_count_grants);
+  // Partial class mechanics tables cannot grant slots without the full feature
+  // catalog; explicit homebrew feature.benefits remain usable independently.
+  const spellcastingRules=catalogs.classFeatures?array(catalogs.spellcastingBenefits?.grants):[];
   const subclassKey=value=>norm(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');
   const attackCount=(row,origin,level,className,classSource)=>{
    const direct=Number(row.attacks_per_action);
@@ -380,7 +383,21 @@ export function collectStructuredFeatures(record,catalogs={}){
     const id=String(row.id||"").trim()||origin+"|"+level+"|"+norm(row.name);
     const key=row.feature_key||origin+"|"+id;if(seen.has(key))return;seen.add(key);
     const attacksPerAction=attackCount(row,origin,level,className,classSource);
+    // A spellcasting benefit belongs to its exact feature, never to its class
+    // by default. The same lookup works for subclasses and homebrew benefits.
+    const subParts=origin.includes('|subclass|')?origin.split('|subclass|')[1].split('|'):null;
+    const spellRule=spellcastingRules.find(rule=>{
+      const owner=rule.owner||{};
+      return match(owner.class_name,className)&&
+        (!owner.class_source||match(owner.class_source,classSource))&&
+        match(owner.trait,row.name)&&
+        (owner.subclass?!!subParts&&match(owner.subclass,subParts[0])&&
+          (!owner.subclass_source||match(owner.subclass_source,subParts[1])):!subParts);
+    });
+    const benefits=[...array(row.benefits),
+      ...(spellRule?.benefit&&!array(row.benefits).some(b=>b.type==='spell_selection')?[spellRule.benefit]:[])];
     results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
+      ...(benefits.length?{benefits}:{}),
       level,requirements:gate,inactive:inactive||row.inactive===true,
       bonuses:array(row.bonuses),
       ...(attacksPerAction>=2?{attacks_per_action:attacksPerAction}:{}),

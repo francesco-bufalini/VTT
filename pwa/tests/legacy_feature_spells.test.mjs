@@ -9,7 +9,7 @@ import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const mechanics=read('class_mechanics');
-const catalogs={classMechanics:mechanics,classFeatures:read('classes'),spells:mechanics.legacy_spells};
+const catalogs={classMechanics:mechanics,classFeatures:read('classes'),spellcastingBenefits:read('spellcasting_benefits'),spells:mechanics.legacy_spells};
 const character=(name,subclass,subclass_source,level=5)=>({kind:'character',rules_version:'2014',
  class:name,class_source:name==='Artificer'?'TCE':'PHB',subclass,subclass_source,level,
  classes:[{name,source:name==='Artificer'?'TCE':'PHB',subclass,subclass_source,level}],

@@ -1,0 +1,4234 @@
+{
+  "version": 1,
+  "description": "Benefici di incantesimi di classe: solo il privilegio attivo concede l'accesso; progressioni, liste e livelli sono dati, non nomi riconosciuti dal runtime.",
+  "grants": [
+    {
+      "owner": {
+        "class_name": "Artificer",
+        "class_source": "TCE",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Artificer",
+        "spell_list_class_name": "Artificer",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 2,
+          "single_round": "ceil",
+          "multiclass_round": "ceil"
+        },
+        "ability": "int",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "formula": "class_level_artificer / 2 + int_mod",
+              "minimum": 1
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                2
+              ],
+              [
+                8,
+                2
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                3
+              ],
+              [
+                11,
+                3
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                3
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Bard",
+        "class_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Bard",
+        "spell_list_class_name": "Bard",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "cha",
+        "knowledge_mode": "known",
+        "layers": {
+          "learned": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  4
+                ],
+                [
+                  2,
+                  5
+                ],
+                [
+                  3,
+                  6
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  5,
+                  8
+                ],
+                [
+                  6,
+                  9
+                ],
+                [
+                  7,
+                  10
+                ],
+                [
+                  8,
+                  11
+                ],
+                [
+                  9,
+                  12
+                ],
+                [
+                  10,
+                  14
+                ],
+                [
+                  11,
+                  15
+                ],
+                [
+                  12,
+                  15
+                ],
+                [
+                  13,
+                  16
+                ],
+                [
+                  14,
+                  18
+                ],
+                [
+                  15,
+                  19
+                ],
+                [
+                  16,
+                  19
+                ],
+                [
+                  17,
+                  20
+                ],
+                [
+                  18,
+                  22
+                ],
+                [
+                  19,
+                  22
+                ],
+                [
+                  20,
+                  22
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "level_up"
+          },
+          "applied": {
+            "mode": "automatic",
+            "from": "learned"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Cleric",
+        "class_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Cleric",
+        "spell_list_class_name": "Cleric",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "wis",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "formula": "class_level_cleric + wis_mod",
+              "minimum": 1
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                4
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                5
+              ],
+              [
+                12,
+                5
+              ],
+              [
+                13,
+                5
+              ],
+              [
+                14,
+                5
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                16,
+                5
+              ],
+              [
+                17,
+                5
+              ],
+              [
+                18,
+                5
+              ],
+              [
+                19,
+                5
+              ],
+              [
+                20,
+                5
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Druid",
+        "class_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Druid",
+        "spell_list_class_name": "Druid",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "wis",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "formula": "class_level_druid + wis_mod",
+              "minimum": 1
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Paladin",
+        "class_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Paladin",
+        "spell_list_class_name": "Paladin",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 2,
+          "single_round": "ceil",
+          "multiclass_round": "floor"
+        },
+        "ability": "cha",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "formula": "class_level_paladin / 2 + cha_mod",
+              "minimum": 1
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                5,
+                0
+              ],
+              [
+                6,
+                0
+              ],
+              [
+                7,
+                0
+              ],
+              [
+                8,
+                0
+              ],
+              [
+                9,
+                0
+              ],
+              [
+                10,
+                0
+              ],
+              [
+                11,
+                0
+              ],
+              [
+                12,
+                0
+              ],
+              [
+                13,
+                0
+              ],
+              [
+                14,
+                0
+              ],
+              [
+                15,
+                0
+              ],
+              [
+                16,
+                0
+              ],
+              [
+                17,
+                0
+              ],
+              [
+                18,
+                0
+              ],
+              [
+                19,
+                0
+              ],
+              [
+                20,
+                0
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Ranger",
+        "class_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Ranger",
+        "spell_list_class_name": "Ranger",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 2,
+          "single_round": "ceil",
+          "multiclass_round": "floor"
+        },
+        "ability": "wis",
+        "knowledge_mode": "known",
+        "layers": {
+          "learned": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  2
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  5
+                ],
+                [
+                  8,
+                  5
+                ],
+                [
+                  9,
+                  6
+                ],
+                [
+                  10,
+                  6
+                ],
+                [
+                  11,
+                  7
+                ],
+                [
+                  12,
+                  7
+                ],
+                [
+                  13,
+                  8
+                ],
+                [
+                  14,
+                  8
+                ],
+                [
+                  15,
+                  9
+                ],
+                [
+                  16,
+                  9
+                ],
+                [
+                  17,
+                  10
+                ],
+                [
+                  18,
+                  10
+                ],
+                [
+                  19,
+                  11
+                ],
+                [
+                  20,
+                  11
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "level_up"
+          },
+          "applied": {
+            "mode": "automatic",
+            "from": "learned"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                5,
+                0
+              ],
+              [
+                6,
+                0
+              ],
+              [
+                7,
+                0
+              ],
+              [
+                8,
+                0
+              ],
+              [
+                9,
+                0
+              ],
+              [
+                10,
+                0
+              ],
+              [
+                11,
+                0
+              ],
+              [
+                12,
+                0
+              ],
+              [
+                13,
+                0
+              ],
+              [
+                14,
+                0
+              ],
+              [
+                15,
+                0
+              ],
+              [
+                16,
+                0
+              ],
+              [
+                17,
+                0
+              ],
+              [
+                18,
+                0
+              ],
+              [
+                19,
+                0
+              ],
+              [
+                20,
+                0
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Sorcerer",
+        "class_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Sorcerer",
+        "spell_list_class_name": "Sorcerer",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "cha",
+        "knowledge_mode": "known",
+        "layers": {
+          "learned": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  4
+                ],
+                [
+                  4,
+                  5
+                ],
+                [
+                  5,
+                  6
+                ],
+                [
+                  6,
+                  7
+                ],
+                [
+                  7,
+                  8
+                ],
+                [
+                  8,
+                  9
+                ],
+                [
+                  9,
+                  10
+                ],
+                [
+                  10,
+                  11
+                ],
+                [
+                  11,
+                  12
+                ],
+                [
+                  12,
+                  12
+                ],
+                [
+                  13,
+                  13
+                ],
+                [
+                  14,
+                  13
+                ],
+                [
+                  15,
+                  14
+                ],
+                [
+                  16,
+                  14
+                ],
+                [
+                  17,
+                  15
+                ],
+                [
+                  18,
+                  15
+                ],
+                [
+                  19,
+                  15
+                ],
+                [
+                  20,
+                  15
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "level_up"
+          },
+          "applied": {
+            "mode": "automatic",
+            "from": "learned"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                5
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                5
+              ],
+              [
+                7,
+                5
+              ],
+              [
+                8,
+                5
+              ],
+              [
+                9,
+                5
+              ],
+              [
+                10,
+                6
+              ],
+              [
+                11,
+                6
+              ],
+              [
+                12,
+                6
+              ],
+              [
+                13,
+                6
+              ],
+              [
+                14,
+                6
+              ],
+              [
+                15,
+                6
+              ],
+              [
+                16,
+                6
+              ],
+              [
+                17,
+                6
+              ],
+              [
+                18,
+                6
+              ],
+              [
+                19,
+                6
+              ],
+              [
+                20,
+                6
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Warlock",
+        "class_source": "PHB",
+        "trait": "Pact Magic"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Warlock",
+        "spell_list_class_name": "Warlock",
+        "slot_progression": {
+          "pool": "pact",
+          "slot_count": {
+            "by_class_level": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                2
+              ],
+              [
+                8,
+                2
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                2
+              ],
+              [
+                11,
+                3
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                3
+              ],
+              [
+                14,
+                3
+              ],
+              [
+                15,
+                3
+              ],
+              [
+                16,
+                3
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "slot_level": {
+            "by_class_level": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                5
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                5
+              ],
+              [
+                12,
+                5
+              ],
+              [
+                13,
+                5
+              ],
+              [
+                14,
+                5
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                16,
+                5
+              ],
+              [
+                17,
+                5
+              ],
+              [
+                18,
+                5
+              ],
+              [
+                19,
+                5
+              ],
+              [
+                20,
+                5
+              ]
+            ]
+          }
+        },
+        "ability": "cha",
+        "knowledge_mode": "known",
+        "layers": {
+          "learned": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  4
+                ],
+                [
+                  4,
+                  5
+                ],
+                [
+                  5,
+                  6
+                ],
+                [
+                  6,
+                  7
+                ],
+                [
+                  7,
+                  8
+                ],
+                [
+                  8,
+                  9
+                ],
+                [
+                  9,
+                  10
+                ],
+                [
+                  10,
+                  10
+                ],
+                [
+                  11,
+                  11
+                ],
+                [
+                  12,
+                  11
+                ],
+                [
+                  13,
+                  12
+                ],
+                [
+                  14,
+                  12
+                ],
+                [
+                  15,
+                  13
+                ],
+                [
+                  16,
+                  13
+                ],
+                [
+                  17,
+                  14
+                ],
+                [
+                  18,
+                  14
+                ],
+                [
+                  19,
+                  15
+                ],
+                [
+                  20,
+                  15
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "level_up"
+          },
+          "applied": {
+            "mode": "automatic",
+            "from": "learned"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Wizard",
+        "class_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Wizard",
+        "spell_list_class_name": "Wizard",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "int",
+        "knowledge_mode": "book",
+        "layers": {
+          "learned": {
+            "limit": {
+              "formula": "6 + 2 * (class_level_wizard - 1)"
+            },
+            "storage": "spellbook_spells",
+            "trigger": null
+          },
+          "prepared": {
+            "limit": {
+              "formula": "class_level_wizard + int_mod",
+              "minimum": 1
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                4
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                5
+              ],
+              [
+                12,
+                5
+              ],
+              [
+                13,
+                5
+              ],
+              [
+                14,
+                5
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                16,
+                5
+              ],
+              [
+                17,
+                5
+              ],
+              [
+                18,
+                5
+              ],
+              [
+                19,
+                5
+              ],
+              [
+                20,
+                5
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Fighter",
+        "class_source": "PHB",
+        "subclass": "Eldritch Knight",
+        "subclass_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Fighter",
+        "spell_list_class_name": "Wizard",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 3,
+          "single_round": "ceil",
+          "multiclass_round": "floor"
+        },
+        "ability": "int",
+        "knowledge_mode": "known",
+        "layers": {
+          "learned": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  4
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  5
+                ],
+                [
+                  8,
+                  6
+                ],
+                [
+                  9,
+                  6
+                ],
+                [
+                  10,
+                  7
+                ],
+                [
+                  11,
+                  8
+                ],
+                [
+                  12,
+                  8
+                ],
+                [
+                  13,
+                  9
+                ],
+                [
+                  14,
+                  10
+                ],
+                [
+                  15,
+                  10
+                ],
+                [
+                  16,
+                  11
+                ],
+                [
+                  17,
+                  11
+                ],
+                [
+                  18,
+                  11
+                ],
+                [
+                  19,
+                  12
+                ],
+                [
+                  20,
+                  13
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "level_up"
+          },
+          "applied": {
+            "mode": "automatic",
+            "from": "learned"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                2
+              ],
+              [
+                8,
+                2
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                3
+              ],
+              [
+                11,
+                3
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                3
+              ],
+              [
+                14,
+                3
+              ],
+              [
+                15,
+                3
+              ],
+              [
+                16,
+                3
+              ],
+              [
+                17,
+                3
+              ],
+              [
+                18,
+                3
+              ],
+              [
+                19,
+                3
+              ],
+              [
+                20,
+                3
+              ]
+            ]
+          },
+          "storage": "prepared_spells"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Rogue",
+        "class_source": "PHB",
+        "subclass": "Arcane Trickster",
+        "subclass_source": "PHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Rogue",
+        "spell_list_class_name": "Wizard",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 3,
+          "single_round": "ceil",
+          "multiclass_round": "floor"
+        },
+        "ability": "int",
+        "knowledge_mode": "known",
+        "layers": {
+          "learned": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  4
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  5
+                ],
+                [
+                  8,
+                  6
+                ],
+                [
+                  9,
+                  6
+                ],
+                [
+                  10,
+                  7
+                ],
+                [
+                  11,
+                  8
+                ],
+                [
+                  12,
+                  8
+                ],
+                [
+                  13,
+                  9
+                ],
+                [
+                  14,
+                  10
+                ],
+                [
+                  15,
+                  10
+                ],
+                [
+                  16,
+                  11
+                ],
+                [
+                  17,
+                  11
+                ],
+                [
+                  18,
+                  11
+                ],
+                [
+                  19,
+                  12
+                ],
+                [
+                  20,
+                  13
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "level_up"
+          },
+          "applied": {
+            "mode": "automatic",
+            "from": "learned"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "prepared_spells"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Bard",
+        "class_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Bard",
+        "spell_list_class_name": "Bard",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "cha",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  4
+                ],
+                [
+                  2,
+                  5
+                ],
+                [
+                  3,
+                  6
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  5,
+                  9
+                ],
+                [
+                  6,
+                  10
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  8,
+                  12
+                ],
+                [
+                  9,
+                  14
+                ],
+                [
+                  10,
+                  15
+                ],
+                [
+                  11,
+                  16
+                ],
+                [
+                  12,
+                  16
+                ],
+                [
+                  13,
+                  17
+                ],
+                [
+                  14,
+                  17
+                ],
+                [
+                  15,
+                  18
+                ],
+                [
+                  16,
+                  18
+                ],
+                [
+                  17,
+                  19
+                ],
+                [
+                  18,
+                  20
+                ],
+                [
+                  19,
+                  21
+                ],
+                [
+                  20,
+                  22
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Cleric",
+        "class_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Cleric",
+        "spell_list_class_name": "Cleric",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "wis",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  4
+                ],
+                [
+                  2,
+                  5
+                ],
+                [
+                  3,
+                  6
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  5,
+                  9
+                ],
+                [
+                  6,
+                  10
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  8,
+                  12
+                ],
+                [
+                  9,
+                  14
+                ],
+                [
+                  10,
+                  15
+                ],
+                [
+                  11,
+                  16
+                ],
+                [
+                  12,
+                  16
+                ],
+                [
+                  13,
+                  17
+                ],
+                [
+                  14,
+                  17
+                ],
+                [
+                  15,
+                  18
+                ],
+                [
+                  16,
+                  18
+                ],
+                [
+                  17,
+                  19
+                ],
+                [
+                  18,
+                  20
+                ],
+                [
+                  19,
+                  21
+                ],
+                [
+                  20,
+                  22
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                4
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                5
+              ],
+              [
+                12,
+                5
+              ],
+              [
+                13,
+                5
+              ],
+              [
+                14,
+                5
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                16,
+                5
+              ],
+              [
+                17,
+                5
+              ],
+              [
+                18,
+                5
+              ],
+              [
+                19,
+                5
+              ],
+              [
+                20,
+                5
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Druid",
+        "class_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Druid",
+        "spell_list_class_name": "Druid",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "wis",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  4
+                ],
+                [
+                  2,
+                  5
+                ],
+                [
+                  3,
+                  6
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  5,
+                  9
+                ],
+                [
+                  6,
+                  10
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  8,
+                  12
+                ],
+                [
+                  9,
+                  14
+                ],
+                [
+                  10,
+                  15
+                ],
+                [
+                  11,
+                  16
+                ],
+                [
+                  12,
+                  16
+                ],
+                [
+                  13,
+                  17
+                ],
+                [
+                  14,
+                  17
+                ],
+                [
+                  15,
+                  18
+                ],
+                [
+                  16,
+                  18
+                ],
+                [
+                  17,
+                  19
+                ],
+                [
+                  18,
+                  20
+                ],
+                [
+                  19,
+                  21
+                ],
+                [
+                  20,
+                  22
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Paladin",
+        "class_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Paladin",
+        "spell_list_class_name": "Paladin",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 2,
+          "single_round": "ceil",
+          "multiclass_round": "ceil"
+        },
+        "ability": "cha",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  4
+                ],
+                [
+                  4,
+                  5
+                ],
+                [
+                  5,
+                  6
+                ],
+                [
+                  6,
+                  6
+                ],
+                [
+                  7,
+                  7
+                ],
+                [
+                  8,
+                  7
+                ],
+                [
+                  9,
+                  9
+                ],
+                [
+                  10,
+                  9
+                ],
+                [
+                  11,
+                  10
+                ],
+                [
+                  12,
+                  10
+                ],
+                [
+                  13,
+                  11
+                ],
+                [
+                  14,
+                  11
+                ],
+                [
+                  15,
+                  12
+                ],
+                [
+                  16,
+                  12
+                ],
+                [
+                  17,
+                  14
+                ],
+                [
+                  18,
+                  14
+                ],
+                [
+                  19,
+                  15
+                ],
+                [
+                  20,
+                  15
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                5,
+                0
+              ],
+              [
+                6,
+                0
+              ],
+              [
+                7,
+                0
+              ],
+              [
+                8,
+                0
+              ],
+              [
+                9,
+                0
+              ],
+              [
+                10,
+                0
+              ],
+              [
+                11,
+                0
+              ],
+              [
+                12,
+                0
+              ],
+              [
+                13,
+                0
+              ],
+              [
+                14,
+                0
+              ],
+              [
+                15,
+                0
+              ],
+              [
+                16,
+                0
+              ],
+              [
+                17,
+                0
+              ],
+              [
+                18,
+                0
+              ],
+              [
+                19,
+                0
+              ],
+              [
+                20,
+                0
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Ranger",
+        "class_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Ranger",
+        "spell_list_class_name": "Ranger",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 2,
+          "single_round": "ceil",
+          "multiclass_round": "ceil"
+        },
+        "ability": "wis",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  4
+                ],
+                [
+                  4,
+                  5
+                ],
+                [
+                  5,
+                  6
+                ],
+                [
+                  6,
+                  6
+                ],
+                [
+                  7,
+                  7
+                ],
+                [
+                  8,
+                  7
+                ],
+                [
+                  9,
+                  9
+                ],
+                [
+                  10,
+                  9
+                ],
+                [
+                  11,
+                  10
+                ],
+                [
+                  12,
+                  10
+                ],
+                [
+                  13,
+                  11
+                ],
+                [
+                  14,
+                  11
+                ],
+                [
+                  15,
+                  12
+                ],
+                [
+                  16,
+                  12
+                ],
+                [
+                  17,
+                  14
+                ],
+                [
+                  18,
+                  14
+                ],
+                [
+                  19,
+                  15
+                ],
+                [
+                  20,
+                  15
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                5,
+                0
+              ],
+              [
+                6,
+                0
+              ],
+              [
+                7,
+                0
+              ],
+              [
+                8,
+                0
+              ],
+              [
+                9,
+                0
+              ],
+              [
+                10,
+                0
+              ],
+              [
+                11,
+                0
+              ],
+              [
+                12,
+                0
+              ],
+              [
+                13,
+                0
+              ],
+              [
+                14,
+                0
+              ],
+              [
+                15,
+                0
+              ],
+              [
+                16,
+                0
+              ],
+              [
+                17,
+                0
+              ],
+              [
+                18,
+                0
+              ],
+              [
+                19,
+                0
+              ],
+              [
+                20,
+                0
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Sorcerer",
+        "class_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Sorcerer",
+        "spell_list_class_name": "Sorcerer",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "cha",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  4
+                ],
+                [
+                  3,
+                  6
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  5,
+                  9
+                ],
+                [
+                  6,
+                  10
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  8,
+                  12
+                ],
+                [
+                  9,
+                  14
+                ],
+                [
+                  10,
+                  15
+                ],
+                [
+                  11,
+                  16
+                ],
+                [
+                  12,
+                  16
+                ],
+                [
+                  13,
+                  17
+                ],
+                [
+                  14,
+                  17
+                ],
+                [
+                  15,
+                  18
+                ],
+                [
+                  16,
+                  18
+                ],
+                [
+                  17,
+                  19
+                ],
+                [
+                  18,
+                  20
+                ],
+                [
+                  19,
+                  21
+                ],
+                [
+                  20,
+                  22
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                5
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                5
+              ],
+              [
+                7,
+                5
+              ],
+              [
+                8,
+                5
+              ],
+              [
+                9,
+                5
+              ],
+              [
+                10,
+                6
+              ],
+              [
+                11,
+                6
+              ],
+              [
+                12,
+                6
+              ],
+              [
+                13,
+                6
+              ],
+              [
+                14,
+                6
+              ],
+              [
+                15,
+                6
+              ],
+              [
+                16,
+                6
+              ],
+              [
+                17,
+                6
+              ],
+              [
+                18,
+                6
+              ],
+              [
+                19,
+                6
+              ],
+              [
+                20,
+                6
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Warlock",
+        "class_source": "XPHB",
+        "trait": "Pact Magic"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Warlock",
+        "spell_list_class_name": "Warlock",
+        "slot_progression": {
+          "pool": "pact",
+          "slot_count": {
+            "by_class_level": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                2
+              ],
+              [
+                8,
+                2
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                2
+              ],
+              [
+                11,
+                3
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                3
+              ],
+              [
+                14,
+                3
+              ],
+              [
+                15,
+                3
+              ],
+              [
+                16,
+                3
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "slot_level": {
+            "by_class_level": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                5
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                5
+              ],
+              [
+                12,
+                5
+              ],
+              [
+                13,
+                5
+              ],
+              [
+                14,
+                5
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                16,
+                5
+              ],
+              [
+                17,
+                5
+              ],
+              [
+                18,
+                5
+              ],
+              [
+                19,
+                5
+              ],
+              [
+                20,
+                5
+              ]
+            ]
+          }
+        },
+        "ability": "cha",
+        "knowledge_mode": "prepared",
+        "layers": {
+          "learned": {
+            "mode": "class_list",
+            "storage": "known_spell_overrides"
+          },
+          "prepared": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  4
+                ],
+                [
+                  4,
+                  5
+                ],
+                [
+                  5,
+                  6
+                ],
+                [
+                  6,
+                  7
+                ],
+                [
+                  7,
+                  8
+                ],
+                [
+                  8,
+                  9
+                ],
+                [
+                  9,
+                  10
+                ],
+                [
+                  10,
+                  10
+                ],
+                [
+                  11,
+                  11
+                ],
+                [
+                  12,
+                  11
+                ],
+                [
+                  13,
+                  12
+                ],
+                [
+                  14,
+                  12
+                ],
+                [
+                  15,
+                  13
+                ],
+                [
+                  16,
+                  13
+                ],
+                [
+                  17,
+                  14
+                ],
+                [
+                  18,
+                  14
+                ],
+                [
+                  19,
+                  15
+                ],
+                [
+                  20,
+                  15
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Wizard",
+        "class_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Wizard",
+        "spell_list_class_name": "Wizard",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 1,
+          "single_round": "floor",
+          "multiclass_round": "floor"
+        },
+        "ability": "int",
+        "knowledge_mode": "book",
+        "layers": {
+          "learned": {
+            "limit": {
+              "formula": "6 + 2 * (class_level_wizard - 1)"
+            },
+            "storage": "spellbook_spells",
+            "trigger": null
+          },
+          "prepared": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  4
+                ],
+                [
+                  2,
+                  5
+                ],
+                [
+                  3,
+                  6
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  5,
+                  9
+                ],
+                [
+                  6,
+                  10
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  8,
+                  12
+                ],
+                [
+                  9,
+                  14
+                ],
+                [
+                  10,
+                  15
+                ],
+                [
+                  11,
+                  16
+                ],
+                [
+                  12,
+                  16
+                ],
+                [
+                  13,
+                  17
+                ],
+                [
+                  14,
+                  18
+                ],
+                [
+                  15,
+                  19
+                ],
+                [
+                  16,
+                  21
+                ],
+                [
+                  17,
+                  22
+                ],
+                [
+                  18,
+                  23
+                ],
+                [
+                  19,
+                  24
+                ],
+                [
+                  20,
+                  25
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "long_rest"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                4
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                5
+              ],
+              [
+                12,
+                5
+              ],
+              [
+                13,
+                5
+              ],
+              [
+                14,
+                5
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                16,
+                5
+              ],
+              [
+                17,
+                5
+              ],
+              [
+                18,
+                5
+              ],
+              [
+                19,
+                5
+              ],
+              [
+                20,
+                5
+              ]
+            ]
+          },
+          "storage": "known_spell_overrides"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Fighter",
+        "class_source": "XPHB",
+        "subclass": "Eldritch Knight",
+        "subclass_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Fighter",
+        "spell_list_class_name": "Wizard",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 3,
+          "single_round": "ceil",
+          "multiclass_round": "ceil"
+        },
+        "ability": "int",
+        "knowledge_mode": "known",
+        "layers": {
+          "learned": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  4
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  5
+                ],
+                [
+                  8,
+                  6
+                ],
+                [
+                  9,
+                  6
+                ],
+                [
+                  10,
+                  7
+                ],
+                [
+                  11,
+                  8
+                ],
+                [
+                  12,
+                  8
+                ],
+                [
+                  13,
+                  9
+                ],
+                [
+                  14,
+                  10
+                ],
+                [
+                  15,
+                  10
+                ],
+                [
+                  16,
+                  11
+                ],
+                [
+                  17,
+                  11
+                ],
+                [
+                  18,
+                  11
+                ],
+                [
+                  19,
+                  12
+                ],
+                [
+                  20,
+                  13
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "level_up"
+          },
+          "applied": {
+            "mode": "automatic",
+            "from": "learned"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                2
+              ],
+              [
+                8,
+                2
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                3
+              ],
+              [
+                11,
+                3
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                3
+              ],
+              [
+                14,
+                3
+              ],
+              [
+                15,
+                3
+              ],
+              [
+                16,
+                3
+              ],
+              [
+                17,
+                3
+              ],
+              [
+                18,
+                3
+              ],
+              [
+                19,
+                3
+              ],
+              [
+                20,
+                3
+              ]
+            ]
+          },
+          "storage": "prepared_spells"
+        }
+      }
+    },
+    {
+      "owner": {
+        "class_name": "Rogue",
+        "class_source": "XPHB",
+        "subclass": "Arcane Trickster",
+        "subclass_source": "XPHB",
+        "trait": "Spellcasting"
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "source": {
+          "type": "spell_catalog"
+        },
+        "level_class_name": "Rogue",
+        "spell_list_class_name": "Wizard",
+        "slot_progression": {
+          "pool": "shared",
+          "divisor": 3,
+          "single_round": "ceil",
+          "multiclass_round": "ceil"
+        },
+        "ability": "int",
+        "knowledge_mode": "known",
+        "layers": {
+          "learned": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  4
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  5
+                ],
+                [
+                  8,
+                  6
+                ],
+                [
+                  9,
+                  6
+                ],
+                [
+                  10,
+                  7
+                ],
+                [
+                  11,
+                  8
+                ],
+                [
+                  12,
+                  8
+                ],
+                [
+                  13,
+                  9
+                ],
+                [
+                  14,
+                  10
+                ],
+                [
+                  15,
+                  10
+                ],
+                [
+                  16,
+                  11
+                ],
+                [
+                  17,
+                  11
+                ],
+                [
+                  18,
+                  11
+                ],
+                [
+                  19,
+                  12
+                ],
+                [
+                  20,
+                  13
+                ]
+              ]
+            },
+            "storage": "prepared_spells",
+            "trigger": "level_up"
+          },
+          "applied": {
+            "mode": "automatic",
+            "from": "learned"
+          }
+        },
+        "cantrips": {
+          "limit": {
+            "by_class_level": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                4
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                4
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                4
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                4
+              ],
+              [
+                17,
+                4
+              ],
+              [
+                18,
+                4
+              ],
+              [
+                19,
+                4
+              ],
+              [
+                20,
+                4
+              ]
+            ]
+          },
+          "storage": "prepared_spells"
+        }
+      }
+    }
+  ]
+}

@@ -633,7 +633,8 @@ async function useCastingCatalog(t){
  const previous=globalThis.fetch;clearLocalRuleCatalogCache();
  globalThis.fetch=async(url,options)=>{
   const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics',
-    '/catalog/proficiency_grants.json':'proficiency_grants','/catalog/classes.json':'classes'})[url];
+    '/catalog/proficiency_grants.json':'proficiency_grants','/catalog/classes.json':'classes',
+    '/catalog/spellcasting_benefits.json':'spellcasting_benefits'})[url];
   return file?new Response(readFileSync(new URL('../catalog/'+file+'.json',import.meta.url),'utf8'),{status:200}):previous(url,options);
  };
  t.after(()=>{globalThis.fetch=previous;clearLocalRuleCatalogCache();});

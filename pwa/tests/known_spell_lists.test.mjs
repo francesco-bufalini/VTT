@@ -42,7 +42,7 @@ test('known-spell overrides can remove class spells and add non-class spells',()
 test('wizard spellbook stays the source of known spells and known-only preparation',()=>{
  const base={rules_version:'2014',prepared_spells:[],spellbook_spells:[]};
  assert.throws(()=>addSelectedSpell(base,catalog[1],'prepared_spells',
-   {member:wizard,classes:[wizard],catalog}),/libro/);
+   {member:wizard,classes:[wizard],catalog}),/Impara prima/);
  const book=addSelectedSpell(base,catalog[1],'spellbook_spells',
    {member:wizard,classes:[wizard],catalog});
  let record={...base,...book};
@@ -107,7 +107,7 @@ test('known-spell limits appear for spontaneous casters; wizard book is the know
  const sc={prepared_spells:[{...sorcery,casting_classes:[sorcerer.id]}]};
  assert.deepEqual(knownSpellProgress(sc,sorcerer,[sorcerer],[sorcery]),{known:1,minimum:4});
  const wc={spellbook_spells:[catalog[1]],prepared_spells:[]};
- assert.deepEqual(knownSpellProgress(wc,{...wizard,level:4},[wizard],catalog),{known:1,minimum:12});
+ assert.deepEqual(knownSpellProgress(wc,{...wizard,level:4,learned_limit:12},[wizard],catalog),{known:1,minimum:12});
 });
 test('preparing a spell granted by another origin cannot duplicate it',()=>{
  const c={prepared_spells:[],spells:[]};
