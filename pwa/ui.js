@@ -4773,7 +4773,7 @@ async function roll(sides) {
 async function shareRoll({quiet=false,roll=null}={}) {
   if(!roll&&!state.roll) return;
   const r=roll||state.roll;
-  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:(document.querySelector("#chat-author")?.value||state.chatAuthor||"Giocatore").slice(0,80),
+  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:String(r.author||state.editor?.read()?.name||document.querySelector("#chat-author")?.value||state.chatAuthor||"Giocatore").slice(0,80),
     timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,
     ...sheetRollChatFields(r)};
   rememberChatEvent(event);
