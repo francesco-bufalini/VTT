@@ -349,25 +349,30 @@ const DAMAGE_GLYPHS={
 };
 const supportedDamage=formula=>/^\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+)(?:\s*[+-]\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+))*\s*$/i.test(String(formula||''));
 function battleEffectMarkup(item,attack){
- const effect=attack?.damage?
+ const effects=[];
+ if(attack?.damage)effects.push(
   {kind:'damage',label:String(attack.damage).trim(),type:String(attack.damage_type||'').trim(),
-   glyph:DAMAGE_GLYPHS[String(attack.damage_type||'').toLowerCase()]||'weapon'}:null;
- const fallbacks=BATTLE_EFFECTS[item.action_ref]||BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
- const resolved=effect||(fallbacks?{kind:fallbacks[0],label:fallbacks[1],glyph:fallbacks[2]}:
-  item.class_feature_id==='step_of_the_wind'?{kind:'movement',label:'Scattare o Disimpegnarsi',glyph:'dash'}:null);
- if(!resolved)return '';
- // Only actual attack damage formulas get dice controls; never infer a damage roll.
- const label=resolved.kind==='damage'?'Danni':resolved.kind==='condition'?'Condizione':'Effetto';
- const detail=resolved.label+(resolved.type?' · '+resolved.type:'');
- const glyph=actionGlyph(resolved.glyph);
- const canRoll=resolved.kind==='damage'&&supportedDamage(resolved.label)&&/\d+d\d+/i.test(resolved.label);
- return '<div class="play-battle-effect" data-effect-kind="'+esc(resolved.kind)+'">'+
-  '<span class="play-battle-effect-kind">'+esc(label)+'</span>'+
-  '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(detail)+'</strong></span>'+
-  (canRoll?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+
+   glyph:DAMAGE_GLYPHS[String(attack.damage_type||'').toLowerCase()]||'weapon'});
+ else for(const bonus of arr(item.action_damage))if(bonus?.formula)effects.push(
+  {kind:'damage',label:String(bonus.formula).trim(),type:String(bonus.damage_type||'').trim(),
+   glyph:DAMAGE_GLYPHS[String(bonus.damage_type||'').toLowerCase()]||'weapon'});
+ const fallback=BATTLE_EFFECTS[item.action_ref]||BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
+ if(!attack&&fallback)effects.push({kind:fallback[0],label:fallback[1],glyph:fallback[2]});
+ else if(!attack&&!fallback&&item.class_feature_id==='step_of_the_wind')
+  effects.push({kind:'movement',label:'Scattare o Disimpegnarsi',glyph:'dash'});
+ return effects.map(resolved=>{
+  const label=resolved.kind==='damage'?'Danni':resolved.kind==='condition'?'Condizione':'Effetto';
+  const detail=resolved.label+(resolved.type?' · '+resolved.type:'');
+  const glyph=actionGlyph(resolved.glyph);
+  const canRoll=resolved.kind==='damage'&&supportedDamage(resolved.label)&&/\d+d\d+/i.test(resolved.label);
+  return '<div class="play-battle-effect" data-effect-kind="'+esc(resolved.kind)+'">'+
+   '<span class="play-battle-effect-kind">'+esc(label)+'</span>'+
+   '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(detail)+'</strong></span>'+
+   (canRoll?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+
     esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-attack-id="'+esc(attack?.id||'')+'" data-damage-label="'+esc(item.name)+
     '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+
-  '</div>';
+   '</div>';
+ }).join('');
 }
 // A computed attack's melee flag, not its name or source, selects the glyph.
 export function attackRowGlyphKey(attack={}){
@@ -473,7 +478,9 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+
    (!rolls.length&&mapButton?'<div class="play-battle-attack-roll-line">'+mapButton+'</div>':'')+
    '</div>':'')+
-  '</div>'+battleEffectMarkup({...item,name:actionName},selectedAttack)+'</article>';
+  '</div>'+battleEffectMarkup({...item,name:actionName,
+   action_damage:attack?[]:arr(calculated.action_damage_bonuses).filter(row=>
+    String(row.action_id)===String(item.id||''))},attack)+'</article>';
 }
 
 const classOrigin=row=>String(row?.origin_id||'').startsWith('class|')||
@@ -706,6 +713,13 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
     '<span>'+esc(label)+'</span></summary>'+
     '<div class="play-battle-action-rows">'+matching.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
+ const timingOverrides=entries.filter(row=>row.action_change_origin&&row.time!==row.original_time);
+ const damageOverrides=arr(calculated.action_damage_bonuses).flatMap(grant=>{
+  const action=allBase.find(row=>row.id===grant.action_id)||entries.find(row=>row.id===grant.action_id);
+  return action?[{...action,action_change_origin:grant.parent_origin||grant.origin_id,
+   action_change_feature:grant.origin_name||'',original_time:action.time,
+   action_damage:[grant]}]:[];
+ });
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
    weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div>',
@@ -715,8 +729,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   abilityEntries:classAbilities,
   basicActions:allBase,
   offhandEligibility,
-  overriddenActions:entries.filter(row=>row.action_change_origin&&
-    row.time!==row.original_time)
+  overriddenActions:timingOverrides,
+  modifiedActions:[...timingOverrides,...damageOverrides]
  };
 }
 
