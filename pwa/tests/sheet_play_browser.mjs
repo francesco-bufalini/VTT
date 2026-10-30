@@ -952,6 +952,7 @@ try{
  assert.equal(afterLong.pact_slots_spent,0);
  assert.deepEqual(afterLong.spell_slots_spent,Array(10).fill(0));
  assert(afterLong.current_hp>=afterShort.current_hp,'Long rest restores maximum HP');
+ assert.equal(afterLong.exhaustion,1,'A 2014 long rest reduces exhaustion by one level');
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
@@ -1003,13 +1004,13 @@ try{
   'Inventory objects disappear only when their section is deselected');
  await popup('inventory-add:documents');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
  assert(await page.locator('#sheet-play-view').textContent().then(t=>t.includes('Lettera della Luna')));
- await sheet('conditions');assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 2/);
+ await sheet('conditions');assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 1/);
  assert.equal(await page.locator('#sheet-play-view .play-status-card').count(),1);
  assert.deepEqual(await page.locator('#sheet-play-view .play-status-section-head h3').allTextContents(),['Condizioni','Incantesimi','Capacità']);
  assert.equal(await page.locator('#sheet-play-view .play-status-add').count(),3);
- await page.locator('#sheet-play-view [data-state-trait="state|condition:exhaustion:2"]').click();
- await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:2"][open]').waitFor();
- assert.match(await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:2"]').textContent(),/Livello 2/);
+ await page.locator('#sheet-play-view [data-state-trait="state|condition:exhaustion:1"]').click();
+ await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:1"][open]').waitFor();
+ assert.match(await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:1"]').textContent(),/Livello 1/);
  assert.equal(await page.locator('#sheet-context-dialog').count(),0);
  await sheet('conditions');
  const poisonedChip=page.locator('#sheet-play-view [data-active-condition="poisoned"]');
