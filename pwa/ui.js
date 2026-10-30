@@ -3168,6 +3168,27 @@ function learningSelectionDialogBody({title,closeAction,summary,searchLabel,sear
    '" role="list">'+results+'</div>'+extra+
    '<div class="actions"><button type="button" class="btn" data-act="'+esc(closeAction)+'">Chiudi</button></div></div>';
 }
+// The Fighting Style chooser uses exactly the same option rows and level
+// grouping as the Artificer's infusion learner; only its actions differ.
+function learningPickerOptionRow({id,name,owned,detailsAction,toggleAction,idAttribute,label,required=false,extra='',removeAction=''}) {
+ return '<div class="magic-catalog-row vtt-selectable'+(owned?' is-selected':'')+'">'+
+  '<button type="button" class="magic-catalog-name" data-act="'+esc(detailsAction)+'" '+idAttribute+'="'+esc(id)+
+  '" aria-label="Dettagli di '+esc(name)+'">'+esc(name)+'</button>'+
+  extra+'<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
+  '" data-act="'+esc(toggleAction)+'" '+idAttribute+'="'+esc(id)+'"'+
+  (required?' disabled title="Opzione obbligatoria"':'')+' aria-pressed="'+owned+'">'+esc(label)+'</button>'+
+  removeAction+'</div>';
+}
+function learningPickerOptionGroups(options,renderRow,levelOf,minLevel=0) {
+ if(!options.length)return '<p class="hint">Nessuna opzione disponibile.</p>';
+ const levels=[...new Set(options.map(row=>Math.max(minLevel,Number(levelOf(row))||minLevel)))]
+  .sort((a,b)=>a-b);
+ return '<div class="magic-groups">'+levels.map(level=>
+  '<section class="magic-level"><div class="magic-level-heading"><h4>'+
+  (level?'Livello '+level:'Opzioni base')+'</h4></div><div class="magic-entries">'+
+  options.filter(row=>Math.max(minLevel,Number(levelOf(row))||minLevel)===level)
+   .map(renderRow).join('')+'</div></section>').join('')+'</div>';
+}
 function genericPowerSelectionPanels(c,calculated){
  return (calculated.power_selections||[]).filter(model=>model.ui==='generic'&&model.selection_kind!=='subtrait').map(model=>{
   const automaticallyApplied=model.layers?.applied?.automatic&&model.layers?.learned;
@@ -3219,29 +3240,19 @@ async function openGenericPowerSelectionDialog(id,stage){
    Array.from({length:sub.count},(_,i)=>'<label>'+esc(sub.label||'Sotto-opzione')+' '+(i+1)+
     '<input type="text" data-power-subchoice="'+i+'" data-power-option="'+esc(option.id)+'" maxlength="70" value="'+
     esc(current?.subchoices?.[i]||'')+'" placeholder="'+esc(sub.placeholder||'Sotto-opzione')+'"></label>').join('')+'</div>':'';
-  return '<div class="magic-catalog-row vtt-selectable'+(owned?' is-selected':'')+'">'+
-   '<button type="button" class="magic-catalog-name" data-act="power-selection-details" data-power-option-id="'+esc(option.id)+'" aria-label="Dettagli di '+esc(option.name)+'">'+
-    esc(option.name)+(option.source?'<small>'+esc(option.source)+'</small>':'')+'</button>'+
-    fields+'<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
-    '" data-act="power-selection-toggle" data-power-option-id="'+esc(option.id)+'"'+
-    (required?' disabled title="Opzione obbligatoria"':'')+' aria-pressed="'+owned+'">'+
-    (required?'Obbligatoria':model.selection_kind==='subtrait'?(owned?(sub?'Aggiorna':'Rimuovi'):'Scegli'):
-     owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
-     stage==='learned'?'+ Impara':stage==='prepared'?'+ Prepara':'+ Applica')+'</button>'+
-    (owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
-    ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':'')+'</div>';
+  const label=required?'Obbligatoria':model.selection_kind==='subtrait'?
+   (owned?(sub?'Aggiorna':'Rimuovi'):'Scegli'):
+   owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
+   stage==='learned'?'+ Impara':stage==='prepared'?'+ Prepara':'+ Applica';
+  return learningPickerOptionRow({
+   id:option.id,name:option.name,owned,required,
+   detailsAction:'power-selection-details',toggleAction:'power-selection-toggle',
+   idAttribute:'data-power-option-id',label,extra:fields,
+   removeAction:owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
+    ' data-power-remove="true" data-power-option-id="'+esc(option.id)+'">Rimuovi</button>':''
+  });
  };
- const groupRows=rows=>'<div class="magic-entries">'+rows.map(choiceRow).join('')+'</div>';
- const renderChoices=shown=>{
-  if(!shown.length)return '<p class="hint">Nessuna opzione disponibile.</p>';
-  if(!shown.some(row=>Number(row.min_level||0)>0))return groupRows(shown);
-  return '<div class="magic-groups">'+
-   [...new Set(shown.map(row=>Math.max(0,Number(row.min_level)||0)))].sort((a,b)=>a-b)
-    .map(level=>'<section class="magic-level"><div class="magic-level-heading"><h4>'+
-     (level?'Livello '+level:'Opzioni base')+'</h4></div>'+
-     groupRows(shown.filter(row=>Math.max(0,Number(row.min_level)||0)===level))+'</section>')
-    .join('')+'</div>';
- };
+ const renderChoices=shown=>learningPickerOptionGroups(shown,choiceRow,row=>row.min_level||0);
  const targetPicker=stage==='applied'&&layer.target&&model.source_type==='inline'?
   '<label>Oggetto a cui applicare<select data-power-target-index>'+
   (record.inventory||[]).flatMap((item,index)=>Number(item.quantity??1)>0?
@@ -3356,18 +3367,12 @@ async function openInfusionPicker(mode){
  const results=dialog.querySelector(".infusion-picker-results");
  const paint=()=>{
   const shown=options.filter(row=>matchesSearch(input.value,row.name,row.source,row.replicates_item_name));
-  const levels=[...new Set(shown.map(row=>Math.max(2,Number(row.min_level)||2)))];
-  results.innerHTML=shown.length?'<div class="magic-groups">'+levels.map(level=>
-   '<section class="magic-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div><div class="magic-entries">'+
-   shown.filter(row=>Math.max(2,Number(row.min_level)||2)===level).map(row=>{
-    const isKnown=known.some(entry=>entry.id===row.id);
-    const active=isKnown;
-    const action=active?"Dimentica":"+ Impara";
-    return '<div class="magic-catalog-row vtt-selectable'+(active?' is-selected':'')+'">'+
-     '<button type="button" class="magic-catalog-name" data-act="infusion-picker-details" data-infusion-id="'+esc(row.id)+'" aria-label="Dettagli di '+esc(row.name)+'">'+esc(row.name)+'</button>'+
-     '<button type="button" class="magic-catalog-action'+(active?' is-selected':'')+'" data-act="infusion-picker-select" data-infusion-id="'+esc(row.id)+'" aria-pressed="'+active+'">'+action+'</button></div>';
-   }).join('')+'</div></section>').join('')+'</div>':
-    '<p class="hint">Nessuna infusione disponibile.</p>';
+  results.innerHTML=learningPickerOptionGroups(shown,row=>{
+   const owned=known.some(entry=>entry.id===row.id);
+   return learningPickerOptionRow({id:row.id,name:row.name,owned,
+    detailsAction:'infusion-picker-details',toggleAction:'infusion-picker-select',
+    idAttribute:'data-infusion-id',label:owned?'Dimentica':'+ Impara'});
+  },row=>row.min_level,2);
  };
  input.addEventListener("input",paint);paint();
  app.append(dialog);dialog.addEventListener("close",()=>dialog.remove(),{once:true});openDialog(dialog);
