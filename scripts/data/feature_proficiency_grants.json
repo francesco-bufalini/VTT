@@ -541,7 +541,10 @@
       "toolProficiencies": [
         {
           "choose": {
-            "from": ["calligrapher's supplies", "painter's supplies"],
+            "from": [
+              "calligrapher's supplies",
+              "painter's supplies"
+            ],
             "count": 1
           }
         }
@@ -559,6 +562,330 @@
       "languageProficiencies": [
         {
           "draconic": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "PHB",
+      "className": "Bard",
+      "classSource": "PHB",
+      "subclassShortName": "Lore",
+      "subclassSource": "PHB",
+      "level": 3,
+      "skillProficiencies": [
+        {
+          "any": 3
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "PHB",
+      "className": "Bard",
+      "classSource": "PHB",
+      "subclassShortName": "Valor",
+      "subclassSource": "PHB",
+      "level": 3,
+      "armorProficiencies": [
+        {
+          "medium": true,
+          "shield": true
+        }
+      ],
+      "weaponProficiencies": [
+        {
+          "martial": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiency",
+      "source": "PHB",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Life",
+      "subclassSource": "PHB",
+      "level": 1,
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Acolyte of Nature",
+      "source": "PHB",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Nature",
+      "subclassSource": "PHB",
+      "level": 1,
+      "skillProficiencies": [
+        {
+          "choose": {
+            "from": [
+              "animal handling",
+              "nature",
+              "survival"
+            ],
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiency",
+      "source": "PHB",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Nature",
+      "subclassSource": "PHB",
+      "level": 1,
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "PHB",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Tempest",
+      "subclassSource": "PHB",
+      "level": 1,
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ],
+      "weaponProficiencies": [
+        {
+          "martial": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "PHB",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "War",
+      "subclassSource": "PHB",
+      "level": 1,
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ],
+      "weaponProficiencies": [
+        {
+          "martial": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "TCE",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Order",
+      "subclassSource": "TCE",
+      "level": 1,
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ],
+      "skillProficiencies": [
+        {
+          "choose": {
+            "from": [
+              "intimidation",
+              "persuasion"
+            ],
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Implement of Peace",
+      "source": "TCE",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Peace",
+      "subclassSource": "TCE",
+      "level": 1,
+      "skillProficiencies": [
+        {
+          "choose": {
+            "from": [
+              "insight",
+              "performance",
+              "persuasion"
+            ],
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "TCE",
+      "className": "Cleric",
+      "classSource": "PHB",
+      "subclassShortName": "Twilight",
+      "subclassSource": "TCE",
+      "level": 1,
+      "armorProficiencies": [
+        {
+          "heavy": true
+        }
+      ],
+      "weaponProficiencies": [
+        {
+          "martial": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Student of War",
+      "source": "PHB",
+      "className": "Fighter",
+      "classSource": "PHB",
+      "subclassShortName": "Battle Master",
+      "subclassSource": "PHB",
+      "level": 3,
+      "toolProficiencies": [
+        {
+          "anyArtisansTool": 1
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Arcane Archer Lore",
+      "source": "XGE",
+      "className": "Fighter",
+      "classSource": "PHB",
+      "subclassShortName": "Arcane Archer",
+      "subclassSource": "XGE",
+      "level": 3,
+      "skillProficiencies": [
+        {
+          "choose": {
+            "from": [
+              "arcana",
+              "nature"
+            ],
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Implements of Mercy",
+      "source": "TCE",
+      "className": "Monk",
+      "classSource": "PHB",
+      "subclassShortName": "Mercy",
+      "subclassSource": "TCE",
+      "level": 3,
+      "skillProficiencies": [
+        {
+          "insight": true,
+          "medicine": true
+        }
+      ],
+      "toolProficiencies": [
+        {
+          "herbalism kit": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Otherworldly Glamour",
+      "source": "TCE",
+      "className": "Ranger",
+      "classSource": "PHB",
+      "subclassShortName": "Fey Wanderer",
+      "subclassSource": "TCE",
+      "level": 3,
+      "skillProficiencies": [
+        {
+          "choose": {
+            "from": [
+              "deception",
+              "performance",
+              "persuasion"
+            ],
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Bonus Proficiencies",
+      "source": "PHB",
+      "className": "Rogue",
+      "classSource": "PHB",
+      "subclassShortName": "Assassin",
+      "subclassSource": "PHB",
+      "level": 3,
+      "toolProficiencies": [
+        {
+          "disguise kit": true,
+          "poisoner's kit": true
+        }
+      ]
+    },
+    {
+      "kind": "classFeature",
+      "name": "Slippery Mind",
+      "source": "PHB",
+      "className": "Rogue",
+      "classSource": "PHB",
+      "level": 15,
+      "saveProficiencies": [
+        {
+          "wis": true
+        }
+      ]
+    },
+    {
+      "kind": "subclassFeature",
+      "name": "Training in War and Song (Bladesinging)",
+      "source": "TCE",
+      "className": "Wizard",
+      "classSource": "PHB",
+      "subclassShortName": "Bladesinging",
+      "subclassSource": "TCE",
+      "level": 2,
+      "armorProficiencies": [
+        {
+          "light": true
+        }
+      ],
+      "skillProficiencies": [
+        {
+          "performance": true
         }
       ]
     }
