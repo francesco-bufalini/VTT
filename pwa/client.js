@@ -20,9 +20,14 @@ async function exchange(path, token = "", action = null, timeoutMs = TIMEOUT_MS)
       body: action ? JSON.stringify(action) : undefined,
       cache: "no-store", credentials: "omit", signal: controller.signal
     });
-    const data = await response.json();
+    // Preserve the HTTP status even when a proxy sends HTML or no error body.
+    // Successful responses still require valid JSON.
+    const data = await response.json().catch(error => {
+      if (response.ok) throw error;
+      return null;
+    });
     if (!response.ok) {
-      const error = new Error(data.error || "Desktop request failed");
+      const error = new Error(data?.error || "Desktop request failed");
       error.status = response.status;
       throw error;
     }

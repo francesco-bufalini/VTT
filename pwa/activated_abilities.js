@@ -2,7 +2,7 @@
 // feature/origin graph as the sheet, never from guessed class-level thresholds.
 import {companionOwnerActions} from './companion_rules.js';
 import {featureActionEntries,classFeatureDescriptors} from "./feature_mechanics.js";
-import {activeInfusions,infusionChargeTrackerId,ownedItemDisplayName} from "./item_controls.js";
+import {activeItemOptionEffects,ownedItemDisplayName} from "./item_controls.js";
 const rows=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??"").trim().toLowerCase();
 
@@ -42,6 +42,7 @@ export async function loadActivatedAbilities(){
 // includeUnavailable is only for read-only previews. Never use these entries
 // to authorize an activation or bypass the normal eligibility checks.
 export function abilitiesForCreature(creature={},manifest=[],projection={},options={}){
+ creature=projection.selection_record||creature;
   const includeUnavailable=options.includeUnavailable===true;
   const result=[],seen=new Set();
   const add=(definition,origin,originId="",owner="")=>{
@@ -144,14 +145,14 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   }
   // Activate only real, equipped/attuned item copies. Infusion actions reuse
   // the same ability + tracker pipeline as class powers and other abilities.
-  for(const applied of activeInfusions(creature,projection.infusion_catalog||[],projection.features||[])){
+  for(const applied of activeItemOptionEffects(creature,projection.infusion_catalog||[],projection.features||[])){
     const {item,definition,index}=applied;
     const trait='item:'+String(item.id)+'|'+applied.id;
     const display=ownedItemDisplayName(item);
     for(const action of rows(definition.item_abilities)){
       if(!action?.id||!action.name||!action.action_type||action.action_type==='passive')continue;
       const cost=Math.max(0,Number(action.resource_cost)||0);
-      const trackerId=cost?infusionChargeTrackerId(item,index):'';
+      const trackerId=cost?applied.tracker_id:'';
       if(cost&&!rows(projection.trackers).some(t=>t.id===trackerId&&!t.disabled))continue;
       add({id:'infusion-action:'+applied.id+':'+action.id,name:action.name,
         source:definition.source||'TCE',feature_id:trait,feature_name:display,

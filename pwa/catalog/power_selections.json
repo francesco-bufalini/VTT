@@ -25,54 +25,11 @@
         "layer": "learned",
         "limit": "cantrips"
       },
-      "ui": "existing"
+      "ui": "existing",
+      "benefit_type": "spell_selection"
     }
   ],
   "selections": [
-    {
-      "id": "artificer_infusions",
-      "title": "Infusioni",
-      "owner": {
-        "class_name": "Artificer",
-        "class_source": "TCE",
-        "trait": "Infuse Item"
-      },
-      "option_kind": "infusion",
-      "source": {
-        "type": "infusion_catalog"
-      },
-      "layers": {
-        "learned": {
-          "limit": "infusion_known",
-          "trigger": "level_up",
-          "storage": "optional_features_catalog"
-        },
-        "applied": {
-          "limit": "infusion_active",
-          "trigger": "long_rest",
-          "storage": "inventory.infusion",
-          "refund_on_remove": true
-        }
-      },
-      "ui": "generic",
-      "benefit_type": "option_selection",
-      "on_apply": "companion_grant",
-      "granted_trait": {
-        "benefits": [
-          {
-            "type": "object_extension",
-            "target": {
-              "kind": "item",
-              "selector": "option.item_selector",
-              "label": "Oggetto compatibile",
-              "allow_catalog": true,
-              "extension_field": "infusion",
-              "option_item_id": "plan_item_id"
-            }
-          }
-        ]
-      }
-    },
     {
       "id": "arcane_armor",
       "title": "Armatura Arcana",
@@ -94,7 +51,24 @@
               "name": "Arcane Armor",
               "source": "TCE"
             },
-            "description": "Armatura Arcana: l’oggetto riceve i benefici del privilegio e permette di scegliere un modello."
+            "description": "Armatura Arcana: l’oggetto riceve i benefici del privilegio e permette di scegliere un modello.",
+            "item_effects": {
+              "id": "arcane_armor",
+              "name": "Armatura Arcana",
+              "effect_extensions": [
+                {
+                  "id": "armorer-arcane-armor-ignore-strength-2014",
+                  "rules_version": "2014",
+                  "target_kind": "item",
+                  "target_name": "@equipped_armor",
+                  "operation": "ignore_armor_strength",
+                  "trigger": "passive",
+                  "frequency": "each",
+                  "value": "",
+                  "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza."
+                }
+              ]
+            }
           }
         ]
       },
@@ -104,25 +78,18 @@
           "storage": "power_applications"
         }
       },
-      "granted_trait": {
-        "benefits": [
-          {
-            "type": "object_extension",
-            "target": {
-              "kind": "item",
-              "label": "Oggetto da estendere",
-              "allow_catalog": true
-            },
-            "benefits": [
-              {
-                "type": "option_selection",
-                "selection_id": "armor_model"
-              }
-            ]
-          }
-        ]
+      "application": {
+        "destination": "item",
+        "target": {
+          "kind": "item",
+          "label": "Oggetto da estendere",
+          "allow_catalog": true
+        }
       },
-      "legacy_selection_group": "armor_model"
+      "compatibility": {
+        "selected_group": "armor_model",
+        "target_slot": "body"
+      }
     },
     {
       "id": "armor_model",
@@ -135,14 +102,128 @@
       },
       "option_kind": "trait_state",
       "source": {
-        "type": "trait_states",
-        "group": "armor_model"
+        "type": "inline",
+        "options": [
+          {
+            "id": "armor_model:guardian",
+            "group": "armor_model",
+            "category": "stato",
+            "name": "Modello armatura · Guardiano",
+            "trait": "Armor Model",
+            "class_name": "Artificer",
+            "class_source": "TCE",
+            "subclass": "Armorer",
+            "require_equipped": {
+              "extension_selection": "arcane_armor"
+            },
+            "summary": "Armatura Arcana · Guardiano; guanti del tuono (svantaggio condizionale sul bersaglio colpito) e Campo difensivo.",
+            "attacks": [
+              {
+                "id": "class_feature:thunder_gauntlets",
+                "trait": "Thunder Gauntlets",
+                "name": "Thunder Gauntlets",
+                "damage": "1d8",
+                "damage_type": "T",
+                "melee": true,
+                "ability": "str",
+                "intelligence_override": true,
+                "range_feet": 5,
+                "on_hit_effects": [
+                  {
+                    "operation": "roll_mode",
+                    "target": "attack_roll",
+                    "mode": "disadvantage",
+                    "trigger": "on_hit",
+                    "condition_label": "Attacchi contro creature diverse dall'Artefice che ha colpito",
+                    "duration": "until_start_of_next_turn",
+                    "description": "Il bersaglio colpito ha svantaggio ai tiri per colpire contro creature diverse dall'Artefice fino all'inizio del prossimo turno dell'Artefice."
+                  }
+                ]
+              }
+            ],
+            "granted_features": [
+              "Defensive Field"
+            ],
+            "selection_recovery": "short_rest",
+            "description": "Armatura Arcana · Guardiano; guanti del tuono (svantaggio condizionale sul bersaglio colpito) e Campo difensivo.",
+            "effects": [
+              {
+                "type": "state_selection",
+                "field": "trait_state_selection",
+                "key": "armor_model",
+                "value": "armor_model:guardian"
+              }
+            ]
+          },
+          {
+            "id": "armor_model:infiltrator",
+            "group": "armor_model",
+            "category": "stato",
+            "name": "Modello armatura · Infiltratore",
+            "trait": "Armor Model",
+            "class_name": "Artificer",
+            "class_source": "TCE",
+            "subclass": "Armorer",
+            "require_equipped": {
+              "extension_selection": "arcane_armor"
+            },
+            "summary": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini, Passi Potenziati e vantaggio alle prove di Furtività.",
+            "attacks": [
+              {
+                "id": "class_feature:lightning_launcher",
+                "trait": "Lightning Launcher",
+                "name": "Lightning Launcher",
+                "damage": "1d6",
+                "damage_type": "L",
+                "melee": false,
+                "ability": "dex",
+                "intelligence_override": true,
+                "range_feet": 90,
+                "long_range_feet": 300,
+                "bonus_die": {
+                  "id": "lightning-launcher:extra",
+                  "dice": "1d6",
+                  "damage_type": "lightning",
+                  "name": "Lightning Launcher · danno aggiuntivo",
+                  "tracker_id": "feature:lightning_launcher:extra_damage",
+                  "recharge": "turn",
+                  "max": 1
+                }
+              }
+            ],
+            "numeric_grants": [
+              {
+                "id": "powered_steps",
+                "trait": "Powered Steps",
+                "target": "speed",
+                "amount": 5
+              }
+            ],
+            "selection_recovery": "short_rest",
+            "roll_modes": [
+              {
+                "trait": "Dampening Field",
+                "target": "skill:stealth",
+                "mode": "advantage"
+              }
+            ],
+            "description": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini, Passi Potenziati e vantaggio alle prove di Furtività.",
+            "effects": [
+              {
+                "type": "state_selection",
+                "field": "trait_state_selection",
+                "key": "armor_model",
+                "value": "armor_model:infiltrator"
+              }
+            ]
+          }
+        ]
       },
       "layers": {
         "applied": {
           "limit": 1,
           "trigger": "short_rest",
-          "storage": "trait_state_selection.armor_model",
+          "storage": "power_applications",
           "refund_on_remove": true
         }
       },
@@ -151,6 +232,10 @@
       "requires_application": {
         "selection": "arcane_armor",
         "bound": true
+      },
+      "application": {
+        "destination": "origin",
+        "exclusive": true
       }
     },
     {

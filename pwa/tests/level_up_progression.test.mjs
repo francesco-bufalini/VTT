@@ -125,10 +125,8 @@ test('level up projection exposes class casting, spell grants, infusions, resour
    casting_classes:[{id:'w',name:'Wizard',mode:'Preparati',limit:5,cantrips:4,max_level:2}],
    origin_spells:[{id:'grant:1',spell_id:'shield'}],trackers:[{id:'charges',name:'Cariche',max:3}],
    proficiencies:['skill:arcana','skill:history'],values:{attunement_max:4},attacks_per_action:2};
+ next.selection_models=[{id:'options',title:'Infusioni',level:2,layers:{learned:{limit:4},applied:{limit:2}},options:[{id:'a',name:'Enhanced Defense',min_level:2}]}];
  const changes=levelUpProjectionChanges(old,next,{
-   beforeInfusions:{level:1,known:0,active:0},
-   afterInfusions:{level:2,known:4,active:2},
-   beforeInfusionOptions:[],afterInfusionOptions:[{id:'a',name:'Enhanced Defense'}],
    spells:[{id:'shield',name:'Shield'}]});
  const byLabel=Object.fromEntries(changes.map(row=>[row.label,row]));
  assert.deepEqual([byLabel['Bonus competenza'].from,byLabel['Bonus competenza'].to],[2,3]);
@@ -136,9 +134,9 @@ test('level up projection exposes class casting, spell grants, infusions, resour
  assert.equal(byLabel['Wizard · Trucchetti'].to,4);
  assert.equal(byLabel['Wizard · Livello massimo incantesimi'].to,2);
  assert.equal(byLabel['Slot incantesimi · 2°'].to,2);
- assert.equal(byLabel['Infusioni conosciute · massimo'].to,4);
- assert.equal(byLabel['Infusioni applicabili · massimo'].to,2);
- assert.deepEqual(byLabel['Nuove infusioni selezionabili'].options,['Enhanced Defense']);
+ assert.equal(byLabel['Infusioni · Opzioni imparabili · massimo'].to,4);
+ assert.equal(byLabel['Infusioni · Opzioni applicabili · massimo'].to,2);
+ assert.deepEqual(byLabel['Infusioni · Nuove opzioni selezionabili'].options,['Enhanced Defense']);
  assert.deepEqual(byLabel['Incantesimi concessi dai privilegi'].options,['Shield']);
  assert.equal(byLabel['Risorsa · Cariche'].to,3);
  assert.equal(byLabel['Attacchi per azione'].to,2);
@@ -155,25 +153,22 @@ test('multi-level progression calculates each step separately',async()=>{
    spell_slots:[{level:1,total:rec.level},{level:2,total:rec.level<3?0:1}],
    features:[{key:'infuse',name:'Infuse Item',level:2,origin_key:'class|tce|artificer'}]
      .filter(f=>f.level<=rec.level),
-   trackers:[]});
- const infusionCaps=rec=>({
-   level:rec.level,known:rec.level<2?0:rec.level<4?4:6,
-   active:rec.level<2?0:rec.level<4?2:3});
+   trackers:[],selection_models:rec.level<2?[]:[{id:'options',title:'Infusioni',level:rec.level,layers:{learned:{limit:rec.level<4?4:6},applied:{limit:rec.level<4?2:3}},options:[{id:'one',name:'Infusion I',min_level:2},{id:'two',name:'Infusion II',min_level:4}]}]});
  const rows=levelUpProgressionImpact(base,{
    className:'Artificer',classSource:'TCE',classIndex:0,
    fromLevel:1,toLevel:4}, {classMechanics:{},
      abilityGrants:{artificer_infusions:[
        {id:'one',name:'Infusion I',min_level:2},
        {id:'two',name:'Infusion II',min_level:4}]}},
-   calculated,infusionCaps);
+   calculated);
  assert.deepEqual(rows.map(r=>r.level),[2,3,4]);
  assert.deepEqual(rows.map(r=>r.totalLevel),[2,3,4]);
  assert.deepEqual(rows[0].features.map(f=>f.name),['Infuse Item']);
- assert.ok(rows[0].changes.some(c=>c.label==='Infusioni conosciute · massimo'&&c.to===4));
- assert.ok(rows[0].changes.some(c=>c.label==='Nuove infusioni selezionabili'&&
+ assert.ok(rows[0].changes.some(c=>c.label==='Infusioni · Opzioni imparabili · massimo'&&c.to===4));
+ assert.ok(rows[0].changes.some(c=>c.label==='Infusioni · Nuove opzioni selezionabili'&&
    c.options.includes('Infusion I')));
  assert.ok(rows[1].changes.some(c=>c.label==='Artificer · Livello massimo incantesimi'));
- assert.ok(rows[2].changes.some(c=>c.label==='Nuove infusioni selezionabili'&&
+ assert.ok(rows[2].changes.some(c=>c.label==='Infusioni · Nuove opzioni selezionabili'&&
    c.options.includes('Infusion II')));
 });
 

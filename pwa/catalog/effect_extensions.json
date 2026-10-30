@@ -395,7 +395,8 @@
       "trigger": "passive",
       "frequency": "each",
       "value": "",
-      "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza."
+      "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza.",
+      "compatibility_selection_id": "arcane_armor"
     }
   ]
 }

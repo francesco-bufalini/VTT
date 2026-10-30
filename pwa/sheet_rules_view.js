@@ -7,7 +7,7 @@ import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeItemOptionEffects,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
 const inventoryContainers=inventoryModule.inventoryContainers||((record={})=>{
@@ -645,7 +645,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const panels=[...bank.querySelectorAll(':scope > .panel')];
  panels.forEach((node,i)=>bind('panel:'+i,node));
  const panelNamed=(name)=>panels.find(node=>heading(node).includes(name));
- const infused=activeInfusions(c,d.infusion_catalog||[],d.features||[]);
+ const infused=activeItemOptionEffects(d.selection_record||c,d.infusion_catalog||[],d.features||[]);
  const availableConditions=conditionOptions(conditionCatalog,c.rules_version,c.conditions||[]);
  const activeConditions=availableConditions.filter(row=>row.id!=='exhaustion'&&
    (c.conditions||[]).includes(row.id));
@@ -1393,8 +1393,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const abilityEditor=document.createElement('div');abilityEditor.innerHTML='<div class="play-effect-add">'+abilityPicker+'</div>';bind('apply-ability',abilityEditor.firstElementChild);
   const infusionRows=infused.map(row=>
    '<div class="play-effect-row">'+activeLink('infusion:'+row.id,'spark',row.name,
-    (row.item.name||row.item.id)+' · Infusione equipaggiata')+
-   btn('Termina infusione','cross','data-act="infusion-clear" data-index="'+row.index+'"','<span class="sr-only">Termina</span>')+
+    (row.item.name||row.item.id)+' · Beneficio dell’oggetto')+
+   btn('Rimuovi beneficio dall’oggetto','cross','data-act="item-option-remove" data-index="'+row.index+'" data-selection-id="'+esc(row.infusion.selection_id||'')+'" data-option-id="'+esc(row.option_id||'')+'"','<span class="sr-only">Termina</span>')+
    '</div>').join('');
   const concentrationRow=(c.conditions||[]).includes('concentrating')?
    '<div class="play-effect-row">'+activeLink('condition:concentrating','spark','Concentrazione',c.concentrating_spell_id||'Attiva')+

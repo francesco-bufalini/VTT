@@ -4,7 +4,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses} from './sheet_rules.js';
-import {activeInfusions,infusionInstanceOrigin,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts} from './item_controls.js';
+import {activeItemOptionEffects,infusionInstanceOrigin,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts} from './item_controls.js';
 import {traitIsActive} from './trait_benefit_editor.js';
 import {conditionOptions,conditionDescriptionHtml,exhaustionLevel,exhaustionConditionRows} from './condition_catalog.js';
 
@@ -37,6 +37,7 @@ function sourceDisabled(record,id){
 
 // Dependency injection keeps the rules testable without IndexedDB, HTTP or Godot.
 export async function collectTraitRows(record={},calculated={},providers={}){
+ record=calculated.selection_record||record;
  const {entries=async()=>[],detail=async(_category,row)=>row,isDocument=()=>false,
   conditionLabel=id=>String(id).replaceAll('_',' '),conditionCatalog=null,spells=[]}=providers;
  const rows=[],loaded=new Map(),used=new Set();
@@ -222,7 +223,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   infusionDefinitions.some(def=>def.id===option.id||
     same(def.name,option.name)&&same(option.source||'TCE',def.source||'TCE'))));
  for(const optional of arr(record.optional_features_catalog)){
-  if(!optional?.name||isInfusionOption(optional)||optional.application_managed&&optional.disabled)continue;
+  if(!optional?.name||optional.selection_origin_id||isInfusionOption(optional)||optional.application_managed&&optional.disabled)continue;
   const ownId=optional.origin_id||'optional|'+norm(optional.source)+'|'+norm(optional.name);
   const details=await lookup('optional_features',optional.name,optional.source)||optional;
   add({name:optional.name,entries:details.entries??details.description??optional.entries??'',
@@ -231,15 +232,6 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     resource_name:optional.resource_name||details.resource_name||''},
     {category:'altro',origin:'Privilegio opzionale · '+optional.name,
      origin_key:ownId,level:0,rank:2,inactive:!!optional.disabled});
- }
- const appliedTraits=arr(calculated.power_selections).flatMap(model=>arr(model.layers?.applied?.selected)
-  .filter(row=>row.trait).map(row=>({...row,selection_id:model.id})));
- for(const application of appliedTraits){
-  const trait=application.trait,reference=trait.details;
-  const detail=reference?await lookup(reference.category,reference.name,reference.source):null;
-  add({name:trait.name,entries:detail?.entries||detail?.description||trait.description,
-   feature_origin:trait.origin_id,benefits:trait.benefits},
-   {category:'altro',origin:'Opzione applicata · '+trait.name,origin_key:trait.origin_id,rank:2,level:0});
  }
  for(const origin of arr(record.proficiency_origins)){
   if(origin?.group!=='spell'||!String(origin.id||'').startsWith('spell:'))continue;
@@ -257,7 +249,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   calculated.values?.attunement_max??record.attunement_max_base??3);
  const effectiveInventory=arr(record.inventory).map((item,i)=>requiresAttunement(resolveOwnedItem(item))?
   {...item,attuned_count:attunements[i]||0,attuned:attunements[i]>0}:item);
- const activeByIndex=new Map(activeInfusions({...record,inventory:effectiveInventory},
+ const activeByIndex=new Map(activeItemOptionEffects({...record,inventory:effectiveInventory},
   infusionDefinitions,calculated.features||[]).map(applied=>[applied.index,applied]));
  for(const [index,item] of arr(record.inventory).entries()){
   if(!item?.id||Number(item.quantity??1)<=0||isDocument(item))continue;
@@ -274,8 +266,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const infusionName=infusion?
     infusionDefinitions.find(def=>def.id===infusion.id)?.name||infusion.name||'Infusione':'';
   const instanceOrigin=infusion?infusionInstanceOrigin(item,index):'';
-  const extension=appliedTraits.find(row=>row.target_item_id===(item.instance_id||item.id));
-  const groupKey=infusion?id+'|'+instanceOrigin:extension?id+'|'+extension.trait.origin_id:id;
+  const extension=arr(item.option_extensions)[0];
+  const groupKey=infusion?id+'|'+instanceOrigin:extension?id+'|'+(item.instance_id||item.id):id;
   const group=groupedItems.get(groupKey)||{item,quantity:0,activeQuantity:0,
    slotted,needsAttunement:false,indices:[],infusionName,infusionOrigin:''};
   group.indices.push(index);
@@ -309,7 +301,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
       itemDescription?[itemDescription]:[]),
       ...(Array.isArray(infusionDescription)?infusionDescription:[infusionDescription])];
   }
-  const extensions=appliedTraits.filter(row=>row.target_item_id&&(row.target_item_id===(item.instance_id||item.id)));
+  const extensions=arr(item.option_extensions).map(e=>({id:e.id,trait:{name:e.name,description:e.description,details:e.details}}));
   for(const row of extensions){
    // Legacy infusion descriptions are already included by the inventory adapter.
    if(item.infusion?.id===row.id)continue;
@@ -324,16 +316,25 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   }
   add({name:displayName,entries:description,source:info.source||item.source,
    item_id:id,item_inventory_indices:group.indices,extension_choice_origin:extensions.length?'item-instance:'+(item.instance_id||item.id):'',
-   extension_origin_ids:arr(calculated.power_selections).filter(model=>model.origin_id==='item-instance:'+(item.instance_id||item.id)).flatMap(model=>[model.source_origin_id,
+   extension_origin_ids:['item-instance:'+(item.instance_id||item.id),...activeItemOptionEffects({...record,inventory:effectiveInventory},infusionDefinitions,calculated.features||[]).filter(effect=>group.indices.includes(effect.index)).map(effect=>effect.id),...arr(calculated.power_selections).filter(model=>model.origin_id==='item-instance:'+(item.instance_id||item.id)).flatMap(model=>[model.source_origin_id,
     ...arr(model.layers.applied?.selected).flatMap(selected=>{
       const option=model.options.find(row=>row.id===(typeof selected==='string'?selected:selected.id));
       const names=[...arr(option?.granted_features),...arr(option?.attacks).map(row=>row.trait)];
       return arr(calculated.features).filter(feature=>names.includes(feature.name)).map(feature=>feature.origin_id);
-    })]).filter(Boolean),
+    })])].filter(Boolean),
    item_base_origin:'item:'+id,infusion_origin_id:group.infusionOrigin,
    item_quantity:group.quantity,item_active_quantity:group.activeQuantity,
    item_requires_attunement:group.needsAttunement,
    action_type:item.action_type||info.action_type||info.activation||''}, {...options,rank:0});
+ }
+ for(const model of arr(calculated.selection_models||calculated.power_selections)){
+  if(model.application?.destination==='item')continue;
+  const owner=rows.find(trait=>trait.feature_origin===model.origin_id);if(!owner)continue;
+  for(const chosen of arr(model.layers.applied?.selected)){
+   const option=model.options.find(o=>o.id===(typeof chosen==='string'?chosen:chosen.id));if(!option)continue;
+   const reference=option.details,detail=reference?await lookup(reference.category,reference.name,reference.source):null;
+   owner.entries=[...(Array.isArray(owner.entries)?owner.entries:[owner.entries]),{name:option.name,entries:detail?.entries||[option.description||'']}];
+  }
  }
  // Persistent effects share stable state-trait keys with the States cards.
  // These are read-only projections: native numeric/mechanical state is unchanged.
@@ -408,7 +409,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
  // cover portable grants absent from a descriptive index without duplicating.
  for(const feature of arr(calculated.features)){
   const originKey=String(feature.origin_key||'altro');
-  if(originKey.startsWith('monster|'))continue; // Already projected with its exact card identity.
+  if(originKey.startsWith('monster|')||feature.selection_origin_id)continue; // Already projected with its exact card identity.
   // Do not resurrect item-only structured features for unequipped inventory,
   // and do not replace the full item description with partial effect text.
   if(originKey.startsWith('item:')||
@@ -454,7 +455,7 @@ export function stateTraitNavigationKey(key,traits=[],infusions=[]){
  const infusion=infusions.find(row=>String(row.id)===key.slice(prefix.length));
  if(!infusion)return key;
  return traits.find(row=>row.category==='oggetti'&&
-   row.infusion_origin_id===infusion.id&&
+   (row.infusion_origin_id===infusion.id||arr(row.extension_origin_ids).includes(infusion.id))&&
    Array.isArray(row.item_inventory_indices)&&
    row.item_inventory_indices.includes(infusion.index))?.key||key;
 }

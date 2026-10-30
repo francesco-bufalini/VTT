@@ -1,10 +1,11 @@
+import {learnInfusionPatch,learnedInfusions,applyInfusionPatch} from './fixtures/legacy_infusion_records.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {collectTraitRows,stateTraitNavigationKey} from '../trait_projection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {calculateSheet} from '../sheet_rules.js';
-import {activeInfusions,learnInfusionPatch,learnedInfusions,applyInfusionPatch,clearInfusionPatch} from '../item_controls.js';
+import {activeInfusions,clearInfusionPatch} from '../item_controls.js';
 
 const abilityGrants=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const effectExtensions=JSON.parse(readFileSync(new URL('../catalog/effect_extensions.json',import.meta.url),'utf8')).extensions;

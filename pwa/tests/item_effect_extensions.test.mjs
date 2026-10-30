@@ -1,3 +1,4 @@
+import {applyInfusionPatch,learnInfusionPatch,learnedInfusions} from './fixtures/legacy_infusion_records.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,7 +6,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureRollSources} from '../feature_mechanics.js';
 import {collectEffectExtensions,effectExtensionsFor,applyEffectExtensions} from '../effect_extensions.js';
 import {addBenefitPatch,removeBenefitPatch} from '../trait_benefit_editor.js';
-import {applyInfusionPatch,clearInfusionPatch,learnInfusionPatch,learnedInfusions,infusionNumericBonuses} from '../item_controls.js';
+import {clearInfusionPatch,infusionNumericBonuses} from '../item_controls.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 
 const abilityGrants=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));

@@ -72,6 +72,7 @@ const SHELL = [
   "/feature_mechanics.js",
   "/barbarian_2014.js",
   "/trait_state_rules.js",
+  "/selection_compatibility.js",
   "/power_selection.js",
   "/optional_feature_progression.js",
   "/native_sheet.js",

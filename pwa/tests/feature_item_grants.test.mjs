@@ -1,8 +1,9 @@
+import {infusionLimits} from './fixtures/legacy_infusion_records.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
-import {infusionLimits} from '../item_controls.js';
+
 import {featureItemGrants,claimFeatureItemPatch,featureItemPowers} from '../feature_item_grants.js';
 import {classFeatureRollSources} from '../feature_mechanics.js';
 

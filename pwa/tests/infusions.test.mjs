@@ -1,11 +1,11 @@
+import {infusionLimits,learnedInfusions,infusionEligible,compatibleInfusionTargets,learnInfusionPatch,applyInfusionPatch,forgetInfusionPatch} from './fixtures/legacy_infusion_records.mjs';
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
- artificerLevel,infusionLimits,learnedInfusions,infusionEligible,infusionNumericBonuses,
+ artificerLevel,infusionNumericBonuses,
  infusionGrantingTrait,activeInfusions,infusionChargeTrackers,infusionChargeTrackerId,ownedItemDisplayName,
- targetableInventoryItems,compatibleInfusionTargets,
- learnInfusionPatch,applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch,expandedInfusionDefinitions
+ targetableInventoryItems,clearInfusionPatch,expandedInfusionDefinitions
 } from "../item_controls.js";
 import {calculateSheet} from "../sheet_rules.js";
 import {abilitiesForCreature} from "../activated_abilities.js";
