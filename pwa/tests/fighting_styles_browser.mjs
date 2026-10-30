@@ -82,8 +82,8 @@ try{
     return !!(await listCreatures())[0]?.creature?.power_selections?.[id]?.learned?.length;
    },progression);
    await page.locator('#sheet-play-view').getByText('Two-Weapon Fighting').waitFor();
-   await page.locator('#power-selection-dialog [data-act="power-selection-close"]').click();
-  }else await dialog.locator('[data-act="power-selection-close"]').click();
+   await page.locator('#power-selection-dialog [data-act="power-selection-close"]').last().click();
+  }else await dialog.locator('[data-act="power-selection-close"]').last().click();
  }
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
  console.log('PASS: Fighting Style learning shows and scrolls all rows on mobile/desktop, searches and saves selections');
