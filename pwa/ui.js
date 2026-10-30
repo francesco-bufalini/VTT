@@ -7702,6 +7702,7 @@ async function handleAction(target){
       dialog.usedRollBonuses=chosenRollBonuses(dialog).filter(item=>item.selectionId!==row.selectionId);
       target.dataset.rollUsed='false';target.textContent='Usa';
       dialog.renderRollFormula?.();
+      recordSheetAction('Bonus rimosso dal tiro: '+String(row.origin_name||row.name||row.id||'Bonus'));
       return;
     }
     if(!row||target.dataset.rollUsed==='true'||dialog.appliedBonusIds.has(row.selectionId)||
@@ -7746,6 +7747,7 @@ async function handleAction(target){
           if(!revised)dialog.usedRollBonuses.push(selected);
           target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
           dialog.renderRollFormula?.();
+          recordSheetAction('Bonus applicato al tiro: '+String(row.origin_name||row.name||action.name||'Bonus'));
           if(revised)void announcePostRollBonus(revised);
         }
       });
@@ -7788,6 +7790,7 @@ async function handleAction(target){
       target.textContent=row.tracker_id?'Attivo':'Rimuovi';
       target.dataset.rollUsed='true';target.disabled=!!row.tracker_id;
       dialog.renderRollFormula?.();
+      recordSheetAction('Modalità del tiro: '+String(row.origin_name||row.name||row.roll_mode));
       return;
     }
     const revised=applyPostRollBonus(dialog,row);
@@ -7798,6 +7801,8 @@ async function handleAction(target){
     }
     target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
     dialog.renderRollFormula?.();
+    recordSheetAction('Bonus applicato al tiro: '+String(row.origin_name||row.name||row.id||'Bonus')+
+      (row.dice?' · '+row.dice:Object.hasOwn(row,'flat_bonus')?' · '+row.flat_bonus:''));
     if(revised)await announcePostRollBonus(revised);
     return;
   }
@@ -7908,7 +7913,11 @@ async function handleAction(target){
       if(formula)formula.innerHTML=formulaMarkup([...chosenRollBonuses(dialog),...(dialog.postRollBonuses||[])],choice);
     };
     dialog.addEventListener('change',event=>{
-      if(event.target.matches('[data-roll-mode]'))dialog.renderRollFormula();
+      if(event.target.matches('[data-roll-mode]')){
+        dialog.renderRollFormula();
+        const chosen=event.target.selectedOptions?.[0]?.textContent||event.target.value;
+        recordSheetAction('Modalità tiro selezionata: '+chosen,creature);
+      }
     });
     return;
   }
