@@ -1298,7 +1298,21 @@
         "FS:F",
         "FS:R"
       ],
-      "description": "You gain a +2 bonus to attack rolls you make with ranged weapons."
+      "description": "You gain a +2 bonus to attack rolls you make with ranged weapons.",
+      "effects": [
+        {
+          "type": "bonus",
+          "target": "attack_hit:*",
+          "expression": "2",
+          "requirements": {
+            "attack": {
+              "kind": "weapon",
+              "weapon_type": "ranged",
+              "range_kind": "ranged"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "optional:tce:armor-of-magical-strength",
@@ -1902,7 +1916,20 @@
         "FS:P",
         "FS:R"
       ],
-      "description": "While you are wearing armor, you gain a +1 bonus to AC."
+      "description": "While you are wearing armor, you gain a +1 bonus to AC.",
+      "effects": [
+        {
+          "type": "bonus",
+          "target": "ac",
+          "expression": "1",
+          "requirements": {
+            "equipment": {
+              "kind": "armor",
+              "slot": "body"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "optional:phb:devil-s-sight",
@@ -2070,7 +2097,22 @@
         "FS:P",
         "FS:R"
       ],
-      "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon."
+      "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon.",
+      "effects": [
+        {
+          "type": "bonus",
+          "target": "attack_damage:*",
+          "expression": "2",
+          "requirements": {
+            "attack": {
+              "kind": "weapon",
+              "mode": "melee",
+              "one_handed": true,
+              "no_other_weapon": true
+            }
+          }
+        }
+      ]
     },
     {
       "id": "optional:tce:eldritch-mind",
@@ -5076,7 +5118,23 @@
         "FS:F",
         "FS:R"
       ],
-      "description": "You can draw a weapon that has the thrown property as part of the attack you make with the weapon."
+      "description": "You can draw a weapon that has the thrown property as part of the attack you make with the weapon.",
+      "effects": [
+        {
+          "type": "bonus",
+          "target": "attack_damage:*",
+          "expression": "2",
+          "requirements": {
+            "attack": {
+              "kind": "weapon",
+              "mode": "thrown",
+              "properties": [
+                "T"
+              ]
+            }
+          }
+        }
+      ]
     },
     {
       "id": "optional:xge:tomb-of-levistus",
