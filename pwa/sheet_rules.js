@@ -54,6 +54,7 @@ const arr=v=>Array.isArray(v)?v:[];
 const norm=value=>String(value??"").trim().toLowerCase();
 const same=(a,b)=>String(a??"").trim().toLowerCase()===String(b??"").trim().toLowerCase();
 const key=(row)=>String(row?.name||"").toLowerCase()+"|"+String(row?.source||"").toLowerCase();
+const classSymbol=name=>norm(name).replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 
 export function localClasses(record={}){
   const classes=arr(record.classes).filter(c=>c&&typeof c==="object"&&String(c.name||"").trim());
@@ -108,6 +109,7 @@ export function parseArithmetic(expression,variable,{round=godotRound}={}){
   return round(value);
 }
 function symbolTarget(value){
+  if(/^class_level_[a-z][a-z0-9_]*$/.test(value))return "class_level:"+value.slice(12);
   if(ABILITIES.some(a=>value===a+"_score"))return "ability:"+value.slice(0,3);
   if(ABILITIES.some(a=>value===a+"_mod"))return "ability_mod:"+value.slice(0,3);
   if(value.startsWith("save_")&&ABILITIES.includes(value.slice(5)))return "save:"+value.slice(5);
@@ -440,25 +442,58 @@ export function classMechanicsRow(catalog,name,source=''){
 }
 // Port of ClassSpellSelection.classes(): actual table data, per-class limits,
 // separate cantrip capacity and class spellcasting ability, including 2024.
-export function castingClasses(record,catalog,abilityModifiers={}){
- return localClasses(record).flatMap(member=>{
-  const source=member.source||(record.rules_version==='2024'?'XPHB':'PHB');
-  const row=classMechanicsRow(catalog,member.name,source),data=row?.spellcasting;
-  if(!data||!Object.keys(data).length)return [];
-  const level=clamp(int(member.level,1),1,20),id='class|'+source.toLowerCase()+'|'+member.name.toLowerCase();
-  const ability=({wizard:'int',artificer:'int',cleric:'wis',druid:'wis',ranger:'wis',paladin:'cha',bard:'cha',sorcerer:'cha',warlock:'cha'})[member.name.toLowerCase()]||'int';
-  let limit=-1,mode='Conosciuti';
-  if(Array.isArray(data.preparedSpellsProgression)){limit=int(data.preparedSpellsProgression[level-1]);mode='Preparati';}
-  else if(data.preparedSpells){
-   const expr=data.preparedSpells.replace(/<\$([a-z_]+)\$>/g,(_,key)=>key);
-   try{limit=Math.max(1,parseArithmetic(expr,key=>key==='level'?level:abilityModifiers[key.slice(0,3)]??mod(int(record.abilities?.[key.slice(0,3)],10)),{round:Math.floor}));}catch{limit=-1;}
-   mode='Preparati';
-  }else if(Array.isArray(data.spellsKnownProgression))limit=int(data.spellsKnownProgression[level-1]);
-  const progression=spellProgression(record,[member]);
-  const maxLevel=Math.max(progression.pact_total?progression.pact_level:0,...progression.slots.map((n,i)=>n>0?i:0));
-  if(!maxLevel)limit=0;
-  return [{id,name:member.name,source,level,mode,limit,cantrips:int(data.cantripProgression?.[level-1]),max_level:maxLevel,book:same(member.name,'wizard'),ability}];
- });
+// Every spellcasting capability is an owned, enabled feature benefit. Its
+// level class, 5eTools spell-list class, casting ability and selection policy
+// come from data, not from a map of class names in the runtime.
+export function castingClasses(record,catalog={},abilityModifiers={},features=collectStructuredFeatures(record,catalog)){
+ const members=localClasses(record),results=[];
+ const selectLimit=(rule,level,owner)=>{
+  if(!rule)return null;
+  if(Array.isArray(rule.by_level))return Math.max(0,int(rule.by_level[Math.max(0,Math.min(19,level-1))]));
+  if(!rule.formula)return null;
+  try{
+   const value=parseArithmetic(rule.formula,name=>{
+    if(name==='class_level'||name==='level')return level;
+    if(name.startsWith('class_level_')){
+     const symbol=name.slice('class_level_'.length);
+     return Math.max(0,...members.filter(row=>classSymbol(row.name)===symbol).map(row=>Number(row.level)||0));
+    }
+    if(ABILITIES.some(a=>name===a+'_mod'))return Number(abilityModifiers[name.slice(0,3)]??mod(int(record.abilities?.[name.slice(0,3)],10)));
+    throw Error('Variabile incantesimi non disponibile: '+name);
+   },{round:Math.floor});
+   return Math.max(Number(rule.min)||0,value);
+  }catch{return null;}
+ };
+ for(const feature of arr(features)){
+  if(!feature||!featureEnabled(record,feature)||record.trait_enabled?.[feature.key]===false)continue;
+  for(const benefit of arr(feature.benefits).filter(row=>row?.type==='class_spellcasting')){
+   const levelClass=String(benefit.level_class||''),listClass=String(benefit.spell_list_class||'');
+   const owner=members.find(row=>same(row.name,levelClass)&&
+     (!benefit.level_class_source||same(row.source,benefit.level_class_source)));
+   if(!owner||!listClass||!benefit.slot_progression)continue;
+   const level=clamp(int(owner.level),1,20);
+   const selection=benefit.selection||{},mode=selection.mode||'known',book=mode==='book';
+   const knownLimit=selectLimit(selection.known_limit,level,owner);
+   const preparedLimit=selectLimit(selection.prepared_limit,level,owner);
+   const cantrips=selectLimit(selection.cantrips_limit,level,owner)??0;
+   const progression=spellProgression(record,[{level,slot_progression:benefit.slot_progression}]);
+   const maxLevel=Math.max(progression.pact_total?progression.pact_level:0,
+     ...progression.slots.map((value,i)=>value>0?i:0));
+   const source=String(owner.source||record.class_source||(record.rules_version==='2024'?'XPHB':'PHB'));
+   const id='class|'+source.toLowerCase()+'|'+levelClass.toLowerCase();
+   const layers=mode==='book'?{learned:{limit:null,trigger:null},prepared:{limit:preparedLimit,trigger:'long_rest'}}:
+     mode==='known'?{learned:{limit:knownLimit,trigger:'level_up'}}:
+     {prepared:{limit:preparedLimit,trigger:'long_rest'}};
+   results.push({id,name:owner.name,source,level,mode:mode==='known'?'Conosciuti':'Preparati',
+     limit:mode==='known'?knownLimit:preparedLimit,
+     known_limit:knownLimit,prepared_limit:preparedLimit,
+     cantrips,max_level:maxLevel,book,ability:benefit.casting_ability||'int',
+     spell_list_class:listClass,slot_progression:benefit.slot_progression,
+     selection_layers:layers,granting_trait_id:feature.origin_id,
+     granting_trait_name:feature.name,granting_trait_key:feature.key});
+  }
+ }
+ return results;
 }
 function subclassKey(value){
  return String(value||'').toLowerCase().trim().replace(/^(?:school of |circle of |oath of |college of |domain of |way of the |way of |the )/,'').replace(/ (?:domain|school)$/,'');
@@ -754,25 +789,29 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  }
  return out;
 }
-export function spellProgression(record,classes){
-  const edition=String(record.rules_version||"2014"),sources=[];let warlock=0;
-  const warnings=[];
-  for(const cls of classes){
-    const name=String(cls.name||"").toLowerCase(),level=clamp(int(cls.level,1),1,20);
-    if(name==="warlock")warlock+=level;
-    else if(["bard","cleric","druid","sorcerer","wizard"].includes(name))sources.push(["full",level]);
-    else if(name==="artificer")sources.push(["half_up",level]);
-    else if(["paladin","ranger"].includes(name)){
-      if(level>=2||edition==="2024")sources.push(["half",level]);
-    }else if(["fighter","rogue"].includes(name)){
-      warnings.push("Le sottoclassi magiche di "+cls.name+" richiedono regole specifiche");
-    }
-  }
-  const multiclass=sources.length>1;
-  const caster=clamp(sources.reduce((sum,[kind,lvl])=>sum+(kind==="full"?lvl:
-    kind==="half_up"||!multiclass||edition==="2024"?Math.ceil(lvl/2):Math.floor(lvl/2)),0),0,20);
-  return {slots:[...fullSlots[caster]],pact_total:warlock===0?0:warlock===1?1:warlock<11?2:warlock<17?3:4,
-    pact_level:warlock?Math.min(5,Math.ceil(warlock/2)):1,caster_level:caster,warnings};
+export function spellProgression(record,castingBenefits=[]){
+ const sources=[],warnings=[];let pactTotal=0,pactLevel=1;
+ for(const caster of castingBenefits){
+  const progression=caster.slot_progression;
+  if(!progression)continue;
+  const level=clamp(int(caster.level),0,20);
+  if(!level)continue;
+  if(progression.kind==='pact'){
+   pactTotal+=Math.max(0,int(arr(progression.slots_by_level)[level-1]));
+   pactLevel=Math.max(pactLevel,Math.max(1,int(arr(progression.slot_levels_by_level)[level-1],1)));
+  }else if(progression.kind==='shared')sources.push({level,progression});
+  else warnings.push('Progressione di incantesimi non riconosciuta: '+progression.kind);
+ }
+ const multiclass=sources.length>1;
+ const casterLevel=clamp(sources.reduce((total,{level,progression})=>{
+  const fraction=Number(progression.fraction);
+  if(!Number.isFinite(fraction)||fraction<=0)return total;
+  const rounding=multiclass?progression.multiclass_rounding:progression.single_rounding;
+  const value=level*fraction;
+  return total+(rounding==='ceil'?Math.ceil(value-1e-9):Math.floor(value+1e-9));
+ },0),0,20);
+ return {slots:[...fullSlots[casterLevel]],pact_total:pactTotal,pact_level:pactLevel,
+   caster_level:casterLevel,warnings};
 }
 export function calculateSheet(record={},catalogs={}){
   let effective=projectSelectionBenefits(record,catalogs,collectStructuredFeatures(record,catalogs));
@@ -897,15 +936,6 @@ function calculateSheetValues(record={},catalogs={}){
     ...classDefenseEntries(record,features,suppressed),
     ...dragonbornFtdResistances(record,catalogs.speciesPowers,features).filter(row=>
       !suppressed.has(row.benefit_id)&&sourceEnabled(row))];
-  const grantingCastingTrait=member=>{
-    // Partial/offline catalog tables must not impersonate a real feature grant.
-    if(!catalogs.classFeatures)return null;
-    const source=member.source||(record.rules_version==='2024'?'XPHB':'PHB');
-    const origin='class|'+String(source).toLowerCase()+'|'+String(member.name||'').toLowerCase();
-    return features.find(feature=>feature.origin_key===origin&&
-      ['spellcasting','pact magic'].includes(String(feature.name||'').toLowerCase())&&
-      featureEnabled(record,feature));
-  };
   const automatic=[...(index?indexRows(record,index,warnings):[]),
     ...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows),...barbarian.numeric_grants];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
@@ -1072,6 +1102,8 @@ function calculateSheetValues(record={},catalogs={}){
     if(prefix==="ability"&&ABILITIES.includes(key))return int(record.abilities?.[key],10);
     if(prefix==="ability_mod"&&ABILITIES.includes(key))return mod(resolve("ability:"+key,stack));
     if(target==="level")return int(record.level,1);
+    if(prefix==="class_level")return Math.max(0,...classes.filter(row=>classSymbol(row.name)===key)
+      .map(row=>int(row.level)));
     if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
     // A first-class formula variable, not a feature-specific calculation.
     // Use the actual active copy counts, capped by the computed attunement slots.
@@ -1291,6 +1323,8 @@ function calculateSheetValues(record={},catalogs={}){
     return total;
   }
   const memo=new Map();
+  for(const member of classes)memo.set('class_level:'+classSymbol(member.name),
+    Math.max(0,int(member.level)));
   function resolve(target,stack=new Set()){
     if(stack.has(target))throw Error("Dipendenza circolare: "+target);
     if(memo.has(target))return memo.get(target);
@@ -1312,14 +1346,12 @@ function calculateSheetValues(record={},catalogs={}){
   for(const ability of ABILITIES)safe("ability_check:"+ability);
   const saves=Object.fromEntries(ABILITIES.map(a=>[a,safe("save:"+a)]));
   const skills=Object.fromEntries(SKILLS.map(([id])=>[id,safe("skill:"+id)]));
-  // Actual spell capacity also comes from an enabled Spellcasting/Pact Magic
-  // trait. Class levels only determine its progression once granted.
-  // A class table defines progression, never the entitlement to cast.
-  // If class-feature metadata is missing offline, fail closed instead of
-  // granting class slots from class and level alone.
-  const spellcastingMembers=classes.filter(member=>grantingCastingTrait(member));
-  if(classes.length&&!catalogs.classFeatures)
-    warnings.add('Catalogo tratti di classe non disponibile: slot di classe sospesi');
+  // Class slots are granted only by enabled typed spellcasting feature benefits.
+  // Level is an input to the declared progression, never an entitlement.
+  const spellcastingMembers=castingClasses(record,catalogs,
+    Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])),features);
+  if(classes.length&&(!catalogs.classFeatures||!catalogs.spellcastingBenefits))
+    warnings.add('Catalogo privilegi incantatori non disponibile: slot di classe sospesi');
   const progression=spellProgression(record,spellcastingMembers);
   progression.warnings.forEach(w=>warnings.add(w));
   const saved=arr(record.spell_slots_total);
@@ -1358,13 +1390,9 @@ function calculateSheetValues(record={},catalogs={}){
   // grant free, known or permanently prepared spells of their own.
   const expandedSpellIds=expandedOriginClassSpellIds(record,classesCatalog?.additional_spells,features);
   // Class spell entries retain the owning structured trait, not the class.
-  const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])))
-    .map(member=>{
-      const trait=grantingCastingTrait(member);
-      return {...member,granting_trait_id:trait?.origin_id||'',
-        granting_trait_name:trait?.name||'',
-        ...(expandedSpellIds.length?{expanded_spell_ids:expandedSpellIds}: {})};
-    }).filter(member=>!!member.granting_trait_id);
+  const spellClasses=spellcastingMembers.map(member=>({
+    ...member,...(expandedSpellIds.length?{expanded_spell_ids:expandedSpellIds}:{})
+  }));
   for(const a of ABILITIES){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));
@@ -1378,7 +1406,7 @@ function calculateSheetValues(record={},catalogs={}){
       additional.choices.push(choice);
   // Permanently prepared subclass spells are attached to their actual feature,
   // not to the class itself; the same source identity powers UI and calculations.
-  const classCasting=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
+  const classCasting=spellClasses;
   additional.grants.push(...featureTableSpellGrants(record,features,catalogs.spells||[],classCasting,featureSpells),
     ...supplementalFeatureSpellGrants(record,features,catalogs.spells||[],
       catalogs.featureSpellGrants||[],classCasting,featureSpells));
@@ -1651,11 +1679,13 @@ export function loadRuleCatalogs(){
       .catch(()=>({progressions:[],options:[]})),
     fetch('/catalog/feature_slot_spells.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.spells)&&Array.isArray(data.grants)?data:{spells:[],grants:[]})
-      .catch(()=>({spells:[],grants:[]}))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells])=>({
+      .catch(()=>({spells:[],grants:[]})),
+    fetch('/catalog/spellcasting_benefits.json').then(r=>{if(!r.ok)throw Error('Benefici incantatori non disponibili');return r.json();}).then(data=>
+      data?.version===1&&Array.isArray(data.grants)?data:{grants:[]})
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
-    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,featureRules:featureRules||{},
+    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
     featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
