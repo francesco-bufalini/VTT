@@ -178,7 +178,7 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
  const catalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{}};
  const record=normalizeSelectionRecord(raw,catalog),models=powerSelectionModels(record,{features},catalog),inventory=structuredClone(rows(record.inventory)).map(item=>({...item,option_extensions:rows(item.option_extensions).filter(e=>!e.selection_id)}));
  const optional=rows(record.optional_features_catalog).filter(row=>!row.selection_origin_id);const states={...record.trait_state_selection};
- const fields={bonus:'formula_bonuses',proficiency:'proficiency_choices',resources:'resource_trackers',spells:'origin_spell_grants',spell_choice:'origin_spell_choices',actions:'action_grants',senses:'sense_grants',defenses:'damage_defense_entries',effect_extensions:'effect_extensions',roll_mode:'roll_mode_grants',base_override:'base_value_overrides'};
+ const fields={bonus:'formula_bonuses',dice:'dice_bonuses',scaling_die:'scaling_dice',proficiency:'proficiency_choices',resources:'resource_trackers',spells:'origin_spell_grants',spell_choice:'origin_spell_choices',actions:'action_grants',senses:'sense_grants',defenses:'damage_defense_entries',effect_extensions:'effect_extensions',roll_mode:'roll_mode_grants',base_override:'base_value_overrides'};
  const grants=Object.fromEntries(Object.values(fields).map(field=>[field,rows(record[field]).filter(row=>!row.selection_origin_id)]));
  // Model state choices are derived, not another persisted selection engine.
  for(const rule of definitions(catalog))for(const option of optionsFor(record,rule))for(const e of rows(option.effects))if(e.type==='state_selection')delete states[e.key];
