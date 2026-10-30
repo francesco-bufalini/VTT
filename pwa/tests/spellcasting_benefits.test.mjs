@@ -108,3 +108,26 @@ test('spell selections expose typed learned/prepared layers and their data limit
  assert.equal(knownSpellProgress({spellbook_spells:[{id:'shield',level:1}]},
    calculated.casting_classes[0],calculated.casting_classes,[]).minimum,14);
 });
+
+test('an arbitrary homebrew class gets slots and a different spell list without a runtime class branch',()=>{
+ const extraBenefit={type:'class_spellcasting',level_class:'Runesmith',
+   spell_list_class:'Druid',casting_ability:'wis',
+   slot_progression:{kind:'shared',fraction:0.5,single_rounding:'ceil',multiclass_rounding:'floor'},
+   selection:{list:'spells',mode:'known',known_limit:{formula:'class_level * 2'},
+     cantrips_limit:{by_level:Array(20).fill(2)}}};
+ const original=record([{
+   name:'Runesmith',source:'HB',level:7,
+   features:[{id:'homebrew:runesmith:spellcasting',name:'Rune Magic',level:1,benefits:[extraBenefit]}]
+ }]);
+ const result=calculateSheet(original,catalog);
+ const caster=result.casting_classes[0];
+ assert.ok(caster,'the benefit itself grants the casting source');
+ assert.equal(caster.name,'Runesmith');
+ assert.equal(caster.spell_list_class,'Druid');
+ assert.equal(caster.limit,14);
+ assert.equal(caster.ability,'wis');
+ assert.equal(result.spell_slots[0].total,4);
+ assert.equal(result.spell_slots[1].total,3);
+ assert.equal(spellEligible({level:1,classes:['Druid']},caster),true);
+ assert.equal(spellEligible({level:1,classes:['Runesmith']},caster),false);
+});
