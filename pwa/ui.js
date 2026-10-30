@@ -43,6 +43,7 @@ import { calculateSheet, loadRuleCatalogs, localClasses, classMechanicsRow, vali
 import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
 import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} from './feature_rolls.js';
 import {availableZeroHpResponses,resolveZeroHpDamage} from './zero_hp_responses.js';
+import {incomingDamageOptions,resolveIncomingDamage} from './defense_summary.js';
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan,describeSheetActivity} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrait.js';
@@ -8172,12 +8173,17 @@ async function handleAction(target){
     if(!state.editor)throw Error('Apri prima una scheda.');
     let creature=state.editor.read(),calculated=await computeLocalData(creature);
     const draft=hpAdjustDraft(dialog,calculated);
-    // Interrupt a potentially lethal damage entry before recording HP loss.
-    // The player may ignore the response or cancel the damage entirely.
+    const adjustment=mode==='damage'?
+      resolveIncomingDamage(creature,calculated,hpDamageSelection(dialog,amount),randomDie):null;
+    const incoming=adjustment?.damage??amount;
+    // Only the final adjusted damage decides if a zero-HP reaction is offered.
+    // Reserve selected tracker uses while validating that reaction, but commit
+    // both the HP and tracker changes together after confirmation.
+    const prospective={...creature,...draft,...(adjustment?.resource_patch||{})};
     let responseChoice;
-    if(mode==='damage'&&availableZeroHpResponses({...creature,...draft},calculated,amount).length){
+    if(mode==='damage'&&availableZeroHpResponses(prospective,calculated,incoming).length){
       closeSessionDialog(dialog);
-      responseChoice=await chooseZeroHpResponse({...creature,...draft},calculated,amount);
+      responseChoice=await chooseZeroHpResponse(prospective,calculated,incoming);
       if(!responseChoice)return;
     }
     if(draft.current_hp!==Number(creature.current_hp||0)||draft.temporary_hp!==Number(creature.temporary_hp||0)){
@@ -8185,15 +8191,17 @@ async function handleAction(target){
       creature=state.editor.read();
       calculated=await computeLocalData(creature);
     }
+    const augmented={...creature,...(adjustment?.resource_patch||{})};
     const resolution=mode==='damage'&&responseChoice?.id?
-      resolveZeroHpDamage(creature,calculated,amount,responseChoice.id,responseChoice.roll):null;
-    const effectiveDamage=resolution?resolution.damage:amount;
-    const damage=mode==='damage'&&!resolution?
+      resolveZeroHpDamage(augmented,calculated,incoming,responseChoice.id,responseChoice.roll):null;
+    const effectiveDamage=resolution?resolution.damage:incoming;
+    const damage=mode==='damage'&&effectiveDamage>0&&!resolution?
       variantDamage(state.editor.readBase(),effectiveDamage):null;
     const concentrationCheck=mode==='damage'&&effectiveDamage>0?
       concentrationDamageCheck(creature,effectiveDamage):null;
-    await patch(resolution?.patch||damage?.patch||hitPointPatch(creature,
-      mode==='damage'?effectiveDamage:amount,calculated));
+    const hpChanges=resolution?.patch||damage?.patch||hitPointPatch(creature,
+      mode==='damage'?-effectiveDamage:amount,calculated);
+    await patch({...hpChanges,...(resolution?{}:adjustment?.resource_patch||{})});
     closeSessionDialog(dialog);
     await render();
     if(concentrationCheck){
@@ -9560,11 +9568,68 @@ async function chooseZeroHpResponse(creature,calculated,damage){
  document.body.append(dialog);openDialog(dialog);
  return answer;
 }
+function hpDamageSelection(dialog,amount){
+ return {amount,damage_type:dialog.querySelector('#hp-adjust-damage-type')?.value||'',
+  ignore_permanent:!!dialog.querySelector('#hp-adjust-ignore-permanent')?.checked,
+  selected_ids:[...dialog.querySelectorAll('[data-hp-damage-bonus]:checked')].map(row=>row.value)};
+}
+function refreshHpDamagePreview(dialog){
+ const creature=state.editor?.read(),calculated=state.calculated;
+ if(!creature||!calculated)return;
+ const type=dialog.querySelector('#hp-adjust-damage-type')?.value||'';
+ const options=incomingDamageOptions(creature,calculated,type);
+ const byId=new Map(options.map(row=>[row.id,row]));
+ for(const row of dialog.querySelectorAll('[data-hp-damage-row]')){
+  const matches=!row.dataset.damageType||row.dataset.damageType===type;
+  row.classList.toggle('hp-damage-modifier--inapplicable',!matches);
+  const check=row.querySelector('[data-hp-damage-bonus]');
+  if(check){
+   const bonus=byId.get(check.value);
+   check.disabled=!matches||!bonus?.available;
+   if(check.disabled)check.checked=false;
+  }
+ }
+ const output=dialog.querySelector('#hp-adjust-damage-preview');
+ if(!output)return;
+ const value=dialog.querySelector('#hp-adjust-amount')?.value.trim();
+ const amount=Number(value);
+ if(!value||!Number.isSafeInteger(amount)||amount<1||amount>99999){
+  output.textContent='Seleziona i bonus e inserisci i danni in arrivo.';
+  return;
+ }
+ const input=hpDamageSelection(dialog,amount);
+ const uncertain=options.some(row=>row.kind==='modifier'&&row.formula&&row.matches&&
+  (row.optional?input.selected_ids.includes(row.id):!input.ignore_permanent));
+ if(uncertain){
+  output.textContent='Danno finale calcolato alla conferma, dopo il tiro dei dadi.';
+  return;
+ }
+ try{
+  const result=resolveIncomingDamage(creature,calculated,input);
+  output.textContent='Danni effettivi: '+result.damage+
+   (result.damage!==amount?' (iniziali '+amount+')':'');
+ }catch(error){output.textContent=error.message;}
+}
 function configureHpAdjustDialog(dialog){
   const creature=state.editor?.read()||{};
   dialog.querySelector('#hp-adjust-current').value=String(creature.current_hp??0);
   dialog.querySelector('#hp-adjust-temporary').value=String(creature.temporary_hp??0);
   dialog.querySelector('#hp-adjust-amount').value='';
+  dialog.querySelector('#hp-adjust-damage-type').value='';
+  dialog.querySelector('#hp-adjust-ignore-permanent').checked=false;
+  for(const box of dialog.querySelectorAll('[data-hp-damage-bonus]'))box.checked=false;
+  if(!dialog.dataset.hpDamageHandlers){
+   dialog.dataset.hpDamageHandlers='true';
+   dialog.addEventListener('input',event=>{
+    if(event.target.matches('#hp-adjust-amount,#hp-adjust-damage-type,#hp-adjust-ignore-permanent,[data-hp-damage-bonus]'))
+     refreshHpDamagePreview(dialog);
+   });
+   dialog.addEventListener('change',event=>{
+    if(event.target.matches('#hp-adjust-damage-type,#hp-adjust-ignore-permanent,[data-hp-damage-bonus]'))
+     refreshHpDamagePreview(dialog);
+   });
+  }
+  refreshHpDamagePreview(dialog);
 }
 function hpAdjustDraft(dialog,calculated){
   const max=Math.max(0,Number(calculated.stats?.max_hp)||0);
