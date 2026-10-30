@@ -31,7 +31,7 @@ const fixed=[
 test('2014 class and subclass training is attributed to its exact trait and can be disabled',()=>{
   for(const [klass,sub,source,level,name,keys] of fixed){
     const record=character(klass,sub,source,level),sheet=calculateSheet(record,catalogs);
-    const trait=sheet.features.find(f=>f.name===name&&f.origin_key?.includes('|subclass|'));
+    const trait=sheet.features.find(f=>f.name===name&&f.origin_id?.includes('|subclass|'));
     assert(trait,klass+' / '+sub+' missing trait '+name);
     for(const key of keys){
       assert(sheet.proficiencies.includes(key),klass+' / '+sub+' missing '+key);
@@ -62,7 +62,7 @@ const choices=[
 test('2014 choices reuse the ordinary skill/tool picker, owned by one source trait',()=>{
   for(const [klass,sub,source,level,name,kind,count] of choices){
     const record=character(klass,sub,source,level),sheet=calculateSheet(record,catalogs);
-    const trait=sheet.features.find(f=>f.name===name&&f.origin_key?.includes('|subclass|'));
+    const trait=sheet.features.find(f=>f.name===name&&f.origin_id?.includes('|subclass|'));
     assert(trait,klass+' / '+sub+' missing '+name);
     const picks=pendingCharacterChoices(record,sheet,catalogs)
       .filter(c=>c.origin_id===trait.origin_id&&c.proficiency_kind===kind);
