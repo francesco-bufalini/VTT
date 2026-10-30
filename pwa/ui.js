@@ -3252,7 +3252,7 @@ async function openGenericPowerSelectionDialog(id,stage){
     (layer.limit!==null?' / '+layer.limit:'')+
     (layer.change_label?' · '+layer.change_label:''),
   searchLabel:'Cerca '+model.title,searchAttribute:'data-power-search',
-  resultsClass:'power-selection-results',
+  resultsClass:'learning-picker-results power-selection-results',
   results:list||'<p class="hint">Nessuna opzione disponibile.</p>',
   extra:targetPicker+(model.description?'<p class="hint">'+esc(model.description)+'</p>':'')
  });
@@ -3346,7 +3346,7 @@ async function openInfusionPicker(mode){
  dialog.innerHTML=learningSelectionDialogBody({
    title:'Impara infusioni',closeAction:'infusion-picker-close',
    summary:'Conosciute '+count,searchLabel:'Cerca infusione',
-   searchAttribute:'data-infusion-search',resultsClass:'infusion-picker-results'
+   searchAttribute:'data-infusion-search',resultsClass:'learning-picker-results infusion-picker-results'
  });
  const input=dialog.querySelector("[data-infusion-search]");
  const results=dialog.querySelector(".infusion-picker-results");
