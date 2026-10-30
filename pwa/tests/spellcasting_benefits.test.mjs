@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {calculateSheet,formulaValue} from '../sheet_rules.js';
+import {calculateSheet,castingClasses,spellProgression,formulaValue} from '../sheet_rules.js';
 import {spellEligible,knownSpellProgress} from '../spell_selection.js';
 
 const load=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
@@ -104,4 +104,36 @@ test('multiclass rounds 2014 third and half casters down, but preserves separate
  const w=r.casting_classes.find(m=>m.name==='Wizard');
  assert.deepEqual(knownSpellProgress({spellbook_spells:[]},w,r.casting_classes,[]),
    {known:0,minimum:10});
+});
+
+test('custom class and foreign 5eTools spell list require no named-class branches',()=>{
+ const record={classes:[{name:'Scholar',source:'HB',level:7}],abilities:{wis:14}};
+ const benefit={type:'spell_selection',level_class_name:'Scholar',spell_list_class_name:'Wizard',
+   source:{type:'spell_catalog',class_name:'Wizard'},ability:'wis',knowledge_mode:'known',
+   slot_progression:{pool:'shared',divisor:4,single_round:'ceil',multiclass_round:'floor'},
+   layers:{learned:{limit:{formula:'2 + class_level_scholar'},trigger:'level_up'}},
+   cantrips:{limit:{by_class_level:[[1,1],[5,2]]}}};
+ const trait={name:'Academic Spellcasting',key:'scholar',origin_key:'class|hb|scholar',
+   origin_id:'feature:scholar',benefits:[benefit]};
+ const [caster]=castingClasses(record,null,{wis:2},[trait]);
+ assert.equal(caster.level_class_name,'Scholar');
+ assert.equal(caster.spell_list_class_name,'Wizard');
+ assert.equal(caster.learned_limit,9);
+ assert.equal(caster.cantrips,2);
+ assert.equal(caster.ability,'wis');
+ assert.equal(spellProgression(record,[caster]).caster_level,2);
+ assert.equal(spellEligible({id:'shield',name:'Shield',classes:['Wizard'],level:1},caster),true);
+ assert.equal(spellEligible({id:'guidance',name:'Guidance',classes:['Cleric'],level:0},caster),false);
+ assert.equal(castingClasses(record,null,{wis:2},[]).length,0,
+   'a class without the spell-selection benefit cannot cast');
+});
+
+test('prepared spell minimum is read from benefit data, not a caster name',()=>{
+ const original=catalogs.spellcastingBenefits.grants.find(g=>
+   g.owner.class_name==='Cleric'&&g.owner.class_source==='PHB');
+ const trait={name:'Spellcasting',key:'caster',origin_key:'class|phb|cleric',
+   origin_id:'feature:caster',benefits:[original.benefit]};
+ const [caster]=castingClasses({classes:[{name:'Cleric',source:'PHB',level:1}],abilities:{wis:1}},
+   null,{wis:-5},[trait]);
+ assert.equal(caster.limit,1);
 });
