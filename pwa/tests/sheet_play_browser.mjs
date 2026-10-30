@@ -974,7 +974,13 @@ try{
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===false;});
  await dismiss();
  await page.locator('[data-play-search]').fill('pozione');await popup('item:1');await page.locator('#sheet-context-dialog [data-item-key="quantity"]').fill('5');await dismiss();assert.equal((await record()).inventory[1].quantity,5);assert.match(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').textContent(),/×5/);
- assert.equal(await page.locator('[data-play-search]').inputValue(),'pozione');assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),1);await page.locator('[data-play-search]').fill('');
+ assert.equal(await page.locator('[data-play-search]').inputValue(),'pozione');
+ const potionSearch=page.locator('#inventory-search-results .inventory-search-result').first();
+ await potionSearch.waitFor({state:'visible'});
+ assert.match(await potionSearch.textContent(),/Pozione curativa/i);
+ assert(await page.locator('#sheet-play-view [data-play-filter]:visible').count()>=3,
+  'Global inventory search shows results without hiding existing sections');
+ await page.locator('[data-play-search]').fill('');
  await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());await shot('item-popup');await dismiss();
  const inlineCoins=page.locator('#sheet-play-view .inventory-play-coins');
  assert.equal(await inlineCoins.count(),1,'Coin editor must be visible in the shortcut row');
