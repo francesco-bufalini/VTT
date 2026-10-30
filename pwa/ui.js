@@ -3091,7 +3091,7 @@ async function openRacialRestTrainingDialog(group){
 const selectedPowerId=row=>typeof row==='string'?row:String(row?.id||'');
 const selectedPowerLabel=(option,selection)=>{
  const label=option?.name||selectedPowerId(selection);
- const details=Array.isArray(selection?.subchoices)?selection.subchoices.join(', '):'';
+ const details=Array.isArray(selection?.subchoices)?selection.subchoices.map(id=>option?.subchoices?.options?.find(row=>row.id===id)?.name||id).join(', '):'';
  return label+(details?' · '+details:'');
 };
 const powerLayerNames={learned:'Imparati',prepared:'Preparati',applied:'Applicati'};
@@ -3136,7 +3136,7 @@ function optionBenefitPanels(c,calculated){
  return (calculated.power_selections||[]).filter(model=>model.benefit_type==='option_selection').map(model=>{
   const primary=model.layers.learned||model.layers.prepared;
   const byId=new Map(model.options.map(option=>[option.id,option]));
-  const entries=primary?primary.selected.map(selectedPowerId):model.options.map(option=>option.id);
+  const entries=primary?primary.selected:model.options.map(option=>option.id);
   const active=model.layers.applied?.selected||[];
   const summary=Object.entries(model.layers).filter(([,layer])=>layer.enabled).map(([stage,layer])=>
    '<span>'+esc(powerLayerNames[stage]||stage)+' '+layer.selected.length+(layer.limit===null?'':' / '+layer.limit)+
@@ -3145,10 +3145,10 @@ function optionBenefitPanels(c,calculated){
    '<button type="button" class="btn small magic-selection-button" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+stage+'">'+
    (stage==='learned'?'Impara':'Prepara')+'</button>').join('');
   return panel(model.title,'<div class="benefit-option-list" data-selection-id="'+esc(model.id)+'">'+
-   '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(id=>{
-    const option=byId.get(id);if(!option)return '';
+   '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(selection=>{
+    const id=selectedPowerId(selection),option=byId.get(id);if(!option)return '';
     return '<div class="magic-spell-row" data-power-option-id="'+esc(id)+'" data-option-active="'+
-     active.some(row=>selectedPowerId(row)===id)+'"><span class="magic-spell-open">'+esc(option.name)+'</span></div>';
+     active.some(row=>selectedPowerId(row)===id)+'"><span class="magic-spell-open">'+esc(selectedPowerLabel(option,selection))+'</span></div>';
    }).join('')+'</div>');
  }).join('');
 }
@@ -3176,9 +3176,14 @@ async function openBenefitSelectionDialog(id,stage){
   const locked=owned&&(stage==='learned'||stage==='prepared');
   const current=selected.get(option.id);
   const fields=sub?'<div class="power-selection-subchoices">'+
-   Array.from({length:sub.count},(_,i)=>'<label>'+esc(sub.label||'Sotto-opzione')+' '+(i+1)+
-    '<input type="text" data-power-subchoice="'+i+'" data-power-option="'+esc(option.id)+'" maxlength="70" value="'+
-    esc(current?.subchoices?.[i]||'')+'" placeholder="'+esc(sub.placeholder||'Sotto-opzione')+'"'+(locked?' disabled':'')+'></label>').join('')+'</div>':'';
+   Array.from({length:sub.count},(_,i)=>{
+    const value=current?.subchoices?.[i]||'',attrs=' data-power-subchoice="'+i+'" data-power-option="'+esc(option.id)+'"';
+    const control=Array.isArray(sub.options)?
+     '<select'+attrs+(locked?' disabled':'')+'><option value="">Scegli</option>'+
+     sub.options.map(row=>'<option value="'+esc(row.id)+'"'+(row.id===value?' selected':'')+'>'+esc(row.name)+'</option>').join('')+'</select>':
+     '<input type="text"'+attrs+' maxlength="70" value="'+esc(value)+'" placeholder="'+esc(sub.placeholder||'Sotto-opzione')+'"'+(locked?' disabled':'')+'>';
+    return '<label>'+esc(sub.label||'Sotto-opzione')+' '+(i+1)+control+'</label>';
+   }).join('')+'</div>':'';
   const label=required?'Obbligatoria':
    owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
    stage==='learned'?'+ Impara':stage==='prepared'?'+ Prepara':'+ Applica';

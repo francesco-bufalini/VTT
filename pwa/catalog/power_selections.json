@@ -232,73 +232,234 @@
       "option_kind": "creature_type",
       "source": {
         "type": "inline",
-        "options": [
+        "packages": [
           {
-            "id": "aberrations",
-            "name": "Aberrazioni"
+            "id": "monster_types",
+            "name": "Tipi di mostro",
+            "count": 1,
+            "label": "Tipo di mostro",
+            "options": [
+              {
+                "id": "aberrations",
+                "name": "Aberrazioni"
+              },
+              {
+                "id": "beasts",
+                "name": "Bestie"
+              },
+              {
+                "id": "celestials",
+                "name": "Celestiali"
+              },
+              {
+                "id": "constructs",
+                "name": "Costrutti"
+              },
+              {
+                "id": "dragons",
+                "name": "Draghi"
+              },
+              {
+                "id": "elementals",
+                "name": "Elementali"
+              },
+              {
+                "id": "fey",
+                "name": "Folletti"
+              },
+              {
+                "id": "fiends",
+                "name": "Immondi"
+              },
+              {
+                "id": "giants",
+                "name": "Giganti"
+              },
+              {
+                "id": "monstrosities",
+                "name": "Mostruosità"
+              },
+              {
+                "id": "oozes",
+                "name": "Melme"
+              },
+              {
+                "id": "plants",
+                "name": "Vegetali"
+              },
+              {
+                "id": "undead",
+                "name": "Non morti"
+              }
+            ]
           },
           {
-            "id": "beasts",
-            "name": "Bestie"
-          },
-          {
-            "id": "celestials",
-            "name": "Celestiali"
-          },
-          {
-            "id": "constructs",
-            "name": "Costrutti"
-          },
-          {
-            "id": "dragons",
-            "name": "Draghi"
-          },
-          {
-            "id": "elementals",
-            "name": "Elementali"
-          },
-          {
-            "id": "fey",
-            "name": "Folletti"
-          },
-          {
-            "id": "fiends",
-            "name": "Immondi"
-          },
-          {
-            "id": "humanoids",
-            "name": "Umanoidi",
-            "subchoices": {
-              "count": 2,
-              "label": "Due razze umanoidi",
-              "free_text": true,
-              "placeholder": "Razza umanoide"
-            }
-          },
-          {
-            "id": "giants",
-            "name": "Giganti"
-          },
-          {
-            "id": "monstrosities",
-            "name": "MostruositÃ "
-          },
-          {
-            "id": "oozes",
-            "name": "Melme"
-          },
-          {
-            "id": "plants",
-            "name": "Vegetali"
-          },
-          {
-            "id": "undead",
-            "name": "Non morti"
+            "id": "humanoid_races",
+            "name": "Razze umanoidi",
+            "count": 2,
+            "label": "Razza umanoide",
+            "options": [
+              {
+                "id": "aarakocra",
+                "name": "Aarakocra"
+              },
+              {
+                "id": "astral-elf",
+                "name": "Astral Elf"
+              },
+              {
+                "id": "bugbear",
+                "name": "Bugbear"
+              },
+              {
+                "id": "deep-gnome",
+                "name": "Deep Gnome"
+              },
+              {
+                "id": "dragonborn",
+                "name": "Dragonborn"
+              },
+              {
+                "id": "dwarf",
+                "name": "Dwarf"
+              },
+              {
+                "id": "elf",
+                "name": "Elf"
+              },
+              {
+                "id": "githyanki",
+                "name": "Githyanki"
+              },
+              {
+                "id": "githzerai",
+                "name": "Githzerai"
+              },
+              {
+                "id": "gnome",
+                "name": "Gnome"
+              },
+              {
+                "id": "goblin",
+                "name": "Goblin"
+              },
+              {
+                "id": "goliath",
+                "name": "Goliath"
+              },
+              {
+                "id": "half-elf",
+                "name": "Half-Elf"
+              },
+              {
+                "id": "half-orc",
+                "name": "Half-Orc"
+              },
+              {
+                "id": "halfling",
+                "name": "Halfling"
+              },
+              {
+                "id": "harengon",
+                "name": "Harengon"
+              },
+              {
+                "id": "hobgoblin",
+                "name": "Hobgoblin"
+              },
+              {
+                "id": "human",
+                "name": "Human"
+              },
+              {
+                "id": "kenku",
+                "name": "Kenku"
+              },
+              {
+                "id": "kobold",
+                "name": "Kobold"
+              },
+              {
+                "id": "lizardfolk",
+                "name": "Lizardfolk"
+              },
+              {
+                "id": "locathah",
+                "name": "Locathah"
+              },
+              {
+                "id": "loxodon",
+                "name": "Loxodon"
+              },
+              {
+                "id": "minotaur",
+                "name": "Minotaur"
+              },
+              {
+                "id": "orc",
+                "name": "Orc"
+              },
+              {
+                "id": "owlin",
+                "name": "Owlin"
+              },
+              {
+                "id": "sea-elf",
+                "name": "Sea Elf"
+              },
+              {
+                "id": "shadar-kai",
+                "name": "Shadar-kai"
+              },
+              {
+                "id": "shifter",
+                "name": "Shifter"
+              },
+              {
+                "id": "simic-hybrid",
+                "name": "Simic Hybrid"
+              },
+              {
+                "id": "tabaxi",
+                "name": "Tabaxi"
+              },
+              {
+                "id": "tiefling",
+                "name": "Tiefling"
+              },
+              {
+                "id": "tortle",
+                "name": "Tortle"
+              },
+              {
+                "id": "triton",
+                "name": "Triton"
+              },
+              {
+                "id": "vedalken",
+                "name": "Vedalken"
+              },
+              {
+                "id": "verdan",
+                "name": "Verdan"
+              },
+              {
+                "id": "warforged",
+                "name": "Warforged"
+              },
+              {
+                "id": "yuan-ti",
+                "name": "Yuan-ti"
+              }
+            ],
+            "legacy_ids": [
+              "humanoids"
+            ]
           }
         ]
       },
       "layers": {
-        "prepared": {
+        "learned": {
           "limit": {
             "by_class_level": [
               [
@@ -316,12 +477,13 @@
             ]
           },
           "trigger": null,
-          "storage": "power_selections.ranger_favored_enemy_phb.prepared"
+          "storage": "power_selections.ranger_favored_enemy_phb.learned"
         }
       },
       "ui": "generic",
-      "description": "Scegli un tipo di creatura, oppure due razze di umanoidi, al 1Â°, 6Â° e 14Â° livello da Ranger. La scelta Ã¨ permanente secondo le regole; l'interfaccia non impone quando cambiarla.",
-      "benefit_type": "option_selection"
+      "description": "Per ogni scelta seleziona un tipo di mostro oppure due razze umanoidi. Ottieni una nuova scelta ai livelli 1, 6 e 14 da Ranger.",
+      "benefit_type": "option_selection",
+      "legacy_stage": "prepared"
     }
   ]
 }

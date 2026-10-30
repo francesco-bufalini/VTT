@@ -28,29 +28,39 @@ try{
  const after=await snapshot();assert.equal(after.scores.str.score,12);
  assert.equal(after.record.origin_ability_choices?.length||0,0);
  assert(after.record.formula_bonuses.some(row=>row.target==='ability:str'&&row.expression==='2'));
- const ranger=page.locator('.trait-subtrait[data-choice-id="power:ranger_favored_enemy_phb:prepared"]').first();
- await ranger.click();
- await page.locator('#pending-choice-dialog input[value="humanoids"]').check();
- const details=page.locator('#pending-choice-dialog [data-pending-option="humanoids"]');
- assert.equal(await details.count(),2);
- await details.nth(0).fill('Orc');await details.nth(1).fill('Goblin');
- await page.locator('#pending-choice-dialog input[value="dragons"]').check();
- await page.locator('#pending-choice-dialog [data-act="pending-choice-save"]').click();
- await page.locator('#pending-choice-dialog').waitFor({state:'detached'});
- assert.deepEqual((await snapshot()).record.power_selections.ranger_favored_enemy_phb.prepared,
-  ['dragons',{id:'humanoids',subchoices:['Orc','Goblin']}]);
- await page.reload();await page.locator('[data-act="open"]').click();await sheet('info');
- assert.match(await ranger.innerText(),/Orc, Goblin/);
- assert.equal(await ranger.getAttribute('data-act'),'pending-choice-open');
- const geometry=await ranger.evaluate(node=>({height:node.getBoundingClientRect().height,
-  background:getComputedStyle(node).backgroundImage}));
- assert(geometry.height<65,JSON.stringify(geometry));
- assert.equal(geometry.background,'none');
- await ranger.click();assert.equal(await details.nth(0).inputValue(),'Orc');
- await page.locator('[data-act="pending-choice-close"]').first().click();
- await f.shot('permanent-subtraits-mobile');
+ await sheet('magic');
+ const id='ranger_favored_enemy_phb';
+ const opener=page.locator('#sheet-play-view [data-act="power-selection-open"][data-power-selection-id="'+id+'"][data-power-stage="learned"]');
+ await opener.click();
+ let dialog=page.locator('#power-selection-dialog');
+ await dialog.waitFor({state:'visible'});
+ const races=dialog.locator('[data-power-option="humanoid_races:1"] select');
+ assert.equal(await races.count(),2);
+ await races.nth(0).selectOption('orc');await races.nth(1).selectOption('goblin');
+ await dialog.locator('[data-act="power-selection-toggle"][data-power-option-id="humanoid_races:1"]').click();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature?.power_selections?.ranger_favored_enemy_phb?.learned?.length===1;
+ });
+ dialog=page.locator('#power-selection-dialog');
+ await dialog.locator('[data-power-option="monster_types:2"] select').selectOption('dragons');
+ await dialog.locator('[data-act="power-selection-toggle"][data-power-option-id="monster_types:2"]').click();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature?.power_selections?.ranger_favored_enemy_phb?.learned?.length===2;
+ });
+ assert.deepEqual((await snapshot()).record.power_selections.ranger_favored_enemy_phb.learned,[
+  {id:'humanoid_races:1',subchoices:['orc','goblin']},{id:'monster_types:2',subchoices:['dragons']}
+ ]);
+ await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
+ assert.match(await page.locator('#sheet-play-view .benefit-option-list[data-selection-id="'+id+'"]').innerText(),/Orc, Goblin/);
+ await page.locator('#sheet-play-view [data-act="power-selection-open"][data-power-selection-id="'+id+'"][data-power-stage="learned"]').click();
+ assert.equal(await page.locator('#power-selection-dialog [data-power-option="humanoid_races:1"] select').first().inputValue(),'orc');
+ await page.locator('#power-selection-dialog [data-act="power-selection-close"]').click();
+ await f.shot('ranger-choice-packages-mobile');
  await page.setViewportSize({width:1280,height:900});
- await f.shot('permanent-subtraits-desktop');
+ await f.shot('ranger-choice-packages-desktop');
+
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
- console.log('PASS: ASI generic bonuses, Ranger shared picker, persisted humanoid details, compact mobile and desktop Info');
+ console.log('PASS: ASI and Ranger alternative option packages persist across reloads in the shared picker');
 }finally{await f.close();}

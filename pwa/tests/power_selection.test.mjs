@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerSelectionLimit,
-  powerApplicationPatch,powerSelectionTargets} from '../power_selection.js';
+  powerApplicationPatch,powerSelectionTargets,normalizeSelectionRecord} from '../power_selection.js';
 const data={...JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8')),optionalFeatureProgressions:JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'))};
 const owner=(className,source,name)=>({name,origin_id:'feature:'+name,
  origin_key:'class|'+source.toLowerCase()+'|'+className.toLowerCase(),
@@ -15,43 +15,49 @@ const context=()=>({features:[owner('Ranger','PHB','Favored Enemy')]});
 const pick=(record,calculated,id='ranger_favored_enemy_phb')=>
  powerSelectionModels(record,calculated,data).find(row=>row.id===id);
 
-test('PHB Ranger Favored Enemy uses prepared-only power choices without a trigger',()=>{
+test('PHB Ranger Favored Enemy uses alternative option packages at levels 1, 6 and 14',()=>{
  for(const [level,max] of [[1,1],[5,1],[6,2],[13,2],[14,3],[20,3]]){
-  const row=pick(ranger(level),context());
-  assert.equal(row.layers.prepared.limit,max);
-  assert.equal(row.layers.learned,undefined);
-  assert.equal(row.layers.applied,undefined);
-  assert.equal(row.layers.prepared.trigger,null);
-  assert.equal(row.ui,'generic');
-  assert.equal(row.benefit_type,'option_selection');
+  const model=pick(ranger(level),context());
+  assert.equal(model.layers.learned.limit,max);
+  assert.equal(model.layers.prepared,undefined);
+  assert.equal(model.layers.learned.trigger,null);
+  assert.equal(model.ui,'generic');
+  assert.deepEqual([...new Set(model.options.filter(row=>row.min_level<=level).map(row=>row.choice_slot))].sort(),Array.from({length:max},(_,i)=>i+1));
  }
- assert.equal(pick(ranger(1),{features:[]}),undefined,'no feature: no free benefit');
+ assert.equal(pick(ranger(1),{features:[]}),undefined);
  assert.equal(pick({classes:[{name:'Ranger',source:'XPHB',level:20}]},context()),undefined);
 });
 
-test('Favored Enemy tracks chosen creature types and two humanoid races',()=>{
- const ctx=context(),id='ranger_favored_enemy_phb';
- let record=ranger(1);
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','dragons')};
- assert.deepEqual(pick(record,ctx).layers.prepared.selected,['dragons']);
- assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'prepared','beasts'),/massimo/);
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','dragons')};
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','beasts')};
- assert.deepEqual(pick(record,ctx).layers.prepared.selected,['beasts']);
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','beasts')};
- assert.deepEqual(pick(record,ctx).layers.prepared.selected,[]);
- assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['elf']),/sotto-opzioni/);
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['Elf','Orc'])};
- assert.deepEqual(pick(record,ctx).layers.prepared.selected,[{id:'humanoids',subchoices:['Elf','Orc']}]);
- assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['Elf','elf']),/sotto-opzioni/);
- // Reselection of an existing option updates its sublist without spending a new pick.
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','humanoids',['Elf','Goblin'])};
- assert.equal(pick(record,ctx).layers.prepared.used,1);
+test('alternative packages choose one monster type or two humanoid races within each slot',()=>{
+ const ctx=context(),id='ranger_favored_enemy_phb';let record=ranger(1);
+ assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'learned','humanoid_races:1',['orc']),/sotto-opzioni/);
+ assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'learned','humanoid_races:1',['orc','orc']),/sotto-opzioni/);
+ assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'learned','humanoid_races:1',['orc','not-in-list']),/sotto-opzioni/);
+ record={...record,...powerSelectionPatch(record,ctx,data,id,'learned','monster_types:1',['dragons'])};
+ assert.deepEqual(pick(record,ctx).layers.learned.selected,[{id:'monster_types:1',subchoices:['dragons']}]);
+ record={...record,...powerSelectionPatch(record,ctx,data,id,'learned','humanoid_races:1',['orc','goblin'])};
+ assert.deepEqual(pick(record,ctx).layers.learned.selected,[{id:'humanoid_races:1',subchoices:['orc','goblin']}]);
+ assert.throws(()=>powerSelectionPatch(record,ctx,data,id,'learned','monster_types:2',['fey']),/Livello insufficiente/);
  record.classes[0].level=6;
- record={...record,...powerSelectionPatch(record,ctx,data,id,'prepared','dragons')};
- assert.equal(pick(record,ctx).layers.prepared.used,2);
- // Recoveries and advancement triggers do not gate edits.
- assert.equal(record.rest_selection_available,undefined);
+ record={...record,...powerSelectionPatch(record,ctx,data,id,'learned','monster_types:2',['fey'])};
+ assert.equal(pick(record,ctx).layers.learned.used,2);
+ assert.deepEqual(pick(record,ctx).layers.learned.selected.map(row=>row.id),['humanoid_races:1','monster_types:2']);
+ record.classes[0].level=14;
+ record={...record,...powerSelectionPatch(record,ctx,data,id,'learned','humanoid_races:3',['elf','human'])};
+ assert.equal(pick(record,ctx).layers.learned.used,3);
+});
+
+test('legacy Ranger choices move from prepared to learned without losing selected races',()=>{
+ const old={...ranger(6),selection_state_version:2,power_selections:{ranger_favored_enemy_phb:{
+  prepared:['dragons',{id:'humanoids',subchoices:['Elf','Orc']}]
+ }}};
+ const next=normalizeSelectionRecord(old,data);
+ assert.deepEqual(next.power_selections.ranger_favored_enemy_phb.learned,[
+  {id:'monster_types:1',subchoices:['dragons']},
+  {id:'humanoid_races:2',subchoices:['elf','orc']}
+ ]);
+ assert.equal(next.power_selections.ranger_favored_enemy_phb.prepared,undefined);
+ assert.equal(pick(next,context()).layers.learned.used,2);
 });
 
 test('spell selection benefits project the same stage and source contract as optional powers',()=>{
@@ -148,6 +154,18 @@ test('learned options form the prepared sublist and cannot be lost while active'
  assert.deepEqual(powerSelectionModels(rec,calc,schema)[0].layers.learned.selected,['b']);
 });
 
+test('arbitrary traits can use the same alternative package selector',()=>{
+ const schema={selections:[{id:'choices',owner:{class_name:'Ranger',class_source:'PHB',trait:'Favored Enemy'},
+  source:{packages:[{id:'small',name:'Two choices',count:2,options:[{id:'a',name:'A'},{id:'b',name:'B'}]},
+   {id:'large',name:'One choice',count:1,options:[{id:'x',name:'X'}]}]},
+  layers:{learned:{limit:1}}}]};
+ let record=ranger(1);
+ record={...record,...powerSelectionPatch(record,context(),schema,'choices','learned','small:1',['a','b'])};
+ record={...record,...powerSelectionPatch(record,context(),schema,'choices','learned','large:1',['x'])};
+ assert.deepEqual(powerSelectionModels(record,context(),schema)[0].layers.learned.selected,
+  [{id:'large:1',subchoices:['x']}]);
+});
+
 test('option benefit targets are defined by data, including equipped armor and optional object extensions',()=>{
  const inventory=[
   {id:'armor-a',name:'Armor A',type:'MA',rarity:'none',quantity:1,equipped_slots:['body']},
@@ -165,6 +183,8 @@ test('option benefit targets are defined by data, including equipped armor and o
   infusion:{creator_id:'someone-else'}}))},model,option),[]);
  assert.deepEqual(powerSelectionTargets({...record,inventory:inventory.map(item=>({...item,disabled:true}))},model,option),[]);
 });
+
+
 
 test('targeted options are not applied before object choice and extend only the selected copy',()=>{
  const context={features:[owner('Artificer','TCE','Arcane Armor'),owner('Artificer','TCE','Armor Model')]};

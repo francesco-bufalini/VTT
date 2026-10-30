@@ -22,10 +22,37 @@ function member(record,owner={}){
  low(row.name)===low(owner.class_name)&&(!owner.class_source||low(row.source||record.class_source)===low(owner.class_source))&&
  (!owner.subclass||low(row.subclass)===low(owner.subclass)));
 }
-function optionsFor(record,rule){return [...rows(rule.source?.options),...rows(record.power_selection_custom_options?.[rule.id])].filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014'))).map(row=>({...row,
+function optionsFor(record,rule){
+ const limit=rule.layers?.learned?.limit??rule.layers?.prepared?.limit;
+ const steps=rows(limit?.by_class_level),slots=[];
+ if(steps.length)for(const [at,count] of steps)while(slots.length<Number(count))slots.push(Number(at));
+ else slots.push(...Array.from({length:Math.max(1,Number(limit)||1)},()=>1));
+ const packages=rows(rule.source?.packages).flatMap(pack=>slots.map((at,i)=>({
+  id:pack.id+':'+(i+1),name:pack.name+' · scelta '+(i+1),choice_slot:i+1,min_level:at,
+  subchoices:{count:pack.count,label:pack.label||pack.name,options:pack.options}
+ })));
+ return [...rows(rule.source?.options),...packages,...rows(record.power_selection_custom_options?.[rule.id])].filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014'))).map(row=>({...row,
  min_level:row.min_level||(rows(row.prerequisite).length?Math.min(...rows(row.prerequisite).map(p=>Number(p.level?.level||p.level)||0)):0),
  details:row.details||(!row._homebrew&&row.source?{category:'optional_features',name:row.name,source:row.source}:undefined)}));}
-export function normalizeSelectionRecord(record={},catalog={}){return migrateSelectionRecord(record,definitions(catalog),optionsFor,member);}
+export function normalizeSelectionRecord(record={},catalog={}){
+ let normalized=migrateSelectionRecord(record,definitions(catalog),optionsFor,member);
+ for(const rule of definitions(catalog)){
+  if(!rule.legacy_stage||!rows(rule.source?.packages).length)continue;
+  const saved=normalized.power_selections?.[rule.id],legacy=rows(saved?.[rule.legacy_stage]);
+  if(!legacy.length)continue;
+  const stage=rule.layers?.learned?'learned':'prepared';
+  const converted=legacy.map((row,i)=>{
+   const key=identity(row),pack=rule.source.packages.find(p=>p.id===key||rows(p.legacy_ids).includes(key)||rows(p.options).some(o=>o.id===key));
+   if(!pack)return row;
+   const values=rows(row?.subchoices).length?row.subchoices:[key];
+   return {id:pack.id+':'+(i+1),subchoices:values.map(value=>rows(pack.options).find(o=>low(o.id)===low(value)||low(o.name)===low(value))?.id||value)};
+  });
+  const next={...saved,[stage]:[...rows(saved?.[stage]),...converted]};
+  if(stage!==rule.legacy_stage)delete next[rule.legacy_stage];
+  normalized={...normalized,power_selections:{...normalized.power_selections,[rule.id]:next}};
+ }
+ return normalized;
+}
 export function powerSelectionModels(raw={},calculated={},catalog={}){
  const record=normalizeSelectionRecord(raw,catalog),models=[];
  for(const rule of definitions(catalog)){
@@ -102,10 +129,10 @@ export function powerSelectionPatch(raw,calculated,catalog,id,stage,optionId,det
  if(!exists&&model.unique_across_selections&&powerSelectionModels(record,calculated,catalog).some(other=>other.id!==id&&other.layers.learned?.selected.some(row=>identity(row)===optionId)))throw Error('Opzione già scelta in un altro privilegio.');
  if(!exists&&option.min_level>model.level)throw Error('Livello insufficiente.');
  // Learned counts are guidance (as for spells); prepared choices retain their capacity.
-  if(!exists&&stage!=='learned'&&layer.limit!==null&&old.length>=layer.limit)throw Error('Numero massimo di opzioni raggiunto.');
+  if(!exists&&stage!=='learned'&&layer.limit!==null&&old.length>=layer.limit&&!old.some(row=>option.choice_slot&&model.options.find(o=>o.id===identity(row))?.choice_slot===option.choice_slot))throw Error('Numero massimo di opzioni raggiunto.');
  let value=optionId;
- if(option.subchoices){const names=rows(details).map(v=>String(v).trim());if(names.length!==option.subchoices.count||new Set(names.map(low)).size!==names.length||names.some(n=>!n||n.length>70||/[<>{}]/.test(n)))throw Error('Specifica tutte le sotto-opzioni richieste, senza duplicati.');value={id:optionId,subchoices:names};}
- record.power_selections={...record.power_selections,[id]:{...record.power_selections?.[id],[stage]:exists&&!updating?old.filter(row=>identity(row)!==optionId):[...(old.filter(row=>identity(row)!==optionId)),value]}};
+ if(option.subchoices){const names=rows(details).map(v=>String(v).trim());if(names.length!==option.subchoices.count||new Set(names.map(low)).size!==names.length||names.some(n=>!n||n.length>70||/[<>{}]/.test(n))||rows(option.subchoices.options).length&&names.some(n=>!option.subchoices.options.some(o=>o.id===n)))throw Error('Specifica tutte le sotto-opzioni richieste, senza duplicati.');value={id:optionId,subchoices:names};}
+ record.power_selections={...record.power_selections,[id]:{...record.power_selections?.[id],[stage]:exists&&!updating?old.filter(row=>identity(row)!==optionId):[...old.filter(row=>identity(row)!==optionId&&(!option.choice_slot||model.options.find(o=>o.id===identity(row))?.choice_slot!==option.choice_slot)),value]}};
  if(exists&&!updating)record.power_applications={...record.power_applications,[id]:rows(record.power_applications?.[id]).filter(row=>row.id!==optionId)};
  return statePatch({...record,inventory:projectSelectionBenefits(record,{powerSelections:catalog,optionalFeatureProgressions:catalog.optionalFeatureProgressions},calculated.features||[]).inventory});
 }
