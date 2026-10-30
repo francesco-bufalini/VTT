@@ -8,11 +8,14 @@ import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,spec
 import {referencePatch,rowReferencePatch,availableReferenceRows} from '../native_sheet.js';
 import {canonicalSpeciesReferences} from '../catalog_data.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
+import {collectStructuredFeatures} from '../structured_effects.js';
 import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
 import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 import {readFileSync,existsSync} from 'node:fs';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
-const catalogs={classMechanics:mechanics};
+const catalogs={classMechanics:mechanics,spellcastingBenefits:JSON.parse(readFileSync(new URL('../catalog/spellcasting_benefits.json',import.meta.url),'utf8'))};
+const featureCatalog=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
+const classBenefits=creature=>collectStructuredFeatures(creature,{...catalogs,classFeatures:featureCatalog});
 
 test('resource recovery caption reflects each tracker recovery rule',()=>{
  assert.equal(trackerRecoveryText({recharge:'short_rest'}),'Recupero: riposo breve');
@@ -264,15 +267,16 @@ test('all sheet readouts expose effective values and native bonus targets, inclu
 });
 test('native casting tables preserve editions, class ownership, cantrip limits and wizard spellbook',()=>{
  const c={rules_version:'2014',classes:[{name:'Wizard',source:'PHB',level:5},{name:'Warlock',source:'PHB',level:3}],abilities:{int:16,cha:14}};
- const members=castingClasses(c,mechanics,{int:3,cha:2});
+ const members=castingClasses(c,mechanics,{int:3,cha:2},classBenefits(c));
  const [wizard,warlock]=members;
  assert.deepEqual([wizard.limit,wizard.cantrips,wizard.max_level,wizard.book],[8,4,3,true]);
  assert.deepEqual([warlock.limit,warlock.max_level],[4,2]);
- const modern=castingClasses({...c,rules_version:'2024',classes:[{name:'Wizard',source:'XPHB',level:5}]},mechanics,{int:5});
+ const modernRecord={...c,rules_version:'2024',classes:[{name:'Wizard',source:'XPHB',level:5}]};
+ const modern=castingClasses(modernRecord,mechanics,{int:5},classBenefits(modernRecord));
  assert.equal(modern[0].limit,9,'2024 uses its table rather than ability + level');
  const spell={id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard','Warlock']};
  const options={member:wizard,classes:members,catalog:[spell]};
- assert.throws(()=>addSelectedSpell(c,spell,'prepared_spells',options),/libro/);
+ assert.throws(()=>addSelectedSpell(c,spell,'prepared_spells',options),/Impara prima/);
  const book=addSelectedSpell(c,spell,'spellbook_spells',options);
  const prepared=addSelectedSpell({...c,...book},spell,'prepared_spells',options);
  assert.deepEqual(prepared.prepared_spells[0].casting_classes,[wizard.id]);
