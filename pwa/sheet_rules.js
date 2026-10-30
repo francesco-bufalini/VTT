@@ -1576,8 +1576,11 @@ function calculateSheetValues(record={},catalogs={}){
   // while dice are deliberately left unrolled until that confirmation.
   const incoming_damage_modifiers=arr(record.incoming_damage_modifiers).flatMap(row=>{
     const expression=String(row?.expression||'').replace(/\s+/g,'');
+    const traitKey=String(row.trait_key||'')||
+      (String(row.origin_id||'').startsWith('feature:trait:')?
+       String(row.origin_id).slice('feature:trait:'.length):'');
     if(!expression||row.disabled||!sourceEnabled(row)||
-       row.trait_key&&record.trait_enabled?.[row.trait_key]===false||
+       traitKey&&record.trait_enabled?.[traitKey]===false||
        row.parent_origin&&!sourceEnabled({origin_id:row.parent_origin})||
        !requirementsAllow(record,row))return [];
     const dice=/^([+-]?)([1-9]\d*)d(4|6|8|10|12|20|100)$/i.exec(expression);
