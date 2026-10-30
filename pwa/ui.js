@@ -7592,17 +7592,22 @@ async function handleAction(target){
     if(!formula||!state.editor)throw Error('Danni non disponibili.');
     const type=String(target.dataset.damageType||''),label=String(target.dataset.damageLabel||'Attacco');
     const attackId=String(target.dataset.damageAttackId||'');
+    const actionId=String(target.dataset.damageActionId||'');
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
+    if(actionId&&!(calculated.action_damage_bonuses||[]).some(row=>
+      row.action_id===actionId&&String(row.formula||'').replace(/\s+/g,'')===formula.replace(/\s+/g,'')))
+      throw Error('Il beneficio di danno non è più disponibile per questa azione.');
     const attack=(calculated.attacks||[]).find(row=>
       String(row.id)===attackId&&
       String(row.damage||'').replace(/\s+/g,'')===formula.replace(/\s+/g,''));
     const attackOrigin=attackGrantOrigin(calculated,attackId);
     const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
+    const bonusTarget=actionId?'action_damage:'+actionId:attackId?'attack_damage:'+attackId:'spell_damage';
     const bonuses=rollOptionalDice(creature,calculated,[
-      ...applicableDiceBonuses(creature,attackId?'attack_damage:'+attackId:'spell_damage',state.spellCatalog||[],calculated),
-      ...classFeatureRollBonuses(creature,calculated,'attack_damage:'+attackId),
-       ...applicableFeatRollBonuses(creature,calculated,'attack_damage:'+attackId)
+      ...applicableDiceBonuses(creature,bonusTarget,state.spellCatalog||[],calculated),
+      ...(actionId?[]:classFeatureRollBonuses(creature,calculated,'attack_damage:'+attackId)),
+      ...(actionId?[]:applicableFeatRollBonuses(creature,calculated,'attack_damage:'+attackId))
      ],{kind:'damage',attackId});
     const dialog=openUnifiedRollDialog({kind:'damage',heading:label,modifier:preview.modifier,
       rollType:'Tiro per danni',formula:sheetRollOriginHtml(preview.segments,esc),
