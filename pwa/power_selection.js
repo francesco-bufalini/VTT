@@ -78,7 +78,8 @@ export function powerSelectionPatch(raw,calculated,catalog,id,stage,optionId,det
  if(exists&&!updating&&model.forget!=='unapply'&&(rows(record.power_applications?.[id]).some(row=>row.id===optionId)||stage==='learned'&&rows(record.power_selections?.[id]?.prepared).some(row=>identity(row)===optionId)))throw Error('Disapplica prima il potere o rimuovi l’opzione dalla lista preparata.');
  if(!exists&&model.unique_across_selections&&powerSelectionModels(record,calculated,catalog).some(other=>other.id!==id&&other.layers.learned?.selected.some(row=>identity(row)===optionId)))throw Error('Opzione già scelta in un altro privilegio.');
  if(!exists&&option.min_level>model.level)throw Error('Livello insufficiente.');
- if(!exists&&!(model.selection_kind==='subtrait'&&layer.limit===1)&&layer.limit!==null&&old.length>=layer.limit)throw Error('Numero massimo di opzioni raggiunto.');
+ // Learned counts are guidance (as for spells); prepared choices retain their capacity.
+  if(!exists&&stage!=='learned'&&!(model.selection_kind==='subtrait'&&layer.limit===1)&&layer.limit!==null&&old.length>=layer.limit)throw Error('Numero massimo di opzioni raggiunto.');
  let value=optionId;
  if(option.subchoices){const names=rows(details).map(v=>String(v).trim());if(names.length!==option.subchoices.count||new Set(names.map(low)).size!==names.length||names.some(n=>!n||n.length>70||/[<>{}]/.test(n)))throw Error('Specifica tutte le sotto-opzioni richieste, senza duplicati.');value={id:optionId,subchoices:names};}
  record.power_selections={...record.power_selections,[id]:{...record.power_selections?.[id],[stage]:exists&&!updating?old.filter(row=>identity(row)!==optionId):[...(model.selection_kind==='subtrait'&&layer.limit===1?[]:old.filter(row=>identity(row)!==optionId)),value]}};
