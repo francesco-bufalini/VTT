@@ -6,6 +6,7 @@ import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from '../scaling_dice.js';
 import {rollOptionalDice} from '../sheet_roll_origin.js';
 import {appendRollBonus} from '../sheet_rules_view.js';
+import {abilitiesForCreature} from '../activated_abilities.js';
 import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '../spell_selection.js';
 import {actionEntries,battleActionPanels} from '../action_economy.js';
 import {battleResourcePowers,trackerRollBonusRows} from '../sheet_rules_view.js';
@@ -297,4 +298,38 @@ test('Battle Master known maneuvers grant their own tracker-paid post-roll dice 
   .find(row=>row.origin_name==='Precision Attack')?.dice,'1d10');
  const disabled=calculateSheet({...record,origin_enabled:{[calculated.scaling_dice.find(d=>d.id==='superiority_die')?.origin_id]:false}},completeCatalogs);
  assert(!disabled.scaling_dice.some(row=>row.id==='superiority_die'));
+});
+
+test('Bardic Inspiration uses the same die data for its action in PHB and XPHB',()=>{
+ const rules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
+ const catalog={...completeCatalogs,featureRules:rules};
+ for(const source of ['PHB','XPHB'])for(const [level,expected] of [[1,'1d6'],[5,'1d8'],[10,'1d10'],[15,'1d12']]){
+  const bard={id:'bard',kind:'character',rules_version:source==='PHB'?'2014':'2024',
+   class:'Bard',class_source:source,level,
+   classes:[{name:'Bard',source,level}],
+   abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:18}};
+  const calculated=calculateSheet(bard,catalog);
+  assert.equal(calculated.scaling_dice.find(row=>row.id==='bardic_inspiration_die')?.dice,expected);
+  const power=abilitiesForCreature(bard,[],calculated).find(row=>row.id==='vtt_bardic_inspiration');
+  assert.equal(power?.die,expected,'Bard '+source+' level '+level);
+  assert.equal(power?.tracker_id,calculated.trackers.find(row=>row.name==='Bardic Inspiration')?.id);
+ }
+});
+test('all modeled PHB/TCE Battle Master maneuvers link a real die with one payment path',()=>{
+ const options=catalogs.optionalFeatureProgressions.options.filter(row=>row.types?.includes('MV:B')&&row.effects?.some(e=>e.type==='actions'));
+ assert.equal(options.length,23);
+ for(const option of options){
+  const action=option.effects.find(e=>e.type==='actions');
+  assert.equal(action.dice_ref,'superiority_die',option.name);
+  const bonus=option.effects.filter(e=>e.type==='dice');
+  if(bonus.length){
+   assert.equal(action.tracker_cost,0,option.name+' action must not spend twice');
+   for(const row of bonus){
+    assert.equal(row.dice_ref,'superiority_die',option.name);
+    assert.equal(row.tracker_cost,1,option.name);
+    assert.equal(row.tracker_name,'Superiority Die',option.name);
+    assert.equal(row.strict_tracker,true);
+   }
+  }else assert.equal(action.tracker_cost,1,option.name+' manual action must pay once');
+ }
 });
