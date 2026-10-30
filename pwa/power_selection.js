@@ -125,7 +125,7 @@ export function powerSelectionModels(record={},calculated={},catalog={}){
   }
   if(!Object.keys(layers).length)continue;
   models.push({id:rule.id,title:rule.title||owner.name,description:rule.description||'',
-   source_origin_id:owner.origin_id,origin_id:binding?'item:'+(rows(record.inventory).find(item=>(item.instance_id||item.id)===binding.target_item_id)?.id||binding.target_item_id):owner.origin_id,level:owner.level,option_kind:rule.option_kind||'feature',
+   source_origin_id:owner.origin_id,origin_id:binding?'item-instance:'+binding.target_item_id:owner.origin_id,level:owner.level,option_kind:rule.option_kind||'feature',
    granted_trait:rule.granted_trait||null,on_apply:rule.on_apply||'',source_type:source.type,benefit_type:rule.benefit_type||'option_selection',options,layers,ui:rule.ui||'generic',
    selection_kind:rule.selection_kind||'power'});
  }

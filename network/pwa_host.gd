@@ -102,6 +102,7 @@ const FILES := {
 	"/sheet_rules_view.js": ["res://pwa/sheet_rules_view.js", "text/javascript; charset=utf-8"],
 	"/sheet_roll_origin.js": ["res://pwa/sheet_roll_origin.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
+	"/5etools_inline.js": ["res://pwa/5etools_inline.js", "text/javascript; charset=utf-8"],
 	"/ui_primitives.js": ["res://pwa/ui_primitives.js", "text/javascript; charset=utf-8"],
 	"/trait_benefits.js": ["res://pwa/trait_benefits.js", "text/javascript; charset=utf-8"],
 	"/trait_benefit_distribution.js": ["res://pwa/trait_benefit_distribution.js", "text/javascript; charset=utf-8"],

@@ -74,6 +74,10 @@ try{
  assert(after.attacks.some(row=>row.id==='class_feature:lightning_launcher'));
  assert(!after.attacks.some(row=>row.id==='class_feature:thunder_gauntlets'));
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
+ await sheet('info');
+ const objectTrait=page.locator('#sheet-play-view .trait-row').filter({has:page.locator('.trait-title',{hasText:'Oggetto libero - Armatura Arcana'})});
+ assert.equal(await objectTrait.locator('[data-act="power-selection-open"][data-power-selection-id="armor_model"]').count(),1);
+ await sheet('magic');
  await open('armor_model','armor_model:infiltrator');
  await action.locator('[data-act="benefit-option-apply"]').click();await action.waitFor({state:'detached'});
  assert.equal((await snapshot()).record.trait_state_selection.armor_model,'');

@@ -2686,7 +2686,7 @@ async function traitsView(c){
     '<small>'+esc(sub.selection)+'</small></span><span class="trait-subtrait-chevron" aria-hidden="true">›</span></button>').join('')+'</div>':'';
   // Panoramica retains general origin benefits in the same editable popup.
   const selectionBenefits=(state.calculated?.power_selections||[]).filter(model=>
-    [trait.feature_origin,trait.item_base_origin].filter(Boolean).includes(model.origin_id));
+    [trait.feature_origin,trait.extension_choice_origin].filter(Boolean).includes(model.origin_id));
   const benefitChoices=selectionBenefits.map(model=>model.benefit_type==='object_extension'?
    '<button type="button" class="trait-subtrait" data-act="benefit-option-open" data-power-selection-id="'+esc(model.id)+'" data-power-option-id="'+esc(model.options[0].id)+'">Scegli oggetto · '+esc(model.title)+'</button>':
    model.benefit_type==='option_selection'?'<button type="button" class="trait-subtrait" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+(model.layers.learned?'learned':'applied')+'">Scelte · '+esc(model.title)+'</button>':'').join('');

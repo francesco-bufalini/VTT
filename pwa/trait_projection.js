@@ -75,6 +75,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    item_requires_attunement:entry.item_requires_attunement===true,
    item_id:String(entry.item_id||''),item_inventory_indices:arr(entry.item_inventory_indices),
    item_base_origin:String(entry.item_base_origin||''),
+   extension_choice_origin:String(entry.extension_choice_origin||''),
+   extension_origin_ids:arr(entry.extension_origin_ids),benefits:arr(entry.benefits),
    infusion_origin_id:String(entry.infusion_origin_id||''),
    feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name)),
    // Keep explicit activation metadata even for a standalone feat, item or
@@ -316,13 +318,13 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    const text=detail?.entries||detail?.description||row.trait.description;
    description=[...(Array.isArray(description)?description:[description]),...(Array.isArray(text)?text:[text])].filter(Boolean);
   }
-  for(const model of arr(calculated.power_selections).filter(row=>row.origin_id==='item:'+id))for(const selected of arr(model.layers.applied?.selected)){
+  for(const model of arr(calculated.power_selections).filter(row=>row.origin_id==='item-instance:'+(item.instance_id||item.id)))for(const selected of arr(model.layers.applied?.selected)){
    const option=model.options.find(row=>row.id===(typeof selected==='string'?selected:selected.id));
    if(option?.description)description=[...(Array.isArray(description)?description:[description]),option.description];
   }
   add({name:displayName,entries:description,source:info.source||item.source,
-   item_id:id,item_inventory_indices:group.indices,
-   extension_origin_ids:arr(calculated.power_selections).filter(model=>model.origin_id==='item:'+id).flatMap(model=>[model.source_origin_id,
+   item_id:id,item_inventory_indices:group.indices,extension_choice_origin:extensions.length?'item-instance:'+(item.instance_id||item.id):'',
+   extension_origin_ids:arr(calculated.power_selections).filter(model=>model.origin_id==='item-instance:'+(item.instance_id||item.id)).flatMap(model=>[model.source_origin_id,
     ...arr(model.layers.applied?.selected).flatMap(selected=>{
       const option=model.options.find(row=>row.id===(typeof selected==='string'?selected:selected.id));
       const names=[...arr(option?.granted_features),...arr(option?.attacks).map(row=>row.trait)];
