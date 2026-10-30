@@ -7,7 +7,7 @@ import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '..
 import {actionEntries,battleActionPanels} from '../action_economy.js';
 import {battleResourcePowers} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement} from '../item_controls.js';
+import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={powerSelections:read('power_selections'),optionalFeatureProgressions:read('optional_feature_progressions')};
@@ -234,7 +234,8 @@ test('equipment-conditioned powers stay in their existing Resources group while 
   .some(row=>row.classAction?.id===grant.id&&row.classAction.available===false));
  const shield={id:'sh',name:'Shield',type:'S',custom_item_type:'shield',quantity:1,equipped_slots:['off']};
  const equipped={...base,inventory:[shield]};
- const active=battleActionPanels(equipped,{...projection,selection_record:{...equipped,action_grants:[grant]}},[],[],[]);
+ const active=battleActionPanels(equipped,{...projection,equipped_items:equippedItemFacts(equipped),
+  selection_record:{...equipped,action_grants:[grant]}},[],[],[]);
  assert.equal(active.abilityEntries.find(row=>row.id===grant.id)?.available,true);
  const unequipped={...equipped,inventory:[{...shield,equipped_slots:[]}]};
  const inactive=battleActionPanels(unequipped,{...projection,selection_record:{...unequipped,action_grants:[grant]}},[],[],[]);
