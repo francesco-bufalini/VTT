@@ -676,6 +676,11 @@ export function equipSlot(inventory,slot,index,{allowOffhandWithTwoHanded=false}
   const main=rows.find(row=>row.equipped_slots.includes("main"));
   if(main&&hasProperty(main,"2H")&&!allowOffhandWithTwoHanded)
     for(const row of rows)row.equipped_slots=row.equipped_slots.filter(v=>v!=="off");
+  // The historical equipped boolean is still exported to older sheets. Keep
+  // it consistent for every displaced item, not only the clicked inventory row.
+  for(const row of rows)
+    if(["weapon","shield","armor"].includes(itemKind(row)))
+      row.equipped=row.equipped_slots.length>0;
   return rows;
 }
 
