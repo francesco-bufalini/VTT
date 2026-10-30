@@ -491,6 +491,79 @@ export function hasProperty(item,code){
   return Array.isArray(item?.properties) && item.properties.some(value=>
     String(value).split("|")[0].trim().toUpperCase()===code);
 }
+// A read-only, resolved snapshot for every benefit engine. The slot, not a
+// display name or catalog ID, identifies which copy is being wielded/worn.
+export function equippedItemFacts(record={}){
+ const out=[];
+ for(const saved of array(record.inventory)){
+  const item=resolveOwnedItem(saved),kind=itemKind(item);
+  if((Number(item.quantity??1)||0)<=0||item.active===false||
+      requiresAttunement(item)&&!itemAttunementCount(item))continue;
+  const type=String(item.type||'').split('|')[0].trim().toUpperCase();
+  const properties=array(item.properties).map(p=>String(p).split('|')[0].trim().toUpperCase()).filter(Boolean);
+  for(const slot of array(item.equipped_slots)){
+   if(!(slot==='body'&&kind==='armor'||['main','off'].includes(slot)&&['weapon','shield'].includes(kind)))continue;
+   out.push({id:String(item.id||''),instance_id:String(item.instance_id||item.id||''),
+    name:item.name||'',slot,kind,type,weapon_type:type==='R'?'ranged':type==='M'?'melee':'',
+    weapon_category:item.weapon_category||'',properties,damage_type:String(item.damage_type||'').toLowerCase()});
+  }
+ }
+ return out;
+}
+const selected=(actual,wanted)=>wanted===undefined||
+ (Array.isArray(wanted)?wanted.some(value=>String(value).toLowerCase()===String(actual).toLowerCase()):
+  String(actual).toLowerCase()===String(wanted).toLowerCase());
+function equipmentSelectorMatches(item,selector={}){
+ if(!item||!selector||typeof selector!=='object')return false;
+ if(!['id','instance_id','slot','kind','type','weapon_type','weapon_category','damage_type']
+   .every(field=>selected(item[field],selector[field])))return false;
+ const props=item.properties||[];
+ if(array(selector.properties).some(p=>!props.includes(String(p).toUpperCase())))return false;
+ if(array(selector.any_properties).length&&!selector.any_properties.some(p=>props.includes(String(p).toUpperCase())))return false;
+ if(array(selector.without_properties).some(p=>props.includes(String(p).toUpperCase())))return false;
+ return true;
+}
+// Conditions are data only. The same contract is usable by numeric bonuses,
+// base-value replacements and contextual roll benefits. Missing attack context
+// fails closed: an equipment-specific bonus must never affect an unrelated roll.
+export function equipmentRequirementMatches(record={},requirements={},target='',attack=null,equipped=null){
+ const gear=equipped||equippedItemFacts(record),gate=requirements?.equipment;
+ if(gate&&typeof gate==='object'){
+  if(array(gate.all).some(selector=>!gear.some(item=>equipmentSelectorMatches(item,selector))))return false;
+  if(array(gate.any).length&&!gate.any.some(selector=>gear.some(item=>equipmentSelectorMatches(item,selector))))return false;
+  if(array(gate.none).some(selector=>gear.some(item=>equipmentSelectorMatches(item,selector))))return false;
+  const selector=Object.fromEntries(Object.entries(gate).filter(([k])=>!['all','any','none'].includes(k)));
+  if(Object.keys(selector).length&&!gear.some(item=>equipmentSelectorMatches(item,selector)))return false;
+ }
+ const rule=requirements?.attack;
+ if(!rule)return true;
+ const attackId=String(attack?.id||String(target).match(/^attack_(?:hit|damage|range|long_range|damage_base):(.+)$/)?.[1]||'');
+ if(!attackId)return false;
+ let item=gear.find(e=>e.kind==='weapon'&&(
+  e.slot==='main'&&attackId==='item:'+e.id||
+  e.slot==='off'&&attackId==='item:off:'+e.id||
+  attackId==='item:throw:'+e.slot+':'+e.id));
+ if(!item)item=gear.find(e=>e.kind==='shield'&&attackId==='shield:improvised:'+e.slot+':'+e.id);
+ const thrown=attackId.startsWith('item:throw:');
+ const kind=item?.kind|| (attackId.startsWith('unarmed')?'unarmed':
+  attackId.startsWith('natural:')?'natural':attack?'other':'');
+ const mode=thrown?'thrown':attack?.melee===true?'melee':attack?.melee===false?'ranged':
+  item?.weapon_type==='ranged'?'ranged':item?.weapon_type==='melee'||kind==='unarmed'?'melee':'';
+ const range=mode==='thrown'||mode==='ranged'?'ranged':'melee';
+ if(!selected(kind,rule.kind)||!selected(mode,rule.mode)||!selected(range,rule.range_kind)||
+    !selected(item?.weapon_type||'',rule.weapon_type)||
+    !selected(item?.slot||'',rule.slot)||
+    !selected(String(attack?.damage_type||item?.damage_type||'').toLowerCase(),rule.damage_type))return false;
+ if(array(rule.properties).length&&!item||array(rule.properties).some(p=>!item?.properties.includes(String(p).toUpperCase())))return false;
+ if(array(rule.any_properties).length&&!rule.any_properties.some(p=>item?.properties.includes(String(p).toUpperCase())))return false;
+ if(array(rule.without_properties).some(p=>item?.properties.includes(String(p).toUpperCase())))return false;
+ const twoHanded=item?.properties.includes('2H')||
+  item?.slot==='main'&&item?.properties.includes('V')&&record.hand_grip_two_handed&&!gear.some(e=>e.slot==='off');
+ if(rule.one_handed!==undefined&&(!item||Boolean(!twoHanded)!==Boolean(rule.one_handed)))return false;
+ if(rule.no_other_weapon===true&&(!item||gear.some(e=>e.kind==='weapon'&&e.slot!==item.slot)))return false;
+ if(rule.no_shield===true&&gear.some(e=>e.kind==='shield'))return false;
+ return true;
+}
 export function validSlot(item,slot){
   const kind=itemKind(item);
   return (kind==="weapon"&&["main","off"].includes(slot)&&
