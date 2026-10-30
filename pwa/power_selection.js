@@ -53,12 +53,35 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   models.push({...rule,benefit_type:rule.benefit_type||'option_selection',source_type:'option_catalog',ui:'generic',options,layers,level,
    origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required});
  }
- for(const template of rows(catalog.templates))if(template.source==='casting_classes')for(const member of rows(calculated.casting_classes)){
-  const layers={};for(const [stage,spec] of Object.entries(template.layers||{})){
-   if(stage==='learned'&&(member.book||member.mode==='Conosciuti')||stage==='prepared'&&member.mode==='Preparati')layers[stage]={enabled:true,selected:[],limit:member.book?null:member.limit,trigger:stage==='learned'&&member.book?null:spec.trigger||null,change_label:stage==='learned'&&member.book?'':powerSelectionTriggerLabel(spec.trigger)};
-  }
-  models.push({id:template.id+':'+member.id,title:member.name+' · Incantesimi',source_type:'casting_classes',ui:'existing',options:[],layers,cantrips:member.cantrips});
- }
+ // Spell selection extends the same learned/prepared/applied layer contract.
+ // A benefit declares both the spell catalogue and the owning class level;
+ // this read-only projection deliberately preserves existing spell storage/UI.
+ for(const template of rows(catalog.templates))
+   if(['casting_classes','spell_selection'].includes(template.source))
+   for(const member of rows(calculated.casting_classes)){
+     const declared=member.selection_layers||{};
+     const layers={};
+     if(Object.keys(declared).length){
+       for(const [stage,spec] of Object.entries(declared)){
+         layers[stage]={enabled:true,selected:[],limit:spec.limit??null,
+           trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger),
+           automatic:spec.mode==='automatic'||spec.mode==='class_list',
+           storage:spec.storage||null};
+       }
+     }else for(const [stage,spec] of Object.entries(template.layers||{})){
+       if(stage==='learned'&&(member.book||member.mode==='Conosciuti')||
+         stage==='prepared'&&member.mode==='Preparati')
+         layers[stage]={enabled:true,selected:[],limit:member.book&&stage==='learned'?null:member.limit,
+           trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger)};
+     }
+     models.push({id:template.id+':'+member.id,title:member.name+' · Incantesimi',
+       benefit_type:'spell_selection',source_type:'spell_catalog',
+       source:member.spell_list_source||{type:'spell_catalog',class_name:member.spell_list_class_name||member.name},
+       spell_list_class_name:member.spell_list_class_name||member.name,
+       level_class_name:member.level_class_name||member.name,
+       origin_id:member.granting_trait_id||'',
+       ui:'existing',options:[],layers,cantrips:member.cantrips});
+   }
  // Dependent choices require an available, applied parent, including its source gates.
  let available=models;
  for(let pass=0;pass<models.length;pass++){
