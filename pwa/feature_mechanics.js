@@ -73,6 +73,10 @@ export function classFeatureEntries(record={},calculated={}){
  // mechanics, supported rolls and resource are all declared in the catalog.
  for(const rule of rows(calculated.roll_bonus_rules)){
   if(rule?.passive||!rule?.id||!rule.feature_name||!rule.bonus)continue;
+  // Feature projections may be stale across class/edition changes: only the
+  // currently owned source-qualified class can grant this typed roll bonus.
+  if(!featureMember(record,{class_name:rule.class_name,class_source:rule.class_source,
+   subclass:rule.subclass_name||'',min_level:rule.min_level||1}))continue;
   const feature=rows(calculated.features).find(f=>featureEnabled(record,f)&&
    low(f.name).replaceAll("'",'’')===low(rule.feature_name).replaceAll("'",'’')&&
    String(f.origin_key||'').startsWith('class|')&&
