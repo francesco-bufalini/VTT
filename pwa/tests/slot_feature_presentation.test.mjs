@@ -10,11 +10,13 @@ function originRenderer(){
  const end=ui.indexOf('function magicLevelSlotChip(',start);
  assert.ok(start>=0&&end>start);
  const fn=new Function('state','magicSpellInfo','magicSlotUsageChip',
-  'magicTrackerUsageChip','castingStatistics','groupedMagicSpells','esc',
+  'magicTrackerUsageChip','castingStatistics','castingStatisticsToggle','castingStatisticsVisible','groupedMagicSpells','esc',
   ui.slice(start,end)+';return originSpellSections;');
  return fn({spellCatalog:[]},
   row=>({name:row.name||row.id,level:1}),
   ()=>'<slot-chip/>',()=>'<tracker-chip/>',()=>'<casting-statistics/>',
+  (_record,section,shown)=>'<eye-toggle data-section="'+section+'" data-visible="'+shown+'"/>',
+  (_record,_section,shown)=>shown,
   (items,renderRow)=>'<spell-list>'+items.map(renderRow).join('')+'</spell-list>',value=>String(value));
 }
 const grant={id:'feature-spell:feature:ranger|feature_slot_primeval_awareness_phb',
@@ -26,6 +28,7 @@ test('Slot-paid trait is grouped once as a normal first-level spell',()=>{
  assert.equal((html.match(/magic-source magic-origin-panel/g)||[]).length,1);
  assert.match(html,/<slot-chip\/>/);
  assert.match(html,/data-act="power-spell"/);
+ assert.match(html,/<eye-toggle data-section="origin:feature:ranger" data-visible="false"\/>/);
  assert.doesNotMatch(html,/slot-feature-open|slot-feature-id|<casting-statistics\/>/);
 });
 test('Class granted powers reuse spell casting, not a separate popup or Resources row',()=>{
