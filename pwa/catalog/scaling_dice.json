@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "dice": [
+    {
+      "id": "bardic_inspiration_die",
+      "name": "Bardic Inspiration",
+      "owner": {
+        "class_name": "Bard",
+        "class_source": "PHB",
+        "trait": "Bardic Inspiration"
+      },
+      "by_class_level": [
+        [
+          1,
+          6
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          10,
+          10
+        ],
+        [
+          15,
+          12
+        ]
+      ]
+    },
+    {
+      "id": "bardic_inspiration_die",
+      "name": "Bardic Inspiration",
+      "owner": {
+        "class_name": "Bard",
+        "class_source": "XPHB",
+        "trait": "Bardic Inspiration"
+      },
+      "by_class_level": [
+        [
+          1,
+          6
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          10,
+          10
+        ],
+        [
+          15,
+          12
+        ]
+      ]
+    },
+    {
+      "id": "superiority_die",
+      "name": "Superiority Die",
+      "owner": {
+        "class_name": "Fighter",
+        "class_source": "PHB",
+        "subclass": "Battle Master",
+        "trait": "Combat Superiority"
+      },
+      "by_class_level": [
+        [
+          3,
+          8
+        ],
+        [
+          10,
+          10
+        ],
+        [
+          18,
+          12
+        ]
+      ],
+      "priority": 10
+    }
+  ]
+}
