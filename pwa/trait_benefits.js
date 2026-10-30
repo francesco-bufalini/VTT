@@ -128,6 +128,7 @@ export function traitBenefitTargetLabel(value=''){
  if(type==='tracker')return 'Tracker · '+name;
  if(type==='attack_hit')return 'Tiro per colpire · '+name;
  if(type==='attack_damage')return 'Danni · '+name;
+ if(type==='action_damage')return 'Danni azione · '+({'attack':'Azione di attacco','opportunity':'Attacco di opportunità','two_weapon':'Attacco con arma secondaria','spell_cast':'Lanciare un incantesimo','ability_checks':'Prova abilità'}[name]||name.replaceAll('_',' '));
  if(type==='attack_range')return 'Portata · '+name;
  return key;
 }
