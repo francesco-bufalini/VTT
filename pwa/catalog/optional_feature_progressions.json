@@ -4022,7 +4022,8 @@
           "resource_name": "Superiority Die",
           "description": "Quando subisci danni da un attacco in mischia, puoi usare la reazione per ridurli di un dado superiorità + modificatore di Destrezza. La riduzione dei PF è manuale. Il dado superiorità va speso e il risultato applicato manualmente.",
           "dice_ref": "superiority_die",
-          "tracker_name": "Superiority Die"
+          "tracker_name": "Superiority Die",
+          "dice_add": "dex_mod"
         }
       ]
     },
@@ -4379,7 +4380,8 @@
           "resource_name": "Superiority Die",
           "description": "Come azione bonus, scegli un alleato che ti vede o sente: ottiene PF temporanei pari al risultato del dado superiorità + il tuo modificatore di Carisma. Inserisci i PF manualmente. Il dado superiorità va speso e il risultato applicato manualmente.",
           "dice_ref": "superiority_die",
-          "tracker_name": "Superiority Die"
+          "tracker_name": "Superiority Die",
+          "dice_add": "cha_mod"
         }
       ]
     },
