@@ -1,7 +1,7 @@
 // Substituted by the host with the fingerprint of the actual served assets.
 // Each deployed version gets an atomic app-shell cache; IndexedDB is untouched.
 const REVISION = "__VTT_COMMIT_SHA__";
-const CACHE = "vtt-mobile-shell-v198-" + REVISION;
+const CACHE = "vtt-mobile-shell-v199-" + REVISION;
 const CATALOGS = ["/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
 const SHELL = [
   "/miniature-images/ore.webp",
@@ -140,6 +140,7 @@ const SHELL = [
   "/catalog/species_conditional_bonuses.json",
   "/catalog/trait_states.json",
   "/catalog/power_selections.json",
+  "/catalog/spellcasting_benefits.json",
   "/catalog/feature_slot_spells.json",
   "/catalog/optional_feature_progressions.json",
   "/catalog/roll_bonus_rules.json",
@@ -174,6 +175,7 @@ const REQUIRED_CATALOGS = [
   "/catalog/spell_grant_rules.json", "/catalog/species_powers.json", "/catalog/proficiency_grants.json", "/catalog/classes.json",
   "/catalog/player.json", "/catalog/sense_grants.json", "/catalog/species_roll_modes.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json", "/catalog/power_selections.json",
+  "/catalog/spellcasting_benefits.json",
   "/catalog/optional_feature_progressions.json",
   "/catalog/feature_slot_spells.json",
   "/catalog/roll_bonus_rules.json", "/catalog/feature_item_grants.json", "/catalog/effect_extensions.json",
