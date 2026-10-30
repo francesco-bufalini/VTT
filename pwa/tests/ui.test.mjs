@@ -654,6 +654,12 @@ test("inline spell catalog adds available and spellbook choices without divergin
   await until(()=>document.querySelector('[data-act="magic-select-spells"]'));
   click('[data-act="magic-select-spells"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
+  const preparationDialog=document.querySelector('#magic-tools-dialog[open]');
+  assert.equal(preparationDialog.querySelector('h2')?.textContent,'Prepara incantesimi');
+  assert.ok(preparationDialog.classList.contains('benefit-selection-dialog'));
+  assert.ok(preparationDialog.querySelector('#spell-learn-filter'),'Both spell stages share the class filter');
+  const preparationLayout=[...preparationDialog.querySelector('.magic-tools-body').children]
+    .map(element=>element.className);
   const search=document.querySelector('#spell-search');
   search.value="Shield";
   search.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
@@ -674,6 +680,21 @@ test("inline spell catalog adds available and spellbook choices without divergin
     'Preparing a spell does not reset the modal scroll');
   assert.equal(document.querySelector('#magic-tools-dialog[open] #spell-results').scrollTop,41,
     'Preparing a spell preserves the inner results scroll');
+  assert.equal(document.querySelector('#magic-tools-dialog [data-act="remove-spell"]')?.textContent,'Rimuovi');
+  click('[data-act="magic-tool-close"]');
+  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
+  click('[data-act="magic-learn-select"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
+  const learningDialog=document.querySelector('#magic-tools-dialog[open]');
+  assert.equal(learningDialog.querySelector('h2')?.textContent,'Impara nuovi incantesimi');
+  assert.deepEqual([...learningDialog.querySelector('.magic-tools-body').children]
+    .map(element=>element.className),preparationLayout,
+    'Learning and preparation use exactly the same popup view');
+  const learnSearch=learningDialog.querySelector('#spell-search');
+  learnSearch.value='Shield';
+  learnSearch.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  await until(()=>learningDialog.querySelector('[data-act="spell-known-toggle"]'));
+  assert.equal(learningDialog.querySelector('[data-act="spell-known-toggle"]')?.textContent,'Dimentica');
   click('[data-act="magic-tool-close"]');
   await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   const preparedRow=document.querySelector('.magic-spell-open[data-spell-key="prepared_spells"]');

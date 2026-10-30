@@ -2349,8 +2349,7 @@ async function editorView() {
     requireFullSpellsForPicker();
   if(state.sheet==='magic'&&state.magicPopup){
     const member=calculated.casting_classes.find(row=>row.id===state.spellClass);
-    if(state.magicPopup==='choices'||state.magicPopup==='learn'||state.magicPopup==='catalog'&&
-      !(member?.mode==='Preparati'&&state.spellTarget==='prepared_spells'&&state.spellKnownView==='known'))
+    if(['choices','learn','catalog'].includes(state.magicPopup))
       requireFullSpellsForPicker();
   }
   let featDetails;
@@ -3832,37 +3831,21 @@ function magicToolsDialog(c,calculated){
    slotTrackerRow(0,pact,true)+
    '<div class="actions"><button type="button" class="btn small" data-act="slots-restore">Ripristina tutti gli slot</button></div></div>';
  const selectedMember=calculated.casting_classes.find(member=>member.id===state.spellClass);
- const selectedTarget=(!selectedMember||selectedMember.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
  const counts=selectedMember?classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]):null;
  const knownProgress=selectedMember?knownSpellProgress(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]):null;
- const preparationWarning=selectedMember?.mode==='Preparati'&&
-   Number.isInteger(selectedMember.limit)&&selectedMember.limit>=0&&
-   counts.leveled!==selectedMember.limit?
-     '<p class="magic-selection-warning" role="status">Preparati: '+
-     counts.leveled+' / '+selectedMember.limit+'</p>':'';
- const knownLevels=knownProgress&&Number.isInteger(knownProgress.minimum)&&knownProgress.minimum>=0?
-   {current:knownProgress.known,expected:knownProgress.minimum}:null;
- const knownCantrips=selectedMember&&Number.isInteger(selectedMember.cantrips)&&selectedMember.cantrips>=0?
-   {current:counts.cantrips,expected:selectedMember.cantrips}:null;
- const learningSummary=[
-   knownLevels?'Conosciuti: '+knownLevels.current+' / '+knownLevels.expected:'',
-   knownCantrips?'Trucchetti conosciuti: '+knownCantrips.current+' / '+knownCantrips.expected:''
-  ].filter(Boolean).join(' · ');
- const learnClassFilter='<label class="magic-learn-filter"><span>Filtra per classe</span>'+
+ // The same selection summary, class filter, search and result view serve
+ // both learned and prepared stages. Only the title and row action change.
+ const selectionSummary=[
+   selectedMember?.mode==='Preparati'&&Number.isInteger(selectedMember.limit)&&selectedMember.limit>=0?
+     'Preparati: '+counts.leveled+' / '+selectedMember.limit:'',
+   knownProgress&&Number.isInteger(knownProgress.minimum)&&knownProgress.minimum>=0?
+     'Conosciuti: '+knownProgress.known+' / '+knownProgress.minimum:'',
+   selectedMember&&Number.isInteger(selectedMember.cantrips)&&selectedMember.cantrips>=0?
+     'Trucchetti conosciuti: '+counts.cantrips+' / '+selectedMember.cantrips:''
+ ].filter(Boolean).join(' · ');
+ const classFilter='<label class="magic-learn-filter"><span>Filtra per classe</span>'+
    '<select id="spell-learn-filter" aria-label="Filtra per classe">'+
    spellLearningFilterOptions()+'</select></label>';
- const searchInput='<label class="vtt-list-search magic-editor-search">Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>';
- const searchResults=(state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
-   '<div id="spell-results" class="catalog-results vtt-selection-list magic-editor-results">'+renderSpellResults()+'</div>';
- const preparation=
-   (selectedMember?
-     '<button type="button" class="btn small magic-selection-button" data-act="magic-learn-open">Impara / dimentica incantesimi</button>':'')+
-   preparationWarning+
-   '<section class="magic-selection-current"><h3>'+esc(selectedMember?.mode==='Preparati'?'Preparati':'Conosciuti / disponibili')+'</h3>'+
-   spellList(c,selectedTarget,selectedMember?.id||null,calculated.casting_classes,
-     {includeSlots:false,minLevel:selectedMember?.mode==='Preparati'?1:0})+'</section>'+
-   searchInput+searchResults;
- const catalog=preparation;
  const chosenLevel=Number(state.magicSlotLevel);
  const chosenPact=Boolean(state.magicSlotPact);
  const chosenSlot=chosenPact?calculated.pact_slots:
@@ -3903,18 +3886,18 @@ function magicToolsDialog(c,calculated){
   'slot-menu':[label,slotMenu],
   concentration:['Concentrazione',concentration],
   slots:['Slot · Classi / Patto',slots],
-  catalog:['Prepara incantesimi',catalog],
+  catalog:['Prepara incantesimi',''],
   learn:['Impara nuovi incantesimi',catalog],
   choices:['Scelte dalle origini',originChoicesView(calculated)||'<p class="hint">Nessuna scelta di incantesimi in sospeso.</p>']
  };
  if(!views[kind])return '';
  const [title,content]=views[kind];
- if(kind==='learn'){
-  // The same known-options picker is used by spells, infusions, styles and maneuvers.
+ if(kind==='learn'||kind==='catalog'){
+  // Both spell stages reuse the same picker as infusions, styles and maneuvers.
   return '<dialog id="magic-tools-dialog" class="sheet-roll-dialog magic-tools-dialog benefit-selection-dialog" aria-label="'+esc(title)+'">'+
    learningSelectionDialogBody({
-    title,closeAction:'magic-tool-close',summary:learningSummary,
-    filters:learnClassFilter,searchLabel:'Cerca incantesimo',
+    title,closeAction:'magic-tool-close',summary:selectionSummary,
+    filters:classFilter,searchLabel:'Cerca incantesimo',
     searchAttribute:'id="spell-search" value="'+esc(state.spellQuery)+'"',
     resultsId:'spell-results',resultsClass:'learning-picker-results',
     results:renderSpellResults(),footer:false
@@ -4166,15 +4149,17 @@ function renderSpellResults(){
     new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
   const selectedRows=target==='spellbook_spells'?(record.spellbook_spells||[]):prepared;
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
+  const filterClass=String(state.spellLearnFilter||'all').toLowerCase();
+  const matchesClassFilter=spell=>filterClass==='all'||
+    (filterClass===String(member?.spell_list_class_name||member?.name||'').toLowerCase()&&spellEligible(spell,member))||
+    arr(spell.classes).some(name=>
+      String(typeof name==='string'?name:name?.name).toLowerCase()===filterClass);
   const filtered=rows.filter(spell=>allowed.has(spell)&&!spell.internal_grant&&
     (preparing?Number(spell.level)>0&&Number(spell.level)<=member.max_level&&
         (known.has(spell.id)||granted.has(spell.id)):
-      learning?Number(spell.level)<=member.max_level&&
-        (state.spellLearnFilter==='all'||
-         (state.spellLearnFilter.toLowerCase()===String(member.spell_list_class_name||member.name).toLowerCase()&&spellEligible(spell,member))||
-         (Array.isArray(spell.classes)&&spell.classes.some(name=>
-          String(typeof name==='string'?name:name?.name).toLowerCase()===state.spellLearnFilter.toLowerCase()))):
+      learning?Number(spell.level)<=member.max_level:
       !member||spellEligible(spell,member))&&
+    matchesClassFilter(spell)&&
     (target!=='spellbook_spells'||Number(spell.level)>0||learning)&&
     matchesSearch(query,spell.name,spell.source))
     .sort((a,b)=>Number(a.level||0)-Number(b.level||0)||
@@ -4195,29 +4180,27 @@ function renderSpellResults(){
         ' data-spell-id="'+esc(spell.id)+'"';
     const name='<button type="button" class="magic-catalog-name" data-act="power-spell"'+details+
       ' aria-label="Dettagli di '+esc(info.name)+'">'+esc(info.name)+'</button>';
-    if(learning){
-      const isKnown=member.book&&Number(spell.level)>0?knownBook.has(spell.id):known.has(spell.id);
-      return '<div class="magic-catalog-row vtt-selectable'+(isKnown?' is-selected':'')+'">'+name+
-        '<button class="magic-catalog-action" type="button" data-act="spell-known-toggle"'+
-        ' data-spell-index="'+rows.indexOf(spell)+'" data-known="'+isKnown+'" data-class-id="'+esc(member.id)+'">'+
-        (isKnown?'Dimentica':'+ Impara')+'</button></div>';
-    }
+    // Shared row template; the current selection stage controls the action.
+    const owned=learning?
+      (member.book&&Number(spell.level)>0?knownBook.has(spell.id):known.has(spell.id)):
+      already;
     const grant=preparing?granted.get(spell.id):null;
-    if(grant){
-      const source=grant.origin_name||grant.origin_id||'altra origine';
-      return '<div class="magic-catalog-row magic-granted-spell">'+name+
-        '<span class="magic-granted-label" title="'+esc(source)+'">Sempre disponibile · '+esc(source)+'</span></div>';
-    }
-    const action=already?'remove-spell':'spell-pick';
-    const actionIndex=already?selectedRows.findIndex(row=>spellId(row)===spell.id):rows.indexOf(spell);
-    return '<div class="magic-catalog-row vtt-selectable'+(already?' is-selected':'')+'">'+name+
-      '<button class="magic-catalog-action'+(already?' is-selected':'')+'" type="button" aria-pressed="'+already+'" data-act="'+action+
-      '" data-index="'+actionIndex+'"'+(already?
-        ' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
-      ' aria-label="'+(already?'Rimuovi':'Aggiungi')+' '+esc(info.name)+'">'+
-      (target==='spellbook_spells'?(already?'✓ Imparato':'+ Impara'):
-        member?.mode==='Conosciuti'?(already?'✓ Conosciuto':'+ Conosci'):
-        already?'✓ Preparato':'+ Prepara')+'</button></div>';
+    const action=learning?'spell-known-toggle':owned?'remove-spell':'spell-pick';
+    const actionIndex=owned?selectedRows.findIndex(row=>spellId(row)===spell.id):rows.indexOf(spell);
+    const attrs=learning?
+      ' data-spell-index="'+rows.indexOf(spell)+'" data-known="'+owned+
+        '" data-class-id="'+esc(member.id)+'"':
+      ' data-index="'+actionIndex+'"'+(owned?
+        ' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'');
+    const label=learning?(owned?'Dimentica':'+ Impara'):
+      member?(owned?'Rimuovi':'+ Prepara'):(owned?'Rimuovi':'+ Aggiungi');
+    return '<div class="magic-catalog-row vtt-selectable'+(owned?' is-selected':'')+'">'+name+
+      (grant?'<button class="magic-catalog-action" type="button" disabled title="'+
+        esc(grant.origin_name||grant.origin_id||'Altra origine')+'">Sempre disponibile</button>':
+        '<button class="magic-catalog-action'+(owned?' is-selected':'')+
+        '" type="button" aria-pressed="'+owned+'" data-act="'+action+'"'+attrs+
+        ' aria-label="'+esc(label.replace(/^\\+ /,'')+' '+info.name)+'">'+esc(label)+'</button>')+
+      '</div>';
   })+resultsFooter('spell-results-more',shown,total,60);
 }
 function diceResult(){
@@ -7208,6 +7191,7 @@ async function handleAction(target){
         classes.some(row=>row.id===state.spellClass)?state.spellClass:classes[0]?.id||'manual';
       state.spellTarget=act==='magic-select-spells'&&target.dataset.magicTarget==='spellbook_spells'?
         'spellbook_spells':'prepared_spells';
+      state.spellLearnFilter='all';
       state.spellQuery='';state.spellResultLimit=60;
       state.spellKnownView=classes.find(row=>row.id===state.spellClass)?.mode==='Preparati'?'known':'all';
     }
