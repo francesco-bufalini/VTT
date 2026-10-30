@@ -884,7 +884,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-power-open" data-act="'+
     (id==='spell_cast'?'action-open-spells':'battle-action-jump')+'" data-action-id="'+esc(id)+'"'+
     ' aria-label="'+esc(name)+'">'+icon(id==='ability_checks'?'skill':actionGlyphKey({id,name,time}))+
-    '<span><strong>'+esc(name)+'</strong><small>'+esc(extra||(
+    '<span><strong>'+esc(name)+'</strong><small>'+render5etoolsInline(extra||(
      available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):
      'Non disponibile'))+'</small></span></button>'+
     (count>1?(grantId?'<button type="button" class="play-battle-attacks-per-action" data-act="power-trait"'+
