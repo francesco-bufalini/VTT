@@ -542,6 +542,16 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   .sort((a,b)=>a.order-b.order||a.value.localeCompare(b.value,'it',{sensitivity:'base'}));
  for(const row of defenses)
   add('defenses','Resistenze, immunità e vulnerabilità',row.label,row.value,row.id);
+ for(const modifier of rows(calculated.incoming_damage_modifiers)){
+  if(!belongs(modifier))continue;
+  const type=modifier.damage_type?' · '+(DAMAGE[norm(modifier.damage_type)]||modifier.damage_type):' · Tutti i danni';
+  const mode=modifier.optional?'Utilizzabile':'Permanente';
+  const cost=modifier.tracker_id?' · Tracker '+modifier.tracker_id+' (−'+(modifier.tracker_cost||1)+')':'';
+  add('incoming_damage','Modificatori ai danni subiti',
+   'Danni subiti',modifier.expression+type+' · '+mode+cost,
+   'incoming_damage:'+modifier.id);
+ }
+
  for(const row of rows(calculated.trackers)){
   if(!belongs(row)&&!rows(trait.monster_tracker_ids).includes(row.id)){
    // Unattributed automatic class pools are shown only in the class overview,
