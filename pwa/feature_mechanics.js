@@ -480,7 +480,7 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
    const count=integer(levels[level-1]);if(!(count>=0&&count<=slots[level]))throw Error('Slot da recuperare non validi.');
    total+=level*count;slots[level]-=count;
   }
-  if(!total||total>Math.ceil(classFeatureLevel(record,'Wizard')/2))throw Error('Troppi livelli di slot da recuperare.');
+  if(!total||total>Math.ceil(classFeatureLevel(record,action.class_name)/2))throw Error('Troppi livelli di slot da recuperare.');
   patch.spell_slots_spent=slots;
  }
  if(record.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(key))cost=options.enhanced?1:0;
