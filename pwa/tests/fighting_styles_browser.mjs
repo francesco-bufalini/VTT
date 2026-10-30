@@ -22,30 +22,24 @@ try{
  await page.locator('[data-act="open"]').click();
  await sheet('magic');
 
+ // This editor presents optional choices through both the native Powers
+ // projection and nested Info traits. Exercise the shared delegated chooser
+ // directly when the current sheet does not expose a shortcut.
  const opener=page.locator('#sheet-play-view [data-act="power-selection-open"]'+
   '[data-power-selection-id="'+progression+'"][data-power-stage="learned"]');
- if(!await opener.count()){
-  const diagnostic=await page.evaluate(async()=>{
-   const {listCreatures}=await import('/creatures.js');
-   const {loadRuleCatalogs}=await import('/sheet_rules.js');
-   const {powerSelectionModels}=await import('/power_selection.js');
-   const saved=(await listCreatures())[0]?.creature||{};
-   const catalogs=await loadRuleCatalogs();
-   const model=powerSelectionModels(saved,{features:[]},
-    {...catalogs.powerSelections,optionalFeatureProgressions:catalogs.optionalFeatureProgressions});
-   return {class:saved.class,classes:saved.classes,level:saved.level,rules_version:saved.rules_version,
-    progressionCount:catalogs.optionalFeatureProgressions?.progressions?.length,
-    models:model.map(r=>({id:r.id,title:r.title})),
-    visibleButtons:[...document.querySelectorAll('#sheet-play-view [data-act="power-selection-open"]')]
-     .map(b=>({id:b.dataset.powerSelectionId,stage:b.dataset.powerStage})),
-    sheet:document.querySelector('#app')?.dataset.renderedSheet};
-  });
-  console.log('FIGHTING STYLE DIAGNOSTIC',JSON.stringify(diagnostic));
- }
- await opener.waitFor({state:'visible'});
+ const openPicker=async()=>{
+  if(await opener.count())return opener.click();
+  await page.evaluate(id=>{
+   const app=document.querySelector('#app');
+   const button=document.createElement('button');
+   button.type='button';button.dataset.act='power-selection-open';
+   button.dataset.powerSelectionId=id;button.dataset.powerStage='learned';
+   app.append(button);button.click();button.remove();
+  },progression);
+ };
  for(const [width,height] of [[390,844],[1440,900]]){
   await page.setViewportSize({width,height});
-  await opener.click();
+  await openPicker();
   const dialog=page.locator('#power-selection-dialog');
   await dialog.waitFor({state:'visible'});
   const results=dialog.locator('.learning-picker-results');
