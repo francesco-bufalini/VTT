@@ -155,7 +155,7 @@ test('multiattack counter uses active structured features or a monster multiatta
  assert.equal(attacksPerAction(typedMonster,{features:collectStructuredFeatures(typedMonster)}),4);
  const attack={id:'monster:action:0',name:'Bite',melee:true,hit:6,damage:'1d8'};
  const html=doc(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions,[],[],true).others);
- assert.equal(html.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action'),null);
+ assert.equal(html.querySelectorAll('[data-attack-id="attack"] .play-attack-sequence > li').length,1);
  assert.equal(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions).basicActions.find(row=>row.id==='attack').attack_count,3);
 });
 
@@ -664,7 +664,7 @@ test('privilege and equipped attacks precede the full basic group, starting with
   assert(ids.indexOf(id)>=0&&ids.indexOf(id)<firstBasic,
    id+' must appear before every basic attack: '+ids.join(', '));
  }
- assert.equal(ids[firstBasic+1],'grapple','Unarmed is immediately followed by Grapple');
+ assert.equal(ids[firstBasic+1],'improvised','Only concrete attacks follow Unarmed in Resources');
  assert(ids.indexOf('improvised')>firstBasic,'Improvised attacks belong to the basic group');
  const baseIds=new Set(catalog.actions.filter(rule=>rule.edition==='2014'&&
   rule.parent_action==='attack').map(rule=>rule.id));
