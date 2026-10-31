@@ -1682,7 +1682,8 @@ test('failed hit-point save keeps the dialog and entered amount open',async t=>{
  await saveCreature({...current.data,name:'Aggiornata da altra finestra'},'default',current.revision);
  const hpInput=dialog.querySelector('#hp-adjust-current');hpInput.value='12';
  hpInput.dispatchEvent(new window.Event('input',{bubbles:true}));
- await until(()=>document.querySelector('#save-state')?.classList.contains('error'));
+ await until(()=>document.querySelector('#toast')?.classList.contains('error'));
+ assert.ok(document.querySelector('#toast').textContent.trim(),'Failed save exposes a visible error');
 
  assert.ok(dialog.isConnected&&dialog.open,'A failed save must not close or replace the dialog');
  assert.equal(dialog.querySelector('#hp-adjust-amount').value,'3');

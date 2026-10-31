@@ -1074,7 +1074,14 @@ input:disabled{opacity:.75;cursor:default}
 
 .inventory-detail-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 20px;padding:14px;border:1px solid #b68b5040;border-radius:12px;background:#49322425}
 .inventory-detail-facts>div{min-width:0}.inventory-detail-facts dt{font-size:10px;color:#aa987e;margin-bottom:4px}.inventory-detail-facts dd{font-size:13px;color:#e6d0ad;margin:0;line-height:1.6;overflow-wrap:anywhere}
-.inventory-detail-section{margin:18px 0}.inventory-detail-section h3{font:600 10px/1.5 system-ui;text-transform:uppercase;letter-spacing:.08em;color:#bfa581;margin:0 0 7px}.inventory-detail-section p,.inventory-detail-section .inventory-prose{font-size:13px;line-height:1.7;color:#dfd0ba}
+.inventory-variant-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
+.inventory-variant-heading h3{margin:0}
+.inventory-variant-add{display:grid;place-items:center;flex:none;width:40px;height:40px;padding:0;
+ border:0;border-radius:9px;background:transparent;color:#edc891;font:400 28px/1 system-ui,sans-serif;cursor:pointer}
+.inventory-variant-add:hover{background:#a9815126}
+.inventory-variant-add:focus-visible{outline:2px solid #edc891;outline-offset:2px}
+.inventory-detail-section{margin:18px 0}.inventory-detail-section h3{font:600 10px/1.5 system-ui;text-transform:uppercase;letter-spacing:.08em;color:#bfa581;margin:0 0 7px}
+.inventory-applied-options .inventory-variant-heading h3{margin:0}.inventory-detail-section p,.inventory-detail-section .inventory-prose{font-size:13px;line-height:1.7;color:#dfd0ba}
 
 /* Dice roller: selection is separate from rolling and sharing. */
 .chat-dice-dialog .dice-options .btn[aria-pressed="true"]{border-color:var(--accent);background:rgba(227,179,107,.16);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
@@ -1727,7 +1734,7 @@ input:disabled{opacity:.75;cursor:default}
 .play-section-divider{display:flex;align-items:center;gap:12px;margin:7px 0 6px;color:#edc891;font:700 13px/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase}
 .play-section-divider::before,.play-section-divider::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,#a98151a8)}
 .play-section-divider::after{background:linear-gradient(90deg,#a98151a8,transparent)}
-.play-skills-disclosure{border:0;border-bottom:1px solid #a37b4766;background:transparent;min-width:0}
+.play-skills-disclosure{border:0;background:transparent;min-width:0}
 .play-competence-heading{display:flex;align-items:center;gap:10px;min-height:54px;padding:8px 8px;cursor:pointer;list-style:none;color:#ecd4a9}
 .play-competence-heading::-webkit-details-marker{display:none}
 .play-competence-heading .vtt-action-glyph{width:22px;height:22px;flex:none}
@@ -4254,26 +4261,37 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
  margin:0;padding:0 0 14px;border-bottom:1px solid #b18b5940
 }
 #sheet-context-dialog[data-context^="item:"] .play-item-fields{gap:12px}
+#sheet-context-dialog[data-context^="item:"] :is(.play-item-fields>label,.play-item-main-fields>label){
+ min-width:0;gap:6px;color:#ccb392;font:600 11px/1.4 system-ui,sans-serif
+}
+#sheet-context-dialog[data-context^="item:"] :is(.play-item-fields>label,.play-item-main-fields>label)>span{
+ display:block;min-height:16px;line-height:16px
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-fields>label>input:not([type=checkbox]){
+ box-sizing:border-box;width:100%;min-width:0;height:48px;min-height:48px;
+ border:1px solid #b38f5d6e;border-radius:7px;background:#2d2421;
+ color:#ead1aa;font:500 12px/1.4 system-ui,sans-serif;padding:6px 8px
+}
 #sheet-context-dialog[data-context^="item:"] .play-item-main-fields{
  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end
 }
 #sheet-context-dialog[data-context^="item:"] .play-item-main-fields>label{min-width:0;gap:6px;
  font:600 11px/1.4 system-ui,sans-serif;color:#ccb392}
 #sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-quantity-controls{
- grid-template-columns:32px minmax(0,1fr) 32px;gap:4px;width:100%;min-width:0
+ grid-template-columns:32px minmax(0,1fr) 32px;gap:4px;width:100%;min-width:0;height:48px;min-height:48px;box-sizing:border-box
 }
 #sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-quantity-controls input{
- height:38px;min-height:38px!important;padding:4px;min-width:0!important;
+ height:46px;min-height:46px!important;padding:4px;min-width:0!important;
  font-size:14px!important;text-align:center;border:1px solid #b38f5d6e;border-radius:7px;
  background:#221c1b;color:#f3ddbd
 }
 #sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-qty-btn{
- width:32px!important;min-width:32px!important;min-height:38px!important;
+ width:32px!important;min-width:32px!important;min-height:46px!important;
  border:1px solid #ad8a5d63;border-radius:7px;background:#674a363b;
  color:#eed3ae;font-size:18px
 }
 #sheet-context-dialog[data-context^="item:"] .play-item-main-fields select{
- box-sizing:border-box;display:block;min-height:38px;width:100%;min-width:0;
+ box-sizing:border-box;display:block;min-height:48px;height:48px;width:100%;min-width:0;
  border:1px solid #b38f5d6e;border-radius:7px;background:#2d2421;
  color:#ead1aa;font:500 12px/1.4 system-ui,sans-serif;padding:6px 8px
 }
@@ -6357,6 +6375,10 @@ html:has(dialog[open]) #sheet-play-view .inventory-bulk-bar.vtt-selection-toolba
 .chat-screen #chat-form .chat-send-button:hover{background:#b78b4c}
 .chat-screen #chat-form .chat-send-button:disabled{opacity:.4}
 .app-shell.chat-open .toast{bottom:calc(70px + env(safe-area-inset-bottom))}
+
+/* Expanded Battle lists never draw an old index rail or branch before a row. */
+#sheet-play-view [data-battle-action="others"] .play-battle-action-rows{border-left:0}
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-entry::before{content:none}
 
 
 /* Keep the familiar Wild Shape paw in the compact header icon frame. */

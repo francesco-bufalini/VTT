@@ -370,8 +370,17 @@ function trackIdentityWrite(target){
  void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
  return write;
 }
+// HP edits may arrive from a debounce while an earlier save is in flight.
+// Serialize them and read the latest dialog values after the previous write.
+let pendingHpFieldWrite=Promise.resolve();
 function trackFieldWrite(target) {
-  const write=handleField(target);
+  let write;
+  if(target?.matches?.('[data-hp-autosave]')){
+    const editor=state.editor;
+    write=pendingHpFieldWrite.then(()=>
+      target.isConnected&&state.editor===editor?handleField(target):undefined);
+    pendingHpFieldWrite=write.catch(()=>{});
+  }else write=handleField(target);
   pendingFieldWrites.add(write);
   void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
   return write;
@@ -1847,8 +1856,11 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
    await patch(changes);if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();
     if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
-    dialog.dataset.confirmed='true';dialog.close();await render();
-   if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
+    dialog.dataset.confirmed='true';dialog.close();
+    // Apply roll-scoped bonuses before the sheet refresh can replace the
+    // view/roll owner. Payment has already been committed and flushed.
+    if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
+    await render();
    if(reroll){state.roll={...reroll,label:ability.name,author:selectedName()};state.rollHistory.unshift({...state.roll});}
    message(reroll?ability.name+': '+reroll.notation+' → '+reroll.total+' · usa i nuovi risultati.':ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
   }catch(error){button.disabled=false;dialog.querySelector('[data-feature-result]').textContent=errorMessage(error);}
@@ -2659,9 +2671,7 @@ async function editorView() {
     break;
   }
   return header(['info','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+
-    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+btn("send","Manda")+
-    '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
-    btn("delete","Elimina scheda","danger")+'</div></details>';
+    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div>';
 }
 function resourceView(c,configure=false,compact=false){
  const active=state.calculated?.trackers||[],saved=Array.isArray(c.resource_trackers)?c.resource_trackers:[],origins=state.calculated?.origins||[];
@@ -3861,10 +3871,10 @@ function inventoryItemDescription(obj,index,optionDescriptions=new Map()){
        'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
    })():'';
   return '<div class="inventory-description">'+
-    '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
-      '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools">'+actionGlyph('spark')+
-      '<span>Varianti 5eTools</span></button></div>'+
-    (applied.length?'<section class="inventory-detail-section inventory-applied-options"><h3>Modifiche applicate</h3>'+
+    '<section class="inventory-detail-section inventory-applied-options">'+
+     '<div class="inventory-variant-heading"><h3>Varianti</h3>'+
+      '<button type="button" class="inventory-variant-add" data-act="item-variant-open" data-index="'+index+
+      '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools"><span aria-hidden="true">+</span></button></div>'+
       applied.map(option=>'<article class="inventory-applied-entry">'+
        '<div class="inventory-applied-heading"><strong>'+esc(option.name)+'</strong>'+
        (option.removable?'<button type="button" class="inventory-applied-remove" data-act="item-variant-remove" data-index="'+index+
@@ -3872,7 +3882,7 @@ function inventoryItemDescription(obj,index,optionDescriptions=new Map()){
         '<span aria-hidden="true">×</span></button>':'')+'</div>'+
        '<p class="inventory-applied-description">'+esc(option.description)+'</p>'+
        option.effects.map(storedPowerControls).join('')+'</article>').join('')+
-      '</section>':'')+
+    '</section>'+
     (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
       '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
     '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+

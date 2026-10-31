@@ -9,7 +9,10 @@ try{
   await saveCreature({...saved.data,class:'Artificer',class_source:'TCE',level:8,
    classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
    abilities:{str:18,dex:14,con:14,int:19,wis:12,cha:10},trait_state_selection:{armor_model:'armor_model:infiltrator'},attack_ability:'int',
-   current_hp:62,max_hp_base:62,inventory:[{id:'test:armor',name:'Celebrum Armor',type:'MA',ac:14,quantity:1,equipped_slots:['body']}]
+   current_hp:62,max_hp_base:62,
+    inventory:[{id:'test:armor',instance_id:'test:armor',name:'Celebrum Armor',type:'MA',ac:14,quantity:1,equipped_slots:['body']}],
+    power_applications:{arcane_armor:[{id:'arcane_armor',target_item_id:'test:armor'}],
+      armor_model:[{id:'armor_model:infiltrator'}]}
   },'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('info');
@@ -25,8 +28,8 @@ try{
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  await sheet('battle');
  // A selected model must expose its actual attack in the Actions list.
- await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').waitFor({state:"attached"});
- assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').count(),0);
+ await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Lightning Launcher'}).waitFor({state:"attached"});
+ assert.equal(await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Thunder Gauntlets'}).count(),0);
 
  const resources=page.locator('[data-battle-action="resources"]');
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
@@ -65,8 +68,8 @@ try{
  assert.equal(await guardian.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'true');
  assert.equal(await infiltrator.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'false');
  await sheet('battle');
- await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').waitFor({state:"attached"});
- assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').count(),0);
+ await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Thunder Gauntlets'}).waitFor({state:"attached"});
+ assert.equal(await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Lightning Launcher'}).count(),0);
 
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  await page.getByRole('button',{name:'Usa Campo difensivo',exact:true}).click();
@@ -92,7 +95,16 @@ try{
   const {listCreatures}=await import('/creatures.js');
   return ((await listCreatures())[0].creature.resource_tracker_spent?.[id]||0)===1;
  },flashTracker);
- assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/\+4/);
+ const rollBonusState=await rollDialog.evaluate(dialog=>({
+   connected:dialog.isConnected,
+   used:dialog.usedRollBonuses?.map(row=>({id:row.id,flat_bonus:row.flat_bonus,dice:row.dice})),
+   post:dialog.postRollBonuses?.map(row=>({id:row.id,flat_bonus:row.flat_bonus,dice:row.dice})),
+   applied:[...(dialog.appliedBonusIds||[])],
+   flash:dialog.querySelector('.sheet-roll-bonus-item')?.querySelector('[data-roll-use]')?.outerHTML,
+   formula:dialog.querySelector('[data-roll-formula]')?.textContent
+ }));
+ assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/\+4/,
+   'Confirmed Flash of Genius must change the roll formula: '+JSON.stringify(rollBonusState));
  const modifier=Number((await rollDialog.locator('.sheet-roll-math strong').first().textContent()).trim());
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  const total=Number(await rollDialog.locator('.dice-result').textContent());

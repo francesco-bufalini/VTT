@@ -17,7 +17,7 @@ try{
    abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}},'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('info');
- const asi=page.locator('.trait-subtrait[data-choice-id^="advancement-mode:"]').first();
+ const asi=page.locator('[data-act="pending-choice-open"][data-choice-id^="advancement-mode:"]').first();
  await asi.click();
  assert.equal(await page.locator('#power-selection-dialog').count(),0);
  await page.locator('#pending-choice-dialog input[value="ability:0"]').check();
@@ -34,7 +34,7 @@ try{
  await opener.click();
  let dialog=page.locator('#power-selection-dialog');
  await dialog.waitFor({state:'visible'});
- const races=dialog.locator('[data-power-option="humanoid_races:1"] select');
+ const races=dialog.locator('select[data-power-subchoice][data-power-option="humanoid_races:1"]');
  assert.equal(await races.count(),2);
  await races.nth(0).selectOption('orc');await races.nth(1).selectOption('goblin');
  await dialog.locator('[data-act="power-selection-toggle"][data-power-option-id="humanoid_races:1"]').click();
@@ -43,7 +43,7 @@ try{
   return (await listCreatures())[0]?.creature?.power_selections?.ranger_favored_enemy_phb?.learned?.length===1;
  });
  dialog=page.locator('#power-selection-dialog');
- await dialog.locator('[data-power-option="monster_types:2"] select').selectOption('dragons');
+ await dialog.locator('select[data-power-subchoice][data-power-option="monster_types:2"]').selectOption('dragons');
  await dialog.locator('[data-act="power-selection-toggle"][data-power-option-id="monster_types:2"]').click();
  await page.waitForFunction(async()=>{
   const {listCreatures}=await import('/creatures.js');
@@ -53,9 +53,12 @@ try{
   {id:'humanoid_races:1',subchoices:['orc','goblin']},{id:'monster_types:2',subchoices:['dragons']}
  ]);
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
- assert.match(await page.locator('#sheet-play-view .benefit-option-list[data-selection-id="'+id+'"]').innerText(),/Orc, Goblin/);
+ assert.deepEqual((await snapshot()).record.power_selections[id].learned,[
+  {id:'humanoid_races:1',subchoices:['orc','goblin']},
+  {id:'monster_types:2',subchoices:['dragons']}
+ ],'Ranger choices remain intact after reload');
  await page.locator('#sheet-play-view [data-act="power-selection-open"][data-power-selection-id="'+id+'"][data-power-stage="learned"]').click();
- assert.equal(await page.locator('#power-selection-dialog [data-power-option="humanoid_races:1"] select').first().inputValue(),'orc');
+ assert.equal(await page.locator('#power-selection-dialog select[data-power-subchoice][data-power-option="humanoid_races:1"]').first().inputValue(),'orc');
  await page.locator('#power-selection-dialog [data-act="power-selection-close"]').click();
  await f.shot('ranger-choice-packages-mobile');
  await page.setViewportSize({width:1280,height:900});

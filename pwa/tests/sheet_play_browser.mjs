@@ -637,6 +637,12 @@ try{
  await hpCard.click({position:{x:22,y:80}});
  await page.locator('#hp-adjust-current').fill('39');
  await page.locator('#hp-adjust-temporary').fill('5');
+ // Cross the production pending-edit barrier before asserting durable HP.
+ await page.locator('#hp-adjust-temporary').press('Tab');
+ await page.evaluate(async()=>{
+  const {desktopSheetSession}=await import('/ui.js');
+  await desktopSheetSession.flush();
+ });
  await page.waitForFunction(async creatureId=>{
   const {loadCreature}=await import('/creatures.js');
   const creature=(await loadCreature(creatureId))?.data;
@@ -670,11 +676,16 @@ try{
   await hpCard.click({position:{x:22,y:80}});
   await page.locator('#hp-adjust-amount').fill(String(healedHp-37));
   await page.locator('#hp-adjust-dialog [data-hp-mode="damage"]').click();
+  await page.locator('#hp-adjust-dialog').waitFor({state:'hidden'});
   await page.waitForFunction(async creatureId=>{
    const {loadCreature}=await import('/creatures.js');
    return (await loadCreature(creatureId)).data.current_hp===37;
   },seededCreatureId);
  }
+ await page.evaluate(async()=>{
+  const {desktopSheetSession}=await import('/ui.js');
+  await desktopSheetSession.flush();
+ });
  assert.equal((await record()).current_hp,37,'Subsequent damage restores expected HP');
 
  const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
@@ -952,19 +963,17 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
- // The former dedicated "tools" context button was replaced by the shared
- // skill/proficiency editor. Use the visible proxy rather than a dead selector.
- await page.locator('#sheet-play-view .play-skills-tools [data-act="sheet-context"][data-sheet-context="tools"]').click();
- assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
- assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
- await dismiss();
+ assert.equal(await page.locator('#sheet-play-view .play-skills-tools').count(),0,'No competence editor button in Info');
+ assert.equal(await page.locator('#sheet-play-view [data-play-search]').count(),0,'No skills search in Info');
+ assert.deepEqual(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').evaluateAll(rows=>
+  rows.map(row=>row.dataset.target)),['ability_check:str','ability_check:dex','ability_check:con','ability_check:int','ability_check:wis','ability_check:cha']);
  const skillMarker=key=>page.locator('#sheet-play-view .play-skills [data-target="skill:'+key+'"] .play-skill-rank');
  assert.equal(await skillMarker('arcana').getAttribute('aria-label'),'Competenza');
  assert.equal(await skillMarker('arcana').locator('svg path').count(),1);
  assert.equal(await skillMarker('stealth').getAttribute('aria-label'),'Maestria');
  assert.equal(await skillMarker('stealth').locator('svg path').count(),2);
  assert.equal(await skillMarker('athletics').count(),0,'Untrained skills have no rank indicator');
- await page.locator('[data-play-search]').fill('furt');assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),1);
+ assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),24,'Six ability checks before eighteen skills');
  await page.locator('#sheet-play-view [data-target="skill:stealth"]').click();await page.locator('[data-act="roll-sheet-confirm"]').click();assert(Number(await page.locator('.dice-result').textContent())>0);await page.locator('[data-act="close-sheet-roll"]').click();
  await sheet('inventory');
  await popup('equipment');
@@ -983,7 +992,23 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),3,
   'Global inventory search must not hide the owned items in their sections');
  await page.locator('[data-play-search]').fill('');
- await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());await shot('item-popup');await dismiss();
+ await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());
+ assert.equal((await page.locator('#sheet-context-dialog .inventory-variant-heading h3').textContent()).trim(),'Varianti');
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="item-variant-open"]').count(),1,'Variant picker has one plus icon');
+ await dismiss();await popup('item:1');
+ const popupControls=await page.locator('#sheet-context-dialog').evaluate(dialog=>{
+  const quantity=dialog.querySelector('.inventory-quantity-controls');
+  const container=dialog.querySelector('.play-item-main-fields select');
+  const labelA=dialog.querySelector('.play-item-main-fields>label:first-child>span');
+  const labelB=dialog.querySelector('.play-item-main-fields>label:last-child>span');
+  return {quantity:quantity?.getBoundingClientRect().height,container:container?.getBoundingClientRect().height,
+   captionA:labelA&&getComputedStyle(labelA).fontSize,captionB:labelB&&getComputedStyle(labelB).fontSize};
+ });
+ assert(popupControls.quantity&&popupControls.container,'Editable quantity and container controls must be present');
+ assert(Math.abs(popupControls.quantity-popupControls.container)<=1,
+  'Quantity and container controls align in height: '+JSON.stringify(popupControls));
+ assert.equal(popupControls.captionA,popupControls.captionB,'Item popup captions use equal font sizes');
+ await shot('item-popup');await dismiss();
  const inlineCoins=page.locator('#sheet-play-view .inventory-play-coins');
  assert.equal(await inlineCoins.count(),1,'Coin editor must be visible in the shortcut row');
  assert.equal(await inlineCoins.locator('[data-coin-code]').count(),5,'All five denominations must be editable inline');
@@ -1080,7 +1105,14 @@ try{
    return Number((await listCreatures())[0].creature.resource_tracker_spent?.focus||0)===before;
   },spentBefore);
  }
- await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
+ // Slot management now opens directly from the always-visible Power overview.
+ const manageSlots=page.locator('#sheet-play-view [data-act="sheet-proxy"][aria-label="Gestisci slot"]');
+ await manageSlots.waitFor({state:'visible'});
+ await manageSlots.click();
+ await page.locator('#magic-tools-dialog[open]').waitFor();
+ assert.match(await page.locator('#magic-tools-dialog').textContent(),/Slot/i);
+ assert.equal(await page.locator('#sheet-context-dialog').count(),0);
+ await page.locator('#magic-tools-dialog [data-act="magic-tool-close"]').click();
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  const traitSection=page.locator('.play-info-traits');
  assert.equal(await traitSection.count(),1);
@@ -1280,7 +1312,9 @@ try{
  await page.locator('.play-info-traits .trait-card[data-trait-key="state|rage"][open]').waitFor();
  await sheet('battle');
  const ragePanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
- await ragePanel.locator('summary.play-battle-summary').click();
+ const rageDisclosure=ragePanel.locator('details.play-battle-disclosure');
+ if(!await rageDisclosure.evaluate(node=>node.open))
+   await rageDisclosure.locator('summary.play-battle-summary').click();
  const rage=ragePanel.locator('.play-resource-power-row').filter({has:page.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]')});
  assert.equal(await rage.count(),1,'Rage has a single Disattiva button when active');
  await rage.locator('[data-act="condition-remove-ability"]').click();

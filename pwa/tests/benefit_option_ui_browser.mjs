@@ -13,7 +13,7 @@ try{
  await page.evaluate(async()=>{
   const {createCreature,saveCreature}=await import('/creatures.js');
   const saved=await createCreature('character','Benefici comuni');
-  await saveCreature({...saved.data,rules_version:'2014',level:10,
+  await saveCreature({...saved.data,rules_version:'2014',class:'Ranger',class_source:'PHB',level:10,
    classes:[{name:'Ranger',source:'PHB',level:2},{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
    abilities:{str:12,dex:14,con:14,int:18,wis:12,cha:10},attack_ability:'int',
    inventory:[{id:'test:armor',name:'Armatura bersaglio',type:'MA',ac:14,quantity:1,equipped_slots:['body']}]
@@ -76,7 +76,8 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
  await sheet('info');
  const objectTrait=page.locator('#sheet-play-view .trait-row').filter({has:page.locator('.trait-title',{hasText:'Oggetto libero - Armatura Arcana'})});
- assert.equal(await objectTrait.locator('[data-act="power-selection-open"][data-power-selection-id="armor_model"]').count(),1);
+ assert.equal(await objectTrait.locator('[data-act="trait-benefits-open"]').count(),1,
+  'The original trait opens its benefits instead of embedding another selection picker');
  await sheet('magic');
  await open('armor_model','armor_model:infiltrator');
  await action.locator('[data-act="benefit-option-apply"]').click();await action.waitFor({state:'detached'});
@@ -89,6 +90,10 @@ try{
  }
  await sheet('conditions');
  await page.locator('#sheet-play-view [data-act="item-option-remove"][data-selection-id="arcane_armor"]').click();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature.power_applications?.arcane_armor?.length===0;
+ },null,{timeout:5000});
  assert.equal((await snapshot()).record.power_applications.arcane_armor.length,0);
  assert(!(await snapshot()).record.inventory[1].option_extensions.some(effect=>effect.selection_id==='arcane_armor'));
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
