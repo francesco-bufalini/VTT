@@ -40,7 +40,8 @@ test('2014 Goblin Nimble Escape exposes two separate bonus actions on all eligib
   assert.match(rendered.others,/Nimble Escape/);
   assert.match(rendered.others,/data-act="battle-use-ability"/);
   assert.match(rendered.others,/data-target="skill:stealth"/);
-  assert.match(rendered.others,/Nessun attacco di opportunità/);
+  assert.doesNotMatch(rendered.others,/class="play-battle-effect"/,
+   'The action list no longer repeats conditions and effects in subrows');
   assert.equal(racialPowerProjection({...rec,rules_version:'2024'},index,[trait(rec,'Nimble Escape')]).abilities.length,0);
  }
  const r=record('Goblin','PSZ');
