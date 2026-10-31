@@ -6028,6 +6028,9 @@ dialog.benefit-selection-dialog .magic-editor-search{width:100%;min-width:0;box-
 .levelup-class-fields{display:grid;gap:11px}
 .levelup-class-fields label{display:grid;gap:6px;font-size:12px}
 .levelup-class-fields select{width:100%;min-height:39px}
+.levelup-class-target-row{display:grid;grid-template-columns:minmax(0,1fr) 124px;gap:9px;align-items:end}
+.levelup-class-target-row label{min-width:0}
+.levelup-class-target-row input{width:100%;box-sizing:border-box;min-height:39px}
 .levelup-class-preview{margin:0;padding:9px 10px;color:#ebd0a9;background:#b68a4c15;
  border:1px solid #b68a4c31;border-radius:7px;font-size:12px}
 

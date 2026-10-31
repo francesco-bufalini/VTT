@@ -5993,8 +5993,7 @@ async function openLevelUpClassDialog(preset={}){
  // Monsters use the same class progression, retaining their original bestiary stats.
  const isMonster=record.kind==='monster'||record.variant_rules_kind==='monster';
  const fromTotal=totalClassLevel(record);
- const maximum=20-fromTotal;
- if(maximum<1)throw Error('La creatura ha già 20 livelli di classe.');
+ const maximum=20; // Maximum levels gained in one operation, never a character cap.
  const xpAvailable=availableXpLevels(record);
  const owned=rowsFor(record,'classes').map((row,index)=>({...row,index})).filter(row=>row.name);
  const all=state.referenceCatalogs.classes||await catalogEntries('classes');
@@ -6002,7 +6001,7 @@ async function openLevelUpClassDialog(preset={}){
  const choices=all.filter(row=>row.name&&isContentAvailableForRules(row,record.rules_version));
  const idOf=row=>String(row.id||row.name+'|'+row.source);
  const existing=owned.map(row=>({value:'owned:'+row.index,
-   label:row.name+' · '+(row.source||'Fonte non specificata')+' (livello '+row.level+')'}));
+   label:row.name+' · '+(row.source||'Fonte non specificata')}));
  const remaining=choices.filter(row=>!owned.some(member=>member.name.toLowerCase()===row.name.toLowerCase()));
  const unique=new Map();
  for(const row of remaining){
@@ -6020,17 +6019,13 @@ async function openLevelUpClassDialog(preset={}){
  dialog.innerHTML='<header class="sheet-context-head"><h2>Livellaggio</h2>'+
    dialogCloseButton('level-up-class-close','Chiudi','play-button')+'</header>'+
    '<div class="pending-choice-dialog-body levelup-class-fields">'+
-   '<label>Classe da livellare<select data-level-up-class>'+
+   '<div class="levelup-class-target-row"><label>Classe da livellare<select data-level-up-class>'+
      (existing.length?'<optgroup label="Classi possedute">'+opts(existing)+'</optgroup>':'')+
      (newEntries.length?'<optgroup label="Altre classi">'+
        opts(newEntries.map(row=>({value:'new:'+idOf(row),label:row.name+' · '+row.source})))+
        '</optgroup>':'')+
    '</select></label>'+
-   '<label>Livelli da acquisire<select data-level-up-count>'+
-     Array.from({length:maximum},(_,i)=>'<option value="'+(i+1)+'"'+
-       (i+1===defaultCount?' selected':'')+'>'+
-       (i+1)+' '+(i===0?'livello':'livelli')+'</option>').join('')+
-   '</select></label>'+
+   '<label>Livello della classe<input type="number" inputmode="numeric" step="1" min="1" data-level-up-target></label></div>'+
    '<p class="levelup-class-preview" data-level-up-preview></p>'+
    '<div class="levelup-hp-rows" data-level-up-hp-rows></div>'+
    '<section class="levelup-impact-preview" aria-label="Anteprima della progressione">'+
@@ -6044,7 +6039,7 @@ async function openLevelUpClassDialog(preset={}){
    '<button type="button" data-level-up-cancel>Annulla</button>'+
    '<button type="button" class="btn primary" data-level-up-confirm>Conferma livellaggio</button></footer>';
  const classSelect=dialog.querySelector('[data-level-up-class]');
- const countSelect=dialog.querySelector('[data-level-up-count]');
+ const targetInput=dialog.querySelector('[data-level-up-target]');
  const hpRows=dialog.querySelector('[data-level-up-hp-rows]');
  const impactPanel=dialog.querySelector('[data-level-up-impact]');
  const impactCache=new Map();
@@ -6079,9 +6074,9 @@ async function openLevelUpClassDialog(preset={}){
  };
  const refreshImpact=async()=>{
    const generation=++impactGeneration;
-   const selected=selectedClass(),count=Number(countSelect.value);
+   const selected=selectedClass(),count=Number(targetInput.value)-(selected?.from||0);
    impactPanel.innerHTML='<p class="levelup-empty">Calcolo della progressione…</p>';
-   if(!selected||!Number.isInteger(count)||count<1)return;
+   if(!selected||!Number.isSafeInteger(count)||count<1||count>maximum)return;
    try{
      const rows=await getImpact(selected,count);
      if(generation!==impactGeneration||!dialog.isConnected)return;
@@ -6110,17 +6105,31 @@ async function openLevelUpClassDialog(preset={}){
    return reference?{name:reference.name,source:reference.source||'',
      index:-1,from:0,reference}:null;
  };
- let previousSelection='';
+ let previousSelection='',activeClassValue='';
  const paintPreview=()=>{
-   const selected=selectedClass();
-   const count=Number(countSelect.value)||1;
+   const selected=selectedClass(),from=selected?.from||0;
+   if(activeClassValue!==classSelect.value){
+     targetInput.value=String(from+defaultCount);
+     activeClassValue=classSelect.value;
+   }
+   targetInput.min=String(from+1);
+   targetInput.max=String(from+maximum);
+   const count=Number(targetInput.value)-from;
+   if(!selected||!Number.isSafeInteger(Number(targetInput.value))||
+     !Number.isSafeInteger(count)||count<1||count>maximum){
+     dialog.querySelector('[data-level-up-preview]').textContent=
+       'Seleziona un livello della classe da '+(from+1)+' a '+(from+maximum)+'.';
+     hpRows.innerHTML='';
+     impactPanel.innerHTML='<p class="levelup-empty">Livello della classe non valido.</p>';
+     dialog.querySelector('[data-level-up-confirm]').disabled=true;
+     return;
+   }
    const die=hitDieFor(selected);
    const con=Number(state.calculated?.abilities?.con?.modifier ??
      Math.floor((Number(record.abilities?.con??10)-10)/2));
    const values=previousSelection===classSelect.value?
      [...hpRows.querySelectorAll('[data-level-up-hp]')].map(input=>Number(input.value)): [];
    previousSelection=classSelect.value;
-   const from=selected?.from||0;
    dialog.querySelector('[data-level-up-preview]').textContent=
      (selected?.name||'Classe')+' · livello '+from+' → '+(from+count)+
      ' · '+(isMonster?'livelli di classe':'personaggio')+' '+fromTotal+' → '+(fromTotal+count);
@@ -6166,7 +6175,7 @@ async function openLevelUpClassDialog(preset={}){
    dialog.querySelector('[data-level-up-confirm]').disabled=!valid;
  };
  classSelect.addEventListener('change',paintPreview);
- countSelect.addEventListener('change',paintPreview);
+ targetInput.addEventListener('input',paintPreview);
  hpRows.addEventListener('input',paintHpTotal);
  paintPreview();
  dialog.querySelector('[data-level-up-cancel]').addEventListener('click',()=>closeDialog(dialog,{remove:true}));
@@ -6177,10 +6186,12 @@ async function openLevelUpClassDialog(preset={}){
    try{
      const current=state.editor?.read();
      if(!current||current.id!==record.id)throw Error('Creatura cambiata.');
-     const rows=rowsFor(current,'classes'),count=Number(countSelect.value);
-     const selected=selectedClass();
+     const rows=rowsFor(current,'classes'),selected=selectedClass();
+     const count=Number(targetInput.value)-(selected?.from||0);
      const faces=hitDieFor(selected);
-     if(!selected||!faces||!Number.isInteger(count)||count<1||totalClassLevel(current)+count>20)
+     if(!selected||!faces||!Number.isSafeInteger(Number(targetInput.value))||
+       !Number.isSafeInteger(count)||count<1||count>maximum||
+       !Number.isSafeInteger(totalClassLevel(current)+count))
        throw Error('Livellaggio non valido.');
      const rolls=[...hpRows.querySelectorAll('[data-level-up-hp]')].map(input=>Number(input.value));
      if(rolls.length!==count||rolls.some(value=>!Number.isInteger(value)||value<1||value>faces))

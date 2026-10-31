@@ -35,14 +35,18 @@ export function normalizeMonsterStatBlock(stat={}){
  return changed?{...stat,action}:stat;
 }
 
-/** Cumulative XP needed to reach each character level (D&D 5e, 2014/2024). */
+/** Published cumulative XP thresholds for character levels 1–20 (D&D 5e). */
 export const XP_THRESHOLDS=Object.freeze([
  0,0,300,900,2700,6500,14000,23000,34000,48000,64000,
  85000,100000,120000,140000,165000,195000,225000,265000,305000,355000
 ]);
 export function minimumXpForLevel(level){
  const n=Number(level);
- return Number.isInteger(n)&&n>=1?XP_THRESHOLDS[Math.min(n,20)]:0;
+ if(!Number.isSafeInteger(n)||n<1)return 0;
+ if(n<=20)return XP_THRESHOLDS[n];
+ // Levels beyond the published table use its final 50,000-XP increment.
+ return Math.min(Number.MAX_SAFE_INTEGER,XP_THRESHOLDS[20]+
+   (n-20)*(XP_THRESHOLDS[20]-XP_THRESHOLDS[19]));
 }
 export function minimumXpForCreature(record={}){
  // Challenge rating never counts as a class level. A monster with class
@@ -60,7 +64,7 @@ export function canLevelUp(record={}){
  const level=classes.length?classes.reduce((n,row)=>n+Math.max(1,integer(row.level,1)),0):
   record.class?Math.max(1,integer(record.level,1)):0;
  const xp=Number(record.xp);
- return level>=1&&level<20&&Number.isSafeInteger(xp)&&xp>=minimumXpForLevel(level+1);
+ return level>=1&&Number.isSafeInteger(xp)&&xp>=minimumXpForLevel(level+1);
 }
 export function experienceFloorPatch(record,changes={}){
  const updated={...record,...changes};

@@ -14,13 +14,17 @@ const subclassCatalog={
   {name:'Improved Critical',class_name:'Fighter',class_source:'PHB',subclass_name:'Champion',level:3}
  ]}
 };
-test('XP eligibility is based on the NEXT total character level and stops at 20',()=>{
+test('XP eligibility is based on the NEXT total character level, including beyond 20',()=>{
  assert.equal(canLevelUp(fighter(1,299)),false);
  assert.equal(canLevelUp(fighter(1,300)),true);
  assert.equal(canLevelUp(fighter(2,900)),true);
  assert.equal(canLevelUp({...fighter(1,900),
    classes:[{name:'Fighter',source:'PHB',level:1},{name:'Wizard',source:'PHB',level:1}]}),true);
  assert.equal(canLevelUp(fighter(20,355000)),false);
+ assert.equal(minimumXpForLevel(21),405000);
+ assert.equal(minimumXpForLevel(22),455000);
+ assert.equal(canLevelUp(fighter(20,405000)),true);
+ assert.equal(canLevelUp(fighter(21,455000)),true);
  assert.equal(canLevelUp({...fighter(1,300),kind:'monster'}),false);
 });
 test('monster XP minima follow class levels, never bestiary CR',()=>{
@@ -89,7 +93,7 @@ test('unselected subrace is offered from the species catalog and persisted sourc
  assert.equal(patch.subrace_source,'PHB');
  assert.throws(()=>savePendingChoice(record,choice,['not-in-options']),/Selezione non consentita/);
 });
-test('class-level editors present dropdown options and retain the 20-level limit',()=>{
+test('class-level editors allow class and total levels beyond 20',()=>{
  const record={...fighter(3,2700),classes:[
   {name:'Fighter',source:'PHB',level:3},
   {name:'Rogue',source:'PHB',level:2}
@@ -99,8 +103,10 @@ test('class-level editors present dropdown options and retain the 20-level limit
  assert.match(html,/<select/);
  assert.doesNotMatch(html,/data-native-list="classes"[^>]*data-key="level"[^>]*type="number"/);
  assert.equal(nativeRowPatch(record,'classes',1,'level','4').level,7);
- assert.equal(identityPatch(record,'primary_class_level','18').level,20);
- assert.throws(()=>identityPatch(record,'primary_class_level','19'),/20/);
+ assert.match(html,/<option value="21"\s*>21<\/option>/);
+ assert.equal(nativeRowPatch(record,'classes',1,'level','21').level,24);
+ assert.equal(identityPatch(record,'primary_class_level','21').level,23);
+ assert.equal(identityPatch(record,'primary_class_level','31').level,33);
 });
 
 test('XP entered in the class editor immediately makes advancement available',()=>{

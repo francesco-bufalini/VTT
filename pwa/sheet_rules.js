@@ -432,7 +432,7 @@ function classHitDice(record,classes,catalog){
         .find(Boolean)||options[0];
     }
     if(!chosen){return {available:false,reason:"Classe non inclusa nei dadi vita locali: "+cls.name};}
-    const hd=int(chosen.hit_die),count=clamp(int(cls.level,1),1,20);
+    const hd=int(chosen.hit_die),count=Math.max(1,int(cls.level,1));
     const subtotal={die:hd,count,name:cls.name};parts.push(subtotal);
     if(hd<=0)return {available:false,reason:"Dado vita non noto per "+cls.name};
   }
@@ -548,11 +548,12 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
  const add=row=>{if(row.id&&!rows.has(row.id))rows.set(row.id,row);};
  for(const member of localClasses(record)){
   const level=int(member.level),base=classMechanicsRow(catalog,member.name,member.source);
-  if(!base||level<1||level>20)continue;
+  if(!base||level<1)continue;
+   const tableLevel=Math.min(level,20); // Preserve published class capacities beyond level 20.
   const prefix='class:'+member.name.toLowerCase()+':'+base.source.toLowerCase()+':';
   const makeId=name=>prefix+name.toLowerCase().replaceAll(' ','_');
   for(const column of arr(base.columns)){
-   const max=column.levels?.[level-1];
+   const max=column.levels?.[tableLevel-1];
    if(column.kind==='resource'&&typeof max==='number'&&max>0)
     add({id:makeId(column.name),name:column.name,max:int(max),origin_name:column.origin_feature||column.name,origin_feature_key:column.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,recharge:'manual',automatic:true});
   }
@@ -562,7 +563,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
     const steps=arr(resource.steps).filter(s=>requirementsAllow(record,{requirements:{scope:'class',class_name:member.name,class_source:base.source,min_level:int(s.level),...s.requirements}})).sort((a,b)=>int(b.requirements?.min_level??b.level)-int(a.requirements?.min_level??a.level));
     const step=steps[0];if(!step)continue;
     const columnName=resource.column||resource.name,column=arr(base.columns).find(c=>c.name===columnName);
-    if(column&&(typeof column.levels?.[level-1]!=='number'||column.levels[level-1]<=0))continue;
+    if(column&&(typeof column.levels?.[tableLevel-1]!=='number'||column.levels[tableLevel-1]<=0))continue;
     const id=makeId(columnName);
     if(rows.has(id)){rows.get(id).recharge=step.reset||'manual';continue;}
     try{

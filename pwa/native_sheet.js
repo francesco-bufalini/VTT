@@ -40,11 +40,13 @@ export const BONUS_TARGETS=[['ability_check','Tutte le prove di caratteristica (
  ...Array.from({length:9},(_,i)=>['slot:'+(i+1),'Slot livello '+(i+1)])];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const list=v=>Array.isArray(v)?v:[];
+const classLevelOptions=current=>Array.from({length:Math.max(30,Number(current||1)+10)},
+  (_,i)=>[i+1,String(i+1)]);
 export const ROW_FIELDS = {
- classes:[["name","Classe"],["source","Fonte"],["subclass","Sottoclasse"],["subclass_source","Fonte sottoclasse"],["level","Livello","number",1,20]],
+ classes:[["name","Classe"],["source","Fonte"],["subclass","Sottoclasse"],["subclass_source","Fonte sottoclasse"],["level","Livello","number",1,Number.MAX_SAFE_INTEGER]],
  proficiency_choices:[["kind","Tipo",[["skill","Abilità"],["expertise","Maestria"],["save","Tiro salvezza"],["weapon","Arma"],["armor","Armatura"],["tool","Strumento"],["language","Linguaggio"]]],["key","Competenza"],["origin_name","Origine"],["disabled","Disattivata","checkbox"]],
  backgrounds_catalog:[["name","Background"],["source","Fonte"],["disabled","Disattivato","checkbox"]],
-  feats_catalog:[["name","Talento"],["source","Fonte"],["level","Livello del privilegio","number",1,20],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
+  feats_catalog:[["name","Talento"],["source","Fonte"],["level","Livello del privilegio","number",1,Number.MAX_SAFE_INTEGER],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
  formula_bonuses:[["target","Valore"], ["expression","Formula"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  dice_bonuses:[["target","Tiro",[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']]],["dice","Dadi (es. 1d4)"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  damage_defense_entries:[["key","Danno o condizione"],["rank","Difesa",[[-1,"Vulnerabilità"],[1,"Resistenza"],[2,"Immunità danno"],[3,"Immunità condizione"]]],["disabled","Disattivata","checkbox"]],
@@ -54,8 +56,8 @@ export function benefitRequirements(row,attrs){
  const gate=row.requirements||{};
  return '<details><summary>Requisiti di livello</summary><div class="columns">'+
  control('Livello di riferimento',attrs+' data-requirement="scope"',gate.scope||'character',[['character','Personaggio'],['class','Classe']])+
- control('Livello minimo',attrs+' data-requirement="min_level"',gate.min_level??row.min_level??0,'number',0,20)+
- control('Livello massimo (vuoto: nessuno)',attrs+' data-requirement="max_level"',gate.max_level??'','number',0,20)+
+ control('Livello minimo',attrs+' data-requirement="min_level"',gate.min_level??row.min_level??0,'number',0,Number.MAX_SAFE_INTEGER)+
+ control('Livello massimo (vuoto: nessuno)',attrs+' data-requirement="max_level"',gate.max_level??'','number',0,Number.MAX_SAFE_INTEGER)+
  control('Nome classe',attrs+' data-requirement="class_name"',gate.class_name||'')+
  control('Fonte classe',attrs+' data-requirement="class_source"',gate.class_source||'')+'</div></details>';
 }
@@ -65,7 +67,7 @@ export function requirementPatch(row,field,value){
  if(field==='scope'&&!['character','class'].includes(value))throw Error('Ambito non valido');
  if(['min_level','max_level'].includes(field)){
   if(field==='max_level'&&value===''){delete gate.max_level;return gate;}
-  value=Number(value);if(!Number.isInteger(value)||value<0||value>20)throw Error('Livello da 0 a 20');
+  value=Number(value);if(!Number.isSafeInteger(value)||value<0)throw Error('Livello non valido');
  }
  gate[field]=value;
  if(gate.max_level!==undefined&&gate.max_level<gate.min_level)throw Error('Il massimo non può essere inferiore al minimo');
@@ -384,11 +386,7 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
       return control(label,'data-native-pick="'+key+'" data-index="'+i+'" data-key="'+field+'" data-category="'+category+'"',selected,options);
     }
     if(key==='classes'&&field==='level'){
-      const others=rows.filter((other,index)=>index!==i&&other.name)
-        .reduce((total,other)=>total+Number(other.level||1),0);
-      const remaining=Math.max(0,20-others);
-      type=remaining?Array.from({length:remaining},(_,index)=>[index+1,String(index+1)]):
-        [[Number(row.level)||1,String(row.level||1)]];
+      type=classLevelOptions(row.level);
     }
     if(key==='classes'&&['source','subclass_source'].includes(field))
       return '<div class="native-readonly-source"><span>'+esc(label)+'</span><strong>'+esc(row[field]||'—')+'</strong></div>';
@@ -442,7 +440,8 @@ export function collectionPatch(c,key,rows){
  if(!ROW_FIELDS[key])throw Error('Elenco non valido');
  const patch={[key]:rows};
  if(key==='classes'){
-  const total=rows.filter(row=>row.name).reduce((sum,row)=>sum+Number(row.level||1),0);if(total>20)throw Error('La somma dei livelli non può superare 20');
+  const total=rows.filter(row=>row.name).reduce((sum,row)=>sum+Number(row.level||1),0);
+   if(!Number.isSafeInteger(total))throw Error('Livello totale non valido');
   const primary=rows[0]||{};
   Object.assign(patch,{class:primary.name||'',class_source:primary.source||'',class_id:primary.id||'',subclass:primary.subclass||'',subclass_source:primary.subclass_source||'',subclass_id:primary.subclass_id||'',level:total||1});
   Object.assign(patch,experienceFloorPatch(c,patch));
@@ -525,10 +524,10 @@ export function identityPatch(c,key,value){
  if(key==='primary_class_level'){
   if(!c.class)throw Error('Seleziona prima la classe principale');
   const n=Number(value);
-  if(!Number.isInteger(n)||n<1||n>20)throw Error('Livello della classe principale non valido');
+  if(!Number.isSafeInteger(n)||n<1)throw Error('Livello della classe principale non valido');
   const classes=rowsFor(c,'classes');
   const others=classes.slice(1).filter(row=>row.name).reduce((total,row)=>total+Number(row.level||1),0);
-  if(n+others>20)throw Error('La somma dei livelli delle classi non può superare 20');
+  if(!Number.isSafeInteger(n+others))throw Error('Livello totale non valido');
   classes[0].level=n;
   const changes={classes,level:n+others};
   return {...changes,...experienceFloorPatch(c,changes)};
@@ -542,7 +541,7 @@ export function identityPatch(c,key,value){
   const classes=structuredClone(list(c.classes));
   if(classes.length){
    const extra=classes.slice(1).reduce((n,row)=>n+Number(row.level||1),0);
-   if(key==='level'){if(value<=extra||value>20)throw Error('Livello totale non valido per le classi aggiuntive');classes[0].level=value-extra;}
+   if(key==='level'){if(value<=extra||!Number.isSafeInteger(Number(value)))throw Error('Livello totale non valido per le classi aggiuntive');classes[0].level=value-extra;}
    else {const mapped=({class:'name',class_source:'source',subclass:'subclass',subclass_source:'subclass_source'})[key];classes[0][mapped]=value;if(patch[key+'_id']!==undefined)classes[0][key==='class'?'id':'subclass_id']='';}
    patch.classes=classes;
   }
@@ -621,7 +620,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   const entry=typeof feat==='string'?{name:feat}:feat||{};
   const owner=featOriginLabel(entry,calculated);
   const level=Number(entry.level??entry.acquired_level??entry.origin_level);
-  const levelText=Number.isInteger(level)&&level>=1&&level<=20?
+  const levelText=Number.isSafeInteger(level)&&level>=1?
     'Livello del privilegio: '+level:'';
   const originKey=featTraitOriginKey(entry);
   const book=String(entry.source||'').trim();
@@ -717,8 +716,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       number('XP','xp',Math.max(Number(c.xp)||0,minimumXpForCreature(c)),minimumXpForCreature(c),Number.MAX_SAFE_INTEGER)+'</div>'+
       cols('<div class="class-level-row">'+reference('Classe base','class','classes')+
        (c.class?select('Livello','primary_class_level',
-        Array.from({length:Math.max(1,20-secondaryClasses.reduce((n,row)=>n+Number(row.level||1),0))},
-          (_,index)=>[index+1,String(index+1)]),primaryClassLevel(c)):
+        classLevelOptions(primaryClassLevel(c)),primaryClassLevel(c)):
         '<label>Livello<input type="number" value="0" disabled></label>')+
        '</div>'+reference('Sottoclasse','subclass','subclasses')+
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+

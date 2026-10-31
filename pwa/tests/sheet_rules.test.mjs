@@ -312,3 +312,11 @@ test("battle damage rolls use bounded dice notation and desktop-compatible chat 
  for(const invalid of ["", "alert(1)", "1d6-1d4", "101d6", "1d0", "10000","2d6+1d4+foo"])
   assert.throws(()=>rollBattleDamage(invalid,()=>1),/danni|dadi/i);
 });
+
+test("characters above level 20 retain every hit die and their last published proficiency",()=>{
+ const epic=character({class:"Fighter",class_source:"PHB",
+   classes:[{name:"Fighter",source:"PHB",level:21}],level:21});
+ const result=calculateSheet(epic,catalogs);
+ assert.equal(result.stats.proficiency,6);
+ assert.match(result.stats.hit_dice,/21d10/);
+});

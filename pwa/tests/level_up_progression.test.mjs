@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {availableXpLevels,levelUpSteps} from '../level_up.js';
 
 const record=(level,xp)=>({kind:'character',class:'Fighter',level,
@@ -8,7 +9,9 @@ test('available XP can cover multiple character levels at once',()=>{
  assert.equal(availableXpLevels(record(2,6500)),3);
  assert.equal(availableXpLevels(record(2,899)),0);
  assert.equal(availableXpLevels(record(19,355000)),1);
- assert.equal(availableXpLevels(record(20,999999)),0);
+ assert.equal(availableXpLevels(record(20,355000)),0);
+ assert.equal(availableXpLevels(record(20,405000)),1);
+ assert.equal(availableXpLevels(record(25,655000)),1);
  assert.equal(availableXpLevels({...record(2,6500),kind:'monster'}),0);
  assert.equal(availableXpLevels({...record(1,6500),
    classes:[{name:'Fighter',level:1},{name:'Rogue',level:1}]}),3);
@@ -40,6 +43,8 @@ test('subclass choice owed before a batch is shown at its first acquired level',
    {className:'Rogue',classSource:'PHB',classIndex:1,fromLevel:4,toLevel:6});
  assert.deepEqual(rows.map(row=>row.choices.map(choice=>choice.id)),[['sub'],[]]);
  assert.deepEqual(levelUpSteps({}, {className:'Rogue',fromLevel:6,toLevel:6}),[]);
+ assert.deepEqual(levelUpSteps({}, {className:'Rogue',fromLevel:20,toLevel:22,fromTotal:30})
+   .map(row=>[row.level,row.totalLevel]),[[21,31],[22,32]]);
 });
 
 test('class dice, half-up averages and Constitution are applied per level',async()=>{
@@ -108,6 +113,11 @@ test('projected multiclass levels do not touch the stored character',async()=>{
  assert.equal(selected.level,6);
  assert.deepEqual(selected.classes.map(row=>row.level),[2,4]);
  assert.deepEqual(base.classes.map(row=>row.level),[2,2]);
+ const epic=levelUpProjectedRecord({...base,level:23,classes:[
+   {name:'Fighter',source:'PHB',level:21},{name:'Wizard',source:'PHB',level:2}]},
+   {classIndex:0,className:'Fighter',classSource:'PHB'},2);
+ assert.equal(epic.level,25);
+ assert.deepEqual(epic.classes.map(row=>row.level),[23,2]);
  const newClass=levelUpProjectedRecord(base,{
    classIndex:-1,className:'Artificer',classSource:'TCE'},3);
  assert.equal(newClass.level,7);
@@ -185,4 +195,11 @@ test('class reference without hit dice uses the structured mechanics row',async(
  assert.equal(classHitDieFaces(classMechanicsRow(catalog,reference.name,reference.source)),10);
  assert.equal(classHitDieFaces(classMechanicsRow(catalog,'Wizard','PHB')),6);
  assert.equal(classHitDieFaces(classMechanicsRow(catalog,'Artificer','TCE')),8);
+});
+
+test('level-up editor places final class level beside its class selector',()=>{
+ const source=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
+ assert.match(source,/levelup-class-target-row/);
+ assert.match(source,/data-level-up-target/);
+ assert.doesNotMatch(source,/data-level-up-count/);
 });

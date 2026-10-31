@@ -10,9 +10,10 @@ export function availableXpLevels(record={}){
  const current=owned.length?owned.reduce((sum,row)=>sum+Math.max(1,Number(row.level)||1),0):
    record.class?Math.max(1,Number(record.level)||1):0;
  const xp=Number(record.xp);
- if(!current||current>=20||!Number.isSafeInteger(xp)||xp<0)return 0;
+ if(!current||!Number.isSafeInteger(xp)||xp<0)return 0;
  let count=0;
- for(let next=current+1;next<=20&&xp>=minimumXpForLevel(next);next++)count++;
+ // A single level-up operation handles up to 20 levels, not a lifetime maximum.
+ while(count<20&&xp>=minimumXpForLevel(current+count+1))count++;
  return count;
 }
 
@@ -24,7 +25,7 @@ export function availableXpLevels(record={}){
  */
 export function levelUpSteps(calculated={},progress={}){
  const start=Number(progress.fromLevel),end=Number(progress.toLevel);
- if(!Number.isInteger(start)||!Number.isInteger(end)||start<0||end>20||end<=start)
+ if(!Number.isInteger(start)||!Number.isInteger(end)||start<0||end-start>20||end<=start)
    return [];
  const name=norm(progress.className),source=norm(progress.classSource),index=Number(progress.classIndex);
  const relevant=feature=>{
@@ -126,7 +127,7 @@ export function levelUpProjectedRecord(record={},plan={},gained=1){
  }
  const total=classes.filter(row=>row?.name);
  const level=total.reduce((sum,row)=>sum+Math.max(1,Number(row.level)||1),0);
- if(level>20)throw Error('Il livello totale non può superare 20.');
+ if(!Number.isSafeInteger(level))throw Error('Livello totale non valido.');
  const first=total[0]||{};
  return {...record,classes:total,level,
    class:first.name||'',class_source:first.source||'',class_id:first.id||'',
