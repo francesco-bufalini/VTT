@@ -73,10 +73,12 @@ export function spellScrollLevel(item={}){
 // Scrolls are created from an actual spell and its selected casting level,
 // not from a generic magic item entry. The desktop's SC + spell fields remain
 // readable, while each scroll remains a normal owned inventory stack.
-export function addSpellScroll(inventory,spell,level,instanceId){
+export function addSpellScroll(inventory,spell,level,instanceId,quantity=1){
   if(!Array.isArray(inventory))throw Error("Inventario non valido.");
   const spellId=String(spell?.id||"").trim(),spellName=String(spell?.name||"").trim();
-  const base=Number(spell?.level),selected=Number(level);
+  const base=Number(spell?.level),selected=Number(level),count=Number(quantity);
+ if(!Number.isInteger(count)||count<1||count>99999)
+  throw Error("Quantità della pergamena non valida.");
   if(!spellId||!spellName||spell?.internal_grant||
      !Number.isInteger(base)||base<0||base>9||
      !Number.isInteger(selected)||selected<base||selected>9||
@@ -88,9 +90,9 @@ export function addSpellScroll(inventory,spell,level,instanceId){
     !item.equipped&&!item.attuned&&!item.infusion);
   if(existing>=0){
     const amount=Number(rows[existing].quantity)||1;
-    if(!Number.isInteger(amount)||amount<1||amount>=99999)
+    if(!Number.isInteger(amount)||amount<1||amount+count>99999)
       throw Error("Quantità massima raggiunta per questa pergamena.");
-    rows[existing].quantity=amount+1;
+    rows[existing].quantity=amount+count;
     return {inventory:rows,index:existing};
   }
   if(!String(instanceId||"").trim())throw Error("Identificativo copia mancante.");
@@ -98,7 +100,7 @@ export function addSpellScroll(inventory,spell,level,instanceId){
     type:"SC",source:String(spell.source||""),spell_id:spellId,spell_name:spellName,
     spell_level:selected,spell_base_level:base,
     description:String(spell.description||""),
-    quantity:1,equipped:false,equipped_slots:[],attuned:false,active:true,
+    quantity:count,equipped:false,equipped_slots:[],attuned:false,active:true,
     instance_overrides:{}});
   return {inventory:rows,index:rows.length-1};
 }
