@@ -108,6 +108,7 @@ const FILES := {
 	"/5etools_inline.js": ["res://pwa/5etools_inline.js", "text/javascript; charset=utf-8"],
 	"/ui_primitives.js": ["res://pwa/ui_primitives.js", "text/javascript; charset=utf-8"],
 	"/distance_units.js": ["res://pwa/distance_units.js", "text/javascript; charset=utf-8"],
+	"/attack_range.js": ["res://pwa/attack_range.js", "text/javascript; charset=utf-8"],
 	"/trait_benefits.js": ["res://pwa/trait_benefits.js", "text/javascript; charset=utf-8"],
 	"/trait_benefit_distribution.js": ["res://pwa/trait_benefit_distribution.js", "text/javascript; charset=utf-8"],
 	"/trait_benefit_editor.js": ["res://pwa/trait_benefit_editor.js", "text/javascript; charset=utf-8"],
