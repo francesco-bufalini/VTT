@@ -6307,6 +6307,16 @@ html:has(dialog[open]) #sheet-play-view .inventory-bulk-bar.vtt-selection-toolba
  .topbar .header-actions{gap:4px}
 }
 
+/* Match all header controls to the original gold paw glyph (including the
+   notification bell in both states). Do not alter icon shapes or behavior. */
+.topbar{--header-icon-gold:#e4c695}
+.topbar .header-icon-button,
+.topbar .header-back,
+.topbar .header-chat-notify[aria-pressed="false"],
+.topbar .header-chat-notify[aria-pressed="true"]{
+ color:var(--header-icon-gold)
+}
+
 /* No enclosing panel, toolbar, heading or author selector: a full-screen chat
    with one small WhatsApp-style compose row at the bottom. */
 .app-shell.chat-open{width:100%;max-width:none;height:100dvh;min-height:0;overflow:hidden}

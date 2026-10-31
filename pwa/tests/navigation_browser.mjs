@@ -203,6 +203,11 @@ try{
  assert(await page.locator('#header-dice').isVisible(),'Dice icon is visible on a creature');
  assert(await page.locator('#creature-forms').isVisible(),'Variants shares the header row');
  assert(await page.locator('#creature-forms .vtt-action-glyph').isVisible(),'Variants uses the original Wild Shape paw');
+ const headerGold=await page.evaluate(()=>
+  ['creature-forms','header-chat','header-dice','header-preferences','creature-back']
+   .map(id=>getComputedStyle(document.getElementById(id)).color));
+ assert(headerGold.every(color=>color===headerGold[0]),'All visible header icons use the Variants gold');
+ assert.equal(headerGold[0],'rgb(228, 198, 149)','Header gold matches the original paw button');
  assert.equal(await page.locator('.topbar .connection-link').isVisible(),false,'Partita is only in the bottom dock inside a creature');
  await page.locator('#header-dice').click();
  await page.locator('#chat-dice-dialog').waitFor({state:'visible'});
@@ -235,6 +240,8 @@ try{
  assert(await page.locator('#chat-screen .chat-send-button').isVisible());
  assert.equal(await page.locator('#header-chat').isVisible(),false);
  assert(await page.locator('#header-chat-notifications').isVisible());
+ assert.equal(await page.locator('#header-chat-notifications').evaluate(node=>getComputedStyle(node).color),
+  headerGold[0],'Notification bell matches the same gold, even when notifications are off');
  assert.equal(await page.locator('#mobile-tabs').isVisible(),false);
  assert.equal(await page.locator('#app').isVisible(),false);
  await shot('chat');
