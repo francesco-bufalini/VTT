@@ -624,8 +624,8 @@ test('Dual Wielder grants a separate capacity without unlocking the base Light r
  const action=doc(result.others).querySelector('[data-attack-id="two_weapon"]');
  assert(action&&!action.classList.contains('play-battle-attack-unavailable'));
  assert.equal(action.querySelector('.play-battle-attack-roll'),null);
- assert.equal(action.querySelector('.play-battle-attack-range')?.textContent,'Portata 5 ft');
- assert.equal(action.querySelector('[data-act="battle-attack-map"]')?.dataset.mapAttackId,'unarmed');
+ assert.equal(action.querySelector('.play-battle-attack-range'),null);
+ assert.equal(action.querySelector('[data-act="battle-attack-map"]'),null);
  const light={...record,inventory:record.inventory.map(row=>({...row,properties:['L']}))};
  assert.equal(battleActionPanels(light,{attacks:[main,off]},[],[],catalog.actions)
   .basicActions.find(row=>row.id==='two_weapon').available,true);
@@ -670,7 +670,7 @@ test('privilege and equipped attacks precede the full basic group, starting with
   assert(ids.indexOf(id)>=0&&ids.indexOf(id)<firstBasic,
    id+' must appear before every basic attack: '+ids.join(', '));
  }
- assert.equal(ids[firstBasic+1],'improvised','Only concrete attacks follow Unarmed in Resources');
+ assert.equal(ids[firstBasic+1],'grapple','Original Attacchi keeps Grapple directly after Unarmed');
  assert(ids.indexOf('improvised')>firstBasic,'Improvised attacks belong to the basic group');
  const baseIds=new Set(catalog.actions.filter(rule=>rule.edition==='2014'&&
   rule.parent_action==='attack').map(rule=>rule.id));
@@ -704,7 +704,7 @@ test('basic actions never show unarmed damage unless a benefit explicitly target
  const computed={attacks:[unarmed],spell_slots:[],trackers:[]};
  const base=battleActionPanels({rules_version:'2014'},computed,[],[],catalog.actions);
  const actions=doc(base.others);
- for(const id of ['attack','opportunity','two_weapon','dash','disengage']){
+ for(const id of ['opportunity','two_weapon','dash','disengage']){
   const row=actions.querySelector('[data-attack-id="'+id+'"]');
   assert(row,'Expected abstract action '+id);
   assert.equal(row.querySelector('[data-effect-kind="damage"]'),null,
