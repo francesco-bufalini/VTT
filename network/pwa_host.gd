@@ -834,7 +834,7 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		return
 	if path == "/api/session":
 		_answer(client, 200, {"protocol": 1, "session": board.get("session_key"),
-			"mobile_protocol": 3})
+			"mobile_protocol": 3, "device_name": _server_device_name()})
 	elif path == "/api/conditions":
 		_answer(client, 200, _condition_public_catalog())
 	elif path == "/api/map":
