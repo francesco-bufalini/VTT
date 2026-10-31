@@ -652,14 +652,9 @@ test("inline spell catalog adds available and spellbook choices without divergin
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector('[data-act="magic-select-spells"]'));
-  const classEye=document.querySelector('#sheet-play-view .play-magic-eye[data-casting-visibility-section^="class|"]');
-  assert.equal(classEye?.getAttribute('aria-pressed'),'true','Eye must be present in the visible class card');
-  classEye.click();
-  await until(()=>document.querySelector('#sheet-play-view .play-magic-eye[data-casting-visibility-section^="class|"][aria-pressed="false"]'));
-  assert.equal(document.querySelector('#sheet-play-view .play-magic-class-card .casting-statistics'),null);
-  assert.equal((await loadCreature(saved.data.id)).data.spellcasting_section_visibility?.[classEye.dataset.castingVisibilitySection],false);
-  click('#sheet-play-view .play-magic-eye[data-casting-visibility-section^="class|"]');
-  await until(()=>document.querySelector('#sheet-play-view .play-magic-class-card .casting-statistics'));
+  assert.equal(document.querySelector('#sheet-play-view .play-magic-eye[data-casting-visibility-section^="class|"]'),null,
+    'Class spellcasting always shows its characteristic and DC without an eye');
+  assert.ok(document.querySelector('#sheet-play-view .play-magic-class-card .casting-statistics'));
   click('[data-act="magic-select-spells"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const preparationDialog=document.querySelector('#magic-tools-dialog[open]');

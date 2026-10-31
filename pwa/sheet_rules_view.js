@@ -1089,6 +1089,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       (concentrated?proxy(overview?.querySelector('[data-act="stop-concentration"]'),
         'Termina concentrazione','', '<span aria-hidden="true">×</span>'):'')+
     '</div></section>';
+  // Reuse the same visibility control for non-class spell sources and option privileges.
+  const castingEye=source=>{
+   const toggle=source?.querySelector('.magic-source-visibility');
+   return toggle?'<button type="button" class="play-button play-magic-eye"'+
+     ' data-act="casting-stats-toggle" data-casting-visibility-section="'+esc(toggle.dataset.castingVisibilitySection)+'"'+
+     ' data-casting-default-visible="'+esc(toggle.dataset.castingDefaultVisible)+'"'+
+     ' aria-pressed="'+esc(toggle.getAttribute('aria-pressed'))+'"'+
+     ' aria-label="'+esc(toggle.getAttribute('aria-label'))+'" title="'+esc(toggle.title)+'">'+icon('eye')+'</button>':'';
+  };
   // Only the spell source card can contribute casting origins. Generic choice
   // stages elsewhere in the hidden editor must not become extra "Poteri" cards.
   for(const source of panelNamed('Incantesimi disponibili')?.querySelectorAll('.magic-source')||[]){
@@ -1129,24 +1138,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    // The casting selector and actions share the same per-source editor, both
    // for class spells and for grants from items, traits and other origins.
    const castingDetails=source.querySelector('.casting-statistics')?.outerHTML||'';
-   const toggle=source.querySelector('.magic-source-visibility');
-   const eye=toggle?'<button type="button" class="play-button play-magic-eye"'+
-     ' data-act="casting-stats-toggle" data-casting-visibility-section="'+esc(toggle.dataset.castingVisibilitySection)+'"'+
-     ' data-casting-default-visible="'+esc(toggle.dataset.castingDefaultVisible)+'"'+
-     ' aria-pressed="'+esc(toggle.getAttribute('aria-pressed'))+'"'+
-     ' aria-label="'+esc(toggle.getAttribute('aria-label'))+'" title="'+esc(toggle.title)+'">'+icon('eye')+'</button>':'';
    const choices=[...source.querySelectorAll('.magic-source-controls .magic-selection-button')]
      .map(node=>proxy(node,node.textContent.trim(),'book','<span>'+esc(node.textContent.trim())+'</span>')).join('');
    html+=card(title,'<div class="play-magic-inline-casting">'+castingDetails+'</div>'+
      (choices?'<div class="play-magic-selection">'+choices+'</div>':'')+
      (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),
-     eye+(resources?'<div class="play-magic-source-resources" aria-label="Risorse di lancio">'+resources+'</div>':''),
+     castingEye(source)+(resources?'<div class="play-magic-source-resources" aria-label="Risorse di lancio">'+resources+'</div>':''),
      'play-magic-class-card'+(granted?' play-magic-granted-card':''),
      granted&&trackerId?'data-magic-origin-tracker="'+esc(trackerId)+'"':'');
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
   // Infusions and other learned/applied powers share the actual visible card.
-  const learnedOptionCard=(title,entries,controls,counters,empty)=>card(title,
+  const learnedOptionCard=(title,entries,controls,counters,empty,source)=>card(title,
+   (source.querySelector('.casting-statistics')?
+     '<div class="play-magic-inline-casting">'+source.querySelector('.casting-statistics').outerHTML+'</div>':'')+
    '<div class="play-magic-selection">'+controls+'</div>'+entries.map(entry=>{
     const status=entry.applied?'Attiva':'Conosciuta';
     return '<div class="play-spell play-infusion-row"><button type="button" class="play-button" '+entry.attrs+
@@ -1155,7 +1160,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      '<span class="play-infusion-state'+(entry.applied?' is-active':'')+'" title="'+status+'" aria-label="'+status+'">'+
      '<span aria-hidden="true">'+(entry.applied?'✓':'○')+'</span></span></button></div>';
    }).join('')+(entries.length?'':'<p class="play-empty">'+esc(empty)+'</p>'),
-   counters?'<div class="play-magic-source-resources" aria-label="Riepilogo '+esc(title)+'">'+counters+'</div>':'',
+   castingEye(source)+(counters?'<div class="play-magic-source-resources" aria-label="Riepilogo '+esc(title)+'">'+counters+'</div>':''),
    'play-magic-class-card play-infusion-card');
   originPanels.forEach((node,i)=>{
    if(node.querySelector('.benefit-option-list')){
@@ -1170,7 +1175,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      const controls=[...source.querySelectorAll('.benefit-option-controls button')].map(button=>
       btn(button.textContent.trim()+' '+heading(node),'book','data-act="power-selection-open" data-power-selection-id="'+esc(id)+
        '" data-power-stage="'+esc(button.dataset.powerStage)+'"','<span>'+esc(button.textContent.trim())+'</span>')).join('');
-     html+=learnedOptionCard(heading(node),entries,controls,counters,'Nessuna opzione conosciuta.');
+     html+=learnedOptionCard(heading(node),entries,controls,counters,'Nessuna opzione conosciuta.',source);
      return;
    }
    const key='power:'+i;

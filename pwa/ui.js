@@ -2499,13 +2499,12 @@ async function editorView() {
         calculated.casting_classes.map(member=>{
           return '<section class="magic-source"><header class="magic-source-header">'+
             '<div class="magic-source-title"><h3>'+esc(member.name)+'</h3>'+
-            castingStatisticsToggle(c,member.id)+
             (member.source?'<span class="hint">'+esc(member.source)+'</span>':'')+'</div>'+
             '<div class="magic-source-resources" aria-label="Risorse di lancio">'+magicSlotUsageChip()+
             (member.mode==='Preparati'?'<span class="magic-source-resource magic-selection-rest" title="Puoi riselezionare gli incantesimi dopo un riposo lungo"><span class="magic-source-resource-label">Riposo lungo</span></span>':'')+
             (member.mode==='Conosciuti'?(()=>{const trigger=calculated.power_selections?.find(row=>row.id==='class_spellcasting:'+member.id)?.layers.learned?.change_label;return trigger?'<span class="magic-source-resource magic-selection-rest" title="Quando cambiare gli incantesimi conosciuti"><span class="magic-source-resource-label">'+esc(trigger)+'</span></span>':'';})():'')+
             '</div></header>'+
-            (castingStatisticsVisible(c,member.id)?castingStatistics(c,member.id,member.ability):'')+
+            castingStatistics(c,member.id,member.ability)+
             '<div class="magic-source-controls">'+
             (member.mode==='Preparati'?
               '<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="prepared_spells">Prepara incantesimi</button>':'')+
@@ -3144,7 +3143,11 @@ function optionBenefitPanels(c,calculated){
   const controls=Object.entries(model.layers).filter(([stage,layer])=>stage!=='applied'&&layer.enabled&&!layer.automatic).map(([stage])=>
    '<button type="button" class="btn small magic-selection-button" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+stage+'">'+
    (stage==='learned'?'Impara':'Prepara')+'</button>').join('');
+  const castingId='selection:'+model.id;
   return panel(model.title,'<div class="benefit-option-list" data-selection-id="'+esc(model.id)+'">'+
+   castingStatisticsToggle(c,castingId,false)+
+   (castingStatisticsVisible(c,castingId,false)?castingStatistics(c,castingId,
+     c.spellcasting_ability||calculated.casting_classes?.[0]?.ability||'int'):'')+
    '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(selection=>{
     const id=selectedPowerId(selection),option=byId.get(id);if(!option)return '';
     return '<div class="magic-spell-row" data-power-option-id="'+esc(id)+'" data-option-active="'+
@@ -7152,6 +7155,7 @@ async function handleAction(target){
     if(state.sheet!=='magic'||!state.editor)return;
     const section=target.dataset.castingVisibilitySection;
     if(!section||!target.closest('.magic-source,.play-magic-class-card'))return;
+    if((state.calculated?.casting_classes||[]).some(member=>member.id===section))return;
     const creature=state.editor.read();
     const visible=castingStatisticsVisible(creature,section,target.dataset.castingDefaultVisible==='true');
     await patch({spellcasting_section_visibility:{

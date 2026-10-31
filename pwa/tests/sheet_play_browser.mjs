@@ -57,6 +57,8 @@ try{
    }
    if(key==='magic'){
     const classSource=page.locator('#sheet-play-view .play-magic-class-card:not(.play-magic-granted-card)').first();
+    assert.equal(await classSource.locator('.play-magic-eye').count(),0,
+      'Class spellcasting DC is always shown; the eye is reserved for optional privilege sources');
     const slotLabel=classSource.locator('.play-card-head .play-magic-source-resources');
     assert.equal((await slotLabel.locator('.play-magic-source-resource').first().textContent()).trim(),'Slot',
       'Class spellcasting header exposes one Slot label, with the rest interval separately');
