@@ -259,6 +259,51 @@ export function flattenDescription(value) {
  return [...new Set(result)].join("\n\n")
   .replace(/\{@[^ ]+ ([^}|]+)(?:\|[^}]*)?\}/g,"$1").slice(0,15000);
 }
+// 5etools uses {#itemEntry Name|Source} for shared magic-item prose.
+// Offline item indexes omit some item-group parents; resolve what is packaged
+// and provide a compact rule summary for the missing Absorbing Tattoo group.
+const ITEM_ENTRY_REF=/^\{#itemEntry\s+([^|}]+?)(?:\|([^}]+))?\}$/i;
+const ABSORBING_DAMAGE_TYPES=new Set(["acid","cold","fire","force","lightning",
+ "necrotic","poison","psychic","radiant","thunder"]);
+function missingItemGroupDescription(reference,owner){
+ if(reference!=="absorbing tattoo|tce")return null;
+ const type=/^([a-z]+) absorbing tattoo$/i.exec(String(owner?.name||""))?.[1]?.toLowerCase();
+ if(!ABSORBING_DAMAGE_TYPES.has(type))return null;
+ return [
+  "Magic tattoo (very rare; requires attunement). When attuned, its needle turns into the tattoo. The tattoo vanishes and the needle returns when attunement ends.",
+  "Damage Resistance: While you wear the tattoo, you have resistance to "+type+" damage.",
+  "Damage Absorption: When you take "+type+" damage, you may use your reaction to become immune to that instance of damage and regain hit points equal to half the damage you would otherwise take. This reaction is available again at the next dawn."
+ ];
+}
+function resolveItemEntryReferences(value,index,categories,owner,seen=new Set(),depth=0){
+ if(depth>12)return value;
+ if(Array.isArray(value))
+  return value.map(part=>resolveItemEntryReferences(part,index,categories,owner,seen,depth+1));
+ if(typeof value==="string"){
+  const match=ITEM_ENTRY_REF.exec(value.trim());
+  if(!match)return value;
+  const name=match[1].trim(),source=String(match[2]||owner?.source||"").trim();
+  const ref=(name+"|"+source).toLowerCase();
+  if(seen.has(ref))return "Riferimento circolare 5etools: "+name;
+  const referenced=categories.map(category=>index?.[category]?.[ref])
+   .find(row=>row&&typeof row==="object");
+  if(!referenced){
+   return missingItemGroupDescription(ref,owner)||
+    "Descrizione condivisa con "+name+" ("+source+") non inclusa nel catalogo offline.";
+  }
+  const next=new Set(seen);next.add(ref);
+  const description=referenced.entries??referenced.description??referenced.text??referenced.fluff;
+  return resolveItemEntryReferences(description??value,index,categories,owner,next,depth+1);
+ }
+ if(value&&typeof value==="object"){
+  const out={...value};
+  for(const key of ["entries","entry","items","additionalEntries","entriesTemplate","description","text","fluff"])
+   if(value[key]!==undefined)
+    out[key]=resolveItemEntryReferences(value[key],index,categories,owner,seen,depth+1);
+  return out;
+ }
+ return value;
+}
 export async function detailedEntry(category,entry) {
   // Keep homebrew entries independent from the published compendium.
   if(entry?._homebrew||String(entry?.origin||'').toLowerCase()==='homebrew')return entry;
@@ -293,6 +338,11 @@ export async function detailedEntry(category,entry) {
   "entriesTemplate","itemTypeAdditionalEntries","inherits","feats","feature_sections"]){
   if(copy[field]==null||copy[field]===""||(Array.isArray(copy[field])&&!copy[field].length))
    if(candidate[field]!=null)copy[field]=candidate[field];
+ }
+ if(path===GROUPS.items&&categories.length){
+  for(const field of DESCRIPTION_FIELDS)
+   if(copy[field]!==undefined)
+    copy[field]=resolveItemEntryReferences(copy[field],index,itemCategories,entry);
  }
  return copy;
 }
