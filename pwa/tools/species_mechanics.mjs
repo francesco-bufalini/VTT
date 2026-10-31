@@ -27,7 +27,8 @@ export function projectSpeciesAttacks(races=[]) {
    const ability=/your constitution modifier/i.test(description)&&
     /(?:instead of your strength modifier|add your constitution modifier|plus your constitution modifier)/i.test(description)?'con':'str';
    const damage_ability_modifier=/(?:\+\s*your\s+(?:strength|constitution)\s+modifier|plus your (?:strength|constitution) modifier|add your (?:strength|constitution) modifier)/i.test(description);
-   attacks.push({trait:trait.name,damage:damages[0][1],damage_type,ability,damage_ability_modifier});
+   attacks.push({trait:trait.name,damage:damages[0][1],damage_type,ability,damage_ability_modifier,
+    grants_proficiency:true});
   }
   if(attacks.length||flight_no_medium_heavy_armor)projected.push({id:race.id,name:race.name,source:race.source,attacks,
     ...(flight_no_medium_heavy_armor?{flight_no_medium_heavy_armor:true}:{})});

@@ -145,7 +145,8 @@
               "description": "Il bersaglio colpito ha svantaggio ai tiri per colpire contro creature diverse dall'Artefice fino all'inizio del prossimo turno dell'Artefice."
             }
           ],
-          "weapon_category": "simple"
+          "weapon_category": "simple",
+          "grants_proficiency": true
         }
       ],
       "granted_features": [
@@ -187,7 +188,8 @@
             "recharge": "turn",
             "max": 1
           },
-          "weapon_category": "simple"
+          "weapon_category": "simple",
+          "grants_proficiency": true
         }
       ],
       "numeric_grants": [
@@ -227,7 +229,8 @@
           "melee": true,
           "ability": "str",
           "range_feet": 5,
-          "weapon_category": "simple"
+          "weapon_category": "simple",
+          "grants_proficiency": true
         }
       ]
     },
@@ -251,7 +254,8 @@
           "melee": true,
           "ability": "str",
           "range_feet": 5,
-          "weapon_category": "simple"
+          "weapon_category": "simple",
+          "grants_proficiency": true
         }
       ]
     },
@@ -275,7 +279,8 @@
           "melee": true,
           "ability": "str",
           "range_feet": 10,
-          "weapon_category": "simple"
+          "weapon_category": "simple",
+          "grants_proficiency": true
         }
       ]
     },

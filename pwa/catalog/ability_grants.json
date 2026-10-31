@@ -5663,7 +5663,8 @@
           "melee": true,
           "range_feet": 5,
           "attack_kind": "natural",
-          "description": "Artigli retrattili come arma naturale; colpo senz'armi che infligge 1d4 + modificatore di Forza danni taglienti invece del normale danno contundente."
+          "description": "Artigli retrattili come arma naturale; colpo senz'armi che infligge 1d4 + modificatore di Forza danni taglienti invece del normale danno contundente.",
+          "grants_proficiency": true
         }
       ],
       "required_species": "dragonborn"
