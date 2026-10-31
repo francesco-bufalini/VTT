@@ -11,7 +11,7 @@ on:
       - "tests/**/*.gd"
 
 concurrency:
-  group: vtt-godot-full
+  group: vtt-godot-full-${{ github.event_name }}
   # Prefer the latest automatic test revision; preserve manually dispatched runs.
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
