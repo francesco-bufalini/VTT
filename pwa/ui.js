@@ -6973,7 +6973,7 @@ async function handleAction(target){
     action.querySelector('.play-battle-attack-details>summary')?.focus({preventScroll:true});
     return;
   }
-  if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create'){state.scrollSpellQuery='';state.scrollSpellSelectedId='';}state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
+  if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create'){state.scrollSpellQuery='';state.scrollSpellSelectedId='';requireFullSpellsForPicker();}state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
   if(act==='sheet-context-close'){await closeSheetContext();return;}
   if(act==='battle-competences-open'){
     if(!state.editor)throw Error('Apri prima una creatura');
