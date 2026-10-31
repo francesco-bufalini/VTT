@@ -68,7 +68,8 @@ test("desktop-style size selector only changes the equipped weapon copy in its o
 
 test("infusion attunement requirement is respected even without catalog",()=>{
  const obj={name:"Rod",id:"local_rod",custom_item_type:"other",equipped:true,attuned:false,
-   infusion:{id:"infusion|tce|enhanced arcane focus",requires_attunement:true}};
+   option_extensions:[{id:"enhanced-arcane-focus",selection_id:"artificer_infusions",
+     requires_attunement:true}]};
  const calc=calculateSheet(character([{...obj,bonus_spell_attack:2}]));
  assert.equal(calc.bonuses.filter(r=>r.origin_id==="item:local_rod").length,0);
  const calc2=calculateSheet(character([{...obj,attuned:true,bonus_spell_attack:2}]));
