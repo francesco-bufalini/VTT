@@ -97,8 +97,8 @@ try{
     assert.equal(await attackGroup.locator('[data-attack-id="opportunity"]').count(),1);
     assert.equal(await attackGroup.locator('[data-attack-id="two_weapon"]').count(),1);
     assert(await otherGroup.getByText('Scattare').count()>0);
-    assert.equal(await abilityGroup.locator('[data-ability-id]').count()>0,true);
-    const paid=abilityGroup.locator('.play-resource-power-row').filter({hasText:'Capacità di prova'});
+    assert.equal(await abilityGroup.locator('[data-ability-id],[data-attack-id]').count()>0,true);
+    const paid=abilityGroup.locator('.play-resource-power-row,.play-battle-attack-entry').filter({hasText:'Capacità di prova'}).first();
     assert.equal(await paid.locator('.play-action-tracker').count(),1);
     assert.match(await paid.locator('.play-action-tracker').textContent(),/Cariche.*2\/3/);
     const chipStyle=await paid.locator('.play-action-tracker-name').evaluate(node=>
