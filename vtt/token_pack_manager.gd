@@ -592,9 +592,6 @@ func _on_catalog_request_completed(
 			return
 		push_warning("TokenPackManager: HTTP catalog JSON is invalid.")
 
-	if OS.has_feature("mobile") and not _entries_by_id.is_empty():
-		print("TokenPackManager: keeping offline miniature catalog; remote refresh unavailable (HTTP %d)." % response_code)
-		return
 	print(
 		(
 			"TokenPackManager: HTTP catalog unavailable (result=%d code=%d), "

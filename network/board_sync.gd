@@ -2816,7 +2816,7 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: b
 	token.set_meta("default_miniature_id", String(creature.get("default_miniature_id", miniature)))
 	token.call("set_display_name", String(creature.get("name", "Creatura")))
 	token.call("set_size_category", String(creature.get("size_name", "Medium")), float(footprint), false)
-	# Preserve the edition for SRD combat resolution on both PWA and Android.
+	# Preserve the edition for SRD combat resolution in the desktop/PWA session.
 	var rules_version := String(creature.get("rules_version", "2014"))
 	token.set_meta("rules_version", rules_version if rules_version in ["2014", "2024"] else "2014")
 	token.call("set_token_pack_id", miniature)

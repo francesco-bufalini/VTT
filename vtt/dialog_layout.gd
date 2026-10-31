@@ -25,9 +25,6 @@ static func _root_bounds(dialog: Window) -> Vector2i:
 	)
 
 
-static func _touch(dialog: Window) -> bool:
-	return OS.has_feature("mobile") or dialog.get_tree().root.has_meta("vtt_touch_layout")
-
 
 # The root is the actual VTT window, not a stretched in-game viewport.
 # In native mode Window.position is measured from the desktop origin; for
@@ -40,12 +37,11 @@ static func _centered_popup_position(
 	return origin + (root_size - popup_size) / 2
 
 
-static func _fit_window(dialog: Window, preferred_size: Vector2i, ratio: float, touch: bool) -> void:
+static func _fit_window(dialog: Window, preferred_size: Vector2i, ratio: float) -> void:
 	var root: Window = dialog.get_tree().root
 	var available: Vector2i = _root_bounds(dialog)
-	var margin: int = 12 if touch else 24
 	var allowed: Vector2i = Vector2i(Vector2(available) * clampf(ratio, 0.1, 1.0))
-	allowed = allowed.min(available - Vector2i(margin, margin)).max(Vector2i(1, 1))
+	allowed = allowed.min(available - Vector2i(24, 24)).max(Vector2i(1, 1))
 	dialog.min_size = Vector2i.ZERO
 	dialog.max_size = allowed
 	# Setting an upper bound alone is not sufficient: wrap_controls and the
@@ -70,9 +66,6 @@ static func popup(
 		accept.add_theme_constant_override("buttons_min_height", 34)
 		accept.get_label().autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_keep_body_within_viewport(accept, fallback_ratio)
-	var touch: bool = _touch(dialog)
-	if touch:
-		preload("res://vtt/touch_layout.gd").fit_dialog(dialog)
 	# Desktop previously re-enabled wrap_controls, letting a late Label/HBox
 	# minimum size override max_size and push the modal off the screen.
 	dialog.wrap_controls = false
@@ -84,7 +77,7 @@ static func popup(
 	dialog.max_size = allowed
 	var popup_size: Vector2i = preferred_size.min(allowed).max(Vector2i(1, 1))
 	dialog.popup_centered_clamped(popup_size, fallback_ratio)
-	_fit_window(dialog, preferred_size, fallback_ratio, touch)
+	_fit_window(dialog, preferred_size, fallback_ratio)
 	_check_first_frame_layout(dialog, preferred_size, fallback_ratio)
 
 
@@ -129,7 +122,7 @@ static func resize_visible(
 	if dialog == null or not is_instance_valid(dialog) or not dialog.visible:
 		return
 	dialog.size = preferred_size
-	_fit_window(dialog, preferred_size, fallback_ratio, _touch(dialog))
+	_fit_window(dialog, preferred_size, fallback_ratio)
 
 
 static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> void:
@@ -170,9 +163,4 @@ static func _check_first_frame_layout(
 	await tree.process_frame
 	if not is_instance_valid(dialog) or not dialog.visible:
 		return
-	var touch: bool = _touch(dialog)
-	_fit_window(dialog, preferred_size, fallback_ratio, touch)
-	if touch:
-		await tree.process_frame
-		if is_instance_valid(dialog) and dialog.visible:
-			_fit_window(dialog, preferred_size, fallback_ratio, touch)
+	_fit_window(dialog, preferred_size, fallback_ratio)

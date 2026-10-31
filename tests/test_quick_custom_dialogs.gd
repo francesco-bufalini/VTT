@@ -7,7 +7,6 @@ func run() -> void:
 	var parent := Control.new()
 	root.add_child(parent)
 	root.gui_embed_subwindows = true
-	root.set_meta("vtt_touch_layout", true)
 	root.size = Vector2i(360, 640)
 	var creations: Array = []
 	for category: String in ["feats", "backgrounds", "items"]:
@@ -18,10 +17,10 @@ func run() -> void:
 		await process_frame
 		await process_frame
 		assert(dialog.size.x <= 348 and dialog.position.x >= 0,
-			"Creation dialogs must fit a phone-sized screen")
+			"Creation dialogs must fit a compact desktop window")
 		dialog.hide()
 		await process_frame
-		assert(is_instance_valid(dialog), "Temporary hiding for mobile choice selection must not destroy the form")
+		assert(is_instance_valid(dialog), "Temporarily hiding a creation form must not destroy it")
 		dialog.show()
 		dialog.canceled.emit()
 		dialog.hide()
@@ -88,5 +87,5 @@ func run() -> void:
 	assert(not is_instance_valid(warning), "Acknowledging a warning must release it")
 	parent.queue_free()
 	await process_frame
-	print("PASS: custom content forms, cancel/close cleanup and temporary mobile hiding, failed-save draft preservation and bounded catalog writes")
+	print("PASS: custom content forms, cancel/close cleanup and temporary form hiding, failed-save draft preservation and bounded catalog writes")
 	quit()

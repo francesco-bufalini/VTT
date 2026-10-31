@@ -138,50 +138,6 @@ func get_panel_control() -> Control:
 	return _panel
 
 
-func configure_touch_layout() -> void:
-	_allow_remote_catalog = true
-	if DisplayServer.get_name() != "headless":
-		_client.load_catalog()
-	var touch = preload("res://vtt/touch_layout.gd")
-	var outer := _panel.get_child(0) as VBoxContainer
-	var header := outer.get_child(0) as HBoxContainer
-	(header.get_child(0) as Label).text = "Compendio"
-	var back := Button.new()
-	back.name = "TouchCatalogBack"
-	back.text = "Risultati"
-	back.hide()
-	header.add_child(back)
-	for child: Node in header.get_children():
-		if child is Button and child.text == "Chiudi":
-			child.hide()
-	touch.replace_box(header, HFlowContainer.new())
-	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var old := _details.get_parent() as HSplitContainer
-	var pages := touch.replace_box(old, VBoxContainer.new()) as VBoxContainer
-	var search := pages.get_child(0) as VBoxContainer
-	search.custom_minimum_size.x = 0
-	search.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_details.hide()
-	_list.item_selected.connect(func(_index: int) -> void:
-		search.hide()
-		_details.show()
-		back.show())
-	back.pressed.connect(func() -> void:
-		_details.hide()
-		search.show()
-		back.hide())
-	touch.style_tree(_panel)
-
-
-func close_touch_details() -> bool:
-	if _details == null or not _details.visible:
-		return false
-	var back := _panel.find_child("TouchCatalogBack", true, false) as Button
-	if back == null:
-		return false
-	back.pressed.emit()
-	return true
-
 
 func is_panel_open() -> bool:
 	return _panel != null and _panel.visible

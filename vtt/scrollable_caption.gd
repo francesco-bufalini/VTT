@@ -66,7 +66,6 @@ func _install_later(reference: WeakRef) -> void:
 		install(window)
 
 func _process(delta: float) -> void:
-	var touch_mode := OS.has_feature("mobile") or get_tree().root.has_meta("vtt_touch_layout")
 	var viewport: Viewport = get_viewport()
 	if viewport is Window and not (viewport as Window).visible:
 		_reset()
@@ -87,7 +86,7 @@ func _process(delta: float) -> void:
 				_body.text = _text
 		_suppress()
 		_elapsed += delta
-		if not touch_mode and _elapsed >= APPEAR_DELAY and not _panel.visible:
+		if _elapsed >= APPEAR_DELAY and not _panel.visible:
 			_show_caption()
 		return
 	_leave += delta
