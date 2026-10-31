@@ -255,12 +255,18 @@ try{
  assert.equal(await page.locator('#quick-name').isVisible(),false);
  await page.locator('.catalog-create > summary').click();assert(await page.locator('#quick-name').isVisible());
  await page.locator('.connection-link').click();await page.waitForFunction(()=>document.querySelector('#app').dataset.page==='session');
- assert(await page.locator('[data-session-content="connection"]').isVisible());
- assert.equal(await page.locator('.session-map-panel').isVisible(),false);
+ assert.equal(await page.locator('.topbar').isVisible(),false,'Partita has no topbar, like the Creature archive');
+ assert.equal(await page.locator('.page-head,.session-switcher,[data-session-content="connection"]').count(),0,'No heading or connection tab before the map');
  assert.equal(await page.locator('#header-chat').isVisible(),false,'No chat icon without an open creature');
  assert.equal(await page.locator('#header-dice').isVisible(),false,'No dice icon without an open creature');
- await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
- assert.equal(await page.locator('#pair-form').isVisible(),false);
+ assert(await page.locator('.session-map-panel').isVisible(),'Map is immediately visible without selecting a pane');
+ assert(await page.locator('#pair-form').isVisible(),'Pairing controls live above the map');
+ const connectionAboveMap=await page.locator('.session-desktop,.session-map-panel').evaluateAll(
+  nodes=>nodes.map(node=>({name:node.className,top:node.getBoundingClientRect().top})));
+ assert.equal(connectionAboveMap.length,2);
+ assert(connectionAboveMap[0].top<connectionAboveMap[1].top,'Only compact connection status precedes map');
+ assert.equal(await page.locator('.session-desktop h2').count(),0,'No large Desktop panel title');
+ assert.equal(await page.locator('.session-server-name').innerText(),'Server','Fallback name is neutral when older host lacks device_name');
  await globalPage('library');
  assert.equal(await page.locator('#creature-back').isVisible(),false,'Archive hides character back');
  assert(await page.locator('#nav [data-nav="library"]').isVisible(),'Archive dock is restored');
