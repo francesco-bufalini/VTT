@@ -198,7 +198,7 @@ const EFFECT_FIELDS={bonus:'formula_bonuses',dice:'dice_bonuses',
  actions:'action_grants',senses:'sense_grants',
  defenses:'damage_defense_entries',effect_extensions:'effect_extensions',
  roll_mode:'roll_mode_grants',base_override:'base_value_overrides',
- damage_reroll:'damage_die_rerolls'};
+ damage_reroll:'damage_die_rerolls',damage_ability:'damage_ability_grants'};
 function appendTypedBenefit(grants,effect,origin){
  const field=EFFECT_FIELDS[effect?.type];if(!field)return false;
  const {type,...values}=effect;

@@ -5701,7 +5701,19 @@
         "FS:B",
         "FS:R"
       ],
-      "description": "When you engage in two-weapon fighting, you can add your ability modifier to the damage of the second attack."
+      "description": "When you engage in two-weapon fighting, you can add your ability modifier to the damage of the second attack.",
+      "effects": [
+        {
+          "type": "damage_ability",
+          "modifier": "full",
+          "requirements": {
+            "attack": {
+              "kind": "weapon",
+              "slot": "off"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "optional:tce:unarmed-fighting",

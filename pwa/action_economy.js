@@ -370,6 +370,12 @@ function battleEffectMarkup(item,attack,calculated={}){
    .map(row=>String(row.origin_name||'Bonus')+' '+(Number(row.value)>0?'+':'')+Number(row.value)):[];
  const rerollLabels=arr(attack?.damage_rerolls).map(row=>
    String(row.origin_name||'Ritiro dadi')+' · ritira 1-'+Number(row.reroll_at_most));
+ const abilityLabels=attack?.damage_ability_source?[
+  attack.damage_ability_source+' '+(attack.damage_ability_modifier>0?'+':'')+
+   attack.damage_ability_modifier]:[];
+ const baseOverride=calculated.base_override_applied?.['attack_damage_base:'+attack?.id];
+ const baseLabels=baseOverride?.origin_name?
+  [baseOverride.origin_name+' · '+String(baseOverride.expression||'')]:[];
  return effects.map(resolved=>{
   const label=resolved.kind==='damage'?'Danni':resolved.kind==='condition'?'Condizione':'Effetto';
   const detail=resolved.label+(resolved.type?' · '+resolved.type:'');
@@ -378,8 +384,8 @@ function battleEffectMarkup(item,attack,calculated={}){
   return '<div class="play-battle-effect" data-effect-kind="'+esc(resolved.kind)+'">'+
    '<span class="play-battle-effect-kind">'+esc(label)+'</span>'+
    '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(detail)+'</strong>'+
-    (resolved.kind==='damage'&&numericBonuses.length+rerollLabels.length?
-     '<small class="play-battle-damage-benefits">'+esc([...numericBonuses,...rerollLabels].join(' · '))+'</small>':'')+'</span>'+
+    (resolved.kind==='damage'&&[...numericBonuses,...abilityLabels,...baseLabels,...rerollLabels].length?
+     '<small class="play-battle-damage-benefits">'+esc([...numericBonuses,...abilityLabels,...baseLabels,...rerollLabels].join(' · '))+'</small>':'')+'</span>'+
    (canRoll?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+
     esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-attack-id="'+esc(attack?.id||'')+'" data-damage-action-id="'+esc(!attack?item.id||'':'')+'" data-damage-label="'+esc(item.name)+
     '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+

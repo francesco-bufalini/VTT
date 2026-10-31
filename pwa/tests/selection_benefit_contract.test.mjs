@@ -301,9 +301,34 @@ test('Thrown Weapon Fighting applies +2 exclusively to the thrown damage roll',(
  const thrown=c.attacks.find(a=>a.id==='item:throw:main:dagger');
  assert.equal(melee.damage_extra_modifier,0);
  assert.equal(thrown.damage_extra_modifier,2);
- assert.match(thrown.damage,/\+ 2/);
+ const inactive=calculateSheet({...r,power_applications:{...r.power_applications,[id]:[]}},completeCatalogs);
+ assert.equal(thrown.damage,'1d4 + 3','The +2 style stacks with the +1 STR modifier');
+ assert.equal(inactive.attacks.find(a=>a.id===thrown.id).damage,'1d4 + 1');
  assert(c.roll_components['attack_damage:'+thrown.id].some(row=>
   row.value===2&&row.origin_name==='Thrown Weapon Fighting'));
+ assert.match(battleActionPanels(r,c,[],[],[]).attacks,/Thrown Weapon Fighting \+2/,
+  'The battle row shows the +2 source for a thrown attack');
+});
+
+test('Two-Weapon Fighting applies the offhand ability modifier from structured data',()=>{
+ const selection='optional:class:phb:fighter:fs-f',option='optional:phb:two-weapon-fighting';
+ const sword={id:'sword',name:'Shortsword',type:'M',damage:'1d6',properties:['L','F'],
+  equipped_slots:['main'],quantity:1};
+ const offhand={...sword,id:'dagger',name:'Dagger',equipped_slots:['off']};
+ let r={...record(),classes:[{name:'Fighter',source:'PHB',level:2}],level:2,
+  abilities:{str:16,dex:14,con:12,int:10,wis:10,cha:10},
+  inventory:[sword,offhand],attack_ability:'str'};
+ let c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerSelectionPatch(r,c,combined,selection,'learned',option)};
+ c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerApplicationPatch(r,c,combined,selection,option,true)};
+ c=calculateSheet(r,completeCatalogs);
+ const off=c.attacks.find(a=>a.id==='item:off:dagger');
+ assert.equal(off.damage_ability_modifier,3);
+ assert.equal(off.damage_ability_source,'Two-Weapon Fighting');
+ const inactive=calculateSheet({...r,power_applications:{...r.power_applications,[selection]:[]}},completeCatalogs);
+ assert.equal(inactive.attacks.find(a=>a.id==='item:off:dagger').damage_ability_modifier,0);
+ assert.match(battleActionPanels(r,c,[],[],[]).attacks,/Two-Weapon Fighting \+3/);
 });
 
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
