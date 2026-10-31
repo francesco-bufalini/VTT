@@ -1,3 +1,12 @@
+// A token is ours only when a local creature is explicitly linked to its
+// immutable token ID. Names are not unique and must never imply ownership.
+export function tokenOwnershipGlyphKey(token, localCreatures=[]) {
+  const id=String(token?.id||"");
+  return id && Array.isArray(localCreatures) &&
+    localCreatures.some(creature=>String(creature?.linked_token_sync_id||"")===id)
+      ? "map" : "poison";
+}
+
 // Read-only tactical presentation: initiative order is native, never inferred.
 export function casterToken(creature, data, owner) {
   const tokens=Array.isArray(data?.tokens)?data.tokens:[];
