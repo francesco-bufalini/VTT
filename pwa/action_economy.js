@@ -412,6 +412,10 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const unarmed=attacksById.get('unarmed')||
   {id:'unarmed',name:'Colpo senz’armi',melee:true,range_feet:5};
  const selectedAttack=attack||(attackAction?unarmed:null);
+ // The generic bonus action keeps its map target, but displays the actual
+ // offhand weapon's damage and its applicable fighting-style benefits.
+ const damageAttack=attack||(item.id==='two_weapon'&&item.available!==false?
+  [...attacksById.values()].find(row=>row.slot==='off'&&String(row.id||'').startsWith('item:off:')):null);
  // A typed shove action uses the existing map-targeting combat action.
  // It is not inferred from whether the character has used Dash.
  const actionName=item.name;
@@ -497,8 +501,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    (!rolls.length&&mapButton?'<div class="play-battle-attack-roll-line">'+mapButton+'</div>':'')+
    '</div>':'')+
   '</div>'+battleEffectMarkup({...item,name:actionName,
-   action_damage:attack?[]:arr(calculated.action_damage_bonuses).filter(row=>
-    String(row.action_id)===String(item.id||''))},attack,calculated)+'</article>';
+   action_damage:damageAttack?[]:arr(calculated.action_damage_bonuses).filter(row=>
+    String(row.action_id)===String(item.id||''))},damageAttack,calculated)+'</article>';
 }
 
 const classOrigin=row=>String(row?.origin_id||'').startsWith('class|')||
@@ -661,9 +665,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const realImprovised=[...attacksById.values()].filter(improvised);
  const weapon=entries.filter(row=>row.type==='Attacco'&&
   !['attack','opportunity','two_weapon','unarmed:off'].includes(row.id)&&
-  // The bonus-action timing stays in Actions; the actual offhand weapon
-  // still needs its own damage row in the flat Attacks list.
-  (row.parent_action!=='two_weapon'||attacksById.has(String(row.attack_id||row.id)))&&
+  row.parent_action!=='two_weapon'&&
   !realImprovised.some(attack=>String(row.attack_id||row.id)===String(attack.id)));
  if(realImprovised.length){
   weapon.push({id:'improvised',attack_id:realImprovised[0].id,name:'Arma improvvisata',

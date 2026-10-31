@@ -316,7 +316,10 @@ test('Two-Weapon Fighting applies the offhand ability modifier from structured d
  assert.equal(off.damage_ability_source,'Two-Weapon Fighting');
  const inactive=calculateSheet({...r,power_applications:{...r.power_applications,[selection]:[]}},completeCatalogs);
  assert.equal(inactive.attacks.find(a=>a.id==='item:off:dagger').damage_ability_modifier,0);
- assert.match(battleActionPanels(r,c,[],[],[]).attacks,/Two-Weapon Fighting \+3/);
+ const panels=battleActionPanels(r,c,[],[],[]);
+ assert.doesNotMatch(panels.attacks,/item:off:dagger/,'No duplicate offhand attack');
+ assert.match(panels.others,/Two-Weapon Fighting \+3/,
+  'The offhand bonus appears on its existing bonus action');
 });
 
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
