@@ -227,6 +227,35 @@ test('a genuine weapon attack uses Mod.FOR in the base damage section',()=>{
  assert.equal(rows[0].damageType,'slashing');
  assert.equal(rows[0].value,roll.modifier);
 });
+test('base weapon damage keeps +Mod.FOR with a genuine zero ability modifier',()=>{
+ const c={...character(),abilities:{str:10,dex:16,con:12,int:10,wis:10,cha:10},
+  inventory:[{id:'zero-sword',name:'Sword',custom_item_type:'weapon',type:'M',
+    weapon_category:'simple',damage:'1d8',damage_type:'slashing',quantity:1,
+    equipped_slots:['main']}]};
+ const calculated=calculateSheet(c);
+ const attack=calculated.attacks.find(row=>row.id==='item:zero-sword');
+ assert(attack);
+ assert.equal(attack.damage_ability_modifier,0);
+ assert.equal(attack.damage_ability_applies,true);
+ assert.deepEqual(damageRollSegments(rollBattleDamage(attack.damage,()=>1),
+  attack.damage_type,attack).map(row=>row.formula),['1d8 + Mod.FOR']);
+});
+test('separated damage bonuses do not remove +Mod from base or invent it for offhand',()=>{
+ const style={id:'style',value:2,origin_id:'feature:style',origin_name:'Stile'};
+ const main={id:'item:sword',ability:'str',damage:'1d8 + 2',
+  damage_base_formula:'1d8',damage_ability_modifier:0,damage_extra_modifier:2,
+  damage_ability_applies:true,damage_bonus_components:[style]};
+ const mainRows=damageRollSegments(rollBattleDamage(main.damage,()=>1),'slashing',main);
+ assert.deepEqual(mainRows.map(row=>row.formula),['1d8 + Mod.FOR','+2']);
+ assert.equal(mainRows.reduce((sum,row)=>sum+row.value,0),2);
+ assert.deepEqual(mainRows.map(row=>row.damageType),['slashing','slashing']);
+ const off={...main,id:'item:off:dagger',damage:'1d6 + 2',
+  damage_base_formula:'1d6',damage_ability_applies:false};
+ const offRows=damageRollSegments(rollBattleDamage(off.damage,()=>1),'piercing',off);
+ assert.deepEqual(offRows.map(row=>row.formula),['1d6','+2'],
+  'Offhand damage has no base ability bonus; its Fighting Style bonus remains distinct');
+ assert.deepEqual(offRows.map(row=>row.damageType),['piercing','piercing']);
+});
 test('automatic numeric damage bonuses get their own origin boxes and inherit the base damage type',()=>{
  const attack={id:'item:sword',ability:'str',origin_id:'item:sword',damage:'1d8 + 1 + 6',
    damage_base_formula:'1d8+1',damage_ability_modifier:2,damage_extra_modifier:4,

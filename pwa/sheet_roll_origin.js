@@ -210,7 +210,6 @@ const normalizeDamage=value=>String(value||'').replace(/\s+/g,'').replace(/−/g
 const damageDie=term=>/^\+?[1-9]\d*d(?:2|3|4|6|8|10|12|20|100)$/i.test(term);
 const damageInteger=term=>/^[+-]?\d+$/.test(term);
 function damageModifierExpression(value,attack,notation,detached=0){
- if(!value)return '';
  const ability=String(attack?.ability||'').toLowerCase();
  const source=normalizeDamage(attack?.damage_base_formula);
  const rawModifier=Number(attack?.damage_ability_modifier)+Number(attack?.damage_extra_modifier);
@@ -221,11 +220,15 @@ function damageModifierExpression(value,attack,notation,detached=0){
  const staticBase=sourceTerms.filter(damageInteger).reduce((sum,term)=>sum+Number(term),0);
  const abilityAmount=Number(attack?.damage_ability_modifier);
  const extra=Number(attack?.damage_extra_modifier);
+ const abilityApplies=attack?.damage_ability_applies??(abilityAmount!==0);
  if(matches&&Object.hasOwn(abilityNames,ability)&&Number.isFinite(abilityAmount)&&
-   Number.isFinite(extra)&&staticBase+abilityAmount+extra-detached===value&&abilityAmount!==0){
+   Number.isFinite(extra)&&staticBase+abilityAmount+extra-detached===value&&abilityApplies){
    const remaining=staticBase+extra-detached;
    return ' + Mod.'+abilityNames[ability]+(remaining?damageSign(remaining):'');
  }
+ // A zero-valued ability still contributes symbolically when the underlying
+ // attack uses it. Conversely, an offhand style bonus must not fabricate one.
+ if(!value)return '';
  // An unknown source must not be falsely identified as a Strength modifier.
  return ' + Modificatore';
 }
