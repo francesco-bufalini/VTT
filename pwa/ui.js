@@ -3949,9 +3949,28 @@ function originSpellSections(c,calculated,renderRow){
      else group.missingTracker=true;
    }else if(mode==='free')group.hasFree=true;
  }
+ // Source cards must exist even when an active grant has no chosen spells yet.
+ for(const choice of calculated.origin_choices||[]){
+  if(!choice?.origin_id)continue;
+  const origin=String(choice.origin_id);
+  if(!origins.has(origin))origins.set(origin,{
+   name:choice.origin_name||'Origine non specificata',
+   ability:choice.spellcasting_ability||'int',showStats:true,
+   allowed:choice.spellcasting_ability_options?.length?
+     choice.spellcasting_ability_options:[choice.spellcasting_ability||'int'],
+   items:[],trackers:new Map(),usesSlots:false,missingTracker:false,hasFree:false
+  });
+  (origins.get(origin).choices??=[]).push(choice);
+ }
 
  return [...origins.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
    .map(([origin,group])=>{
+     const choiceControls=(group.choices||[]).filter(choice=>choice.remaining>0).map(choice=>{
+      const cantrips=String(choice.filter||'').includes('level=0');
+      const selected=Math.max(0,Number(choice.count||0)-Number(choice.remaining||0));
+      return '<button type="button" class="btn small magic-selection-button" data-act="magic-tool-open" data-magic-tool="choices" data-origin-choice-id="'+esc(choice.id)+'">'+
+       (cantrips?'Scegli trucchetti':'Scegli incantesimi')+' · '+selected+' / '+esc(choice.count)+'</button>';
+     }).join('');
      const badges=(group.usesSlots?magicSlotUsageChip():'')+
        [...group.trackers.values()].map(magicTrackerUsageChip).join('')+
        (group.missingTracker?'<span class="magic-source-resource magic-source-resource--warning">Tracker non disponibile</span>':'')+
@@ -3963,6 +3982,7 @@ function originSpellSections(c,calculated,renderRow){
        '<div class="magic-source-resources" aria-label="Risorse di lancio">'+badges+'</div></header>'+
        (castingStatisticsVisible(c,'origin:'+origin,group.showStats)?
          castingStatistics(c,'origin:'+origin,group.ability,group.allowed):'')+
+       (choiceControls?'<div class="magic-source-controls">'+choiceControls+'</div>':'')+
        (calculated.active_celestial_form&&group.items.some(item=>
          item.grant.spell_id===calculated.active_celestial_form.spell_id)?
          '<div class="magic-active-form"><strong>Manifestazione attiva · 1 minuto</strong> '+
@@ -7515,7 +7535,14 @@ async function handleAction(target){
       state.spellQuery='';state.spellResultLimit=60;
       state.spellKnownView=classes.find(row=>row.id===state.spellClass)?.mode==='Preparati'?'known':'all';
     }
-    state.magicPopup=type;await render();return;
+    if(type==='choices')state.pendingSpellChoiceId=target.dataset.originChoiceId||'';
+    state.magicPopup=type;await render();
+    if(type==='choices'&&state.pendingSpellChoiceId){
+      const choice=[...app.querySelectorAll('#magic-tools-dialog [data-pending-spell-choice]')]
+        .find(node=>node.dataset.pendingSpellChoice===state.pendingSpellChoiceId);
+      choice?.scrollIntoView?.({block:'nearest'});
+    }
+    return;
   }
   if(act==='magic-tool-close'){
     state.magicPopup="";

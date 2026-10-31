@@ -635,8 +635,10 @@ export function effectiveEquipmentInventory(inventory=[],{allowOffhandWithTwoHan
  for(const [index,item] of items.entries()){
   if(item.equipped!==true||array(item.equipped_slots).length||item.active===false)continue;
   const kind=itemKind(resolveOwnedItem(item));
+  // An old equipped flag does not identify a second hand: never create
+  // a phantom offhand weapon that suppresses one-weapon benefits.
   const choices=kind==='armor'?['body']:kind==='shield'?['off','main']:
-   kind==='weapon'?['main','off']:[];
+   kind==='weapon'?['main']:[];
   const slot=choices.find(slot=>usable(item,slot)&&!occupied.has(slot)&&
    (slot!=='off'||allowOffhandWithTwoHanded||!hasProperty(items[occupied.get('main')],'2H')));
   if(!slot)continue;

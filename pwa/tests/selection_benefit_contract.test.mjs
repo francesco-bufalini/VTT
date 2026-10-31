@@ -235,6 +235,31 @@ test('legacy equipped flags are reconciled before calculating Ranger conditional
  assert.equal(changed[1].equipped,true);
 });
 
+test('legacy equipped flags never create a phantom offhand that blocks Dueling',()=>{
+ const id='optional:class:phb:ranger:fs-r',option='optional:phb:dueling';
+ const sword={id:'weapon:longsword|phb',name:'Longsword',type:'M',damage:'1d8',properties:['V'],
+  quantity:1,equipped:true,equipped_slots:['main']};
+ const legacy={id:'weapon:dagger|phb',name:'Dagger',type:'M',damage:'1d4',
+  properties:['F','L','T'],quantity:1,equipped:true,equipped_slots:[]};
+ let r={...record(),level:2,classes:[{name:'Ranger',source:'PHB',level:2}],
+  abilities:{str:14,dex:16,con:12,int:10,wis:14,cha:10},inventory:[sword,legacy]};
+ let c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerSelectionPatch(r,c,combined,id,'learned',option)};
+ c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerApplicationPatch(r,c,combined,id,option,true)};
+ c=calculateSheet(r,completeCatalogs);
+ assert.deepEqual(c.selection_record.inventory.map(item=>item.equipped_slots),
+  [['main'],[]],'A legacy flag alone must not assign the second hand');
+ assert.equal(c.attacks.find(a=>a.id==='item:'+sword.id)?.damage_extra_modifier,2,
+  'The lone one-handed weapon receives Dueling');
+ const realOff=calculateSheet({...r,inventory:[sword,{...legacy,equipped_slots:['off']}]},completeCatalogs);
+ assert.equal(realOff.attacks.find(a=>a.id==='item:'+sword.id)?.damage_extra_modifier,0,
+  'An explicitly wielded second weapon suppresses Dueling');
+ const bothHands=calculateSheet({...r,hand_grip_two_handed:true},completeCatalogs);
+ assert.equal(bothHands.attacks.find(a=>a.id==='item:'+sword.id)?.damage_extra_modifier,0,
+  'Two-handed use of a versatile weapon suppresses Dueling');
+});
+
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
  const cases=[
   {className:'Paladin',id:'optional:class:phb:paladin:fs-p',option:'optional:tce:blessed-warrior',ability:'cha',list:'Cleric'},
