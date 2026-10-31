@@ -4,7 +4,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses} from './sheet_rules.js';
-import {activeItemOptionEffects,infusionInstanceOrigin,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts} from './item_controls.js';
+import {activeItemOptionEffects,infusionInstanceOrigin,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts,ownedItemDisplayName} from './item_controls.js';
 import {traitIsActive} from './trait_benefit_editor.js';
 import {conditionOptions,conditionDescriptionHtml,exhaustionLevel,exhaustionConditionRows} from './condition_catalog.js';
 
@@ -286,8 +286,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const item=group.item,id=String(item.id);
   const info=await lookup('items',item.name||id,item.source||'',id)||item;
   if(isDocument(info))continue;
-  const name=item.name||info.name||id,infused=Boolean(group.infusionName);
-  let displayName=infused?name+' - '+group.infusionName:name;
+  const infused=Boolean(group.infusionName);
+  const displayName=ownedItemDisplayName({...item,infusion:infused?{name:group.infusionName}:item.infusion});
   const originKey='item:'+groupKey;
   const options={category:'oggetti',origin:'Oggetto · '+displayName,
    origin_key:originKey,level:0,inactive:group.activeQuantity===0};
@@ -305,7 +305,6 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   for(const row of extensions){
    // Legacy infusion descriptions are already included by the inventory adapter.
    if(item.infusion?.id===row.id)continue;
-   displayName+=' - '+row.trait.name;
    const reference=row.trait.details,detail=reference?await lookup(reference.category,reference.name,reference.source):null;
    const text=detail?.entries||detail?.description||row.trait.description;
    description=[...(Array.isArray(description)?description:[description]),...(Array.isArray(text)?text:[text])].filter(Boolean);

@@ -151,6 +151,12 @@ export function resolveOwnedItem(saved={}){
     for(const key of ITEM_INSTANCE_FIELDS)
       if(Object.hasOwn(overrides,key))effective[key]=structuredClone(overrides[key]);
   if(saved?.infusion?.requires_attunement===true||array(saved?.option_extensions).some(effect=>effect.requires_attunement===true))effective.req_attune=true;
+  for(const extension of array(saved?.option_extensions).filter(row=>row.generic_variant)){
+    const inherits=extension.definition?.inherits||{};
+    const props=array(effective.properties).filter(p=>!array(inherits.propertyRemove).some(r=>String(r).split('|')[0]===String(p).split('|')[0]));
+    effective.properties=[...props,...array(inherits.propertyAdd).filter(p=>!props.some(r=>String(r).split('|')[0]===String(p).split('|')[0]))];
+    if(inherits.rarity)effective.rarity=inherits.rarity;
+  }
   return effective;
 }
 // Fold truly identical owned copies into one stack. An instance ID identifies
@@ -168,7 +174,7 @@ export function consolidateOwnedItems(inventory){
     const slots=array(row?.equipped_slots);
     const canStack=row&&typeof row==="object"&&!Array.isArray(row)&&
       String(row.id||row.name||"").trim()&&kind!=="document"&&
-      !row.infusion&&row.standalone_instance!==true&&itemAttunementCount(row)===0&&row.attuned!==true&&
+      !row.infusion&&!array(row.option_extensions).length&&row.standalone_instance!==true&&itemAttunementCount(row)===0&&row.attuned!==true&&
       Number.isInteger(quantity)&&quantity>=1&&quantity<=99999&&
       slots.every(slot=>["main","off","body"].includes(slot))&&
       new Set(slots).size===slots.length&&slots.length<=quantity;
@@ -250,6 +256,83 @@ export function changeItemOverride(inventory,index,key,value){
   else overrides[key]=normalized;
   changed.instance_overrides=overrides;
   return rows;
+}
+
+
+const variantWords={
+ sword:/sword|rapier|scimitar|sabre|saber|cutlass/i,
+ axe:/axe|hatchet|halberd/i,bow:/bow/i,crossbow:/crossbow/i,
+ spear:/spear|pike|trident/i,polearm:/glaive|halberd|pike|polearm/i,
+ net:/^net$/i,arrow:/arrow/i,bolt:/bolt/i,bulletFirearm:/bullet/i,cellEnergy:/energy cell/i
+};
+const variantSame=(actual,expected)=>Array.isArray(expected)?
+ expected.some(value=>variantSame(actual,value)):
+ String(actual??'').trim().toLowerCase()===String(expected??'').trim().toLowerCase();
+function variantField(item,field){
+ const kind=itemKind(item);
+ if(field==='weapon')return kind==='weapon';
+ if(field==='armor')return kind==='armor';
+ if(field==='property')return array(item.properties);
+ if(field==='weaponCategory')return item.weaponCategory||item.weapon_category;
+ if(field==='scfType')return item.scfType||item.scf_type;
+ if(Object.hasOwn(variantWords,field))return Boolean(item[field]??(kind==='weapon'&&variantWords[field].test(String(item.name||''))));
+ return item[field];
+}
+function variantRequirement(item,requirements){
+ return Object.entries(requirements||{}).every(([field,expected])=>{
+  const actual=variantField(item,field);
+  if(field==='property')return (Array.isArray(expected)?expected:[expected]).some(value=>array(actual).some(p=>variantSame(String(p).split('|')[0],String(value).split('|')[0])));
+  if(field==='type'){
+   const [type,source]=String(expected).split('|');
+   return variantSame(String(item.type||'').split('|')[0],type)&&(!source||variantSame(item.source,source));
+  }
+  if(typeof expected==='boolean')return Boolean(actual)===expected;
+  return variantSame(actual,expected);
+ });
+}
+export function genericVariantMatches(item,variant){
+ if(!item||itemKind(item)==='document'||!array(variant?.requires).length)return false;
+ const base=resolveOwnedItem({...item,option_extensions:[]});
+ return variant.requires.some(requirement=>variantRequirement(base,requirement))&&
+  !Object.entries(variant.excludes||{}).some(([field,value])=>variantRequirement(base,{[field]:value}));
+}
+export function genericVariantPatch(record,index,variant,add=true){
+ const inventory=structuredClone(array(record.inventory)),selected=inventory[index];
+ if(!Number.isInteger(index)||index<0||!selected||!variant?.id)throw Error('Oggetto o variante non disponibile.');
+ const id=String(variant.id),attached=array(selected.option_extensions);
+ if(add){
+  if(!genericVariantMatches(selected,variant))throw Error('Variante incompatibile con questo oggetto.');
+  if(attached.some(x=>x.id===id))throw Error('Variante già applicata.');
+  if(Number(selected.quantity??1)>1){
+   const quantity=Math.floor(Number(selected.quantity)),single=structuredClone(selected),slots=array(selected.equipped_slots);
+   selected.quantity=quantity-1;single.quantity=1;
+   single.equipped_slots=slots.slice(0,1);selected.equipped_slots=slots.slice(1);
+   single.equipped=single.equipped_slots.length>0;selected.equipped=selected.equipped_slots.length>0;
+   const tuned=itemAttunementCount(selected);
+   single.attuned_count=tuned>0?1:0;single.attuned=tuned>0;
+   selected.attuned_count=Math.max(0,tuned-single.attuned_count);selected.attuned=selected.attuned_count>0;
+   single.instance_id='pwa_instance_'+crypto.randomUUID();single.standalone_instance=true;
+   inventory.splice(++index,0,single);
+  }
+  const copy=inventory[index],inherits=variant.inherits||{},numeric={};
+  for(const [field,source] of [['bonus_ac','bonusAc'],['bonus_weapon','bonusWeapon'],['bonus_weapon_attack','bonusWeaponAttack'],['bonus_weapon_damage','bonusWeaponDamage'],['bonus_spell_attack','bonusSpellAttack']]){
+   const raw=String(inherits[source]??'').trim();
+   if(/^[+-]?\d+$/.test(raw))numeric[field]=Number(raw);
+  }
+  const description=array(inherits.entries).concat(array(variant.entries)).map(entry=>
+   typeof entry==='string'?entry.replace(/\{=(\w+)\}/g,(_,key)=>String(inherits[key]??'')):entry);
+  copy.option_extensions=[...array(copy.option_extensions),{
+   id,name:variant.name,source:variant.source,generic_variant:true,
+   description,requires_attunement:Boolean(inherits.reqAttune||array(inherits.reqAttuneTags).length),
+   definition:{id,name:variant.name,source:variant.source,inherits,
+    ...(Object.keys(numeric).length?{numeric_item_bonuses:numeric}:{}),
+    ...(Number(inherits.charges)>0?{charge_tracker:{max:Number(inherits.charges),recovery:String(inherits.recharge||'manual')}}:{})}
+  }];
+ }else{
+  if(!attached.some(x=>x.id===id&&x.generic_variant))throw Error('Variante non applicata.');
+  selected.option_extensions=attached.filter(x=>!(x.id===id&&x.generic_variant));
+ }
+ return {inventory,index};
 }
 
 // Match desktop slot-size editing: a stack's equipped copy is split
@@ -478,7 +561,7 @@ export function itemOptionNumericEffects(record,item,definitions=[],features=[])
   const selector=data.item_selector||{};
   if(array(selector.item_types).length&&!selector.item_types.includes(String(item.type||'').split('|')[0].toUpperCase()))return [];
   const level=active.infusion.level||artificerLevel(record),mult=level>=Number(data.upgrade_level||99)?2:1;
-  return [{...active,bonuses:Object.fromEntries(['bonus_ac','bonus_weapon','bonus_spell_attack'].filter(key=>Number.isFinite(Number(data[key]))).map(key=>[key,Number(data[key])*mult]))}];
+  return [{...active,bonuses:Object.fromEntries(['bonus_ac','bonus_weapon','bonus_weapon_attack','bonus_weapon_damage','bonus_spell_attack'].filter(key=>Number.isFinite(Number(data[key]))).map(key=>[key,Number(data[key])*mult]))}];
  });
 }
 export function itemOptionNumericBonuses(record,item,definitions=[],features=[]){

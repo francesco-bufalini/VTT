@@ -3565,6 +3565,32 @@ function inventoryContainerSections(record,entries,containers,selectedIndex,menu
       '<button type="button" class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(destination)+'">＋ Homebrew</button></div>',
       "inventory-native-panel inventory-items-panel")+'</div>';
 }
+async function openGenericVariantDialog(index){
+ const record=state.editor?.read(),item=record?.inventory?.[index];
+ if(!item)throw Error('Oggetto non disponibile.');
+ const catalog=await catalogEntries('generic_variants');
+ const selected=new Set((item.option_extensions||[]).filter(x=>x.generic_variant).map(x=>x.id));
+ const choices=catalog.filter(variant=>isContentAvailableForRules(variant,record.rules_version)&&
+   !selected.has(variant.id)&&inventoryModule.genericVariantMatches(item,variant));
+ app.querySelector('#item-variant-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='item-variant-dialog';dialog.className='sheet-roll-dialog magic-tools-dialog benefit-selection-dialog';
+ dialog.dataset.itemIndex=String(index);dialog.dataset.creatureId=record.id;
+ const row=variant=>'<div class="magic-catalog-row vtt-selectable">'+
+  '<span class="magic-catalog-name">'+esc(variant.name)+' <small>· '+esc(variant.source)+'</small></span>'+
+  '<button type="button" class="magic-catalog-action" data-act="item-variant-add" data-variant-id="'+esc(variant.id)+'">Aggiungi</button></div>';
+ const paint=filter=>{const rows=choices.filter(v=>matchesSearch(filter,v.name,v.source));
+  return rows.length?rows.map(row).join(''):'<p class="hint">Nessuna variante compatibile.</p>';};
+ dialog.innerHTML=learningSelectionDialogBody({title:'Varianti 5eTools · '+ownedItemDisplayName(item),
+  closeAction:'item-variant-close',summary:'Scegli una variante compatibile. Puoi applicarne più di una alla stessa copia.',
+  searchLabel:'Cerca variante',searchAttribute:'data-item-variant-search',
+  resultsClass:'learning-picker-results item-variant-results',results:paint(''),footer:false});
+ dialog.querySelector('[data-item-variant-search]').addEventListener('input',event=>{
+  dialog.querySelector('.item-variant-results').innerHTML=paint(event.target.value);
+ });
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ openDialog(dialog);
+}
 function inventoryItemDescription(obj,index){
   if(requiresAttunement(resolveOwnedItem(obj))&&state.calculated?.attunements)
     obj={...obj,attuned_count:state.calculated.attunements.counts[index]||0};
@@ -3592,7 +3618,16 @@ function inventoryItemDescription(obj,index){
     [['ac','CA base'],['bonus_ac','Bonus CA']].map(([key,label])=>'<label>'+label+
     '<input data-item-override="'+key+'" data-item-index="'+index+'" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+
     '</details>':'';
+  const genericVariants=(Array.isArray(obj.option_extensions)?obj.option_extensions:[]).filter(row=>row.generic_variant);
   return '<div class="inventory-description">'+
+    '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
+      '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools">'+actionGlyph('spark')+
+      '<span>Varianti 5eTools</span></button></div>'+
+    (genericVariants.length?'<section class="inventory-detail-section"><h3>Varianti applicate</h3>'+
+     genericVariants.map(row=>'<div class="infusion-dialog-item"><span>'+esc(row.name)+' · '+esc(row.source||'')+
+      '</span><button type="button" class="btn small" data-act="item-variant-remove" data-index="'+index+
+      '" data-variant-id="'+esc(row.id)+'" aria-label="Rimuovi '+esc(row.name)+'">Rimuovi</button></div>').join('')+
+     '</section>':'')+
     (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
       '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
     '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+
@@ -9227,6 +9262,32 @@ async function handleAction(target){
     state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
     state.traitPopupKey=trait.key;state.traitPopupConfirm='';state.traitPopupTrait=trait;
     mountTraitBenefitDialog();return;
+  }
+  if(act==='item-variant-open'){
+    await openGenericVariantDialog(Number(target.dataset.index));return;
+  }
+  if(act==='item-variant-close'){
+    closeDialog(app.querySelector('#item-variant-dialog'),{remove:true});return;
+  }
+  if(act==='item-variant-add'||act==='item-variant-remove'){
+    const editor=state.editor,record=editor?.read(),dialog=app.querySelector('#item-variant-dialog');
+    if(!record)throw Error('Apri prima una creatura.');
+    if(act==='item-variant-add'&&(!dialog?.open||dialog.dataset.creatureId!==record.id))
+      throw Error('Selettore varianti non più valido.');
+    const index=act==='item-variant-add'?Number(dialog.dataset.itemIndex):Number(target.dataset.index);
+    const variantId=String(target.dataset.variantId||'');
+    const variant=act==='item-variant-add'?
+      (await catalogEntries('generic_variants')).find(row=>row.id===variantId&&
+        isContentAvailableForRules(row,record.rules_version)):{id:variantId};
+    if(!variant)throw Error('Variante non disponibile per questa edizione.');
+    const change=inventoryModule.genericVariantPatch(record,index,variant,act==='item-variant-add');
+    closeDialog(dialog,{remove:true});
+    await patch({inventory:change.inventory});
+    state.inventorySelectedIndex=change.index;state.sheetPopup='item:'+change.index;
+    state.sheetPopupTitle=ownedItemDisplayName(change.inventory[change.index]);
+    await render();
+    if(act==='item-variant-add')await openGenericVariantDialog(change.index);
+    return;
   }
   if(act==="inventory-select"){
     state.inventorySelectedIndex=Number(target.dataset.index);

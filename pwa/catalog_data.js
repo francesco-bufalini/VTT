@@ -189,7 +189,18 @@ export async function selectedSpellEntries(ids=[],classes=[]){
   }
   return scopedRequests.get(key);
 }
+let genericVariantsPromise;
+export function genericItemVariants(){
+ if(!genericVariantsPromise)genericVariantsPromise=fetch('/catalog/generic_item_variants.json')
+  .then(async response=>{if(!response.ok)throw Error('Varianti 5eTools non disponibili offline.');
+   const data=await response.json();
+   if(data?.version!==1||!Array.isArray(data.variants))throw Error('Catalogo varianti non valido.');
+   return data.variants;
+  }).catch(error=>{genericVariantsPromise=null;throw error;});
+ return genericVariantsPromise;
+}
 export async function catalogEntries(category) {
+  if(category==='generic_variants')return genericItemVariants();
   if(category==="spells"){
     const spells=await spellCatalog();
     const known=await listRecords("global","homebrew");

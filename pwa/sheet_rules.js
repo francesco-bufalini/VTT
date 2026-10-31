@@ -369,11 +369,12 @@ function itemRows(record,warnings,infusionCatalog=[],features=[],itemGrants=[]){
           ["bonus_weapon_attack","bonus_weapon_attack","bonusWeaponAttack","attack_hit:"+attack],
           ["bonus_weapon_damage","bonus_weapon_damage","bonusWeaponDamage","attack_damage:"+attack]
         ])add(target,field,snake,camel);
-        for(const effect of optionEffects)if(Number.isFinite(effect.bonuses.bonus_weapon)){
-          for(const type of ["attack_hit:","attack_damage:"]){
-            const grant=numericGrant(effect.id,effect.name,"item-option:"+effect.option_id,type+attack,effect.bonuses.bonus_weapon);
-            if(grant)rows.push(grant);
-          }
+        for(const effect of optionEffects)for(const [key,targets] of [
+          ['bonus_weapon',['attack_hit:','attack_damage:']],
+          ['bonus_weapon_attack',['attack_hit:']],['bonus_weapon_damage',['attack_damage:']]
+        ])if(Number.isFinite(effect.bonuses[key]))for(const type of targets){
+          const grant=numericGrant(effect.id,effect.name,'item-option:'+effect.option_id,type+attack,effect.bonuses[key]);
+          if(grant)rows.push(grant);
         }
       }
     }
@@ -932,7 +933,13 @@ function calculateSheetValues(record={},catalogs={}){
     instinct.roll_modes=[...arr(instinct.roll_modes),{target:'initiative',mode:'advantage'}];
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const racialBonusRows=racialBonusEntries(record,catalogs.speciesConditionalBonuses||{},features,suppressed);
-  const damage_defense_entries=[...arr(record.damage_defense_entries),
+  const variantDefenses=activeItemOptionEffects(record,[],features).flatMap(effect=>
+    ['resist','immune','vulnerable'].flatMap((field,index)=>
+     arr(effect.definition?.inherits?.[field]).filter(value=>typeof value==='string').map(value=>({
+      id:'generic-variant:'+effect.id+':'+field+':'+value,origin_id:effect.id,origin_name:effect.name,
+      rank:[1,2,-1][index],key:value.split('|')[0],automatic:true
+     }))));
+  const damage_defense_entries=[...arr(record.damage_defense_entries),...variantDefenses,
     ...(kind==='monster'?monsterStatDefenses(record.stat_block):[]),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed),
     ...classDefenseEntries(record,features,suppressed),

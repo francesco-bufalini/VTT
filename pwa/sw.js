@@ -2,7 +2,7 @@
 // Each deployed version gets an atomic app-shell cache; IndexedDB is untouched.
 const REVISION = "__VTT_COMMIT_SHA__";
 const CACHE = "vtt-mobile-shell-v198-" + REVISION;
-const CATALOGS = ["/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
+const CATALOGS = ["/catalog/generic_item_variants.json", "/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
 const SHELL = [
   "/miniature-images/ore.webp",
   "/miniature-images/gilliam.webp",

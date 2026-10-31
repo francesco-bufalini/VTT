@@ -39,6 +39,7 @@ const FILES := {
 	"/creature_variants.js": ["res://pwa/creature_variants.js", "text/javascript; charset=utf-8"],
 	"/creature_variants_view.js": ["res://pwa/creature_variants_view.js", "text/javascript; charset=utf-8"],
 	"/catalog/companion_spells.json": ["res://pwa/catalog/companion_spells.json", "application/json; charset=utf-8"],
+  "/catalog/generic_item_variants.json": ["res://pwa/catalog/generic_item_variants.json", "application/json; charset=utf-8"],
 	"/": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/index.html": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/client.js": ["res://pwa/client.js", "text/javascript; charset=utf-8"],
