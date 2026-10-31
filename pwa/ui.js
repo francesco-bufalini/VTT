@@ -25,7 +25,7 @@ import {exportInventoryItems} from './inventory_transfer.js';
 import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, createBestiaryMonster, importCreatureFile, exportCreature, exportCreatureBatch, exportCreatureArchive, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
-import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
+import { tokenGroups, tokenOwnershipGlyphKey, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew, catalogBenefitRows } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews, stateTraitNavigationKey } from "./trait_projection.js";
@@ -268,7 +268,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", chatOpen:false, chatUnread:false, stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, serverDeviceName:"", disclosureState:new Map(),
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, catalogCreateOpen:false, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogEmbedMode:"5etools", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, catalogCreateOpen:false, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventorySelectedIndices:new Set(), inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', scrollSpellSelectedId:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -281,7 +281,6 @@ let mapGeneration=0;
 let snapshotGeneration=0;
 let snapshotCaptureQueue=Promise.resolve();
 let previousMapFingerprint="";
-let realtimeStopped=false;
 let toastTimer = null;
 let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
@@ -370,8 +369,17 @@ function trackIdentityWrite(target){
  void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
  return write;
 }
+// HP edits may arrive from a debounce while an earlier save is in flight.
+// Serialize them and read the latest dialog values after the previous write.
+let pendingHpFieldWrite=Promise.resolve();
 function trackFieldWrite(target) {
-  const write=handleField(target);
+  let write;
+  if(target?.matches?.('[data-hp-autosave]')){
+    const editor=state.editor;
+    write=pendingHpFieldWrite.then(()=>
+      target.isConnected&&state.editor===editor?handleField(target):undefined);
+    pendingHpFieldWrite=write.catch(()=>{});
+  }else write=handleField(target);
   pendingFieldWrites.add(write);
   void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
   return write;
@@ -751,7 +759,6 @@ async function restoreBrowserScreen(screen){
     await flushPendingFields();
     if(ticket!==browserHistoryRestoreTicket)return;
     if(state.page!==screen.page)stopSubscriptions();
-    if(screen.page==='session')realtimeStopped=false;
     const oldCreatureId=state.creatureId;
     state.page=screen.page;
     state.libraryMode=Boolean(screen.libraryMode);
@@ -774,12 +781,6 @@ async function restoreBrowserScreen(screen){
 }
 
 async function download(blob, filename) {
-  // The embedded desktop WebView cannot reliably fetch its own blob: URLs.
-  // Send the original Blob directly to the native save dialog instead.
-  if (typeof globalThis.vttDesktopSaveFile === "function") {
-    await globalThis.vttDesktopSaveFile(blob, filename);
-    return false; // Desktop reports its own save/cancel/error result.
-  }
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url; link.download = filename; link.hidden = true;
@@ -835,7 +836,7 @@ async function navigate(page){
   else if(state.editor)state.catalogAssignCreatureId=state.creatureId||'';
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
-  stopSubscriptions();if(page==="session")realtimeStopped=false;
+  stopSubscriptions();
   state.traitPopupKey='';state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
   state.inventorySelectedIndices.clear();
   if(page==="library"){
@@ -934,8 +935,8 @@ async function render() {
       }
     }
     if(state.page==="session" && state.map) void refreshSessionSnapshot();
-    if(state.paired && state.online && !realtimeStopped && !state.stopMap) startMap();
-    if(state.paired && state.online && !realtimeStopped && !state.pollChat) startChat();
+    if(state.paired && state.online && !state.stopMap) startMap();
+    if(state.paired && state.online && !state.pollChat) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
     console.error("VTT Mobile: rendering della scheda fallito", {page:state.page,sheet:state.sheet}, error);
@@ -1296,6 +1297,23 @@ function renderCatalogRows() {
     resultsFooter('catalog-more',shown,total,90);
 }
 async function catalogView() {
+  // The embedded reference is optional: browsers may block cross-site frames,
+  // and the same locally packaged 5etools data must remain usable offline.
+  const online=typeof navigator==="undefined"||navigator.onLine!==false;
+  const localOnly=state.catalogEmbedMode==="local"||!online||
+    Boolean(state.pendingItemOwner||state.catalogCreateOpen);
+  if(!localOnly){
+    return '<section class="catalog-web" aria-label="5etools, manuale 2014">'+
+      '<div class="catalog-source-bar">'+
+      '<strong>5etools · 2014</strong>'+
+      '<button type="button" class="play-button" data-act="catalog-source-local">Catalogo offline</button>'+
+      '<a href="https://2014.5e.tools/" target="_blank" rel="noopener noreferrer">Apri nel browser</a></div>'+
+      '<iframe class="catalog-web-frame" title="5etools, regole D&D 2014" src="https://2014.5e.tools/" '+
+      'loading="eager" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads" '+
+      'aria-label="Catalogo 5etools 2014"></iframe>'+
+      '<p class="catalog-embed-note">Se 5etools non si visualizza o non risponde sul dispositivo, aprilo nel browser oppure usa il catalogo offline.</p>'+
+      '</section>';
+  }
   state.catalogRows=await catalogEntries(state.catalogCategory);
   const quickPanel=['items','feats','backgrounds'].includes(state.catalogCategory)?panel('Crea contenuto personalizzato',
     '<label>Nome<input id="quick-name" maxlength="120"></label>'+
@@ -1308,6 +1326,9 @@ async function catalogView() {
       Array.from({length:3},(_,i)=>'<div class="columns"><label>Tipo<select data-quick-kind="'+i+'">'+[['','Nessuna'],['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],['weapon','Arma'],['armor','Armatura'],['tool','Strumento'],['language','Linguaggio']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label><label>Competenza<input data-quick-key="'+i+'" placeholder="es. perception"></label></div>').join(''))+
     '<div class="actions">'+btn('quick-create','Crea nel catalogo locale','primary')+'</div>'):'';
   return '<div class="catalog-screen">'+
+    '<div class="catalog-source-bar"><strong>Catalogo offline</strong>'+
+    (online?'<button type="button" class="play-button" data-act="catalog-source-5etools">5etools 2014</button>':'<small>Dispositivo offline</small>')+
+    '</div>'+
     '<div class="catalog-toolbar">'+
     '<label class="catalog-search-wrap" for="catalog-search">'+actionGlyph('search')+
     '<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
@@ -1827,8 +1848,11 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
    await patch(changes);if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();
     if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
-    dialog.dataset.confirmed='true';dialog.close();await render();
-   if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
+    dialog.dataset.confirmed='true';dialog.close();
+    // Apply roll-scoped bonuses before the sheet refresh can replace the
+    // view/roll owner. Payment has already been committed and flushed.
+    if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
+    await render();
    if(reroll){state.roll={...reroll,label:ability.name,author:selectedName()};state.rollHistory.unshift({...state.roll});}
    message(reroll?ability.name+': '+reroll.notation+' → '+reroll.total+' · usa i nuovi risultati.':ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
   }catch(error){button.disabled=false;dialog.querySelector('[data-feature-result]').textContent=errorMessage(error);}
@@ -2639,9 +2663,7 @@ async function editorView() {
     break;
   }
   return header(['info','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+
-    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+btn("send","Manda")+
-    '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
-    btn("delete","Elimina scheda","danger")+'</div></details>';
+    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div>';
 }
 function resourceView(c,configure=false,compact=false){
  const active=state.calculated?.trackers||[],saved=Array.isArray(c.resource_trackers)?c.resource_trackers:[],origins=state.calculated?.origins||[];
@@ -3841,10 +3863,10 @@ function inventoryItemDescription(obj,index,optionDescriptions=new Map()){
        'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
    })():'';
   return '<div class="inventory-description">'+
-    '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
-      '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools">'+actionGlyph('spark')+
-      '<span>Varianti 5eTools</span></button></div>'+
-    (applied.length?'<section class="inventory-detail-section inventory-applied-options"><h3>Modifiche applicate</h3>'+
+    '<section class="inventory-detail-section inventory-applied-options">'+
+     '<div class="inventory-variant-heading"><h3>Varianti</h3>'+
+      '<button type="button" class="inventory-variant-add" data-act="item-variant-open" data-index="'+index+
+      '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools"><span aria-hidden="true">+</span></button></div>'+
       applied.map(option=>'<article class="inventory-applied-entry">'+
        '<div class="inventory-applied-heading"><strong>'+esc(option.name)+'</strong>'+
        (option.removable?'<button type="button" class="inventory-applied-remove" data-act="item-variant-remove" data-index="'+index+
@@ -3852,7 +3874,7 @@ function inventoryItemDescription(obj,index,optionDescriptions=new Map()){
         '<span aria-hidden="true">×</span></button>':'')+'</div>'+
        '<p class="inventory-applied-description">'+esc(option.description)+'</p>'+
        option.effects.map(storedPowerControls).join('')+'</article>').join('')+
-      '</section>':'')+
+    '</section>'+
     (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
       '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
     '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+
@@ -4656,8 +4678,11 @@ function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
     (token.id===turnId?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
     sessionTokenDetails(token)+'</button>'+
     (token.initiative!==undefined?'<span class="session-initiative" title="Iniziativa">'+esc(token.initiative)+'</span>':'')+
-    '<button class="btn small session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
-    '" aria-label="Modifica '+esc(token.name)+'" title="Condizioni, incantesimi e miniatura">⚙</button></div>').join('');
+    '<button class="play-button session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
+    '" aria-label="Modifica '+esc(token.name)+'" title="'+
+    (tokenOwnershipGlyphKey(token,state.cachedCreatures)==='map'?'Scheda locale collegata':'Token non controllato')+
+    ' · condizioni, incantesimi e miniatura">'+
+    actionGlyph(tokenOwnershipGlyphKey(token,state.cachedCreatures))+'</button></div>').join('');
 }
 function sessionCreatureWarnings(){
  return state.sessionCreatureErrors.length?
@@ -4708,15 +4733,18 @@ function sessionView() {
     '</section>';
   html+=sessionCreatureWarnings();
   if(!online)return desktop+html;
-  html+='<section class="panel session-token-panel">'+
-    '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
-    '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
+  html+='<section class="panel session-token-panel play-card">'+
+    '<div class="session-token-header play-card-head">'+
+    '<h2>Token sulla mappa</h2>'+
+    '<button type="button" class="play-button session-add-token-icon" data-act="open-place-token"'+
+      (!online||!entries.length?' disabled':'')+
+      ' aria-label="Aggiungi token da una tua scheda" title="Aggiungi token da una tua scheda">+</button>'+
+    (groups.active?'<span class="session-combat-round">Round '+esc(groups.round)+' · Iniziativa</span>':'')+
+    '</div>'+
     (groups.participants.length?sessionTokenRows(groups.participants,groups.turnId,groups.activeEnvironment):
-      '<p class="hint">Nessun token sulla mappa.</p>')+
+      '<p class="hint session-token-empty">Nessun token sulla mappa.</p>')+
     (groups.active&&groups.outside.length?'<h3 class="session-outside-heading">Fuori dal combattimento</h3>'+
       sessionTokenRows(groups.outside):'')+
-    '<button type="button" class="btn primary full session-add-token" data-act="open-place-token"'+
-      (!online||!entries.length?' disabled':'')+'>＋ Aggiungi token da una tua scheda</button>'+
     '</section>';
   if(state.editTokenId){
     const edited=entries.find(t=>t.id===state.editTokenId);
@@ -4890,7 +4918,7 @@ async function refreshConnection(quiet=false) {
     }catch(error){console.warn("Desktop condition catalog unavailable; using bundled 5etools catalog",error);}
   }
   syncNav();
-  if(state.online && state.paired && !realtimeStopped){
+  if(state.online && state.paired){
     if(!state.stopMap)startMap();
     if(!state.pollChat)startChat();
   }
@@ -5544,21 +5572,9 @@ async function refreshMapOnce() {
   }
 }
 
-// Android and PWA use the same native targeting commands, not independent
-// spell/area calculations. Never send a private creature sheet to the host.
-let desktopHooks=null;
+// Targeting commands share Godot's tactical geometry; private creature data
+// stays in the PWA and never goes to the board.
 async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken='',companionSource=null){
-  if(desktopHooks?.cast){
-    await flushPendingFields();
-    const result=await desktopHooks.cast({casterId,selection,requestedLevel,payment});
-    if(companionSource?.rule?.grant_kind==='spell_effect'){
-      const editor=state.editor&&state.creatureId===casterId?state.editor:await openCreatureEditor(casterId);
-      await editor.update(companionSpellEffectPatch(editor.read(),companionSource.rule,selection.id));
-    }
-    if(companionSource)
-      await summonSpellCompanion(casterId,companionSource,companionSource);
-    return result;
-  }
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
   const stored=await loadCreature(casterId);
   if(!stored)throw Error("Scheda locale non trovata.");
@@ -5821,11 +5837,8 @@ function rollDieResultMarkup(outcome){
    '<div class="sheet-roll-dice-group"><span class="sheet-roll-dice-label">'+esc(part.notation)+'</span>'+
    '<div class="sheet-roll-dice-values">'+(part.kind==='flat'?
      '<span class="sheet-roll-die-value">'+esc(part.notation)+'</span>':
-     (part.rolls||[]).map((n,i)=>{
-       const reroll=(part.rerolls||[]).find(row=>row.index===i);
-       return '<span class="sheet-roll-die-value">'+esc(n)+
-         (reroll?'<small title="Ritiro automatico">'+esc(reroll.previous+'→'+reroll.next)+'</small>':'')+'</span>';
-     }).join(''))+'</div></div>').join('')+'</div>';
+     (part.rolls||[]).map(n=>
+       '<span class="sheet-roll-die-value">'+esc(n)+'</span>').join(''))+'</div></div>').join('')+'</div>';
 }
 function chosenRollBonuses(dialog){
  return [...(dialog.usedRollBonuses||[])];
@@ -7386,7 +7399,11 @@ async function handleAction(target){
     if(source.dataset.magicTool){state.sheetPopup='';app.querySelector('#sheet-context-dialog')?.close?.();}
     await handleAction(source);return;
   }
-  if(act==='catalog-close'){
+  if(act==='catalog-source-local'||act==='catalog-source-5etools'){
+     state.catalogEmbedMode=act==='catalog-source-local'?'local':'5etools';
+     await render();return;
+   }
+   if(act==='catalog-close'){
     closeDialog(app.querySelector('#catalog-detail-dialog'),{remove:true});
     state.catalogSelected=-1;return;
   }
@@ -7649,7 +7666,7 @@ async function handleAction(target){
     const plan=spellCastPlan(creature,selection,0,calculated,'auto');
     target.disabled=true;
     try{
-      if(desktopHooks?.cast||(state.paired&&state.online)){
+      if(state.paired&&state.online){
         await startTargetedCast(creature.id,structuredClone(selection),0,'auto');
       }else{
         if(Object.keys(plan.patch).length)await patch(plan.patch);
@@ -7798,7 +7815,7 @@ async function handleAction(target){
     const [payment,levelText]=choice.split(':');const level=Number(levelText);
     if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)
       throw Error('Risorsa di lancio non valida.');
-    if(desktopHooks?.cast||(state.paired&&state.online)){
+    if(state.paired&&state.online){
       app.querySelector('#action-cast-dialog')?.close();
       await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
         companionSource?{...companionSource,spell_id:selection.id,rule:companion.rule,
@@ -7988,7 +8005,10 @@ async function handleAction(target){
       String(row.id)===attackId&&
       String(row.damage||'').replace(/\s+/g,'')===formula.replace(/\s+/g,''));
     const attackOrigin=attackGrantOrigin(calculated,attackId);
-    const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
+    const sourceAttack=attack?{...attack,origin_id:attackOrigin,
+      // Numeric conditional bonuses have already been applied to attack.damage.
+      // Preserve their verified sources for separate damage-type-matched terms.
+      damage_bonus_components:calculated.roll_components?.['attack_damage:'+attackId]||[]}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
     const bonusTarget=actionId?'action_damage:'+actionId:attackId?'attack_damage:'+attackId:'spell_damage';
     const bonuses=rollOptionalDice(creature,calculated,[
@@ -8001,11 +8021,6 @@ async function handleAction(target){
       bonuses,creatureId:creature.id||'',damageFormula:formula,damageLabel:label,damageType:type});
     dialog.dataset.damageAttackId=attackId;
     dialog.rollAttack=sourceAttack;
-    dialog.damageRerolls=sourceAttack?.damage_rerolls||[];
-    // Only the original weapon damage dice can be rerolled, never extra dice.
-    dialog.damageRerollDiceCount=[...String(sourceAttack?.damage_base_formula||'')
-      .matchAll(/([1-9]\d*)d(?:2|3|4|6|8|10|12|20|100)/gi)]
-      .reduce((sum,match)=>sum+Number(match[1]),0);
     dialog.renderRollFormula=()=>{dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
         [...damageRollTerms(formula,type,dialog.rollAttack).segments,...[...chosenRollBonuses(dialog),...(dialog.postRollBonuses||[])].map(rollBonusTerm)],esc);};
     return;
@@ -8355,10 +8370,7 @@ async function handleAction(target){
         const chosen=chosenRollBonuses(dialog);
         const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>
           Object.hasOwn(row,'flat_bonus')?(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice).join('');
-        const threshold=dialog.dataset.rollKind==='damage'?
-          Math.max(0,...(dialog.damageRerolls||[]).map(row=>Number(row.reroll_at_most)||0)):0;
-        const outcome=rollBattleDamage(fullFormula,randomDie,{
-          rerollAtMost:threshold,rerollDiceCount:dialog.damageRerollDiceCount||0});
+        const outcome=rollBattleDamage(fullFormula,randomDie);
         const featureTarget=dialog.dataset.featureRollTarget||'';
         state.roll={...outcome,label:(featureTarget?'Tiro capacità · ':'Danni · ')+dialog.dataset.damageLabel+
           (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName(),
@@ -10086,7 +10098,6 @@ async function handleSubmit(form){
     const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
     acceptSession(pairedSession);
     serverBackups.schedule();
-    realtimeStopped=false;
     state.paired=true;state.online=true;
     state.messages=[];state.after="";state.tokenId="";
     // Pairing codes are one-time. A momentary map failure must not turn a
@@ -10460,12 +10471,16 @@ function listen(){
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.matches('[data-hp-autosave]')){
-      clearTimeout(pendingFieldTimers.get(target));
+      // Commit current and temporary HP as one draft: independent timers
+      // can race and restore a stale value from the other field.
+      const field=target.closest('#hp-adjust-dialog')
+        ?.querySelector('[data-hp-autosave="current_hp"]')||target;
+      clearTimeout(pendingFieldTimers.get(field));
       const editor=state.editor;
-      pendingFieldTimers.set(target,setTimeout(()=>{
-        pendingFieldTimers.delete(target);
-        if(target.isConnected&&state.editor===editor)
-          trackFieldWrite(target).catch(error=>message(errorMessage(error),true));
+      pendingFieldTimers.set(field,setTimeout(()=>{
+        pendingFieldTimers.delete(field);
+        if(field.isConnected&&state.editor===editor)
+          trackFieldWrite(field).catch(error=>message(errorMessage(error),true));
       },500));
       return;
     }
@@ -10679,7 +10694,6 @@ function listen(){
   });
 }
 // Allows tests and future app lifecycle handlers to release polling resources.
-export function stopRealtime() { realtimeStopped=true;stopSubscriptions(); }
 
 // The public 5etools catalog ships with the PWA and is precached. Load it
 // after first paint so an offline desktop never delays the creature archive.
@@ -10710,18 +10724,7 @@ window.addEventListener("message", event => {
   if(event.origin===location.origin && event.data?.type==="OPEN_CHAT")
     void openChatFromNotification().catch(error=>message(errorMessage(error),true));
 });
-// Desktop-only callers reuse the same editor and its pending-write barrier.
-export const desktopSheetSession={
-  configure(hooks){desktopHooks=hooks;},
-  currentId:()=>state.creatureId,
-  flush:flushPendingFields,
-  notify:message,
-  showLibrary:()=>navigate('library'),
-  async exportArchive(){await flushPendingFields();return exportCreatureArchive();},
-  async open(id){await flushPendingFields();state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await refreshCharacterHomebrewOptions();await render();}
-};
 export async function mount(){
-  realtimeStopped=false;
   const openChatOnMount=new URLSearchParams(location.search).get("open")==="chat";
   if(openChatOnMount)history.replaceState(history.state,"",location.pathname);
   listen();
@@ -10742,8 +10745,7 @@ export async function mount(){
   }catch(error){console.warn('Cronologia chat locale non disponibile',error);}
   await render();
   if(openChatOnMount&&!qrCode)void openChatFromNotification().catch(error=>message(errorMessage(error),true));
-  if(typeof globalThis.vttDesktopSaveFile!=='function')
-    void serverBackups.start();
+  void serverBackups.start();
   void loadBundledConditionCatalog();
   // Idle-only background prefetch: never gate the library, sheet or pairing.
   // The service worker also caches the complete catalog for later offline use.
