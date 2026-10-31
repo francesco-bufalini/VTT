@@ -6739,3 +6739,15 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  height:0!important;margin:0;border:0;border-radius:0;
  background:#f4eee3
 }
+
+/* One gold homebrew control beside inventory search; no per-card add controls. */
+.inventory-search-row{display:flex;align-items:stretch;gap:8px;min-width:0}
+.inventory-search-row>.inventory-global-search{flex:1 1 auto;width:auto;min-width:0;margin:0}
+.inventory-quick-homebrew-add{display:grid;place-items:center;flex:0 0 46px;min-height:46px;
+ border:1px solid #b68d555d;border-radius:10px;background:#5d432e6b;color:#e4c695;cursor:pointer}
+.inventory-quick-homebrew-add .vtt-action-glyph{width:23px;height:23px;color:inherit}
+.inventory-quick-homebrew-add:hover{border-color:#f0c68c;background:#7654358a}
+.inventory-quick-homebrew-add:focus-visible{outline:2px solid #ffd99e;outline-offset:2px}
+/* Header SVGs and generated icons use the same gold as the Wild Shape paw. */
+.topbar .header-icon-button :is(svg,.vtt-action-glyph){color:var(--header-icon-gold)}
+.play-battle-attack-expanded>p{white-space:pre-line}
