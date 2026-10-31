@@ -6437,3 +6437,87 @@ html:has(dialog[open]) #sheet-play-view .inventory-bulk-bar.vtt-selection-toolba
  .session-connection-state{padding:4px 6px;font-size:10px}
  .session-server-name{font-size:12px}
 }
+
+
+/* Catalogo: a search field, type filter and an unboxed continuous list. */
+#app[data-page="catalog"]{
+ padding:8px 12px calc(96px + env(safe-area-inset-bottom))
+}
+#app[data-page="catalog"] .catalog-screen{display:flex;flex-direction:column;gap:9px;min-width:0}
+.catalog-toolbar{display:flex;align-items:stretch;gap:8px;width:100%;min-width:0}
+.catalog-search-wrap{
+ display:flex;align-items:center;gap:7px;flex:1;min-width:0;margin:0;
+ padding:0 10px;border:1px solid #97744b8a;border-radius:9px;
+ background:#241d1a;color:#e4c695
+}
+.catalog-search-wrap>.vtt-action-glyph{flex:0 0 19px;width:19px;height:19px}
+#app[data-page="catalog"] .catalog-search-wrap #catalog-search{
+ flex:1;min-width:0;width:100%;height:42px;min-height:42px!important;
+ padding:7px 0;border:0!important;border-radius:0;background:transparent!important;
+ outline:0;box-shadow:none;font-size:14px
+}
+.catalog-search-wrap:focus-within{outline:2px solid #e4c695;outline-offset:1px}
+#app[data-page="catalog"] #catalog-category{
+ flex:0 0 min(40vw,166px);min-width:115px;width:min(40vw,166px);
+ min-height:42px!important;height:42px;padding:6px 26px 6px 9px;
+ border:1px solid #97744b8a;border-radius:9px;
+ font-size:12px;background:#29201c;color:#f1d7ab
+}
+#app[data-page="catalog"] #catalog-results{
+ margin:0;max-height:none;overflow:visible;display:flex;
+ flex-direction:column;gap:0;min-width:0
+}
+#app[data-page="catalog"] .catalog-entry{
+ display:flex;align-items:center;gap:10px;width:100%;margin:0;
+ min-height:43px!important;padding:9px 7px;
+ border:0;border-bottom:1px solid #9b76474f;border-radius:0;
+ background:transparent!important;box-shadow:none;text-align:left;
+ font:600 13px/1.35 system-ui,sans-serif;color:#f1ddbc
+}
+#app[data-page="catalog"] .catalog-entry:hover,
+#app[data-page="catalog"] .catalog-entry:focus-visible{
+ background:#a17a4930!important
+}
+#app[data-page="catalog"] .catalog-entry .tag{
+ padding:3px 7px;font-size:10px;white-space:nowrap
+}
+#app[data-page="catalog"] .vtt-results-footer{margin:12px 0 0}
+dialog.catalog-detail-dialog{
+ width:min(580px,calc(100vw - 24px));max-height:min(88dvh,850px);
+ padding:0;overflow:hidden;border-radius:13px
+}
+.catalog-detail-dialog .vtt-popup-heading{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ margin:0;padding:13px 16px;border-bottom:1px solid #a8875658
+}
+.catalog-detail-dialog .vtt-popup-heading h2{
+ flex:1;min-width:0;margin:0;font-size:18px;overflow-wrap:anywhere
+}
+.catalog-detail-dialog .catalog-detail-body{
+ max-height:calc(88dvh - 60px);padding:15px 16px 20px;
+ overflow-y:auto;overscroll-behavior:contain
+}
+.catalog-detail-dialog .catalog-description{
+ max-height:none;overflow:visible;margin:0;
+ white-space:pre-wrap;overflow-wrap:anywhere;
+ font-size:13px;line-height:1.55;color:#e7d8c1
+}
+.catalog-detail-dialog .catalog-benefits{
+ margin:15px 0 0;padding:13px 0 0;border-top:1px solid #a887564b
+}
+.catalog-detail-dialog .catalog-benefits h3{margin:0 0 9px;font-size:14px;color:#efc98c}
+.catalog-detail-dialog .catalog-benefits ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.catalog-detail-dialog .catalog-benefits li{display:grid;gap:3px;font-size:12px;line-height:1.45}
+.catalog-detail-dialog .catalog-benefits li strong{color:#f2d3a0}
+.catalog-detail-dialog .catalog-benefits li span{white-space:pre-wrap;overflow-wrap:anywhere}
+dialog.catalog-create{
+ width:min(560px,calc(100vw - 24px));max-height:87dvh;
+ margin:auto;padding:12px;overflow-y:auto
+}
+dialog.catalog-create .catalog-create-close{display:flex;justify-content:flex-end;margin:0 0 4px}
+dialog.catalog-create .panel{margin:0;padding:11px;border:0;box-shadow:none}
+@media(max-width:350px){
+ #app[data-page="catalog"]{padding-left:7px;padding-right:7px}
+ #app[data-page="catalog"] #catalog-category{flex-basis:121px;width:121px}
+ .catalog-toolbar{gap:5px}
+}
