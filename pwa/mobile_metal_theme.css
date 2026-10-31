@@ -6472,24 +6472,27 @@ html:has(dialog[open]) #sheet-play-view .inventory-bulk-bar.vtt-selection-toolba
  padding:8px 12px calc(96px + env(safe-area-inset-bottom))
 }
 #app[data-page="catalog"] .catalog-screen{display:flex;flex-direction:column;gap:9px;min-width:0}
-.catalog-toolbar{display:flex;align-items:stretch;gap:8px;width:100%;min-width:0}
+.catalog-toolbar{
+ display:flex;flex-wrap:nowrap;align-items:center;gap:7px;width:100%;min-width:0
+}
 .catalog-search-wrap{
- display:flex;align-items:center;gap:7px;flex:1;min-width:0;margin:0;
- padding:0 10px;border:1px solid #97744b8a;border-radius:9px;
+ display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;
+ gap:7px;flex:1 1 auto;min-width:0;height:38px;min-height:38px;margin:0;
+ padding:0 9px;border:1px solid #97744b8a;border-radius:8px;
  background:#241d1a;color:#e4c695
 }
 .catalog-search-wrap>.vtt-action-glyph{flex:0 0 19px;width:19px;height:19px}
 #app[data-page="catalog"] .catalog-search-wrap #catalog-search{
- flex:1;min-width:0;width:100%;height:42px;min-height:42px!important;
- padding:7px 0;border:0!important;border-radius:0;background:transparent!important;
- outline:0;box-shadow:none;font-size:14px
+ flex:1 1 auto;min-width:0;width:100%;height:36px;min-height:36px!important;
+ padding:5px 0;border:0!important;border-radius:0;background:transparent!important;
+ outline:0;box-shadow:none;font-size:13px
 }
 .catalog-search-wrap:focus-within{outline:2px solid #e4c695;outline-offset:1px}
 #app[data-page="catalog"] #catalog-category{
- flex:0 0 min(40vw,166px);min-width:115px;width:min(40vw,166px);
- min-height:42px!important;height:42px;padding:6px 26px 6px 9px;
- border:1px solid #97744b8a;border-radius:9px;
- font-size:12px;background:#29201c;color:#f1d7ab
+ flex:0 0 clamp(88px,24vw,108px);min-width:0;max-width:108px;
+ min-height:36px!important;height:36px;padding:4px 20px 4px 7px;
+ border:1px solid #97744b8a;border-radius:7px;
+ font-size:11px;background:#29201c;color:#f1d7ab
 }
 #app[data-page="catalog"] #catalog-results{
  margin:0;max-height:none;overflow:visible;display:flex;
@@ -6546,7 +6549,7 @@ dialog.catalog-create .catalog-create-close{display:flex;justify-content:flex-en
 dialog.catalog-create .panel{margin:0;padding:11px;border:0;box-shadow:none}
 @media(max-width:350px){
  #app[data-page="catalog"]{padding-left:7px;padding-right:7px}
- #app[data-page="catalog"] #catalog-category{flex-basis:121px;width:121px}
+ #app[data-page="catalog"] #catalog-category{flex-basis:88px;width:88px}
  .catalog-toolbar{gap:5px}
 }
 
@@ -6687,4 +6690,39 @@ dialog.catalog-create .panel{margin:0;padding:11px;border:0;box-shadow:none}
   #app[data-page="catalog"] .catalog-source-bar{gap:5px}
   #app[data-page="catalog"] .catalog-source-bar .play-button{padding:6px 8px;font-size:11px}
   #app[data-page="catalog"] .catalog-web-frame{height:calc(100dvh - 256px)}
+}
+
+/* The embedded 5etools site owns the entire viewport below its two-button bar;
+   the host document must not receive scrolling gestures in this mode. */
+body.catalog-web-mode{height:100dvh;overflow:hidden}
+body.catalog-web-mode .app-shell{
+ width:100%;max-width:none;height:100dvh;min-height:0;overflow:hidden
+}
+body.catalog-web-mode #mobile-tabs{display:none!important}
+body.catalog-web-mode #app[data-page="catalog"]{
+ display:flex;flex:1 1 auto;flex-direction:column;
+ height:0;min-height:0;overflow:hidden;padding:0!important;margin:0
+}
+body.catalog-web-mode #app[data-page="catalog"] .catalog-web{
+ display:flex;flex:1 1 auto;flex-direction:column;
+ height:100%;min-height:0;width:100%;gap:0
+}
+body.catalog-web-mode #app[data-page="catalog"] .catalog-web-toolbar{
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;
+ flex:0 0 auto;width:100%;min-height:calc(52px + env(safe-area-inset-top));
+ padding:calc(5px + env(safe-area-inset-top)) 12px 5px;margin:0;
+ background:linear-gradient(180deg,#413027,#241c1b);
+ border-bottom:1px solid #a27b4a77
+}
+body.catalog-web-mode .catalog-web-toolbar .play-button{
+ flex:0 0 auto;min-height:40px;white-space:nowrap
+}
+body.catalog-web-mode .catalog-web-toolbar .catalog-web-back{
+ display:grid;place-items:center;width:42px;min-width:42px;height:40px;
+ padding:0;font:500 29px/1 Georgia,serif
+}
+body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
+ flex:1 1 auto;display:block;width:100%;min-height:0;
+ height:0!important;margin:0;border:0;border-radius:0;
+ background:#f4eee3
 }
