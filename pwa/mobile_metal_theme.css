@@ -1642,6 +1642,25 @@ input:disabled{opacity:.75;cursor:default}
 .scroll-creator-fields select:disabled{opacity:.55}
 .scroll-creator-fields .actions{display:flex;justify-content:flex-end;margin-top:4px}
 .scroll-creator-fields .actions .btn{min-height:44px;padding:9px 17px}
+#sheet-context-dialog[data-context="scroll-create"] .scroll-spell-results{
+ display:block;max-height:min(34dvh,330px);overflow-y:auto;overscroll-behavior:contain;
+ border:1px solid #97764b77;border-radius:10px;-webkit-overflow-scrolling:touch;
+}
+.scroll-spell-results .scroll-spell-choice{
+ display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;
+ text-align:left;padding:9px 11px;background:transparent;color:inherit;border:0;
+ border-bottom:1px solid #97764b42;border-radius:0;cursor:pointer;min-height:48px;
+}
+.scroll-spell-results .scroll-spell-choice:last-of-type{border-bottom:0}
+.scroll-spell-results .scroll-spell-choice.is-selected,
+.scroll-spell-results .scroll-spell-choice:focus-visible{background:#97764b38;outline:1px solid #c69e68}
+.scroll-spell-choice .inventory-search-result-copy{display:grid;gap:3px;min-width:0}
+.scroll-spell-choice small{font-size:11px;color:#ceb58e}
+.scroll-spell-picked{border:1px solid #97764b66;border-radius:10px;padding:10px 12px;min-width:0}
+.scroll-spell-picked-title{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.scroll-spell-description{max-height:150px;overflow-y:auto;white-space:pre-wrap;overflow-wrap:anywhere;
+ font-size:12px;line-height:1.45;margin-top:6px}
+
 /* Active privilege benefits remain readable in narrow condition cards. */
 .feature-effect-summary{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.45;margin-top:6px}
 #class-feature-dialog label,#class-feature-dialog p,.miniature-dialog p{overflow-wrap:anywhere}
