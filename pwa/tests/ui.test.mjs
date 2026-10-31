@@ -322,7 +322,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
     if(url==='/catalog/spells.json'||url==='/catalog/spells/selected')return referenceCatalogFetch(url,options);
     if(url==="/api/status")return new Response(JSON.stringify({protocol:1,desktop_online:true,device_name:"DRAGON-SERVER"}),{status:200});
     if(url==="/api/pair")return new Response(JSON.stringify({token:"a".repeat(64)}),{status:200});
-    if(url==="/api/session")return new Response(JSON.stringify({protocol:1,session:"3",mobile_protocol:3}),{status:200});
+    if(url==="/api/session")return new Response(JSON.stringify({protocol:1,session:"3",mobile_protocol:3,device_name:"DRAGON-SERVER"}),{status:200});
     if(url==="/api/map")return new Response(JSON.stringify({version:1,mobile_protocol:3,
       tokens:[{id:"token_1",name:"Guardiano",free:false,conditions:[]}],
       combat:{active:true,round:2,active_index:0,entries:[{name:"Guardiano",token_id:"token_1",initiative:12}]}}),{status:200});
