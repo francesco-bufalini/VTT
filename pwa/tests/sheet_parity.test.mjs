@@ -55,7 +55,7 @@ test('legacy class becomes editable without losing primary class or subclass ref
  assert.equal(patch.level,7);
  assert.equal(patch.class_id,'wizard');
  assert.equal(nativeRowPatch({...c,...patch},'classes',1,'level',3).level,8);
- assert.throws(()=>nativeRowPatch({...c,...patch},'classes',1,'level',19),/20/);
+ assert.equal(nativeRowPatch({...c,...patch},'classes',1,'level',21).level,26);
 });
 test('Info derives species creature type from references, including implicit Humanoid and subraces',()=>{
  const races=[{id:'elf',name:'Elf',source:'PHB'},
@@ -244,7 +244,7 @@ test('primary class level can be edited but total is recomputed and cannot be ed
  assert.equal(patch.classes[0].level,7);
  assert.equal(patch.level,9);
  assert.equal(c.classes[0].level,4);
- assert.throws(()=>identityPatch(c,'primary_class_level',19),/somma dei livelli/);
+ assert.equal(identityPatch(c,'primary_class_level',21).level,23);
  assert.throws(()=>identityPatch(c,'level',10),/calcolato automaticamente/);
  const html=nativeSection(c,'info',{field:(name,key,value)=>'<input data-field="'+key+'" value="'+value+'">',
    area:()=>'',panel:(_title,body)=>body,catalogs:{},calculated:{stats:{},values:{}}});
