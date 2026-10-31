@@ -1,3 +1,4 @@
+import {applyDistanceUnits} from './distance_units.js';
 // Shared, deliberately small PWA presentation primitives.
 // Keep feature state in its owning view; these helpers only manage DOM/UI.
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -8,6 +9,7 @@ export function openDialog(dialog,{removeOnClose=false}={}){
     dialog.dataset.vttRemoveOnClose='true';
     dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   }
+  applyDistanceUnits(dialog);
   if(!dialog.open){
     // Each view owns its initial values, including intentionally empty requests.
     if(typeof dialog.showModal==='function')dialog.showModal();

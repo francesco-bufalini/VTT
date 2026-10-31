@@ -1,3 +1,4 @@
+import {formatDistance} from './distance_units.js';
 import {hitDicePools,spendTrackerUses} from './character_core.js';
 import {canLevelUp} from './character_core.js';
 import {isPortraitDataUrl} from './character_portrait.js';
@@ -311,6 +312,7 @@ export function sheetRollChatFields(result){
 // only the outputs, leaving focused editors and pending user input in place.
 export function calculatedValue(data,target,{signed:sign=false,suffix=""}={}){
   const value=data?.values?.[target];
+  if(suffix.trim()==='ft')return value==null?'—':formatDistance(value);
   return (sign?signed(value):value??"—")+suffix;
 }
 export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target,scoreAbility='',showBonus=true}={}){

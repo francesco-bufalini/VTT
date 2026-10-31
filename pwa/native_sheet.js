@@ -1,3 +1,4 @@
+import {formatDistance,distanceInputValue,distanceUnitLabel,getDistanceUnit} from './distance_units.js';
 import {hitDicePools,minimumXpForCreature,experienceFloorPatch,canLevelUp} from './character_core.js';
 import {identityEntries} from './identity_aliases.js';
 // Native-style sheet sections and mutations of the portable native schema.
@@ -812,8 +813,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         ' · Resistenza a '+esc(row.damage_type)).join(' · ')+'</p>':'')+
    panel('Movimento',
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
-    '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+
-    ((c.kind==='monster'||c.variant_rules_kind==='monster')?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):''),
+    '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',formatDistance(calculated.stats?.jumps?.long??0)],['In lungo · da fermo',formatDistance((calculated.stats?.jumps?.long??0)/2)],['In alto · con rincorsa',formatDistance(calculated.stats?.jumps?.high??0)],['In alto · da fermo',formatDistance((calculated.stats?.jumps?.high??0)/2)]])+
+    ((c.kind==='monster'||c.variant_rules_kind==='monster')?field('Camminata base ('+distanceUnitLabel()+')','speed_base',distanceInputValue(c.speed_base??c.speed??30),'number','min="0" max="99999" step="'+(getDistanceUnit()==='meters'?'any':'1')+'" data-distance-unit-input'):''),
     'battle-movement-panel')+
    resources+
    panel('Attacchi disponibili',attacks,'battle-attacks-panel')+

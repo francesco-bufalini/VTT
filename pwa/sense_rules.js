@@ -1,6 +1,7 @@
 // Typed, source-bound sensory grants: never infer mechanics from trait descriptions.
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {resolveOwnedItem,itemBenefitCopies} from './item_controls.js';
+import {formatDistance} from './distance_units.js';
 const arr=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??'').trim().toLowerCase();
 const same=(a,b)=>norm(a)===norm(b);
@@ -8,11 +9,14 @@ export const SENSE_NAMES={normal:'Visione normale',darkvision:'Scurovisione',
  blindsight:'Vista cieca',tremorsense:'Percezione tellurica',truesight:'Vista pura',
  devils_sight:'Vista del diavolo'};
 export const SENSE_OPTIONS=Object.entries(SENSE_NAMES).filter(([key])=>key!=='normal');
-export const senseRange=feet=>Math.round(feet)+' ft · '+Math.round(feet*0.3048)+' m';
+export const senseRange=feet=>formatDistance(feet);
 
 export function senseLightRows(distances={}){
- const result=[{type:'normal',name:'Visione normale',bright:'Linea di vista',
-  dim:'Linea di vista · luce fioca',dark:'Nessuna',magical:'Nessuna'}];
+ // DMG 2014: roughly two miles of outdoor visibility in clear weather, barring obstructions.
+ // This contextual reference is not a universal cap on normal vision.
+ const outdoors=formatDistance(2*5280);
+ const result=[{type:'normal',name:'Visione normale',bright:outdoors+' · all’aperto',
+  dim:outdoors+' · luce fioca',dark:'Nessuna',magical:'Nessuna'}];
  for(const [type,name] of SENSE_OPTIONS){
   const feet=Number(distances[type]||0);
   if(!(feet>0))continue;
