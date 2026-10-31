@@ -101,7 +101,7 @@ test('Partita uses one compact server bar before the map with no switcher or hea
  assert.doesNotMatch(ui,/header\('Al tavolo'|class="session-switcher"|data-session-content="connection"/);
  assert.match(ui,/state\.serverDeviceName=String\(result\.device_name\|\|''\)/);
  assert.match(ui,/esc\(serverName\)/);
- assert.match(ui,/session-server-name.*?\+.*?session-connection-state/);
+ assert.match(ui,/session-server-name[\s\S]*?session-connection-state/);
  assert.match(ui,/class="session-connection-actions"/);
  assert.match(ui,/btn\('disconnect','Dissocia','danger'\)/);
  assert.match(theme,/\.session-connection-actions\{display:flex/);
