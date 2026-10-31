@@ -2008,6 +2008,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      String(row.id||row.ability_id||row.name)===requested)||
     (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
    if(!currentAbility)throw Error('Capacità non più disponibile.');
+   if(currentAbility.available===false)throw Error('Requisiti di equipaggiamento non soddisfatti.');
    if(currentAbility.infusion_action){
      const liveId=requested.startsWith('activated:')?requested.slice('activated:'.length):requested;
      const active=abilitiesForCreature(current,state.abilityCatalog||[],fresh)
@@ -7059,6 +7060,7 @@ async function handleAction(target){
       String(row.id||row.ability_id||row.name)===requested)||
       (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
     if(!ability)throw Error('Capacità non disponibile per questa creatura.');
+    if(ability.available===false)throw Error('Requisiti di equipaggiamento non soddisfatti.');
     // Generic typed attack abilities open the same unified d20 popup as
     // ordinary weapons. No special-case code is needed for a specific race.
     if(ability.mode==='spell_imprint'){

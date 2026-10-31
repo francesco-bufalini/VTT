@@ -3,8 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits,normalizeSelectionRecord,powerStateActivationPatch} from '../power_selection.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '../spell_selection.js';
+import {actionEntries,battleActionPanels} from '../action_economy.js';
+import {battleResourcePowers} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement} from '../item_controls.js';
+import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={powerSelections:read('power_selections'),optionalFeatureProgressions:read('optional_feature_progressions')};
@@ -178,4 +181,63 @@ test('real Archery catalog entry applies only while the learned style is active 
  r={...r,...powerApplicationPatch(r,c,combined,id,option,false)};
  c=calculateSheet(r,completeCatalogs);
  assert.equal(hit(c),before,'Unapplying the same style withdraws the bonus');
+});
+
+test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
+ const cases=[
+  {className:'Paladin',id:'optional:class:phb:paladin:fs-p',option:'optional:tce:blessed-warrior',ability:'cha',list:'Cleric'},
+  {className:'Ranger',id:'optional:class:phb:ranger:fs-r',option:'optional:tce:druidic-warrior',ability:'wis',list:'Druid'}
+ ];
+ for(const example of cases){
+  const spell={id:'test_'+example.list.toLowerCase()+'_cantrip',name:'Test cantrip',source:'PHB',level:0,classes:[example.list]};
+  const wrong={...spell,id:'wrong_spell',classes:['Wizard']};
+  const definitions={...completeCatalogs,spells:[spell,wrong]};
+  let r={...record(),abilities:{str:10,dex:14,con:12,int:10,wis:16,cha:16},
+   classes:[{name:example.className,source:'PHB',level:2}]};
+  let c=calculateSheet(r,definitions);
+  r={...r,...powerSelectionPatch(r,c,combined,example.id,'learned',example.option)};
+  c=calculateSheet(r,definitions);
+  assert(!c.origin_choices.some(choice=>choice.id.startsWith('selection:')),
+   'Knowing a style without applying it must not grant free cantrip choices');
+  r={...r,...powerApplicationPatch(r,c,combined,example.id,example.option,true)};
+  c=calculateSheet(r,definitions);
+  const choice=c.origin_choices.find(row=>row.id.startsWith('selection:')&&row.filter.includes('class='+example.list.toLowerCase()));
+  assert(choice,'The applied option must show in the existing origin spell chooser');
+  assert.equal(choice.count,2);
+  assert.equal(choice.spellcasting_ability,example.ability);
+  assert.equal(originChoiceMatches(choice,spell).matches,true);
+  assert.equal(originChoiceMatches(choice,wrong).matches,false);
+  r={...r,...applyOriginSpellChoice(r,choice,spell)};
+  c=calculateSheet(r,definitions);
+  assert(c.origin_spells.some(row=>row.spell_id===spell.id&&row.payment_mode==='free'&&row.cantrip));
+  assert(sessionSpellEntries(r,c,definitions.spells).some(row=>row.id===spell.id&&row.caster_ability===example.ability));
+  assert.equal(c.origin_choices.find(row=>row.id===choice.id).selected.length,1);
+  r={...r,...powerApplicationPatch(r,c,combined,example.id,example.option,false)};
+  assert.equal(r.origin_spell_grants.length,1,'Unapplying must not erase previously learned choices');
+  c=calculateSheet(r,definitions);
+  assert(!c.origin_spells.some(row=>row.spell_id===spell.id),'An unapplied style cannot still cast its granted cantrips');
+  assert(!c.origin_choices.some(row=>row.id===choice.id));
+ }
+});
+
+test('equipment-conditioned powers stay in their existing Resources group while locked',()=>{
+ const grant={id:'selection:protection',origin_id:'feature:class|phb|fighter|fighting-style',
+  name:'Protection',action_type:'reaction',type:'Capacità',
+  requirements:{equipment:{kind:'shield'}},description:'Reaction while wielding a shield'};
+ const base={rules_version:'2014',inventory:[]};
+ const projection={attacks:[],trackers:[],selection_record:{...base,action_grants:[grant]},equipped_items:[]};
+ const entries=actionEntries(base,projection,[],[],[]);
+ assert.equal(entries.find(row=>row.id===grant.id)?.available,false);
+ const panels=battleActionPanels(base,projection,[],[],[]);
+ assert.equal(panels.abilityEntries.find(row=>row.id===grant.id)?.available,false);
+ assert(battleResourcePowers(projection,panels.abilityEntries)
+  .some(row=>row.classAction?.id===grant.id&&row.classAction.available===false));
+ const shield={id:'sh',name:'Shield',type:'S',custom_item_type:'shield',quantity:1,equipped_slots:['off']};
+ const equipped={...base,inventory:[shield]};
+ const active=battleActionPanels(equipped,{...projection,equipped_items:equippedItemFacts(equipped),
+  selection_record:{...equipped,action_grants:[grant]}},[],[],[]);
+ assert.equal(active.abilityEntries.find(row=>row.id===grant.id)?.available,true);
+ const unequipped={...equipped,inventory:[{...shield,equipped_slots:[]}]};
+ const inactive=battleActionPanels(unequipped,{...projection,selection_record:{...unequipped,action_grants:[grant]}},[],[],[]);
+ assert.equal(inactive.abilityEntries.find(row=>row.id===grant.id)?.available,false);
 });

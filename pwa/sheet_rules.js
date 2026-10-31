@@ -1419,6 +1419,15 @@ function calculateSheetValues(record={},catalogs={}){
   const featMechanics=featMechanicGrants(record,index);
   const featureSpells=arr(classesCatalog?.feature_spells);
   const additional=structuredSpellGrants(record,[...arr(classesCatalog?.additional_spells),...featureSpells],catalogs.spells||[],features,catalogs.spellGrantRules||[],catalogs.speciesPowers?.races||[],safe('proficiency'));
+  // Applied power options can declare a spell choice without inventing a
+  // separate spell picker. Saved choices stay on the creature when unapplied,
+  // but only currently applied selections can grant their spells.
+  const optionChoices=arr(record.origin_spell_choices).filter(row=>row?.id&&row?.filter);
+  const activeChoices=new Set(optionChoices.map(row=>row.id));
+  additional.saved_grants=additional.saved_grants.filter(row=>
+    !String(row.source_choice_id||'').startsWith('selection:')||activeChoices.has(row.source_choice_id));
+  additional.choices.push(...optionChoices.map(choice=>({...choice,
+    selected:additional.saved_grants.filter(row=>row.source_choice_id===choice.id&&!row.disabled)})));
   for(const choice of barbarian.spell_choices)
     if(!additional.choices.some(existing=>existing.origin_id===choice.origin_id&&
       arr(existing.spell_options).some(spell=>choice.spell_options.includes(spell))))

@@ -4694,6 +4694,9 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
 .play-battle-attack-direct-button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .play-battle-unavailable-reason{display:block;margin-top:4px;color:#d9ae82;font:450 11px/1.45 system-ui}
 .play-battle-attack-unavailable{opacity:.82}
+/* Keep unmet equipment-gated powers in place: readable, but visibly locked. */
+.play-battle-attack-unavailable,.play-resource-power--unavailable{opacity:.5;filter:grayscale(1)}
+.play-resource-power--unavailable .play-resource-power-open{cursor:pointer}
 .play-resource-rule--inactive{opacity:1}
 .play-resource-rule--inactive .play-resource-power-open{cursor:pointer}
 .play-resource-rule--inactive .play-resource-power-open small{color:#e2b287}
