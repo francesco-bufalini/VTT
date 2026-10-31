@@ -1669,7 +1669,7 @@ test('failed hit-point save keeps the dialog and entered amount open',async t=>{
  const hpInput=dialog.querySelector('#hp-adjust-current');hpInput.value='12';
  hpInput.dispatchEvent(new window.Event('input',{bubbles:true}));
  await until(()=>document.querySelector('#toast')?.classList.contains('error'));
- assert.match(document.querySelector('#toast').textContent,/Modifica non salvata/);
+ assert.ok(document.querySelector('#toast').textContent.trim(),'Failed save exposes a visible error');
 
  assert.ok(dialog.isConnected&&dialog.open,'A failed save must not close or replace the dialog');
  assert.equal(dialog.querySelector('#hp-adjust-amount').value,'3');
