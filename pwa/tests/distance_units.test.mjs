@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getDistanceUnit,setDistanceUnit,formatDistance,formatGuiDistanceText,
- distanceInputValue,distanceInputFeet,applyDistanceUnits} from '../distance_units.js';
+ distanceInputValue,distanceInputFeet,distanceFieldDisplay,distanceFieldFeet,applyDistanceUnits} from '../distance_units.js';
 import {senseLightRows,senseRange} from '../sense_rules.js';
 import {JSDOM} from 'jsdom';
 
@@ -50,4 +50,17 @@ test('the GUI converts numeric labels but not trait descriptions or input values
   assert.equal(main.querySelector('.trait-description').textContent,'The spell reaches 30 ft.');
   assert.equal(main.querySelector('input').value,'30');
  }finally{setDistanceUnit('feet');dom.window.close();}
+});
+
+// Range inputs use preferred units, while saved item data stays in whole feet.
+test('editable weapon ranges convert both directions with their long-range component',()=>{
+ try{
+  setDistanceUnit('meters');
+  assert.equal(distanceFieldDisplay('30/120'),'9/36');
+  assert.equal(distanceFieldFeet('9/36'),'30/120');
+  assert.equal(distanceFieldDisplay('5'),'1.5');
+  assert.equal(distanceFieldFeet('1,5'),'5');
+  setDistanceUnit('feet');
+  assert.equal(distanceFieldFeet('30/120'),'30/120');
+ }finally{setDistanceUnit('feet');}
 });

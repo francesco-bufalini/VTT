@@ -31,7 +31,7 @@ import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews, stateTraitN
 import { traitBenefitGroups, rollGrantTraitRow } from "./trait_benefits.js";
 import { distributeTraitBenefits } from "./trait_benefit_distribution.js";
 import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
-import {DISTANCE_UNIT_SETTING,getDistanceUnit,setDistanceUnit,distanceInputFeet,applyDistanceUnits} from "./distance_units.js";
+import {DISTANCE_UNIT_SETTING,getDistanceUnit,setDistanceUnit,distanceInputFeet,distanceUnitLabel,distanceFieldDisplay,distanceFieldFeet,applyDistanceUnits} from "./distance_units.js";
 import {applicableSpeciesRollModes} from './species_roll_modes.js';
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
@@ -2843,7 +2843,7 @@ function mountTraitBenefitDialog(){
  const optionList=(options,selected='')=>options.map(([value,label])=>
   '<option value="'+esc(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join('');
  const formSelect=(label,name,options)=>'<label>'+esc(label)+'<select name="'+name+'">'+optionList(options)+'</select></label>';
- const formInput=(label,name,placeholder='',type='text')=>'<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" placeholder="'+esc(placeholder)+'" required></label>';
+ const formInput=(label,name,placeholder='',type='text',extra='')=>'<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" placeholder="'+esc(placeholder)+'" '+extra+' required></label>';
  const kinds=BENEFIT_TYPES,draftKind=state.traitPopupDraftKind||'bonus',draftTarget=state.traitPopupDraftTarget||'';
  const featureRollOptions=(benefitProjection.activatable_abilities||[])
    .filter(row=>featureRollTarget(row)).map(row=>[featureRollTarget(row),'Tiro capacità · '+row.name]);
@@ -2915,7 +2915,7 @@ function mountTraitBenefitDialog(){
    ])+formSelect('Tracker (facoltativo)','tracker_id',trackerOptions)+
      formInput('Costo in utilizzi','tracker_cost','1','number')],
   ['proficiency',formSelect('Categoria','proficiency_kind',PROFICIENCY_KINDS)+formInput('Competenza','key','Es. perception, firearms, elvish')],
-   ['senses',formSelect('Senso','sense_type',SENSE_OPTIONS)+formInput('Portata (ft)','range_feet','Es. 60','number')],
+   ['senses',formSelect('Senso','sense_type',SENSE_OPTIONS)+formInput('Portata ('+distanceUnitLabel()+')','range_feet',getDistanceUnit()==='meters'?'Es. 18':'Es. 60','number','step="any"')],
   ['defenses',formSelect('Difesa','rank',DEFENSE_RANKS)+formSelect('Danno o condizione','key',
     [...DAMAGE_TYPES.map(key=>[key,key]),...['blinded','charmed','deafened','frightened','grappled','paralyzed','petrified','poisoned','prone','restrained','stunned','unconscious'].map(key=>[key,key])])],
   ['resources',formInput('Nome risorsa','name')+formInput('Utilizzi massimi','max','Es. 3','number')+
@@ -3774,9 +3774,9 @@ function inventoryItemDescription(obj,index){
   const localEdit=!isCatalogItem(obj)?'<label>Descrizione<textarea data-item-index="'+index+
     '" data-item-key="description" rows="3">'+esc(obj.description||"")+'</textarea></label>':'';
   const overrides=itemKind(obj)==="weapon"?'<details class="inventory-overrides"><summary>Personalizza copia</summary>'+
-    [['damage','Dadi danno'],['versatile_damage','Danno versatile'],['range','Gittata (ft)'],['bonus_weapon','Bonus magico']].map(([key,label])=>
+    [['damage','Dadi danno'],['versatile_damage','Danno versatile'],['range','Gittata ('+distanceUnitLabel()+')'],['bonus_weapon','Bonus magico']].map(([key,label])=>
       '<label>'+label+'<input data-item-override="'+key+'" data-item-index="'+index+
-      '" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+'</details>':'';
+      '" value="'+esc(key==='range'?distanceFieldDisplay(obj.instance_overrides?.[key]??''):(obj.instance_overrides?.[key]??''))+'"></label>').join('')+'</details>':'';
   const genericVariants=(Array.isArray(obj.option_extensions)?obj.option_extensions:[]).filter(row=>row.generic_variant);
   return '<div class="inventory-description">'+
     '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
@@ -3835,9 +3835,9 @@ function inventoryRow(item,index) {
     '<details><summary>Proprietà della singola copia</summary>'+
     (kind==='weapon'?'<label>Taglia arma<select data-item-override="weapon_size" data-item-index="'+index+'">'+
       [['','Come la creatura'],...WEAPON_SIZES.map(size=>[size,size])].map(([v,label])=>'<option value="'+esc(v)+'" '+((obj.instance_overrides?.weapon_size||'')===v?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>'+
-      [['damage','Dadi danno'],['versatile_damage','Dadi versatile'],['range','Gittata (ft)'],['bonus_weapon','Bonus magico arma']].map(([k,label])=>
-        '<label>'+label+'<input data-item-override="'+k+'" data-item-index="'+index+'" placeholder="'+esc(String(obj[k]??''))+
-          '" value="'+esc(obj.instance_overrides?.[k]??'')+'"></label>').join(''):
+      [['damage','Dadi danno'],['versatile_damage','Dadi versatile'],['range','Gittata ('+distanceUnitLabel()+')'],['bonus_weapon','Bonus magico arma']].map(([k,label])=>
+        '<label>'+label+'<input data-item-override="'+k+'" data-item-index="'+index+'" placeholder="'+esc(k==='range'?distanceFieldDisplay(obj[k]??''):String(obj[k]??''))+
+          '" value="'+esc(k==='range'?distanceFieldDisplay(obj.instance_overrides?.[k]??''):(obj.instance_overrides?.[k]??''))+'"></label>').join(''):
      ['armor','shield'].includes(kind)?
       [['ac','CA base'],['bonus_ac','Bonus CA']].map(([k,label])=>'<label>'+label+
         '<input data-item-override="'+k+'" data-item-index="'+index+'" placeholder="'+esc(String(obj[k]??''))+
@@ -5132,7 +5132,7 @@ async function handleField(target) {
     state.inventoryMenuIndex=-1;await render();return;
   }
   if(target.dataset.itemOverride){
-    await patch({inventory:changeItemOverride(creature.inventory||[],Number(target.dataset.itemIndex),target.dataset.itemOverride,target.value)});
+    await patch({inventory:changeItemOverride(creature.inventory||[],Number(target.dataset.itemIndex),target.dataset.itemOverride,target.dataset.itemOverride==='range'?distanceFieldFeet(target.value):target.value)});
     await render();return;
   }
   if(target.dataset.coinCode){
@@ -8687,6 +8687,8 @@ async function handleAction(target){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     if(!fields||!trait)throw Error('Tratto o campi mancanti');
     const values=Object.fromEntries([...fields.querySelectorAll('[name]')].map(node=>[node.name,node.value]));
+    if(type==='senses'&&String(values.range_feet||'').trim()!=='')
+      values.range_feet=String(Math.round(distanceInputFeet(values.range_feet)));
     let targetInventory=null;
     if(type==='effect_extensions'&&values.target_kind==='item'){
       const index=Number(values.target_item_index),inventory=state.editor.read().inventory||[];

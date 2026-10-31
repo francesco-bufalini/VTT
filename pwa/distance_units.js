@@ -55,3 +55,17 @@ export function applyDistanceUnits(root){
   }
  }
 }
+
+// Editable, typed distance fields have no unit suffix, and are never stored in metres.
+// Weapon ranges may have a pair such as 30/120; invalid strings remain invalid.
+const distanceFieldPattern=/^\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)?$/;
+export function distanceFieldDisplay(value){
+ const text=String(value??'').trim();
+ if(unit!=='meters'||!distanceFieldPattern.test(text))return text;
+ return text.split('/').map(x=>String(Number((Number(x)*FEET_TO_METRES).toFixed(2)))).join('/');
+}
+export function distanceFieldFeet(value){
+ const text=String(value??'').trim().replaceAll(',','.');
+ if(unit!=='meters'||!distanceFieldPattern.test(text))return text;
+ return text.split('/').map(x=>String(Math.round(Number(x)/FEET_TO_METRES))).join('/');
+}
