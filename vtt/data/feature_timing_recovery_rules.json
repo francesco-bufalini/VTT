@@ -402,7 +402,8 @@
       "target_range_feet": 60,
       "exclude_self": true,
       "detail": "Bardic Inspiration (2024): scegli una creatura diversa da te entro 60 ft in grado di percepire la tua ispirazione. Consuma un utilizzo confermato; l'applicazione del dado rimane manuale.",
-      "priority": 0
+      "priority": 0,
+      "dice_ref": "bardic_inspiration_die"
     },
     {
       "id": "bard_phb_bardic_inspiration",
@@ -420,7 +421,8 @@
       "target_range_feet": 60,
       "exclude_self": true,
       "detail": "Bardic Inspiration (2014): scegli una creatura diversa da te entro 60 ft in grado di percepire la tua ispirazione. Consuma un utilizzo confermato; l'applicazione del dado rimane manuale.",
-      "priority": 0
+      "priority": 0,
+      "dice_ref": "bardic_inspiration_die"
     },
     {
       "id": "bard_phb_xge_whispers_mantle_capture",

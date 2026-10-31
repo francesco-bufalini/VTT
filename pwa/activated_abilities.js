@@ -53,7 +53,9 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
     // Ability entries retain requirements, feature identity, effect and payment
     // metadata; only spell-specific fields are intentionally excluded.
     const {school,components,level,...rest}=definition;
+    const die=rows(projection.scaling_dice).find(row=>row.id===definition.dice_ref);
     result.push(attachTracker({...rest,action_kind:"ability",origin,origin_id:originId,
+      ...(die?{die:die.dice,die_sides:die.sides}:{}),
       ...(includeUnavailable?{unavailable:!!definition.unavailable||
         inactive(creature,originId)||!!originId&&rows(projection.features)
           .some(f=>f.origin_id===originId&&(f.inactive||f.disabled))}: {})
@@ -101,6 +103,7 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
       tracker_id:action?.tracker_id||tracker?.id||"",
       resource_cost:action?.cost??(tracker?1:0),
       target_mode:action?.target_mode||"",
+      dice_ref:action?.dice_ref||"",
       target_range_feet:action?.target_range_feet||0,
       exclude_self:action?.exclude_self===true,
       description:text(feature.entries??feature.description??"")

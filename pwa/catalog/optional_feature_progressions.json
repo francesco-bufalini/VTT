@@ -1197,9 +1197,24 @@
           "type": "actions",
           "name": "Ambush",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando effettui Furtività o iniziativa e non sei incapacitato, puoi aggiungere il dado superiorità al risultato. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Ambush",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "skill:stealth",
+            "initiative"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando effettui Furtività o iniziativa e non sei incapacitato, puoi aggiungere il dado superiorità al risultato. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra."
         }
       ]
     },
@@ -1471,8 +1486,10 @@
           "name": "Bait and Switch",
           "action_type": "movement",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Nel tuo turno, spendi almeno 5 ft di movimento per scambiarti di posto con una creatura consenziente entro 5 ft, non incapacitata. Aggiungi il dado superiorità alla CA tua oppure sua fino all'inizio del turno successivo. Spostamento e CA manuali. Il dado superiorità va speso e il risultato applicato manualmente."
+          "resource_name": "Superiority Die",
+          "description": "Nel tuo turno, spendi almeno 5 ft di movimento per scambiarti di posto con una creatura consenziente entro 5 ft, non incapacitata. Aggiungi il dado superiorità alla CA tua oppure sua fino all'inizio del turno successivo. Spostamento e CA manuali. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
         }
       ]
     },
@@ -1712,13 +1729,37 @@
           "type": "actions",
           "name": "Brace",
           "action_type": "reaction",
-          "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando una creatura visibile entra nella portata dell'arma da mischia impugnata, effettua un attacco di reazione. Se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "tracker_cost": 0,
+          "description": "Quando una creatura visibile entra nella portata dell'arma da mischia impugnata, effettua un attacco di reazione. Se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità si consuma quando applichi il bonus al tiro.",
           "requirements": {
             "equipment": {
               "kind": "weapon",
               "weapon_type": "melee"
+            }
+          },
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Brace",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
+          "tracker_cost": 1,
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ],
+              "mode": "melee"
             }
           }
         }
@@ -1883,8 +1924,10 @@
           "name": "Commander's Strike",
           "action_type": "bonus",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Durante la tua azione di Attacco, rinuncia a un attacco e usa un'azione bonus per indicare un alleato che ti vede o sente. L'alleato può usare la sua reazione per attaccare e aggiungere il dado superiorità al danno se colpisce. Il dado superiorità va speso e il risultato applicato manualmente."
+          "resource_name": "Superiority Die",
+          "description": "Durante la tua azione di Attacco, rinuncia a un attacco e usa un'azione bonus per indicare un alleato che ti vede o sente. L'alleato può usare la sua reazione per attaccare e aggiungere il dado superiorità al danno se colpisce. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
         }
       ]
     },
@@ -1910,9 +1953,25 @@
           "type": "actions",
           "name": "Commanding Presence",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando effettui una prova di Carisma (Intimidire, Intrattenere o Persuasione), aggiungi il dado superiorità al risultato. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Commanding Presence",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "skill:intimidation",
+            "skill:performance",
+            "skill:persuasion"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando effettui una prova di Carisma (Intimidire, Intrattenere o Persuasione), aggiungi il dado superiorità al risultato. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra."
         }
       ]
     },
@@ -2016,9 +2075,32 @@
           "type": "actions",
           "name": "Disarming Attack",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Dopo aver colpito con un attacco con arma, aggiungi il dado superiorità al danno. Il bersaglio deve superare un TS Forza contro la CD delle manovre o lasciare cadere un oggetto che impugna. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Disarming Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Dopo aver colpito con un attacco con arma, aggiungi il dado superiorità al danno. Il bersaglio deve superare un TS Forza contro la CD delle manovre o lasciare cadere un oggetto che impugna. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },
@@ -2062,9 +2144,32 @@
           "type": "actions",
           "name": "Distracting Strike",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; il prossimo tiro per colpire di un'altra creatura contro il bersaglio ha vantaggio prima dell'inizio del tuo prossimo turno. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Distracting Strike",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; il prossimo tiro per colpire di un'altra creatura contro il bersaglio ha vantaggio prima dell'inizio del tuo prossimo turno. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },
@@ -2501,8 +2606,10 @@
           "name": "Evasive Footwork",
           "action_type": "movement",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Mentre ti muovi, aggiungi il risultato del dado superiorità alla CA fino a quando smetti di muoverti. Il bonus temporaneo non è applicato automaticamente. Il dado superiorità va speso e il risultato applicato manualmente."
+          "resource_name": "Superiority Die",
+          "description": "Mentre ti muovi, aggiungi il risultato del dado superiorità alla CA fino a quando smetti di muoverti. Il bonus temporaneo non è applicato automaticamente. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
         }
       ]
     },
@@ -2601,9 +2708,32 @@
           "type": "actions",
           "name": "Feinting Attack",
           "action_type": "bonus",
+          "tracker_cost": 0,
+          "description": "Come azione bonus scegli una creatura entro 5 ft. Hai vantaggio al prossimo attacco contro di essa in questo turno; se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Feinting Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Come azione bonus scegli una creatura entro 5 ft. Hai vantaggio al prossimo attacco contro di essa in questo turno; se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },
@@ -2855,9 +2985,32 @@
           "type": "actions",
           "name": "Goading Attack",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Dopo un attacco con arma che colpisce, aggiungi il dado superiorità al danno. Se il bersaglio fallisce un TS Saggezza, ha svantaggio agli attacchi contro creature diverse da te fino alla fine del tuo prossimo turno. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Goading Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Dopo un attacco con arma che colpisce, aggiungi il dado superiorità al danno. Se il bersaglio fallisce un TS Saggezza, ha svantaggio agli attacchi contro creature diverse da te fino alla fine del tuo prossimo turno. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },
@@ -2905,9 +3058,23 @@
           "type": "actions",
           "name": "Grappling Strike",
           "action_type": "bonus",
+          "tracker_cost": 0,
+          "description": "Subito dopo aver colpito con un attacco in mischia nel tuo turno, usa un'azione bonus per tentare di afferrare il bersaglio; aggiungi il dado superiorità alla prova di Atletica. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Grappling Strike",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "skill:athletics"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Subito dopo aver colpito con un attacco in mischia nel tuo turno, usa un'azione bonus per tentare di afferrare il bersaglio; aggiungi il dado superiorità alla prova di Atletica. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra."
         }
       ]
     },
@@ -3311,9 +3478,33 @@
           "type": "actions",
           "name": "Lunging Attack",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Nel tuo turno, quando effettui un attacco con arma da mischia, estendi la portata di 5 ft per quell'attacco. Se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Lunging Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Nel tuo turno, quando effettui un attacco con arma da mischia, estendi la portata di 5 ft per quell'attacco. Se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ],
+              "mode": "melee"
+            }
+          }
         }
       ]
     },
@@ -3361,9 +3552,32 @@
           "type": "actions",
           "name": "Maneuvering Attack",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno. Un alleato che ti vede o sente può usare la reazione per muoversi fino a metà velocità senza provocare attacchi di opportunità dal bersaglio. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Maneuvering Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno. Un alleato che ti vede o sente può usare la reazione per muoversi fino a metà velocità senza provocare attacchi di opportunità dal bersaglio. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },
@@ -3459,9 +3673,32 @@
           "type": "actions",
           "name": "Menacing Attack",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno. Il bersaglio deve superare un TS Saggezza o è spaventato da te fino alla fine del tuo prossimo turno. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Menacing Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno. Il bersaglio deve superare un TS Saggezza o è spaventato da te fino alla fine del tuo prossimo turno. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },
@@ -3782,8 +4019,11 @@
           "name": "Parry",
           "action_type": "reaction",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando subisci danni da un attacco in mischia, puoi usare la reazione per ridurli di un dado superiorità + modificatore di Destrezza. La riduzione dei PF è manuale. Il dado superiorità va speso e il risultato applicato manualmente."
+          "resource_name": "Superiority Die",
+          "description": "Quando subisci danni da un attacco in mischia, puoi usare la reazione per ridurli di un dado superiorità + modificatore di Destrezza. La riduzione dei PF è manuale. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die",
+          "dice_add": "dex_mod"
         }
       ]
     },
@@ -3827,9 +4067,32 @@
           "type": "actions",
           "name": "Precision Attack",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando effettui un tiro per colpire con arma, aggiungi il dado superiorità al tiro, prima o dopo il lancio ma prima che gli effetti dell'attacco siano risolti. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Precision Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_roll"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando effettui un tiro per colpire con arma, aggiungi il dado superiorità al tiro, prima o dopo il lancio ma prima che gli effetti dell'attacco siano risolti. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },
@@ -3916,9 +4179,32 @@
           "type": "actions",
           "name": "Pushing Attack",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; se il bersaglio è Grande o inferiore e fallisce un TS Forza, puoi spingerlo fino a 15 ft. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Pushing Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; se il bersaglio è Grande o inferiore e fallisce un TS Forza, puoi spingerlo fino a 15 ft. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },
@@ -3944,15 +4230,35 @@
           "type": "actions",
           "name": "Quick Toss",
           "action_type": "bonus",
-          "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Come azione bonus, estrai un'arma con proprietà Lancio ed effettua un attacco a distanza con essa; se colpisce, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "tracker_cost": 0,
+          "description": "Come azione bonus, estrai un'arma con proprietà Lancio ed effettua un attacco a distanza con essa; se colpisce, aggiungi il dado superiorità al danno. Il dado superiorità si consuma quando applichi il bonus al tiro.",
           "requirements": {
             "equipment": {
               "kind": "weapon",
               "properties": [
                 "T"
               ]
+            }
+          },
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Quick Toss",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
+          "tracker_cost": 1,
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": "weapon",
+              "mode": "thrown"
             }
           }
         }
@@ -4071,8 +4377,11 @@
           "name": "Rally",
           "action_type": "bonus",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Come azione bonus, scegli un alleato che ti vede o sente: ottiene PF temporanei pari al risultato del dado superiorità + il tuo modificatore di Carisma. Inserisci i PF manualmente. Il dado superiorità va speso e il risultato applicato manualmente."
+          "resource_name": "Superiority Die",
+          "description": "Come azione bonus, scegli un alleato che ti vede o sente: ottiene PF temporanei pari al risultato del dado superiorità + il tuo modificatore di Carisma. Inserisci i PF manualmente. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die",
+          "dice_add": "cha_mod"
         }
       ]
     },
@@ -4757,13 +5066,37 @@
           "type": "actions",
           "name": "Riposte",
           "action_type": "reaction",
-          "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando una creatura ti manca con un attacco in mischia, effettua un attacco in mischia con arma usando la reazione; se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "tracker_cost": 0,
+          "description": "Quando una creatura ti manca con un attacco in mischia, effettua un attacco in mischia con arma usando la reazione; se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità si consuma quando applichi il bonus al tiro.",
           "requirements": {
             "equipment": {
               "kind": "weapon",
               "weapon_type": "melee"
+            }
+          },
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Riposte",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
+          "tracker_cost": 1,
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ],
+              "mode": "melee"
             }
           }
         }
@@ -5067,8 +5400,10 @@
           "name": "Sweeping Attack",
           "action_type": "free",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando colpisci con un attacco con arma da mischia, puoi infliggere il risultato del dado superiorità a un'altra creatura entro 5 ft dal bersaglio e nella tua portata, se il tiro originario colpirebbe anche la sua CA. Il dado superiorità va speso e il risultato applicato manualmente."
+          "resource_name": "Superiority Die",
+          "description": "Quando colpisci con un attacco con arma da mischia, puoi infliggere il risultato del dado superiorità a un'altra creatura entro 5 ft dal bersaglio e nella tua portata, se il tiro originario colpirebbe anche la sua CA. Il dado superiorità va speso e il risultato applicato manualmente.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
         }
       ]
     },
@@ -5103,9 +5438,25 @@
           "type": "actions",
           "name": "Tactical Assessment",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando effettui una prova di Intelligenza (Indagare o Storia) o Saggezza (Intuizione), puoi aggiungere il dado superiorità al risultato. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Tactical Assessment",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "skill:investigation",
+            "skill:history",
+            "skill:insight"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando effettui una prova di Intelligenza (Indagare o Storia) o Saggezza (Intuizione), puoi aggiungere il dado superiorità al risultato. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra."
         }
       ]
     },
@@ -5266,9 +5617,32 @@
           "type": "actions",
           "name": "Trip Attack",
           "action_type": "free",
+          "tracker_cost": 0,
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; un bersaglio Grande o inferiore deve superare un TS Forza o cade prono. Il dado superiorità si consuma quando applichi il bonus al tiro.",
+          "dice_ref": "superiority_die",
+          "tracker_name": "Superiority Die"
+        },
+        {
+          "type": "dice",
+          "name": "Trip Attack",
+          "dice_ref": "superiority_die",
+          "targets": [
+            "attack_damage"
+          ],
+          "tracker_name": "Superiority Die",
+          "tracker_class": "Fighter",
           "tracker_cost": 1,
-          "resource_name": "Superiority Dice",
-          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; un bersaglio Grande o inferiore deve superare un TS Forza o cade prono. Il dado superiorità va speso e il risultato applicato manualmente."
+          "strict_tracker": true,
+          "condition_label": "Usa il dado solo quando si verifica l'evento descritto dalla manovra.",
+          "requirements": {
+            "attack": {
+              "kind": [
+                "weapon",
+                "unarmed",
+                "natural"
+              ]
+            }
+          }
         }
       ]
     },

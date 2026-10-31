@@ -2,10 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits,normalizeSelectionRecord,powerStateActivationPatch} from '../power_selection.js';
-import {calculateSheet} from '../sheet_rules.js';
+import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
+import {scalingDiceFor,resolveScalingDieBenefit} from '../scaling_dice.js';
+import {rollOptionalDice} from '../sheet_roll_origin.js';
+import {appendRollBonus} from '../sheet_rules_view.js';
+import {abilitiesForCreature} from '../activated_abilities.js';
 import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '../spell_selection.js';
 import {actionEntries,battleActionPanels} from '../action_economy.js';
-import {battleResourcePowers} from '../sheet_rules_view.js';
+import {battleResourcePowers,trackerRollBonusRows} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
@@ -89,7 +93,7 @@ test('multiple options extend the same object without replacing one another or s
  r={...r,...powerApplicationPatch(r,context,catalog,'data-choice','first',false)};
  assert.deepEqual(r.inventory[0].option_extensions.map(e=>e.id),['second']);
 });
-const completeCatalogs={...catalogs,classFeatures:read('classes'),classMechanics:read('class_mechanics'),
+const completeCatalogs={...catalogs,scalingDice:read('scaling_dice'),classFeatures:read('classes'),classMechanics:read('class_mechanics'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),traitStates:read('trait_states').states,
  effectExtensions:read('effect_extensions').extensions};
 test('Arcane Armor follows the exact chosen object and disabling the parent also suppresses model benefits',()=>{
@@ -240,4 +244,122 @@ test('equipment-conditioned powers stay in their existing Resources group while 
  const unequipped={...equipped,inventory:[{...shield,equipped_slots:[]}]};
  const inactive=battleActionPanels(unequipped,{...projection,selection_record:{...unequipped,action_grants:[grant]}},[],[],[]);
  assert.equal(inactive.abilityEntries.find(row=>row.id===grant.id)?.available,false);
+});
+
+test('generic scaling dice follow owned class levels, not total character level',()=>{
+ const classes=[{name:'Fighter',source:'PHB',subclass:'Battle Master',level:9},
+  {name:'Bard',source:'PHB',level:10}];
+ const record={rules_version:'2014',classes};
+ const features=[
+  {name:'Combat Superiority',origin_key:'class|phb|fighter|subclass|battle master|phb',origin_id:'fighter:superiority'},
+  {name:'Bardic Inspiration',origin_key:'class|phb|bard',origin_id:'bard:inspiration'}
+ ];
+ const definitions=completeCatalogs.scalingDice.dice;
+ const expected=(f,b)=>{
+  const dice=scalingDiceFor({...record,classes:classes.map(row=>({...row,level:row.name==='Fighter'?f:b}))},
+    definitions,features);
+  assert.equal(dice.find(d=>d.id==='superiority_die')?.dice,f>=3?'1d'+(f>=18?12:f>=10?10:8):undefined);
+  assert.equal(dice.find(d=>d.id==='bardic_inspiration_die')?.dice,'1d'+(b>=15?12:b>=10?10:b>=5?8:6));
+ };
+ for(const [fighter,bard] of [[3,1],[9,10],[10,10],[17,14],[18,15],[20,20]])expected(fighter,bard);
+ assert.equal(scalingDiceFor({...record,classes:[{...classes[0],subclass:'Champion'}]},definitions,features)
+  .some(d=>d.id==='superiority_die'),false);
+ assert.equal(scalingDiceFor(record,definitions,[features[1]]).some(d=>d.id==='superiority_die'),false);
+ const missing=resolveScalingDieBenefit({dice_ref:'superiority_die',tracker_name:'Superiority Die'},[],[]);
+ assert.equal(missing.disabled,true);
+});
+
+test('Battle Master known maneuvers grant their own tracker-paid post-roll dice from data',()=>{
+ const owner='optional:subclass:phb:fighter:phb:battle-master:mv-b';
+ const fighter=level=>({id:'fighter',kind:'character',rules_version:'2014',
+  class:'Fighter',class_source:'PHB',level,subclass:'Battle Master',subclass_source:'PHB',
+  classes:[{name:'Fighter',source:'PHB',level,subclass:'Battle Master',subclass_source:'PHB'}],
+  abilities:{str:16,dex:14,con:14,int:10,wis:10,cha:10}});
+ let record=fighter(9),calculated=calculateSheet(record,completeCatalogs);
+ assert(calculated.selection_models.some(row=>row.id===owner));
+ assert.equal(calculated.scaling_dice.find(row=>row.id==='superiority_die')?.dice,'1d8');
+ record={...record,...powerSelectionPatch(record,calculated,combined,owner,'learned','optional:phb:precision-attack')};
+ calculated=calculateSheet(record,completeCatalogs);
+ const bonus=applicableDiceBonuses(record,'attack_hit:unarmed',[],calculated)
+  .find(row=>row.origin_name==='Precision Attack');
+ assert(bonus,'A learned maneuver must supply its own roll bonus');
+ assert.equal(bonus.dice,'1d8');
+ assert.equal(bonus.tracker_id,calculated.trackers.find(t=>t.name==='Superiority Die')?.id);
+ assert.equal(bonus.strict_tracker,true);
+ assert(rollOptionalDice(record,calculated,[bonus],{kind:'d20'}).some(row=>row.dice==='1d8'));
+ const example={total:14,parts:[{name:'d20',notation:'1d20',subtotal:14,rolls:[14]}]};
+ let calls=0;
+ const revised=appendRollBonus(example,bonus,sides=>{calls++;assert.equal(sides,8);return 5;});
+ assert.equal(revised.total,19);
+ assert.equal(calls,1,'Only the superiority die is rolled after the original d20');
+ assert.equal(trackerRollBonusRows(record,calculated).find(row=>row.origin_name==='Precision Attack')?.dice,'1d8');
+ calculated=calculateSheet({...record,...fighter(10),classes:fighter(10).classes},completeCatalogs);
+ assert.equal(applicableDiceBonuses(record,'attack_hit:unarmed',[],calculated)
+  .find(row=>row.origin_name==='Precision Attack')?.dice,'1d10');
+ const disabled=calculateSheet({...record,origin_enabled:{[calculated.scaling_dice.find(d=>d.id==='superiority_die')?.origin_id]:false}},completeCatalogs);
+ assert(!disabled.scaling_dice.some(row=>row.id==='superiority_die'));
+});
+
+test('Bardic Inspiration uses the same die data for its action in PHB and XPHB',()=>{
+ const rules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
+ const catalog={...completeCatalogs,featureRules:rules};
+ for(const source of ['PHB','XPHB'])for(const [level,expected] of [[1,'1d6'],[5,'1d8'],[10,'1d10'],[15,'1d12']]){
+  const bard={id:'bard',kind:'character',rules_version:source==='PHB'?'2014':'2024',
+   class:'Bard',class_source:source,level,
+   classes:[{name:'Bard',source,level}],
+   abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:18}};
+  const calculated=calculateSheet(bard,catalog);
+  assert.equal(calculated.scaling_dice.find(row=>row.id==='bardic_inspiration_die')?.dice,expected);
+  const power=abilitiesForCreature(bard,[],calculated).find(row=>row.id==='vtt_bardic_inspiration');
+  assert.equal(power?.die,expected,'Bard '+source+' level '+level);
+  assert.equal(power?.tracker_id,calculated.trackers.find(row=>row.name==='Bardic Inspiration')?.id);
+ }
+});
+test('all modeled PHB/TCE Battle Master maneuvers link a real die with one payment path',()=>{
+ const options=catalogs.optionalFeatureProgressions.options.filter(row=>row.types?.includes('MV:B')&&row.effects?.some(e=>e.type==='actions'));
+ assert.equal(options.length,23);
+ for(const option of options){
+  const action=option.effects.find(e=>e.type==='actions');
+  assert.equal(action.dice_ref,'superiority_die',option.name);
+  const bonus=option.effects.filter(e=>e.type==='dice');
+  if(bonus.length){
+   assert.equal(action.tracker_cost,0,option.name+' action must not spend twice');
+   for(const row of bonus){
+    assert.equal(row.dice_ref,'superiority_die',option.name);
+    assert.equal(row.tracker_cost,1,option.name);
+    assert.equal(row.tracker_name,'Superiority Die',option.name);
+    assert.equal(row.strict_tracker,true);
+   }
+  }else assert.equal(action.tracker_cost,1,option.name+' manual action must pay once');
+ }
+});
+
+test('an arbitrary option can grant a named scaling die used by its own optional roll',()=>{
+ const catalog=schema('origin'),definition=catalog.selections[0].source.options[0];
+ definition.effects=[
+  {type:'scaling_die',key:'training_die',name:'Training die',class_name:'Ranger',by_class_level:[[2,4],[5,6]]},
+  {type:'dice',dice_ref:'training_die',targets:['skill:stealth'],tracker_name:'Training',
+   tracker_cost:1,strict_tracker:true}
+ ];
+ let r=record();
+ r={...r,...powerSelectionPatch(r,{features:[feature]},catalog,'data-choice','learned','option')};
+ r={...r,...powerApplicationPatch(r,{features:[feature]},catalog,'data-choice','option',true)};
+ let effective=projectSelectionBenefits(r,{powerSelections:catalog},[feature]);
+ assert.equal(effective.scaling_dice[0].key,'training_die');
+ let resolved=scalingDiceFor(effective,[],[feature]);
+ assert.equal(resolved[0].dice,'1d4');
+ const bonus=resolveScalingDieBenefit(effective.dice_bonuses[0],resolved,[{id:'training-pool',name:'Training',max:2}],
+  expression=>expression==='dex_mod'?2:NaN);
+ assert.equal(bonus.dice,'1d4');
+ assert.equal(bonus.tracker_id,'training-pool');
+ const boosted=resolveScalingDieBenefit({...effective.dice_bonuses[0],dice_add:'dex_mod'},resolved,
+  [{id:'training-pool',name:'Training',max:2}],expression=>expression==='dex_mod'?2:NaN);
+ assert.equal(boosted.dice,'1d4+2');
+ r={...r,classes:[{name:'Ranger',source:'PHB',level:5}]};
+ effective=projectSelectionBenefits(r,{powerSelections:catalog},[feature]);
+ resolved=scalingDiceFor(effective,[],[feature]);
+ assert.equal(resolved[0].dice,'1d6');
+ r={...r,...powerApplicationPatch(r,{features:[feature]},catalog,'data-choice','option',false)};
+ effective=projectSelectionBenefits(r,{powerSelections:catalog},[feature]);
+ assert.equal(effective.scaling_dice.length,0);
 });
