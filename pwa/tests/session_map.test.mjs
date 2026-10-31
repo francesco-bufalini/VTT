@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {tokenGroups,snapshotRevision,snapshotBlob,casterToken,SessionMapViewer} from "../session_map.js";
+import {tokenGroups,tokenOwnershipGlyphKey,snapshotRevision,snapshotBlob,casterToken,SessionMapViewer} from "../session_map.js";
 
 test("connected casting recovers only the exact owned creature token, never a display name",()=>{
  const creature={id:"creature-a",name:"Maga"};
@@ -129,4 +129,14 @@ test("session map zoom stays attached to its own viewport",()=>{
  assert.equal(viewer.zoom,1);
  assert.equal(viewer.panX,0);
  assert.equal(viewer.panY,0);
+});
+
+test("roster icons distinguish only tokens explicitly linked to a local sheet",()=>{
+ const local=[{id:"character-1",name:"Maga",linked_token_sync_id:"own"}];
+ assert.equal(tokenOwnershipGlyphKey({id:"own",name:"Maga"},local),"map");
+ assert.equal(tokenOwnershipGlyphKey({id:"other",name:"Maga"},local),"poison",
+   "matching names cannot make a foreign token controllable");
+ assert.equal(tokenOwnershipGlyphKey({id:"free",free:true},local),"poison");
+ assert.equal(tokenOwnershipGlyphKey({id:""},local),"poison");
+ assert.equal(tokenOwnershipGlyphKey(null,local),"poison");
 });
