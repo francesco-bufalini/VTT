@@ -7,7 +7,13 @@ alongside each action in the monster's `stat_block`:
 
 - `vtt_attack`: `attack_kind: attack`, `melee`, `has_ranged_mode`,
   `range_feet`, `long_range_feet`, `melee_reach_feet`, `base_hit`,
-  `hit_known`, `damage`, and `source_ability`.
+  `hit_known`, `damage`, `source_ability`, and `grants_proficiency`.
+  Recognized attacks grant proficiency by default; curated overrides can set
+  `grants_proficiency: false` without changing their published to-hit total.
+  The PWA also defaults older saved `vtt_attack` records and legacy parsed
+  attack entries to proficient, associating the grant with the monster's
+  actual trait origin. Published monster hit totals are never incremented
+  by a second proficiency bonus. Saving-throw-only actions remain excluded.
 - `vtt_resource`: `id`, `name`, `max`, `recharge`, optional
   `recharge_min` and provenance.
 - `vtt_max_reach_feet`: precalculated greatest reach, including formal reach\n  mentions in non-attack features; `CreatureRules` uses it directly.\n- `vtt_action_metadata_version`, `vtt_action_source_revision` and
