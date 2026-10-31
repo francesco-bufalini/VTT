@@ -50,8 +50,8 @@ test('legendary, resistance and lair traits grant their own counters and correct
   ['Azione leggendaria','legendary',1],['Azioni di tana','lair',1],['Resistenza leggendaria','legendary_resistance',1]]);
  const panels=battleActionPanels(fixture,data);
  assert.match(panels.basicActions.find(row=>row.id==='attack').grant_description,/three attacks/);
- assert.match(panels.others,/data-action-timing="legendary"/);
- assert.match(panels.others,/data-action-timing="lair"/);
+ assert.match(panels.others,/Resistenza leggendaria/);
+ assert.match(panels.others,/Azioni di tana/);
  assert.ok(panels.abilityEntries.some(row=>row.name==='Frightful Presence'));
 });
 test('using a legendary option spends its actual cost and rejects exhausted or missing pools',()=>{
@@ -84,8 +84,12 @@ test('battle resources display monster costs and the granting attack description
   globalThis.document=dom.window.document;
   const app=document.querySelector('#app');
   mountPlaySheet(app,{creature:fixture,calculated:data,sheet:'battle',icon:actionGlyph,view:{battleActions,battleTraits:data.features}});
-  assert.match(app.querySelector('[data-rule-action="attack"] small').textContent,/three attacks/);
-  for(const id of ['legendary_action','legendary_resistance','lair_action'])assert.ok(app.querySelector('[data-rule-action="'+id+'"]'));
+  const multiattack=app.querySelector('[data-battle-action="others"] [data-attack-id="monster:multiattack"]');
+  assert(multiattack,'Multiattack appears as its own action');
+  assert.equal(multiattack.querySelectorAll('.play-attack-sequence > li').length,4,
+   'Multiattack has four independent descriptive sequence elements');
+  for(const id of ['legendary_action','legendary_resistance','lair_action'])
+   assert.ok(app.querySelector('[data-battle-action="others"] [data-attack-id="'+id+'"]'));
   const wing=app.querySelector('[data-ability-id="monster:legendary:1"]');
   assert.match(wing.textContent,/Azione leggendaria.*Costo 2/);
   assert.equal(wing.querySelector('[data-act="monster-action-use"]').dataset.monsterActionId,'monster:legendary:1');

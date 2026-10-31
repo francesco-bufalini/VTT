@@ -62,7 +62,7 @@ test('a tracker-backed dice bonus uses the dice pictogram, never a crosshair',()
  const bank='<div class="battle-resource-row"><button data-tracker-id="dice-uses">Usi bonus</button></div>';
  render(record,calculated,app=>{
   const bonus=app.querySelector('[data-roll-bonus-id="extra-d6"]');
-  assert(bonus,'A structured tracker dice bonus is rendered in Resources');
+  assert(bonus,'A structured tracker dice bonus is rendered in Azioni');
   assert(bonus.querySelector('.action-dice'),'Reuses the real dice pictogram');
   assert.equal(bonus.querySelector('.vtt-action-glyph'),null,
    'Dice bonuses do not reuse the crosshair-like attack bonus atlas icon');
@@ -78,9 +78,9 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
  render(record,calculated,(app,abilities)=>{
   const bonus=app.querySelector('[data-resource-tracker="'+tracker.id+'"]');
   assert(bonus);
-  assert.equal(bonus.querySelector('.play-resource > .play-resource-info .vtt-action-glyph'),null,
+  assert.equal(bonus.querySelector('.play-resource-info .vtt-action-glyph'),null,
    'The tracker heading is a counter, not an ability');
-  assert.match(bonus.textContent,/1d6/);
+  assert.match(app.querySelector('[data-action-benefit="damage-bonuses"]').textContent,/1d6/);
   assert.equal(bonus.querySelector('[data-act="tracker-trait-use"]'),null);
   assert.equal(bonus.querySelector('[data-act="battle-use-ability"]'),null);
   const attack=abilities.find(row=>row.roll_attack?.id==='class_feature:lightning_launcher');
@@ -88,16 +88,20 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert.equal(attack.resource_cost,0);
   assert.equal(attack.tracker_id,'');
   assert.equal(abilityAttackRoll(attack,calculated).target,'attack_hit:class_feature:lightning_launcher');
-  const free=app.querySelector('[data-resource-privilege="'+attack.feature_id+'"]');
+  const free=app.querySelector('[data-battle-action="resources"] [data-ability-id="activated:'+attack.id+'"]');
   assert(free);
-  const attackIcon=free.querySelector('[data-ability-id] .vtt-action-glyph');
+  const attackIcon=free.querySelector('.vtt-action-glyph');
   assert(attackIcon);
   assert.equal(attackIcon.className,/class="([^"]+)"/.exec(actionGlyph('weapon'))[1],
    'A trait-granted attack uses the weapon pictogram');
   assert.equal(free.querySelector('[data-act="battle-attack-map"]'),null,
    'Resource rows expose benefits but never duplicate the attack range button');
-  assert.equal(app.querySelectorAll('[data-battle-action="resources"] [data-act="battle-attack-map"]').length,0,
-   'Neither abilities nor basic rule rows expose a map range button in Resources');
+  assert(app.querySelectorAll('[data-battle-action="resources"] [data-act="battle-attack-map"]').length===0,
+   'Resources does not reproduce the map/range buttons from Attacchi');
+  assert(app.querySelectorAll('[data-battle-action="attacks"] [data-act="battle-attack-map"]').length>0,
+   'The restored Attacchi table owns map and range controls');
+  assert.equal(app.querySelector('[data-battle-action="resources"] [data-attack-id="unarmed"]'),null,
+   'Unarmed never appears in Resources');
   const buttons=free.querySelectorAll('[data-act="battle-use-ability"]');
   assert.equal(buttons.length,1);
   assert.equal(buttons[0].disabled,false);
@@ -112,13 +116,13 @@ test('a trait with both a paid summon and a free command retains both resource g
  const tracker=calculated.trackers.find(row=>row.name==='Animating Performance');
  render(record,calculated,(app,abilities)=>{
   const paid=app.querySelector('[data-resource-tracker="'+tracker.id+'"]');
-  assert(paid.querySelector('[data-act="tracker-trait-use"]'),'Summoning keeps its payment');
+  assert(app.querySelector('[data-battle-action="others"] [data-act="tracker-trait-use"]'),'Summoning keeps its payment in Actions');
   assert(!paid.textContent.includes('Comanda oggetto animato'));
   const command=abilities.find(row=>row.companion_rule_id==='animating_performance_2014');
   assert.equal(command.action_type,'bonus');
   assert.equal(command.resource_cost,0);
   assert.equal(command.companion_command,true);
-  const free=app.querySelector('[data-resource-privilege="'+tracker.origin_id+'"]');
+  const free=[...app.querySelectorAll('[data-battle-action="others"] .play-resource-power-row')].find(node=>node.textContent.includes('Comanda oggetto animato'));
   assert(free);
   assert.match(free.textContent,/Comanda oggetto animato/);
  });
@@ -153,8 +157,8 @@ test('creator commands follow active, source-qualified companion grants and neve
  assert.equal(command.resource_cost,0);
  assert.equal(command.tracker_id,'');
  render(record,calculated,app=>{
-  const group=app.querySelector('[data-resource-privilege="'+command.feature_id+'"]');
-  assert.match(group.textContent,/Homunculus Servant/);
+  const group=[...app.querySelectorAll('[data-battle-action="others"] .play-resource-power-row')].find(node=>node.textContent.includes('Comanda homunculus'));
+  assert(group);
   assert.match(group.textContent,/Comanda homunculus/);
   assert.equal(group.querySelectorAll('[data-act="battle-use-ability"]').length,1);
  });
@@ -206,9 +210,10 @@ test('Defensive Field retains its counter but exposes its action only with activ
    const group=app.querySelector('[data-resource-tracker="'+tracker.id+'"]');
    assert(group);
    assert.equal(group.querySelectorAll('[data-act="tracker-trait-use"]').length,0);
-   const actions=group.querySelectorAll('[data-act="battle-use-ability"]');
+   const actions=[...app.querySelectorAll('[data-battle-action="others"] .play-resource-power-row')]
+    .filter(node=>node.textContent.includes('Defensive Field')&&node.querySelector('[data-act="battle-use-ability"]'));
    assert.equal(actions.length,available?1:0);
-   if(available)assert.match(group.textContent,/Azione bonus · Costo 1/);
+   if(available)assert.match(actions[0].textContent,/Azione bonus · Costo 1/);
   });
   if(!available){
    assert.equal(resourceLinkedSubclassTrait(tracker,calculated.features,[],calculated),null);
@@ -222,8 +227,8 @@ test('trait operation identity deduplicates translated descriptive actions and a
  const calculated=project(record);
  render(record,calculated,app=>{
   const trait=calculated.features.find(row=>row.name==='Magical Tinkering');
-  const group=app.querySelector('[data-resource-privilege="'+trait.origin_id+'"]');
-  assert.equal(group.querySelectorAll('[data-ability-id]').length,1);
+  const group=[...app.querySelectorAll('[data-battle-action="others"] [data-ability-id]')].find(node=>node.textContent.includes('Magical Tinkering'));
+  assert(group);
   assert(!group.textContent.includes('Congegni magici'));
   const attack=app.querySelector('[data-ability-id="activated:trait-attack:class_feature:lightning_launcher"]');
   assert.match(attack.textContent,/Azione di attacco/);
@@ -257,15 +262,10 @@ test('an explicit action-damage trait bonus moves its basic action into the owni
  const owner=calculated.features.find(row=>row.origin_id);
  calculated.action_damage_bonuses[0].parent_origin=owner?.origin_id||'class|phb|bard';
  calculated.action_damage_bonuses[0].origin_name=owner?.name||'Bard';
- render(record,calculated,app=>{
-  const group=[...app.querySelectorAll('[data-resource-privilege^="timing:"]')]
-   .find(node=>node.querySelector('[data-rule-action="attack"]'));
-  assert(group,'Modified Attack action must be present under its originating privilege');
-  assert.match(group.textContent,/Danni 1d6/);
-  assert.equal(app.querySelector('[data-resource-privilege="basic-rules"] [data-rule-action="attack"]'),null,
-   'A modified base action is not duplicated under basic rules');
-  const action=app.querySelector('[data-attack-id="attack"]');
-  assert(action.querySelector('[data-effect-kind="damage"]'),
-   'The action also shows its explicit damage in the Actions panel');
+ render(record,calculated,(app,_abilities,actions)=>{
+  assert.equal(app.querySelector('[data-battle-action="others"] [data-attack-id="attack"]'),null,
+   'Generic Attack is not an attack-action grant');
+  assert(actions.modifiedActions.some(row=>row.id==='attack'&&row.action_damage?.some(x=>x.formula==='1d6')),
+   'The saved damage modifier remains modeled even when Attack is not listed in Actions');
  });
 });

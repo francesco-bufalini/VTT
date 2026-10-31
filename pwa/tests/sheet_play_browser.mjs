@@ -370,14 +370,17 @@ try{
  const movementPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
  assert.match(await weaponPanel.locator('summary.play-battle-summary').textContent(),/Attacchi/);
+ assert.equal(await weaponPanel.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is in Attacchi');
+ assert.equal(await page.locator('[data-battle-action="resources"] [data-attack-id="unarmed"]').count(),0,
+  'Unarmed cannot appear in Risorse');
  const otherPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
 
  assert.equal(await otherPanel.count(),1);
- assert.equal(await page.locator('#sheet-play-view [data-battle-action="abilities"]').count(),0,'Abilities belong beneath resources');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="abilities"]').count(),0,'Abilities are grouped by benefit in Azioni');
  assert.match(await otherPanel.locator('summary.play-battle-summary').textContent(),/Azioni/);
- await otherPanel.locator('summary.play-battle-summary').click();
+ if((await otherPanel.getAttribute('open'))===null)await otherPanel.locator('summary.play-battle-summary').click();
  assert.equal(await otherPanel.locator('.play-battle-action-group:has([data-attack-id="search"])').getAttribute('open'),'',
-  'Opening Other Actions automatically expands its action-type subsections');
+  'Action benefit sections start expanded');
  const searchAction=otherPanel.locator('[data-attack-id="search"]');
  assert.equal(await searchAction.locator('[data-target="skill:perception"]').count(),1);
  assert.equal(await searchAction.locator('[data-target="skill:investigation"]').count(),1);
@@ -403,14 +406,14 @@ try{
  assert.equal(await mainAttack.count(),1);
  assert.equal(await weaponPanel.locator('[data-action-timing]').count(),0,
   'Weapon attacks have no timing subsections');
- const mainTiming=otherPanel.locator('[data-action-timing="action"]');
+ const mainTiming=otherPanel.locator('[data-action-benefit="other"]');
  assert.equal(await mainTiming.locator('summary.play-battle-action-heading').count(),1);
  if((await otherPanel.getAttribute('open'))===null)
   await otherPanel.locator('summary.play-battle-summary').click();
  assert.equal(await mainTiming.getAttribute('open'),'',
-  'Opening Azioni expands all action-time groups');
+  'Opening Azioni reveals the benefit categories');
  await mainTiming.locator('summary.play-battle-action-heading').click();
- assert.equal(await mainTiming.getAttribute('open'),null,'Individual timing groups can close');
+ assert.equal(await mainTiming.getAttribute('open'),null,'Individual benefit groups can close');
  await mainTiming.locator('summary.play-battle-action-heading').click();
  const opportunity=otherPanel.locator('[data-attack-id="opportunity"]');
  assert.match(await opportunity.locator('.play-battle-attack-copy strong').textContent(),/Attacco di opportunità/);
@@ -630,8 +633,8 @@ try{
    nodes.map(node=>{const {x,y}=node.getBoundingClientRect();return {x,y}}));
  assert(escapeRolls[1].y>escapeRolls[0].y+10);
  assert(Math.abs(escapeRolls[0].x-escapeRolls[1].x)<2,'Alternative rolls align on the right');
- assert(await movementPanel.locator('[data-action-timing="action"]').textContent().then(t=>t.includes('Scattare')));
- assert(await movementPanel.locator('[data-action-timing="movement"]').textContent().then(t=>t.includes('Muoversi')));
+ assert(await movementPanel.locator('[data-action-benefit="other"]').textContent().then(t=>t.includes('Scattare')));
+ assert(await movementPanel.locator('[data-action-benefit="other"]').textContent().then(t=>t.includes('Muoversi')));
  await sheet('info');await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="others"]').getAttribute('open'),'');
  await hpCard.click({position:{x:22,y:80}});
@@ -713,33 +716,34 @@ try{
  assert.match(await focusResource.locator('.play-resource-count').textContent(),/4\s*\/\s*7/,
    'The explicit Use action consumed one Focus use across two damage rolls');
  const resourceWeight=await focusResource.locator('.play-resource-name').evaluate(node=>Number(getComputedStyle(node).fontWeight));
- const abilityWeight=await resourcesPanel.locator('.play-resource-power-open strong').first().evaluate(node=>Number(getComputedStyle(node).fontWeight));
+ const actionsPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
+ const abilityWeight=await actionsPanel.locator('.play-resource-power-open strong').first().evaluate(node=>Number(getComputedStyle(node).fontWeight));
  assert(resourceWeight>abilityWeight,'Resource name has stronger emphasis than its abilities');
- const inlineClass=resourcesPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"]');
- assert.equal(await inlineClass.count(),1,'Class abilities appear beneath their resource');
+ const inlineClass=actionsPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"]');
+ assert.equal(await inlineClass.count(),1,'Class abilities appear under Capacità in Azioni');
  assert.equal(await inlineClass.locator('[data-act="battle-use-ability"]').count(),1);
  assert.equal(await resourcesPanel.locator('.play-resource>[data-act="tracker-more"]').count(),0,'No minus shortcut next to tracker');
- assert(!String(await inlineClass.textContent()).includes('Focus arcano'));
+ assert(String(await inlineClass.textContent()).includes('Focus arcano'),'Actions display their associated tracker');
  assert(!String(await inlineClass.textContent()).includes(' / '));
  await inlineClass.locator('[data-act="sheet-context"]').click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Attiva un impulso magico/);
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Origine[\s\S]*Attivazione[\s\S]*Costo/);
  assert.equal(await page.locator('#sheet-context-dialog [data-act="power-trait"]').count(),1);
  await dismiss();
- assert.equal(await resourcesPanel.locator('[data-resource-privilege="basic-rules"] [data-rule-action="two_weapon"] button:not([disabled])').count(),1,
-  'An unavailable secondary attack remains clickable in base rules');
- assert.equal(await resourcesPanel.locator('[data-resource-privilege="basic-rules"] [data-rule-action="spell_cast"] [data-act="action-open-spells"]').count(),1,
-  'Base-rule spellcasting opens Powers directly');
- assert.equal(await resourcesPanel.locator('[data-resource-privilege]').count()>0,true,
-  'Free abilities belong to their granting traits, not to a generic free tracker');
- assert.equal(await resourcesPanel.locator('[data-resource-privilege] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
+ assert.equal(await actionsPanel.locator('[data-action-benefit="attacks"] [data-attack-id="two_weapon"]').count(),1,
+  'The unavailable secondary attack stays inspectable under Azioni di attacco');
+ assert.equal(await actionsPanel.locator('[data-attack-id="spell_cast"] [data-act="action-open-spells"]').count(),1,
+  'Spellcasting opens Powers directly');
+ assert.equal(await resourcesPanel.locator('[data-resource-privilege],[data-ability-id]').count(),0,
+  'Resources do not own abilities or privileges');
+ assert.equal(await actionsPanel.locator('.play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"]').count(),0,
   'No generic free tracker remains');
  assert.equal(await resourcesPanel.locator('.play-resource-free-actions').count(),0);
- const freeActions=page.locator('#sheet-play-view [data-battle-action="others"] [data-action-timing="free"]');
+ const freeActions=actionsPanel.locator('[data-action-benefit="other"]');
  assert.equal(await freeActions.count(),1,'Free general actions belong beneath Other Actions');
  assert(await freeActions.locator('[data-attack-id]').count()>0);
- const linkedSpell=resourcesPanel.locator('[data-power-spell-id="arcane_light"]');
+ const linkedSpell=actionsPanel.locator('[data-power-spell-id="arcane_light"]');
  assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
  assert.equal(await linkedSpell.locator('[data-act="battle-cast-resource-spell"]').count(),1,'Dedicated Lancia button is beside the spell details');
  assert.match(await linkedSpell.textContent(),/Azione/);
@@ -747,15 +751,15 @@ try{
  await linkedSpell.locator('[data-act="power-spell"]').click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
  await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').first().click();
- assert.equal(await resourcesPanel.locator('[data-resource-privilege] [data-ability-id="arcane_pulse"]').count(),0);
+ assert.equal(await resourcesPanel.locator('[data-ability-id="arcane_pulse"]').count(),0);
  const focusButton=resourcesPanel.locator('[data-sheet-context="power-resource:tracker:focus"]');
  await focusButton.click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Focus arcano|Utilizzi disponibili/);
  assert.equal(await page.locator('#sheet-context-dialog [data-magic-tracker-id="focus"]').count(),1);
  await dismiss();
- const maneuver=resourcesPanel.locator('[data-sheet-context="power-ability:ability:maneuver:phb:commander\'s_strike"]');
+ const maneuver=actionsPanel.locator('[data-sheet-context="power-ability:ability:maneuver:phb:commander\'s_strike"]');
  assert.equal(await maneuver.count(),1,'Activated maneuvers should be visible under resources');
- assert.equal(await resourcesPanel.locator('.play-resource-power-row[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"]').count(),1,'Optional maneuver has its Use button');
+ assert.equal(await actionsPanel.locator('.play-resource-power-row[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"]').count(),1,'Optional maneuver has its Use button');
  await maneuver.click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Costo/);
  await dismiss();
@@ -771,13 +775,13 @@ try{
  await page.locator('#sheet-context-dialog [data-act="tracker-more"][data-tracker-id="focus"]').click();
  await dismiss();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
- await resourcesPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
+ await actionsPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===5;});
  // Some ability actions retain their details dialog after updating the tracker.
  // Dismiss it before interacting with the independent spell use control.
  if(await page.locator('#other-ability-dialog').count())
   await page.locator('#other-ability-dialog [data-ability-cancel]').click();
- await resourcesPanel.locator('[data-power-spell-id="arcane_light"] [data-act="battle-cast-resource-spell"]').click();
+ await actionsPanel.locator('[data-power-spell-id="arcane_light"] [data-act="battle-cast-resource-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===6;});
  assert.equal(await page.locator('#action-cast-dialog').count(),0,'Quick Lancia casts without opening spell description');
  await focusButton.click();
@@ -1321,7 +1325,7 @@ try{
  await page.locator('[data-state-trait="state|rage"]').click();
  await page.locator('.play-info-traits .trait-card[data-trait-key="state|rage"][open]').waitFor();
  await sheet('battle');
- const ragePanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
+ const ragePanel=page.locator('#sheet-play-view [data-battle-action="others"]');
  // The resources locator already points to the <details> element.
  if(await ragePanel.getAttribute('open')===null)
   await ragePanel.locator(':scope > summary.play-battle-summary').click();

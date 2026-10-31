@@ -8,7 +8,7 @@ import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 import {inventoryRangeLabel} from './attack_range.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
-import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup} from "./action_economy.js";
+import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,attackActionSequence} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeItemOptionEffects,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
@@ -738,13 +738,27 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     .filter(row=>!(row.kind==='ability'&&slotTraitGrants.some(grant=>
       String(grant.origin_name||'').toLowerCase()===String(row.name||'').toLowerCase())));
   const rollBonuses=trackerRollBonusRows(c,d);
-  const bonusRows=trackerId=>rollBonuses.filter(row=>row.tracker_id===trackerId).map(row=>{
+  const trackerChip=(trackerId,cost=1)=>{
+   if(!(cost>0)||!trackerId)return '';
+   const tracker=(d.trackers||[]).find(t=>String(t.id)===String(trackerId));
+   if(!tracker)return '<span class="play-action-tracker play-action-tracker--missing">Tracker non disponibile</span>';
+   const left=Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0));
+   return '<span class="play-action-tracker" title="'+esc(tracker.name)+'" aria-label="'+
+    esc(tracker.name+' · '+left+' di '+tracker.max+' utilizzi')+'">'+
+    '<span class="play-action-tracker-name">'+esc(tracker.name)+'</span>'+
+    '<strong class="play-action-tracker-count">'+left+'/'+esc(tracker.max)+'</strong></span>';
+  };
+  const bonusIsDamage=row=>(Array.isArray(row.targets)?row.targets:[row.target]).some(target=>
+   /^(?:attack_damage:|action_damage:|damage_roll$|spell_damage$)/.test(String(target||'')));
+  const bonusRows=(trackerId,group='roll')=>rollBonuses.filter(row=>
+   row.tracker_id===trackerId&&(bonusIsDamage(row)?'damage':'roll')===group).map(row=>{
    const value=Object.hasOwn(row,'flat_bonus')?String(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice;
    const originId=row.origin_id||'';
    const content='<span><strong>'+esc(value+' · '+(row.name||'Bonus'))+'</strong><small>'+esc(trackerRollBonusTargets(row,d))+'</small></span>';
    return '<div class="play-resource-power-row play-resource-bonus-row" data-roll-bonus-id="'+esc(row.id||row.name||'')+'">'+
     (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+diceGlyph()+content+'</button>':
-      '<span class="play-resource-power-open">'+diceGlyph()+content+'</span>')+'</div>';
+      '<span class="play-resource-power-open">'+diceGlyph()+content+'</span>')+
+     trackerChip(row.tracker_id,1)+'</div>';
   }).join('');
   const traits=view.battleTraits||[];
   const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
@@ -781,8 +795,36 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      (Number(tracker.spent||0)===0?' disabled':'')+'>Ripristina tutti gli utilizzi</button></section>';
    source.insertAdjacentHTML('beforeend',bonusRows(tracker.id)+detail);
   }
+  // Read attack counts from typed grants first; 5eTools prose is only a
+  // fallback for explicit statements such as "make two unarmed strikes".
+  // Neither the name of the class nor a specific privilege is special-cased.
+  const powerAttackSteps=row=>{
+   const sources=[row.classAction,row.power].filter(Boolean);
+   const typed=sources.find(source=>Number(source.attack_count||source.attacks_per_action)>0||
+    Array.isArray(source.attack_sequence)&&source.attack_sequence.length||
+    Array.isArray(source.attacks_granted)&&source.attacks_granted.length);
+   if(typed)return attackActionSequence(typed,c,d);
+   const description=String(sources.map(source=>source.description||'').join(' '));
+   const hit=description.match(/\b(?:make|makes|effettua|effettuare|sferra|sferrare)\s+(one|two|three|four|five|six|uno|una|due|tre|quattro|cinque|sei|\d+)\s+((?:[\w'-]+\s+){0,3}?)(?:attacks?|strikes?|attacchi|colpi)\b/i);
+   if(!hit)return [];
+   const quantity=({one:1,two:2,three:3,four:4,five:5,six:6,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6})[hit[1].toLowerCase()]||Number(hit[1])||0;
+   if(!(quantity>0&&quantity<=20))return [];
+   const name=/unarmed|senz.?armi/i.test(hit[2])?'Colpo senz’armi':'Attacco';
+   return Array.from({length:quantity},()=>name);
+  };
+  const sequenceMarkup=steps=>steps.length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
+   steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'';
+  // A native ability may carry a roll bonus as an *effect* without being
+  // equivalent to a bonus selectable on a roll. Keep its Use operation unless
+  // the same paid bonus already has its own benefit row.
   const abilityButtons=(key,filtered=null)=>(filtered||powerRows.filter(row=>row.key===key))
-   .filter(row=>!row.classAction?.roll_bonus).map(row=>{
+   // Activated capabilities remain operable even when they also carry a roll
+   // bonus; the bonus line is not a replacement for their action.
+   .filter(row=>row.source==='activated'||!row.classAction?.roll_bonus||!rollBonuses.some(b=>
+    b.tracker_id===row.tracker_id&&
+    (String(b.name||'').toLowerCase()===String(row.name||'').toLowerCase()||
+     String(b.origin_id||'')===String(row.classAction.origin_id||'')&&!!b.origin_id))).map(row=>{
+   const steps=powerAttackSteps(row);
    const tracker=(d.trackers||[]).find(t=>String(t.id)===String(row.tracker_id));
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
    // Abilities can confirm "Nessun tracker" even if their resource is spent.
@@ -803,7 +845,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong><small>'+esc(caption+note)+'</small></span></button>'+
     '<button type="button" class="play-resource-use" data-act="battle-cast-resource-spell" data-grant-id="'+esc(row.id)+'"'+(disabled?' disabled':'')+
-    ' aria-label="Lancia '+esc(row.name)+'">Lancia</button></div>';
+    ' aria-label="Lancia '+esc(row.name)+'">Lancia</button>'+trackerChip(row.tracker_id,row.cost)+'</div>';
    const id=row.id,action=row.classAction||{},power=row.power||{};
    const trait=featureFor([power.feature_id,power.origin_id,action.origin_id,action.feature_id],
      action.feature||row.name);
@@ -843,171 +885,70 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     ' aria-label="Disattiva '+esc(row.name)+'">Disattiva</button>':
     '<button type="button" class="play-resource-use" data-act="'+useAction+'"'+useIdentity+
     (persistent?' data-persistent-key="'+esc(statusKey)+'"':'')+
-    (disabled?' disabled':'')+' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+'</div>';
+    (disabled?' disabled':'')+' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+
+    trackerChip(row.tracker_id,row.cost)+'</div>'+sequenceMarkup(steps);
   }).join('');
+  // Resources are a flat catalogue of counters and *actual* attack options.
+  // An action which spends a counter is rendered separately under Actions.
+  const linkedAbilities=[];
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
    const left=Math.max(0,t.max-t.spent),key='tracker:'+t.id;
    const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);
    bind('resource:'+t.id,source);
    const context=powerGroups.has(key)?'power-resource:'+key:'resource:'+t.id;
    const linked=resourceLinkedSubclassTrait(t,d.features||[],powerRows,d);
-   const reference=linked?'<div class="play-resource-power-row" data-linked-subclass-resource="'+esc(t.id)+'">'+
+   if(linked)linkedAbilities.push('<div class="play-resource-power-row" data-linked-subclass-resource="'+esc(t.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(linked.origin_id)+'"'+
     ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon('spark')+
-    '<span><strong>'+esc(linked.name)+'</strong><small>Capacità di sottoclasse · '+esc(trackerRecoveryText(t))+'</small></span></button>'+
+    '<span><strong>'+esc(linked.name)+'</strong><small>Capacità di sottoclasse</small></span></button>'+
     '<button type="button" class="play-resource-use" data-act="tracker-trait-use" data-tracker-id="'+esc(t.id)+'"'+
-    ' data-origin-id="'+esc(linked.origin_id)+'"'+/* Alternative slot payments may be available even with zero tracker uses.
-      The activation dialog validates eligibility and available resources. */''+
-    ' aria-label="Usa '+esc(linked.name)+'">Usa</button></div>':'';
-   return '<div class="play-resource-group" data-resource-tracker="'+esc(t.id)+'"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'">'+
-    '<span class="play-resource-copy"><strong class="play-resource-name">'+esc(t.name)+'</strong><small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
-    '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
-    '</div>'+bonusRows(t.id)+abilityButtons(key)+reference+'</div>';
+    ' data-origin-id="'+esc(linked.origin_id)+'" aria-label="Usa '+esc(linked.name)+'">Usa</button>'+
+    trackerChip(t.id,1)+'</div>');
+   return '<div class="play-resource play-resource--flat" data-resource-tracker="'+esc(t.id)+'">'+
+    '<button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'">'+
+    '<span class="play-resource-copy"><strong class="play-resource-name">'+esc(t.name)+'</strong>'+
+    '<small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
+    '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button></div>';
   }).join('');
-  // Unlimited abilities belong to their granting trait rather than to a
-  // fictitious free-use tracker. Keep paid powers under their real trackers.
-  const freeByTrait=new Map();
-  for(const row of powerRows.filter(row=>row.key==='free')){
-   const action=row.classAction||{},power=row.power||{},grant=row.grant||{};
-   const originId=grant.origin_id||power.feature_id||power.origin_id||
-    action.origin_id||action.feature_id||'';
-   const trait=featureFor([originId],action.feature_name||row.name);
-   const key=trait?.origin_id||originId||'unattributed:'+row.id;
-   if(!freeByTrait.has(key))freeByTrait.set(key,{
-    id:key,name:trait?.name||grant.origin_name||power.feature_name||power.origin_name||
-     action.feature_name||row.name,rows:[]});
-   freeByTrait.get(key).rows.push(row);
-  }
-  const privilegeGroup=(id,title,body,sourceId='',status='Privilegio')=>
-   '<div class="play-resource-ungrouped play-resource-privilege" data-resource-privilege="'+esc(id)+'">'+
-    '<div class="play-resource"><span class="play-resource-copy">'+
-     '<strong class="play-resource-name">'+esc(title)+'</strong>'+
-     '<small class="play-resource-recovery">'+esc(status)+'</small></span>'+
-     (sourceId?'<button type="button" class="play-resource-trait-link" data-act="power-trait" data-origin-id="'+esc(sourceId)+'" aria-label="Apri il tratto '+esc(title)+'">'+icon('details')+'</button>':'')+
-    '</div>'+body+'</div>';
-  const freePrivileges=[...freeByTrait.values()].map(group=>
-   privilegeGroup(group.id,group.name,abilityButtons('free',group.rows),
-    group.id.startsWith('unattributed:')?'':group.id));
-  // Basic-rule and trait-granted rows share the same clear action style.
-  // Unavailable rules stay clickable so their matching action and explanation
-  // can still be inspected. Spellcasting jumps straight to the Powers tab.
-  // A feat can provide an independent second-weapon capacity without
-  // changing the basic-rule availability for two Light weapons.
-  const actionLink=(id,name,time,available=true,extra='',count=0,grantId='',grantName='')=>
-   '<div class="play-resource-power-row play-resource-rule'+(available?'':' play-resource-rule--inactive')+
-    (id==='attack'?' play-resource-rule--attack':'')+'" data-rule-action="'+esc(id)+'">'+
-    '<button type="button" class="play-resource-power-open" data-act="'+
-    (id==='spell_cast'?'action-open-spells':'battle-action-jump')+'" data-action-id="'+esc(id)+'"'+
-    ' aria-label="'+esc(name)+'">'+icon(id==='ability_checks'?'skill':actionGlyphKey({id,name,time}))+
-    '<span><strong>'+esc(name)+'</strong><small>'+render5etoolsInline(extra||(
-     available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):
-     'Non disponibile'))+'</small></span></button>'+
-    (count>1?(grantId?'<button type="button" class="play-battle-attacks-per-action" data-act="power-trait"'+
-      ' data-origin-id="'+esc(grantId)+'" title="Apri il privilegio '+esc(grantName||'Multiattacco')+'"'+
-      ' aria-label="Apri il privilegio '+esc(grantName||'Multiattacco')+', '+count+(c.kind==='monster'?' elementi della sequenza':' attacchi per azione')+'">':
-      '<span class="play-battle-attacks-per-action" aria-label="'+count+(c.kind==='monster'?' elementi della sequenza':' attacchi per azione')+'">')+
-     '×'+count+(grantId?'</button>':'</span>'):'')+'</div>';
-  const basic=view.battleActions?.basicActions||[];
-  const base=id=>basic.find(row=>row.id===id)||{id,available:false};
-  const grants=(d.attack_count_benefits||[]).filter(row=>Number(row.attacks_per_action)>1);
-  const maxCount=Math.max(1,Number(base('attack').attack_count)||1,
-   ...grants.map(row=>Number(row.attacks_per_action)));
-  const mainGrant=grants.find(row=>Number(row.attacks_per_action)===maxCount);
-  const maxTrait=mainGrant?featureFor([mainGrant.origin_id],mainGrant.origin_name):null;
-  const maxGrantOrigin=maxTrait?.origin_id||mainGrant?.origin_id||'';
-  const baseRuleNames={
-   attack:'Azione di attacco',opportunity:'Attacco di opportunità',
-   spell_cast:'Lanciare un incantesimo',two_weapon:'Attacco con arma secondaria',
-   ability_checks:'Prova abilità'
-  };
-  const movedRuleIds=new Set((view.battleActions?.modifiedActions||
-   view.battleActions?.overriddenActions||[]).map(row=>row.id));
-  const rulesOfBase=[
-   ['attack','action'],['opportunity','reaction'],
-   ['spell_cast','action'],['two_weapon','bonus'],['ability_checks','action'],
-   ...basic.filter(row=>['legendary_action','legendary_resistance','lair_action'].includes(row.id)).map(row=>[row.id,row.time])
-  ];
-  const basicRules=privilegeGroup('basic-rules','Regole di base',
-   rulesOfBase.filter(([id])=>!movedRuleIds.has(id)).map(([id,time])=>{
-    const row=base(id),available=row.available!==false;
-    const hint=id==='spell_cast'?'Slot':
-     id==='attack'?(maxCount>1?(row.grant_description||maxTrait?.description||'Azione').replace(/^(?:[^·]+\s*·\s*)?(?:\\?\{@i\s*)?\d+(?:st|nd|rd|th)[- ]level\s+[^:]+?\s+feature(?:\})?\s*[:·-]?\s*/i,'').trim()||'Azione':'Azione'):
-     ['legendary_action','legendary_resistance','lair_action'].includes(id)?'1 '+({legendary_action:'Azione leggendaria',legendary_resistance:'Resistenza leggendaria',lair_action:'Azione di tana'}[id]):
-     !available?(row.unavailable_reason||
-      (id==='opportunity'?'È necessario poter effettuare un attacco in mischia.':
-       'Manca l’equipaggiamento richiesto.')):'';
-    return actionLink(id,baseRuleNames[id]||row.name,time,available,hint,
-     id==='attack'?maxCount:0,
-     id==='attack'?maxGrantOrigin:'',
-     id==='attack'?(maxTrait?.name||mainGrant?.origin_name||'Multiattacco'):'');
-   }).join(''),'','Azioni e requisiti base');
-  // Dual Wielder 2014 is displayed under its own granting feat. Its capacity
-  // may be usable while the separate base-rule offhand row stays locked.
-  const offhand=view.battleActions?.offhandEligibility||{};
-  const feat=offhand.feat;
-  const featTrait=feat?featureFor([feat.origin_id,feat.feature_id,feat.origin_key],feat.name||'Dual Wielder'):null;
-  const featId=featTrait?.origin_id||feat?.origin_id||'';
-  const featPrivileges=feat?[privilegeGroup('feat-dual-wielder',featTrait?.name||feat.name||'Dual Wielder',
-   actionLink('two_weapon','Attacco con arma secondaria','bonus',!!offhand.feat_available,
-    offhand.feat_available?'Azione bonus':offhand.feat_reason||'Equipaggiamento non idoneo'),
-   featId,'Talento · combattimento con due armi')]:[];
-  // Action-time and explicit action-damage benefits share one source-owned
-  // group. The action stays in Actions but moves out of the basic Rules group.
-  const changedByTrait=new Map();
-  for(const action of view.battleActions?.modifiedActions||
-    view.battleActions?.overriddenActions||[]){
-   const id=action.action_change_origin,trait=featureFor([id],action.action_change_feature);
-   const key=trait?.origin_id||id;
-   if(!key||!action.id)continue;
-   if(!changedByTrait.has(key))changedByTrait.set(key,[]);
-   const existing=changedByTrait.get(key).find(row=>row.id===action.id);
-   if(existing){
-    existing.action_damage=[...(existing.action_damage||[]),...(action.action_damage||[])];
-    if(action.time!==action.original_time){
-     existing.time=action.time;existing.original_time=action.original_time;
-    }
-   }else changedByTrait.get(key).push({...action,action_damage:[...(action.action_damage||[])]});
-  }
-  const overriddenPrivileges=[...changedByTrait.entries()].map(([id,actions])=>{
-   const trait=featureFor([id],actions[0].action_change_feature);
-   const title=trait?.name||actions[0].action_change_feature||'Privilegio';
-   const names={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Nessun costo',movement:'Movimento'};
-   const details=action=>{
-    const parts=[];
-    if(action.time!==action.original_time)
-     parts.push((names[action.original_time]||'Azione')+' → '+(names[action.time]||action.time));
-    for(const bonus of action.action_damage||[])
-     parts.push('Danni '+bonus.formula+(bonus.damage_type?' · '+bonus.damage_type:''));
-    return parts.join(' · ');
-   };
-   return privilegeGroup('timing:'+id,title,actions.map(action=>
-    actionLink(action.id,action.name,action.time,true,details(action))).join(''),
-    trait?.origin_id||id,actions.some(row=>row.action_damage?.length)?
-     'Modifica i danni delle azioni':'Modifica il tipo di azione');
+  // A newly granted strike is a resource option, not an action that grants
+  // attacks. Keep it outside Azioni while leaving the canonical Attacchi
+  // table (including Unarmed Strike) unchanged.
+  const grantedAttackRows=powerRows.filter(row=>{
+   if(row.kind!=='ability')return false;
+   const attackId=resourceAttackId(row,d.attacks||[]);
+   return !!attackId&&!['unarmed','unarmed:off'].includes(attackId);
   });
-  // Missing trackers are exceptional and must remain visible, not be
-  // misrepresented as cost-free privileges.
-  const missingPowers=abilityButtons('missing');
-  const untracked=(missingPowers?'<div class="play-resource-ungrouped" data-ability-resource="missing">'+
-   '<div class="play-resource"><span class="play-resource-heading">Tracker non disponibile</span></div>'+
-    missingPowers+'</div>':'')+
-   freePrivileges.join('')+featPrivileges.join('')+
-   overriddenPrivileges.join('')+basicRules;
+  const combatPowers=powerRows.filter(row=>!grantedAttackRows.includes(row));
+  const actionGroups=view.battleActions?.actionGroups||{};
+  const powerAttacks=combatPowers.filter(row=>powerAttackSteps(row).length>0);
+  const powerAbilities=combatPowers.filter(row=>!powerAttacks.includes(row));
+  const actionGroup=(key,title,glyph,body)=>!body?'':'<details class="play-battle-action-group" data-action-benefit="'+key+'" open>'+
+   '<summary class="play-battle-action-heading">'+icon(glyph)+'<span>'+esc(title)+'</span></summary>'+
+   '<div class="play-action-benefit-rows">'+body+'</div></details>';
+  const actionsMarkup=[
+   actionGroup('abilities','Capacità','spark',abilityButtons('all',powerAbilities)+linkedAbilities.join('')+(actionGroups.abilities||'')),
+   actionGroup('attacks','Azioni di attacco','weapon',(actionGroups.attacks||'')+abilityButtons('all',powerAttacks)),
+   actionGroup('roll-bonuses','Bonus ai tiri','dice',(d.trackers||[]).filter(t=>!t.disabled).map(t=>bonusRows(t.id,'roll')).join('')),
+   actionGroup('damage-bonuses','Bonus ai danni','dice',(d.trackers||[]).filter(t=>!t.disabled).map(t=>bonusRows(t.id,'damage')).join('')),
+   actionGroup('other','Altre azioni','hand',actionGroups.other||'')
+  ].join('');
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
    '<details class="play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
    '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2></summary>'+body+'</details>'+
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
 
-  if(resources+untracked)html+=disclosure('resources','Risorse','reset',
-   resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>',true);
+  const flatResources=resources+abilityButtons('all',grantedAttackRows);
+  html+=disclosure('resources','Risorse','reset',
+   flatResources||'<p class="play-empty">Nessun tracker o nuovo attacco disponibile.</p>',true);
+  // Restore the Attacchi table with its original structure and equipment
+  // shortcut; never nest it under Resources or Azioni.
   if(view.battleActions?.attacks)html+=disclosure('attacks','Attacchi','weapon',
-   view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
+   view.battleActions.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
-  if(view.battleActions?.others)html+=disclosure('others','Azioni','hand',
-   view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
+  if(actionsMarkup)html+=disclosure('others','Azioni','hand',actionsMarkup,true);
   if(view.battleActions?.checks)html+=disclosure('checks','Prove abilità','skill',
-   view.battleActions?.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
+   view.battleActions.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
  }
  if(sheet==='info'){
   const identity=panelNamed('Identità');bind('identity',identity);

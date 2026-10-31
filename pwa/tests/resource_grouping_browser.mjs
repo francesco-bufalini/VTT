@@ -24,8 +24,8 @@ try{
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  const extra=page.locator('#sheet-play-view [data-resource-tracker="feature:lightning_launcher:extra_damage"]');
  assert.equal(await extra.locator('[data-act="battle-use-ability"],[data-act="tracker-trait-use"]').count(),0);
- assert.match(await extra.innerText(),/1d6/);
- const launcher=page.locator('#sheet-play-view [data-resource-privilege]').filter({hasText:'Lightning Launcher'});
+ assert.match(await page.locator('[data-battle-action="others"] [data-action-benefit="damage-bonuses"]').innerText(),/1d6/);
+ const launcher=page.locator('#sheet-play-view [data-battle-action="others"] .play-resource-power-row').filter({hasText:'Lightning Launcher'});
  assert.equal(await launcher.count(),1);
  const attack=launcher.locator('[data-act="battle-use-ability"]');
  assert.equal(await attack.count(),1);assert(await attack.isEnabled());
@@ -33,7 +33,7 @@ try{
  await page.locator('#sheet-roll-dialog[open]').waitFor();
  assert.match(await page.locator('#sheet-roll-dialog').innerText(),/Lightning Launcher/);
  await page.keyboard.press('Escape');
- const servant=page.locator('#sheet-play-view [data-resource-privilege]').filter({hasText:'Comanda homunculus'});
+ const servant=page.locator('#sheet-play-view [data-battle-action="others"] .play-resource-power-row').filter({hasText:'Comanda homunculus'});
  assert.equal(await servant.count(),1);
  assert.match(await servant.innerText(),/Azione bonus/);
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent;});
@@ -77,7 +77,7 @@ try{
   await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
   const disclosure=page.locator('[data-battle-action="resources"]');
   if(!await disclosure.evaluate(n=>n.open))await disclosure.locator('summary.play-battle-summary').click();
-  const free=page.locator('#sheet-play-view [data-resource-privilege]').filter({hasText:config.command});
+  const free=page.locator('#sheet-play-view [data-battle-action="others"] .play-resource-power-row').filter({hasText:config.command});
   assert.equal(await free.count(),1);
   if(config.descriptive){
    assert.equal(await free.locator('[data-act="battle-use-ability"]').count(),0,

@@ -131,17 +131,14 @@ try{
  const resources=page.locator('#sheet-play-view [data-battle-action="resources"]');
  if(await resources.getAttribute('open')===null)
    await resources.locator(':scope > summary.play-battle-summary').click();
- const offhandResource=resources.locator('[data-rule-action="two_weapon"] [data-act="battle-action-jump"]');
- assert.equal(await offhandResource.count(),1,'Secondary attack is always in base rules');
- assert.equal(await offhandResource.isEnabled(),true,'Blocked secondary attack still links to Azioni');
- await offhandResource.click();
- const secondary=page.locator('#sheet-play-view [data-battle-action="others"] [data-attack-id="two_weapon"]');
+ assert.equal(await resources.locator('[data-rule-action]').count(),0,'Resources contain only counters and actual attacks');
+ const secondary=page.locator('#sheet-play-view [data-battle-action="others"] [data-action-benefit="attacks"] [data-attack-id="two_weapon"]');
  assert.equal(await secondary.count(),1);
  assert.equal(await page.locator('[data-battle-action="others"]').getAttribute('open'),'',
   'Selecting offhand base rule reveals its matching action');
- await resources.locator('[data-rule-action="spell_cast"] [data-act="action-open-spells"]').click();
- await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
- await sheet('battle');
+ // A new non-caster has no spellcasting action; the Powers destination remains reachable.
+ assert.equal(await page.locator('[data-battle-action="others"] [data-attack-id="spell_cast"]').count(),0);
+ await sheet('magic');await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="spells"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
   'Class-only filtering no longer exists');
