@@ -1049,6 +1049,9 @@ try{
  assert.equal(await poisonedChip.locator('[data-act="state-trait-jump"]').count(),1);
  assert.equal(await poisonedChip.locator('[data-act="condition-remove"]').count(),1);
  await poisonedChip.locator('[data-act="condition-remove"]').click();
+ // Wait for the async save AND its re-render before checking persistence.
+ // A transient IndexedDB revision alone can precede a pending UI update.
+ await poisonedChip.waitFor({state:'detached'});
  await page.waitForFunction(async id=>{
   const {loadCreature}=await import('/creatures.js');
   return !(await loadCreature(id))?.data?.conditions?.includes('poisoned');
