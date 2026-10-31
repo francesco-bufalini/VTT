@@ -292,8 +292,11 @@ function resolveItemEntryReferences(value,index,categories,owner,seen=new Set(),
     "Descrizione condivisa con "+name+" ("+source+") non inclusa nel catalogo offline.";
   }
   const next=new Set(seen);next.add(ref);
-  const description=referenced.entries??referenced.description??referenced.text??referenced.fluff;
-  return resolveItemEntryReferences(description??value,index,categories,owner,next,depth+1);
+  const description=referenced.entries??referenced.description??referenced.text??
+   referenced.fluff??referenced.inherits?.entries;
+  return description==null?
+   "Descrizione condivisa con "+name+" ("+source+") non inclusa nel catalogo offline.":
+   resolveItemEntryReferences(description,index,categories,owner,next,depth+1);
  }
  if(value&&typeof value==="object"){
   const out={...value};
