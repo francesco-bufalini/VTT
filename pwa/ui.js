@@ -47,7 +47,7 @@ import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} fr
 import {availableZeroHpResponses,resolveZeroHpDamage} from './zero_hp_responses.js';
 import {incomingDamageOptions,resolveIncomingDamage} from './defense_summary.js';
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan,describeSheetActivity} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch,trackerRollBonusRows } from "./sheet_rules_view.js";
 import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
@@ -7252,6 +7252,45 @@ async function handleAction(target){
     const followUp=singleNewPendingChoice(fresh.pending_choices,
       state.calculated?.pending_choices||[],live);
     if(followUp)await openCharacterChoice(followUp);
+    return;
+  }
+  // A sequence step never rolls here: it reveals the original computed attack
+  // in the dedicated Attacchi table, including its native hit/damage controls.
+  if(act==='battle-attack-jump'){
+    const panel=app.querySelector('#sheet-play-view [data-battle-action="attacks"]');
+    if(!panel)return;
+    panel.open=true;state.disclosureState.set('battle-disclosure:attacks',true);
+    const id=String(target.dataset.attackTargetId||'');
+    const attack=id?[...panel.querySelectorAll('[data-attack-id]')]
+      .find(node=>node.dataset.attackId===id):null;
+    const focus=attack?.querySelector('.play-battle-attack-details>summary')||
+      panel.querySelector(':scope > summary');
+    (attack||panel).scrollIntoView({behavior:'smooth',block:'center'});
+    focus?.focus({preventScroll:true});return;
+  }
+  // A tracker-backed roll bonus must be selected in a real roll popup; a
+  // click on the benefit card navigates to that roll without spending uses.
+  if(act==='battle-roll-bonus-jump'){
+    const creature=state.editor?.read();if(!creature)throw Error('Creatura non disponibile.');
+    const calculated=await computeLocalData(creature);
+    const id=String(target.dataset.rollBonusId||''),trackerId=String(target.dataset.trackerId||'');
+    const bonus=trackerRollBonusRows(creature,calculated).find(row=>
+      String(row.tracker_id)===trackerId&&String(row.id||row.name||'')===id);
+    if(!bonus)throw Error('Bonus non più disponibile.');
+    const targets=(Array.isArray(bonus.targets)?bonus.targets:[bonus.target]).filter(Boolean);
+    const exact=targets.length===1&&/^(?:skill:|ability_check:|save:|attack_hit:|initiative$)/.test(String(targets[0]));
+    if(exact){
+      await handleAction({dataset:{act:'sheet-roll',target:String(targets[0]),label:bonus.name||'Tiro'}});
+      return;
+    }
+    const isAttack=targets.some(value=>/^(?:attack_roll|attack_hit:|attack_damage:|damage_roll|spell_attack|spell_damage)/.test(String(value)));
+    const panel=app.querySelector('#sheet-play-view [data-battle-action="'+(isAttack?'attacks':'checks')+'"]');
+    if(!panel)return;
+    panel.open=true;state.disclosureState.set('battle-disclosure:'+(isAttack?'attacks':'checks'),true);
+    if(!isAttack)for(const group of panel.querySelectorAll('[data-action-ability]'))group.open=true;
+    panel.scrollIntoView({behavior:'smooth',block:'start'});
+    panel.querySelector(':scope > summary')?.focus({preventScroll:true});
+    message('Seleziona un tiro e applica '+(bonus.name||'il bonus')+' nel relativo popup.');
     return;
   }
   if(act==='battle-action-jump'){
