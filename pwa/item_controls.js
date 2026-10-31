@@ -680,6 +680,7 @@ export function equipmentRequirementMatches(record={},requirements={},target='',
  if(!selected(kind,rule.kind)||!selected(mode,rule.mode)||!selected(range,rule.range_kind)||
     !selected(item?.weapon_type||'',rule.weapon_type)||
     !selected(item?.slot||'',rule.slot)||
+    !selected(String(attack?.ability||''),rule.ability)||
     !selected(String(attack?.damage_type||item?.damage_type||'').toLowerCase(),rule.damage_type))return false;
  if(array(rule.properties).length&&!item||array(rule.properties).some(p=>!item?.properties.includes(String(p).toUpperCase())))return false;
  if(array(rule.any_properties).length&&!rule.any_properties.some(p=>item?.properties.includes(String(p).toUpperCase())))return false;
@@ -687,22 +688,13 @@ export function equipmentRequirementMatches(record={},requirements={},target='',
  const twoHanded=item?.properties.includes('2H')||
   item?.slot==='main'&&item?.properties.includes('V')&&record.hand_grip_two_handed&&!gear.some(e=>e.slot==='off');
  if(rule.one_handed!==undefined&&(!item||Boolean(!twoHanded)!==Boolean(rule.one_handed)))return false;
- if(rule.two_handed!==undefined&&(!item||Boolean(twoHanded)!==Boolean(rule.two_handed)))return false;
+ if(rule.min_ability_modifier!==undefined&&
+   (!Number.isFinite(Number(attack?.ability_modifier))||
+    Number(attack.ability_modifier)<Number(rule.min_ability_modifier)))return false;
+ if(rule.offhand_eligible!==undefined&&Boolean(attack?.offhand_eligible)!==Boolean(rule.offhand_eligible))return false;
  if(rule.no_other_weapon===true&&(!item||gear.some(e=>e.kind==='weapon'&&e.slot!==item.slot)))return false;
  if(rule.no_shield===true&&gear.some(e=>e.kind==='shield'))return false;
  return true;
-}
-// All damage-die rerolls follow the same attack/equipment condition contract
-// as ordinary conditional numeric bonuses.
-export function matchingDamageDieRerolls(record={},attack={}){
- if(!attack?.id)return [];
- const target='attack_damage:'+attack.id,equipped=equippedItemFacts(record);
- return array(record.damage_die_rerolls).filter(row=>
-  !row?.disabled&&row.scope==='weapon_damage_dice'&&
-  Number.isInteger(Number(row.reroll_at_most))&&Number(row.reroll_at_most)>0&&
-  record.origin_enabled?.[row.origin_id]!==false&&
-  record.origin_enabled?.[row.parent_origin]!==false&&
-  equipmentRequirementMatches(record,row.requirements,target,attack,equipped));
 }
 export function validSlot(item,slot){
   const kind=itemKind(item);
