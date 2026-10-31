@@ -5561,6 +5561,8 @@ function decorateSheetHeadings(){
   }
   heading.classList.add('sheet-heading');
  }
+ // Session, catalog and creature archive use the same distance preference.
+ if(state.page!=='library'||state.libraryMode||!state.editor)applyDistanceUnits(app);
 }
 async function saveInfoPortrait(input){
  const file=input.files?.[0];
