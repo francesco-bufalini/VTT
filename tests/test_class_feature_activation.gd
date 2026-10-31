@@ -110,6 +110,9 @@ func run() -> void:
 	armorer["classes"][0]["subclass_source"] = "TCE"
 	armorer["inventory"] = [{"id": "armor_test", "name": "Scale Mail", "type": "MA",
 		"ac": 14, "quantity": 1, "equipped_slots": ["body"]}]
+	assert(not Runtime.entries(armorer).any(func(action: Dictionary) -> bool:
+		return String(action.get("mode", "")) == "armor_model"), "Unmodified armor must not grant Armor Models")
+	armorer["power_applications"] = {"arcane_armor": [{"id": "arcane_armor", "target_item_id": "armor_test"}]}
 	var model_actions := Runtime.entries(armorer)
 	assert(model_actions.any(func(action: Dictionary) -> bool:
 		return String(action.get("key", "")) == "armor_guardian"), "Missing eligible Guardian model")
