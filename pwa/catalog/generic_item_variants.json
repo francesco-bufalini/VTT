@@ -1287,7 +1287,12 @@
      "target": "attack_damage",
      "dice": "6d10",
      "damage_type": "force",
-     "condition_label": "Solo contro il tipo di creatura designato; TS Costituzione CD 17, metà danno se riuscito. La munizione perde magia."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo contro il tipo di creatura designato; TS Costituzione CD 17, metà danno se riuscito. La munizione perde magia.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -2666,7 +2671,12 @@
      "target": "attack_damage",
      "dice": "6d10",
      "damage_type": "piercing",
-     "condition_label": "Solo contro il tipo di creatura designato; TS Costituzione CD 17, metà danno se riuscito. La freccia perde magia."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo contro il tipo di creatura designato; TS Costituzione CD 17, metà danno se riuscito. La freccia perde magia.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -2701,7 +2711,8 @@
      "type": "actions",
      "name": "Dragon's Wrath · Soffio",
      "action_type": "action",
-     "description": "Azione: cono di 60 piedi, TS Destrezza CD 18, 12d6 danni del tipo del soffio; metà se riuscito. Una volta per alba."
+     "description": "Azione: cono di 60 piedi, TS Destrezza CD 18, 12d6 danni del tipo del soffio; metà se riuscito. Una volta per alba.",
+     "descriptive_only": true
     }
    ]
   },
@@ -3071,7 +3082,12 @@
      "target": "attack_damage",
      "dice": "1d6",
      "damage_type": "fire",
-     "condition_label": "Ogni colpo a segno con questo arco; l'incendio persistente sull'oggetto è separato."
+     "condition_label": "Ogni colpo a segno con questo arco; l'incendio persistente sull'oggetto è separato.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -3222,7 +3238,12 @@
      "type": "dice",
      "target": "attack_damage",
      "dice": "1d8",
-     "condition_label": "Solo contro un non morto; danno dello stesso tipo dell'arma."
+     "condition_label": "Solo contro un non morto; danno dello stesso tipo dell'arma.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -3269,7 +3290,12 @@
      "target": "attack_damage",
      "dice": "1d8",
      "damage_type": "radiant",
-     "condition_label": "Ogni colpo a segno con questa spada; la cura con carica è un effetto separato."
+     "condition_label": "Ogni colpo a segno con questa spada; la cura con carica è un effetto separato.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -3628,7 +3654,12 @@
      "type": "dice",
      "target": "attack_damage",
      "dice": "3d6",
-     "condition_label": "Solo se il bersaglio è un drago; danno dello stesso tipo dell'arma."
+     "condition_label": "Solo se il bersaglio è un drago; danno dello stesso tipo dell'arma.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -3668,7 +3699,12 @@
      "type": "dice",
      "target": "attack_damage",
      "dice": "3d6",
-     "condition_label": "Solo se il bersaglio è un drago; danno dello stesso tipo dell'arma."
+     "condition_label": "Solo se il bersaglio è un drago; danno dello stesso tipo dell'arma.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -3733,7 +3769,12 @@
      "target": "attack_damage",
      "dice": "3d6",
      "damage_type": "force",
-     "condition_label": "Solo se il bersaglio è un drago."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo se il bersaglio è un drago.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -4748,7 +4789,12 @@
      "target": "attack_damage",
      "dice": "2d6",
      "damage_type": "slashing",
-     "condition_label": "Solo quando colpisci un umanoide; i PF temporanei pari al danno vanno annotati separatamente."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo quando colpisci un umanoide; i PF temporanei pari al danno vanno annotati separatamente.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -4848,26 +4894,24 @@
    "effects": [
     {
      "type": "actions",
-     "name": "Flame Tongue · Accendi/Spegni",
+     "name": "Flame Tongue · Accendere / spegnere",
      "action_type": "bonus",
-     "description": "Azione bonus: pronuncia la parola di comando per accendere o spegnere la lama. Le fiamme si spengono quando lasci o rinfoderi l'arma."
+     "descriptive_only": true,
+     "description": "Azione bonus descrittiva, senza stato automatico: pronuncia la parola di comando per accendere o spegnere le fiamme. Le fiamme si spengono anche quando lasci, riponi o rinfoderi l'arma."
     },
     {
      "type": "dice",
      "target": "attack_damage",
      "dice": "2d6",
      "damage_type": "fire",
-     "condition_label": "Solo mentre le fiamme della Flame Tongue sono accese e l'attacco colpisce.",
-     "requires_activation": true
+     "condition_label": "Solo con questa Flame Tongue, se la lama è accesa. Accensione/spegnimento gestiti dal giocatore con l'azione bonus descrittiva.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
-   ],
-   "activation": {
-    "label": "Fiamme",
-    "action_type": "bonus",
-    "on": "Accendi le fiamme",
-    "off": "Spegni le fiamme",
-    "ends_on": "Riporre, lasciare o rinfoderare l'arma"
-   }
+   ]
   },
   {
    "id": "generic-variant:xdmg:flame%20tongue",
@@ -4905,26 +4949,24 @@
    "effects": [
     {
      "type": "actions",
-     "name": "Flame Tongue · Accendi/Spegni",
+     "name": "Flame Tongue · Accendere / spegnere",
      "action_type": "bonus",
-     "description": "Azione bonus: pronuncia la parola di comando per accendere o spegnere la lama. Le fiamme si spengono quando lasci o rinfoderi l'arma."
+     "descriptive_only": true,
+     "description": "Azione bonus descrittiva, senza stato automatico: pronuncia la parola di comando per accendere o spegnere le fiamme. Le fiamme si spengono anche quando lasci, riponi o rinfoderi l'arma."
     },
     {
      "type": "dice",
      "target": "attack_damage",
      "dice": "2d6",
      "damage_type": "fire",
-     "condition_label": "Solo mentre le fiamme della Flame Tongue sono accese e l'attacco colpisce.",
-     "requires_activation": true
+     "condition_label": "Solo con questa Flame Tongue, se la lama è accesa. Accensione/spegnimento gestiti dal giocatore con l'azione bonus descrittiva.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
-   ],
-   "activation": {
-    "label": "Fiamme",
-    "action_type": "bonus",
-    "on": "Accendi le fiamme",
-    "off": "Spegni le fiamme",
-    "ends_on": "Riporre, lasciare o rinfoderare l'arma"
-   }
+   ]
   },
   {
    "id": "generic-variant:bmt:fool's%20blade",
@@ -5045,7 +5087,12 @@
      "target": "attack_damage",
      "dice": "1d6",
      "damage_type": "cold",
-     "condition_label": "Ogni colpo a segno con quest'arma."
+     "condition_label": "Solo con l'arma che possiede questa variante. Ogni colpo a segno con quest'arma.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -5108,7 +5155,12 @@
      "target": "attack_damage",
      "dice": "1d6",
      "damage_type": "cold",
-     "condition_label": "Ogni colpo a segno con quest'arma."
+     "condition_label": "Solo con l'arma che possiede questa variante. Ogni colpo a segno con quest'arma.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -5180,7 +5232,12 @@
      "type": "dice",
      "target": "attack_damage",
      "dice": "2d6",
-     "condition_label": "Solo se il bersaglio è un gigante; danno dello stesso tipo dell'arma."
+     "condition_label": "Solo se il bersaglio è un gigante; danno dello stesso tipo dell'arma.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -5220,7 +5277,12 @@
      "type": "dice",
      "target": "attack_damage",
      "dice": "2d6",
-     "condition_label": "Solo se il bersaglio è un gigante; danno dello stesso tipo dell'arma."
+     "condition_label": "Solo se il bersaglio è un gigante; danno dello stesso tipo dell'arma.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -5275,7 +5337,12 @@
      "target": "attack_damage",
      "dice": "1d6",
      "damage_type": "radiant",
-     "condition_label": "Ogni attacco a distanza con quest'arco che colpisce."
+     "condition_label": "Solo con l'arma che possiede questa variante. Ogni attacco a distanza con quest'arco che colpisce.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -5502,7 +5569,12 @@
      "target": "attack_damage",
      "dice": "2d10",
      "damage_type": "radiant",
-     "condition_label": "Solo quando colpisci un immondo o un non morto."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo quando colpisci un immondo o un non morto.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -5550,7 +5622,12 @@
      "target": "attack_damage",
      "dice": "2d10",
      "damage_type": "radiant",
-     "condition_label": "Solo quando colpisci un immondo o un non morto."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo quando colpisci un immondo o un non morto.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -5881,7 +5958,12 @@
      "target": "attack_damage",
      "dice": "2d4",
      "damage_type": "necrotic",
-     "condition_label": "Ogni colpo a segno; impedisce anche le cure fino alla fine del prossimo turno del bersaglio."
+     "condition_label": "Solo con l'arma che possiede questa variante. Ogni colpo a segno; impedisce anche le cure fino alla fine del prossimo turno del bersaglio.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -6191,7 +6273,12 @@
      "target": "attack_damage",
      "dice": "2d6",
      "damage_type": "psychic",
-     "condition_label": "Solo se impugnata dal suo utilizzatore designato e il colpo va a segno."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo se impugnata dal suo utilizzatore designato e il colpo va a segno.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -6695,7 +6782,12 @@
      "target": "attack_damage",
      "dice": "3d6",
      "damage_type": "piercing",
-     "condition_label": "Solo sul nemico giurato designato da questa Oathbow."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo sul nemico giurato designato da questa Oathbow.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -7452,7 +7544,12 @@
      "target": "attack_damage",
      "dice": "2d6",
      "damage_type": "psychic",
-     "condition_label": "Ruidium Strike: su un colpo a segno."
+     "condition_label": "Solo con l'arma che possiede questa variante. Ruidium Strike: su un colpo a segno.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -7769,25 +7866,22 @@
      "type": "actions",
      "name": "Starshot Crossbow · Flames",
      "action_type": "bonus",
-     "description": "Azione bonus: consuma 1 carica per attivare Flames. Fino alla fine del tuo prossimo turno, i colpi con questa balestra infliggono +2d8 fuoco.",
-     "tracker_cost": 1
+     "description": "Azione bonus descrittiva: spendi manualmente 1 carica della balestra per invocare Flames. I prossimi colpi fino alla fine del tuo prossimo turno possono aggiungere 2d8 fuoco, selezionando il bonus nel tiro per danni.",
+     "descriptive_only": true
     },
     {
      "type": "dice",
      "target": "attack_damage",
      "dice": "2d8",
      "damage_type": "fire",
-     "condition_label": "Solo dopo aver invocato Flames (1 carica); fino alla fine del tuo prossimo turno, su un colpo a segno.",
-     "requires_activation": true
+     "condition_label": "Solo con questa Starshot Crossbow dopo aver speso manualmente 1 carica per Flames; fino alla fine del tuo prossimo turno.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
-   ],
-   "activation": {
-    "label": "Costellazione: Flames",
-    "action_type": "bonus",
-    "on": "Invoca Flames",
-    "off": "Termina Flames",
-    "ends_on": "Fine del prossimo turno"
-   }
+   ]
   },
   {
    "id": "generic-variant:ftd:stirring%20dragon's%20wrath%20weapon",
@@ -7907,7 +8001,12 @@
      "target": "attack_damage",
      "dice": "2d6",
      "damage_type": "poison",
-     "condition_label": "Solo quando la maledizione ti costringe a colpire un alleato; non su attacchi ordinari."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo quando la maledizione ti costringe a colpire un alleato; non su attacchi ordinari.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -7996,7 +8095,12 @@
      "target": "attack_damage",
      "flat_bonus": 10,
      "damage_type": "necrotic",
-     "condition_label": "Solo con un 20 naturale; il bersaglio non deve essere un costrutto o un non morto. Inoltre ottieni 10 PF temporanei."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo con un 20 naturale; il bersaglio non deve essere un costrutto o un non morto. Inoltre ottieni 10 PF temporanei.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8051,7 +8155,12 @@
      "target": "attack_damage",
      "flat_bonus": 15,
      "damage_type": "necrotic",
-     "condition_label": "Solo con un 20 naturale; il bersaglio non deve essere un costrutto o un non morto. Inoltre ottieni PF temporanei pari al danno necrotico."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo con un 20 naturale; il bersaglio non deve essere un costrutto o un non morto. Inoltre ottieni PF temporanei pari al danno necrotico.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8139,7 +8248,12 @@
      "target": "attack_damage",
      "flat_bonus": 14,
      "damage_type": "slashing",
-     "condition_label": "Solo con un 20 naturale contro una creatura; l'eventuale amputazione resta contestuale."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo con un 20 naturale contro una creatura; l'eventuale amputazione resta contestuale.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8187,7 +8301,12 @@
      "target": "attack_damage",
      "flat_bonus": 14,
      "damage_type": "slashing",
-     "condition_label": "Solo con un 20 naturale contro una creatura; applica separatamente un livello di Indebolimento."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo con un 20 naturale contro una creatura; applica separatamente un livello di Indebolimento.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8399,7 +8518,12 @@
      "target": "attack_damage",
      "dice": "2d6",
      "damage_type": "necrotic",
-     "condition_label": "Ogni colpo a segno; il blocco delle cure e i TS sono gestiti separatamente."
+     "condition_label": "Solo con l'arma che possiede questa variante. Ogni colpo a segno; il blocco delle cure e i TS sono gestiti separatamente.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8723,7 +8847,12 @@
      "type": "dice",
      "target": "attack_damage",
      "flat_bonus": 7,
-     "condition_label": "Solo con un 20 naturale sul tiro per colpire."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo con un 20 naturale sul tiro per colpire.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8767,7 +8896,12 @@
      "type": "dice",
      "target": "attack_damage",
      "flat_bonus": 7,
-     "condition_label": "Solo con un 20 naturale sul tiro per colpire."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo con un 20 naturale sul tiro per colpire.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8802,7 +8936,12 @@
      "type": "dice",
      "target": "attack_damage",
      "dice": "2d6",
-     "condition_label": "Ogni colpo a segno: stesso tipo dei danni normali dell'arma."
+     "condition_label": "Ogni colpo a segno: stesso tipo dei danni normali dell'arma.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8846,7 +8985,12 @@
      "target": "attack_damage",
      "dice": "6d8",
      "damage_type": "slashing",
-     "condition_label": "Solo con 20 naturale se la creatura è immune alla decapitazione ma può subire il danno supplementare."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo con 20 naturale se la creatura è immune alla decapitazione ma può subire il danno supplementare.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8898,7 +9042,12 @@
      "target": "attack_damage",
      "flat_bonus": 30,
      "damage_type": "slashing",
-     "condition_label": "Solo con 20 naturale se la creatura evita la decapitazione, secondo le condizioni del privilegio."
+     "condition_label": "Solo con l'arma che possiede questa variante. Solo con 20 naturale se la creatura evita la decapitazione, secondo le condizioni del privilegio.",
+     "requirements": {
+      "attack": {
+       "kind": "weapon"
+      }
+     }
     }
    ]
   },
@@ -8933,7 +9082,8 @@
      "type": "actions",
      "name": "Dragon's Wrath · Soffio",
      "action_type": "action",
-     "description": "Azione: cono di 30 piedi, TS Destrezza CD 16, 8d6 danni del tipo del soffio; metà se riuscito. Una volta per alba."
+     "description": "Azione: cono di 30 piedi, TS Destrezza CD 16, 8d6 danni del tipo del soffio; metà se riuscito. Una volta per alba.",
+     "descriptive_only": true
     }
    ]
   },

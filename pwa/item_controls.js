@@ -329,7 +329,7 @@ export function hydrateGenericVariants(record={},catalog={}){
    const variant=row.generic_variant&&definitions.get(row.id);
    if(!variant)return row;
    const definition={...row.definition};
-   for(const field of ['numeric_item_bonuses','effects','charge_tracker','item_fields','activation'])
+   for(const field of ['numeric_item_bonuses','effects','charge_tracker','item_fields'])
      if(Object.hasOwn(variant,field))definition[field]=variant[field];
    return {...row,definition};
   })};
@@ -364,9 +364,7 @@ export function genericVariantPatch(record,index,variant,add=true){
   copy.option_extensions=[...array(copy.option_extensions),{
    id,name:variant.name,source:variant.source,generic_variant:true,
    description,requires_attunement:Boolean(inherits.reqAttune||array(inherits.reqAttuneTags).length),
-   effect_active:false,
    definition:{id,name:variant.name,source:variant.source,inherits,
-    ...(variant.activation?{activation:variant.activation}:{}),
     ...(variant.item_fields?{item_fields:variant.item_fields}:{}),
     ...(variant.effects?{effects:variant.effects}:{}),
     ...(variant.numeric_item_bonuses?{numeric_item_bonuses:variant.numeric_item_bonuses}:
@@ -378,19 +376,6 @@ export function genericVariantPatch(record,index,variant,add=true){
   if(!attached.some(x=>x.id===id&&x.generic_variant))throw Error('Variante non applicata.');
   selected.option_extensions=attached.filter(x=>!(x.id===id&&x.generic_variant));
  }
- return {inventory,index};
-}
-
-// Activate or end only the optional, stateful benefits of one extension.
-// Numeric item enchantments and defenses remain active independently.
-export function genericVariantActivationPatch(record,index,variant,enabled){
- const inventory=structuredClone(array(record.inventory)),item=inventory[index];
- if(!Number.isInteger(index)||index<0||!item||!variant?.id||!variant.activation)
-  throw Error('Variante attivabile non disponibile.');
- const effect=array(item.option_extensions).find(x=>x.generic_variant&&x.id===variant.id);
- if(!effect)throw Error('La variante non è applicata a questa copia.');
- effect.effect_active=Boolean(enabled);
- effect.definition={...effect.definition,activation:variant.activation};
  return {inventory,index};
 }
 
