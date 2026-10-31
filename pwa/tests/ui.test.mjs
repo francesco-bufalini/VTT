@@ -660,7 +660,12 @@ test("inline spell catalog adds available and spellbook choices without divergin
   const preparationDialog=document.querySelector('#magic-tools-dialog[open]');
   assert.equal(preparationDialog.querySelector('h2')?.textContent,'Prepara incantesimi');
   assert.ok(preparationDialog.classList.contains('benefit-selection-dialog'));
-  assert.ok(preparationDialog.querySelector('#spell-learn-filter'),'Both spell stages share the class filter');
+  const preparationFilters=preparationDialog.querySelector('.magic-editor-filters');
+  assert.ok(preparationFilters?.querySelector('#spell-learn-filter'),'Both spell stages share the class filter');
+  assert.equal(preparationFilters.querySelector('#spell-search')?.getAttribute('type'),'search',
+    'Class filter and spell search occupy the same toolbar row');
+  assert.equal(preparationFilters.querySelector('#spell-learn-filter option[value="all"]')?.textContent,
+    'Tutte le classi');
   const preparationLayout=[...preparationDialog.querySelector('.magic-tools-body').children]
     .map(element=>element.className);
   const search=document.querySelector('#spell-search');
@@ -695,6 +700,9 @@ test("inline spell catalog adds available and spellbook choices without divergin
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const learningDialog=document.querySelector('#magic-tools-dialog[open]');
   assert.equal(learningDialog.querySelector('h2')?.textContent,'Impara nuovi incantesimi');
+  assert.equal(learningDialog.querySelector('.magic-editor-filters #spell-search')?.id,'spell-search');
+  assert.equal(learningDialog.querySelector('#spell-learn-filter')?.value,'all',
+    'Learning defaults to all class spell lists');
   assert.deepEqual([...learningDialog.querySelector('.magic-tools-body').children]
     .map(element=>element.className),preparationLayout,
     'Learning and preparation use exactly the same popup view');

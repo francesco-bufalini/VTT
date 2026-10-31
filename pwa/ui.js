@@ -480,7 +480,7 @@ function spellLearningClassNames(castingClasses=state.calculated?.casting_classe
   return [...names].sort((a,b)=>a.localeCompare(b,'it',{sensitivity:'base'}));
 }
 function spellLearningFilterOptions(){
-  return '<option value="all"'+(state.spellLearnFilter==='all'?' selected':'')+'>Tutte</option>'+
+  return '<option value="all"'+(state.spellLearnFilter==='all'?' selected':'')+'>Tutte le classi</option>'+
     spellLearningClassNames().map(name=>'<option value="'+esc(name)+'"'+
       (state.spellLearnFilter===name?' selected':'')+'>'+esc(name)+'</option>').join('');
 }
@@ -3099,9 +3099,10 @@ function learningSelectionDialogBody({title,closeAction,summary='',searchLabel,s
    dialogCloseButton(closeAction,'Chiudi','magic-tool-close')+'</div>'+
    '<div class="magic-tools-body">'+
    (summary?'<p class="magic-selection-warning" role="status">'+esc(summary)+'</p>':'')+
-   (filters?filters:'')+
+   (filters?'<div class="magic-editor-filters">'+filters:'')+
    '<label class="vtt-list-search magic-editor-search">'+esc(searchLabel)+
    '<input type="search" '+searchAttribute+' autocomplete="off" placeholder="Nome o fonte"></label>'+
+   (filters?'</div>':'')+
    '<div '+(resultsId?'id="'+esc(resultsId)+'" ':'')+
    'class="catalog-results vtt-selection-list magic-editor-results '+esc(resultsClass)+
    '" role="list">'+results+'</div>'+extra+
