@@ -65,7 +65,9 @@ func run() -> void:
 	board._move_selected(Vector2i.RIGHT)
 	assert(cart.position.x > 1.0)
 	board._rotate_selected(1)
-	assert(is_equal_approx(rad_to_deg(cart.rotation.y), 45.0))
+	# The 3D item arrows invert yaw, while 2D preserves the shortcut direction.
+	var expected_yaw: float = 45.0 if board._view_2d_enabled else -45.0
+	assert(is_equal_approx(rad_to_deg(cart.rotation.y), expected_yaw), "Item yaw must follow the selected view")
 	# Item tilt remains supported; only creature-token tilt was removed.
 	board.item_controller.rotate_selected_vertical(1)
 	assert(is_equal_approx(rad_to_deg(cart.rotation.x), 30.0))
