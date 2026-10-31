@@ -1014,9 +1014,12 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
   assert.equal(document.querySelectorAll('#sheet-play-view .inventory-global-search').length,1,
     "Inventory sections share exactly one global search bar");
   assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section [data-play-search]').length,0);
-  click('[data-act="item-catalog"]');
-  await until(()=>document.querySelector('#catalog-category'));
-  assert.equal(document.querySelector('#catalog-category').value,"items");
+  assert.equal(document.querySelectorAll('#sheet-play-view [data-act="new-homebrew-item"]').length,1,
+    "Exactly one homebrew add command sits beside the search field");
+  click('#sheet-play-view [data-act="new-homebrew-item"]');
+  await until(()=>document.querySelector('#quick-name'));
+  assert.equal(document.querySelector('#catalog-category')?.value,"items",
+    "The common plus opens the item homebrew creator directly");
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -1120,12 +1123,10 @@ test("inventory section switches keep their order and can all be disabled",async
   assert.ok(bagPanel.querySelector('[data-act="inventory-container-rename"][data-container-id="'+bagId+'"]'));
   assert.ok(sectionNav().querySelector('.inventory-section-remove[data-container-id="'+bagId+'"]'));
   assert.equal(sectionNav().querySelectorAll('.inventory-section-remove').length,1);
-  const addButton=bagPanel.querySelector('[data-act="sheet-context"][data-sheet-context^="inventory-add:"]');
-  assert.ok(addButton,'Each custom container needs its own add-item action');
-  addButton.click();
-  await until(()=>document.querySelector('#sheet-context-dialog [data-act="item-catalog"][data-container-id="'+bagId+'"]'));
-  click('#sheet-context-dialog [data-act="sheet-context-close"]');
-  await until(()=>!document.querySelector('#sheet-context-dialog'));
+  assert.equal(bagPanel.querySelector('[data-act="sheet-context"][data-sheet-context^="inventory-add:"]'),null,
+    'Custom containers no longer repeat the add-item button');
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-quick-homebrew-add').length,1,
+    'The global homebrew creator is shared by all containers');
   click('#sheet-play-view [data-subtab="documents"]');
   await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===3);
   click('#sheet-play-view [data-subtab="scrolls"]');
