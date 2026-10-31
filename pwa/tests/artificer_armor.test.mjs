@@ -5,6 +5,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses} from '../feature_mechanics.js';
 import {trackerRollBonusRows,trackerRollBonusTargets} from '../sheet_rules_view.js';
 import {traitStateActivationPatch,powerRestSelections} from '../trait_state_rules.js';
+import {traitBenefitGroups} from '../trait_benefits.js';
 import {recoveryPatch,restRecoveryPreview,completeRest} from '../native_sheet.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
