@@ -488,7 +488,7 @@ export function battleAttackActionRow(item={},calculated={}){
    sequence.map(label=>'<li>'+esc(label)+'</li>').join('')+'</ol>':'')+'</article>';
 }
 
-function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
+function battleAttackRow(item,calculated,attacksById,descriptions,record={},physical=false){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
  const rolls=[];
  const addRoll=(target,label,kind,value)=>{
@@ -554,7 +554,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
  const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
- const trackerChip=tracker&&Number(item.cost)>0?
+ const trackerChip=!physical&&tracker&&Number(item.cost)>0?
   '<span class="play-action-tracker" title="'+esc(tracker.name)+'" aria-label="'+
    esc(tracker.name+' · '+remaining+' di '+tracker.max+' utilizzi')+'">'+
    '<span class="play-action-tracker-name">'+esc(tracker.name)+'</span>'+
@@ -581,7 +581,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
    source+target+resources+optionMarkup+
    (String(item.id||'').startsWith('activated:')&&!item.descriptive_only?'<button type="button" class="btn small" data-act="battle-use-ability" data-ability-id="'+esc(item.id)+'">Usa</button>':'')+
    '</div></details>')+
-  (arr(item.attack_sequence).length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
+  (!physical&&arr(item.attack_sequence).length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
    item.attack_sequence.map(label=>'<li>'+esc(label)+'</li>').join('')+'</ol>':'')+
   (rolls.length||mapButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
    '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
@@ -873,7 +873,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  });
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
-   weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>',
+   weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record,true)).join('')+'</div>',
   others:renderCategories(),actionGroups:Object.fromEntries(Object.entries(categoryGroups).map(([key,rows])=>[key,rows.length?groupHtml(rows,key):''])),movement:'',
   checks:battleSkillChecksPanel(calculated),
   spells:'',
