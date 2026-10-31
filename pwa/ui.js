@@ -266,7 +266,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventorySelectedIndices:new Set(), inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
+  inventorySelectedIndex:0, inventorySelectedIndices:new Set(), inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', scrollSpellSelectedId:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 const sessionMapViewer=new SessionMapViewer();
@@ -494,13 +494,11 @@ function refreshSpellPickers(){
     classFilter.innerHTML=spellLearningFilterOptions();
     classFilter.value=selected;
   }
-  const scroll=app.querySelector('#sheet-context-dialog[open] #scroll-spell-select');
-  if(scroll){
-    const selected=scroll.value;
-    scroll.innerHTML=scrollSpellSelectOptions(state.scrollSpellQuery);
-    if([...scroll.options].some(row=>row.value===selected))scroll.value=selected;
-    updateScrollSpellLevels();
-  }
+  if(app.querySelector('#sheet-context-dialog[open] #scroll-spell-results')){
+  renderScrollSpellResults();
+  updateScrollSpellLevels();
+ }
+
 }
 function refreshWhenSpellsArrive(promise,creatureId,sheet){
   refreshSheetAfterLateLoad(promise,creatureId,sheet);
@@ -3322,53 +3320,79 @@ const INVENTORY_RARITIES={
   common:"Comune",uncommon:"Non comune",rare:"Raro","very rare":"Molto raro",
   legendary:"Leggendario",artifact:"Artefatto",varies:"Variabile"
 };
-// Search the spell library, not the item compendium, when creating scrolls.
+// Scrolls come from a real spell and can be cast at a higher spell level.
 function scrollSpellCandidates(query=''){
-  const value=String(query||'').trim().toLocaleLowerCase('it');
-  if(value.length<2)return [];
-  const edition=state.editor?.read()?.rules_version||'2014';
-  return spellsForEdition(state.spellCatalog||[],edition)
-    .filter(spell=>spell?.id&&spell?.name&&!spell.internal_grant&&
-      Number.isInteger(Number(spell.level))&&Number(spell.level)>=0&&Number(spell.level)<=9&&
-      (String(spell.name).toLocaleLowerCase('it').includes(value)||
-       String(spell.source||'').toLocaleLowerCase('it').includes(value)))
-    .sort((a,b)=>String(a.name).localeCompare(String(b.name),'it')||
-      String(a.source||'').localeCompare(String(b.source||''),'it'));
+ const value=String(query||'').trim().toLocaleLowerCase('it');
+ return spellsForEdition(state.spellCatalog||[],state.editor?.read()?.rules_version||'2014')
+  .filter(spell=>spell?.id&&spell?.name&&!spell.internal_grant&&
+   Number.isInteger(Number(spell.level))&&Number(spell.level)>=0&&Number(spell.level)<=9&&
+   (!value||String(spell.name).toLocaleLowerCase('it').includes(value)||
+    String(spell.source||'').toLocaleLowerCase('it').includes(value)))
+  .sort((a,b)=>String(a.name).localeCompare(String(b.name),'it')||
+    String(a.source||'').localeCompare(String(b.source||''),'it'));
 }
-function scrollSpellSelectOptions(query=''){
-  const candidates=scrollSpellCandidates(query);
-  const lead=String(query).trim().length<2?'Scrivi almeno 2 lettere':
-    candidates.length?'Seleziona un incantesimo':'Nessun incantesimo trovato';
-  return '<option value="">'+esc(lead)+'</option>'+
-    candidates.map(spell=>'<option value="'+esc(spell.id)+'">'+
-      esc(spell.name)+' · '+esc(Number(spell.level)===0?'Trucchetto':spell.level+'°')+
-      (spell.source?' · '+esc(spell.source):'')+'</option>').join('');
+function selectedScrollSpell(){
+ return spellsForEdition(state.spellCatalog||[],state.editor?.read()?.rules_version)
+  .find(spell=>String(spell.id)===state.scrollSpellSelectedId&&!spell.internal_grant);
+}
+function scrollSpellSelectionRows(query=''){
+ const rows=scrollSpellCandidates(query),selectedId=state.scrollSpellSelectedId;
+ const selected=!String(query).trim()?rows.find(row=>String(row.id)===selectedId):null;
+ const ordered=selected?[selected,...rows.filter(row=>row!==selected)]:rows;
+ const shown=ordered.slice(0,40);
+ return (shown.length?shown.map(spell=>
+  '<button type="button" class="inventory-search-result scroll-spell-choice'+
+  (String(spell.id)===selectedId?' is-selected':'')+
+  '" data-act="scroll-spell-choose" data-spell-id="'+esc(spell.id)+
+  '" aria-pressed="'+(String(spell.id)===selectedId)+'">'+
+  '<span class="inventory-search-result-copy"><strong>'+esc(spell.name)+'</strong>'+
+  '<small>'+esc(Number(spell.level)===0?'Trucchetto':spell.level+'° livello')+
+  (spell.source?' · '+esc(spell.source):'')+'</small></span>'+
+  (String(spell.id)===selectedId?'<span aria-hidden="true">✓</span>':'')+'</button>').join(''):
+  '<p class="hint">'+((state.spellCatalog||[]).length?'Nessun incantesimo trovato.':'Caricamento incantesimi…')+'</p>')+
+  (rows.length>shown.length?'<p class="hint">Mostrati '+shown.length+' di '+rows.length+'. Restringi la ricerca.</p>':'');
+}
+function renderScrollSpellResults(){
+ const list=app.querySelector('#scroll-spell-results');
+ if(list)list.innerHTML=scrollSpellSelectionRows(state.scrollSpellQuery);
 }
 function scrollSpellLevelOptions(spell){
-  if(!spell)return '<option value="">Scegli prima un incantesimo</option>';
-  const base=Number(spell.level);
-  return Array.from({length:base===0?1:10-base},(_,i)=>base+i).map(level=>
-    '<option value="'+level+'">'+(level===0?'Trucchetto':level+'° livello')+'</option>').join('');
+ if(!spell)return '<option value="">Scegli prima un incantesimo</option>';
+ const base=Number(spell.level);
+ return Array.from({length:base===0?1:10-base},(_,i)=>base+i).map(level=>
+  '<option value="'+level+'">'+(level===0?'Trucchetto':level+'° livello')+'</option>').join('');
+}
+function scrollSpellPreview(spell){
+ if(!spell)return '<p class="hint">Seleziona un incantesimo per vedere la descrizione.</p>';
+ return '<div class="scroll-spell-picked-title"><strong>'+esc(spell.name)+'</strong>'+
+  '<small>'+esc(spell.source||'')+'</small></div>'+
+  '<div class="inventory-prose scroll-spell-description">'+
+  esc(flattenDescription(spell)||'Descrizione non disponibile nel catalogo locale.')+'</div>';
 }
 function scrollSpellCreatorView(){
-  const ready=Array.isArray(state.spellCatalog)&&state.spellCatalog.length>0;
-  return '<div class="scroll-creator-fields">'+
-    '<label class="vtt-list-search">Incantesimo<input id="scroll-spell-query" type="search" autocomplete="off" placeholder="Cerca incantesimo…" value="'+esc(state.scrollSpellQuery)+'"></label>'+
-    '<label>Selezione<select id="scroll-spell-select" aria-label="Incantesimo per la pergamena"'+(ready?'':' disabled')+'>'+
-      scrollSpellSelectOptions(state.scrollSpellQuery)+'</select></label>'+
-    '<label>Livello pergamena<select id="scroll-spell-level" aria-label="Livello della pergamena">'+scrollSpellLevelOptions(null)+'</select></label>'+
-    '<div class="actions"><button type="button" class="btn primary" data-act="scroll-spell-add"'+(ready?'':' disabled')+'>Aggiungi pergamena</button></div>'+
-    (ready?'':'<p class="warning">Elenco incantesimi non disponibile offline.</p>')+
-    '</div>';
+ const ready=Array.isArray(state.spellCatalog)&&state.spellCatalog.length>0;
+ const selected=selectedScrollSpell();
+ return '<div class="scroll-creator-fields">'+
+  '<label class="vtt-list-search">Cerca incantesimo<input id="scroll-spell-query" type="search" autocomplete="off" placeholder="Nome o fonte…" value="'+esc(state.scrollSpellQuery)+'"'+(ready?'':' disabled')+'></label>'+
+  '<div id="scroll-spell-results" class="scroll-spell-results vtt-selection-list" role="list" aria-label="Incantesimi disponibili">'+scrollSpellSelectionRows(state.scrollSpellQuery)+'</div>'+
+  '<div id="scroll-spell-picked" class="scroll-spell-picked" aria-live="polite">'+scrollSpellPreview(selected)+'</div>'+
+  '<label>Livello pergamena<select id="scroll-spell-level" aria-label="Livello della pergamena"'+(selected?'':' disabled')+'>'+scrollSpellLevelOptions(selected)+'</select></label>'+
+  '<label>Quantità<input id="scroll-spell-quantity" type="number" inputmode="numeric" min="1" max="99999" step="1" value="1"></label>'+
+  '<div class="actions"><button type="button" class="btn primary" data-act="scroll-spell-add"'+(selected?'':' disabled')+'>Aggiungi pergamena</button></div>'+
+  (ready?'':'<p class="warning">Elenco incantesimi non disponibile offline.</p>')+'</div>';
 }
-function updateScrollSpellLevels(){
-  const select=app.querySelector('#scroll-spell-select');
-  const level=app.querySelector('#scroll-spell-level');
-  if(!level||!select)return;
-  const spell=spellsForEdition(state.spellCatalog||[],state.editor?.read()?.rules_version)
-    .find(row=>String(row.id)===select.value);
-  level.innerHTML=scrollSpellLevelOptions(spell);
-  level.disabled=!spell;
+function updateScrollSpellLevels(preserveLevel=true){
+ const level=app.querySelector('#scroll-spell-level');
+ if(!level)return;
+ const previous=preserveLevel?level.value:'';
+ const spell=selectedScrollSpell();
+ level.innerHTML=scrollSpellLevelOptions(spell);
+ if(previous&&[...level.options].some(row=>row.value===previous))level.value=previous;
+ level.disabled=!spell;
+ const preview=app.querySelector('#scroll-spell-picked');
+ if(preview)preview.innerHTML=scrollSpellPreview(spell);
+ const add=app.querySelector('[data-act="scroll-spell-add"]');
+ if(add)add.disabled=!spell;
 }
 function inventoryProperties(item={}){
   const obj=resolveOwnedItem(item),kind=itemKind(obj),parts=[];
@@ -6945,7 +6969,7 @@ async function handleAction(target){
     action.querySelector('.play-battle-attack-details>summary')?.focus({preventScroll:true});
     return;
   }
-  if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create')state.scrollSpellQuery='';state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
+  if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create'){state.scrollSpellQuery='';state.scrollSpellSelectedId='';}state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
   if(act==='sheet-context-close'){await closeSheetContext();return;}
   if(act==='battle-competences-open'){
     if(!state.editor)throw Error('Apri prima una creatura');
@@ -9409,16 +9433,23 @@ async function handleAction(target){
     }else await patch({inventory:changeOwnedItem(record.inventory,index,"quantity",qty)});
     await render();return;
   }
+  if(act==="scroll-spell-choose"){
+   const spell=scrollSpellCandidates(state.scrollSpellQuery).find(row=>String(row.id)===target.dataset.spellId);
+   if(!spell)throw Error("Incantesimo non disponibile.");
+   state.scrollSpellSelectedId=String(spell.id);
+   renderScrollSpellResults();updateScrollSpellLevels(false);return;
+  }
   if(act==="scroll-spell-add"){
-    if(!state.editor||!inventoryVisibleSections(state.editor.read()).includes("scrolls"))
-      throw Error("Apri la sezione Pergamene della creatura.");
-    const c=state.editor.read(),spellId=app.querySelector('#scroll-spell-select')?.value;
-    const spell=spellsForEdition(state.spellCatalog||[],c.rules_version).find(s=>String(s.id)===spellId);
-    const level=app.querySelector('#scroll-spell-level')?.value;
-    if(!spell||level===undefined||level==='')throw Error("Seleziona un incantesimo e un livello.");
-    const created=addSpellScroll(c.inventory||[],{...spell,description:flattenDescription(spell)},level,"pwa_"+crypto.randomUUID());
-    state.inventorySelectedIndex=created.index;state.sheetPopup='';state.scrollSpellQuery='';
-    await patch({inventory:created.inventory});await render();message("Pergamena aggiunta all'inventario.");return;
+   if(!state.editor||!inventoryVisibleSections(state.editor.read()).includes("scrolls"))
+    throw Error("Apri la sezione Pergamene della creatura.");
+   const c=state.editor.read(),spell=selectedScrollSpell();
+   const level=app.querySelector('#scroll-spell-level')?.value;
+   const quantity=app.querySelector('#scroll-spell-quantity')?.value;
+   if(!spell||level===undefined||level==='')throw Error("Seleziona un incantesimo e un livello.");
+   const created=addSpellScroll(c.inventory||[],{...spell,description:flattenDescription(spell)},
+    level,"pwa_"+crypto.randomUUID(),quantity);
+   state.inventorySelectedIndex=created.index;state.sheetPopup='';state.scrollSpellQuery='';state.scrollSpellSelectedId='';
+   await patch({inventory:created.inventory});await render();message("Pergamena aggiunta all'inventario.");return;
   }
   if(act==="item-catalog"){const owner=state.creatureId;state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;await navigate("catalog");return;}
   if(act==="document-add"){
@@ -10168,12 +10199,10 @@ function listen(){
       return;
     }
     if(target?.id==="scroll-spell-query"){
-      state.scrollSpellQuery=target.value;
-      const select=app.querySelector('#scroll-spell-select');
-      if(select)select.innerHTML=scrollSpellSelectOptions(target.value);
-      updateScrollSpellLevels();return;
-    }
-    if(target?.id==="condition-spell-search"){fillAppliedSpellOptions(target.value);return;}
+    state.scrollSpellQuery=target.value;
+    renderScrollSpellResults();return;
+   }
+   if(target?.id==="condition-spell-search"){fillAppliedSpellOptions(target.value);return;}
     if(target?.id==="token-spell-query"){fillSessionSpells(target.value);return;}
     if(target?.id==="token-mini-query"){fillSessionMiniatures(target.value);return;}
     if(target?.id==="spell-search"){
@@ -10259,7 +10288,7 @@ function listen(){
       else state.librarySelectedIds.delete(target.dataset.librarySelect);
       syncLibrarySelectionUI();return;
     }
-    if(target?.id==="scroll-spell-select"){updateScrollSpellLevels();return;}
+    
     if(target?.id==="spell-target"){
       state.spellTarget='prepared_spells';
       render().catch(error=>message(errorMessage(error),true));return;
