@@ -47,7 +47,7 @@ func _run() -> void:
 	assert(Attacks.damage_expression(record, Attacks.active_attack(record)) == "1d8+3")
 	equipped[1]["equipped_slots"] = []
 	record["inventory"] = equipped
-	assert(Attacks.active_attack(record).is_empty(), "Sheathing must not auto-equip a fictional attack")
+	assert(Attacks.active_attack(record).get("id") == "improvised", "Equipped shield remains a valid improvised attack after sheathing")
 	record["hand_main_special"] = "unarmed"
 	assert(Attacks.active_attack(record).get("id") == "unarmed", "Explicitly selected unarmed attacks remain available")
 
