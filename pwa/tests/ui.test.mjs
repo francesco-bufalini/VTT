@@ -742,6 +742,7 @@ test("granted spells block new duplicate learning and preparation, not owned cla
   const saved=await (await import('../creatures.js')).createCreature('character','Incantesimo da altra fonte');
   await saveCreature({...saved.data,class:'Wizard',class_source:'PHB',level:5,
     classes:[{name:'Wizard',source:'PHB',level:5}],
+    proficiency_origins:[{id:'custom:other',name:'Altra origine',group:'custom'}],
     origin_spell_grants:[{id:'other-shield',origin_id:'custom:other',origin_name:'Altra origine',
       spell_id:'phb2014_shield',payment_mode:'free',spellcasting_ability:'int'}]},'default',saved.revision);
   click('[data-nav="library"]');
@@ -754,7 +755,10 @@ test("granted spells block new duplicate learning and preparation, not owned cla
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const learnSearch=document.querySelector('#spell-search');
   learnSearch.value='Shield';learnSearch.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  await until(()=>document.querySelector('#magic-tools-dialog .magic-catalog-owned'));
+  await until(()=>document.querySelector('#magic-tools-dialog .magic-catalog-owned')).catch(error=>{
+    throw Error(error.message+' — learn: '+document.querySelector('#magic-tools-dialog')?.textContent.slice(0,500)+
+      ' — origins: '+[...document.querySelectorAll('.magic-origin-panel')].map(row=>row.dataset.magicOrigin).join(','));
+  });
   assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-owned').textContent,'Già posseduta');
   assert.equal(document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"]'),null);
   click('[data-act="magic-tool-close"]');
