@@ -661,7 +661,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const realImprovised=[...attacksById.values()].filter(improvised);
  const weapon=entries.filter(row=>row.type==='Attacco'&&
   !['attack','opportunity','two_weapon','unarmed:off'].includes(row.id)&&
-  row.parent_action!=='two_weapon'&&
+  // The bonus-action timing stays in Actions; the actual offhand weapon
+  // still needs its own damage row in the flat Attacks list.
+  (row.parent_action!=='two_weapon'||attacksById.has(String(row.attack_id||row.id)))&&
   !realImprovised.some(attack=>String(row.attack_id||row.id)===String(attack.id)));
  if(realImprovised.length){
   weapon.push({id:'improvised',attack_id:realImprovised[0].id,name:'Arma improvvisata',
