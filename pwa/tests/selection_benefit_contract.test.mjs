@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits,powerStateActivationPatch} from '../power_selection.js';
 import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from '../scaling_dice.js';
-import {rollOptionalDice} from '../sheet_roll_origin.js';
+import {rollOptionalDice,damageRollSegments,sheetRollOriginHtml} from '../sheet_roll_origin.js';
 import {appendRollBonus,rollBattleDamage} from '../sheet_rules_view.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
 import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '../spell_selection.js';
@@ -225,7 +225,7 @@ test('legacy equipped flags are reconciled before calculating Ranger conditional
 
 test('legacy equipped flags never create a phantom offhand that blocks Dueling',()=>{
  const id='optional:class:phb:ranger:fs-r',option='optional:phb:dueling';
- const sword={id:'weapon:longsword|phb',name:'Longsword',type:'M',damage:'1d8',properties:['V'],
+ const sword={id:'weapon:longsword|phb',name:'Longsword',type:'M',damage:'1d8',damage_type:'slashing',properties:['V'],
   quantity:1,equipped:true,equipped_slots:['main']};
  const legacy={id:'weapon:dagger|phb',name:'Dagger',type:'M',damage:'1d4',
   properties:['F','L','T'],quantity:1,equipped:true,equipped_slots:[]};
@@ -241,6 +241,15 @@ test('legacy equipped flags never create a phantom offhand that blocks Dueling',
  const duel=c.attacks.find(a=>a.id==='item:'+sword.id);
  assert.equal(duel?.damage_extra_modifier,2,
   'The generic attack_damage bonus applies Dueling to the one-handed weapon');
+ const duelTerms=damageRollSegments(rollBattleDamage(duel.damage,()=>1),duel.damage_type,
+  {...duel,damage_bonus_components:c.roll_components['attack_damage:'+duel.id]||[]});
+ assert.deepEqual(duelTerms.map(row=>row.originName),['Danno base','Dueling'],
+  'The generic damage origin must be separate from the base damage box');
+ assert.deepEqual(duelTerms.map(row=>row.formula),['1d8 + Mod.FOR','+2']);
+ assert.deepEqual(duelTerms.map(row=>row.damageType),['slashing','slashing']);
+ assert.equal(duelTerms.reduce((sum,row)=>sum+row.value,0),4);
+ assert.match(sheetRollOriginHtml(duelTerms,x=>x),/data-origin-id="[^"]+"/,
+  'The origin of Dueling remains navigable');
  assert.match(battleActionPanels(r,c,[],[],[]).attacks,/data-damage-formula="1d8 \+ 4"/,
   'Dueling is included in the standard damage roll formula');
  assert.doesNotMatch(battleActionPanels(r,c,[],[],[]).attacks,/play-battle-damage-benefits/,
@@ -264,7 +273,7 @@ test('Great Weapon Fighting remains descriptive without a dedicated damage rerol
 
 test('Thrown Weapon Fighting applies +2 exclusively to the thrown damage roll',()=>{
  const id='optional:class:phb:ranger:fs-r',option='optional:tce:thrown-weapon-fighting';
- const dagger={id:'dagger',name:'Dagger',type:'M',damage:'1d4',range:'20/60',
+ const dagger={id:'dagger',name:'Dagger',type:'M',damage:'1d4',damage_type:'piercing',range:'20/60',
   properties:['L','F','T'],equipped_slots:['main'],quantity:1};
  let r={...record(),level:2,classes:[{name:'Ranger',source:'PHB',level:2}],
   abilities:{str:12,dex:16,con:12,int:10,wis:14,cha:10},inventory:[dagger]};
@@ -282,6 +291,15 @@ test('Thrown Weapon Fighting applies +2 exclusively to the thrown damage roll',(
  assert.equal(inactive.attacks.find(a=>a.id===thrown.id).damage,'1d4 + 1');
  assert(c.roll_components['attack_damage:'+thrown.id].some(row=>
   row.value===2&&row.origin_name==='Thrown Weapon Fighting'));
+ const thrownTerms=damageRollSegments(rollBattleDamage(thrown.damage,()=>1),thrown.damage_type,
+  {...thrown,damage_bonus_components:c.roll_components['attack_damage:'+thrown.id]||[]});
+ assert.deepEqual(thrownTerms.map(row=>row.originName),['Danno base','Thrown Weapon Fighting']);
+ assert.deepEqual(thrownTerms.map(row=>row.formula),['1d4 + Mod.FOR','+2']);
+ assert.deepEqual(thrownTerms.map(row=>row.damageType),['piercing','piercing']);
+ assert.equal(thrownTerms.reduce((sum,row)=>sum+row.value,0),3);
+ const meleeTerms=damageRollSegments(rollBattleDamage(melee.damage,()=>1),melee.damage_type,
+  {...melee,damage_bonus_components:c.roll_components['attack_damage:'+melee.id]||[]});
+ assert.equal(meleeTerms.length,1,'Melee attacks do not show the thrown-weapon bonus');
  const thrownRows=battleActionPanels(r,c,[],[],[]).attacks;
  assert.match(thrownRows,/data-damage-formula="1d4 \+ 3"/,
   'Thrown Weapon Fighting is included in the standard damage roll formula');
