@@ -814,8 +814,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   };
   const sequenceMarkup=steps=>steps.length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
    steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'';
+  // A native ability may carry a roll bonus as an *effect* without being
+  // equivalent to a bonus selectable on a roll. Keep its Use operation unless
+  // the same paid bonus already has its own benefit row.
   const abilityButtons=(key,filtered=null)=>(filtered||powerRows.filter(row=>row.key===key))
-   .filter(row=>!row.classAction?.roll_bonus).map(row=>{
+   .filter(row=>!row.classAction?.roll_bonus||!rollBonuses.some(b=>
+    b.tracker_id===row.tracker_id&&
+    (String(b.name||'').toLowerCase()===String(row.name||'').toLowerCase()||
+     String(b.origin_id||'')===String(row.classAction.origin_id||'')&&!!b.origin_id))).map(row=>{
    const steps=powerAttackSteps(row);
    const tracker=(d.trackers||[]).find(t=>String(t.id)===String(row.tracker_id));
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
