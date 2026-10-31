@@ -8,7 +8,7 @@ import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 import {inventoryRangeLabel} from './attack_range.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
-import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,attackActionSequence} from "./action_economy.js";
+import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,attackActionSequence,battleActionUseBox,battleAttackStepMarkup,battleActionTimeLabel} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeItemOptionEffects,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
@@ -754,11 +754,19 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    row.tracker_id===trackerId&&(bonusIsDamage(row)?'damage':'roll')===group).map(row=>{
    const value=Object.hasOwn(row,'flat_bonus')?String(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice;
    const originId=row.origin_id||'';
-   const content='<span><strong>'+esc(value+' · '+(row.name||'Bonus'))+'</strong><small>'+esc(trackerRollBonusTargets(row,d))+'</small></span>';
-   return '<div class="play-resource-power-row play-resource-bonus-row" data-roll-bonus-id="'+esc(row.id||row.name||'')+'">'+
-    (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+diceGlyph()+content+'</button>':
+   const time=battleActionTimeLabel(row.action_type||row.time||row.timing||'contextual');
+   const content='<span><strong>'+esc(value+' · '+(row.name||'Bonus'))+'</strong>'+
+    '<small>'+esc(time+' · '+trackerRollBonusTargets(row,d))+'</small></span>';
+   const tracker=(d.trackers||[]).find(t=>String(t.id)===String(trackerId));
+   const bonusId=String(row.id||row.name||'');
+   return '<div class="play-resource-power-row play-battle-benefit-row play-resource-bonus-row"'+
+    ' data-roll-bonus-id="'+esc(bonusId)+'">'+
+    (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait"'+
+       ' data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+diceGlyph()+content+'</button>':
       '<span class="play-resource-power-open">'+diceGlyph()+content+'</span>')+
-     trackerChip(row.tracker_id,1)+'</div>';
+    battleActionUseBox({act:'battle-roll-bonus-jump',
+     attrs:' data-roll-bonus-id="'+esc(bonusId)+'" data-tracker-id="'+esc(trackerId)+'"',
+     tracker,cost:Number(row.tracker_cost)||1,name:row.name,label:'Usa'})+'</div>';
   }).join('');
   const traits=view.battleTraits||[];
   const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
@@ -812,8 +820,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const name=/unarmed|senz.?armi/i.test(hit[2])?'Colpo senz’armi':'Attacco';
    return Array.from({length:quantity},()=>name);
   };
-  const sequenceMarkup=steps=>steps.length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
-   steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'';
+  const sequenceMarkup=steps=>battleAttackStepMarkup(steps,d);
   // A native ability may carry a roll bonus as an *effect* without being
   // equivalent to a bonus selectable on a roll. Keep its Use operation unless
   // the same paid bonus already has its own benefit row.
@@ -844,8 +851,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong><small>'+esc(caption+note)+'</small></span></button>'+
-    '<button type="button" class="play-resource-use" data-act="battle-cast-resource-spell" data-grant-id="'+esc(row.id)+'"'+(disabled?' disabled':'')+
-    ' aria-label="Lancia '+esc(row.name)+'">Lancia</button>'+trackerChip(row.tracker_id,row.cost)+'</div>';
+    battleActionUseBox({act:'battle-cast-resource-spell',attrs:' data-grant-id="'+esc(row.id)+'"',
+     tracker,cost:row.cost,label:'Lancia',disabled,name:row.name})+'</div>';
    const id=row.id,action=row.classAction||{},power=row.power||{};
    const trait=featureFor([power.feature_id,power.origin_id,action.origin_id,action.feature_id],
      action.feature||row.name);
@@ -881,12 +888,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
-    (descriptive&&!monsterPayment?'':active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
-    ' aria-label="Disattiva '+esc(row.name)+'">Disattiva</button>':
-    '<button type="button" class="play-resource-use" data-act="'+useAction+'"'+useIdentity+
-    (persistent?' data-persistent-key="'+esc(statusKey)+'"':'')+
-    (disabled?' disabled':'')+' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+
-    trackerChip(row.tracker_id,row.cost)+'</div>'+sequenceMarkup(steps);
+    battleActionUseBox({act:descriptive&&!monsterPayment?'':active?'condition-remove-ability':useAction,
+     attrs:active?' data-ability-key="'+esc(statusKey)+'"':useIdentity+
+      (persistent?' data-persistent-key="'+esc(statusKey)+'"':''),
+     tracker,cost:active?0:row.cost,label:active?'Disattiva':use,disabled:active?false:disabled,
+     allowDepleted:!monsterPayment&&!row.power?.infusion_action,name:row.name})+
+    '</div>'+sequenceMarkup(steps);
   }).join('');
   // Resources are a flat catalogue of counters and *actual* attack options.
   // An action which spends a counter is rendered separately under Actions.
@@ -901,9 +908,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(linked.origin_id)+'"'+
     ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon('spark')+
     '<span><strong>'+esc(linked.name)+'</strong><small>Capacità di sottoclasse</small></span></button>'+
-    '<button type="button" class="play-resource-use" data-act="tracker-trait-use" data-tracker-id="'+esc(t.id)+'"'+
-    ' data-origin-id="'+esc(linked.origin_id)+'" aria-label="Usa '+esc(linked.name)+'">Usa</button>'+
-    trackerChip(t.id,1)+'</div>');
+    battleActionUseBox({act:'tracker-trait-use',attrs:' data-tracker-id="'+esc(t.id)+
+      '" data-origin-id="'+esc(linked.origin_id)+'"',tracker:t,cost:1,name:linked.name})+'</div>');
    return '<div class="play-resource play-resource--flat" data-resource-tracker="'+esc(t.id)+'">'+
     '<button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'">'+
     '<span class="play-resource-copy"><strong class="play-resource-name">'+esc(t.name)+'</strong>'+
@@ -922,7 +928,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // battleActions.actionGroups, not again as an activated power below.
   const routineOrigins=new Set((d.attack_actions||[]).map(row=>String(row.origin_id||'')).filter(Boolean));
   const combatPowers=powerRows.filter(row=>!grantedAttackRows.includes(row)&&
-   !routineOrigins.has(String(row.classAction?.origin_id||row.power?.feature_id||row.power?.origin_id||'')));
+   // User-activated optional abilities remain individually operable even if
+   // their granting feature also defines a typed attack routine.
+   (row.source==='activated'||!routineOrigins.has(String(
+    row.classAction?.origin_id||row.power?.feature_id||row.power?.origin_id||''))));
   const actionGroups=view.battleActions?.actionGroups||{};
   const powerAttacks=combatPowers.filter(row=>powerAttackSteps(row).length>0);
   const powerAbilities=combatPowers.filter(row=>!powerAttacks.includes(row));

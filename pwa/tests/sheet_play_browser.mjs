@@ -757,8 +757,8 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Focus arcano|Utilizzi disponibili/);
  assert.equal(await page.locator('#sheet-context-dialog [data-magic-tracker-id="focus"]').count(),1);
  await dismiss();
- const maneuver=actionsPanel.locator('[data-sheet-context="power-ability:ability:maneuver:phb:commander\'s_strike"]');
- assert.equal(await maneuver.count(),1,'Activated maneuvers should be visible under resources');
+ const maneuver=actionsPanel.locator('.play-resource-power-row[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"] [data-act="sheet-context"]');
+ assert.equal(await maneuver.count(),1,'Activated maneuver details are available under Azioni');
  assert.equal(await actionsPanel.locator('.play-resource-power-row[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"]').count(),1,'Optional maneuver has its Use button');
  await maneuver.click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Costo/);

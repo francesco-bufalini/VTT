@@ -101,8 +101,10 @@ try{
     assert(await otherGroup.getByText('Scattare').count()>0);
     assert.equal(await abilityGroup.locator('[data-ability-id],[data-attack-id]').count()>0,true);
     const paid=abilityGroup.locator('.play-resource-power-row,.play-battle-attack-entry').filter({hasText:'Capacità di prova'}).first();
-    assert.equal(await paid.locator('.play-action-tracker').count(),1);
-    assert.match(await paid.locator('.play-action-tracker').textContent(),/Cariche.*2\/3/);
+    assert.equal(await paid.locator('button.play-action-use-box').count(),1);
+    assert.match(await paid.locator('button.play-action-use-box').textContent(),/Cariche.*2\/3.*Usa/);
+    assert.equal(await paid.locator('button.play-action-use-box .play-action-tracker-name').count(),1,
+     'Tracker name, remaining charges and Use belong to a single button');
     const chipStyle=await paid.locator('.play-action-tracker-name').evaluate(node=>
      ({overflow:getComputedStyle(node).overflow,ellipsis:getComputedStyle(node).textOverflow}));
     assert.equal(chipStyle.overflow,'hidden');
