@@ -8941,6 +8941,7 @@ async function handleAction(target){
       if(state.pendingItemContainer&&inventoryContainers(record).some(row=>row.id===state.pendingItemContainer)&&state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER)item.container_id=state.pendingItemContainer;
       const inventory=[...(record.inventory||[]),item];
       await editor.update({inventory});
+      state.catalogCreateOpen=false;
       state.page="library";state.libraryMode=false;state.creatureId=owner;
       state.editor=editor;state.sheet="inventory";
       focusInventorySection(editor.read(),state.pendingItemContainer&&state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?
