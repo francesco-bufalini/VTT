@@ -259,7 +259,7 @@ export function appendRollBonus(outcome={},bonus={},die){
 }
 
 /** Roll an explicitly calculated weapon-damage formula, never evaluate arbitrary text. */
-export function rollBattleDamage(formula,die){
+export function rollBattleDamage(formula,die,{rerollAtMost=0,rerollDiceCount=0}={}){
  if(typeof die!=='function')throw Error('Generatore dadi non disponibile');
  const notation=String(formula||'').replace(/\s+/g,'');
  if(!notation||notation.length>120||!/^[+]?[0-9dD+\-]+$/.test(notation))
@@ -267,16 +267,29 @@ export function rollBattleDamage(formula,die){
  const terms=notation.match(/[+-]?[^+-]+/g)||[];
  if(!terms.length||terms.join('')!==notation||terms.length>24)throw Error('Formula danni non valida');
  let modifier=0,totalCount=0;
- const parts=[];
+ const parts=[],threshold=Number(rerollAtMost)||0,baseDiceCount=Number(rerollDiceCount)||0;
+ if(!Number.isInteger(threshold)||threshold<0||threshold>100||
+   !Number.isInteger(baseDiceCount)||baseDiceCount<0||baseDiceCount>100)
+  throw Error('Regola di ritiro dei dadi non valida');
  for(const term of terms){
   const dice=term.match(/^\+?([1-9]\d*)d(2|3|4|6|8|10|12|20|100)$/i);
   if(dice){
    const count=Number(dice[1]),sides=Number(dice[2]);
    totalCount+=count;
    if(totalCount>100)throw Error('Troppi dadi nella formula');
-   const rolls=Array.from({length:count},()=>die(sides));
-   if(rolls.some(value=>!Number.isInteger(value)||value<1||value>sides))throw Error('Risultato dado non valido');
-   parts.push({name:'Danni',notation:count+'d'+sides,rolls,subtotal:rolls.reduce((sum,value)=>sum+value,0)});
+   const rerolls=[];
+   const rolls=Array.from({length:count},(_,i)=>{
+    const previous=die(sides);
+    if(!Number.isInteger(previous)||previous<1||previous>sides)throw Error('Risultato dado non valido');
+    if(threshold&&totalCount-count+i<baseDiceCount&&previous<=threshold){
+     const next=die(sides);
+     if(!Number.isInteger(next)||next<1||next>sides)throw Error('Risultato dado non valido');
+     rerolls.push({index:i,previous,next});return next;
+    }
+    return previous;
+   });
+   parts.push({name:'Danni',notation:count+'d'+sides,rolls,rerolls,
+    subtotal:rolls.reduce((sum,value)=>sum+value,0)});
   }else if(/^[+-]?\d+$/.test(term)){
    modifier+=Number(term);
    if(!Number.isSafeInteger(modifier)||Math.abs(modifier)>9999)throw Error('Modificatore danni fuori limite');
@@ -286,7 +299,9 @@ export function rollBattleDamage(formula,die){
  const rolls=parts.flatMap(part=>part.rolls);
  const total=parts.reduce((sum,part)=>sum+part.subtotal,modifier);
  return {sides:Number(parts[0].notation.split('d')[1]),count:rolls.length,modifier,rolls,total,
-  notation,parts,detail:parts.map(part=>part.notation+' ['+part.rolls.join(', ')+'] = '+part.subtotal).join(' · ')+
+  notation,parts,detail:parts.map(part=>part.notation+' ['+part.rolls.join(', ')+']'+
+    (part.rerolls?.length?' · ritiri '+part.rerolls.map(row=>row.previous+'→'+row.next).join(', '):'')+
+    ' = '+part.subtotal).join(' · ')+
    (modifier?' · modificatore '+(modifier>=0?'+':'')+modifier:'')+' · totale '+total};
 }
 /** Match the desktop DiceChatSync.valid_event protocol for combined dice rolls. */
