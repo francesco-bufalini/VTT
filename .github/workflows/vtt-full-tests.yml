@@ -8,10 +8,12 @@ on:
       - main
     paths:
       - "scripts/validate.ps1"
+      - "tests/**/*.gd"
 
 concurrency:
   group: vtt-godot-full
-  cancel-in-progress: false
+  # Prefer the latest automatic test revision; preserve manually dispatched runs.
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   validate:
