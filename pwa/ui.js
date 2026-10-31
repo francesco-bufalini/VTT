@@ -1074,6 +1074,13 @@ async function confirmCreatureDeletion(rows){
   });
 }
 
+function updateSelectionToolbar(root,count,lastName){
+ if(!root)return;
+ const counter=root.querySelector('[data-selection-count]');
+ if(counter)counter.textContent=count+' '+(count===1?'selezionato':'selezionati');
+ const last=root.querySelector('[data-selection-last]');
+ if(last)last.textContent=lastName?'Ultima selezione · '+lastName:'';
+}
 function librarySelectionActions(){
  const count=state.librarySelectedIds.size;
  return count?
@@ -1085,7 +1092,8 @@ function librarySelectionActions(){
     '<span>Manda</span></button>'+
   '<button type="button" class="library-bulk-button library-bulk-delete" data-act="library-delete" aria-label="Elimina creature selezionate">'+
     '<span class="library-bulk-glyph library-bulk-delete-symbol" aria-hidden="true">×</span>'+
-    '<span>Elimina</span></button>':'';
+    '<span>Elimina</span></button>'+
+  '<button type="button" class="vtt-selection-done" data-act="library-selection-clear">Fine</button>':'';
 }
 function syncLibrarySelectionUI(){
  const entries=[...app.querySelectorAll('.library-creature-entry')];
@@ -1111,7 +1119,13 @@ function syncLibrarySelectionUI(){
   if(open)open.setAttribute('aria-pressed',String(selecting&&selected));
  }
  const master=app.querySelector('.library-list-header');
- if(master)master.hidden=!selecting;
+ if(master){
+   master.hidden=!selecting;
+   const lastId=[...state.librarySelectedIds].at(-1);
+   const last=entries.find(entry=>entry.dataset.libraryId===lastId);
+   updateSelectionToolbar(master,state.librarySelectedIds.size,
+     last?.querySelector('.creature-name')?.textContent||'');
+ }
  const actions=app.querySelector('#library-selected-actions');
  if(actions){actions.innerHTML=librarySelectionActions();actions.hidden=!selecting;}
 }
@@ -1161,10 +1175,12 @@ async function libraryView(){
    [['all','Tutte'],['character','Personaggi'],['monster','Mostri']].map(([kind,label])=>
     '<button type="button" data-act="library-filter" data-kind="'+kind+'" aria-pressed="'+(kind===state.libraryFilter)+'">'+label+'</button>').join('')+
   '</div>'+
-  '<div class="library-list-header" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
+   '<div class="library-list-header vtt-selection-toolbar" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
    '<label class="library-select-master"><input type="checkbox" data-library-select-all aria-label="Seleziona tutte le creature visibili">'+
-   '<span class="library-check-graphic" aria-hidden="true">✓</span><span class="library-select-master-copy">Seleziona tutte</span></label>'+
-   '<div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+librarySelectionActions()+'</div></div>'+
+    '<span class="library-check-graphic" aria-hidden="true">✓</span><span class="library-select-master-copy">Seleziona tutte</span></label>'+
+    '<span class="vtt-selection-summary"><strong data-selection-count>0 selezionati</strong>'+
+    '<small data-selection-last aria-live="polite"></small></span>'+
+    '<div id="library-selected-actions" class="library-selection-actions vtt-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+librarySelectionActions()+'</div></div>'+
   '<div class="library-rows">'+(list||'<div class="library-empty">Nessuna creatura salvata.</div>')+'</div>'+
   (rows.length?'<div id="library-no-results" class="library-no-results" hidden>Nessuna creatura in questa categoria.</div>':'')+
   '</section>'+
@@ -2244,14 +2260,29 @@ function openInventorySearchAddDialog(catalogIndex){
   dialog.dataset.catalogIndex=String(catalogIndex);
   dialog.innerHTML='<header class="sheet-context-head"><h2>Aggiungi '+esc(entry.name)+'</h2>'+
     dialogCloseButton('inventory-search-add-close','Chiudi','play-button')+'</header>'+
-    '<div class="sheet-context-body inventory-search-add-fields">'+
+   '<div class="sheet-context-body inventory-search-add-body">'+
+    '<section class="inventory-search-add-description" aria-label="Descrizione oggetto">'+
+      '<strong>Descrizione</strong><p data-inventory-add-description>'+
+      esc(flattenDescription(entry)||'Caricamento dei dettagli dal catalogo…')+'</p></section>'+
+    '<div class="inventory-search-add-fields">'+
     '<label>Sezione<select id="inventory-search-add-section">'+options+'</select></label>'+
-    '<label>Quantità<input type="number" id="inventory-search-add-quantity" value="1" min="1" max="99999" step="1" required></label></div>'+
+    '<label>Quantità<input type="number" id="inventory-search-add-quantity" value="1" min="1" max="99999" step="1" required></label></div></div>'+
     '<footer class="pending-choice-actions"><button type="button" data-act="inventory-search-add-close">Annulla</button>'+
     '<button type="button" data-act="inventory-search-add-confirm">Aggiungi oggetto</button></footer>';
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   app.append(dialog);
   openDialog(dialog);
+  // Keep quantity and destination interactive while full local 5eTools details load.
+  void detailedEntry('items',entry).then(full=>{
+    if(!dialog.isConnected||state.editor?.read()?.id!==creature.id)return;
+    const description=dialog.querySelector('[data-inventory-add-description]');
+    if(description)description.textContent=flattenDescription(full)||
+      flattenDescription(entry)||'Descrizione non disponibile nel catalogo locale.';
+  }).catch(()=>{
+    const description=dialog.querySelector('[data-inventory-add-description]');
+    if(description&&dialog.isConnected&&!flattenDescription(entry))
+      description.textContent='Descrizione non disponibile offline.';
+  });
 }
 
 const monsterDetailAttempts=new Set();
@@ -6662,6 +6693,12 @@ function openRemoveFeatDialog(originKey){
 async function handleAction(target){
   const act=target.dataset.act;
   if(act==='server-backup-now'){serverBackups.schedule(true);return;}
+  if(act==='inventory-selection-clear'){
+    state.inventorySelectedIndices.clear();syncInventorySelectionUI();return;
+  }
+  if(act==='library-selection-clear'){
+    state.librarySelectedIds.clear();syncLibrarySelectionUI();return;
+  }
   if(['inventory-bulk-export','inventory-bulk-send','inventory-bulk-delete'].includes(act)){
     if(state.sheet!=='inventory'||!state.editor)throw Error('Apri prima un inventario.');
     await flushPendingFields();
@@ -9795,8 +9832,10 @@ function syncInventorySelectionUI(){
   }
   const toolbar=root.querySelector('[data-inventory-bulk]');
   if(toolbar)toolbar.hidden=!selecting;
-  const label=root.querySelector('[data-inventory-selection-count]');
-  if(label)label.textContent=state.inventorySelectedIndices.size+' '+(state.inventorySelectedIndices.size===1?'selezionato':'selezionati');
+  const lastIndex=[...state.inventorySelectedIndices].at(-1);
+  const inventory=state.editor?.read()?.inventory||[];
+  updateSelectionToolbar(toolbar,state.inventorySelectedIndices.size,
+    inventory[lastIndex]?ownedItemDisplayName(inventory[lastIndex]):'');
 }
 function toggleInventoryHoldSelection(index){
   if(!state.editor||state.page!=='library'||state.libraryMode||state.sheet!=='inventory')return;

@@ -1209,13 +1209,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const selected=keys.filter(key=>requested.includes(key)||requested.includes('all'));
   const showingItems=selected.some(key=>key==='items'||key.startsWith('container:'));
   html+=inventorySectionControls(c,selected);
-  html+='<div class="inventory-bulk-bar" data-inventory-bulk hidden>'+
+  html+='<div class="inventory-bulk-bar vtt-selection-toolbar" data-inventory-bulk hidden>'+
     '<label class="inventory-bulk-master"><input type="checkbox" data-inventory-select-all aria-label="Seleziona tutti gli oggetti visibili"><span class="inventory-check-graphic" aria-hidden="true">✓</span><span>Seleziona tutti</span></label>'+
-    '<strong data-inventory-selection-count>0 selezionati</strong>'+
-    '<div class="inventory-bulk-actions">'+
+    '<span class="vtt-selection-summary"><strong data-inventory-selection-count data-selection-count>0 selezionati</strong>'+
+     '<small data-selection-last aria-live="polite"></small></span>'+
+    '<div class="inventory-bulk-actions vtt-selection-actions">'+
     '<button type="button" class="library-bulk-button" data-act="inventory-bulk-export">Esporta</button>'+
     '<button type="button" class="library-bulk-button" data-act="inventory-bulk-send">Manda</button>'+
     '<button type="button" class="library-bulk-button library-bulk-delete" data-act="inventory-bulk-delete">Elimina</button>'+
+     '<button type="button" class="vtt-selection-done" data-act="inventory-selection-clear">Fine</button>'+
     '</div></div>';
   if(showingItems){
     target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
@@ -1287,7 +1289,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       const primary=document.createElement('div');primary.className='play-item-main-fields';
       field('Quantità',quantity,primary);
       const location=document.createElement('select');
-      location.setAttribute('aria-label','Sezione dell’oggetto');
+      location.setAttribute('aria-label','Contenitore dell’oggetto');
       if(section==='scrolls'||section==='documents'){
         const option=document.createElement('option');option.textContent=section==='scrolls'?'Pergamene':'Documenti';
         location.append(option);location.disabled=true;
@@ -1300,7 +1302,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
           location.append(option);
         }
       }
-      field('Sezione',location,primary);
+      field('Contenitore',location,primary);
       form.append(primary);
       if(requiresAttunement(resolveOwnedItem(item))){
         form.insertAdjacentHTML('beforeend',inventoryAttunementControl(c,i,d,false));

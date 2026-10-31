@@ -239,6 +239,10 @@ try{
  await firstCard.dispatchEvent('pointerup',{pointerId:1,button:0,clientX:10,clientY:10});
  assert(await page.locator('.library-list-header').isVisible(),'Long press enters selection mode');
  assert(await page.locator('[data-act="library-export"]').isVisible(),'Bulk actions appear on selection');
+ assert.match(await page.locator('.library-list-header [data-selection-last]').textContent(),/Ultima selezione/);
+ assert.equal(await page.locator('.library-list-header [data-selection-count]').textContent(),'1 selezionato');
+ assert(await page.locator('.library-list-header').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight),
+   'Creature selection actions remain visible at the viewport bottom');
  assert(await page.locator('.library-list-header [data-library-select-all]').evaluate(input=>{
   const indicator=input.nextElementSibling;
   const r=indicator.getBoundingClientRect();

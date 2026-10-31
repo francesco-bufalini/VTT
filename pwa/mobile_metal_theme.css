@@ -6140,3 +6140,67 @@ dialog.benefit-selection-dialog .magic-editor-search{width:100%;min-width:0;box-
 .hp-adjust-dialog .hp-damage-ignore input[type="checkbox"]{width:18px;height:18px;min-height:18px;flex:0 0 18px;margin:0;accent-color:#dba75e}
 .hp-adjust-dialog .hp-damage-ignore{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.35;color:#edd5ab}
 .hp-adjust-dialog #hp-adjust-damage-preview{display:block;min-height:24px;padding:8px 10px;border:1px solid #98734b55;border-radius:8px;color:#f3d3a1;font-size:12px}
+
+/* Shared bottom selection bar for creature archive and owned inventory.
+   Appears on the first long press without scrolling back to the page top. */
+.library-index .library-list-header.vtt-selection-toolbar,
+#sheet-play-view .inventory-bulk-bar.vtt-selection-toolbar{
+ position:fixed;z-index:800;bottom:max(10px,env(safe-area-inset-bottom));
+ left:50%;transform:translateX(-50%);box-sizing:border-box;
+ width:min(670px,calc(100vw - 20px));max-height:43vh;overflow-y:auto;
+ display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;
+ margin:0;padding:10px 12px;border:1px solid #d1a97899;border-radius:14px;
+ background:linear-gradient(145deg,#49352bfa,#211b1afa);
+ box-shadow:0 14px 34px #070505b8,inset 0 1px #ffe0af26;color:#f3d8ae;
+}
+.library-index .library-list-header.vtt-selection-toolbar[hidden],
+#sheet-play-view .inventory-bulk-bar.vtt-selection-toolbar[hidden]{display:none!important}
+.library-index.is-selecting,#sheet-play-view.is-inventory-selecting{padding-bottom:155px}
+.vtt-selection-toolbar .vtt-selection-summary{
+ display:flex;flex:1 1 120px;flex-direction:column;min-width:0;gap:2px;
+}
+.vtt-selection-toolbar .vtt-selection-summary strong{
+ color:#f9dfb6;font:700 13px/1.25 system-ui,sans-serif;
+}
+.vtt-selection-toolbar .vtt-selection-summary small{
+ color:#cbb69b;font:500 11px/1.35 system-ui,sans-serif;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.library-index .library-selection-actions.vtt-selection-actions,
+#sheet-play-view .inventory-bulk-actions.vtt-selection-actions{
+ display:flex;justify-content:flex-end;align-items:center;
+ flex:1 1 235px;flex-wrap:wrap;gap:6px;margin:0;padding:0;
+}
+.vtt-selection-toolbar .vtt-selection-done{
+ display:inline-flex;align-items:center;justify-content:center;min-height:40px;
+ padding:8px 11px;border:1px solid #c7a77a66;border-radius:9px;
+ background:#27201d;color:#f1d3a4;font:650 12px/1.2 system-ui;cursor:pointer;
+}
+.vtt-selection-toolbar :is(.vtt-selection-done,.library-bulk-button):focus-visible{
+ outline:2px solid #ffe2ae;outline-offset:2px;
+}
+.library-index .library-creature-entry>.library-batch-check .library-check-graphic,
+#sheet-play-view .inventory-item-batch-check .inventory-check-graphic{
+ border:1px solid #b99765;border-radius:7px;background:#29211e;
+}
+.library-index .library-creature-entry.is-selected>.library-batch-check .library-check-graphic,
+#sheet-play-view .inventory-selectable-item.is-selected .inventory-check-graphic{
+ border-color:#f1c587;background:linear-gradient(#a97b4b,#67472d);color:#fff1d1;
+}
+@media(max-width:430px){
+ .library-index .library-list-header.vtt-selection-toolbar,
+ #sheet-play-view .inventory-bulk-bar.vtt-selection-toolbar{padding:8px;gap:6px}
+ .vtt-selection-toolbar .vtt-selection-summary{flex-basis:calc(100% - 130px)}
+ .library-index .library-selection-actions.vtt-selection-actions,
+ #sheet-play-view .inventory-bulk-actions.vtt-selection-actions{
+   flex:1 1 100%;width:100%;justify-content:space-between;gap:5px;
+ }
+ .vtt-selection-toolbar :is(.library-bulk-button,.vtt-selection-done){flex:1 1 auto;min-width:0}
+ .library-index.is-selecting,#sheet-play-view.is-inventory-selecting{padding-bottom:178px}
+}
+.inventory-search-add-body{display:grid;gap:14px}
+.inventory-search-add-description{display:grid;gap:7px;padding:12px;border:1px solid #b58c575e;
+ border-radius:10px;background:#3b2d2638}
+.inventory-search-add-description>strong{color:#ecd0a2;font:650 12px/1.3 system-ui,sans-serif}
+.inventory-search-add-description p{margin:0;max-height:180px;overflow-y:auto;
+ white-space:pre-wrap;color:#dfcdb6;font:400 12px/1.55 system-ui,sans-serif}

@@ -74,6 +74,8 @@ try{
  await page.locator('#sheet-play-view [data-sheet-context="item:1"]').click();
  const itemDialog=page.locator('#sheet-context-dialog[data-context="item:1"]');
  await itemDialog.waitFor({state:'visible'});
+ assert(await itemDialog.getByText('Contenitore',{exact:true}).count()>0,
+   'The item editor presents the move-to-section control as Contenitore');
  await itemDialog.locator('[data-item-container="1"]').selectOption('case');
  await page.waitForFunction(async()=>{
   const {listCreatures}=await import('/creatures.js');

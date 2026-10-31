@@ -47,6 +47,18 @@ try{
    'Subtotals must remain within the title row at '+width+'px');
  }
  await page.setViewportSize({width:390,height:844});
+ const firstItem=page.locator('#sheet-play-view .inventory-play-item').first();
+ await firstItem.dispatchEvent('pointerdown',{pointerId:3,button:0,clientX:18,clientY:18});
+ await page.waitForTimeout(610);
+ await firstItem.dispatchEvent('pointerup',{pointerId:3,button:0,clientX:18,clientY:18});
+ const selection=page.locator('#sheet-play-view .vtt-selection-toolbar');
+ assert(await selection.isVisible(),'Inventory multi-selection opens immediately near the viewport bottom');
+ assert.equal(await selection.locator('[data-selection-count]').textContent(),'1 selezionato');
+ assert.match(await selection.locator('[data-selection-last]').textContent(),/Ultima selezione/);
+ assert(await selection.evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight),
+   'Inventory selected-entry actions remain visible without scrolling');
+ await selection.locator('[data-act="inventory-selection-clear"]').click();
+ assert.equal(await selection.isVisible(),false,'Fine exits inventory selection');
  const search=page.locator('#sheet-play-view [data-play-search]');
  const layout=await page.evaluate(()=>{
   const a=document.querySelector('.inventory-overview').getBoundingClientRect();
@@ -82,6 +94,10 @@ try{
  const addedName=(await result.locator('strong').textContent()).trim();
  await result.click();
  await page.locator('#inventory-search-add-dialog[open]').waitFor();
+ const description=page.locator('#inventory-search-add-dialog [data-inventory-add-description]');
+ await description.waitFor();
+ assert((await description.textContent()).trim().length>0,
+   'Item description is visible in the same dialog as quantity and section');
  assert.equal(await page.locator('#inventory-search-add-quantity').inputValue(),'1','Catalog additions default to one item');
  await page.locator('#inventory-search-add-section').selectOption('chest');
  await page.locator('#inventory-search-add-quantity').fill('4');
