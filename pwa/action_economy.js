@@ -413,6 +413,50 @@ function attackSourceDescription(record,calculated,attack){
  const manual=arr(record.attacks).find(row=>String(row.id||'')===id);
  return details(manual?.description||manual?.entries||attack.description);
 }
+// Only consuming actions describe an attack sequence; the actual hit rolls stay in Resources.
+const ATTACK_NUMBERS={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6,sette:7,otto:8};
+export function attackActionSequence(action={},record={},calculated={}){
+ const count=Math.max(0,Math.min(99,Number(action.attack_count||action.attacks_per_action||0)||0));
+ const declared=arr(action.attack_sequence||action.attacks_granted||action.attack_grants);
+ if(declared.length){
+  const named=declared.flatMap(part=>{
+   const amount=Math.max(1,Math.min(99,Number(part?.count??part?.quantity??1)||1));
+   const name=typeof part==='string'?part:String(part?.name||part?.attack_name||part?.attack_type||'Attacco');
+   return Array.from({length:amount},()=>name);
+  });
+  return count?named.slice(0,count).concat(Array.from({length:Math.max(0,count-named.length)},()=> 'Attacco')):named;
+ }
+ if(!count)return [];
+ if(action.id==='two_weapon')return ['Attacco con arma secondaria'];
+ if(action.id==='opportunity')return ['Attacco in mischia'];
+ if(action.id==='attack')return Array.from({length:count},()=> 'Attacco');
+ if(action.id==='monster:multiattack'){
+  const raw=arr(record.stat_block?.action).find(monsterMultiattack)||{};
+  const prose=details(raw.entries||raw.description).toLowerCase();
+  const choices=arr(calculated.attacks).filter(row=>String(row.id).startsWith('monster:')&&row.name);
+  const found=[];
+  for(const choice of choices){
+   const singular=String(choice.name).trim().toLowerCase();
+   const escaped=singular.replace(/[^a-z0-9 ]/g,'');
+   if(!escaped)continue;
+   const pattern=new RegExp('\\b(one|two|three|four|five|six|seven|eight|uno|una|due|tre|quattro|cinque|sei|sette|otto|\\d+)\\s+(?:(?:attacks?|attacchi)\\s+)?(?:with\\s+)?(?:(?:its|his|her|the|a|an|il|la|i|le)\\s+)?[^,;:.]{0,25}?\\b'+escaped+'s?\\b','gi');
+   for(const match of prose.matchAll(pattern)){
+    const quantity=ATTACK_NUMBERS[match[1].toLowerCase()]||Number(match[1])||1;
+    found.push({position:match.index,name:choice.name,quantity:Math.min(99,quantity)});
+   }
+  }
+  found.sort((a,b)=>a.position-b.position);
+  const result=found.flatMap(hit=>Array.from({length:hit.quantity},()=>hit.name));
+  return result.slice(0,count).concat(Array.from({length:Math.max(0,count-result.length)},()=> 'Attacco'));
+ }
+ return Array.from({length:count},()=> 'Attacco');
+}
+export function attackActionCategory(row={}){
+ if(arr(row.attack_sequence).length||['attack','two_weapon','opportunity','monster:multiattack'].includes(String(row.id))||
+   Number(row.attack_count)>0||Number(row.attacks_per_action)>0||row.attack_replacement===true)return 'attacks';
+ return row.type==='Capacità'||row.monster_action?'abilities':'other';
+}
+
 function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
  const rolls=[];
@@ -501,6 +545,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
    source+target+resources+optionMarkup+
    (String(item.id||'').startsWith('activated:')&&!item.descriptive_only?'<button type="button" class="btn small" data-act="battle-use-ability" data-ability-id="'+esc(item.id)+'">Usa</button>':'')+
    '</div></details>')+
+  (arr(item.attack_sequence).length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
+   item.attack_sequence.map(label=>'<li>'+esc(label)+'</li>').join('')+'</ol>':'')+
   (rolls.length||mapButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
    '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
    esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
@@ -661,7 +707,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const allBase=[...baseById.values()];
  const actionsBase=allBase.map(row=>row.id==='two_weapon'?
   {...row,available:haveOffhand,unavailable_reason:offhandEligibility.reason}:
-  row.id==='attack'?{...row,attack_count:1}:row);
+  row.id==='attack'&&record.kind==='monster'?{...row,attack_count:1}:row);
  // All physical attack choices are a flat list, irrespective of action cost.
  // Their action economy is defined in "Azioni", not repeated here.
  // Combine all actually available improvised attacks into one generic choice.
@@ -738,7 +784,14 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  }
  const basicInActions=actionsBase.filter(row=>row.id==='attack'||row.id==='two_weapon'||
   row.id==='opportunity'&&row.available||row.id==='spell_cast'&&row.available||row.monster_action);
- const other=[...basicInActions,...specials,...classAbilities.filter(row=>row.monster_action)];
+ const multiattack=record.kind==='monster'?
+  monsterTraits(record).find(row=>row.monster_role==='multiattack'&&!row.disabled&&!row.inactive):null;
+ const multiCount=multiattack?Math.max(Number(multiattack.attacks_per_action)||0,count):0;
+ const multiRow=multiCount>1?[{id:'monster:multiattack',name:'Multiattacco',
+  time:'action',type:'Generale',available:true,attack_count:multiCount,
+  description:details(multiattack.entries),origin_id:'feature:'+multiattack.feature_key}]:[];
+ const other=[...basicInActions,...multiRow,...specials,...classAbilities.filter(row=>row.monster_action)]
+  .map(row=>({...row,attack_sequence:attackActionSequence(row,record,calculated)}));
  const ordering=(a,b,time)=>{
   const order=row=>row.id==='attack'&&time==='action'?-100:
    row.id==='opportunity'&&time==='reaction'?-100:
@@ -746,13 +799,19 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    row.id==='spell_cast'&&time==='action'?-90:0;
   return order(a)-order(b);
  };
- const renderTiming=rows=>BATTLE_TIMINGS.map(([time,label])=>{
-  const matching=rows.filter(row=>row.time===time).sort((a,b)=>ordering(a,b,time));
-  return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'"'+' open'+'>'+
-    '<summary class="play-battle-action-heading">'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+
-    '<span>'+esc(label)+'</span></summary>'+
-    '<div class="play-battle-action-rows">'+matching.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div></details>':'';
- }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
+ const categoryGroups={attacks:[],abilities:[],other:[]};
+ for(const row of other)categoryGroups[attackActionCategory(row)].push(row);
+ const groupHtml=rows=>'<div class="play-battle-action-rows">'+
+  rows.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>';
+ const renderCategories=()=>[
+  ['attacks','Azioni di attacco','weapon'],
+  ['abilities','Capacità','spark'],
+  ['other','Altre azioni','hand']
+ ].filter(([id])=>categoryGroups[id].length).map(([id,label,glyph])=>
+  '<details class="play-battle-action-group" data-action-benefit="'+id+'" open>'+
+  '<summary class="play-battle-action-heading">'+actionGlyph(glyph)+
+  '<span>'+label+'</span></summary>'+groupHtml(categoryGroups[id])+'</details>').join('')||
+  '<p class="play-empty">Nessuna azione disponibile.</p>';
  const timingOverrides=entries.filter(row=>row.action_change_origin&&row.time!==row.original_time);
  const damageOverrides=arr(calculated.action_damage_bonuses).flatMap(grant=>{
   const action=allBase.find(row=>row.id===grant.action_id)||entries.find(row=>row.id===grant.action_id);
@@ -763,7 +822,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
    weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>',
-  others:renderTiming(other),movement:'',
+  others:renderCategories(),actionGroups:Object.fromEntries(Object.entries(categoryGroups).map(([key,rows])=>[key,groupHtml(rows)])),movement:'',
   checks:battleSkillChecksPanel(calculated),
   spells:'',
   abilityEntries:classAbilities,
