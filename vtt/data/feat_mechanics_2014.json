@@ -209,6 +209,7 @@
       "roll_bonuses": [
         {
           "target": "attack_roll",
+          "name": "Sharpshooter · −5 al tiro per colpire",
           "flat_bonus": -5,
           "attack_ranged_weapon": true,
           "condition_label": "Facoltativo: −5 al tiro per colpire con un'arma a distanza con cui sei competente, prima del tiro.",
@@ -216,6 +217,7 @@
         },
         {
           "target": "damage_roll",
+          "name": "Sharpshooter · +10 ai danni",
           "flat_bonus": 10,
           "attack_ranged_weapon": true,
           "condition_label": "Facoltativo: +10 ai danni di un attacco con un'arma a distanza con cui sei competente."

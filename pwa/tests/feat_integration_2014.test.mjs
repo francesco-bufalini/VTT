@@ -167,8 +167,27 @@ test('Shield Master scales with equipped shield AC; power attacks require approp
  assert(heavy.some(x=>x.feat_name==='Great Weapon Master'&&x.flat_bonus===-5&&x.require_before_roll));
  assert(!heavy.some(x=>x.feat_name==='Sharpshooter'));
  const bow=applicableFeatRollBonuses(record,calculated,'attack_hit:item:bow');
- assert(bow.some(x=>x.feat_name==='Sharpshooter'&&x.flat_bonus===-5&&x.require_before_roll));
+ const sharpshooterHit=bow.find(x=>x.feat_name==='Sharpshooter');
+ assert.equal(sharpshooterHit?.flat_bonus,-5);
+ assert.equal(sharpshooterHit?.require_before_roll,true);
+ assert.equal(sharpshooterHit?.name,'Sharpshooter · −5 al tiro per colpire');
  assert(!bow.some(x=>x.feat_name==='Great Weapon Master'));
+ const bowDamage=applicableFeatRollBonuses(record,calculated,'attack_damage:item:bow');
+ const sharpshooterDamage=bowDamage.find(x=>x.feat_name==='Sharpshooter');
+ assert.equal(sharpshooterDamage?.flat_bonus,10,
+  'The +10 damage option must be available without selecting −5 on a hit roll');
+ assert.equal(sharpshooterDamage?.name,'Sharpshooter · +10 ai danni');
+ assert(!sharpshooterDamage?.require_before_roll,
+  'The two user-selectable Sharpshooter bonuses are independent');
+ assert.notEqual(sharpshooterHit?.id,sharpshooterDamage?.id);
+ assert(!sharpshooterHit?.exclusive_group&&!sharpshooterDamage?.exclusive_group,
+  'No shared exclusive/linked selection may be created');
+ assert.equal(applicableFeatRollBonuses(record,calculated,'attack_hit:item:bow')
+  .filter(x=>x.feat_name==='Sharpshooter').length,1);
+ assert.equal(applicableFeatRollBonuses(record,calculated,'attack_damage:item:bow')
+  .filter(x=>x.feat_name==='Sharpshooter').length,1);
+ assert(!applicableFeatRollBonuses(record,calculated,'attack_damage:item:sword')
+  .some(x=>x.feat_name==='Sharpshooter'));
  assert(!applicableFeatRollBonuses(record,calculated,'attack_hit:item:sword')
   .some(x=>x.feat_name==='Great Weapon Master'));
  assert(!applicableFeatRollBonuses(record,calculated,'attack_hit:item:untrained')
@@ -178,6 +197,8 @@ test('Shield Master scales with equipped shield AC; power attacks require approp
  const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
  assert.match(ui,/row\.roll_mode\|\|row\.require_before_roll/);
  assert.match(ui,/featAvailable=applicableFeatRollBonuses/);
+ assert.match(ui,/row\.feat_conditional&&row\.name/,
+  'Each named feat bonus has its own label in the roll picker');
 });
 
 test('Agent of Order Stasis Strike has a PB-sized long-rest tracker and typed targeted activation',()=>{
