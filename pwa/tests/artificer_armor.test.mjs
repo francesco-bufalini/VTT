@@ -140,7 +140,7 @@ test('state-created weapons receive source-bound training and use ordinary attac
   const benefitGroups=traitBenefitGroups({key:trait.key,feature_origin:trait.origin_id,
    origin_key:trait.origin_key},r,calculated);
   assert(benefitGroups.some(group=>group.type==='proficiency'&&group.items.some(row=>
-   row.label.toLowerCase().includes(weaponName.toLowerCase()))),
+   String(row.value).toLowerCase().includes(weaponName.toLowerCase()))),
    'The source trait must list the granted proficiency');
   const muted=calculateSheet({...r,origin_enabled:{[trait.origin_id]:false}},catalogs);
   assert(!muted.proficiencies.includes(key),'Disabling the source revokes its proficiency');
