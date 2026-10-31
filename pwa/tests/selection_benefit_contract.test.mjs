@@ -328,12 +328,24 @@ test('Two-Weapon Fighting uses generic conditional damage bonuses',()=>{
   const attack=calculated.attacks.find(row=>row.id==='item:off:dagger');
   const amount=ability==='str'?3:ability==='dex'?2:4;
   assert.equal(attack.damage_ability_modifier,0);
+  assert.equal(attack.damage_ability_applies,false,
+   'Positive offhand ability damage comes from the style, not the base attack');
   assert.equal(attack.damage_extra_modifier,amount);
   assert.equal(attack.damage,'1d6 + '+amount);
   assert.equal(inactive.attacks.find(row=>row.id===attack.id).damage,'1d6');
   assert(calculated.roll_components['attack_damage:'+attack.id].some(row=>
    row.origin_name==='Two-Weapon Fighting'&&row.value===amount));
-  assert.equal(calculated.attacks.find(row=>row.id==='item:sword').damage_extra_modifier,0);
+  const offSegments=damageRollSegments(rollBattleDamage(attack.damage,()=>1),'piercing',
+   {...attack,damage_bonus_components:calculated.roll_components['attack_damage:'+attack.id]});
+  assert.deepEqual(offSegments.map(row=>row.formula),['1d6','+'+amount],
+   'The offhand style is a separate damage bonus, not an intrinsic +Mod');
+  assert.equal(offSegments[1].originName,'Two-Weapon Fighting');
+  const mainAttack=calculated.attacks.find(row=>row.id==='item:sword');
+  assert.equal(mainAttack.damage_ability_applies,true);
+  assert.equal(damageRollSegments(rollBattleDamage(mainAttack.damage,()=>1),'piercing',
+   mainAttack)[0].formula,'1d6 + Mod.'+({str:'FOR',dex:'DES',wis:'SAG'}[ability]),
+   'The main-hand weapon keeps its ability modifier in base damage');
+  assert.equal(mainAttack.damage_extra_modifier,0);
   const panels=battleActionPanels(r,calculated,[],[],[]);
   assert.doesNotMatch(panels.attacks,/item:off:dagger/);
   assert.doesNotMatch(panels.others,/data-damage-attack-id="item:off:dagger"/);
