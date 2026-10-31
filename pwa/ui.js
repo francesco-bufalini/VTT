@@ -1813,8 +1813,11 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
    await patch(changes);if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();
     if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
-    dialog.dataset.confirmed='true';dialog.close();await render();
-   if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
+    dialog.dataset.confirmed='true';dialog.close();
+    // Apply roll-scoped bonuses before the sheet refresh can replace the
+    // view/roll owner. Payment has already been committed and flushed.
+    if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
+    await render();
    if(reroll){state.roll={...reroll,label:ability.name,author:selectedName()};state.rollHistory.unshift({...state.roll});}
    message(reroll?ability.name+': '+reroll.notation+' → '+reroll.total+' · usa i nuovi risultati.':ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
   }catch(error){button.disabled=false;dialog.querySelector('[data-feature-result]').textContent=errorMessage(error);}
