@@ -680,7 +680,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  };
  const attackTier=row=>{
   if(row.id==='unarmed')return 2;
-  if(row.id==='improvised'||row.origin==='general')return 3;
+  if(row.id==='improvised'||row.origin==='general'||row.catalog_id&&row.parent_action==='attack')return 3;
   const attack=attacksById.get(String(row.attack_id||row.id||''));
   const source=/^monster:(action|bonus|reaction|legendary|mythic):(\d+)$/.exec(String(attack?.id||''));
   const statBlockAttack=source&&arr(record.stat_block?.[source[1]])[Number(source[2])];
