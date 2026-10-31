@@ -3111,15 +3111,14 @@ function learningSelectionDialogBody({title,closeAction,summary='',searchLabel,s
 // The Fighting Style chooser uses exactly the same option rows and level
 // grouping as the Artificer's infusion learner; only its actions differ.
 const alreadyOwnedOptionNotice='<small class="magic-catalog-owned">Già posseduta</small>';
-function learningPickerOptionRow({id,name,owned,detailsAction,toggleAction,idAttribute,label,required=false,locked=false,extra='',removeAction=''}) {
+function learningPickerOptionRow({id,name,owned,detailsAction,toggleAction,idAttribute,label,required=false,extra='',removeAction=''}) {
  return '<div class="magic-catalog-row vtt-selectable'+(owned?' is-selected':'')+'">'+
   '<button type="button" class="magic-catalog-name" data-act="'+esc(detailsAction)+'" '+idAttribute+'="'+esc(id)+
   '" aria-label="Dettagli di '+esc(name)+'">'+esc(name)+'</button>'+
-  extra+(locked?alreadyOwnedOptionNotice:
-    '<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
+  extra+'<button type="button" class="magic-catalog-action'+(owned?' is-selected':'')+
     '" data-act="'+esc(toggleAction)+'" '+idAttribute+'="'+esc(id)+'"'+
     (required?' disabled title="Opzione obbligatoria"':'')+' aria-pressed="'+owned+'">'+esc(label)+'</button>'+
-    removeAction)+'</div>';
+    removeAction+'</div>';
 }
 function learningPickerOptionGroups(options,renderRow,levelOf,minLevel=0) {
  if(!options.length)return '<p class="hint">Nessuna opzione disponibile.</p>';
@@ -3176,22 +3175,21 @@ async function openBenefitSelectionDialog(id,stage){
   (!learned||learned.has(option.id)||selected.has(option.id)));
  const choiceRow=option=>{
   const owned=selected.has(option.id),sub=option.subchoices,required=model.required?.includes(option.id);
-  const locked=owned&&(stage==='learned'||stage==='prepared');
   const current=selected.get(option.id);
   const fields=sub?'<div class="power-selection-subchoices">'+
    Array.from({length:sub.count},(_,i)=>{
     const value=current?.subchoices?.[i]||'',attrs=' data-power-subchoice="'+i+'" data-power-option="'+esc(option.id)+'"';
     const control=Array.isArray(sub.options)?
-     '<select'+attrs+(locked?' disabled':'')+'><option value="">Scegli</option>'+
+     '<select'+attrs+'><option value="">Scegli</option>'+
      sub.options.map(row=>'<option value="'+esc(row.id)+'"'+(row.id===value?' selected':'')+'>'+esc(row.name)+'</option>').join('')+'</select>':
-     '<input type="text"'+attrs+' maxlength="70" value="'+esc(value)+'" placeholder="'+esc(sub.placeholder||'Sotto-opzione')+'"'+(locked?' disabled':'')+'>';
+     '<input type="text"'+attrs+' maxlength="70" value="'+esc(value)+'" placeholder="'+esc(sub.placeholder||'Sotto-opzione')+'">';
     return '<label>'+esc(sub.label||'Sotto-opzione')+' '+(i+1)+control+'</label>';
    }).join('')+'</div>':'';
   const label=required?'Obbligatoria':
    owned?(sub?'Aggiorna':stage==='learned'?'Dimentica':'Rimuovi'):
    stage==='learned'?'+ Impara':stage==='prepared'?'+ Prepara':'+ Applica';
   return learningPickerOptionRow({
-   id:option.id,name:option.name,owned,required,locked,
+   id:option.id,name:option.name,owned,required,
    detailsAction:'power-selection-details',toggleAction:'power-selection-toggle',
    idAttribute:'data-power-option-id',label,extra:fields,
    removeAction:owned&&sub?'<button type="button" class="magic-catalog-action" data-act="power-selection-toggle"'+
@@ -4176,6 +4174,16 @@ function renderSpellResults(){
   const known=knownClassSpellIds(record,member,rows);
   const granted=new Map((state.calculated?.origin_spells||[]).filter(row=>row.spell_id)
     .map(row=>[String(row.spell_id),row]));
+  // Other sources only block new choices, never removal from this class.
+  // Automatically known class-list spells are not external ownership.
+  const foreignKnown=new Set(classes.filter(other=>other.id!==member?.id).flatMap(other=>
+    [...knownClassSpellIds(record,other,rows)].filter(id=>{
+      const spell=rows.find(row=>spellId(row)===id);
+      return !(other.selection_layers?.learned?.mode==='class_list'&&
+        spell&&Number(spell.level)>0&&spellEligible(spell,other));
+    })));
+  const foreignPrepared=new Set(prepared.filter(row=>
+    !member||!castingSources(row,classes,rows).includes(member.id)).map(spellId));
   const selected=new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
   const filterClass=String(state.spellLearnFilter||'all').toLowerCase();
@@ -4206,17 +4214,22 @@ function renderSpellResults(){
       ' data-spell-id="'+esc(spell.id)+'"';
     const name='<button type="button" class="magic-catalog-name" data-act="power-spell"'+details+
       ' aria-label="Dettagli di '+esc(info.name)+'">'+esc(info.name)+'</button>';
-    // Shared row template; the current selection stage controls the action.
     const owned=learning?known.has(spell.id):already;
-    const grant=preparing?granted.get(spell.id):null;
-    const label=learning?'+ Impara':member?'+ Prepara':'+ Aggiungi';
+    const foreign=!owned&&(granted.has(spell.id)||foreignKnown.has(spell.id)||
+      foreignPrepared.has(spell.id));
+    const action=learning?'spell-known-toggle':owned?'remove-spell':'spell-pick';
+    const label=learning?(owned?'Dimentica':'+ Impara'):
+      owned?'Rimuovi':member?'+ Prepara':'+ Aggiungi';
+    const attrs=learning?' data-spell-index="'+rows.indexOf(spell)+'" data-known="'+owned+
+      '" data-class-id="'+esc(member.id)+'"':
+      owned?' data-index="'+preparedIndex+'" data-key="'+esc(target)+
+        '" data-class-id="'+esc(member?.id||'manual')+'"':
+        ' data-index="'+rows.indexOf(spell)+'"';
     return '<div class="magic-catalog-row vtt-selectable'+(owned?' is-selected':'')+'">'+name+
-      (owned||grant?alreadyOwnedOptionNotice:
-        '<button class="magic-catalog-action" type="button" aria-pressed="false" data-act="'+
-        (learning?'spell-known-toggle':'spell-pick')+'"'+
-        (learning?' data-spell-index="'+rows.indexOf(spell)+'" data-known="false" data-class-id="'+esc(member.id)+'"':
-          ' data-index="'+rows.indexOf(spell)+'"')+
-        ' aria-label="'+esc(label.slice(2)+' '+info.name)+'">'+esc(label)+'</button>')+
+      (foreign?alreadyOwnedOptionNotice:
+        '<button class="magic-catalog-action'+(owned?' is-selected':'')+
+        '" type="button" aria-pressed="'+owned+'" data-act="'+action+'"'+attrs+
+        ' aria-label="'+esc(label.replace(/^\+ /,'')+' '+info.name)+'">'+esc(label)+'</button>')+
       '</div>';
   })+resultsFooter('spell-results-more',shown,total,60);
 }
