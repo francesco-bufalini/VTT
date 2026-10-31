@@ -5847,11 +5847,8 @@ function rollDieResultMarkup(outcome){
    '<div class="sheet-roll-dice-group"><span class="sheet-roll-dice-label">'+esc(part.notation)+'</span>'+
    '<div class="sheet-roll-dice-values">'+(part.kind==='flat'?
      '<span class="sheet-roll-die-value">'+esc(part.notation)+'</span>':
-     (part.rolls||[]).map((n,i)=>{
-       const reroll=(part.rerolls||[]).find(row=>row.index===i);
-       return '<span class="sheet-roll-die-value">'+esc(n)+
-         (reroll?'<small title="Ritiro automatico">'+esc(reroll.previous+'→'+reroll.next)+'</small>':'')+'</span>';
-     }).join(''))+'</div></div>').join('')+'</div>';
+     (part.rolls||[]).map(n=>
+       '<span class="sheet-roll-die-value">'+esc(n)+'</span>').join(''))+'</div></div>').join('')+'</div>';
 }
 function chosenRollBonuses(dialog){
  return [...(dialog.usedRollBonuses||[])];
@@ -8031,11 +8028,6 @@ async function handleAction(target){
       bonuses,creatureId:creature.id||'',damageFormula:formula,damageLabel:label,damageType:type});
     dialog.dataset.damageAttackId=attackId;
     dialog.rollAttack=sourceAttack;
-    dialog.damageRerolls=sourceAttack?.damage_rerolls||[];
-    // Only the original weapon damage dice can be rerolled, never extra dice.
-    dialog.damageRerollDiceCount=[...String(sourceAttack?.damage_base_formula||'')
-      .matchAll(/([1-9]\d*)d(?:2|3|4|6|8|10|12|20|100)/gi)]
-      .reduce((sum,match)=>sum+Number(match[1]),0);
     dialog.renderRollFormula=()=>{dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
         [...damageRollTerms(formula,type,dialog.rollAttack).segments,...[...chosenRollBonuses(dialog),...(dialog.postRollBonuses||[])].map(rollBonusTerm)],esc);};
     return;
@@ -8385,10 +8377,7 @@ async function handleAction(target){
         const chosen=chosenRollBonuses(dialog);
         const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>
           Object.hasOwn(row,'flat_bonus')?(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice).join('');
-        const threshold=dialog.dataset.rollKind==='damage'?
-          Math.max(0,...(dialog.damageRerolls||[]).map(row=>Number(row.reroll_at_most)||0)):0;
-        const outcome=rollBattleDamage(fullFormula,randomDie,{
-          rerollAtMost:threshold,rerollDiceCount:dialog.damageRerollDiceCount||0});
+        const outcome=rollBattleDamage(fullFormula,randomDie);
         const featureTarget=dialog.dataset.featureRollTarget||'';
         state.roll={...outcome,label:(featureTarget?'Tiro capacità · ':'Danni · ')+dialog.dataset.damageLabel+
           (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName(),

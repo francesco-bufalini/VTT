@@ -253,30 +253,13 @@ test('legacy equipped flags never create a phantom offhand that blocks Dueling',
   'Two-handed use of a versatile weapon suppresses Dueling');
 });
 
-test('Great Weapon Fighting applies a declared reroll only to two-handed melee weapon damage dice',()=>{
- const id='optional:class:phb:fighter:fs-f',option='optional:phb:great-weapon-fighting';
- const greatsword={id:'greatsword',name:'Greatsword',type:'M',damage:'2d6',
-  properties:['H','2H'],equipped_slots:['main'],quantity:1};
- let r={...record(),level:2,classes:[{name:'Fighter',source:'PHB',level:2}],
-  abilities:{str:16,dex:10,con:12,int:10,wis:10,cha:10},inventory:[greatsword]};
- let c=calculateSheet(r,completeCatalogs);
- r={...r,...powerSelectionPatch(r,c,combined,id,'learned',option)};
- c=calculateSheet(r,completeCatalogs);
- r={...r,...powerApplicationPatch(r,c,combined,id,option,true)};
- c=calculateSheet(r,completeCatalogs);
- const attack=c.attacks.find(row=>row.id==='item:greatsword');
- assert.equal(attack?.damage_rerolls?.[0]?.reroll_at_most,2);
- const results=[1,5,2,6,1],outcome=rollBattleDamage('2d6+1d6+3',()=>results.shift(),
-  {rerollAtMost:2,rerollDiceCount:2});
- assert.deepEqual(outcome.parts.map(part=>part.rolls),[[5,6],[1]],
-  'Only the weapon dice reroll and the replacement is kept');
- assert.equal(outcome.total,15);
- assert.match(outcome.detail,/1→5/);
- const oneHanded=calculateSheet({...r,inventory:[{...greatsword,properties:['V'],damage:'1d8'}],
-  hand_grip_two_handed:false},completeCatalogs);
- assert.equal(oneHanded.attacks.find(row=>row.id==='item:greatsword').damage_rerolls.length,0);
- const ranged=calculateSheet({...r,inventory:[{...greatsword,type:'R',range:'80/320'}]},completeCatalogs);
- assert.equal(ranged.attacks.find(row=>row.id==='item:greatsword').damage_rerolls.length,0);
+test('Great Weapon Fighting remains descriptive without a dedicated damage reroll',()=>{
+ const style=catalogs.optionalFeatureProgressions.options.find(row=>row.id==='optional:phb:great-weapon-fighting');
+ assert(style.description.includes('reroll'));
+ assert.equal(style.effects,undefined);
+ const damage=rollBattleDamage('2d6+3',()=>1);
+ assert.deepEqual(damage.parts[0].rolls,[1,1]);
+ assert.equal(damage.total,5);
 });
 
 test('Thrown Weapon Fighting applies +2 exclusively to the thrown damage roll',()=>{
@@ -306,30 +289,51 @@ test('Thrown Weapon Fighting applies +2 exclusively to the thrown damage roll',(
   'Thrown Weapon Fighting must not add a second damage display');
 });
 
-test('Two-Weapon Fighting applies the offhand ability modifier from structured data',()=>{
+test('Two-Weapon Fighting uses generic conditional damage bonuses',()=>{
  const selection='optional:class:phb:fighter:fs-f',option='optional:phb:two-weapon-fighting';
- const sword={id:'sword',name:'Shortsword',type:'M',damage:'1d6',properties:['L','F'],
-  equipped_slots:['main'],quantity:1};
- const offhand={...sword,id:'dagger',name:'Dagger',equipped_slots:['off']};
+ const definition=catalogs.optionalFeatureProgressions.options.find(row=>row.id===option);
+ assert.deepEqual(definition.effects.map(row=>[row.type,row.target,row.expression]),
+  [['bonus','attack_damage:*','attack_ability_mod']]);
+ const sword={id:'sword',name:'Shortsword',type:'M',damage:'1d6',
+  properties:['L','F'],equipped_slots:['main'],quantity:1};
+ const dagger={...sword,id:'dagger',name:'Dagger',equipped_slots:['off']};
+ for(const ability of ['str','dex','wis']){
+  let r={...record(),classes:[{name:'Fighter',source:'PHB',level:2}],level:2,
+   abilities:{str:16,dex:14,con:12,int:10,wis:18,cha:10},
+   inventory:[sword,dagger],attack_ability:ability};
+  let calculated=calculateSheet(r,completeCatalogs);
+  r={...r,...powerSelectionPatch(r,calculated,combined,selection,'learned',option)};
+  calculated=calculateSheet(r,completeCatalogs);
+  const inactive=calculated;
+  r={...r,...powerApplicationPatch(r,calculated,combined,selection,option,true)};
+  calculated=calculateSheet(r,completeCatalogs);
+  const attack=calculated.attacks.find(row=>row.id==='item:off:dagger');
+  const amount=ability==='str'?3:ability==='dex'?2:4;
+  assert.equal(attack.damage_ability_modifier,0);
+  assert.equal(attack.damage_extra_modifier,amount);
+  assert.equal(attack.damage,'1d6 + '+amount);
+  assert.equal(inactive.attacks.find(row=>row.id===attack.id).damage,'1d6');
+  assert(calculated.roll_components['attack_damage:'+attack.id].some(row=>
+   row.origin_name==='Two-Weapon Fighting'&&row.value===amount));
+  assert.equal(calculated.attacks.find(row=>row.id==='item:sword').damage_extra_modifier,0);
+  const panels=battleActionPanels(r,calculated,[],[],[]);
+  assert.doesNotMatch(panels.attacks,/item:off:dagger/);
+  assert.doesNotMatch(panels.others,/data-damage-attack-id="item:off:dagger"/);
+  const nonLight=calculateSheet({...r,inventory:[{...sword,properties:['F']},dagger]},completeCatalogs);
+  assert.equal(nonLight.attacks.find(row=>row.id==='item:off:dagger')?.damage_extra_modifier,0,
+   'The style does not enable an otherwise illegal offhand strike');
+ }
  let r={...record(),classes:[{name:'Fighter',source:'PHB',level:2}],level:2,
-  abilities:{str:16,dex:14,con:12,int:10,wis:10,cha:10},
-  inventory:[sword,offhand],attack_ability:'str'};
- let c=calculateSheet(r,completeCatalogs);
- r={...r,...powerSelectionPatch(r,c,combined,selection,'learned',option)};
- c=calculateSheet(r,completeCatalogs);
- r={...r,...powerApplicationPatch(r,c,combined,selection,option,true)};
- c=calculateSheet(r,completeCatalogs);
- const off=c.attacks.find(a=>a.id==='item:off:dagger');
- assert.equal(off.damage_ability_modifier,3);
- assert.equal(off.damage_ability_source,'Two-Weapon Fighting');
- const inactive=calculateSheet({...r,power_applications:{...r.power_applications,[selection]:[]}},completeCatalogs);
- assert.equal(inactive.attacks.find(a=>a.id==='item:off:dagger').damage_ability_modifier,0);
- const panels=battleActionPanels(r,c,[],[],[]);
- assert.doesNotMatch(panels.attacks,/item:off:dagger/,'No duplicate offhand attack');
- assert.match(panels.others,/data-damage-formula="1d6 \+ 3"/,
-  'The offhand modifier appears in the existing bonus-action damage roll');
- assert.doesNotMatch(panels.others,/play-battle-damage-benefits/,
-  'The offhand style must not add a second damage display');
+  abilities:{str:8,dex:10,con:12,int:10,wis:10,cha:10},
+  inventory:[sword,dagger],attack_ability:'str'};
+ let calculated=calculateSheet(r,completeCatalogs);
+ r={...r,...powerSelectionPatch(r,calculated,combined,selection,'learned',option)};
+ calculated=calculateSheet(r,completeCatalogs);
+ r={...r,...powerApplicationPatch(r,calculated,combined,selection,option,true)};
+ calculated=calculateSheet(r,completeCatalogs);
+ const off=calculated.attacks.find(row=>row.id==='item:off:dagger');
+ assert.equal(off.damage,'1d6 − 1','Negative ability modifiers are not subtracted twice');
+ assert.equal(off.damage_extra_modifier,0);
 });
 
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
