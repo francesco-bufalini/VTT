@@ -226,7 +226,8 @@
           "damage_type": "piercing",
           "melee": true,
           "ability": "str",
-          "range_feet": 5
+          "range_feet": 5,
+          "weapon_category": "simple"
         }
       ]
     },
@@ -249,7 +250,8 @@
           "damage_type": "slashing",
           "melee": true,
           "ability": "str",
-          "range_feet": 5
+          "range_feet": 5,
+          "weapon_category": "simple"
         }
       ]
     },
@@ -272,7 +274,8 @@
           "damage_type": "piercing",
           "melee": true,
           "ability": "str",
-          "range_feet": 10
+          "range_feet": 10,
+          "weapon_category": "simple"
         }
       ]
     },
