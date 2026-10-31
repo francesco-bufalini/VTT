@@ -4516,7 +4516,8 @@ function setSheetChatOpen(open){
  if(open){
   const events=chatScreen.querySelector('#events');
   if(events)events.scrollTop=events.scrollHeight;
- }
+  chatScreen.querySelector('.chat-view-close')?.focus({preventScroll:true});
+ }else document.querySelector('#header-chat')?.focus({preventScroll:true});
 }
 function chatView(){
  return '<section class="panel chat-main-panel">'+
@@ -9023,6 +9024,7 @@ async function handleAction(target){
     await render();return;
   }
   if(act==="back"){
+    if(state.chatOpen){setSheetChatOpen(false);return;}
     const parentId=state.editor?.readBase()?.parent_creature_id;
     if(parentId){
       await flushPendingFields();
@@ -10250,6 +10252,7 @@ function listen(){
       try{await handleAction(button);}catch(error){message(errorMessage(error),true);}
       return;
     }
+    if(closeAction==='header-chat-close'){setSheetChatOpen(false);return;}
     // Picking a spell changes only this popup; paint the selection immediately.
     if(closeAction==='scroll-spell-choose'){
       try{await handleAction(button);}catch(error){message(errorMessage(error),true);}
@@ -10280,6 +10283,11 @@ function listen(){
       e.preventDefault();e.stopPropagation();e.target.blur();
     }
   },true);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&state.chatOpen&&!document.querySelector('dialog[open]')){
+      e.preventDefault();setSheetChatOpen(false);
+    }
+  });
   document.addEventListener('keydown',e=>{
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"],#sheet-play-view .play-character-portrait[role="button"]');
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
