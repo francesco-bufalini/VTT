@@ -937,7 +937,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
 
   const flatResources=resources+abilityButtons('all',grantedAttackRows);
-  if(flatResources)html+=disclosure('resources','Risorse','reset',flatResources,true);
+  html+=disclosure('resources','Risorse','reset',
+   flatResources||'<p class="play-empty">Nessun tracker o nuovo attacco disponibile.</p>',true);
   // Restore the Attacchi table with its original structure and equipment
   // shortcut; never nest it under Resources or Azioni.
   if(view.battleActions?.attacks)html+=disclosure('attacks','Attacchi','weapon',
