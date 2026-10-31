@@ -469,7 +469,7 @@ export function battleAttackActionRow(item={},calculated={}){
  const typeLabel=timeLabels[item.time]||String(item.time||'Azione');
  const costLabel=cost>0?' · '+cost+' '+(cost===1?'utilizzo':'utilizzi'):'';
  const trackerChip=tracker&&cost>0?'<span class="play-action-tracker" title="'+esc(tracker.name)+'" aria-label="'+
-  esc(tracker.name+' · '+remaining+' di '+tracker.max+' utilizzi, costo '+cost+'">'+
+  esc(tracker.name+' · '+remaining+' di '+tracker.max+' utilizzi, costo '+cost)+'">'+
   '<span class="play-action-tracker-name">'+esc(tracker.name)+'</span>'+
   '<strong class="play-action-tracker-count">'+remaining+'/'+esc(tracker.max)+'</strong></span>':
   cost>0?'<span class="play-action-tracker play-action-tracker--missing">Tracker non disponibile</span>':'';
