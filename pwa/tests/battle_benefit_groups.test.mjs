@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
-import {attackActionSequence,attackActionCategory,battleActionPanels} from '../action_economy.js';
+import {attackActionSequence,attackActionCategory,battleAttackActionRow,battleActionPanels} from '../action_economy.js';
 
 const doc=html=>new JSDOM(html).window.document;
 
@@ -62,4 +62,20 @@ test('Attacchi keeps all original attack rows and maneuvers without duplicates i
  assert.equal(actions.querySelector('[data-attack-id="attack"]'),null);
  assert(actions.querySelector('[data-action-benefit="other"]'));
  assert(!actions.querySelector('[data-action-timing]'),'Timing is metadata, never the grouping key');
+});
+
+
+test('attack-action row shows action type and tracker cost but no range, map tool or count badge',()=>{
+ const document=doc(battleAttackActionRow({
+  id:'monster:multiattack',name:'Multiattacco',time:'action',
+  attack_count:4,attack_sequence:['Morso','Artiglio','Artiglio','Coda'],
+  tracker_id:'charges',cost:2,description:'Quattro attacchi.'
+ },{trackers:[{id:'charges',name:'Cariche del drago',max:5,spent:2}]}));
+ const action=document.querySelector('[data-attack-id="monster:multiattack"]');
+ assert.match(action.querySelector('.play-attack-action-cost').textContent,/Azione · 2 utilizzi/);
+ assert.match(action.querySelector('.play-action-tracker').textContent,/Cariche del drago.*3\/5/);
+ assert.equal(action.querySelectorAll('.play-attack-sequence > li').length,4);
+ for(const selector of ['.play-battle-attack-range','.play-battle-attacks-per-action',
+  '[data-act="battle-attack-map"]','[data-target^="attack_hit:"]','.play-attack-sequence button'])
+  assert.equal(action.querySelector(selector),null,selector+' must be absent');
 });
