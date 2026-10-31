@@ -908,9 +908,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
     '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button></div>';
   }).join('');
+  // A newly granted strike is a resource option, not an action that grants
+  // attacks. Keep it outside Azioni while leaving the canonical Attacchi
+  // table (including Unarmed Strike) unchanged.
+  const grantedAttackRows=powerRows.filter(row=>{
+   if(row.kind!=='ability')return false;
+   const attackId=resourceAttackId(row,d.attacks||[]);
+   return !!attackId&&!['unarmed','unarmed:off'].includes(attackId);
+  });
+  const combatPowers=powerRows.filter(row=>!grantedAttackRows.includes(row));
   const actionGroups=view.battleActions?.actionGroups||{};
-  const powerAttacks=powerRows.filter(row=>powerAttackSteps(row).length>0);
-  const powerAbilities=powerRows.filter(row=>!powerAttacks.includes(row));
+  const powerAttacks=combatPowers.filter(row=>powerAttackSteps(row).length>0);
+  const powerAbilities=combatPowers.filter(row=>!powerAttacks.includes(row));
   const actionGroup=(key,title,glyph,body)=>!body?'':'<details class="play-battle-action-group" data-action-benefit="'+key+'" open>'+
    '<summary class="play-battle-action-heading">'+icon(glyph)+'<span>'+esc(title)+'</span></summary>'+
    '<div class="play-action-benefit-rows">'+body+'</div></details>';
@@ -927,8 +936,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2></summary>'+body+'</details>'+
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
 
-  const flatResources=resources+(view.battleActions?.attacks||'');
-  if(flatResources)html+=disclosure('resources','Risorse','reset',flatResources,true,
+  const flatResources=resources+abilityButtons('all',grantedAttackRows);
+  if(flatResources)html+=disclosure('resources','Risorse','reset',flatResources,true);
+  // Restore the Attacchi table with its original structure and equipment
+  // shortcut; never nest it under Resources or Azioni.
+  if(view.battleActions?.attacks)html+=disclosure('attacks','Attacchi','weapon',
+   view.battleActions.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
   if(actionsMarkup)html+=disclosure('others','Azioni','hand',actionsMarkup,true);
   if(view.battleActions?.checks)html+=disclosure('checks','Prove abilità','skill',
