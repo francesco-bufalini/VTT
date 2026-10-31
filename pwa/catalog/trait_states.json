@@ -144,7 +144,8 @@
               "duration": "until_start_of_next_turn",
               "description": "Il bersaglio colpito ha svantaggio ai tiri per colpire contro creature diverse dall'Artefice fino all'inizio del prossimo turno dell'Artefice."
             }
-          ]
+          ],
+          "weapon_category": "simple"
         }
       ],
       "granted_features": [
@@ -185,7 +186,8 @@
             "tracker_id": "feature:lightning_launcher:extra_damage",
             "recharge": "turn",
             "max": 1
-          }
+          },
+          "weapon_category": "simple"
         }
       ],
       "numeric_grants": [
@@ -224,7 +226,8 @@
           "damage_type": "piercing",
           "melee": true,
           "ability": "str",
-          "range_feet": 5
+          "range_feet": 5,
+          "weapon_category": "simple"
         }
       ]
     },
@@ -247,7 +250,8 @@
           "damage_type": "slashing",
           "melee": true,
           "ability": "str",
-          "range_feet": 5
+          "range_feet": 5,
+          "weapon_category": "simple"
         }
       ]
     },
@@ -270,7 +274,8 @@
           "damage_type": "piercing",
           "melee": true,
           "ability": "str",
-          "range_feet": 10
+          "range_feet": 10,
+          "weapon_category": "simple"
         }
       ]
     },

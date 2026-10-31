@@ -653,6 +653,10 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
 // its native stable attack ID. Published monster totals already include PB.
 export function attackCalculations(record,abilities,proficiency,proficiencies=[],bonus=()=>0,featureContext={}){
  const out=[],inventory=arr(record.inventory).map(resolveOwnedItem),trained=new Set(proficiencies);
+ // Proficiency keys can name any weapon or attack, including homebrew
+ // weapons absent from the item catalogue. Categories remain supported.
+ const trainedWeapon=(...keys)=>trained.has('weapon:all')||keys.some(key=>
+   key&&trained.has('weapon:'+String(key).trim().toLowerCase()));
  const occupied=slot=>inventory.find(row=>int(row?.quantity,1)>0&&arr(row?.equipped_slots).includes(slot));
  const main=occupied('main'),physicalOff=occupied('off');
  // Preserve the one-handed damage until the stored offhand is actually clear.
@@ -688,7 +692,8 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
     offhand_bonus:attack.slot==='off'||attack.slot==='shield'&&attack.hand==='off'});
  };
- for(const weapon of traitStateAttacks(record,featureContext.features,featureContext.traitStates))append(weapon,weapon.ability,true,weapon.damage);
+ for(const weapon of traitStateAttacks(record,featureContext.features,featureContext.traitStates))
+  append(weapon,weapon.ability,trainedWeapon(weapon.id,weapon.name,weapon.weapon_category),weapon.damage);
  // Grant a distinct natural strike from a typed feat without changing all
  // unarmed strikes or making the weapon depend on inventory equipment.
  for(const strike of arr(featureContext.featAttacks))if(strike?.id&&strike.damage){
@@ -722,7 +727,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const item=slot==='off'?off:main;if(!item||itemKind(item)!=='weapon')continue;
   const ranged=String(item.type||'').split('|')[0].toUpperCase()==='R';
   const ranges=String(item.range||'').split('/').map(Number),reach=hasProperty(item,'R')?10:5;
-  const proficient=trained.has('weapon:'+String(item.name).toLowerCase())||trained.has('weapon:'+String(item.weapon_category).toLowerCase())||trained.has('weapon:all');
+  const proficient=trainedWeapon(item.id,item.name,item.weapon_category);
   // By default, the selected ability only overrides Finesse weapons.
   // When the scope toggle is off, it applies to every equipped weapon.
   const chosen=['str','dex','con','int','wis','cha'].includes(record.attack_ability)?
