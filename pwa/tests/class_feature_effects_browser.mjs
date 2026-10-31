@@ -47,7 +47,8 @@ try{
  assert.match(await page.locator('[data-roll-formula]').textContent(),/Ira/,
   'Rage grants automatic advantage');
  await page.locator('[data-act="roll-sheet-confirm"]').click();
- assert.match(await page.locator('[data-roll-result]').textContent(),/vantaggio/);
+ assert.match(await page.locator('[data-roll-result]').textContent(),/ADV/,
+  'The result visibly reports the advantage supplied by Rage');
  await page.locator('[data-act="close-sheet-roll"]').click();
  await sheet('conditions');assert.match(await page.locator('.feature-effect-summary').textContent(),/resistenza.*taglienti/);
  for(const width of [320,390,768]){
