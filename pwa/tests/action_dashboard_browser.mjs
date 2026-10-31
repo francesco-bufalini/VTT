@@ -72,89 +72,51 @@ try{
     // The old global expand/collapse buttons were removed: independently
     // expandable action groups are the current Battle navigation.
     assert.equal(await page.locator('[data-act="battle-expand-all"],[data-act="battle-collapse-all"]').count(),0);
-    assert(await page.locator('[data-battle-action="attacks"] > summary').isVisible(),
-      'The attacks group remains independently expandable');
+    const resources=page.locator('[data-battle-action="resources"]');
+    const actionSection=page.locator('[data-battle-action="others"]');
+    assert(await resources.locator(':scope > summary').isVisible(),'Resources is the flat counter and attack list');
+    assert.equal(await page.locator('[data-battle-action="attacks"]').count(),0,
+      'Physical attacks now share the Resources section');
+    assert.equal(await resources.locator('[data-attack-id="unarmed"]').count(),1);
+    assert.equal(await resources.locator('[data-rule-action],[data-ability-id],[data-action-benefit]').count(),0,
+      'Resources has no action, ability or nested benefit groups');
+    assert.equal(await resources.locator('[data-resource-tracker="charge"]').count(),1);
+    assert.equal(await resources.locator('[data-resource-privilege]').count(),0);
+    assert.match(await actionSection.locator('summary.play-battle-summary').textContent(),/^Azioni$/);
+    const attackGroup=actionSection.locator('[data-action-benefit="attacks"]');
+    const abilityGroup=actionSection.locator('[data-action-benefit="abilities"]');
+    const otherGroup=actionSection.locator('[data-action-benefit="other"]');
+    assert.equal(await attackGroup.count(),1);
+    assert.equal(await abilityGroup.count(),1);
+    assert.equal(await otherGroup.count(),1);
+    const primaryAttack=attackGroup.locator('[data-attack-id="attack"]');
+    assert.equal(await primaryAttack.count(),1);
+    assert.equal(await primaryAttack.locator('.play-attack-sequence > li').count(),1,
+      'Basic Attack has one descriptive hit');
+    assert.equal(await primaryAttack.locator('.play-attack-sequence button').count(),0);
+    assert.equal(await attackGroup.locator('[data-attack-id="opportunity"]').count(),1);
+    assert.equal(await attackGroup.locator('[data-attack-id="two_weapon"]').count(),1);
+    assert(await otherGroup.getByText('Scattare').count()>0);
+    assert.equal(await abilityGroup.locator('[data-ability-id]').count()>0,true);
+    const paid=abilityGroup.locator('.play-resource-power-row').filter({hasText:'Capacità di prova'});
+    assert.equal(await paid.locator('.play-action-tracker').count(),1);
+    assert.match(await paid.locator('.play-action-tracker').textContent(),/Cariche.*2\/3/);
+    const chipStyle=await paid.locator('.play-action-tracker-name').evaluate(node=>
+     ({overflow:getComputedStyle(node).overflow,ellipsis:getComputedStyle(node).textOverflow}));
+    assert.equal(chipStyle.overflow,'hidden');
+    assert.equal(chipStyle.ellipsis,'ellipsis');
+    assert.equal(await actionSection.locator('[data-action-timing]').count(),0,
+      'Actions group by benefit, never by action timing');
     if(width===360){
-     const physical=page.locator('[data-battle-action="attacks"]');
-     assert.match(await physical.locator('summary.play-battle-summary').textContent(),/^Attacchi$/);
-     assert.equal(await physical.locator('[data-action-timing]').count(),0,'Attacks are not divided by action cost');
-     assert.equal(await physical.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is always available');
-     const resources=page.locator('[data-battle-action="resources"]');
-      assert.notEqual(await resources.getAttribute('open'),null,'Risorse starts expanded by default');
-     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"]').count(),1);
-     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),5);
-     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="ability_checks"] .play-resource-power-open strong').textContent(),'Prova abilità');
-     const expectedSkillGlyph=await page.evaluate(async()=>{
-      const {actionGlyph}=await import('/action_economy.js');
-      const node=document.createElement('div');node.innerHTML=actionGlyph('skill');
-      return node.firstElementChild?.className;
-     });
-     const resourceSkillGlyph=resources.locator('[data-rule-action="ability_checks"] .vtt-action-glyph').first();
-     assert.equal(await resourceSkillGlyph.getAttribute('class'),expectedSkillGlyph,
-      'Prova abilità uses the exact same skill icon as Info → Competenze → Abilità');
-     if(await resources.getAttribute('open')===null)
-      await resources.locator(':scope > summary.play-battle-summary').click();
-     const attackGlyph=resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="attack"] .vtt-action-glyph').first();
-     const otherGlyph=resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="spell_cast"] .vtt-action-glyph').first();
-     const x=await attackGlyph.evaluate(node=>node.getBoundingClientRect().left);
-     const otherX=await otherGlyph.evaluate(node=>node.getBoundingClientRect().left);
-     assert(Math.abs(x-otherX)<2,'Multiattack action icon aligns with neighboring resource rows');
-     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="attack"] .play-resource-power-open strong').textContent(),'Azione di attacco');
-     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="spell_cast"] small').textContent(),'Slot');
-     assert.equal(await resources.locator('[data-ability-resource="free"]').count(),0,
-      'Unlimited abilities are not placed in a fake free tracker');
-     const actionSection=page.locator('[data-battle-action="others"]');
-     assert.match(await actionSection.locator('summary.play-battle-summary').textContent(),/^Azioni$/);
-     // The standard theme has nested, tinted panels. Keep the original
-     // background gradients on table shells and rows instead of flattening them.
-     const naturalSurfaces=await actionSection.evaluate(panel=>{
-      const card=panel.closest('.play-card'),heading=panel.querySelector('.play-battle-action-heading'),
-       entry=panel.querySelector('.play-battle-attack-entry');
-      return [card,heading,entry].map(node=>({
-       color:getComputedStyle(node).backgroundColor,
-       image:getComputedStyle(node).backgroundImage
-      }));
-     });
-     assert(naturalSurfaces.every(surface=>surface.image!=='none'),
-      'Original panel, heading and action-row gradients must be restored');
-     assert(naturalSurfaces.every(surface=>surface.color!=='rgb(0, 0, 0)'),
-      'The old flat-black experiment must remain disabled');
-     assert.equal(await actionSection.locator('[data-action-timing="action"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'attack');
-     assert.equal(await actionSection.locator('[data-action-timing="reaction"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'opportunity');
-     assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
-     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"]').count(),1,
-      'Secondary attack always remains in Azioni');
-     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"] .play-battle-unavailable-reason').count(),0,
-      'Two equipped light shortswords enable the off-hand attack');
-     const movement=page.locator('[data-battle-action="others"]');
-     await movement.locator('summary.play-battle-summary').click();
-     const groups=movement.locator('.play-battle-action-group[data-action-timing]');
-     assert(await groups.count()>0,'Movement has action-timing subsections');
-     assert.equal(await movement.locator('.play-battle-action-group[data-action-timing][open]').count(),await groups.count(),
-      'Opening an action category automatically opens every timing subsection');
-     const group=groups.first();
-     const styles=await group.locator('.play-battle-action-rows').evaluate(node=>({
-      rail:getComputedStyle(node).borderLeftStyle,
-      branch:getComputedStyle(node.querySelector('.play-battle-attack-entry'),'::before').content
-     }));
-     assert.equal(styles.rail,'none','Nested action lists use a minimal layout without an index rail');
-     assert.equal(styles.branch,'none','Action rows have no index branches');
-     await group.locator('summary.play-battle-action-heading').click();
-     assert.equal(await group.getAttribute('open'),null,
-      'A timing subsection may still be collapsed independently');
-     await movement.locator('summary.play-battle-summary').click();
-     await movement.locator('summary.play-battle-summary').click();
-     assert.equal(await movement.locator('.play-battle-action-group[data-action-timing][open]').count(),await groups.count(),
-      'Reopening a category re-expands all timing subsections');
-     // Every group remains independently controllable after the global
-     // expand/collapse controls were removed.
-     const localGroup=groups.first();
-     await localGroup.locator(':scope > summary').click();
-     assert.equal(await localGroup.getAttribute('open'),null);
-     await localGroup.locator(':scope > summary').click();
-     assert.notEqual(await localGroup.getAttribute('open'),null);
+     const groups=actionSection.locator('.play-battle-action-group[data-action-benefit]');
+     assert.equal(await groups.count(),await actionSection.locator('.play-battle-action-group[open]').count(),
+       'Benefit groups start expanded');
+     const first=groups.first();await first.locator(':scope > summary').click();
+     assert.equal(await first.getAttribute('open'),null);
+     await first.locator(':scope > summary').click();
+     assert.notEqual(await first.getAttribute('open'),null);
     }
-    const rangedAttack=page.locator('[data-battle-action="attacks"] [data-act="battle-attack-map"]').first();
+    const rangedAttack=page.locator('[data-battle-action="resources"] [data-act="battle-attack-map"]').first();
     assert(await rangedAttack.count(),'Each computed weapon has a map range action');
     assert(await rangedAttack.getAttribute('aria-label'),'Map range action has an accessible label');
     assert.equal(await page.locator('[data-battle-action="spells"]').count(),0,
@@ -168,12 +130,12 @@ try{
  const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
  if(await resourcesPanel.getAttribute('open')===null)
   await resourcesPanel.locator(':scope > summary.play-battle-summary').click();
- const checksLink=resourcesPanel.locator('[data-resource-privilege="basic-rules"] [data-rule-action="ability_checks"] button');
- await checksLink.click();
  const checksSection=page.locator('#sheet-play-view [data-battle-action="checks"]');
- assert.equal(await checksSection.getAttribute('open'),'','Checks jump expands its destination section');
- assert.equal(await checksSection.locator('[data-action-ability][open]').count(),6,
-  'Checks jump expands all six ability groups');
+ if(await checksSection.getAttribute('open')===null)await checksSection.locator(':scope > summary').click();
+ assert.equal(await checksSection.getAttribute('open'),'','Checks disclosure remains available independently');
+ for(const group of await checksSection.locator('[data-action-ability]').all())
+  if(await group.getAttribute('open')===null)await group.locator(':scope > summary').click();
+ assert.equal(await checksSection.locator('[data-action-ability][open]').count(),6);
  await section('magic');await section('battle');
  assert.equal(await checksSection.getAttribute('open'),'','Expanded checks survive sheet rerender');
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
