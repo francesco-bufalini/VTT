@@ -67,6 +67,21 @@ try{
     assert.equal(await slotLabel.locator('.play-magic-source-resource').count(),2,
       'Slot and its preparation-rest label are distinct single badges');
     const grantedCard=page.locator('#sheet-play-view .play-magic-granted-card[data-magic-origin-tracker="focus"]');
+    if(await grantedCard.count()!==1){
+     const info=await page.evaluate(async()=>{
+      const {listCreatures}=await import('/creatures.js');
+      const {calculateSheet,loadRuleCatalogs}=await import('/sheet_rules.js');
+      const record=(await listCreatures())[0].creature;
+      const calculated=calculateSheet(record,await loadRuleCatalogs());
+      return {saved:record.origin_spell_grants,origin_spells:calculated.origin_spells,
+       sourceNodes:[...document.querySelectorAll('#sheet-play-view .play-magic-class-card')].map(n=>({
+        title:n.querySelector('h2,h3')?.textContent,classes:n.className,
+        tracker:n.getAttribute('data-magic-origin-tracker'),html:n.outerHTML.slice(0,850)})),
+       legacySources:[...document.querySelectorAll('.sheet-editor-bank .magic-source')].map(n=>({
+        html:n.outerHTML.slice(0,1300)}))};
+     });
+     console.error('GRANTED_SOURCE_DEBUG '+JSON.stringify(info));
+    }
     assert.equal(await grantedCard.count(),1,'Granted spells have their own visible source card');
     const trackerHeader=grantedCard.locator('.play-card-head [data-play-magic-tracker="focus"]');
     assert(await trackerHeader.isVisible(),'Linked tracker is visible beside the granting origin title');
