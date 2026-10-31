@@ -63,7 +63,12 @@ try{
  });
  await page.locator('#hp-adjust-dialog [data-act="hp-adjust-cancel"]').click();
  await damage(10);await page.locator('#form-depleted-dialog[open]').waitFor();
- await page.locator('[data-form-restore]').click();await waitForm('');assert.equal((await record()).current_hp,22);
+ await page.locator('[data-form-restore]').click();await waitForm('');
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures()).find(r=>r.creature.kind==='character')?.creature.current_hp===22;
+ });
+ assert.equal((await record()).current_hp,22);
  await forms();await page.locator('[data-variant-switch="'+aliasId+'"]').click();await closeForms();
  assert.equal(await page.locator('#creature-name').textContent(),'Ombra della luna');
  await page.reload();await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).click();await page.locator('#sheet-play-view').waitFor();

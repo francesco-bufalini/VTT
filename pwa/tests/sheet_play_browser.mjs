@@ -672,6 +672,7 @@ try{
   await hpCard.click({position:{x:22,y:80}});
   await page.locator('#hp-adjust-amount').fill(String(healedHp-37));
   await page.locator('#hp-adjust-dialog [data-hp-mode="damage"]').click();
+  await page.locator('#hp-adjust-dialog').waitFor({state:'hidden'});
   await page.waitForFunction(async creatureId=>{
    const {loadCreature}=await import('/creatures.js');
    return (await loadCreature(creatureId)).data.current_hp===37;
