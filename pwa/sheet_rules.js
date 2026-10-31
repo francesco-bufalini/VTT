@@ -1330,7 +1330,16 @@ function calculateSheetValues(record={},catalogs={}){
       try{
         if(!cycleCache.has(row))cycleCache.set(row,dependencies(row.expression).some(ref=>reaches(ref,target)));
         if(cycleCache.get(row))throw Error('Dipendenza circolare: '+target);
-        const value=parseArithmetic(row.expression??"0",name=>resolveSymbol(name,resolve,stack));
+        // Reusable per-attack symbol for any numeric benefit, never a style-specific rule.
+        const value=parseArithmetic(row.expression??"0",name=>{
+          if(name==='attack_ability_mod'){
+            const amount=attackContexts.get(target)?.ability_modifier;
+            if(!target.startsWith('attack_')||!Number.isFinite(amount))
+              throw Error('Modificatore caratteristica attacco non disponibile');
+            return amount;
+          }
+          return resolveSymbol(name,resolve,stack);
+        });
         const owner=itemSourceOf(row.origin_id);
         const repeats=row.automatic?Math.max(1,Number(row.multiplier)||1):
           owner?(activeItemCopies.get(owner)||0):1;
