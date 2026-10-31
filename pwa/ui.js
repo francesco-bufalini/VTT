@@ -7827,14 +7827,17 @@ async function handleAction(target){
           limit_per_owner_rule:companion.rule.limit_per_owner_spell??1}:null);return;
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
-    app.querySelector('#action-cast-dialog')?.close();
     const effect=companion?companionSpellEffectPatch(record,companion.rule,selection.id):{};
+    // Confirmation only dismisses the popup after IndexedDB has committed the
+    // spell payment (including Metamagic). Closing early makes the UI appear
+    // finished while a reader can still observe the unspent tracker.
     if(Object.keys({...plan.patch,...effect}).length)await patch({...plan.patch,...effect});
     if(companionSource)await summonSpellCompanion(record.id,companionSource,{
       ...companionSource,spell_id:selection.id,rule_id:companion.rule.id,
       origin_name:companion.rule.names?.[0]||selection.name,
       grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
       limit_per_owner_rule:companion.rule.limit_per_owner_spell??1});
+    app.querySelector('#action-cast-dialog')?.close();
     await render();
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
