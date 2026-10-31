@@ -942,6 +942,7 @@ try{
  await dismiss();
  const afterLong=await record();
  assert.equal(afterLong.temporary_hp,0,'Long rest expires temporary HP');
+ assert.equal(afterLong.exhaustion,1,'2014 long rest removes one exhaustion level');
  assert.equal(afterLong.hit_dice_spent.d6,undefined,'2014 long rest restores half of five Hit Dice');
  assert.equal(afterLong.pact_slots_spent,0);
  assert.deepEqual(afterLong.spell_slots_spent,Array(10).fill(0));
@@ -1004,14 +1005,14 @@ try{
  assert(await page.locator('#sheet-play-view').textContent().then(t=>t.includes('Lettera della Luna')));
  await sheet('conditions');
  assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);
- assert.equal((await record()).exhaustion,2,'Editing inventory must preserve the saved exhaustion level');
- assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 2/);
+ assert.equal((await record()).exhaustion,1,'Editing inventory preserves exhaustion after the long rest');
+ assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 1/);
  assert.equal(await page.locator('#sheet-play-view .play-status-card').count(),1);
  assert.deepEqual(await page.locator('#sheet-play-view .play-status-section-head h3').allTextContents(),['Condizioni','Incantesimi','Capacità']);
  assert.equal(await page.locator('#sheet-play-view .play-status-add').count(),3);
- await page.locator('#sheet-play-view [data-state-trait="state|condition:exhaustion:2"]').click();
- await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:2"][open]').waitFor();
- assert.match(await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:2"]').textContent(),/Livello 2/);
+ await page.locator('#sheet-play-view [data-state-trait="state|condition:exhaustion:1"]').click();
+ await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:1"][open]').waitFor();
+ assert.match(await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:1"]').textContent(),/Livello 1/);
  assert.equal(await page.locator('#sheet-context-dialog').count(),0);
  await sheet('conditions');
  const poisonedChip=page.locator('#sheet-play-view [data-active-condition="poisoned"]');
