@@ -1550,6 +1550,36 @@ test('clicking an owned feat opens its original benefit-bearing trait, not a sec
  await until(()=>document.querySelector('[data-act="create"]'));
 });
 
+test('Fighting Style has a manual spellcasting eye while class DC stays fixed',async()=>{
+ const {createCreature}=await import('../creatures.js');
+ const saved=await createCreature('character','Ranger e CD facoltativa');
+ await saveCreature({...saved.data,class:'Ranger',class_source:'PHB',level:2,
+  classes:[{name:'Ranger',source:'PHB',level:2}]},'default',saved.revision);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+ click('[data-act="open"][data-id="'+saved.data.id+'"]');
+ await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
+ click('[data-sheet="magic"]');
+ const styleCard=await until(()=>[...document.querySelectorAll('#sheet-play-view .play-infusion-card')]
+  .find(row=>row.querySelector('.play-card-head h2')?.textContent==='Fighting Style'),7000);
+ const eye=styleCard.querySelector('.play-card-head .play-magic-eye');
+ assert.ok(eye,'Fighting Style offers a manual CD eye');
+ assert.equal(eye.getAttribute('aria-pressed'),'false');
+ assert.equal(styleCard.querySelector('.casting-statistics'),null);
+ assert.equal(document.querySelector('#sheet-play-view .play-magic-class-card:not(.play-infusion-card) .play-magic-eye'),null);
+ eye.click();
+ await until(()=>[...document.querySelectorAll('#sheet-play-view .play-infusion-card')]
+  .find(row=>row.querySelector('.play-card-head h2')?.textContent==='Fighting Style')
+  ?.querySelector('.casting-statistics'));
+ const section=eye.dataset.castingVisibilitySection;
+ assert.equal((await loadCreature(saved.data.id)).data.spellcasting_section_visibility?.[section],true);
+ click('#sheet-play-view [data-casting-visibility-section="'+section+'"]');
+ await until(()=>document.querySelector('#sheet-play-view [data-casting-visibility-section="'+section+'"][aria-pressed="false"]'));
+ assert.equal((await loadCreature(saved.data.id)).data.spellcasting_section_visibility?.[section],false);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="create"]'));
+});
+
 test('failed hit-point save keeps the dialog and entered amount open',async t=>{
  t.after(stopRealtime);
  const {createCreature}=await import('../creatures.js');
