@@ -42,7 +42,7 @@ try{
  // to verify the PWA navigation or the offline catalog fallback.
  await page.route('https://2014.5e.tools/**',route=>route.fulfill({
    status:200,contentType:'text/html',
-   body:'<!doctype html><html><body><p>5etools 2014 reference</p></body></html>'
+   body:'<!doctype html><html><body style="min-height:2200px"><p>5etools 2014 reference</p></body></html>'
  }));
  const shot=async name=>page.screenshot({path:fileURLToPath(new URL('navigation-'+name+'.png',artifacts))});
  const sheet=async key=>{
@@ -260,18 +260,55 @@ try{
  await globalPage('catalog');
  assert.equal(await page.locator('.topbar').isVisible(),false,'Catalogo hides the topbar');
  assert.equal(await page.locator('.page-head,#app .panel,#app .catalog-create').count(),0,'Catalogo has no introductory titles or boxed panels');
- assert.equal(await page.locator('#mobile-tabs').isVisible(),true,'Three-way bottom dock remains');
+ assert.equal(await page.locator('#mobile-tabs').isVisible(),false,
+  'The bottom dock is hidden when 5etools owns the screen');
+ assert.equal(await page.locator('.catalog-source-bar > button').count(),2,
+  'Online mode has only a Back button and an offline-switch button');
+ assert(await page.locator('[data-act="catalog-back"]').isVisible(),'Online Back stays accessible');
+ assert.equal(await page.locator('.catalog-embed-note,.catalog-source-bar a').count(),0,
+  'No extra note or browser link steals space from the embedded site');
  assert(await page.locator('.catalog-web-frame').isVisible(),'The 2014 site replaces the default catalog');
+ for(const width of [320,360,390,768,1440]){
+  await page.setViewportSize({width,height:844});
+  const bounds=await page.locator('.catalog-web-frame').evaluate(frame=>{
+    const b=frame.getBoundingClientRect(),bar=frame.previousElementSibling.getBoundingClientRect();
+    return {left:b.left,right:b.right,top:b.top,bottom:b.bottom,barBottom:bar.bottom,
+     fullWidth:innerWidth,fullHeight:innerHeight,scrollHeight:document.documentElement.scrollHeight};
+  });
+  assert(bounds.left<=1&&bounds.right>=bounds.fullWidth-1&&
+   Math.abs(bounds.bottom-bounds.fullHeight)<2&&
+   Math.abs(bounds.top-bounds.barBottom)<2&&bounds.scrollHeight<=bounds.fullHeight+2,
+   '5etools fills the viewport beneath the toolbar with no app scroll at '+width+'px: '+JSON.stringify(bounds));
+ }
+ await page.setViewportSize({width:390,height:844});
+ const frameScroll=await page.frameLocator('.catalog-web-frame').locator('body').evaluate(()=>{
+  window.scrollTo(0,620);return window.scrollY;
+ });
+ assert(frameScroll>0,'Swiping 5etools scrolls the embedded document itself');
+ assert.equal(await page.evaluate(()=>window.scrollY),0,
+  'Scrolling the embedded document does not scroll the app');
  assert.equal(await page.locator('.catalog-web-frame').getAttribute('src'),'https://2014.5e.tools/');
  assert(await page.locator('[data-act="catalog-source-local"]').isVisible(),'Offline fallback remains available');
  await page.locator('[data-act="catalog-source-local"]').click();
  await page.locator('#catalog-search').waitFor({state:'visible'});
+ assert.equal(await page.locator('#mobile-tabs').isVisible(),true,
+  'The ordinary three-way dock returns in the offline catalog');
+ assert.equal(await page.locator('body').evaluate(node=>node.classList.contains('catalog-web-mode')),false);
  assert(await page.locator('#catalog-category').isVisible());
  assert(await page.locator('.catalog-entry').first().isVisible(),'Entries are visible before typing a search');
  const toolbar=await page.locator('.catalog-search-wrap,#catalog-category').evaluateAll(nodes=>
-  nodes.map(n=>({top:n.getBoundingClientRect().top,left:n.getBoundingClientRect().left})));
- assert(Math.abs(toolbar[0].top-toolbar[1].top)<6&&toolbar[1].left>toolbar[0].left,
-  'Category selector sits next to the search');
+  nodes.map(n=>({top:n.getBoundingClientRect().top,left:n.getBoundingClientRect().left,
+   height:n.getBoundingClientRect().height,width:n.getBoundingClientRect().width,
+   direction:getComputedStyle(n).flexDirection})));
+ assert(Math.abs(toolbar[0].top-toolbar[1].top)<6&&toolbar[1].left>toolbar[0].left&&
+  toolbar[0].direction==='row'&&toolbar[1].width<=110&&toolbar[1].height<=38,
+  'Search stays horizontal and the category filter is narrow and flat: '+JSON.stringify(toolbar));
+ const searchBounds=await page.locator('#catalog-search').evaluate(input=>{
+  const i=input.getBoundingClientRect(),outer=input.closest('.catalog-search-wrap').getBoundingClientRect();
+  return {iTop:i.top,iBottom:i.bottom,outerTop:outer.top,outerBottom:outer.bottom};
+ });
+ assert(searchBounds.iTop>=searchBounds.outerTop-1&&searchBounds.iBottom<=searchBounds.outerBottom+1,
+  'The search input is inside a single toolbar row');
  await page.locator('.catalog-entry').first().click();
  await page.locator('#catalog-detail-dialog[open]').waitFor({state:'visible'});
  assert(await page.locator('#catalog-search').isVisible(),'The search and list stay mounted behind the dialog');
@@ -281,6 +318,12 @@ try{
  await page.locator('#catalog-detail-dialog [data-act="catalog-close"]').click();
  assert.equal(await page.locator('#catalog-detail-dialog').count(),0);
  assert(await page.locator('.catalog-entry').first().isVisible(),'Closing the popup restores the same list');
+ await page.locator('[data-act="catalog-source-5etools"]').click();
+ assert(await page.locator('.catalog-web-frame').isVisible(),'Online mode can be reopened');
+ await page.locator('[data-act="catalog-back"]').click();
+ await page.waitForFunction(()=>document.querySelector('#app')?.dataset.page==='library');
+ assert.equal(await page.locator('#mobile-tabs').isVisible(),true,
+  'Back exits 5etools and restores the archive navigation');
  await page.locator('#nav [data-nav="session"]').click();
  await page.waitForFunction(()=>document.querySelector('#app').dataset.page==='session');
  assert.equal(await page.locator('.topbar').isVisible(),false,'Partita has no topbar, like the Creature archive');

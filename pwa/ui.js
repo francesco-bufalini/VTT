@@ -268,7 +268,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", chatOpen:false, chatUnread:false, stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, serverDeviceName:"", disclosureState:new Map(),
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogEmbedMode:"5etools", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, catalogCreateOpen:false, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogEmbedMode:"5etools", catalogReturnPage:"library", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, catalogCreateOpen:false, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventorySelectedIndices:new Set(), inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', scrollSpellSelectedId:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -622,7 +622,14 @@ function navigationButton(key,title){
     '" aria-pressed="'+current+'" aria-label="'+esc(title)+'">'+
     actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+'<span class="destination-label">'+esc(title)+'</span></button>';
 }
+function catalogWebVisible(){
+  return state.page==='catalog'&&state.catalogEmbedMode!=='local'&&
+    (typeof navigator==='undefined'||navigator.onLine!==false)&&
+    !state.pendingItemOwner&&!state.catalogCreateOpen;
+}
 function syncNav(){
+  // The embedded site owns the viewport; offline browsing keeps the app dock.
+  document.body.classList.toggle('catalog-web-mode',catalogWebVisible());
   const hasCreature=isCreatureOpen();
   const topbar=document.querySelector('.topbar');
   if(topbar)topbar.hidden=state.page==='catalog'||state.page==='session'||state.page==='library'&&state.libraryMode;
@@ -840,6 +847,8 @@ async function refreshSessionCreatures(){
 }
 async function navigate(page){
   if(!sections.has(page))return;
+  if(page==='catalog'&&state.page!=='catalog')
+    state.catalogReturnPage=state.page==='session'?'session':'library';
   if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';state.catalogAssignCreatureId='';state.catalogCreateOpen=false;}
   else if(state.editor)state.catalogAssignCreatureId=state.creatureId||'';
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
@@ -1308,18 +1317,14 @@ async function catalogView() {
   // The embedded reference is optional: browsers may block cross-site frames,
   // and the same locally packaged 5etools data must remain usable offline.
   const online=typeof navigator==="undefined"||navigator.onLine!==false;
-  const localOnly=state.catalogEmbedMode==="local"||!online||
-    Boolean(state.pendingItemOwner||state.catalogCreateOpen);
-  if(!localOnly){
+  if(catalogWebVisible()){
     return '<section class="catalog-web" aria-label="5etools, manuale 2014">'+
-      '<div class="catalog-source-bar">'+
-      '<strong>5etools · 2014</strong>'+
-      '<button type="button" class="play-button" data-act="catalog-source-local">Catalogo offline</button>'+
-      '<a href="https://2014.5e.tools/" target="_blank" rel="noopener noreferrer">Apri nel browser</a></div>'+
+      '<header class="catalog-source-bar catalog-web-toolbar">'+
+      '<button type="button" class="play-button catalog-web-back" data-act="catalog-back" aria-label="Torna indietro" title="Torna indietro">‹</button>'+
+      '<button type="button" class="play-button" data-act="catalog-source-local">Catalogo offline</button></header>'+
       '<iframe class="catalog-web-frame" title="5etools, regole D&D 2014" src="https://2014.5e.tools/" '+
       'loading="eager" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads" '+
       'aria-label="Catalogo 5etools 2014"></iframe>'+
-      '<p class="catalog-embed-note">Se 5etools non si visualizza o non risponde sul dispositivo, aprilo nel browser oppure usa il catalogo offline.</p>'+
       '</section>';
   }
   state.catalogRows=await catalogEntries(state.catalogCategory);
@@ -7419,10 +7424,14 @@ async function handleAction(target){
     if(source.dataset.magicTool){state.sheetPopup='';app.querySelector('#sheet-context-dialog')?.close?.();}
     await handleAction(source);return;
   }
+  if(act==='catalog-back'){
+    await navigate(state.catalogReturnPage==='session'?'session':'library');return;
+  }
   if(act==='catalog-source-local'||act==='catalog-source-5etools'){
-     state.catalogEmbedMode=act==='catalog-source-local'?'local':'5etools';
-     await render();return;
-   }
+    state.catalogEmbedMode=act==='catalog-source-local'?'local':'5etools';
+    window.scrollTo(0,0);
+    await render();return;
+  }
    if(act==='catalog-close'){
     closeDialog(app.querySelector('#catalog-detail-dialog'),{remove:true});
     state.catalogSelected=-1;return;
