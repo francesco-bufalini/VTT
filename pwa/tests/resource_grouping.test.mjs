@@ -7,6 +7,7 @@ import {abilitiesForCreature} from '../activated_abilities.js';
 import {battleActionPanels,abilityAttackRoll,actionGlyph} from '../action_economy.js';
 import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch,resourceAttackId,resourceAbilityGlyphKey} from '../sheet_rules_view.js';
 import {companionOwnerActions} from '../companion_rules.js';
+import {itemOptionChargeTrackers} from '../item_controls.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const companions=read('companion_spells');
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
@@ -23,6 +24,16 @@ const appliedInfusion=(id,creatorId)=>{
 };
 const project=record=>({...calculateSheet(record,catalogs),
  companion_rules:companions,infusion_catalog:catalogs.abilityGrants.artificer_infusions});
+// These focused ability tests supply already-applied item options. A full
+// character sheet would reconstruct them from power_applications; keep the
+// source inventory and charge trackers here so ability projection is tested
+// independently of the learning interface.
+const projectAppliedItems=record=>{
+ const result=project(record);
+ return {...result,selection_record:record,
+  trackers:[...result.trackers,...itemOptionChargeTrackers(record).map(row=>({
+   ...row,spent:Number(record.resource_tracker_spent?.[row.id]||0)}))]};
+};
 function render(record,calculated,check,sheet='battle',bank=''){
  const dom=new JSDOM('<main id="app"><div data-local-sheet-calculations>'+bank+'</div></main>');
  const previous=globalThis.document;
@@ -147,7 +158,10 @@ test('creator commands follow active, source-qualified companion grants and neve
  const record=sheet('Artificer','Alchemist','TCE');
  record.inventory=[{id:'heart',name:'Crystal',quantity:1,
   option_extensions:[appliedInfusion('infusion|tce|homunculus servant',record.id)]}];
- const calculated=project(record);
+ const source=project(record).features.find(row=>row.name==='Infuse Item')?.origin_id;
+ assert(source,'The command must be tied to the owned Infuse Item trait');
+ record.inventory[0].option_extensions[0].origin_id=source;
+ const calculated=projectAppliedItems(record);
  const powers=abilitiesForCreature(record,[],calculated);
  const command=powers.find(row=>row.companion_rule_id==='homunculus_servant_2014');
  assert(command);
@@ -167,7 +181,7 @@ test('creator commands follow active, source-qualified companion grants and neve
     {...record.inventory[0].option_extensions[0],creator_id:'someone-else'}]}]},
   {...record,rules_version:'2024'},
   {...record,origin_enabled:{[calculated.features.find(row=>row.name==='Infuse Item').origin_id]:false}}
- ])assert(!abilitiesForCreature(next,[],project(next)).some(row=>row.companion_command));
+ ])assert(!abilitiesForCreature(next,[],projectAppliedItems(next)).some(row=>row.companion_command));
  const druid=sheet('Druid','Circle of Wildfire');
  assert.equal(companionOwnerActions(druid,project(druid),companions)[0].action_type,'bonus');
  const revised={...druid,classes:[{...druid.classes[0],source:'XPHB'}]};
@@ -180,7 +194,7 @@ test('Infusions does not repeat infused item powers while Resources keeps the ac
  record.inventory=[{id:'sword',name:'Sword',type:'M',quantity:1,equipped_slots:['main'],
   attuned:true,attuned_count:1,option_extensions:[
     appliedInfusion('infusion|tce|radiant weapon',record.id)]}];
- const calculated=project(record);
+ const calculated=projectAppliedItems(record);
  const powers=abilitiesForCreature(record,[],calculated).filter(row=>row.infusion_action);
  assert.equal(powers.length,2);
  const rows=battleResourcePowers(calculated,[],powers);
