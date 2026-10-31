@@ -7431,6 +7431,23 @@ async function handleAction(target){
     await activateOtherAbility(c,ability,persistentKey,requested);
     return;
   }
+  // Manual action grants share the same tracker counter as native powers.
+  // Recompute the projected action before spending; never trust DOM costs.
+  if(act==='battle-action-activate'){
+    const creature=state.editor?.read();if(!creature)throw Error('Creatura non disponibile.');
+    const calculated=await computeLocalData(creature);
+    const panels=battleActionPanels(calculated.companion_view||creature,calculated,state.spellCatalog||[],
+      state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),
+      abilitiesForCreature(creature,state.abilityCatalog||[],calculated));
+    const id=String(target.dataset.actionId||'');
+    const row=(panels.actionRows||[]).find(item=>String(item.id)===id);
+    if(!row||row.available===false)throw Error('Azione non disponibile.');
+    const cost=Number(row.cost)||0,trackerId=String(row.tracker_id||'');
+    if(!Number.isSafeInteger(cost)||cost<1||!trackerId)
+      throw Error('Azione priva di una risorsa da consumare.');
+    await patch(current=>spendTrackerUses(current,trackerId,cost,calculated.trackers));
+    await render();return;
+  }
   if(act==='attack-action-use'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Creatura non disponibile.');
