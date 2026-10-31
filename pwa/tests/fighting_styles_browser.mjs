@@ -142,6 +142,37 @@ try{
  assert.equal(await spellPicker.locator('.magic-tools-body > .actions').count(),0,
   'The spell learner has no footer below the choices');
  await spellPicker.locator('[data-act="magic-tool-close"]').first().click();
+ // An applied cantrip choice gets its own Poteri source card before a spell is chosen.
+ await page.goto(origin);
+ await page.evaluate(async()=>{
+  const {createCreature,saveCreature}=await import('/creatures.js');
+  const {calculateSheet,loadRuleCatalogs}=await import('/sheet_rules.js');
+  const {powerSelectionPatch,powerApplicationPatch}=await import('/power_selection.js');
+  const saved=await createCreature('character','Ranger Druidic Warrior visibility');
+  const record={...saved.data,rules_version:'2014',level:2,
+   classes:[{name:'Ranger',source:'PHB',level:2}],
+   abilities:{str:12,dex:16,con:12,int:10,wis:16,cha:10}};
+  const catalogs=await loadRuleCatalogs(),selectionCatalog={...catalogs.powerSelections,
+   optionalFeatureProgressions:catalogs.optionalFeatureProgressions};
+  const calculated=calculateSheet(record,catalogs);
+  const learned={...record,...powerSelectionPatch(record,calculated,selectionCatalog,
+   'optional:class:phb:ranger:fs-r','learned','optional:tce:druidic-warrior')};
+  const afterLearn=calculateSheet(learned,catalogs);
+  const applied={...learned,...powerApplicationPatch(learned,afterLearn,selectionCatalog,
+   'optional:class:phb:ranger:fs-r','optional:tce:druidic-warrior',true)};
+  await saveCreature(applied,'default',saved.revision);
+ });
+ await page.reload();
+ await page.locator('[data-act="open"][aria-label="Apri scheda di Ranger Druidic Warrior visibility"]').click();
+ await sheet('magic');
+ const druidic=page.locator('#sheet-play-view .play-magic-granted-card')
+  .filter({hasText:'Druidic Warrior'});
+ assert.equal(await druidic.count(),1,'Druidic Warrior gets a Poteri source even before cantrip selection');
+ await druidic.getByRole('button',{name:/Scegli trucchetti/i}).click();
+ const choicesDialog=page.locator('#magic-tools-dialog[open]');
+ await choicesDialog.waitFor({state:'visible'});
+ assert(await choicesDialog.locator('[data-pending-spell-choice]').count()>0,
+  'The Druidic Warrior card opens the existing origin spell picker');
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
  console.log('PASS: Fighting Styles and infusions share visible cards and learners; manual application changes real effects, persists and needs no object');
 }finally{await f.close();}
