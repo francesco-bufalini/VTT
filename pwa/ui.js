@@ -10460,12 +10460,16 @@ function listen(){
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.matches('[data-hp-autosave]')){
-      clearTimeout(pendingFieldTimers.get(target));
+      // Commit current and temporary HP as one draft: independent timers
+      // can race and restore a stale value from the other field.
+      const field=target.closest('#hp-adjust-dialog')
+        ?.querySelector('[data-hp-autosave="current_hp"]')||target;
+      clearTimeout(pendingFieldTimers.get(field));
       const editor=state.editor;
-      pendingFieldTimers.set(target,setTimeout(()=>{
-        pendingFieldTimers.delete(target);
-        if(target.isConnected&&state.editor===editor)
-          trackFieldWrite(target).catch(error=>message(errorMessage(error),true));
+      pendingFieldTimers.set(field,setTimeout(()=>{
+        pendingFieldTimers.delete(field);
+        if(field.isConnected&&state.editor===editor)
+          trackFieldWrite(field).catch(error=>message(errorMessage(error),true));
       },500));
       return;
     }
