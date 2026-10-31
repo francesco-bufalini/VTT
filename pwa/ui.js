@@ -4644,7 +4644,7 @@ function sessionView() {
   const snapshotMatches=state.liveSnapshot?.token_id===state.tokenId;
   html+='<section class="panel session-map-panel" aria-label="Mappa della partita">'+
     '<div class="session-map-stage">'+
-    (image?'<canvas id="session-map-canvas" role="img" aria-label="Mappa della partita: trascina per spostarti, pizzica per ingrandire"></canvas>':'<div class="session-map-placeholder">⧉<span>'+(online?'Acquisizione mappa…':'Mappa disponibile quando il desktop è collegato')+'</span></div>')+
+    (image?'<canvas id="session-map-canvas" role="img" aria-label="Mappa della partita: trascina per spostarti, pizzica per ingrandire"></canvas>':'<div class="session-map-placeholder">⧉<span>'+(online?'Acquisizione mappa…':'Mappa disponibile quando il server è collegato')+'</span></div>')+
     (state.snapshotPending||image&&!snapshotMatches?'<span class="session-map-loading" role="status">Aggiornamento…</span>':'')+
     '</div>'+
     (selected?'<div class="session-selected-controls"><strong>'+esc(selected.name)+'</strong>'+
@@ -9743,7 +9743,7 @@ async function handleAction(target){
   }
   if(act==="check"){await refreshConnection();if(state.paired){try{state.map=await map();}catch{state.map=null;}}await render();return;}
   if(act==="disconnect"){
-    if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
+    if(!confirm("Dissociare questo server? Le schede locali rimarranno sul dispositivo.")) return;
     await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;
     state.messages=[];state.after="";state.tokenId="";currentGameSession="";state.desktopConditionCatalog=null;state.conditionCatalog=state.offlineConditionCatalog;
     await render();return;
@@ -10026,7 +10026,7 @@ async function handleSubmit(form){
     // Pairing codes are one-time. A momentary map failure must not turn a
     // successful enrollment into a visible failure or require a new QR.
     try{state.map=await map();}catch{state.map=null;}
-    await render();message("Desktop associato.");return;
+    await render();message("Server associato.");return;
   }
   if(form.id==="chat-form"){
     const body=text(document.querySelector("#chat-message")?.value);
