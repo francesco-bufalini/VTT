@@ -6812,3 +6812,17 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 
 #sheet-play-view .play-action-benefit-rows>.play-attack-sequence{margin:0 8px 8px 40px}
 #sheet-play-view .play-battle-attack-details>summary>.play-action-tracker{max-width:min(36%,145px);margin-left:auto}
+
+/* Attack-granting actions show action economy and tracker costs, never range. */
+#sheet-play-view .play-battle-attack-action .play-attack-action-cost{
+ display:inline-flex;max-width:100%;width:fit-content;align-items:center;
+ margin-top:5px;padding:3px 7px;border:1px solid #b28a5259;border-radius:7px;
+ background:#74512b21;color:#dfbb81;font:600 10px/1.3 system-ui;
+}
+#sheet-play-view .play-battle-attack-action .play-battle-attack-copy{min-width:0}
+#sheet-play-view .play-battle-attack-action .play-action-tracker{
+ max-width:min(42%,155px);flex-shrink:1;align-self:center
+}
+#sheet-play-view .play-battle-attack-action .play-attack-sequence{
+ margin-top:0;margin-bottom:9px;list-style:decimal
+}
