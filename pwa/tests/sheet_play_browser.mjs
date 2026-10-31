@@ -951,19 +951,17 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
- // The former dedicated "tools" context button was replaced by the shared
- // skill/proficiency editor. Use the visible proxy rather than a dead selector.
- await page.locator('#sheet-play-view .play-skills-tools [data-act="sheet-context"][data-sheet-context="tools"]').click();
- assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
- assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
- await dismiss();
+ assert.equal(await page.locator('#sheet-play-view .play-skills-tools').count(),0,'No competence editor button in Info');
+ assert.equal(await page.locator('#sheet-play-view [data-play-search]').count(),0,'No skills search in Info');
+ assert.deepEqual(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').evaluateAll(rows=>
+  rows.map(row=>row.dataset.target)),['ability_check:str','ability_check:dex','ability_check:con','ability_check:int','ability_check:wis','ability_check:cha']);
  const skillMarker=key=>page.locator('#sheet-play-view .play-skills [data-target="skill:'+key+'"] .play-skill-rank');
  assert.equal(await skillMarker('arcana').getAttribute('aria-label'),'Competenza');
  assert.equal(await skillMarker('arcana').locator('svg path').count(),1);
  assert.equal(await skillMarker('stealth').getAttribute('aria-label'),'Maestria');
  assert.equal(await skillMarker('stealth').locator('svg path').count(),2);
  assert.equal(await skillMarker('athletics').count(),0,'Untrained skills have no rank indicator');
- await page.locator('[data-play-search]').fill('furt');assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),1);
+ assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),24,'Six ability checks before eighteen skills');
  await page.locator('#sheet-play-view [data-target="skill:stealth"]').click();await page.locator('[data-act="roll-sheet-confirm"]').click();assert(Number(await page.locator('.dice-result').textContent())>0);await page.locator('[data-act="close-sheet-roll"]').click();
  await sheet('inventory');
  await popup('equipment');

@@ -14,7 +14,9 @@ try{
   return {id:row.creature.id,hp:row.creature.current_hp};
  });
  await page.locator('#hp-adjust-confirm').click();
- await page.locator('#save-state.error').waitFor({state:'attached'});
+ await page.locator('#toast.error').waitFor({state:'visible'});
+ assert.match(await page.locator('#toast').textContent(),/Modifica non salvata/);
+ assert.equal(await page.locator('#save-state').count(),0,'No saved-on-device footer in creature panels');
  await page.waitForFunction(()=>document.querySelector('#hp-adjust-confirm')?.disabled===false);
  assert(await page.locator('#hp-adjust-dialog').isVisible(),'Rejected saves must leave the dialog visible');
  assert.equal(await page.locator('#hp-adjust-amount').inputValue(),'10');
