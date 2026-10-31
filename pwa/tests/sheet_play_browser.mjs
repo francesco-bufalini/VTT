@@ -36,7 +36,7 @@ try{
       tracker_cost:0,description:'Attiva un impulso gratuito.'}],
    origin_spell_grants:[...(creature.origin_spell_grants||[]),
      {id:'arcane_light',spell_id:'spell:light|phb',tracker_id:'focus',
-      payment_mode:'tracker',tracker_cost:1,origin_id:'feature:class|phb|wizard|arcane_light',
+      payment_mode:'tracker',tracker_cost:1,origin_id:'class|phb|wizard',
       origin_name:'Mago'}]},
    'default',row.revision);
  });
@@ -641,6 +641,9 @@ try{
   const creature=(await loadCreature(creatureId))?.data;
   return creature?.current_hp===39&&creature?.temporary_hp===5;
  },seededCreatureId);
+ // Autosaving both inputs uses separate 500ms debounces. Ensure all writes
+ // settle before inspecting the final persisted record, not a transient one.
+ await page.waitForTimeout(750);
  assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
  await page.locator('#hp-adjust-dialog [data-act="hp-adjust-cancel"]').click();
@@ -946,11 +949,13 @@ try{
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
- await popup('tools');
+ await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
+ // The former dedicated "tools" context button was replaced by the shared
+ // skill/proficiency editor. Use the visible proxy rather than a dead selector.
+ await page.locator('#sheet-play-view .play-skills-tools [data-act="sheet-context"][data-sheet-context="tools"]').click();
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
  await dismiss();
- await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  const skillMarker=key=>page.locator('#sheet-play-view .play-skills [data-target="skill:'+key+'"] .play-skill-rank');
  assert.equal(await skillMarker('arcana').getAttribute('aria-label'),'Competenza');
  assert.equal(await skillMarker('arcana').locator('svg path').count(),1);
@@ -969,7 +974,13 @@ try{
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===false;});
  await dismiss();
  await page.locator('[data-play-search]').fill('pozione');await popup('item:1');await page.locator('#sheet-context-dialog [data-item-key="quantity"]').fill('5');await dismiss();assert.equal((await record()).inventory[1].quantity,5);assert.match(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').textContent(),/×5/);
- assert.equal(await page.locator('[data-play-search]').inputValue(),'pozione');assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),1);await page.locator('[data-play-search]').fill('');
+ assert.equal(await page.locator('[data-play-search]').inputValue(),'pozione');
+ assert(await page.locator('#inventory-search-results').isVisible(),
+  'Global inventory search shows its separate results panel');
+ assert.match(await page.locator('#inventory-search-results').textContent(),/Pozione curativa/i);
+ assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),3,
+  'Global inventory search must not hide the owned items in their sections');
+ await page.locator('[data-play-search]').fill('');
  await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());await shot('item-popup');await dismiss();
  const inlineCoins=page.locator('#sheet-play-view .inventory-play-coins');
  assert.equal(await inlineCoins.count(),1,'Coin editor must be visible in the shortcut row');
@@ -982,9 +993,14 @@ try{
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view .inventory-play-coins .inventory-coin-total')?.textContent.includes('12 mo'));
  assert.match(await inlineCoins.locator('.inventory-coin-total').textContent(),/12 mo/);
  assert.equal(await page.locator('#sheet-context-dialog').count(),0,'Saving coins must stay on the page');
- await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();
- assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,'Objects must not leak into Documents');
- await popup('inventory-add');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
+ // Sections now use independent multi-select toggles. From the default
+ // "all sections" view, deselect both object and scroll sections so
+ // Documents is the only visible section.
+ await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="items"]').click();
+ await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]').click();
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,
+  'Hiding the objects section removes its rows from Documents-only view');
+ await popup('inventory-add:documents');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
  assert(await page.locator('#sheet-play-view').textContent().then(t=>t.includes('Lettera della Luna')));
  await sheet('conditions');assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 2/);
  assert.equal(await page.locator('#sheet-play-view .play-status-card').count(),1);
