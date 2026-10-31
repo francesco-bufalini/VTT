@@ -1029,6 +1029,10 @@ try{
  assert.equal((await record()).exhaustion,4);
  assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 4/);
  await page.locator('#sheet-play-view [data-active-condition="exhaustion:4"] [data-act="condition-remove"]').click();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0].creature.exhaustion===0;
+ });
  assert.equal((await record()).exhaustion,0);
  assert.equal(await page.locator('[data-active-condition="exhaustion:4"]').count(),0);
  await popup('apply-spell');await page.locator('#condition-spell-picker').selectOption('phb2014_light');await page.locator('#sheet-context-dialog [data-act="condition-add-spell"]').click();
