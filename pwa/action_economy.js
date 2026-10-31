@@ -463,9 +463,11 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
    weapon.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+weapon.id]??weapon.hit);
  }
  const offhand=attack&&(attack.slot==='off'||String(attack.id).startsWith('shield:improvised:off:'));
+ const equipmentAttack=attack&&['main','off','shield'].includes(attack.slot);
  const description=item.id==='improvised'?item.description||'Attacco con un oggetto equipaggiato impugnato come arma improvvisata.':
-  attack?(attackSourceDescription(record,calculated,attack)||item.description||
-   (offhand?descriptions.off:descriptions.main)):item.description||'';
+  attack?(attackSourceDescription(record,calculated,attack)||
+   (equipmentAttack?(offhand?descriptions.off:descriptions.main):item.description)||''):
+   item.description||'';
  const rangeFeet=Number(selectedAttack?.range_feet);
  const longRangeFeet=Number(selectedAttack?.long_range_feet);
  const rangeLabel=Number.isFinite(rangeFeet)&&rangeFeet>0?
