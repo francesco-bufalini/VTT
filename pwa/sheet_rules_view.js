@@ -1052,9 +1052,11 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<details class="play-skills-disclosure">'+
     '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
     '<div class="play-skills-content">'+
-     '<div class="play-skills-tools">'+btn('Modifica competenze','settings','data-act="sheet-context" data-sheet-context="tools"')+'</div>'+
-     '<label class="play-search vtt-list-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
-     '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>{
+     '<div class="play-skills">'+ABILITIES.map(key=>{
+       const label=({str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'})[key];
+       return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('ability_check:'+key,'Prova di '+label,
+        '<span class="play-skill-name">'+label+'<small>Prova di caratteristica</small></span><b>'+output('ability_check:'+key,true)+'</b>')+'</div>';
+      }).join('')+SKILLS.map(([key,label,ability])=>{
        const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;
        return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,
         '<span class="play-skill-name">'+esc(label)+skillTrainingIcon(rank)+'<small>'+ability.toUpperCase()+
@@ -1493,13 +1495,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);
- const filter=sheet==='inventory'?'':String(view.search||'').trim().toLocaleLowerCase('it');
+ const filter=['inventory','info'].includes(sheet)?'':String(view.search||'').trim().toLocaleLowerCase('it');
  for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!matchesSearch(filter,row.dataset.playFilter);
  for(const warning of [...bank.querySelectorAll(':scope > [role=alert],:scope > .action-catalog-warning')])main.prepend(warning);
- const utilities=app.querySelector(':scope > .archive-tools');
- if(utilities){bind('sheet-tools',utilities);bank.append(utilities);}
- const note=bank.querySelector('[data-calculation-note]');if(note)bind('calculation',note);
- const more=document.createElement('div');more.className='play-sheet-tools';more.innerHTML=edit('sheet-tools','Opzioni della scheda','settings')+(note?edit('calculation','Calcoli e copertura','information'):'');main.append(more);
  // Native dialogs must never inherit hidden from the editor bank.
  for(const dialog of [...bank.querySelectorAll('dialog')])root.append(dialog);
  return sources;
