@@ -677,6 +677,10 @@ try{
    return (await loadCreature(creatureId)).data.current_hp===37;
   },seededCreatureId);
  }
+ await page.evaluate(async()=>{
+  const {desktopSheetSession}=await import('/ui.js');
+  await desktopSheetSession.flush();
+ });
  assert.equal((await record()).current_hp,37,'Subsequent damage restores expected HP');
 
  const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');

@@ -95,8 +95,10 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
  await resources();
  assert(await use('Disattiva Wild Shape').count()||await use('Disattiva Forma selvatica').count());
- await page.locator('#sheet-play-view [data-act="hp-damage"]').click();
- await page.locator('#hp-adjust-amount').fill('13');await page.locator('#hp-adjust-confirm').click();
+ await page.locator('#sheet-play-view .play-health[data-act="hp-adjust-open"]').click();
+ await page.locator('#hp-adjust-dialog[open]').waitFor();
+ await page.locator('#hp-adjust-amount').fill('13');
+ await page.locator('#hp-adjust-dialog [data-act="hp-adjust-apply"][data-hp-mode="damage"]').click();
  await page.locator('#form-depleted-dialog').waitFor();assert.equal((await record()).current_hp,10);
  await page.locator('[data-form-restore]').click();await page.locator('#form-depleted-dialog').waitFor({state:'detached'});
  assert.equal((await record()).current_miniature_id,'ape');assert.equal((await record()).current_form_id,'');assert.equal((await record()).current_hp,8);
