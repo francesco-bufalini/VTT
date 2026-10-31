@@ -1,7 +1,7 @@
 // Substituted by the host with the fingerprint of the actual served assets.
 // Each deployed version gets an atomic app-shell cache; IndexedDB is untouched.
 const REVISION = "__VTT_COMMIT_SHA__";
-const CACHE = "vtt-mobile-shell-v198-" + REVISION;
+const CACHE = "vtt-mobile-shell-v199-" + REVISION;
 const CATALOGS = ["/catalog/generic_item_variants.json", "/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
 const SHELL = [
   "/miniature-images/ore.webp",
@@ -29,6 +29,7 @@ const SHELL = [
   "/ui.js",
   "/5etools_inline.js",
   "/ui_primitives.js",
+  "/distance_units.js",
   "/trait_benefits.js",
   "/trait_benefit_distribution.js",
   "/trait_benefit_editor.js",

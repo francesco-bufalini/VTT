@@ -31,6 +31,7 @@ import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews, stateTraitN
 import { traitBenefitGroups, rollGrantTraitRow } from "./trait_benefits.js";
 import { distributeTraitBenefits } from "./trait_benefit_distribution.js";
 import {SENSE_OPTIONS,senseRange} from "./sense_rules.js";
+import {DISTANCE_UNIT_SETTING,getDistanceUnit,setDistanceUnit,distanceInputFeet,applyDistanceUnits} from "./distance_units.js";
 import {applicableSpeciesRollModes} from './species_roll_modes.js';
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
@@ -5342,6 +5343,7 @@ async function handleField(target) {
       if(!Number.isFinite(value)) throw new Error("Inserisci un numero valido.");
     }
     if(target.validity&&!target.validity.valid)throw Error("Valore fuori intervallo");
+    if(target.hasAttribute('data-distance-unit-input'))value=distanceInputFeet(value);
     if(key==='current_hp'&&value<0&&variantOwns(state.editor.readBase(),'hp')){
       await patch({current_hp:0});await render();
       promptVariantOverflow(creature.id,creature.current_form_id,-value);return;
@@ -5649,6 +5651,8 @@ function organizeSheetPanels(){
     });
   }
 
+  // Apply presentation-only unit labels after the sheet is mounted.
+  applyDistanceUnits(app);
   if(!state.sheetPopup)return;
   const source=state.sheetSources.get(state.sheetPopup);
   if(!source){state.sheetPopup="";return;}
@@ -6067,6 +6071,27 @@ function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
  dialog.querySelector('input')?.select();
  return dialog;
 }
+function openDistancePreferences(){
+ const previous=document.querySelector('#distance-preferences-dialog');
+ if(previous){previous.focus();return previous;}
+ const dialog=document.createElement('dialog');
+ dialog.id='distance-preferences-dialog';
+ dialog.className='sheet-context-dialog distance-preferences-dialog';
+ const current=getDistanceUnit();
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Preferenze</h2>'+
+  dialogCloseButton('distance-preferences-close','Chiudi','play-button')+'</header>'+
+  '<div class="sheet-context-body distance-preferences-body"><fieldset><legend>Unità di distanza</legend>'+
+  [['feet','Piedi (ft)','Unità originale delle regole D&D'],['meters','Metri (m)','5 ft = 1,5 m']].map(([id,title,note])=>
+  '<label class="distance-preferences-option"><input type="radio" name="distance-unit" value="'+id+'"'+
+  (current===id?' checked':'')+'><span><strong>'+title+'</strong><small>'+note+'</small></span></label>').join('')+
+  '</fieldset><p class="hint">La preferenza cambia solo le distanze visualizzate nella GUI: velocità, salti, sensi, portate e gittate. I valori salvati e le descrizioni dei tratti restano invariati.</p>'+
+  '<div class="actions"><button type="button" class="btn primary" data-act="distance-preferences-save">Salva</button></div></div>';
+ document.body.append(dialog);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ openDialog(dialog);
+ return dialog;
+}
+
 function openSheetSensesDialog(calculated={}){
  document.querySelector('#sheet-senses-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -6085,9 +6110,10 @@ function openSheetSensesDialog(calculated={}){
   '<div class="sheet-senses-table-wrap"><table class="sheet-senses-table"><thead><tr>'+
   ['Senso','Luce intensa','Luce fioca','Oscurità','Oscurità magica'].map(label=>'<th scope="col">'+label+'</th>').join('')+
   '</tr></thead><tbody>'+(data.rows||[]).map(row=>'<tr><th scope="row">'+esc(row.name)+'</th>'+
-  [row.bright,row.dim,row.dark,row.magical].map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join('')+
+  [row.bright,row.dim,row.dark,row.magical].map((value,i)=>'<td data-light-label="'+['Luce intensa','Luce fioca','Oscurità','Oscurità magica'][i]+'">'+esc(value)+'</td>').join('')+'</tr>').join('')+
   '</tbody></table></div>'+
-  '<p class="sheet-senses-note">In luce fioca le prove di Percezione basate sulla vista subiscono svantaggio (−5 alla percezione passiva pertinente). La scurovisione tratta la luce fioca come intensa e l’oscurità non magica come fioca entro la sua portata; al buio non distingue i colori.</p>'+
+  '<p class="sheet-senses-note">La visione normale all’aperto arriva indicativamente a 2 miglia con cielo sereno e senza ostacoli (DMG 2014). Non è un limite fisso: terreno, luce e meteo possono ridurre o modificare la visibilità.</p>'+ 
+   '<p class="sheet-senses-note">In luce fioca le prove di Percezione basate sulla vista subiscono svantaggio (−5 alla percezione passiva pertinente). La scurovisione tratta la luce fioca come intensa e l’oscurità non magica come fioca entro la sua portata; al buio non distingue i colori.</p>'+
   '<p class="sheet-senses-note">La percezione tellurica rileva vibrazioni tramite una superficie condivisa: non equivale a vedere. La vista cieca e la vista pura non dipendono dall’illuminazione entro la loro portata. Fuori portata valgono le condizioni della visione normale.</p>'+
   (origins?'<section class="sheet-senses-sources"><h3>Privilegi e origini</h3><ul>'+origins+'</ul></section>':'')+
   (state.editor?.read()?.species==='Custom Lineage'&&state.editor?.read()?.species_source==='TCE'?
@@ -6851,7 +6877,21 @@ function openRemoveFeatDialog(originKey){
 }
 async function handleAction(target){
   const act=target.dataset.act;
-  if(act==='server-backup-now'){serverBackups.schedule(true);return;}
+  if(act==='distance-preferences-open'){openDistancePreferences();return;}
+   if(act==='distance-preferences-close'){
+    closeDialog(document.querySelector('#distance-preferences-dialog'),{remove:true});return;
+   }
+   if(act==='distance-preferences-save'){
+    const dialog=document.querySelector('#distance-preferences-dialog');
+    const unit=dialog?.querySelector('input[name="distance-unit"]:checked')?.value;
+    if(!['feet','meters'].includes(unit))throw Error('Seleziona un’unità valida.');
+    await flushPendingFields();
+    await setting(DISTANCE_UNIT_SETTING,unit);
+    setDistanceUnit(unit);
+    closeDialog(dialog,{remove:true});
+    await render();message('Distanze visualizzate in '+(unit==='meters'?'metri':'piedi')+'.');return;
+   }
+   if(act==='server-backup-now'){serverBackups.schedule(true);return;}
   if(act==='inventory-selection-clear'){
     state.inventorySelectedIndices.clear();syncInventorySelectionUI();return;
   }
@@ -10584,7 +10624,9 @@ export async function mount(){
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
-  const qrCode=takeQrPairCode();
+  try{setDistanceUnit((await setting(DISTANCE_UNIT_SETTING))||'feet');}
+   catch(error){setDistanceUnit('feet');console.warn('Preferenza distanze non disponibile',error);}
+   const qrCode=takeQrPairCode();
   // Possession of a local credential is unrelated to reachability. Render
   // IndexedDB creatures FIRST: an offline desktop must never gate the editor.
   state.paired=await hasPairingCredential();

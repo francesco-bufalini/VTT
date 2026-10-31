@@ -1,3 +1,4 @@
+import {formatDistance} from './distance_units.js';
 // The browser viewer consumes exactly the same public mobile snapshot projection
 // as Android's map_snapshot_view.gd; gameplay/LOS/range remain native Godot.
 import {abilityAreaPreview} from './ability_areas.js';
@@ -140,7 +141,7 @@ export class TacticalViewer {
       throw Error('Selezione bersaglio non disponibile.');
     this.abilityTarget={name,range_feet,exclude_self,onSelected};
     this.setStatus('Seleziona sulla mappa un token per '+name+
-      (range_feet?' (portata '+range_feet+' ft)':'')+'. Annulla chiudendo la vista.');
+      (range_feet?' (portata '+formatDistance(range_feet)+')':'')+'. Annulla chiudendo la vista.');
     this.updateButtons();this.draw();
   }
   setAreaAbility({name,shape,length_feet=0,width_feet=0,radius_feet=0,onSelected}={}){
@@ -248,12 +249,12 @@ export class TacticalViewer {
     this.snapshot=data;this.image=image;this.targeting=data.targeting||{};
     this.preview=null;this.aimPixel=null;this.aimTargetId="";
     if(!same){this.zoom=Math.max(1,Math.min(4,(data.field_feet||60)/80));this.panX=0;this.panY=0;}
-    this.caption.textContent=String(data.title||"Mappa")+" · "+Math.round(data.field_feet||60)+" ft";
+    this.caption.textContent=String(data.title||"Mappa")+" · "+formatDistance(Math.round(data.field_feet||60));
     this.setStatus(this.targeting.active ?
       (this.targeting.instruction||"Scegli un bersaglio sulla mappa.") :
       this.areaAbility?'Scegli una direzione per '+this.areaAbility.name:
       this.abilityTarget?'Seleziona un token per '+this.abilityTarget.name+
-        (this.abilityTarget.range_feet?' · portata '+this.abilityTarget.range_feet+' ft':'') :
+        (this.abilityTarget.range_feet?' · portata '+formatDistance(this.abilityTarget.range_feet):'') :
       this.attack?.range_feet?"Tocca un bersaglio per verificarne gittata e distanza." :
       "Tocca un token per selezionarlo. Trascina per spostarti, pizzica per ingrandire.");
     this.updateButtons();this.draw();
@@ -443,7 +444,7 @@ export class TacticalViewer {
         token_id:this.tokenId,target_id:marker.id,attack:this.attack
       });
       const distance="Bersaglio: "+marker.name+" · distanza "+
-        Math.ceil(result.distance_feet||0)+" ft"+
+        formatDistance(Math.ceil(result.distance_feet||0))+
         (result.long_range?" · gittata lunga (svantaggio)":"");
       if(this.attackEffects&&marker.id!==this.tokenId){
         const selected=this.attackEffects;
