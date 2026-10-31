@@ -10,7 +10,7 @@ import {canonicalSpeciesReferences} from '../catalog_data.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
-import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
+import {addSelectedSpell,removeSelectedSpell,changeKnownClassSpell,knownClassSpellIds} from '../spell_selection.js';
 import {readFileSync,existsSync} from 'node:fs';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:mechanics,spellcastingBenefits:JSON.parse(readFileSync(new URL('../catalog/spellcasting_benefits.json',import.meta.url),'utf8'))};
@@ -265,20 +265,22 @@ test('all sheet readouts expose effective values and native bonus targets, inclu
  assert.equal(out.values.hp,13);
  assert.match(out.explanations['ability:dex'],/Scelta.*2/);
 });
-test('native casting tables preserve editions, class ownership, cantrip limits and wizard spellbook',()=>{
+test('native casting tables preserve editions, class ownership, cantrip limits and wizard learning',()=>{
  const c={rules_version:'2014',classes:[{name:'Wizard',source:'PHB',level:5},{name:'Warlock',source:'PHB',level:3}],abilities:{int:16,cha:14}};
  const members=castingClasses(c,mechanics,{int:3,cha:2},classBenefits(c));
  const [wizard,warlock]=members;
- assert.deepEqual([wizard.limit,wizard.cantrips,wizard.max_level,wizard.book],[8,4,3,true]);
+ assert.deepEqual([wizard.limit,wizard.cantrips,wizard.max_level],[8,4,3]);
+ assert.equal(wizard.mode,'Preparati');
  assert.deepEqual([warlock.limit,warlock.max_level],[4,2]);
  const modernRecord={...c,rules_version:'2024',classes:[{name:'Wizard',source:'XPHB',level:5}]};
  const modern=castingClasses(modernRecord,mechanics,{int:5},classBenefits(modernRecord));
  assert.equal(modern[0].limit,9,'2024 uses its table rather than ability + level');
  const spell={id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard','Warlock']};
  const options={member:wizard,classes:members,catalog:[spell]};
- assert.throws(()=>addSelectedSpell(c,spell,'prepared_spells',options),/Impara prima/);
- const book=addSelectedSpell(c,spell,'spellbook_spells',options);
- const prepared=addSelectedSpell({...c,...book},spell,'prepared_spells',options);
+ assert.throws(()=>addSelectedSpell(c,spell,'prepared_spells',options),/non conosciuto/);
+ const learned=changeKnownClassSpell(c,wizard,spell,true,[spell]);
+ assert(knownClassSpellIds({...c,...learned},wizard,[spell]).has(spell.id));
+ const prepared=addSelectedSpell({...c,...learned},spell,'prepared_spells',options);
  assert.deepEqual(prepared.prepared_spells[0].casting_classes,[wizard.id]);
  const shared=addSelectedSpell({...c,...prepared},spell,'prepared_spells',{...options,member:warlock});
  assert.deepEqual(shared.prepared_spells[0].casting_classes,[wizard.id,warlock.id]);

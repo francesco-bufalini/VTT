@@ -94,11 +94,12 @@ test('bundled canonical subraces carry the speed of the native source',()=>{
  }
 });
 
-test('all migrated contextual operations retain stable IDs, counters and source gates',()=>{
+test('migrated Barbarian contextual operations retain stable IDs, counters and source gates',()=>{
  const rules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url)));
- assert.equal(rules.contextual_actions.length,30);
- assert.equal(new Set(rules.contextual_actions.map(row=>row.id)).size,30);
- for(const rule of rules.contextual_actions){
+ assert(rules.contextual_actions.length>=30,'previously migrated contextual actions must not disappear');
+ assert.equal(new Set(rules.contextual_actions.map(row=>row.id)).size,rules.contextual_actions.length,
+  'contextual action IDs must remain unique');
+ for(const rule of rules.contextual_actions.filter(row=>row.class_name==='Barbarian')){
   const f={name:rule.feature,key:'key:'+rule.feature,origin_id:'feature:'+rule.feature,
    origin_key:'class|phb|barbarian'+(rule.subclass?'|subclass|'+rule.subclass.toLowerCase()+'|tce':'')};
   const c={kind:'character',class:'Barbarian',class_source:'PHB',level:20,

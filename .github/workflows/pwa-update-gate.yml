@@ -1,7 +1,17 @@
 name: PWA update asset gate
 on:
   push:
+    paths:
+      - "pwa/**"
+      - "network/pwa_host.gd"
+      - "scripts/check_pwa_assets.mjs"
+      - ".github/workflows/pwa-update-gate.yml"
   pull_request:
+    paths:
+      - "pwa/**"
+      - "network/pwa_host.gd"
+      - "scripts/check_pwa_assets.mjs"
+      - ".github/workflows/pwa-update-gate.yml"
 jobs:
   mobile-update:
     runs-on: ubuntu-latest
@@ -11,5 +21,5 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/check_pwa_assets.mjs
+      # Full unit coverage belongs to the PWA Infrastructure workflow.
       - run: node --test pwa/tests/pwa_asset_gate.test.mjs pwa/tests/startup_module_routes.test.mjs pwa/tests/offline_cache_policy.test.mjs pwa/tests/version_gate.test.mjs
-      - run: node --test pwa/tests/sheet_rules.test.mjs pwa/tests/selection_benefit_contract.test.mjs
