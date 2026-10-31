@@ -10108,6 +10108,12 @@ function listen(){
       return;
     }
     if(button.disabled)return;
+    // Picking a spell changes only this popup; paint the selection immediately.
+    if(closeAction==='scroll-spell-choose'){
+      try{await handleAction(button);}catch(error){message(errorMessage(error),true);}
+      return;
+    }
+    
     if(closeAction==='trait-benefits-remove-request'){
       // Keyboard and assistive clicks have detail=0 and need no pointer.
       if(e.detail>0&&armedBenefitRemovalTarget!==button)return;
