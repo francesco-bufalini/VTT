@@ -5,7 +5,7 @@ import {activeItemOptionEffects,itemOptionChargeTrackers,itemOptionChargeTracker
  consolidateOwnedItems} from '../item_controls.js';
 import {projectItemOptionBenefits} from '../power_selection.js';
 
-const sword=(id='copy-one')=>({id:'weapon:longsword',instance_id:id,name:'Longsword',type:'M',
+const sword=(id='copy-one')=>({id:'weapon:longsword',instance_id:id,name:'Longsword',type:'M',damage:'1d8',
  quantity:1,active:true,equipped_slots:['main'],attuned:true,attuned_count:1});
 const enchantment=(overrides={})=>({id:'enhanced',name:'Enhanced Weapon',selection_id:'artificer_infusions',
  requires_attunement:true,level:10,

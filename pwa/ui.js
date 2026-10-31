@@ -147,7 +147,7 @@ async function createOptionCompanion(owner,infusion,calculated){
  const row=await summonSubcreature(owner.id,await choice.load(),{
   name:choice.name,source:choice.source,template_id:choice.template_id,rule_id:rule.id,
   origin_name:rule.names?.[0]||infusion.name,
-  limit_per_owner_rule:rule.limit_per_owner_rule??1,grant:{kind:infusion.item_effects?'item_option':'inventory_infusion',id:infusion.id}
+  limit_per_owner_rule:rule.limit_per_owner_rule??1,grant:{kind:'item_option',id:infusion.id}
  });
  await askCompanionRest(row);return row;
 }
