@@ -41,6 +41,7 @@ try{
    'default',row.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
+ assert.equal((await record()).exhaustion,2,'Seeded exhaustion remains 2 on first sheet load');
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
   for(const key of ['info','battle','magic','inventory','conditions']){
