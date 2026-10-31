@@ -1191,7 +1191,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you make a Dexterity ({@skill Stealth}) check or an initiative roll, you can expend one superiority die and add the die to the roll, provided you aren't {@condition incapacitated}."
+      "description": "When you make a Dexterity ({@skill Stealth}) check or an initiative roll, you can expend one superiority die and add the die to the roll, provided you aren't {@condition incapacitated}.",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Ambush",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando effettui Furtività o iniziativa e non sei incapacitato, puoi aggiungere il dado superiorità al risultato. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:ambush",
@@ -1440,7 +1450,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you're within 5 feet of a creature on your turn, you can expend one superiority die and switch places with that creature, provided you spend at least 5 feet of movement and the creature is willing and isn't {@condit"
+      "description": "When you're within 5 feet of a creature on your turn, you can expend one superiority die and switch places with that creature, provided you spend at least 5 feet of movement and the creature is willing and isn't {@condit",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Bait and Switch",
+          "action_type": "movement",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Nel tuo turno, spendi almeno 5 ft di movimento per scambiarti di posto con una creatura consenziente entro 5 ft, non incapacitata. Aggiungi il dado superiorità alla CA tua oppure sua fino all'inizio del turno successivo. Spostamento e CA manuali. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:bait-and-switch",
@@ -1542,7 +1562,17 @@
         "FS:P",
         "FS:R"
       ],
-      "description": "You have {@sense blindsight} with a range of 10 feet. Within that range, you can effectively see anything that isn't behind {@quickref Cover||3||total cover}, even if you're {@condition blinded} or in darkness. Moreover,"
+      "description": "You have {@sense blindsight} with a range of 10 feet. Within that range, you can effectively see anything that isn't behind {@quickref Cover||3||total cover}, even if you're {@condition blinded} or in darkness. Moreover,",
+      "effects": [
+        {
+          "type": "senses",
+          "data": {
+            "type": "blindsight",
+            "range_feet": 10,
+            "mode": "maximum"
+          }
+        }
+      ]
     },
     {
       "id": "optional:tce:bond-of-the-talisman",
@@ -1650,7 +1680,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When a creature you can see moves into the reach you have with the melee weapon you're wielding, you can use your reaction to expend one superiority die and make one attack against the creature, using that weapon. If the"
+      "description": "When a creature you can see moves into the reach you have with the melee weapon you're wielding, you can use your reaction to expend one superiority die and make one attack against the creature, using that weapon. If the",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Brace",
+          "action_type": "reaction",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando una creatura visibile entra nella portata dell'arma da mischia impugnata, effettua un attacco di reazione. Se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:phb:breath-of-winter",
@@ -1804,7 +1844,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you take the {@action Attack} action on your turn, you can forgo one of your attacks and use a bonus action to direct one of your companions to strike. When you do so, choose a friendly creature who can see or hear "
+      "description": "When you take the {@action Attack} action on your turn, you can forgo one of your attacks and use a bonus action to direct one of your companions to strike. When you do so, choose a friendly creature who can see or hear ",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Commander's Strike",
+          "action_type": "bonus",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Durante la tua azione di Attacco, rinuncia a un attacco e usa un'azione bonus per indicare un alleato che ti vede o sente. L'alleato può usare la sua reazione per attaccare e aggiungere il dado superiorità al danno se colpisce. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:commander-s-strike",
@@ -1822,7 +1872,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you make a Charisma ({@skill Intimidation}), a Charisma ({@skill Performance}), or a Charisma ({@skill Persuasion}) check, you can expend one superiority die and add the superiority die to the ability check."
+      "description": "When you make a Charisma ({@skill Intimidation}), a Charisma ({@skill Performance}), or a Charisma ({@skill Persuasion}) check, you can expend one superiority die and add the superiority die to the ability check.",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Commanding Presence",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando effettui una prova di Carisma (Intimidire, Intrattenere o Persuasione), aggiungi il dado superiorità al risultato. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:commanding-presence",
@@ -1905,7 +1965,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to disarm the target, forcing it to drop one item of your choice that it's holding. You add the superiority die to the attack's "
+      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to disarm the target, forcing it to drop one item of your choice that it's holding. You add the superiority die to the attack's ",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Disarming Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Dopo aver colpito con un attacco con arma, aggiungi il dado superiorità al danno. Il bersaglio deve superare un TS Forza contro la CD delle manovre o lasciare cadere un oggetto che impugna. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:disarming-attack",
@@ -1941,7 +2011,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to distract the creature, giving your allies an opening. You add the superiority die to the attack's damage roll. The next attack roll agai"
+      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to distract the creature, giving your allies an opening. You add the superiority die to the attack's damage roll. The next attack roll agai",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Distracting Strike",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; il prossimo tiro per colpire di un'altra creatura contro il bersaglio ha vantaggio prima dell'inizio del tuo prossimo turno. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:distracting-strike",
@@ -2342,7 +2422,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you move, you can expend one superiority die, rolling the die and adding the number rolled to your AC until you stop moving."
+      "description": "When you move, you can expend one superiority die, rolling the die and adding the number rolled to your AC until you stop moving.",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Evasive Footwork",
+          "action_type": "movement",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Mentre ti muovi, aggiungi il risultato del dado superiorità alla CA fino a quando smetti di muoverti. Il bonus temporaneo non è applicato automaticamente. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:evasive-footwork",
@@ -2433,7 +2523,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "You can expend one superiority die and use a bonus action on your turn to feint, choosing one creature within 5 feet of you as your target. You have advantage on your next attack roll against that creature this turn. If "
+      "description": "You can expend one superiority die and use a bonus action on your turn to feint, choosing one creature within 5 feet of you as your target. You have advantage on your next attack roll against that creature this turn. If ",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Feinting Attack",
+          "action_type": "bonus",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Come azione bonus scegli una creatura entro 5 ft. Hai vantaggio al prossimo attacco contro di essa in questo turno; se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:feinting-attack",
@@ -2677,7 +2777,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to goad the target into attacking you. You add the superiority die to the attack's damage roll, and the target must make a Wisdo"
+      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to goad the target into attacking you. You add the superiority die to the attack's damage roll, and the target must make a Wisdo",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Goading Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Dopo un attacco con arma che colpisce, aggiungi il dado superiorità al danno. Se il bersaglio fallisce un TS Saggezza, ha svantaggio agli attacchi contro creature diverse da te fino alla fine del tuo prossimo turno. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:goading-attack",
@@ -2717,7 +2827,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "Immediately after you hit a creature with a melee attack on your turn, you can expend one superiority die and then try to grapple the target as a bonus action (see the Player's Handbook for rules on grappling). Add the s"
+      "description": "Immediately after you hit a creature with a melee attack on your turn, you can expend one superiority die and then try to grapple the target as a bonus action (see the Player's Handbook for rules on grappling). Add the s",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Grappling Strike",
+          "action_type": "bonus",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Subito dopo aver colpito con un attacco in mischia nel tuo turno, usa un'azione bonus per tentare di afferrare il bersaglio; aggiungi il dado superiorità alla prova di Atletica. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xge:grasp-of-hadar",
@@ -2964,7 +3084,16 @@
         "FS:F",
         "FS:P"
       ],
-      "description": "When a creature you can see hits a target, other than you, within 5 feet of you with an attack, you can use your reaction to reduce the damage the target takes by {@dice 1d10} + your proficiency bonus (to a minimum of 0 "
+      "description": "When a creature you can see hits a target, other than you, within 5 feet of you with an attack, you can use your reaction to reduce the damage the target takes by {@dice 1d10} + your proficiency bonus (to a minimum of 0 ",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Interception",
+          "action_type": "reaction",
+          "tracker_cost": 0,
+          "description": "Reazione mentre impugni uno scudo o un'arma semplice/marziale: quando una creatura visibile colpisce un bersaglio diverso da te entro 5 ft, riduci i danni di 1d10 + bonus di competenza (minimo 0). La riduzione è manuale."
+        }
+      ]
     },
     {
       "id": "optional:tce:investment-of-the-chain-master",
@@ -3092,7 +3221,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you make a melee weapon attack on your turn, you can expend one superiority die to increase your reach for that attack by 5 feet. If you hit, you add the superiority die to the attack's damage roll."
+      "description": "When you make a melee weapon attack on your turn, you can expend one superiority die to increase your reach for that attack by 5 feet. If you hit, you add the superiority die to the attack's damage roll.",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Lunging Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Nel tuo turno, quando effettui un attacco con arma da mischia, estendi la portata di 5 ft per quell'attacco. Se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:lunging-attack",
@@ -3132,7 +3271,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to maneuver one of your comrades into a more advantageous position. You add the superiority die to the attack's damage roll, and you choose"
+      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to maneuver one of your comrades into a more advantageous position. You add the superiority die to the attack's damage roll, and you choose",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Maneuvering Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno. Un alleato che ti vede o sente può usare la reazione per muoversi fino a metà velocità senza provocare attacchi di opportunità dal bersaglio. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:maneuvering-attack",
@@ -3220,7 +3369,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to frighten the target. You add the superiority die to the attack's damage roll, and the target must make a Wisdom saving throw."
+      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to frighten the target. You add the superiority die to the attack's damage roll, and the target must make a Wisdom saving throw.",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Menacing Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno. Il bersaglio deve superare un TS Saggezza o è spaventato da te fino alla fine del tuo prossimo turno. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:menacing-attack",
@@ -3532,7 +3691,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When another creature damages you with a melee attack, you can use your reaction and expend one superiority die to reduce the damage by the number you roll on your superiority die + your Dexterity modifier."
+      "description": "When another creature damages you with a melee attack, you can use your reaction and expend one superiority die to reduce the damage by the number you roll on your superiority die + your Dexterity modifier.",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Parry",
+          "action_type": "reaction",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando subisci danni da un attacco in mischia, puoi usare la reazione per ridurli di un dado superiorità + modificatore di Destrezza. La riduzione dei PF è manuale. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:parry",
@@ -3568,7 +3737,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you make a weapon attack roll against a creature, you can expend one superiority die to add it to the roll. You can use this maneuver before or after making the attack roll, but before any effects of the attack are "
+      "description": "When you make a weapon attack roll against a creature, you can expend one superiority die to add it to the roll. You can use this maneuver before or after making the attack roll, but before any effects of the attack are ",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Precision Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando effettui un tiro per colpire con arma, aggiungi il dado superiorità al tiro, prima o dopo il lancio ma prima che gli effetti dell'attacco siano risolti. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:precision-attack",
@@ -3604,7 +3783,16 @@
         "FS:F",
         "FS:P"
       ],
-      "description": "When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield."
+      "description": "When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Protection",
+          "action_type": "reaction",
+          "tracker_cost": 0,
+          "description": "Reazione mentre impugni uno scudo: imponi svantaggio all'attacco di una creatura che puoi vedere contro un bersaglio diverso da te entro 5 ft. La scelta del bersaglio e lo svantaggio restano manuali."
+        }
+      ]
     },
     {
       "id": "optional:tce:protection-of-the-talisman",
@@ -3633,7 +3821,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to drive the target back. You add the superiority die to the attack's damage roll, and if the target is Large or smaller, it mus"
+      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to drive the target back. You add the superiority die to the attack's damage roll, and if the target is Large or smaller, it mus",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Pushing Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; se il bersaglio è Grande o inferiore e fallisce un TS Forza, puoi spingerlo fino a 15 ft. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:pushing-attack",
@@ -3651,7 +3849,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "As a bonus action, you can expend one superiority die and make a ranged attack with a weapon that has the thrown property. You can draw the weapon as part of making this attack. If you hit, add the superiority die to the"
+      "description": "As a bonus action, you can expend one superiority die and make a ranged attack with a weapon that has the thrown property. You can draw the weapon as part of making this attack. If you hit, add the superiority die to the",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Quick Toss",
+          "action_type": "bonus",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Come azione bonus, estrai un'arma con proprietà Lancio ed effettua un attacco a distanza con essa; se colpisce, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:phb:quickened-spell",
@@ -3759,7 +3967,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "On your turn, you can use a bonus action and expend one superiority die to bolster the resolve of one of your companions. When you do so, choose a friendly creature who can see or hear you. That creature gains temporary "
+      "description": "On your turn, you can use a bonus action and expend one superiority die to bolster the resolve of one of your companions. When you do so, choose a friendly creature who can see or hear you. That creature gains temporary ",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Rally",
+          "action_type": "bonus",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Come azione bonus, scegli un alleato che ti vede o sente: ottiene PF temporanei pari al risultato del dado superiorità + il tuo modificatore di Carisma. Inserisci i PF manualmente. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:rally",
@@ -4436,7 +4654,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When a creature misses you with a melee attack, you can use your reaction and expend one superiority die to make a melee weapon attack against the creature. If you hit, you add the superiority die to the attack's damage "
+      "description": "When a creature misses you with a melee attack, you can use your reaction and expend one superiority die to make a melee weapon attack against the creature. If you hit, you add the superiority die to the attack's damage ",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Riposte",
+          "action_type": "reaction",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando una creatura ti manca con un attacco in mischia, effettua un attacco in mischia con arma usando la reazione; se colpisci, aggiungi il dado superiorità al danno. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:riposte",
@@ -4729,7 +4957,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you hit a creature with a melee weapon attack, you can expend one superiority die to attempt to damage another creature with the same attack. Choose another creature within 5 feet of the original target and within y"
+      "description": "When you hit a creature with a melee weapon attack, you can expend one superiority die to attempt to damage another creature with the same attack. Choose another creature within 5 feet of the original target and within y",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Sweeping Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando colpisci con un attacco con arma da mischia, puoi infliggere il risultato del dado superiorità a un'altra creatura entro 5 ft dal bersaglio e nella tua portata, se il tiro originario colpirebbe anche la sua CA. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:sweeping-attack",
@@ -4756,7 +4994,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you make an Intelligence ({@skill Investigation}), an Intelligence ({@skill History}), or a Wisdom ({@skill Insight}) check, you can expend one superiority die and add the superiority die to the ability check."
+      "description": "When you make an Intelligence ({@skill Investigation}), an Intelligence ({@skill History}), or a Wisdom ({@skill Insight}) check, you can expend one superiority die and add the superiority die to the ability check.",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Tactical Assessment",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando effettui una prova di Intelligenza (Indagare o Storia) o Saggezza (Intuizione), puoi aggiungere il dado superiorità al risultato. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:tactical-assessment",
@@ -4893,7 +5141,17 @@
       "types": [
         "MV:B"
       ],
-      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to knock the target down. You add the superiority die to the attack's damage roll, and if the target is Large or smaller, it mus"
+      "description": "When you hit a creature with a weapon attack, you can expend one superiority die to attempt to knock the target down. You add the superiority die to the attack's damage roll, and if the target is Large or smaller, it mus",
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Trip Attack",
+          "action_type": "free",
+          "tracker_cost": 1,
+          "resource_name": "Superiority Dice",
+          "description": "Quando colpisci con un attacco con arma, aggiungi il dado superiorità al danno; un bersaglio Grande o inferiore deve superare un TS Forza o cade prono. Il dado superiorità va speso e il risultato applicato manualmente."
+        }
+      ]
     },
     {
       "id": "optional:xphb:trip-attack",
@@ -4940,7 +5198,31 @@
       "types": [
         "FS:F"
       ],
-      "description": "Your unarmed strikes can deal bludgeoning damage equal to {@damage 1d6} + your Strength modifier on a hit. If you aren't wielding any weapons or a {@item shield|phb} when you make the attack roll, the {@damage d6} become"
+      "description": "Your unarmed strikes can deal bludgeoning damage equal to {@damage 1d6} + your Strength modifier on a hit. If you aren't wielding any weapons or a {@item shield|phb} when you make the attack roll, the {@damage d6} become",
+      "effects": [
+        {
+          "type": "base_override",
+          "target": "attack_damage_base:unarmed",
+          "mode": "alternative",
+          "expression": "1d6",
+          "description": "Danno alternativo per un colpo senz'armi."
+        },
+        {
+          "type": "base_override",
+          "target": "attack_damage_base:unarmed",
+          "mode": "alternative",
+          "expression": "1d8",
+          "no_weapon_or_shield": true,
+          "description": "Danno alternativo se non impugni armi né uno scudo."
+        },
+        {
+          "type": "actions",
+          "name": "Unarmed Fighting · danno da lotta",
+          "action_type": "free",
+          "description": "All'inizio del tuo turno, se stai afferrando almeno una creatura, puoi infliggere 1d4 danni contundenti a una di esse. Danno e verifica della lotta sono manuali.",
+          "tracker_cost": 0
+        }
+      ]
     },
     {
       "id": "optional:phb:unbroken-air",
