@@ -31,3 +31,13 @@ test('every static offline shell asset is served by the native host',()=>{
   assert.doesNotThrow(()=>read('../../'+routes.get(path).slice('res://'.length)),path+' must exist');
  }
 });
+
+test('PWA boot uses its own pending-edit flush API, never the removed native desktop IPC',()=>{
+ const main=read('../main.js'),ui=read('../ui.js');
+ assert.match(main,/\bflushPendingEdits\b/);
+ assert.match(ui,/export\s+async\s+function\s+flushPendingEdits\s*\(/);
+ assert.match(main,/installOfflineShell\(flushPendingEdits\)/);
+ for(const source of [main,ui]){
+  assert.doesNotMatch(source,/\bdesktopSheetSession\b|\bvttDesktopSaveFile\b/);
+ }
+});
