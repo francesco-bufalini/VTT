@@ -3212,11 +3212,8 @@ function optionBenefitPanels(c,calculated){
      c.spellcasting_ability||calculated.casting_classes?.[0]?.ability||'int'):'')+
    '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(selection=>{
     const id=selectedPowerId(selection),option=byId.get(id);if(!option)return '';
-    const applied=active.some(row=>selectedPowerId(row)===id);
-    return '<div class="magic-spell-row" data-power-option-id="'+esc(id)+'" data-option-active="'+applied+'">'+
-     '<button type="button" class="magic-spell-open" data-act="benefit-option-open" data-power-selection-id="'+esc(model.id)+'" data-power-option-id="'+esc(id)+'"'+
-     ' aria-label="Apri '+esc(option.name)+' per consultarne i benefici e l’applicazione">'+esc(selectedPowerLabel(option,selection))+'</button>'+
-     (model.layers.applied?'<small class="hint">'+(applied?'Applicato':'Da applicare')+'</small>':'')+'</div>';
+    return '<div class="magic-spell-row" data-power-option-id="'+esc(id)+'" data-option-active="'+
+     active.some(row=>selectedPowerId(row)===id)+'"><span class="magic-spell-open">'+esc(selectedPowerLabel(option,selection))+'</span></div>';
    }).join('')+'</div>');
  }).join('');
 }

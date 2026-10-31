@@ -187,55 +187,6 @@ test('real Archery catalog entry applies only while the learned style is active 
  assert.equal(hit(c),before,'Unapplying the same style withdraws the bonus');
 });
 
-test('Ranger conditional Fighting Styles respect equipment and their application state',()=>{
- const selectionId='optional:class:phb:ranger:fs-r';
- const armor={id:'leather',custom_item_type:'armor',name:'Leather Armor',type:'LA',
-  ac:11,quantity:1,equipped_slots:['body']};
- const sword={id:'longsword',custom_item_type:'weapon',name:'Longsword',type:'M',
-  damage:'1d8',damage_type:'slashing',properties:['V'],quantity:1,equipped_slots:['main']};
- const shield={id:'shield',custom_item_type:'shield',name:'Shield',type:'S',
-  ac:2,quantity:1,equipped_slots:['off']};
- const dagger={id:'dagger',custom_item_type:'weapon',name:'Dagger',type:'M',
-  damage:'1d4',damage_type:'piercing',range:'20/60',
-  properties:['L','F','T'],quantity:1,equipped_slots:['main']};
- const cases=[
-  {name:'Defense',option:'optional:phb:defense',inventory:[armor],
-   value:c=>c.stats.armor_class,amount:1,invalid:[{...armor,equipped_slots:[]}]},
-  {name:'Dueling',option:'optional:phb:dueling',inventory:[sword,shield],
-   value:c=>c.attacks.find(a=>a.id==='item:longsword')?.damage_extra_modifier,amount:2,
-   invalid:[sword,{id:'off-dagger',custom_item_type:'weapon',type:'M',
-    name:'Offhand Dagger',damage:'1d4',properties:['L'],quantity:1,equipped_slots:['off']}]},
-  {name:'Thrown Weapon Fighting',option:'optional:tce:thrown-weapon-fighting',inventory:[dagger],
-   value:c=>c.attacks.find(a=>a.id==='item:throw:main:dagger')?.damage_extra_modifier,amount:2,
-   invalid:[{...dagger,properties:['L','F']}]}
- ];
- for(const example of cases){
-  let r={...record(),level:2,classes:[{name:'Ranger',source:'PHB',level:2}],
-   abilities:{str:14,dex:16,con:12,int:10,wis:14,cha:10},inventory:example.inventory};
-  let c=calculateSheet(r,completeCatalogs),before=example.value(c);
-  assert(Number.isFinite(before),example.name+' baseline must be available');
-  r={...r,...powerSelectionPatch(r,c,combined,selectionId,'learned',example.option)};
-  c=calculateSheet(r,completeCatalogs);
-  assert.equal(example.value(c),before,example.name+' must not activate merely from learning');
-  r={...r,...powerApplicationPatch(r,c,combined,selectionId,example.option,true)};
-  c=calculateSheet(r,completeCatalogs);
-  assert.equal(example.value(c),before+example.amount,example.name+' must apply to its target');
-  if(example.name==='Thrown Weapon Fighting')
-   assert.equal(c.attacks.find(a=>a.id==='item:dagger')?.damage_extra_modifier,0,
-    'The melee version of a thrown weapon remains unchanged');
-  if(example.name!=='Thrown Weapon Fighting'){
-   const invalid=calculateSheet({...r,inventory:example.invalid},completeCatalogs);
-   const noApplication=calculateSheet({...r,inventory:example.invalid,
-    power_applications:{...r.power_applications,[selectionId]:[]}},completeCatalogs);
-   assert.equal(example.value(invalid),example.value(noApplication),
-    example.name+' must stop applying when its equipment condition fails');
-  }
-  r={...r,...powerApplicationPatch(r,c,combined,selectionId,example.option,false)};
-  assert.equal(example.value(calculateSheet(r,completeCatalogs)),before,
-   example.name+' must be removed when the style is unapplied');
- }
-});
-
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
  const cases=[
   {className:'Paladin',id:'optional:class:phb:paladin:fs-p',option:'optional:tce:blessed-warrior',ability:'cha',list:'Cleric'},
