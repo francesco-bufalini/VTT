@@ -556,7 +556,11 @@ export function activeItemOptionEffects(record={},definitions=[],features=[]){
   const effects=array(owned.option_extensions);
   return effects.flatMap(effect=>{
    if(effect.origin_id&&(record.origin_enabled?.[effect.origin_id]===false||!features.some(f=>f.origin_id===effect.origin_id&&!f.disabled&&!f.inactive)))return [];
-   const definition=effect.definition;if(!definition)return [];
+   // Applied option previews may only carry an ID and title. Resolve source
+   // mechanics from the typed infusion catalog rather than old item.infusion.
+   const source=array(definitions).find(row=>row.id===effect.definition?.id||row.id===effect.id);
+   const definition=source?{...effect.definition,...source}:effect.definition;
+   if(!definition)return [];
    const id='item-option:'+String(owned.instance_id||owned.id)+':'+effect.id;
    return [{id,index,item:owned,option_id:effect.id,tracker_id:itemOptionChargeTrackerId(owned,effect,index),option:effect,name:effect.name||definition.name,definition,origin_id:effect.origin_id||''}];
   });

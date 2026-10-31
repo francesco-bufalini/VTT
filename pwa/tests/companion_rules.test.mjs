@@ -89,9 +89,9 @@ test('infused-object and spell-effect grants toggle availability, not saved shee
  const infusion={id:'infusion|tce|homunculus servant',companion:{rule_id:'homunculus_servant_2014'}};
  assert.equal(infusionCompanionRule(rules,[infusion],infusion.id,artificer)?.activation,'item');
  assert.equal(infusionCompanionRule(rules,[],infusion.id,artificer),null);
- const child={companion_grant:{kind:'inventory_infusion',id:infusion.id},companion_selected:true};
+ const child={companion_grant:{kind:'item_option',id:infusion.id},companion_selected:true};
  assert.equal(companionGrantActive({...artificer,inventory:[]},child),false);
- assert.equal(companionGrantActive({...artificer,inventory:[{quantity:1,infusion:{id:infusion.id}}]},child),true);
+ assert.equal(companionGrantActive({...artificer,inventory:[{quantity:1,option_extensions:[{id:infusion.id}]}]},child),true);
  assert.equal(companionGrantActive({...artificer,inventory:[{quantity:1,infusion:{id:infusion.id}}]},{...child,companion_selected:false}),false);
  const effect=companionSpellEffectPatch(artificer,{grant_kind:'spell_effect',names:['Find Familiar']},'find-familiar');
  const familiar={companion_grant:{kind:'spell_effect',id:'spell:find-familiar'}};
