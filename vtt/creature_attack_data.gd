@@ -13,7 +13,6 @@ const MonsterActions = preload("res://vtt/monster_action_metadata.gd")
 
 static func definitions(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = ClassFeatures.armorer_weapons(record)
-	var kind: String = String(record.get("kind", "character"))
 	var stat: Dictionary = record.get("stat_block", {})
 	for section: String in ["action", "bonus", "reaction", "legendary", "mythic"]:
 		var raw_section: Variant = stat.get(section, [])

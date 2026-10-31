@@ -5,7 +5,6 @@
 *.import
 *.uid
 *.tmp
-native/**/~*.dll
 /build/
 
 # Rebuildable Blender workspace and downloaded third-party assets
