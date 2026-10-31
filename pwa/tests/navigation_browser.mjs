@@ -249,12 +249,27 @@ try{
  assert(await page.locator('#app').isVisible());
  assert(await page.locator('#mobile-tabs').isVisible());
  await globalPage('catalog');
- await page.locator('.catalog-entry').first().click();await page.locator('[data-act="catalog-close"]').waitFor();
- assert.equal(await page.locator('#catalog-search').count(),0,'Selected detail gets its own focused screen');
- await page.locator('[data-act="catalog-close"]').click();await page.locator('#catalog-search').waitFor();
- assert.equal(await page.locator('#quick-name').isVisible(),false);
- await page.locator('.catalog-create > summary').click();assert(await page.locator('#quick-name').isVisible());
- await page.locator('.connection-link').click();await page.waitForFunction(()=>document.querySelector('#app').dataset.page==='session');
+ assert.equal(await page.locator('.topbar').isVisible(),false,'Catalogo hides the topbar');
+ assert.equal(await page.locator('.page-head,#app .panel,#app .catalog-create').count(),0,'Catalogo has no introductory titles or boxed panels');
+ assert.equal(await page.locator('#mobile-tabs').isVisible(),true,'Three-way bottom dock remains');
+ assert(await page.locator('#catalog-search').isVisible());
+ assert(await page.locator('#catalog-category').isVisible());
+ assert(await page.locator('.catalog-entry').first().isVisible(),'Entries are visible before typing a search');
+ const toolbar=await page.locator('#catalog-search,#catalog-category').evaluateAll(nodes=>
+  nodes.map(n=>({top:n.getBoundingClientRect().top,left:n.getBoundingClientRect().left})));
+ assert(Math.abs(toolbar[0].top-toolbar[1].top)<6&&toolbar[1].left>toolbar[0].left,
+  'Category selector sits next to the search');
+ await page.locator('.catalog-entry').first().click();
+ await page.locator('#catalog-detail-dialog[open]').waitFor({state:'visible'});
+ assert(await page.locator('#catalog-search').isVisible(),'The search and list stay mounted behind the dialog');
+ assert(await page.locator('#catalog-detail-dialog .catalog-description').isVisible());
+ assert.equal(await page.locator('#catalog-detail-dialog [data-act="catalog-assign"],#catalog-detail-dialog #catalog-creature').count(),0);
+ assert.equal(await page.locator('#catalog-detail-dialog .tag').count(),0);
+ await page.locator('#catalog-detail-dialog [data-act="catalog-close"]').click();
+ assert.equal(await page.locator('#catalog-detail-dialog').count(),0);
+ assert(await page.locator('.catalog-entry').first().isVisible(),'Closing the popup restores the same list');
+ await page.locator('#nav [data-nav="session"]').click();
+ await page.waitForFunction(()=>document.querySelector('#app').dataset.page==='session');
  assert.equal(await page.locator('.topbar').isVisible(),false,'Partita has no topbar, like the Creature archive');
  assert.equal(await page.locator('.page-head,.session-switcher,[data-session-content="connection"]').count(),0,'No heading or connection tab before the map');
  assert.equal(await page.locator('#header-chat').isVisible(),false,'No chat icon without an open creature');
