@@ -1,6 +1,7 @@
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
 import {SKILLS} from './sheet_rules.js';
+import {attackRangeLabel} from './attack_range.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {offhandActionEligibility} from './offhand_rules.js';
@@ -177,7 +178,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const time=String(attack.id).startsWith('monster:')?(section==='bonus'||section==='reaction'?section:'action'):attack.offhand_bonus?'bonus':'action';
   const hit=attack.hit!==null&&attack.hit!==undefined&&attack.hit!==''&&Number.isFinite(Number(attack.hit))?
    'Colpire: '+(Number(attack.hit)>=0?'+':'')+attack.hit+'. ':'';
-  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+(attack.damage_explanation?attack.damage_explanation+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.'+
+  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+(attack.damage_explanation?attack.damage_explanation+'. ':'')+(attackRangeLabel(attack)||'Portata 5 ft')+'.'+
    (arr(attack.on_hit_effects).length?' Effetti sul colpo: '+arr(attack.on_hit_effects).map(effect=>effect.description).filter(Boolean).join(' · '):''),'',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
  }
  // Fallback for older schemas without the local computed attack projection.
@@ -438,11 +439,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    attack.slot==='shield'||['unarmed','improvised'].includes(attack.id));
  const description=item.id==='improvised'?item.description||'Attacco con un oggetto equipaggiato impugnato come arma improvvisata.':
   isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
- const rangeFeet=Number(selectedAttack?.range_feet);
- const longRangeFeet=Number(selectedAttack?.long_range_feet);
- const rangeLabel=Number.isFinite(rangeFeet)&&rangeFeet>0?
-  (selectedAttack.melee?'Portata ':'Gittata ')+rangeFeet+
-   (!selectedAttack.melee&&Number.isFinite(longRangeFeet)&&longRangeFeet>rangeFeet?'/'+longRangeFeet:'')+' ft':'';
+ const rangeLabel=attackRangeLabel(selectedAttack||{});
  const mapButton=rangeLabel&&selectedAttack?.id?
   '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="'+esc(selectedAttack.id)+
   '" aria-label="Mostra la gittata di '+esc(actionName)+' sulla mappa" title="Gittata sulla mappa">'+actionGlyph('map')+'</button>':'';
