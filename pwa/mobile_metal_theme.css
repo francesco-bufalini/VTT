@@ -6936,3 +6936,12 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  #sheet-play-view .play-battle-benefit-row>.play-attack-sequence{margin-left:31px;margin-right:5px}
  #sheet-play-view .play-battle-benefit-details>summary.play-resource-power-open{gap:6px;padding-inline:6px}
 }
+
+/* Apply the same two-column geometry to source-native power rows too. */
+#sheet-play-view .play-action-benefit-rows>.play-resource-power-row{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
+ min-width:0
+}
+#sheet-play-view .play-action-benefit-rows>.play-resource-power-row>.play-resource-power-open{
+ min-width:0;width:100%;min-height:53px
+}
