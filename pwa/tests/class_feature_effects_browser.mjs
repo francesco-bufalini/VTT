@@ -30,6 +30,10 @@ try{
  assert.deepEqual(await popupOrigins(),['Tratto · Rage'],'Native class ability details must display the granting trait');
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  await use('Attiva Ira').click();
+ // Activation is confirmed in the shared feature popup before the state changes.
+ const rageDialog=page.locator('#class-feature-dialog');
+ if(await rageDialog.isVisible())
+  await rageDialog.locator('[data-feature-confirm]').click();
  await page.waitForFunction(()=>document.querySelector('[aria-label="Disattiva Ira"]'));
  assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
  const calculated=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');const {calculateSheet,loadRuleCatalogs}=await import('/sheet_rules.js');return calculateSheet((await listCreatures())[0].creature,await loadRuleCatalogs());});

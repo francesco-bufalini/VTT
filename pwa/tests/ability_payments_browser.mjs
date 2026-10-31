@@ -20,7 +20,9 @@ try{
  });
  await page.reload();await page.locator('[data-act="open"]').click();
  await page.locator('#sheet-play-view').waitFor();await sheet('battle');
- await page.locator('[data-battle-action="resources"] > summary').click();
+ const resources=page.locator('[data-battle-action="resources"]');
+ if(await resources.getAttribute('open')===null)
+  await resources.locator(':scope > summary').click();
  const use=id=>page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]');
  for(const id of ['first','second']){
   const button=use(id);

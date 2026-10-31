@@ -112,5 +112,10 @@ test('Ranger PHB conditional features reuse typed roll options without granting 
  const disabled={...ranger,origin_enabled:{[features[3].origin_id]:false}};
  assert(!classFeatureRollBonuses(disabled,calculated,'attack_hit:weapon').some(row=>row.origin_id===features[3].origin_id));
  const revised={...ranger,rules_version:'2024',classes:[{name:'Ranger',source:'XPHB',level:8}]};
- assert(!classFeatureRollBonuses(revised,calculated,'skill:survival').some(row=>row.origin_id===features[0].origin_id));
+ const revisedCalculated=calculateSheet(revised,{
+  classMechanics:read('class_mechanics'),classFeatures:read('classes'),rollBonusRules:rules
+ });
+ assert(!classFeatureRollBonuses(revised,revisedCalculated,'skill:survival')
+  .some(row=>row.origin_id===features[0].origin_id),
+  'A genuine XPHB sheet never projects PHB-specific roll benefits');
 });

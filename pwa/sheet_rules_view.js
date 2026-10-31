@@ -500,7 +500,10 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
  const keyFor=(cost,trackerId)=>{
   // A bonus-paid action stays under its shared resource without charging
   // that resource twice when the bonus is selected in the roll dialog.
-  if(!trackerId)return cost?'missing':'free';
+  // An explicitly free command must remain free even when an older save
+  // still retains a tracker_id from the trait's separate paid action.
+  if(!cost)return 'free';
+  if(!trackerId)return 'missing';
   return trackers.some(t=>String(t.id)===String(trackerId))?'tracker:'+trackerId:'missing';
  };
  const rows=[];

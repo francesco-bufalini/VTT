@@ -25,7 +25,10 @@ const definitions={genericItemVariants:catalog,spells:[{id:'phb2014_jump',name:'
 test('generic variants declare only existing primitive benefit kinds, with no prose inference',()=>{
  // The editor's public menu omits 'dice', but dice_bonuses is an existing
  // primitive benefit (used by optional attack damage and other effects).
- const supported=new Set([...BENEFIT_TYPES.map(([type])=>type),'dice']);
+ const supported=new Set(BENEFIT_TYPES.map(([type])=>type));
+ // Dice bonuses already exist in the shared effect projection, even though
+ // the manual benefit editor does not expose this primitive in its menu.
+ supported.add('dice');
  assert.equal(variants.length,230);
  for(const variant of variants){
   for(const effect of variant.effects||[])assert(supported.has(effect.type),variant.name+': '+effect.type);
