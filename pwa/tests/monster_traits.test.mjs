@@ -50,8 +50,8 @@ test('legendary, resistance and lair traits grant their own counters and correct
   ['Azione leggendaria','legendary',1],['Azioni di tana','lair',1],['Resistenza leggendaria','legendary_resistance',1]]);
  const panels=battleActionPanels(fixture,data);
  assert.match(panels.basicActions.find(row=>row.id==='attack').grant_description,/three attacks/);
- assert.match(panels.others,/data-action-timing="legendary"/);
- assert.match(panels.others,/data-action-timing="lair"/);
+ assert.match(panels.others,/Resistenza leggendaria/);
+ assert.match(panels.others,/Azioni di tana/);
  assert.ok(panels.abilityEntries.some(row=>row.name==='Frightful Presence'));
 });
 test('using a legendary option spends its actual cost and rejects exhausted or missing pools',()=>{
