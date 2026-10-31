@@ -536,10 +536,10 @@ export function battleAttackActionRow(item={},calculated={}){
   attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':'',
   tracker,trackerName:item.tracker,cost,label:'Usa',disabled:item.available===false,name:item.name});
  const description=details(item.description||'');
- return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-action'+
+ return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-attack-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
-  '<details class="play-battle-benefit-details"><summary class="play-resource-power-open">'+
-  actionGlyph(actionGlyphKey(item))+'<span><strong>'+esc(item.name||'Azione di attacco')+'</strong>'+
+  '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+
+  actionGlyph(actionGlyphKey(item))+'<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione di attacco')+'</strong>'+
   '<small class="play-attack-action-cost">'+esc(battleActionTimeLabel(item.time))+'</small>'+
   (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
   '</span></summary>'+
@@ -637,11 +637,11 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
    act==='sheet-roll'?' data-target="'+esc(rolls[0].target)+'" data-label="'+esc(rolls[0].label)+'"':'';
   const control=battleActionUseBox({act,attrs,tracker,cost:Number(item.cost)||0,
    trackerName:item.tracker||'',disabled:item.available===false,name:actionName});
-  return '<article class="play-resource-power-row play-battle-benefit-row play-battle-other-action'+
+  return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-other-action'+
    (item.available===false?' play-battle-attack-unavailable':'')+
    '" data-attack-id="'+esc(item.id||'')+'">'+
-   '<details class="play-battle-benefit-details"><summary class="play-resource-power-open">'+icon+
-   '<span><strong>'+esc(actionName)+'</strong><small>'+esc(time)+'</small>'+
+   '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+icon+
+   '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong><small>'+esc(time)+'</small>'+
    (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
    '</span></summary><div class="play-battle-attack-expanded"><p>'+detailsContent+'</p>'+
    source+optionMarkup+'</div></details>'+control+
