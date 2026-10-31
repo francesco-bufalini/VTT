@@ -149,7 +149,7 @@ export function traitStateAttacks(record={},features=[],catalog=[]) {
    const feature=source(record,features,rule,attack.trait);
    return feature?[{
      id:attack.id,name:attack.name,origin_id:feature.origin_id,
-     source:'trait_state',proficient:true,melee:!!attack.melee,
+     source:'trait_state',melee:!!attack.melee,weapon_category:attack.weapon_category||'',
      damage:attack.damage,damage_type:attack.damage_type,
      ability:attack.intelligence_override&&record.attack_ability==='int'?'int':attack.ability,
      range_feet:attack.range_feet,long_range_feet:attack.long_range_feet||0,
