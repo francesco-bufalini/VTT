@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getDistanceUnit,setDistanceUnit,formatDistance,formatGuiDistanceText,
- distanceInputValue,distanceInputFeet} from '../distance_units.js';
+ distanceInputValue,distanceInputFeet,applyDistanceUnits} from '../distance_units.js';
 import {senseLightRows,senseRange} from '../sense_rules.js';
+import {JSDOM} from 'jsdom';
 
 test('display convention is 5 ft = 1.5 m; stored feet are reversible',()=>{
  try{
@@ -36,4 +37,17 @@ test('GUI display converts single, paired, and rectangular distances',()=>{
   setDistanceUnit('feet');
   assert.equal(formatGuiDistanceText('30 ft'),'30 ft');
  }finally{setDistanceUnit('feet');}
+});
+
+test('the GUI converts numeric labels but not trait descriptions or input values',()=>{
+ const dom=new JSDOM('<main><span title="30 ft">Portata 30 ft</span><p class="trait-description">The spell reaches 30 ft.</p><label>Gittata <input value="30"></label></main>');
+ const main=dom.window.document.querySelector('main');
+ try{
+  setDistanceUnit('meters');
+  applyDistanceUnits(main);
+  assert.match(main.querySelector('span').textContent,/9 m/);
+  assert.match(main.querySelector('span').title,/9 m/);
+  assert.equal(main.querySelector('.trait-description').textContent,'The spell reaches 30 ft.');
+  assert.equal(main.querySelector('input').value,'30');
+ }finally{setDistanceUnit('feet');dom.window.close();}
 });
