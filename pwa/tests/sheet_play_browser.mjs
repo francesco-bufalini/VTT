@@ -1092,7 +1092,7 @@ try{
   },spentBefore);
  }
  // Slot management now opens directly from the always-visible Power overview.
- const manageSlots=page.locator('#sheet-play-view .magic-overview-manage[data-magic-tool="slots"]');
+ const manageSlots=page.locator('#sheet-play-view [data-act="sheet-proxy"][aria-label="Gestisci slot"]');
  await manageSlots.waitFor({state:'visible'});
  await manageSlots.click();
  await page.locator('#magic-tools-dialog[open]').waitFor();

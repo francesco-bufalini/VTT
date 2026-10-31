@@ -9,7 +9,10 @@ try{
   await saveCreature({...saved.data,class:'Artificer',class_source:'TCE',level:8,
    classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
    abilities:{str:18,dex:14,con:14,int:19,wis:12,cha:10},trait_state_selection:{armor_model:'armor_model:infiltrator'},attack_ability:'int',
-   current_hp:62,max_hp_base:62,inventory:[{id:'test:armor',name:'Celebrum Armor',type:'MA',ac:14,quantity:1,equipped_slots:['body']}]
+   current_hp:62,max_hp_base:62,
+    inventory:[{id:'test:armor',instance_id:'test:armor',name:'Celebrum Armor',type:'MA',ac:14,quantity:1,equipped_slots:['body']}],
+    power_applications:{arcane_armor:[{id:'arcane_armor',target_item_id:'test:armor'}],
+      armor_model:[{id:'armor_model:infiltrator'}]}
   },'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('info');
