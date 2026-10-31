@@ -13,7 +13,7 @@ import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
 import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
-import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
+import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,attackCategories} from './attack_count_benefits.js';
 import {collectEffectExtensions} from './effect_extensions.js';
 import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
@@ -668,7 +668,8 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  const append=(attack,ability,proficient,damage,baseHit=null)=>{
   const settings=record.attack_overrides?.[attack.id]||{};
   const modifier=abilities[ability]?.modifier??0;
-  const attackContext={...attack,ability,ability_modifier:modifier,offhand_eligible:offAllowed};
+  const categories=attackCategories(attack);
+  const attackContext={...attack,categories,ability,ability_modifier:modifier,offhand_eligible:offAllowed};
   const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id,attackContext);
   let damageMod=baseHit!==null||attack.damage_ability_modifier===false?0:modifier;
   if(attack.slot==='off'&&offAllowed)damageMod=Math.min(0,damageMod);
@@ -684,7 +685,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const range=clamp(int(settings.range_feet,attack.range_feet)+bonus('attack_range:'+attack.id,attackContext),5,1000);
   const longRange=attack.melee||!attack.long_range_feet?0:clamp(int(settings.long_range_feet,attack.long_range_feet)+bonus('attack_long_range:'+attack.id,attackContext),5,5000);
   const usedBase=featureContext.damageBase?featureContext.damageBase(attack.id,damage):damage;
-  out.push({...attack,ability,proficient,hit,damage:usedBase?usedBase+sign(damageMod):'Come da bestiario',
+  out.push({...attack,categories,ability,proficient,hit,damage:usedBase?usedBase+sign(damageMod):'Come da bestiario',
     damage_base_formula:usedBase||'',damage_ability_modifier:damageAbilityModifier,
     damage_ability_applies:damageAbilityApplies,damage_extra_modifier:damageExtraModifier,
    range_feet:range,long_range_feet:longRange,
@@ -1558,6 +1559,7 @@ function calculateSheetValues(record={},catalogs={}){
     attackProficiencySources.set(key,sources);
   }
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
+  const attack_actions=attackActionGrants(record,featureContext.features,trackers,catalogs.featureRules||{});
   const effect_extensions=equippedExtensions;
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
@@ -1708,7 +1710,7 @@ function calculateSheetValues(record={},catalogs={}){
       origin_id:celestialForm.origin_id,source:celestialForm.name,
       damage_type:celestialForm.damage_type,
       amount:safe('proficiency'),once_per_turn:true}:null,
-    attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
+    attack_count_benefits,attack_actions,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
     effect_extensions,armor_effects,armor_strength_waivers:strengthWaivers,
     item_damage_resistances:effect_extensions.filter(row=>row.operation==='resistance'&&row.target_kind==='item')
       .map(row=>({damage_type:row.value,origin_id:row.origin_id,origin_name:row.origin_name,

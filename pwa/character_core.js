@@ -4,33 +4,63 @@ const array=value=>Array.isArray(value)?value:[];
 const integer=(value,fallback=0)=>Number.isFinite(Number(value))?Math.trunc(Number(value)):fallback;
 const zeroSlots=()=>Array(10).fill(0);
 
-// Current imported monster catalogs include untyped Multiattack records.
-// Convert once at ingress; runtime attack benefits read only the typed count.
-// The displayed routine includes a preceding special use as well as attacks.
+// Normalize 5eTools Multiattack prose at ingress, not during a combat roll.
+// The typed sequence is authoritative; text remains available for reading.
+// Each step selects an attack/ability by identity or by existing roll category.
 const multiattackText=v=>typeof v==='string'?v:Array.isArray(v)?v.map(multiattackText).join(' '):
  v&&typeof v==='object'?multiattackText(v.entries??v.entry??v.description??''):'';
+const quantity=v=>({one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6})[String(v).toLowerCase()]||Number(v)||0;
+const singular=v=>String(v).trim().toLowerCase().replace(/(?:'s|’s)$/, '').replace(/ies$/,'y').replace(/(?<!s)s$/,'');
 export function multiattackSequence(row={}){
  const description=multiattackText(row.entries??row.description??'');
  const matches=[...description.matchAll(/\b(?:makes?|can make|may make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*(?:attacks?|attacchi)\b/gi)];
- const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
- const attacks=Math.max(0,...matches.map(match=>Number(match[1])||words[match[1].toLowerCase()]||0));
+ const attacks=Math.max(0,...matches.map(m=>quantity(m[1])));
  const specials=attacks?[...description.matchAll(/\b(?:can|may)\s+use\s+[^.!?]+[.!?]\s*(?:It|They|The [A-Za-z -]+?)\s+then\s+(?:makes?|can make|may make)\s+/gi)].length:0;
  return {attacks,specials,total:attacks+specials};
+}
+export function multiattackSteps(row={}){
+ if(Array.isArray(row.attack_action?.steps))return row.attack_action.steps;
+ const description=multiattackText(row.entries??row.description??'');
+ const {attacks,specials}=multiattackSequence(row);
+ const steps=[];
+ if(specials){
+  const before=description.match(/\b(?:can|may)\s+use\s+(?:its|their|the|an?\s+)?\s*([^.!?]+)[.!?]\s*(?:It|They|The [A-Za-z -]+?)\s+then\s+(?:makes?|can make|may make)\b/i);
+  if(before)steps.push({selector:{kind:'ability',name:before[1].trim()},count:1});
+ }
+ // Enumerations are generic, e.g. "one with its bite and two with its claws".
+ const described=[...description.matchAll(/\b(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+with\s+(?:its|their|the|an?)?\s*([A-Za-zÀ-ÿ'-]+)\b/gi)];
+ const listed=described.reduce((sum,m)=>sum+quantity(m[1]),0);
+ if(listed&&(!attacks||listed<=attacks)){
+  for(const m of described)steps.push({selector:{kind:'attack',name:singular(m[2])},count:quantity(m[1])});
+  if(attacks>listed)steps.push({selector:{category:'attack'},count:attacks-listed});
+ }else if(attacks)steps.push({selector:{category:'attack'},count:attacks});
+ return steps;
 }
 export function normalizeMonsterStatBlock(stat={}){
  let changed=false;
  const action=array(stat.action).map(row=>{
   if(!row||!/^(?:multiattack|multiattacco)$/i.test(String(row.name||'').trim()))return row;
-  const direct=Number(row.attacks_per_action);
-  const sequence=multiattackSequence(row);
-  const derived=row.vtt_multiattack_count_version===2&&row.vtt_multiattack_count_derived===true;
-  const legacy=!row.vtt_multiattack_count_version&&sequence.specials>0&&direct===sequence.attacks;
-  if(Number.isSafeInteger(direct)&&direct>=2&&!derived&&!legacy)return row;
-  const count=sequence.total;
-  if(count<2)return row;
-  if(derived&&direct===count&&row.vtt_attack_sequence_count===sequence.attacks&&row.vtt_special_sequence_count===sequence.specials)return row;
-  changed=true;return {...row,attacks_per_action:count,vtt_multiattack_count_version:2,
-   vtt_multiattack_count_derived:true,vtt_attack_sequence_count:sequence.attacks,vtt_special_sequence_count:sequence.specials};
+  if(Array.isArray(row.attack_action?.steps)&&!row.vtt_multiattack_count_derived)return row;
+  const sequence=multiattackSequence(row),direct=Number(row.attacks_per_action);
+  const derived=row.vtt_multiattack_count_derived===true;
+  // Explicit homebrew counts take precedence over a parsed text description.
+  const explicit=Number.isSafeInteger(direct)&&direct>=2&&!derived&&
+   !(sequence.specials>0&&!row.vtt_multiattack_count_version&&direct===sequence.attacks);
+  const parsed=multiattackSteps({...row,attack_action:undefined});
+  const parsedAttacks=parsed.filter(step=>step.selector?.kind!=='ability')
+   .reduce((n,step)=>n+Number(step.count||0),0);
+  const steps=explicit&&direct!==parsedAttacks?[{selector:{category:'attack'},count:direct}]:parsed;
+  const attackCount=steps.filter(step=>step.selector?.kind!=='ability')
+   .reduce((n,step)=>n+Number(step.count||0),0);
+  const count=explicit?direct:attackCount;
+  if(count<1)return row;
+  const next={...row,attacks_per_action:count,
+   attack_action:{time:'action',steps},
+   vtt_multiattack_count_version:3,vtt_multiattack_count_derived:!explicit,
+   vtt_attack_sequence_count:count,vtt_special_sequence_count:steps.filter(step=>step.selector?.kind==='ability')
+    .reduce((n,step)=>n+Number(step.count||0),0)};
+  if(JSON.stringify(next)!==JSON.stringify(row))changed=true;
+  return next;
  });
  return changed?{...stat,action}:stat;
 }

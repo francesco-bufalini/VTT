@@ -273,8 +273,16 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  for(const grant of attackGrants){
   if(!belongs(grant))continue;
   const routine=trait.category==='mostro'&&trait.monster_role==='multiattack';
-  add('attack_count',routine?'Sequenza di multiattacco':'Attacchi per azione',routine?'Componenti della sequenza':'Attacchi disponibili',
+  if(!routine)add('attack_count','Attacchi per azione','Attacchi disponibili',
    '×'+grant.attacks_per_action,'attack_count:'+grant.id);
+ }
+ for(const grant of rows(calculated.attack_actions)){
+  if(!belongs(grant))continue;
+  const steps=rows(grant.steps).map(step=>Number(step.count||1)+' × '+
+   (step.selector?.name||step.selector?.category||'Attacco a scelta')).join(' → ');
+  add('attack_actions','Azioni di attacco',grant.name,
+   (grant.time||'action')+(grant.cost?' · '+grant.cost+' · '+(grant.tracker||grant.tracker_id):'')+
+   ' · '+steps,'attack_action:'+grant.id);
  }
  // Exhaustion has one virtual state trait, backed by structured rules rather
  // than a generated prose-only entry. All cumulative tier effects belong here.

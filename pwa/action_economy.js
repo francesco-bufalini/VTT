@@ -3,7 +3,7 @@
 import {SKILLS} from './sheet_rules.js';
 import {attackRangeLabel} from './attack_range.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
-import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
+import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,resolveAttackActionSteps} from './attack_count_benefits.js';
 import {offhandActionEligibility} from './offhand_rules.js';
 import {equipmentRequirementMatches} from './item_controls.js';
 import {render5etoolsInline} from './5etools_inline.js';
@@ -301,8 +301,15 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
       tracker,mode==='tracker'?Math.max(1,Number(grant.tracker_cost)||1):0,
       {spell_id:String(grant.spell_id),grant_id:String(grant.id),spell_mode:mode,tracker_id:mode==='tracker'?String(grant.tracker_id||''):''});
  }
+ // Typed attack actions come from trait-owned data, never name-specific code.
+ // Keep their action economy separate from the physical attack catalogue.
+ const attackRoutines=arr(calculated.attack_actions).length?arr(calculated.attack_actions):
+  attackActionGrants(record,calculated.features,calculated.trackers,calculated.feature_rules);
+ const owners=new Set(attackRoutines.map(row=>row.origin_id).filter(Boolean));
  const normalized=[];
- for(const row of out){
+ const routineRows=attackRoutines.map(row=>({...row,origin:'personal',type:'Azione di attacco',
+  attack_action:true,description:details(row.description)}));
+ for(const row of [...out.filter(row=>!owners.has(row.origin_id)||row.type==='Attacco'),...routineRows]){
   if(row.type==='Incantesimo')continue;
   const same=normalized.find(old=>(old.id||old.name)===(row.id||row.name)&&old.tracker_id===row.tracker_id&&
    (old.time===row.time||[old.time,row.time].every(t=>['action','bonus'].includes(t))));
@@ -416,6 +423,21 @@ function attackSourceDescription(record,calculated,attack){
 // Only consuming actions describe an attack sequence; the actual hit rolls stay in Resources.
 const ATTACK_NUMBERS={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6,sette:7,otto:8};
 export function attackActionSequence(action={},record={},calculated={}){
+ // A declared sequence is authoritative even when it contains a special use
+ // that is not an attack roll. The old count is a fallback for saved records.
+ if(arr(action.steps).length){
+  const resolved=resolveAttackActionSteps(action,arr(calculated.attacks),
+   arr(calculated.action_entries));
+  const labels={attack:'Attacco a scelta',melee:'Attacco in mischia',
+   ranged:'Attacco a distanza',unarmed:'Colpo senz’armi',
+   crossbow:'Attacco con balestra',grapple:'Prova di lotta',shove:'Spingere'};
+  return resolved.flatMap(step=>{
+   const selector=step.selector||{};
+   const label=step.options.length===1?step.options[0].name:
+    selector.name||labels[selector.category]||selector.category||'Attacco a scelta';
+   return Array.from({length:step.count},()=>String(label));
+  });
+ }
  const count=Math.max(0,Math.min(99,Number(action.attack_count||action.attacks_per_action||(['attack','two_weapon','opportunity'].includes(action.id)?1:0))||0));
  const declared=arr(action.attack_sequence||action.attacks_granted||action.attack_grants);
  if(declared.length){
@@ -452,7 +474,7 @@ export function attackActionSequence(action={},record={},calculated={}){
  return Array.from({length:count},()=> 'Attacco');
 }
 export function attackActionCategory(row={}){
- if(arr(row.attack_sequence).length||['attack','two_weapon','opportunity','monster:multiattack'].includes(String(row.id))||
+ if(row.attack_action||arr(row.steps).length||arr(row.attack_sequence).length||['attack','two_weapon','opportunity','monster:multiattack'].includes(String(row.id))||
    Number(row.attack_count)>0||Number(row.attacks_per_action)>0||row.attack_replacement===true)return 'attacks';
  return row.type==='Capacità'||row.monster_action?'abilities':'other';
 }
@@ -474,6 +496,9 @@ export function battleAttackActionRow(item={},calculated={}){
   '<strong class="play-action-tracker-count">'+remaining+'/'+esc(tracker.max)+'</strong></span>':
   cost>0?'<span class="play-action-tracker play-action-tracker--missing">Tracker non disponibile</span>':'';
  const sequence=arr(item.attack_sequence),description=details(item.description||'');
+ const use=tracker&&cost>0&&item.attack_action?
+  '<button type="button" class="btn small" data-act="attack-action-use" data-attack-action-id="'+
+  esc(item.id)+'"'+(remaining<cost||tracker.disabled?' disabled':'')+'>Usa · '+esc(cost)+'</button>':'';
  return '<article class="play-battle-attack-entry play-battle-attack-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
   '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+
@@ -482,7 +507,7 @@ export function battleAttackActionRow(item={},calculated={}){
   '<small class="play-attack-action-cost">'+esc(typeLabel+costLabel)+'</small>'+
   (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
   '</span>'+trackerChip+'</summary>'+
-  '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p></div>'+
+  '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p>'+use+'</div>'+
   '</details></div>'+
   (sequence.length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
    sequence.map(label=>'<li>'+esc(label)+'</li>').join('')+'</ol>':'')+'</article>';
@@ -840,14 +865,17 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const rawMulti=arr(record.stat_block?.action).find(monsterMultiattack)||{};
  const multiTrackerId=String(rawMulti.tracker_id||rawMulti.vtt_resource?.id||'');
  const multiTracker=arr(calculated.trackers).find(row=>row.id===multiTrackerId);
- const multiRow=grantedMulti?[{id:monsterMulti?'monster:multiattack':'feature:multiattack',
+ const typedMonsterRoutine=entries.some(row=>row.attack_action&&row.monster_action);
+ const multiRow=!typedMonsterRoutine&&grantedMulti?[{id:monsterMulti?'monster:multiattack':'feature:multiattack',
   name:monsterMulti?'Multiattacco':String(grantingTrait?.name||grant?.origin_name||'Attacco extra'),
   time:monsterMulti?(rawMulti.action_type||'action'):'action',type:'Generale',available:true,
-  attack_count:multiCount,description:details(monsterMulti?.entries||grantingTrait?.entries||grantingTrait?.description),
+  attack_count:multiCount,attack_action:true,steps:[{selector:{category:'attack'},count:multiCount}],
+  description:details(monsterMulti?.entries||grantingTrait?.entries||grantingTrait?.description),
   origin_id:monsterMulti?'feature:'+monsterMulti.feature_key:grant?.origin_id||'',
   tracker_id:multiTrackerId,tracker:multiTracker?.name||'',cost:multiTrackerId?Math.max(1,Number(rawMulti.tracker_cost)||1):0}]:[];
  const other=[...basicInActions,...multiRow,...specials]
-  .map(row=>({...row,attack_sequence:attackActionSequence(row,record,calculated)}));
+  .map(row=>({...row,attack_sequence:attackActionSequence(row,record,
+   {...calculated,action_entries:entries})}));
  const ordering=(a,b,time)=>{
   const order=row=>row.id==='attack'&&time==='action'?-100:
    row.id==='opportunity'&&time==='reaction'?-100:

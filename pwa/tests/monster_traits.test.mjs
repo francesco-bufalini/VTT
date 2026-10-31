@@ -35,7 +35,7 @@ test('one creature section, overview first, exact attack and capacity ownership'
  assert.match(abilities.find(row=>row.label.startsWith('Fire Breath')).cost,/1 utilizzo/);
  assert.equal(data.attacks.find(row=>row.id==='monster:action:1').origin_id,traits[0].feature_origin);
  assert.equal(traits.filter(row=>row.name==='Multiattack').length,1);
- assert.equal(data.attack_count_benefits[0].attacks_per_action,4);
+ assert.equal(data.attack_count_benefits[0].attacks_per_action,3);
 });
 test('legendary, resistance and lair traits grant their own counters and correct costs',()=>{
  const traits=monsterTraits(fixture),data=calculated();
@@ -150,19 +150,19 @@ test('one lair capacity retains base, additional and nested lair descriptions',(
  for(const text of ['Lava','Smoke','Additional Lair Actions','Frozen Floor','Ice covers'])assert.ok(lair[0].description.includes(text));
  assert.equal(lair[0].tracker_id,'lair_actions');assert.equal(lair[0].cost,1);
 });
-test('legacy saved three-count migrates to four routine components and remains recalculable',()=>{
+test('legacy saved multiattack retains special use but reports only attack rolls as attacks_per_action',()=>{
  const row={...fixture.stat_block.action[0],attacks_per_action:3};
  const normalized=normalizeMonsterStatBlock({action:[row]});
- assert.equal(normalized.action[0].attacks_per_action,4);
+ assert.equal(normalized.action[0].attacks_per_action,3);
  assert.equal(normalized.action[0].vtt_attack_sequence_count,3);
  assert.equal(normalized.action[0].vtt_special_sequence_count,1);
  assert.equal(normalizeMonsterStatBlock(normalized),normalized);
  const edited=normalizeMonsterStatBlock({action:[{...normalized.action[0],entries:['It can use a special ability.','It then makes two attacks.']}]});
- assert.equal(edited.action[0].attacks_per_action,3);
+ assert.equal(edited.action[0].attacks_per_action,2);
  assert.deepEqual(multiattackSequence(row),{attacks:3,specials:1,total:4});
  assert.equal(normalizeMonsterStatBlock({action:[{...row,attacks_per_action:7}]}).action[0].attacks_per_action,7);
  const saved={...fixture,stat_block:{...fixture.stat_block,action:[row]}};
- assert.equal(calculated(saved).attack_count_benefits[0].attacks_per_action,4);
+ assert.equal(calculated(saved).attack_count_benefits[0].attacks_per_action,3);
 });
 test('lair enrichment adds inherited additions without overwriting local descriptions',()=>{
  const record=structuredClone(fixture);record.stat_block.lairActions=['Original base'];
