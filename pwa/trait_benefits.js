@@ -2,6 +2,7 @@
 // Use structured grants only; never extract mechanics from free-form descriptions.
 import {contextualFeatureDescriptors,classFeatureDescriptors,classFeatureRollSources} from './feature_mechanics.js';
 import {SENSE_NAMES,senseRange} from './sense_rules.js';
+import {attackRangeLabel} from './attack_range.js';
 import {resolveOwnedItem} from './item_controls.js';
 import {attackCountBenefits} from './attack_count_benefits.js';
 import {effectExtensionLabel,effectExtensionsFor} from './effect_extensions.js';
@@ -37,9 +38,9 @@ const damageLabel=type=>DAMAGE[norm(type)]||({T:'Tuono',L:'Fulmine'}[type]||Stri
 const abilityDetails=rule=>{
  const items=[];
  for(const attack of rows(rule.attacks)){
-  const reach=attack.melee?'Portata ':'Gittata ';
+  const distance=attackRangeLabel(attack);
   items.push('Attacco · '+attack.name+' · '+attack.damage+' '+damageLabel(attack.damage_type)+
-   ' · '+reach+attack.range_feet+(attack.long_range_feet?'/'+attack.long_range_feet:'')+' ft');
+   (distance?' · '+distance:''));
   if(attack.bonus_die)items.push('Dado aggiuntivo · '+attack.bonus_die.dice+' '+
    damageLabel(attack.bonus_die.damage_type)+
    (attack.bonus_die.recharge==='turn'?' · Una volta per turno':''));
@@ -382,11 +383,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    (String(attack.id||'').startsWith('item:'+itemId)||
     String(attack.id||'').includes(':'+itemId));
   if(!belongs(attack)&&!stateAttackIds.has(String(attack.id))&&!fromItem&&!rows(trait.monster_attack_ids).includes(attack.id))continue;
-  const reach=attack.melee?'Portata ':'Gittata ';
-  const range=Number(attack.range_feet);
   const details=[attack.damage&&String(attack.damage)+' '+String(attack.damage_type||''),
-   Number.isFinite(range)&&range>0?reach+range+' ft':'',
-   Number(attack.long_range_feet)>0?'Lunga '+attack.long_range_feet+' ft':''].filter(Boolean).join(' · ');
+   attackRangeLabel(attack)].filter(Boolean).join(' · ');
   add('attacks','Attacchi concessi',attack.name,details,'attack:'+String(attack.id||''));
  }
  // Equipping armor or a shield supplies AC even when no numeric bonus row
