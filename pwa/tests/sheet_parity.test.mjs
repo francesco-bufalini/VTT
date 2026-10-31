@@ -16,6 +16,9 @@ const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json
 const catalogs={classMechanics:mechanics,spellcastingBenefits:JSON.parse(readFileSync(new URL('../catalog/spellcasting_benefits.json',import.meta.url),'utf8'))};
 const featureCatalog=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
 const classBenefits=creature=>collectStructuredFeatures(creature,{...catalogs,classFeatures:featureCatalog});
+const optionalFeatures=JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'));
+const twoWeaponEffect=optionalFeatures.options.find(row=>row.id==='optional:phb:two-weapon-fighting')?.effects?.[0];
+const withTwoWeaponStyle=record=>({...record,formula_bonuses:[...(record.formula_bonuses||[]),twoWeaponEffect]});
 
 test('resource recovery caption reflects each tracker recovery rule',()=>{
  assert.equal(trackerRecoveryText({recharge:'short_rest'}),'Recupero: riposo breve');
@@ -332,7 +335,7 @@ test('equipped attacks calculate proficiency, finesse, offhand damage, thrown ra
  const out=calculateSheet(c,catalogs);
  assert.deepEqual(out.attacks.filter(a=>a.id.startsWith('item:')).map(a=>[a.id,a.hit,a.damage]),[['item:shortsword',8,'1d6 + 4'],['item:off:shortsword',7,'1d6']]);
  assert.equal(out.attacks[1].offhand_bonus,true);
- const style=calculateSheet({...c,two_weapon_fighting:true},catalogs);
+ const style=calculateSheet(withTwoWeaponStyle(c),catalogs);
  assert.equal(style.attacks[1].damage,'1d6 + 4');
  const thrown=calculateSheet({...c,inventory:[{...weapon,id:'dagger',properties:['F','L','T'],range:'20/60',equipped_slots:['main']}]},catalogs);
  assert.deepEqual(thrown.attacks.filter(a=>a.id.startsWith('item:')).map(a=>[a.id,a.range_feet,a.long_range_feet]),[['item:dagger',5,0],['item:throw:main:dagger',20,60]]);
@@ -365,7 +368,7 @@ test('shared equipment rules support every attack ability, finesse scope, off-ha
  const twin={...creature,hand_grip_two_handed:false,
    inventory:[{...dagger,equipped_slots:['main']},{...dagger,id:'off-dagger',equipped_slots:['off']}]};
  const withoutStyle=calculateSheet(twin,catalogs);
- const withStyle=calculateSheet({...twin,two_weapon_fighting:true},catalogs);
+ const withStyle=calculateSheet(withTwoWeaponStyle(twin),catalogs);
  assert.equal(withoutStyle.attacks.find(a=>a.slot==='off').damage,'1d4');
  assert.equal(withStyle.attacks.find(a=>a.slot==='off').damage,'1d4 + 4');
  for(const ability of ['str','dex','con','int','wis','cha']){

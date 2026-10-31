@@ -114,7 +114,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [startup, navigation, sheets]
+        suite: [startup, navigation, sheets, choices, inventory, variants]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -142,32 +142,60 @@ jobs:
       - name: Run Chromium ${{ matrix.suite }} regressions
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
           cd pwa
+          failures=()
+          run_browser() {
+            echo "::group::$1"
+            node "tests/$1" || failures+=("$1")
+            echo "::endgroup::"
+          }
           case "${{ matrix.suite }}" in
             startup)
-              node tests/startup_browser.mjs
-              node tests/archive_startup_browser.mjs
-              node tests/offline_browser.mjs
+              run_browser startup_browser.mjs
+              run_browser archive_startup_browser.mjs
+              run_browser offline_browser.mjs
               ;;
             navigation)
-              node tests/navigation_browser.mjs
-              node tests/inventory_search_browser.mjs
-              node tests/inventory_equipment_browser.mjs
+              run_browser navigation_browser.mjs
+              run_browser inventory_search_browser.mjs
+              run_browser inventory_equipment_browser.mjs
               ;;
             sheets)
-              node tests/character_portrait_browser.mjs
-              node tests/fighting_styles_browser.mjs
-              node tests/sheet_play_browser.mjs
-              node tests/action_dashboard_browser.mjs
-              node tests/infusions_browser.mjs
-              node tests/artificer_armor_browser.mjs
+              run_browser character_portrait_browser.mjs
+              run_browser fighting_styles_browser.mjs
+              run_browser sheet_play_browser.mjs
+              run_browser action_dashboard_browser.mjs
+              run_browser infusions_browser.mjs
+              run_browser artificer_armor_browser.mjs
+              ;;
+            choices)
+              run_browser ability_payments_browser.mjs
+              run_browser benefit_option_ui_browser.mjs
+              run_browser class_feature_effects_browser.mjs
+              run_browser feat_spell_audit_browser.mjs
+              run_browser legacy_feature_spells_browser.mjs
+              run_browser permanent_subtraits_browser.mjs
+              run_browser powers_slots_concentration_browser.mjs
+              ;;
+            inventory)
+              run_browser generic_item_variants_browser.mjs
+              run_browser inventory_bulk_browser.mjs
+              run_browser numeric_fields_browser.mjs
+              run_browser share_dialog_browser.mjs
+              ;;
+            variants)
+              run_browser creature_variants_browser.mjs
               ;;
             *)
               echo "Unknown Chromium suite" >&2
               exit 1
               ;;
           esac
+          if (( ${#failures[@]} )); then
+            printf 'Failed browser tests: %s\n' "${failures[@]}"
+            exit 1
+          fi
 
   # Run the iPhone/Safari-compatible startup regression independently so that
   # installing WebKit system packages does not block Chromium and unit tests.

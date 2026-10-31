@@ -259,7 +259,7 @@ export function appendRollBonus(outcome={},bonus={},die){
 }
 
 /** Roll an explicitly calculated weapon-damage formula, never evaluate arbitrary text. */
-export function rollBattleDamage(formula,die,{rerollAtMost=0,rerollDiceCount=0}={}){
+export function rollBattleDamage(formula,die){
  if(typeof die!=='function')throw Error('Generatore dadi non disponibile');
  const notation=String(formula||'').replace(/\s+/g,'');
  if(!notation||notation.length>120||!/^[+]?[0-9dD+\-]+$/.test(notation))
@@ -267,29 +267,16 @@ export function rollBattleDamage(formula,die,{rerollAtMost=0,rerollDiceCount=0}=
  const terms=notation.match(/[+-]?[^+-]+/g)||[];
  if(!terms.length||terms.join('')!==notation||terms.length>24)throw Error('Formula danni non valida');
  let modifier=0,totalCount=0;
- const parts=[],threshold=Number(rerollAtMost)||0,baseDiceCount=Number(rerollDiceCount)||0;
- if(!Number.isInteger(threshold)||threshold<0||threshold>100||
-   !Number.isInteger(baseDiceCount)||baseDiceCount<0||baseDiceCount>100)
-  throw Error('Regola di ritiro dei dadi non valida');
+ const parts=[];
  for(const term of terms){
   const dice=term.match(/^\+?([1-9]\d*)d(2|3|4|6|8|10|12|20|100)$/i);
   if(dice){
    const count=Number(dice[1]),sides=Number(dice[2]);
    totalCount+=count;
    if(totalCount>100)throw Error('Troppi dadi nella formula');
-   const rerolls=[];
-   const rolls=Array.from({length:count},(_,i)=>{
-    const previous=die(sides);
-    if(!Number.isInteger(previous)||previous<1||previous>sides)throw Error('Risultato dado non valido');
-    if(threshold&&totalCount-count+i<baseDiceCount&&previous<=threshold){
-     const next=die(sides);
-     if(!Number.isInteger(next)||next<1||next>sides)throw Error('Risultato dado non valido');
-     rerolls.push({index:i,previous,next});return next;
-    }
-    return previous;
-   });
-   parts.push({name:'Danni',notation:count+'d'+sides,rolls,rerolls,
-    subtotal:rolls.reduce((sum,value)=>sum+value,0)});
+   const rolls=Array.from({length:count},()=>die(sides));
+   if(rolls.some(value=>!Number.isInteger(value)||value<1||value>sides))throw Error('Risultato dado non valido');
+   parts.push({name:'Danni',notation:count+'d'+sides,rolls,subtotal:rolls.reduce((sum,value)=>sum+value,0)});
   }else if(/^[+-]?\d+$/.test(term)){
    modifier+=Number(term);
    if(!Number.isSafeInteger(modifier)||Math.abs(modifier)>9999)throw Error('Modificatore danni fuori limite');
@@ -299,9 +286,7 @@ export function rollBattleDamage(formula,die,{rerollAtMost=0,rerollDiceCount=0}=
  const rolls=parts.flatMap(part=>part.rolls);
  const total=parts.reduce((sum,part)=>sum+part.subtotal,modifier);
  return {sides:Number(parts[0].notation.split('d')[1]),count:rolls.length,modifier,rolls,total,
-  notation,parts,detail:parts.map(part=>part.notation+' ['+part.rolls.join(', ')+']'+
-    (part.rerolls?.length?' · ritiri '+part.rerolls.map(row=>row.previous+'→'+row.next).join(', '):'')+
-    ' = '+part.subtotal).join(' · ')+
+  notation,parts,detail:parts.map(part=>part.notation+' ['+part.rolls.join(', ')+'] = '+part.subtotal).join(' · ')+
    (modifier?' · modificatore '+(modifier>=0?'+':'')+modifier:'')+' · totale '+total};
 }
 /** Match the desktop DiceChatSync.valid_event protocol for combined dice rolls. */
@@ -1045,16 +1030,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
 
   // Competences are one flat, line-divided section rather than another card.
-  // Skills expand inline while equipment/language proficiencies retain their
-  // existing full editor, including the button for changing selections.
+  // Skills expand inline without search/edit controls. Altre competenze remains
+  // editable from its dedicated context elsewhere in the character sheet.
   const tools=panelNamed('Altre competenze');bind('tools',tools);
   html+='<section class="play-competences" aria-label="Abilità e prove">'+
    '<details class="play-skills-disclosure">'+
     '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
     '<div class="play-skills-content">'+
-     '<div class="play-skills-tools">'+btn('Modifica competenze','settings','data-act="sheet-context" data-sheet-context="tools"')+'</div>'+
-     '<label class="play-search vtt-list-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
-     '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>{
+     '<div class="play-skills">'+ABILITIES.map(key=>{
+       const label=({str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'})[key];
+       return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('ability_check:'+key,'Prova di '+label,
+        '<span class="play-skill-name">'+label+'<small>Prova di caratteristica</small></span><b>'+output('ability_check:'+key,true)+'</b>')+'</div>';
+      }).join('')+SKILLS.map(([key,label,ability])=>{
        const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;
        return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,
         '<span class="play-skill-name">'+esc(label)+skillTrainingIcon(rank)+'<small>'+ability.toUpperCase()+
@@ -1493,13 +1480,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);
- const filter=sheet==='inventory'?'':String(view.search||'').trim().toLocaleLowerCase('it');
+ const filter=['inventory','info'].includes(sheet)?'':String(view.search||'').trim().toLocaleLowerCase('it');
  for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!matchesSearch(filter,row.dataset.playFilter);
  for(const warning of [...bank.querySelectorAll(':scope > [role=alert],:scope > .action-catalog-warning')])main.prepend(warning);
- const utilities=app.querySelector(':scope > .archive-tools');
- if(utilities){bind('sheet-tools',utilities);bank.append(utilities);}
- const note=bank.querySelector('[data-calculation-note]');if(note)bind('calculation',note);
- const more=document.createElement('div');more.className='play-sheet-tools';more.innerHTML=edit('sheet-tools','Opzioni della scheda','settings')+(note?edit('calculation','Calcoli e copertura','information'):'');main.append(more);
  // Native dialogs must never inherit hidden from the editor bank.
  for(const dialog of [...bank.querySelectorAll('dialog')])root.append(dialog);
  return sources;

@@ -38,6 +38,12 @@ try{
  page.on('response',r=>{if(r.status()===404)missing.push(r.url());});
  page.on('request',r=>{if(r.method()!=='GET'&&r.url().includes('/api/'))writes.push(r.url());});
  page.setDefaultTimeout(15000);
+ // Deterministic reference page: never depend on a third-party network call
+ // to verify the PWA navigation or the offline catalog fallback.
+ await page.route('https://2014.5e.tools/**',route=>route.fulfill({
+   status:200,contentType:'text/html',
+   body:'<!doctype html><html><body><p>5etools 2014 reference</p></body></html>'
+ }));
  const shot=async name=>page.screenshot({path:fileURLToPath(new URL('navigation-'+name+'.png',artifacts))});
  const sheet=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
@@ -162,7 +168,7 @@ try{
  await sheet('info');
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
- assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
+ assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),24);
  assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').count(),0,'No duplicate Competenze heading');
  assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0,'Info contains no creature icon');
@@ -175,7 +181,10 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),null);
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
- assert(await page.locator('#sheet-play-view [data-play-search]').isVisible());
+ assert.equal(await page.locator('#sheet-play-view [data-play-search]').count(),0,'Info has no skill search');
+ assert.equal(await page.locator('#sheet-play-view .play-skills-tools').count(),0,'Info has no competence edit button');
+ assert.deepEqual(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').evaluateAll(rows=>
+  rows.map(row=>row.dataset.target)),['ability_check:str','ability_check:dex','ability_check:con','ability_check:int','ability_check:wis','ability_check:cha']);
  await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-competences-open"]').innerText().then(s=>s.includes('Competenze')),true);
  await page.locator('#sheet-play-view [data-act="battle-competences-open"]').click();
@@ -252,7 +261,11 @@ try{
  assert.equal(await page.locator('.topbar').isVisible(),false,'Catalogo hides the topbar');
  assert.equal(await page.locator('.page-head,#app .panel,#app .catalog-create').count(),0,'Catalogo has no introductory titles or boxed panels');
  assert.equal(await page.locator('#mobile-tabs').isVisible(),true,'Three-way bottom dock remains');
- assert(await page.locator('#catalog-search').isVisible());
+ assert(await page.locator('.catalog-web-frame').isVisible(),'The 2014 site replaces the default catalog');
+ assert.equal(await page.locator('.catalog-web-frame').getAttribute('src'),'https://2014.5e.tools/');
+ assert(await page.locator('[data-act="catalog-source-local"]').isVisible(),'Offline fallback remains available');
+ await page.locator('[data-act="catalog-source-local"]').click();
+ await page.locator('#catalog-search').waitFor({state:'visible'});
  assert(await page.locator('#catalog-category').isVisible());
  assert(await page.locator('.catalog-entry').first().isVisible(),'Entries are visible before typing a search');
  const toolbar=await page.locator('.catalog-search-wrap,#catalog-category').evaluateAll(nodes=>

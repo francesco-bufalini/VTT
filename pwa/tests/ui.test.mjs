@@ -232,9 +232,15 @@ test("prototype sample creature is editable, private and persists offline",async
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("catalog entries are shown immediately and selected details stay in a small popup",async()=>{
+test("embedded 5etools has a working offline catalog fallback with the original popup",async()=>{
   click('[data-nav="catalog"]');
+  await until(()=>document.querySelector('.catalog-web-frame'));
+  assert.equal(document.querySelector('.catalog-web-frame').getAttribute('src'),'https://2014.5e.tools/');
+  assert.match(document.querySelector('.catalog-web-frame').getAttribute('sandbox'),/allow-scripts/);
+  assert.ok(document.querySelector('[data-act="catalog-source-local"]'));
+  click('[data-act="catalog-source-local"]');
   await until(()=>document.querySelector('[data-act="catalog-open"]'));
+  assert.equal(document.querySelector('.catalog-web-frame'),null);
   assert.equal(document.querySelector('.topbar').hidden,true);
   assert.equal(document.querySelector('.page-head'),null);
   assert.equal(document.querySelector('#app .panel'),null);
@@ -253,6 +259,8 @@ test("catalog entries are shown immediately and selected details stay in a small
   click('#catalog-detail-dialog [data-act="catalog-close"]');
   await until(()=>!document.querySelector('#catalog-detail-dialog'));
   assert.ok(document.querySelector('#catalog-search'));
+  click('[data-act="catalog-source-5etools"]');
+  await until(()=>document.querySelector('.catalog-web-frame'));
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -353,7 +361,13 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.equal(document.querySelector('.session-switcher'),null);
   assert.ok(desktop.compareDocumentPosition(preview)&dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
   assert.ok(preview.compareDocumentPosition(roster)&dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
-  assert.ok(document.querySelector('[data-act="edit-token"]'));
+  assert.equal(document.querySelector('.session-token-header h2').textContent,'Token sulla mappa');
+  const addToken=document.querySelector('.session-token-header [data-act="open-place-token"]');
+  assert.ok(addToken,"Gold plus is beside the token heading");
+  assert.equal(addToken.textContent.trim(),'+');
+  assert.equal(document.querySelector('.session-add-token'),null,"No full-width add-token button");
+  assert.ok(document.querySelector('[data-act="edit-token"]')?.title.startsWith('Token non controllato'));
+  assert.ok(document.querySelector('[data-act="edit-token"] .vtt-action-glyph'));
   click('[data-act="move"][data-direction="north"]');
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="move_token"));
   const moves=calls.filter(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="move_token");
@@ -1668,7 +1682,8 @@ test('failed hit-point save keeps the dialog and entered amount open',async t=>{
  await saveCreature({...current.data,name:'Aggiornata da altra finestra'},'default',current.revision);
  const hpInput=dialog.querySelector('#hp-adjust-current');hpInput.value='12';
  hpInput.dispatchEvent(new window.Event('input',{bubbles:true}));
- await until(()=>document.querySelector('#save-state')?.classList.contains('error'));
+ await until(()=>document.querySelector('#toast')?.classList.contains('error'));
+ assert.ok(document.querySelector('#toast').textContent.trim(),'Failed save exposes a visible error');
 
  assert.ok(dialog.isConnected&&dialog.open,'A failed save must not close or replace the dialog');
  assert.equal(dialog.querySelector('#hp-adjust-amount').value,'3');

@@ -227,6 +227,43 @@ test('a genuine weapon attack uses Mod.FOR in the base damage section',()=>{
  assert.equal(rows[0].damageType,'slashing');
  assert.equal(rows[0].value,roll.modifier);
 });
+test('automatic numeric damage bonuses get their own origin boxes and inherit the base damage type',()=>{
+ const attack={id:'item:sword',ability:'str',origin_id:'item:sword',damage:'1d8 + 1 + 6',
+   damage_base_formula:'1d8+1',damage_ability_modifier:2,damage_extra_modifier:4,
+   damage_bonus_components:[
+    {id:'style:a',value:2,origin_id:'feature:dueling',origin_name:'Dueling',expression:'2'},
+    {id:'style:b',value:2,origin_id:'feature:other',origin_name:'Altro bonus',expression:'2'}
+   ]};
+ const roll=rollBattleDamage(attack.damage,()=>4);
+ const rows=damageRollSegments(roll,'slashing',attack);
+ assert.deepEqual(rows.map(row=>row.formula),['1d8 + Mod.FOR + 1','+2','+2']);
+ assert.deepEqual(rows.map(row=>row.originName),['Danno base','Dueling','Altro bonus']);
+ assert(rows.every(row=>row.damageType==='slashing'),'Flat bonuses use the base damage type');
+ assert.deepEqual(rows.map(row=>row.value),[3,2,2]);
+ assert.equal(rows.reduce((sum,row)=>sum+row.value,0),roll.modifier,
+  'Separating the bonus is visual only: the roll does not double-count it');
+ const markup=sheetRollOriginHtml(rows,x=>x);
+ assert.match(markup,/data-origin-id="feature:dueling"/);
+ assert.match(markup,/data-origin-id="feature:other"/);
+ assert.equal((markup.match(/>Tagliente<\/span>/g)||[]).length,3,
+  'Each separate bonus box displays the weapon damage type');
+ assert.equal(roll.total,11,'The unchanged damage formula is rolled only once');
+});
+test('numeric damage grants follow the first damage type in mixed weapon damage',()=>{
+ const attack={ability:'dex',damage:'1d6 + 2d4 + 5',
+   damage_base_formula:'1d6+2d4',damage_ability_modifier:3,damage_extra_modifier:2,
+   damage_bonus_components:[{id:'style',value:2,origin_id:'feature:style',origin_name:'Stile'}]};
+ const roll=rollBattleDamage(attack.damage,()=>1);
+ const rows=damageRollSegments(roll,'piercing;fire',attack);
+ assert.deepEqual(rows.map(row=>row.damageType),['piercing','fire','piercing']);
+ assert.equal(rows[0].formula,'1d6 + Mod.DES');
+ assert.equal(rows[2].formula,'+2');
+ assert.equal(rows.reduce((sum,row)=>sum+row.value,0),roll.modifier);
+ const changed=damageRollSegments(rollBattleDamage('1d6+2d4+4',()=>1),
+  'piercing;fire',attack);
+ assert.equal(changed.length,2,'Do not project stale bonuses onto a changed formula');
+ assert.equal(changed[0].formula,'1d6 + Modificatore');
+});
 test('mixed typed damages show only verifiable source-derived characteristic and extra modifiers',()=>{
  const roll=rollBattleDamage('1d6+2+2d4+4',()=>1);
  const attack={ability:'str',damage:'1d6+2+2d4+4',

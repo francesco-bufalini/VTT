@@ -10,7 +10,14 @@ const routes=new Map([...String(await readFile(new URL('network/pwa_host.gd',roo
 const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
+  const revision='a'.repeat(40);
+  if(path==='/__vtt_version'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({revision}));return;}
+  if(path==='/sw.js'){res.setHeader('Content-Type','text/javascript; charset=utf-8');res.end((await readFile(new URL('pwa/sw.js',root),'utf8')).replaceAll('__VTT_COMMIT_SHA__',revision));return;}
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
+  if(path==='/catalog/spells/selected'&&req.method==='POST'){
+   for await(const _chunk of req){} // No known spells in this isolated fixture.
+   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;
+  }
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;}
   const route=routes.get(path);if(!route){res.writeHead(404);res.end();return;}
   res.setHeader('Content-Type',route[1]);res.end(await readFile(new URL(route[0],root)));
@@ -29,7 +36,7 @@ try{
  await page.evaluate(async()=>{
   const {createCreature,saveCreature}=await import('/creatures.js');
   const saved=await createCreature('character','Esploratrice di prova');
-  await saveCreature({...saved.data,class:'Rogue',class_source:'PHB',level:2,rules_version:'2014',abilities:{str:12,dex:16,con:14,int:12,wis:14,cha:10},
+  await saveCreature({...saved.data,class:'Rogue',class_source:'PHB',level:2,xp:300,rules_version:'2014',abilities:{str:12,dex:16,con:14,int:12,wis:14,cha:10},
    inventory:[{id:'shortsword',name:'Shortsword',source:'PHB',type:'M',damage:'1d6',weapon_category:'martial',properties:['L','F'],equipped_slots:['main','off'],quantity:2}],
    prepared_spells:['action','bonus','reaction'].map(unit=>({id:'test_spell_'+unit,name:'Incantesimo '+unit,level:1,time:[{unit,number:1}],entries:['Testo della selezione di prova']})),
    action_grants:[{id:'resource_demo',name:'Capacità di prova',action_type:'bonus',tracker_id:'charge'}],
@@ -62,9 +69,11 @@ try{
     assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
     assert.equal(await page.locator('.page-head [data-act="action-variants"]').count(),1);
     assert.equal(await page.locator('#sheet-navigation [data-sheet="actions"]').count(),0);
-    const expand=page.locator('[data-act="battle-expand-all"]');
-    const collapse=page.locator('[data-act="battle-collapse-all"]');
-    assert(await expand.isVisible()&&await collapse.isVisible(),'Global list controls appear above attacks');
+    // The old global expand/collapse buttons were removed: independently
+    // expandable action groups are the current Battle navigation.
+    assert.equal(await page.locator('[data-act="battle-expand-all"],[data-act="battle-collapse-all"]').count(),0);
+    assert(await page.locator('[data-battle-action="attacks"] > summary').isVisible(),
+      'The attacks group remains independently expandable');
     if(width===360){
      const physical=page.locator('[data-battle-action="attacks"]');
      assert.match(await physical.locator('summary.play-battle-summary').textContent(),/^Attacchi$/);
@@ -115,8 +124,8 @@ try{
      assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
      assert.equal(await actionSection.locator('[data-attack-id="two_weapon"]').count(),1,
       'Secondary attack always remains in Azioni');
-     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"] .play-battle-unavailable-reason').count(),1,
-      'Unavailable secondary attacks explain their unmet requirement');
+     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"] .play-battle-unavailable-reason').count(),0,
+      'Two equipped light shortswords enable the off-hand attack');
      const movement=page.locator('[data-battle-action="others"]');
      await movement.locator('summary.play-battle-summary').click();
      const groups=movement.locator('.play-battle-action-group[data-action-timing]');
@@ -137,10 +146,13 @@ try{
      await movement.locator('summary.play-battle-summary').click();
      assert.equal(await movement.locator('.play-battle-action-group[data-action-timing][open]').count(),await groups.count(),
       'Reopening a category re-expands all timing subsections');
-     await expand.click();
-     assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure:not([open]), #sheet-play-view .play-battle-action-group:not([open])').count(),0);
-     await collapse.click();
-     assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure[open], #sheet-play-view .play-battle-action-group[open]').count(),0);
+     // Every group remains independently controllable after the global
+     // expand/collapse controls were removed.
+     const localGroup=groups.first();
+     await localGroup.locator(':scope > summary').click();
+     assert.equal(await localGroup.getAttribute('open'),null);
+     await localGroup.locator(':scope > summary').click();
+     assert.notEqual(await localGroup.getAttribute('open'),null);
     }
     const rangedAttack=page.locator('[data-battle-action="attacks"] [data-act="battle-attack-map"]').first();
     assert(await rangedAttack.count(),'Each computed weapon has a map range action');

@@ -10724,6 +10724,12 @@ window.addEventListener("message", event => {
   if(event.origin===location.origin && event.data?.type==="OPEN_CHAT")
     void openChatFromNotification().catch(error=>message(errorMessage(error),true));
 });
+// Explicit barrier for PWA lifecycle and browser integration tests.
+// Flush debounced creature edits before inspecting durable IndexedDB state.
+export async function flushPendingEdits() {
+  await flushPendingFields();
+}
+
 export async function mount(){
   const openChatOnMount=new URLSearchParams(location.search).get("open")==="chat";
   if(openChatOnMount)history.replaceState(history.state,"",location.pathname);

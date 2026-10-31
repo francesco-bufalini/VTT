@@ -122,7 +122,9 @@ export function itemKind(item={}){
   if(item.category==="documents")return "document";
   if(["weapon","shield","armor","tool","magic","other"].includes(item.custom_item_type))return item.custom_item_type;
   const code=String(item.type||"").split("|")[0].toUpperCase();
-  if(["M","R"].includes(code)&&(item.weapon_category||item.damage||item.properties!==undefined))return "weapon";
+  // The 5eTools M/R type is itself a weapon category; minimal imported
+  // records can omit the damage/properties fields without becoming "other".
+  if(["M","R"].includes(code))return "weapon";
   if(code==="S")return "shield";
   if(["LA","MA","HA"].includes(code))return "armor";
   if(["AT","INS","T","SCF","GS","P","MNT"].includes(code))return "tool";
@@ -687,22 +689,13 @@ export function equipmentRequirementMatches(record={},requirements={},target='',
  const twoHanded=item?.properties.includes('2H')||
   item?.slot==='main'&&item?.properties.includes('V')&&record.hand_grip_two_handed&&!gear.some(e=>e.slot==='off');
  if(rule.one_handed!==undefined&&(!item||Boolean(!twoHanded)!==Boolean(rule.one_handed)))return false;
- if(rule.two_handed!==undefined&&(!item||Boolean(twoHanded)!==Boolean(rule.two_handed)))return false;
+ if(rule.min_ability_modifier!==undefined&&
+   (!Number.isFinite(Number(attack?.ability_modifier))||
+    Number(attack.ability_modifier)<Number(rule.min_ability_modifier)))return false;
+ if(rule.offhand_eligible!==undefined&&Boolean(attack?.offhand_eligible)!==Boolean(rule.offhand_eligible))return false;
  if(rule.no_other_weapon===true&&(!item||gear.some(e=>e.kind==='weapon'&&e.slot!==item.slot)))return false;
  if(rule.no_shield===true&&gear.some(e=>e.kind==='shield'))return false;
  return true;
-}
-// All damage-die rerolls follow the same attack/equipment condition contract
-// as ordinary conditional numeric bonuses.
-export function matchingDamageDieRerolls(record={},attack={}){
- if(!attack?.id)return [];
- const target='attack_damage:'+attack.id,equipped=equippedItemFacts(record);
- return array(record.damage_die_rerolls).filter(row=>
-  !row?.disabled&&row.scope==='weapon_damage_dice'&&
-  Number.isInteger(Number(row.reroll_at_most))&&Number(row.reroll_at_most)>0&&
-  record.origin_enabled?.[row.origin_id]!==false&&
-  record.origin_enabled?.[row.parent_origin]!==false&&
-  equipmentRequirementMatches(record,row.requirements,target,attack,equipped));
 }
 export function validSlot(item,slot){
   const kind=itemKind(item);

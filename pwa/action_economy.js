@@ -353,7 +353,7 @@ const DAMAGE_GLYPHS={
  thunder:'lightning',tuono:'lightning'
 };
 const supportedDamage=formula=>/^\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+)(?:\s*[+-]\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+))*\s*$/i.test(String(formula||''));
-function battleEffectMarkup(item,attack,calculated={}){
+function battleEffectMarkup(item,attack){
  const effects=[];
  if(attack?.damage)effects.push(
   {kind:'damage',label:String(attack.damage).trim(),type:String(attack.damage_type||'').trim(),
@@ -365,17 +365,6 @@ function battleEffectMarkup(item,attack,calculated={}){
  if(!attack&&fallback)effects.push({kind:fallback[0],label:fallback[1],glyph:fallback[2]});
  else if(!attack&&!fallback&&item.class_feature_id==='step_of_the_wind')
   effects.push({kind:'movement',label:'Scattare o Disimpegnarsi',glyph:'dash'});
- const numericBonuses=attack?arr(calculated.roll_components?.['attack_damage:'+attack.id])
-   .filter(row=>Number(row.value)!==0)
-   .map(row=>String(row.origin_name||'Bonus')+' '+(Number(row.value)>0?'+':'')+Number(row.value)):[];
- const rerollLabels=arr(attack?.damage_rerolls).map(row=>
-   String(row.origin_name||'Ritiro dadi')+' · ritira 1-'+Number(row.reroll_at_most));
- const abilityLabels=attack?.damage_ability_source?[
-  attack.damage_ability_source+' '+(attack.damage_ability_modifier>0?'+':'')+
-   attack.damage_ability_modifier]:[];
- const baseOverride=calculated.base_override_applied?.['attack_damage_base:'+attack?.id];
- const baseLabels=baseOverride?.origin_name?
-  [baseOverride.origin_name+' · '+String(baseOverride.expression||'')]:[];
  return effects.map(resolved=>{
   const label=resolved.kind==='damage'?'Danni':resolved.kind==='condition'?'Condizione':'Effetto';
   const detail=resolved.label+(resolved.type?' · '+resolved.type:'');
@@ -383,9 +372,7 @@ function battleEffectMarkup(item,attack,calculated={}){
   const canRoll=resolved.kind==='damage'&&supportedDamage(resolved.label)&&/\d+d\d+/i.test(resolved.label);
   return '<div class="play-battle-effect" data-effect-kind="'+esc(resolved.kind)+'">'+
    '<span class="play-battle-effect-kind">'+esc(label)+'</span>'+
-   '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(detail)+'</strong>'+
-    (resolved.kind==='damage'&&[...numericBonuses,...abilityLabels,...baseLabels,...rerollLabels].length?
-     '<small class="play-battle-damage-benefits">'+esc([...numericBonuses,...abilityLabels,...baseLabels,...rerollLabels].join(' · '))+'</small>':'')+'</span>'+
+   '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(detail)+'</strong></span>'+
    (canRoll?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+
     esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-attack-id="'+esc(attack?.id||'')+'" data-damage-action-id="'+esc(!attack?item.id||'':'')+'" data-damage-label="'+esc(item.name)+
     '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+
@@ -412,10 +399,6 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const unarmed=attacksById.get('unarmed')||
   {id:'unarmed',name:'Colpo senz’armi',melee:true,range_feet:5};
  const selectedAttack=attack||(attackAction?unarmed:null);
- // The generic bonus action keeps its map target, but displays the actual
- // offhand weapon's damage and its applicable fighting-style benefits.
- const damageAttack=attack||(item.id==='two_weapon'&&item.available!==false?
-  [...attacksById.values()].find(row=>row.slot==='off'&&String(row.id||'').startsWith('item:off:')):null);
  // A typed shove action uses the existing map-targeting combat action.
  // It is not inferred from whether the character has used Dash.
  const actionName=item.name;
@@ -501,8 +484,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    (!rolls.length&&mapButton?'<div class="play-battle-attack-roll-line">'+mapButton+'</div>':'')+
    '</div>':'')+
   '</div>'+battleEffectMarkup({...item,name:actionName,
-   action_damage:damageAttack?[]:arr(calculated.action_damage_bonuses).filter(row=>
-    String(row.action_id)===String(item.id||''))},damageAttack,calculated)+'</article>';
+   action_damage:attack?[]:arr(calculated.action_damage_bonuses).filter(row=>
+    String(row.action_id)===String(item.id||''))},attack)+'</article>';
 }
 
 const classOrigin=row=>String(row?.origin_id||'').startsWith('class|')||
@@ -685,10 +668,10 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   if(attack?.slot==='off'||attack?.slot==='shield')return 1;
   return 2;
  };
- // Privilege and stat-block attacks precede the two generic strikes,
- // which precede equipment. A monster:<section>:<index> attack is special
- // only if the referenced action actually exists in the creature stat block.
- // Never infer its origin from a feature or attack name.
+ // Privilege, monster and equipped attacks precede general attacks.
+ // Unarmed Strike is always first in the final group of basic attacks.
+ // A monster:<section>:<index> is special only when it actually exists in
+ // the stat block; never infer an origin from the displayed attack name.
  // Damage and equipment priority only apply within the same tier.
  const dealsDamage=row=>{
   const attack=attacksById.get(String(row.attack_id||row.id||''));
@@ -696,11 +679,12 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   return /\d+(?:d\d+)?/i.test(formula)||/\b(?:danni|damage)\s*:/i.test(String(row.description||''));
  };
  const attackTier=row=>{
-  if(row.id==='unarmed'||row.id==='improvised')return 1;
+  if(row.id==='unarmed')return 2;
+  if(row.id==='improvised'||row.origin==='general'||row.catalog_id&&row.parent_action==='attack')return 3;
   const attack=attacksById.get(String(row.attack_id||row.id||''));
   const source=/^monster:(action|bonus|reaction|legendary|mythic):(\d+)$/.exec(String(attack?.id||''));
   const statBlockAttack=source&&arr(record.stat_block?.[source[1]])[Number(source[2])];
-  return attack?.origin_id||row.origin_id||attack?.feature_id||row.feature_id||statBlockAttack?0:2;
+  return attack?.origin_id||row.origin_id||attack?.feature_id||row.feature_id||statBlockAttack?0:1;
  };
  weapon.sort((a,b)=>attackTier(a)-attackTier(b)||
   Number(dealsDamage(b))-Number(dealsDamage(a))||

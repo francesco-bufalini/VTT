@@ -1034,7 +1034,7 @@ func _respond(client: Dictionary, status: int, mime: String,
 	head += "Content-Type: %s\r\nContent-Length: %d\r\n" % [mime, payload.size()]
 	head += "Connection: close\r\nCache-Control: no-store\r\n"
 	head += "X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n"
-	head += "Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"
+	head += "Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' blob: data:; frame-src https://2014.5e.tools; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"
 	var response := head.to_utf8_buffer()
 	response.append_array(payload)
 	client.out = response

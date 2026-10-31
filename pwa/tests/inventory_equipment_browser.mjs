@@ -18,8 +18,9 @@ const close=async()=>{
 };
 const waitSlots=async(index,expected)=>page.waitForFunction(async({index,expected})=>{
  const {listCreatures}=await import('/creatures.js');
- const slots=(await listCreatures())[0].creature.inventory[index].equipped_slots||[];
- return JSON.stringify(slots)===JSON.stringify(expected);
+ const item=(await listCreatures())[0].creature.inventory[index],slots=item.equipped_slots||[];
+ return JSON.stringify(slots)===JSON.stringify(expected)&&
+   item.equipped===(expected.length>0);
 },{index,expected});
 try{
  await seedPlayCreature(page,origin);
