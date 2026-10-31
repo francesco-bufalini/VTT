@@ -1037,7 +1037,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<details class="play-skills-disclosure">'+
     '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
     '<div class="play-skills-content">'+
-     '<div class="play-skills-tools">'+proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings')+'</div>'+
+     '<div class="play-skills-tools">'+btn('Modifica competenze','settings','data-act="sheet-context" data-sheet-context="tools"')+'</div>'+
      '<label class="play-search vtt-list-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
      '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>{
        const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;

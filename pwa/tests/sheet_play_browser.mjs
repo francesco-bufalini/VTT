@@ -952,7 +952,7 @@ try{
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  // The former dedicated "tools" context button was replaced by the shared
  // skill/proficiency editor. Use the visible proxy rather than a dead selector.
- await page.locator('#sheet-play-view .play-skills-tools [data-act="sheet-proxy"]').click();
+ await page.locator('#sheet-play-view .play-skills-tools [data-act="sheet-context"][data-sheet-context="tools"]').click();
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
  await dismiss();
