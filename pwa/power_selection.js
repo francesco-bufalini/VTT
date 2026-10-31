@@ -1,6 +1,6 @@
 import {migrateSelectionRecord} from './selection_compatibility.js';
 // One selection engine. Source definitions only supply options and stage data.
-import {targetableInventoryItems,itemAttunementCount,activeItemOptionEffects} from './item_controls.js';
+import {targetableInventoryItems,itemAttunementCount,activeItemOptionEffects,resolveOwnedItem} from './item_controls.js';
 import {originSpellId} from './spell_selection.js';
 import {isContentAvailableForRules} from './source_edition.js';
 const rows=v=>Array.isArray(v)?v:[];
@@ -214,6 +214,32 @@ export function projectItemOptionBenefits(record={},catalogs={}){
    const origin={id:'item-benefit:'+active.id+':'+ordinal,origin_id:active.id,
     parent_origin:'item:'+active.item.id,origin_name:'Oggetto · '+active.name,
     automatic:true,disabled:false};
+   if(effect.type==='dice'&&effect.target==='attack_damage'){
+    if(effect.requires_activation&&active.infusion.effect_active!==true)continue;
+    const item=resolveOwnedItem(active.item);
+    const slots=rows(item.equipped_slots).filter(slot=>slot==='main'||slot==='off');
+    for(const slot of slots){
+     const attackIds=['item:'+(slot==='off'?'off:':'')+item.id];
+     if(rows(item.properties).some(property=>String(property).split('|')[0].toUpperCase()==='T'))
+      attackIds.push('item:throw:'+slot+':'+item.id);
+     for(const attackId of attackIds){
+      const requirements={...effect.requirements,
+       equipment:{instance_id:String(item.instance_id||item.id),slot},
+       attack:{...effect.requirements?.attack,kind:'weapon',slot}};
+      appendTypedBenefit(grants,{...effect,target:'attack_damage:'+attackId,requirements},
+       {...origin,id:origin.id+':'+attackId});
+     }
+    }
+    continue;
+   }
+   if(effect.type==='actions'){
+    const item=resolveOwnedItem(active.item);
+    appendTypedBenefit(grants,{...effect,
+     ...(Number(effect.tracker_cost)>0?{tracker_id:active.tracker_id}:{}),
+     requirements:{...effect.requirements,
+      equipment:{instance_id:String(item.instance_id||item.id)}}},origin);
+    continue;
+   }
    if(effect.type==='spells'){
     const token=String(effect.spell_token||'');
     if(!token||!active.definition.charge_tracker&&!declaration?.charge_tracker)continue;

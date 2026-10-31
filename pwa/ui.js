@@ -3744,15 +3744,29 @@ function inventoryItemDescription(obj,index){
     [['damage','Dadi danno'],['versatile_damage','Danno versatile'],['range','Gittata (ft)'],['bonus_weapon','Bonus magico']].map(([key,label])=>
       '<label>'+label+'<input data-item-override="'+key+'" data-item-index="'+index+
       '" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+'</details>':'';
-  const genericVariants=(Array.isArray(obj.option_extensions)?obj.option_extensions:[]).filter(row=>row.generic_variant);
+  const hydratedVariants=state.calculated?.selection_record?.inventory?.[index]?.option_extensions||[];
+  const genericVariants=(Array.isArray(obj.option_extensions)?obj.option_extensions:[])
+    .filter(row=>row.generic_variant).map(row=>{
+      const fresh=hydratedVariants.find(entry=>entry.id===row.id&&entry.generic_variant);
+      return {...row,definition:fresh?.definition||row.definition};
+    });
   return '<div class="inventory-description">'+
     '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
       '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools">'+actionGlyph('spark')+
       '<span>Varianti 5eTools</span></button></div>'+
     (genericVariants.length?'<section class="inventory-detail-section"><h3>Varianti applicate</h3>'+
-     genericVariants.map(row=>'<div class="infusion-dialog-item"><span>'+esc(row.name)+' · '+esc(row.source||'')+
-      '</span><button type="button" class="btn small" data-act="item-variant-remove" data-index="'+index+
-      '" data-variant-id="'+esc(row.id)+'" aria-label="Rimuovi '+esc(row.name)+'">Rimuovi</button></div>').join('')+
+     genericVariants.map(row=>{
+      const activation=row.definition?.activation;
+      const active=row.effect_active===true;
+      return '<div class="infusion-dialog-item"><span>'+esc(row.name)+' · '+esc(row.source||'')+
+       (activation?' · '+(active?'Attiva':'Non attiva'):'')+'</span>'+
+       (activation?'<button type="button" class="btn small" data-act="item-variant-effect-toggle" data-index="'+index+
+        '" data-variant-id="'+esc(row.id)+'" data-effect-active="'+(active?'false':'true')+
+        '" aria-label="'+esc(active?activation.off:activation.on)+'">'+
+        esc(active?activation.off:activation.on)+'</button>':'')+
+       '<button type="button" class="btn small" data-act="item-variant-remove" data-index="'+index+
+       '" data-variant-id="'+esc(row.id)+'" aria-label="Rimuovi '+esc(row.name)+'">Rimuovi</button></div>';
+     }).join('')+
      '</section>':'')+
     (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
       '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
@@ -9404,6 +9418,19 @@ async function handleAction(target){
   }
   if(act==='item-variant-close'){
     closeDialog(app.querySelector('#item-variant-dialog'),{remove:true});return;
+  }
+  if(act==='item-variant-effect-toggle'){
+    const record=state.editor?.read();
+    if(!record)throw Error('Apri prima una creatura.');
+    const index=Number(target.dataset.index),id=String(target.dataset.variantId||'');
+    const variant=(await catalogEntries('generic_variants')).find(row=>row.id===id);
+    if(!variant?.activation)throw Error('Attivazione della variante non disponibile.');
+    const change=inventoryModule.genericVariantActivationPatch(record,index,variant,
+      target.dataset.effectActive==='true');
+    await patch({inventory:change.inventory});
+    state.inventorySelectedIndex=change.index;state.sheetPopup='item:'+change.index;
+    state.sheetPopupTitle=ownedItemDisplayName(change.inventory[change.index]);
+    await render();return;
   }
   if(act==='item-variant-add'||act==='item-variant-remove'){
     const editor=state.editor,record=editor?.read(),dialog=app.querySelector('#item-variant-dialog');

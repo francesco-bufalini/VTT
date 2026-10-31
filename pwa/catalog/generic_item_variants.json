@@ -1280,7 +1280,16 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "6d10",
+     "damage_type": "force",
+     "condition_label": "Solo contro il tipo di creatura designato; TS Costituzione CD 17, metà danno se riuscito. La munizione perde magia."
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:antimagic%20armor",
@@ -2650,6 +2659,15 @@
     "An {@i arrow of slaying} is a magic weapon meant to slay a particular kind of creature. Some are more focused than others; for example, there are both {@i arrows of dragon slaying} and {@i arrows of blue dragon slaying}. If a creature belonging to the type, race, or group associated with an {@i arrow of slaying} takes damage from the arrow, the creature must make a {@dc 17} Constitution saving throw, taking an extra {@damage 6d10} piercing damage on a failed save, or half as much extra damage on a successful one.",
     "Once an {@i arrow of slaying} deals its extra damage to a creature, it becomes a nonmagical arrow.",
     "Other types of magic ammunition of this kind exist, such as bolts of slaying meant for a crossbow, though arrows are most common."
+   ],
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "6d10",
+     "damage_type": "piercing",
+     "condition_label": "Solo contro il tipo di creatura designato; TS Costituzione CD 17, metà danno se riuscito. La freccia perde magia."
+    }
    ]
   },
   {
@@ -2677,7 +2695,15 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 3
-   }
+   },
+   "effects": [
+    {
+     "type": "actions",
+     "name": "Dragon's Wrath · Soffio",
+     "action_type": "action",
+     "description": "Azione: cono di 60 piedi, TS Destrezza CD 18, 12d6 danni del tipo del soffio; metà se riuscito. Una volta per alba."
+    }
+   ]
   },
   {
    "id": "generic-variant:au:ascendant%20wave-swept%20weapon",
@@ -3038,7 +3064,16 @@
     "entries": [
      "Ammunition fired from this bow blazes brightly. When you hit with an attack roll using this bow, the target takes an extra {@damage 1d6} fire damage. If the target is a flammable, nonmagical object, it catches fire, taking {@damage 1d6} fire damage at the start of each of your turns until a creature uses an action to extinguish the flames."
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "1d6",
+     "damage_type": "fire",
+     "condition_label": "Ogni colpo a segno con questo arco; l'incendio persistente sull'oggetto è separato."
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:bow%20of%20melodies",
@@ -3181,7 +3216,15 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 1
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "1d8",
+     "condition_label": "Solo contro un non morto; danno dello stesso tipo dell'arma."
+    }
+   ]
   },
   {
    "id": "generic-variant:ftd:crystal%20blade",
@@ -3219,7 +3262,16 @@
    "charge_tracker": {
     "max": 3,
     "recovery": "All'alba: recupera {@dice 1d3}"
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "1d8",
+     "damage_type": "radiant",
+     "condition_label": "Ogni colpo a segno con questa spada; la cura con carica è un effetto separato."
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:dancing%20sword",
@@ -3570,7 +3622,15 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 1
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "3d6",
+     "condition_label": "Solo se il bersaglio è un drago; danno dello stesso tipo dell'arma."
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:dragon%20slayer",
@@ -3602,7 +3662,15 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 1
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "3d6",
+     "condition_label": "Solo se il bersaglio è un drago; danno dello stesso tipo dell'arma."
+    }
+   ]
   },
   {
    "id": "generic-variant:ftd:dragon%20wing%20bow",
@@ -3658,7 +3726,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 3
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "3d6",
+     "damage_type": "force",
+     "condition_label": "Solo se il bersaglio è un drago."
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:dried%20leech",
@@ -4664,7 +4741,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 1
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "damage_type": "slashing",
+     "condition_label": "Solo quando colpisci un umanoide; i PF temporanei pari al danno vanno annotati separatamente."
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:feywrought%20armor",
@@ -4758,6 +4844,29 @@
     "lootTables": [
      "Magic Item Table G"
     ]
+   },
+   "effects": [
+    {
+     "type": "actions",
+     "name": "Flame Tongue · Accendi/Spegni",
+     "action_type": "bonus",
+     "description": "Azione bonus: pronuncia la parola di comando per accendere o spegnere la lama. Le fiamme si spengono quando lasci o rinfoderi l'arma."
+    },
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "damage_type": "fire",
+     "condition_label": "Solo mentre le fiamme della Flame Tongue sono accese e l'attacco colpisce.",
+     "requires_activation": true
+    }
+   ],
+   "activation": {
+    "label": "Fiamme",
+    "action_type": "bonus",
+    "on": "Accendi le fiamme",
+    "off": "Spegni le fiamme",
+    "ends_on": "Riporre, lasciare o rinfoderare l'arma"
    }
   },
   {
@@ -4792,6 +4901,29 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
+   },
+   "effects": [
+    {
+     "type": "actions",
+     "name": "Flame Tongue · Accendi/Spegni",
+     "action_type": "bonus",
+     "description": "Azione bonus: pronuncia la parola di comando per accendere o spegnere la lama. Le fiamme si spengono quando lasci o rinfoderi l'arma."
+    },
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "damage_type": "fire",
+     "condition_label": "Solo mentre le fiamme della Flame Tongue sono accese e l'attacco colpisce.",
+     "requires_activation": true
+    }
+   ],
+   "activation": {
+    "label": "Fiamme",
+    "action_type": "bonus",
+    "on": "Accendi le fiamme",
+    "off": "Spegni le fiamme",
+    "ends_on": "Riporre, lasciare o rinfoderare l'arma"
    }
   },
   {
@@ -4907,6 +5039,13 @@
      "type": "defenses",
      "rank": 1,
      "key": "fire"
+    },
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "1d6",
+     "damage_type": "cold",
+     "condition_label": "Ogni colpo a segno con quest'arma."
     }
    ]
   },
@@ -4962,7 +5101,16 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "1d6",
+     "damage_type": "cold",
+     "condition_label": "Ogni colpo a segno con quest'arma."
+    }
+   ]
   },
   {
    "id": "generic-variant:llk:gambler's%20blade",
@@ -5026,7 +5174,15 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 1
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "condition_label": "Solo se il bersaglio è un gigante; danno dello stesso tipo dell'arma."
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:giant%20slayer",
@@ -5058,7 +5214,15 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 1
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "condition_label": "Solo se il bersaglio è un gigante; danno dello stesso tipo dell'arma."
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:glimmering%20moonbow",
@@ -5105,6 +5269,13 @@
      "type": "defenses",
      "rank": 1,
      "key": "slashing"
+    },
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "1d6",
+     "damage_type": "radiant",
+     "condition_label": "Ogni attacco a distanza con quest'arco che colpisce."
     }
    ]
   },
@@ -5324,7 +5495,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 3
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d10",
+     "damage_type": "radiant",
+     "condition_label": "Solo quando colpisci un immondo o un non morto."
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:holy%20avenger",
@@ -5363,7 +5543,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 3
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d10",
+     "damage_type": "radiant",
+     "condition_label": "Solo quando colpisci un immondo o un non morto."
+    }
+   ]
   },
   {
    "id": "generic-variant:erlw:imbued%20wood%20(fernian%20ash)",
@@ -5685,7 +5874,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 1
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d4",
+     "damage_type": "necrotic",
+     "condition_label": "Ogni colpo a segno; impedisce anche le cure fino alla fine del prossimo turno del bersaglio."
+    }
+   ]
   },
   {
    "id": "generic-variant:erlw:living%20armor",
@@ -5986,7 +6184,16 @@
     "entries": [
      "Mind flayers can turn any nonmagical sword into a mind blade. Only one creature can attune to it: either a specific mind flayer or one of its thralls. In the hands of any other creature, the mind blade functions as a normal sword of its kind. In the hands of its intended wielder, the mind blade is a magic weapon that deals an extra {@damage 2d6} psychic damage to any target it hits."
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "damage_type": "psychic",
+     "condition_label": "Solo se impugnata dal suo utilizzatore designato e il colpo va a segno."
+    }
+   ]
   },
   {
    "id": "generic-variant:vgm:mind%20carapace%20armor",
@@ -6481,7 +6688,16 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "3d6",
+     "damage_type": "piercing",
+     "condition_label": "Solo sul nemico giurato designato da questa Oathbow."
+    }
+   ]
   },
   {
    "id": "generic-variant:erlw:orb%20of%20shielding%20(fernian%20basalt)",
@@ -7229,7 +7445,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 2
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "damage_type": "psychic",
+     "condition_label": "Ruidium Strike: su un colpo a segno."
+    }
+   ]
   },
   {
    "id": "generic-variant:phb:silvered%20ammunition",
@@ -7538,6 +7763,30 @@
    "charge_tracker": {
     "max": 3,
     "recovery": "All'alba: recupera {@dice 1d3}"
+   },
+   "effects": [
+    {
+     "type": "actions",
+     "name": "Starshot Crossbow · Flames",
+     "action_type": "bonus",
+     "description": "Azione bonus: consuma 1 carica per attivare Flames. Fino alla fine del tuo prossimo turno, i colpi con questa balestra infliggono +2d8 fuoco.",
+     "tracker_cost": 1
+    },
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d8",
+     "damage_type": "fire",
+     "condition_label": "Solo dopo aver invocato Flames (1 carica); fino alla fine del tuo prossimo turno, su un colpo a segno.",
+     "requires_activation": true
+    }
+   ],
+   "activation": {
+    "label": "Costellazione: Flames",
+    "action_type": "bonus",
+    "on": "Invoca Flames",
+    "off": "Termina Flames",
+    "ends_on": "Fine del prossimo turno"
    }
   },
   {
@@ -7651,7 +7900,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 2
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "damage_type": "poison",
+     "condition_label": "Solo quando la maledizione ti costringe a colpire un alleato; non su attacchi ordinari."
+    }
+   ]
   },
   {
    "id": "generic-variant:au:subjugating%20breastplate%20of%20the%20tyrant%20(*)",
@@ -7731,7 +7989,16 @@
     "lootTables": [
      "Magic Item Table G"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "flat_bonus": 10,
+     "damage_type": "necrotic",
+     "condition_label": "Solo con un 20 naturale; il bersaglio non deve essere un costrutto o un non morto. Inoltre ottieni 10 PF temporanei."
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:sword%20of%20life%20stealing",
@@ -7777,7 +8044,16 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "flat_bonus": 15,
+     "damage_type": "necrotic",
+     "condition_label": "Solo con un 20 naturale; il bersaglio non deve essere un costrutto o un non morto. Inoltre ottieni PF temporanei pari al danno necrotico."
+    }
+   ]
   },
   {
    "id": "generic-variant:coa:sword%20of%20retribution",
@@ -7856,7 +8132,16 @@
     "lootTables": [
      "Magic Item Table H"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "flat_bonus": 14,
+     "damage_type": "slashing",
+     "condition_label": "Solo con un 20 naturale contro una creatura; l'eventuale amputazione resta contestuale."
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:sword%20of%20sharpness",
@@ -7895,7 +8180,16 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "flat_bonus": 14,
+     "damage_type": "slashing",
+     "condition_label": "Solo con un 20 naturale contro una creatura; applica separatamente un livello di Indebolimento."
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:sword%20of%20the%20planes",
@@ -8098,7 +8392,16 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "damage_type": "necrotic",
+     "condition_label": "Ogni colpo a segno; il blocco delle cure e i TS sono gestiti separatamente."
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:sylvan%20talon",
@@ -8414,7 +8717,15 @@
    ],
    "numeric_item_bonuses": {
     "bonus_weapon": 1
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "flat_bonus": 7,
+     "condition_label": "Solo con un 20 naturale sul tiro per colpire."
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:vicious%20weapon",
@@ -8450,6 +8761,14 @@
    "entries": [
     "When you roll a 20 with this magic weapon, the target takes an extra 7 damage of the weapon's type.",
     "{@note Note: According to the SRD, it is an extra {@damage 2d6} damage, although {@link this is incorrect|https://rpg.stackexchange.com/a/174522/53884}.}"
+   ],
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "flat_bonus": 7,
+     "condition_label": "Solo con un 20 naturale sul tiro per colpire."
+    }
    ]
   },
   {
@@ -8477,7 +8796,15 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "2d6",
+     "condition_label": "Ogni colpo a segno: stesso tipo dei danni normali dell'arma."
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:vorpal%20sword",
@@ -8512,7 +8839,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 3
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "dice": "6d8",
+     "damage_type": "slashing",
+     "condition_label": "Solo con 20 naturale se la creatura è immune alla decapitazione ma può subire il danno supplementare."
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:vorpal%20sword",
@@ -8555,7 +8891,16 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 3
-   }
+   },
+   "effects": [
+    {
+     "type": "dice",
+     "target": "attack_damage",
+     "flat_bonus": 30,
+     "damage_type": "slashing",
+     "condition_label": "Solo con 20 naturale se la creatura evita la decapitazione, secondo le condizioni del privilegio."
+    }
+   ]
   },
   {
    "id": "generic-variant:ftd:wakened%20dragon's%20wrath%20weapon",
@@ -8582,7 +8927,15 @@
    },
    "numeric_item_bonuses": {
     "bonus_weapon": 2
-   }
+   },
+   "effects": [
+    {
+     "type": "actions",
+     "name": "Dragon's Wrath · Soffio",
+     "action_type": "action",
+     "description": "Azione: cono di 30 piedi, TS Destrezza CD 16, 8d6 danni del tipo del soffio; metà se riuscito. Una volta per alba."
+    }
+   ]
   },
   {
    "id": "generic-variant:xge:walloping%20ammunition",

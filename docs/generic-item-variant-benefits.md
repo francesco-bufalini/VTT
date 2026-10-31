@@ -104,7 +104,11 @@ La PWA dispone di tracker con recupero manuale, riposo breve/lungo o su turno, m
 
 Le due `Luck Blade` concedono un bonus ai TS **mentre sono sulla persona**: il bonus è dichiarato con il tipo `bonus` esistente, ma le estensioni d'arma si attivano normalmente solo sull'arma equipaggiata. La regola di attivazione esatta resta quindi parziale.
 
-Per effetti come danni aggiuntivi dopo l'attivazione (ad es. `Flame Tongue`), un bersaglio selezionato, una maledizione con trigger o un utilizzo con condizione, il campo `entries` fornisce prosa e non un payload di beneficio. Il catalogo preserva il testo: **non** lo trasforma automaticamente in un effetto permanente. L'audit tratta tutti i campi meccanici espliciti di `inherits`, non pretende di aver interpretato le descrizioni narrative.
+I danni delle varianti con trigger riconoscibile sono ora modellati **manualmente e con qualificazione per fonte** in `scripts/data/generic_variant_damage_benefits.json`, senza interpretare automaticamente `entries`. Il profilo distingue danni aggiuntivi sempre disponibili, danni contro bersagli particolari, effetti su 20 naturale e quelli attivabili.
+
+Per `Flame Tongue` il comando d'accensione/spegnimento è un'azione bonus e l'ulteriore `2d6` da fuoco compare nei tiri dell'arma soltanto quando l'effetto è attivato sulla sua copia. La PWA non interpreta autonomamente il risultato dell'attacco, il tipo del bersaglio o la fine dei turni: l'utente seleziona i bonus applicabili e disattiva manualmente le capacità a durata limitata.
+
+Restano fuori dall'automazione completa le caratteristiche non descritte come una formula di danno immediato selezionabile, come la ferita persistente della `Sword of Wounding` (DMG), le scelte casuali della `Moonblade`, i danni dinamici basati sui Dadi Vita della `Bloodshed Blade` e la selezione del tipo di energia delle `Dragon's Wrath Weapon`. Il loro testo 5eTools rimane disponibile, senza generare numeri scorretti.
 
 ## Metadati e identità
 

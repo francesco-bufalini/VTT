@@ -15,6 +15,18 @@ SOURCE = Path(sys.argv[1]) / "data/magicvariants.json" if len(sys.argv) > 1 else
 if SOURCE is None or not SOURCE.is_file():
     raise SystemExit("Provide a 5eTools checkout with data/magicvariants.json")
 entries = json.loads(SOURCE.read_text(encoding="utf-8"))["magicvariant"]
+# Source-qualified manual benefits are maintained independently of the 5eTools
+# payload, which generally describes conditional damage only in free text.
+MANUAL_PATH = ROOT / "scripts/data/generic_variant_damage_benefits.json"
+manual = json.loads(MANUAL_PATH.read_text(encoding="utf-8"))
+manual_by_key = {}
+for declaration in manual["variants"]:
+    for origin in declaration["sources"]:
+        key = (declaration["name"], origin)
+        if key in manual_by_key:
+            raise ValueError(f"Duplicate manual variant definition: {key}")
+        manual_by_key[key] = declaration
+manual_seen = set()
 
 def source(row):
     return row.get("source") or row.get("inherits", {}).get("source") or row.get("type", "").split("|")[-1]
@@ -129,7 +141,17 @@ for row in entries:
         item["charge_tracker"] = tracker
     if fields:
         item["item_fields"] = fields
+    manual_key = (item["name"], item["source"])
+    if manual_key in manual_by_key:
+        declaration = manual_by_key[manual_key]
+        manual_seen.add(manual_key)
+        item["effects"] = item.get("effects", []) + copy.deepcopy(declaration["effects"])
+        if declaration.get("activation"):
+            item["activation"] = copy.deepcopy(declaration["activation"])
     variants.append(item)
+missing = set(manual_by_key) - manual_seen
+if missing:
+    raise ValueError(f"Manual generic variant declarations no longer found in 5eTools: {sorted(missing)}")
 out = ROOT / "pwa/catalog/generic_item_variants.json"
 out.write_text(json.dumps({
     "version": 1,

@@ -23,7 +23,9 @@ const definitions={genericItemVariants:catalog,spells:[{id:'phb2014_jump',name:'
  {id:'phb2014_levitate',name:'Levitate',source:'PHB',level:2}]};
 
 test('generic variants declare only existing primitive benefit kinds, with no prose inference',()=>{
- const supported=new Set(BENEFIT_TYPES.map(([type])=>type));
+ // The editor's public menu omits 'dice', but dice_bonuses is an existing
+ // primitive benefit (used by optional attack damage and other effects).
+ const supported=new Set([...BENEFIT_TYPES.map(([type])=>type),'dice']);
  assert.equal(variants.length,230);
  for(const variant of variants){
   for(const effect of variant.effects||[])assert(supported.has(effect.type),variant.name+': '+effect.type);

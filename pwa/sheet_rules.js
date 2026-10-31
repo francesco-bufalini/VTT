@@ -827,14 +827,17 @@ export function calculateSheet(record={},catalogs={}){
   const hydrated=hydrateGenericVariants(record,catalogs.genericItemVariants);
   let effective=projectSelectionBenefits(hydrated,catalogs,collectStructuredFeatures(hydrated,catalogs));
   const selectionRecord=effective;
-  const withScalingDice=calculated=>{
-    const dice=scalingDiceFor(effective,catalogs.scalingDice?.dice||[],calculated.features);
+  const withScalingDice=(calculated,source=effective)=>{
+    const dice=scalingDiceFor(source,catalogs.scalingDice?.dice||[],calculated.features);
     const resolve=row=>resolveScalingDieBenefit(row,dice,calculated.trackers,
       expression=>formulaValue(expression,calculated));
+    // Damage roll dialogs and battle action cards read selection_record.
+    // Include activated item benefits there as well as in the numeric sheet.
+    const itemBenefits=projectItemOptionBenefits(source,catalogs);
     return {...calculated,scaling_dice:dice,selection_record:{
-      ...selectionRecord,
-      dice_bonuses:arr(selectionRecord.dice_bonuses).map(resolve),
-      action_grants:arr(selectionRecord.action_grants).map(resolve)}};
+      ...selectionRecord,inventory:source.inventory,
+      dice_bonuses:arr(itemBenefits.dice_bonuses).map(resolve),
+      action_grants:arr(itemBenefits.action_grants).map(resolve)}};
   };
   // Imported or externally edited stacks can exceed the current capacity.
   // Bound their effective benefits without rewriting the owner's saved data.
@@ -852,7 +855,7 @@ export function calculateSheet(record={},catalogs={}){
   const result=calculateSheetValues({...effective,inventory},catalogs);
   result.warnings.push('Sintonie sospese: il massimo dipende dalle stesse sintonie.');
   result.complete=false;
-  return {...withScalingDice(result),selection_models:selectionRecord.selection_models,attunements:{counts:inventory.map(()=>0),maximum:Math.max(0,Math.floor(result.values.attunement_max||0)),used:0}};
+  return {...withScalingDice(result,{...effective,inventory}),selection_models:selectionRecord.selection_models,attunements:{counts:inventory.map(()=>0),maximum:Math.max(0,Math.floor(result.values.attunement_max||0)),used:0}};
 }
 // 5etools stores monster defenses directly on the stat block. Qualified
 // entries are not silently turned into unconditional defenses.

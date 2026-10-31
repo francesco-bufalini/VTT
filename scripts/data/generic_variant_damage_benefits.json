@@ -1,0 +1,497 @@
+{
+  "version": 1,
+  "description": "Manual, source-qualified native benefit declarations for 5eTools generic variants with contextual or activated weapon damage. Never parse descriptive SRD notes as bonuses.",
+  "variants": [
+    {
+      "name": "Flame Tongue",
+      "sources": [
+        "DMG",
+        "XDMG"
+      ],
+      "activation": {
+        "label": "Fiamme",
+        "action_type": "bonus",
+        "on": "Accendi le fiamme",
+        "off": "Spegni le fiamme",
+        "ends_on": "Riporre, lasciare o rinfoderare l'arma"
+      },
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Flame Tongue · Accendi/Spegni",
+          "action_type": "bonus",
+          "description": "Azione bonus: pronuncia la parola di comando per accendere o spegnere la lama. Le fiamme si spengono quando lasci o rinfoderi l'arma."
+        },
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d6",
+          "damage_type": "fire",
+          "condition_label": "Solo mentre le fiamme della Flame Tongue sono accese e l'attacco colpisce.",
+          "requires_activation": true
+        }
+      ]
+    },
+    {
+      "name": "Starshot Crossbow",
+      "sources": [
+        "BMT"
+      ],
+      "activation": {
+        "label": "Costellazione: Flames",
+        "action_type": "bonus",
+        "on": "Invoca Flames",
+        "off": "Termina Flames",
+        "ends_on": "Fine del prossimo turno"
+      },
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Starshot Crossbow · Flames",
+          "action_type": "bonus",
+          "description": "Azione bonus: consuma 1 carica per attivare Flames. Fino alla fine del tuo prossimo turno, i colpi con questa balestra infliggono +2d8 fuoco.",
+          "tracker_cost": 1
+        },
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d8",
+          "damage_type": "fire",
+          "condition_label": "Solo dopo aver invocato Flames (1 carica); fino alla fine del tuo prossimo turno, su un colpo a segno.",
+          "requires_activation": true
+        }
+      ]
+    },
+    {
+      "name": "Bow of Conflagration",
+      "sources": [
+        "BMT"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "1d6",
+          "damage_type": "fire",
+          "condition_label": "Ogni colpo a segno con questo arco; l'incendio persistente sull'oggetto è separato."
+        }
+      ]
+    },
+    {
+      "name": "Crystal Blade",
+      "sources": [
+        "FTD"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "1d8",
+          "damage_type": "radiant",
+          "condition_label": "Ogni colpo a segno con questa spada; la cura con carica è un effetto separato."
+        }
+      ]
+    },
+    {
+      "name": "Frost Brand",
+      "sources": [
+        "DMG",
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "1d6",
+          "damage_type": "cold",
+          "condition_label": "Ogni colpo a segno con quest'arma."
+        }
+      ]
+    },
+    {
+      "name": "Glimmering Moonbow",
+      "sources": [
+        "BMT"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "1d6",
+          "damage_type": "radiant",
+          "condition_label": "Ogni attacco a distanza con quest'arco che colpisce."
+        }
+      ]
+    },
+    {
+      "name": "Life-Sapping Blade",
+      "sources": [
+        "AUD"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d4",
+          "damage_type": "necrotic",
+          "condition_label": "Ogni colpo a segno; impedisce anche le cure fino alla fine del prossimo turno del bersaglio."
+        }
+      ]
+    },
+    {
+      "name": "Ruidium Weapon",
+      "sources": [
+        "CRCotN"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d6",
+          "damage_type": "psychic",
+          "condition_label": "Ruidium Strike: su un colpo a segno."
+        }
+      ]
+    },
+    {
+      "name": "Vicious Weapon",
+      "sources": [
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d6",
+          "condition_label": "Ogni colpo a segno: stesso tipo dei danni normali dell'arma."
+        }
+      ]
+    },
+    {
+      "name": "Sword of Wounding",
+      "sources": [
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d6",
+          "damage_type": "necrotic",
+          "condition_label": "Ogni colpo a segno; il blocco delle cure e i TS sono gestiti separatamente."
+        }
+      ]
+    },
+    {
+      "name": "Dragon Slayer",
+      "sources": [
+        "DMG",
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "3d6",
+          "condition_label": "Solo se il bersaglio è un drago; danno dello stesso tipo dell'arma."
+        }
+      ]
+    },
+    {
+      "name": "Giant Slayer",
+      "sources": [
+        "DMG",
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d6",
+          "condition_label": "Solo se il bersaglio è un gigante; danno dello stesso tipo dell'arma."
+        }
+      ]
+    },
+    {
+      "name": "Corpse Slayer",
+      "sources": [
+        "EGW"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "1d8",
+          "condition_label": "Solo contro un non morto; danno dello stesso tipo dell'arma."
+        }
+      ]
+    },
+    {
+      "name": "Dragonlance",
+      "sources": [
+        "FTD"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "3d6",
+          "damage_type": "force",
+          "condition_label": "Solo se il bersaglio è un drago."
+        }
+      ]
+    },
+    {
+      "name": "Executioner's Axe",
+      "sources": [
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d6",
+          "damage_type": "slashing",
+          "condition_label": "Solo quando colpisci un umanoide; i PF temporanei pari al danno vanno annotati separatamente."
+        }
+      ]
+    },
+    {
+      "name": "Holy Avenger",
+      "sources": [
+        "DMG",
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d10",
+          "damage_type": "radiant",
+          "condition_label": "Solo quando colpisci un immondo o un non morto."
+        }
+      ]
+    },
+    {
+      "name": "Mind Blade",
+      "sources": [
+        "VGM"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d6",
+          "damage_type": "psychic",
+          "condition_label": "Solo se impugnata dal suo utilizzatore designato e il colpo va a segno."
+        }
+      ]
+    },
+    {
+      "name": "Oathbow",
+      "sources": [
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "3d6",
+          "damage_type": "piercing",
+          "condition_label": "Solo sul nemico giurato designato da questa Oathbow."
+        }
+      ]
+    },
+    {
+      "name": "Vicious Weapon",
+      "sources": [
+        "DMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "flat_bonus": 7,
+          "condition_label": "Solo con un 20 naturale sul tiro per colpire."
+        }
+      ]
+    },
+    {
+      "name": "Vicious +1 Weapon",
+      "sources": [
+        "AI"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "flat_bonus": 7,
+          "condition_label": "Solo con un 20 naturale sul tiro per colpire."
+        }
+      ]
+    },
+    {
+      "name": "Sword of Life Stealing",
+      "sources": [
+        "DMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "flat_bonus": 10,
+          "damage_type": "necrotic",
+          "condition_label": "Solo con un 20 naturale; il bersaglio non deve essere un costrutto o un non morto. Inoltre ottieni 10 PF temporanei."
+        }
+      ]
+    },
+    {
+      "name": "Sword of Life Stealing",
+      "sources": [
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "flat_bonus": 15,
+          "damage_type": "necrotic",
+          "condition_label": "Solo con un 20 naturale; il bersaglio non deve essere un costrutto o un non morto. Inoltre ottieni PF temporanei pari al danno necrotico."
+        }
+      ]
+    },
+    {
+      "name": "Sword of Sharpness",
+      "sources": [
+        "DMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "flat_bonus": 14,
+          "damage_type": "slashing",
+          "condition_label": "Solo con un 20 naturale contro una creatura; l'eventuale amputazione resta contestuale."
+        }
+      ]
+    },
+    {
+      "name": "Sword of Sharpness",
+      "sources": [
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "flat_bonus": 14,
+          "damage_type": "slashing",
+          "condition_label": "Solo con un 20 naturale contro una creatura; applica separatamente un livello di Indebolimento."
+        }
+      ]
+    },
+    {
+      "name": "Vorpal Sword",
+      "sources": [
+        "DMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "6d8",
+          "damage_type": "slashing",
+          "condition_label": "Solo con 20 naturale se la creatura è immune alla decapitazione ma può subire il danno supplementare."
+        }
+      ]
+    },
+    {
+      "name": "Vorpal Sword",
+      "sources": [
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "flat_bonus": 30,
+          "damage_type": "slashing",
+          "condition_label": "Solo con 20 naturale se la creatura evita la decapitazione, secondo le condizioni del privilegio."
+        }
+      ]
+    },
+    {
+      "name": "Ammunition of Slaying",
+      "sources": [
+        "XDMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "6d10",
+          "damage_type": "force",
+          "condition_label": "Solo contro il tipo di creatura designato; TS Costituzione CD 17, metà danno se riuscito. La munizione perde magia."
+        }
+      ]
+    },
+    {
+      "name": "Arrow of Slaying (*)",
+      "sources": [
+        "DMG"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "6d10",
+          "damage_type": "piercing",
+          "condition_label": "Solo contro il tipo di creatura designato; TS Costituzione CD 17, metà danno se riuscito. La freccia perde magia."
+        }
+      ]
+    },
+    {
+      "name": "Stygian Spear",
+      "sources": [
+        "CoA"
+      ],
+      "effects": [
+        {
+          "type": "dice",
+          "target": "attack_damage",
+          "dice": "2d6",
+          "damage_type": "poison",
+          "condition_label": "Solo quando la maledizione ti costringe a colpire un alleato; non su attacchi ordinari."
+        }
+      ]
+    },
+    {
+      "name": "Ascendant Dragon's Wrath Weapon",
+      "sources": [
+        "FTD"
+      ],
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Dragon's Wrath · Soffio",
+          "action_type": "action",
+          "description": "Azione: cono di 60 piedi, TS Destrezza CD 18, 12d6 danni del tipo del soffio; metà se riuscito. Una volta per alba."
+        }
+      ]
+    },
+    {
+      "name": "Wakened Dragon's Wrath Weapon",
+      "sources": [
+        "FTD"
+      ],
+      "effects": [
+        {
+          "type": "actions",
+          "name": "Dragon's Wrath · Soffio",
+          "action_type": "action",
+          "description": "Azione: cono di 30 piedi, TS Destrezza CD 16, 8d6 danni del tipo del soffio; metà se riuscito. Una volta per alba."
+        }
+      ]
+    }
+  ]
+}
