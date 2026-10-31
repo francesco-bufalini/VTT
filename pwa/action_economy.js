@@ -836,7 +836,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const monsterMulti=record.kind==='monster'?
   monsterTraits(record).find(row=>row.monster_role==='multiattack'&&!row.disabled&&!row.inactive):null;
  const multiCount=monsterMulti?Math.max(Number(monsterMulti.attacks_per_action)||0,count):count;
- const grantedMulti=multiCount>1&&(monsterMulti||grantingTrait);
+ const grantedMulti=multiCount>1&&(monsterMulti||grantingTrait||grant);
  const rawMulti=arr(record.stat_block?.action).find(monsterMultiattack)||{};
  const multiTrackerId=String(rawMulti.tracker_id||rawMulti.vtt_resource?.id||'');
  const multiTracker=arr(calculated.trackers).find(row=>row.id===multiTrackerId);
