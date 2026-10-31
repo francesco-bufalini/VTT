@@ -6114,7 +6114,7 @@ function openSheetSensesDialog(calculated={}){
   '</tr></thead><tbody>'+(data.rows||[]).map(row=>'<tr><th scope="row">'+esc(row.name)+'</th>'+
   [row.bright,row.dim,row.dark,row.magical].map((value,i)=>'<td data-light-label="'+['Luce intensa','Luce fioca','Oscurità','Oscurità magica'][i]+'">'+esc(value)+'</td>').join('')+'</tr>').join('')+
   '</tbody></table></div>'+
-  '<p class="sheet-senses-note">La visione normale all’aperto arriva indicativamente a 2 miglia con cielo sereno e senza ostacoli (DMG 2014). Non è un limite fisso: terreno, luce e meteo possono ridurre o modificare la visibilità.</p>'+ 
+  '<p class="sheet-senses-note">La vista normale non ha una portata numerica fissa: luce, ostacoli e meteo determinano ciò che è visibile. La luce fioca ostacola la Percezione, ma le regole 2014 non ne dimezzano automaticamente la distanza.</p>'+ 
    '<p class="sheet-senses-note">In luce fioca le prove di Percezione basate sulla vista subiscono svantaggio (−5 alla percezione passiva pertinente). La scurovisione tratta la luce fioca come intensa e l’oscurità non magica come fioca entro la sua portata; al buio non distingue i colori.</p>'+
   '<p class="sheet-senses-note">La percezione tellurica rileva vibrazioni tramite una superficie condivisa: non equivale a vedere. La vista cieca e la vista pura non dipendono dall’illuminazione entro la loro portata. Fuori portata valgono le condizioni della visione normale.</p>'+
   (origins?'<section class="sheet-senses-sources"><h3>Privilegi e origini</h3><ul>'+origins+'</ul></section>':'')+

@@ -19,14 +19,17 @@ test('display convention is 5 ft = 1.5 m; stored feet are reversible',()=>{
   assert.equal(senseLightRows({darkvision:60})[1].dark,'18 m · luce fioca');
  }finally{setDistanceUnit('feet');}
 });
-test('normal sight uses DMG outdoor reference and does not pretend to see through darkness',()=>{
+test('normal sight has no fixed radius and dim light impairs sight-based Perception',()=>{
  try{
-  setDistanceUnit('feet');
-  assert.match(senseLightRows()[0].bright,/10\.560 ft/);
-  assert.doesNotMatch(senseLightRows()[0].bright,/Linea di vista/);
-  setDistanceUnit('meters');
-  assert.match(senseLightRows()[0].bright,/3168 m/);
-  assert.equal(senseLightRows()[0].dark,'Nessuna');
+  for(const unit of ['feet','meters']){
+   setDistanceUnit(unit);
+   const row=senseLightRows()[0];
+   assert.equal(row.bright,'Secondo l’ambiente');
+   assert.equal(row.dim,'Vista ostacolata · svantaggio a Percezione (−5 passiva)');
+   assert.equal(row.dark,'Nessuna');
+   assert.equal(row.magical,'Nessuna');
+   assert.doesNotMatch(row.bright+' '+row.dim,/\b(?:ft|metri|m)\b/i);
+  }
  }finally{setDistanceUnit('feet');}
 });
 test('GUI display converts single, paired, and rectangular distances',()=>{

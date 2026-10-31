@@ -12,11 +12,12 @@ export const SENSE_OPTIONS=Object.entries(SENSE_NAMES).filter(([key])=>key!=='no
 export const senseRange=feet=>formatDistance(feet);
 
 export function senseLightRows(distances={}){
- // DMG 2014: roughly two miles of outdoor visibility in clear weather, barring obstructions.
- // This contextual reference is not a universal cap on normal vision.
- const outdoors=formatDistance(2*5280);
- const result=[{type:'normal',name:'Visione normale',bright:outdoors+' · all’aperto',
-  dim:outdoors+' · luce fioca',dark:'Nessuna',magical:'Nessuna'}];
+ // 2014 PHB: normal vision has no intrinsic range. Dim light is lightly obscured:
+ // sight-based Perception checks have disadvantage (-5 to applicable passive Perception).
+ // DMG outdoor visibility guidance is environmental, not a creature sense radius.
+ const result=[{type:'normal',name:'Visione normale',bright:'Secondo l’ambiente',
+  dim:'Vista ostacolata · svantaggio a Percezione (−5 passiva)',
+  dark:'Nessuna',magical:'Nessuna'}];
  for(const [type,name] of SENSE_OPTIONS){
   const feet=Number(distances[type]||0);
   if(!(feet>0))continue;
