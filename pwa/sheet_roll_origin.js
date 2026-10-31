@@ -265,9 +265,15 @@ export function damageRollSegments(roll,type='',attack=null){
  const segments=groups.map((group,index)=>{
    const base=index===0;
    const formula=group.dice.join(' + ');
+   const symbolic=base?formula+damageModifierExpression(baseModifier,attack,notation,detached):
+     ' + '+formula;
+   // Expand only the modifier of the base term. The detached numeric grants
+   // are shown in their own source cards and must not be counted twice here.
+   const expanded=base&&symbolic!==formula?
+     formula+(baseModifier?damageSign(baseModifier):' + 0'):'';
    return {key:'damage:'+index,kind:base?'base':'formula',
-     formula:(base?'':' + ')+formula+(base?damageModifierExpression(baseModifier,attack,notation,detached):''),
-     expanded:'',damageType:group.damageType,originName:base?'Danno base':'Danno aggiuntivo',
+     formula:symbolic,expanded,damageType:group.damageType,
+     originName:base?'Danno base':'Danno aggiuntivo',
      originId:base?String(attack?.origin_id||''):'',value:base?baseModifier:0};
  });
  // Numeric grants inherit the damage type of the weapon's base dice unless

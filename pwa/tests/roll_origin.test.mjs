@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from '../sheet_roll_origin.js';
@@ -200,6 +201,8 @@ test('damage base dice and modifier share a section; only different types create
  const roll=rollBattleDamage('1d6+3+2d4',()=>1);
  const rows=damageRollSegments(roll,'slashing; fire');
  assert.deepEqual(rows.map(row=>row.formula),['1d6 + Modificatore',' + 2d4']);
+ assert.deepEqual(rows.map(row=>row.expanded),['1d6 + 3',''],
+  'The evaluated base modifier must be visible below the symbolic formula');
  assert.deepEqual(rows.map(row=>row.damageType),['slashing','fire']);
  assert.equal(rows[0].value,3);
  const html=sheetRollOriginHtml(rows,x=>x);
@@ -211,6 +214,20 @@ test('damage base dice and modifier share a section; only different types create
  assert.equal(oneType[0].damageType,'slashing');
  const ambiguous=damageRollSegments(roll,'slashing; fire; cold');
  assert(ambiguous.every(row=>row.damageType===''),'An ambiguous mixture must not invent damage types');
+});
+test('numeric base damage expansion has its own divider before the damage type',()=>{
+ const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+ assert.match(css,/\.sheet-roll-dialog \.sheet-roll-origin-term\.is-base:has\(\.sheet-roll-origin-damage-type\)\s+\.sheet-roll-origin-value\s*\{[^}]*border-top:1px/,
+  'The numeric row must be separated from the symbolic formula by a line');
+});
+test('negative base damage ability modifiers expand without including detached benefits',()=>{
+ const attack={ability:'str',damage:'1d6 - 1',damage_base_formula:'1d6',
+  damage_ability_modifier:-3,damage_extra_modifier:2,damage_ability_applies:true,
+  damage_bonus_components:[{value:2,origin_id:'feature:style',origin_name:'Bonus'}]};
+ const rows=damageRollSegments(rollBattleDamage(attack.damage,()=>1),'slashing',attack);
+ assert.deepEqual(rows.map(row=>row.formula),['1d6 + Mod.FOR','+2']);
+ assert.deepEqual(rows.map(row=>row.expanded),['1d6 − 3','+2']);
+ assert.equal(rows.reduce((sum,row)=>sum+row.value,0),-1);
 });
 test('a genuine weapon attack uses Mod.FOR in the base damage section',()=>{
  const c={...character(),inventory:[{id:'test-sword',name:'Test sword',
@@ -224,6 +241,10 @@ test('a genuine weapon attack uses Mod.FOR in the base damage section',()=>{
  const rows=damageRollSegments(roll,'slashing',attack);
  assert.equal(rows.length,1);
  assert.equal(rows[0].formula,'1d8 + Mod.FOR');
+ assert.equal(rows[0].expanded,'1d8 + 4');
+ const html=sheetRollOriginHtml(rows,x=>x);
+ assert.match(html,/<span class="sheet-roll-origin-symbol">1d8 \+ Mod\.FOR<\/span><span class="sheet-roll-origin-value">1d8 \+ 4<\/span>/,
+  'The expanded base damage appears directly beneath the symbolic formula');
  assert.equal(rows[0].damageType,'slashing');
  assert.equal(rows[0].value,roll.modifier);
 });
@@ -237,8 +258,10 @@ test('base weapon damage keeps +Mod.FOR with a genuine zero ability modifier',()
  assert(attack);
  assert.equal(attack.damage_ability_modifier,0);
  assert.equal(attack.damage_ability_applies,true);
- assert.deepEqual(damageRollSegments(rollBattleDamage(attack.damage,()=>1),
-  attack.damage_type,attack).map(row=>row.formula),['1d8 + Mod.FOR']);
+ const rows=damageRollSegments(rollBattleDamage(attack.damage,()=>1),attack.damage_type,attack);
+ assert.deepEqual(rows.map(row=>row.formula),['1d8 + Mod.FOR']);
+ assert.equal(rows[0].expanded,'1d8 + 0',
+  'The numeric expansion must remain visible even for a +0 modifier');
 });
 test('separated damage bonuses do not remove +Mod from base or invent it for offhand',()=>{
  const style={id:'style',value:2,origin_id:'feature:style',origin_name:'Stile'};
@@ -247,6 +270,7 @@ test('separated damage bonuses do not remove +Mod from base or invent it for off
   damage_ability_applies:true,damage_bonus_components:[style]};
  const mainRows=damageRollSegments(rollBattleDamage(main.damage,()=>1),'slashing',main);
  assert.deepEqual(mainRows.map(row=>row.formula),['1d8 + Mod.FOR','+2']);
+ assert.deepEqual(mainRows.map(row=>row.expanded),['1d8 + 0','+2']);
  assert.equal(mainRows.reduce((sum,row)=>sum+row.value,0),2);
  assert.deepEqual(mainRows.map(row=>row.damageType),['slashing','slashing']);
  const off={...main,id:'item:off:dagger',damage:'1d6 + 2',
@@ -254,6 +278,7 @@ test('separated damage bonuses do not remove +Mod from base or invent it for off
  const offRows=damageRollSegments(rollBattleDamage(off.damage,()=>1),'piercing',off);
  assert.deepEqual(offRows.map(row=>row.formula),['1d6','+2'],
   'Offhand damage has no base ability bonus; its Fighting Style bonus remains distinct');
+ assert.equal(offRows[0].expanded,'','An offhand strike must not invent a base modifier');
  assert.deepEqual(offRows.map(row=>row.damageType),['piercing','piercing']);
 });
 test('automatic numeric damage bonuses get their own origin boxes and inherit the base damage type',()=>{
@@ -266,6 +291,8 @@ test('automatic numeric damage bonuses get their own origin boxes and inherit th
  const roll=rollBattleDamage(attack.damage,()=>4);
  const rows=damageRollSegments(roll,'slashing',attack);
  assert.deepEqual(rows.map(row=>row.formula),['1d8 + Mod.FOR + 1','+2','+2']);
+ assert.deepEqual(rows.map(row=>row.expanded),['1d8 + 3','+2','+2'],
+  'Numeric expansion excludes both detached damage bonuses');
  assert.deepEqual(rows.map(row=>row.originName),['Danno base','Dueling','Altro bonus']);
  assert(rows.every(row=>row.damageType==='slashing'),'Flat bonuses use the base damage type');
  assert.deepEqual(rows.map(row=>row.value),[3,2,2]);
@@ -286,6 +313,7 @@ test('numeric damage grants follow the first damage type in mixed weapon damage'
  const rows=damageRollSegments(roll,'piercing;fire',attack);
  assert.deepEqual(rows.map(row=>row.damageType),['piercing','fire','piercing']);
  assert.equal(rows[0].formula,'1d6 + Mod.DES');
+ assert.equal(rows[0].expanded,'1d6 + 3');
  assert.equal(rows[2].formula,'+2');
  assert.equal(rows.reduce((sum,row)=>sum+row.value,0),roll.modifier);
  const changed=damageRollSegments(rollBattleDamage('1d6+2d4+4',()=>1),
@@ -299,6 +327,7 @@ test('mixed typed damages show only verifiable source-derived characteristic and
    damage_base_formula:'1d6+2+2d4',damage_ability_modifier:4,damage_extra_modifier:0};
  const grouped=damageRollSegments(roll,'slashing;fire',attack);
  assert.equal(grouped[0].formula,'1d6 + Mod.FOR + 2');
+ assert.equal(grouped[0].expanded,'1d6 + 6');
  assert.equal(grouped[1].formula,' + 2d4');
  assert.deepEqual(grouped.map(row=>row.damageType),['slashing','fire']);
  const incorrect={...attack,damage_base_formula:'1d6+2d4',
