@@ -523,6 +523,11 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
  const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ const trackerChip=tracker&&Number(item.cost)>0?
+  '<span class="play-action-tracker" title="'+esc(tracker.name)+'" aria-label="'+
+   esc(tracker.name+' · '+remaining+' di '+tracker.max+' utilizzi')+'">'+
+   '<span class="play-action-tracker-name">'+esc(tracker.name)+'</span>'+
+   '<strong class="play-action-tracker-count">'+remaining+'/'+esc(tracker.max)+'</strong></span>':'';
  const resources=tracker&&item.monster_action?'<div class="action-resource-control"><button type="button" class="btn small" data-act="monster-action-use" data-monster-action-id="'+esc(item.id)+'"'+(remaining<item.cost||tracker.disabled?' disabled':'')+' aria-label="Usa '+esc(actionName)+'">Usa</button><span>'+remaining+' / '+esc(tracker.max)+'</span></div>':tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  const optionMarkup=monsterActionOptionsMarkup(item);
@@ -538,7 +543,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
    '<details class="play-battle-attack-details"><summary>'+icon+
    '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong>'+
     (rangeLabel?'<small class="play-battle-attack-range">'+esc(rangeLabel)+'</small>':'')+
-    (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+'</span>'+
+    (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+'</span>'+trackerChip+
    (Number(item.attack_count)>1?'<span class="play-battle-attacks-per-action" title="Attacchi per azione" aria-label="'+esc(item.attack_count)+' attacchi per azione">×'+esc(item.attack_count)+'</span>':'')+
    (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
    '</summary><div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p>'+
