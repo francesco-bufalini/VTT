@@ -406,7 +406,27 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.equal(JSON.parse(changed.options.body).payload.condition_id,"grappled",
     "Afferrato must never be synchronized as Restrained");
   click('[data-act="close-token-dialog"]');
+  // Associate a local creature with this exact token and return to Partita;
+  // the map icon must now open its Info sheet, never the conditions dialog.
+  const local=(await listCreatures()).find(row=>row.creature.name==="Arcanista mobile")?.creature;
+  assert.ok(local);
+  const localEditor=await openCreatureEditor(local.id);
+  await localEditor.update({linked_token_sync_id:"token_1",linked_token_name:"Guardiano"});
   click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+  click('[data-nav="session"]');
+  await until(()=>document.querySelector('[data-act="open-token-creature"][data-id="token_1"]'));
+  const ownedButton=document.querySelector('[data-act="open-token-creature"][data-id="token_1"]');
+  assert.ok(ownedButton.title.startsWith('Apri scheda collegata: '));
+  assert.ok(ownedButton.querySelector('.vtt-action-glyph'));
+  assert.equal(document.querySelector('.session-token-panel [data-act="edit-token"]'),null,
+    "The owned map icon no longer opens token conditions");
+  click('[data-act="open-token-creature"][data-id="token_1"]');
+  await until(()=>document.querySelector('#sheet-play-view .play-identity [data-read-field="name"]')?.textContent==="Arcanista mobile");
+  assert.equal(document.querySelector('#session-token-dialog[open]'),null);
+  assert.equal(document.querySelector('#app').dataset.page,'library');
+  assert.equal(document.querySelector('#app').dataset.renderedSheet,'info');
+  click('#creature-back');
   await until(()=>document.querySelector('[data-act="create"]'));
   const owned=(await listCreatures()).find(row=>row.creature.name==="Arcanista mobile")?.creature;
   assert.ok(owned,'Test character remains available after pairing');

@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {tokenGroups,tokenOwnershipGlyphKey,snapshotRevision,snapshotBlob,casterToken,SessionMapViewer} from "../session_map.js";
+import {tokenGroups,tokenOwnershipGlyphKey,linkedLocalCreature,snapshotRevision,snapshotBlob,casterToken,SessionMapViewer} from "../session_map.js";
 
 test("connected casting recovers only the exact owned creature token, never a display name",()=>{
  const creature={id:"creature-a",name:"Maga"};
@@ -139,4 +139,39 @@ test("roster icons distinguish only tokens explicitly linked to a local sheet",(
  assert.equal(tokenOwnershipGlyphKey({id:"free",free:true},local),"poison");
  assert.equal(tokenOwnershipGlyphKey({id:""},local),"poison");
  assert.equal(tokenOwnershipGlyphKey(null,local),"poison");
+});
+
+test("the map snapshot always covers its viewport and pan never exposes its edges",()=>{
+ const viewer=new SessionMapViewer();
+ viewer.canvas={clientWidth:320,clientHeight:200,isConnected:false};
+ viewer.image={naturalWidth:200,naturalHeight:100};
+ let t=viewer.transform();
+ assert.equal(t.scale,2,"cover, not contain: the whole panel must show the map");
+ assert.deepEqual([t.x,t.y],[-40,0]);
+ viewer.zoomAt(0.01,80,100);
+ assert.equal(viewer.zoom,1,"cannot shrink the image below panel coverage");
+ viewer.panX=10000;viewer.panY=-10000;t=viewer.transform();
+ assert.deepEqual([t.x,t.y],[0,0],"dragging cannot expose the top or right edge");
+ viewer.panX=-10000;viewer.panY=10000;t=viewer.transform();
+ assert.deepEqual([t.x,t.y],[-80,0],"dragging cannot expose the left or bottom edge");
+ viewer.zoomAt(3,160,100);
+ viewer.panX=-99999;viewer.panY=99999;t=viewer.transform();
+ assert(t.x<=0&&t.y<=0&&t.x+t.iw*t.scale>=t.w&&
+  t.y+t.ih*t.scale>=t.h,"zoomed map still fills all four sides");
+ viewer.canvas.clientWidth=500;viewer.canvas.clientHeight=200;
+ viewer.zoomAt(0.01,250,100);t=viewer.transform();
+ assert.equal(viewer.zoom,1);
+ assert.equal(t.scale,2.5,"resizing recomputes minimum cover scale");
+ assert(t.x<=0&&t.y<=0&&t.x+t.iw*t.scale>=t.w&&t.y+t.ih*t.scale>=t.h);
+});
+test("the exact linked local sheet determines both roster icon and destination",()=>{
+ const local=[{id:"a",name:"Arcanista",linked_token_sync_id:"token-123"},
+  {id:"b",name:"Omomonima",linked_token_sync_id:"token-456"}];
+ const token={id:"token-123",name:"Nome personalizzato"};
+ assert.deepEqual(linkedLocalCreature(token,local),local[0]);
+ assert.equal(tokenOwnershipGlyphKey(token,local),"map");
+ assert.equal(linkedLocalCreature({id:"token-789",name:"Arcanista"},local),null,
+  "display names cannot link another token's sheet");
+ assert.equal(tokenOwnershipGlyphKey({id:"token-789"},local),"poison");
+ assert.equal(linkedLocalCreature({id:""},local),null);
 });
