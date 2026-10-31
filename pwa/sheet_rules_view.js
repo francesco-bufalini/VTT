@@ -1269,10 +1269,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }
   // The search selects all the owner's containers; it does not hide rows.
   const highlighted=new Set(view.inventoryHighlightedIndices||[]);
-  html+='<div class="inventory-search-area">'+
+  html+='<div class="inventory-search-area"><div class="inventory-search-row">'+
     '<label class="play-search inventory-global-search">'+icon('search')+
     '<input type="search" data-play-search value="'+esc(view.search||'')+
     '" placeholder="Cerca nell’inventario e nel catalogo" aria-label="Cerca oggetti posseduti o nel catalogo" autocomplete="off" aria-controls="inventory-search-results"></label>'+
+    '<button type="button" class="inventory-quick-homebrew-add" data-act="new-homebrew-item" '+
+    'aria-label="Crea oggetto homebrew" title="Crea oggetto homebrew">'+icon('increase')+'</button></div>'+
     '<div id="inventory-search-results" class="inventory-search-results vtt-selection-list" role="region" aria-label="Risultati ricerca inventario" aria-live="polite" hidden></div></div>';
   const renderItem=({info,i},section)=>{
     const item=c.inventory[i],key='item:'+i,scroll=section==='scrolls';
@@ -1371,16 +1373,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       info.kind!=='document'&&!isSpellScroll(c.inventory[i])&&
         itemContainerId(c.inventory[i],containers)===destination);
     const name=isDocuments?'Documenti':isScrolls?'Pergamene magiche':activeContainer?.name||'Zaino';
-    const add=document.createElement('div'),key='inventory-add:'+section;
-    if(isScrolls)target('scroll-create','.inventory-scroll-create');
-    else {
-      const holder=isDocuments?bank.querySelector('.inventory-documents-panel'):
-        bank.querySelector('[data-inventory-section="'+section+'"]');
-      const selector=isDocuments?'[data-act="document-add"]':
-        '[data-act="item-catalog"],[data-act="new-homebrew-item"]';
-      for(const node of holder?.querySelectorAll(selector)||[])add.append(node);
-      bind(key,add);
-    }
     const controls=activeContainer?
       '<div class="inventory-container-management">'+
         btn('Rinomina '+name,'settings','data-act="inventory-container-rename" data-container-id="'+esc(activeContainer.id)+'"','<span>Rinomina</span>')+
@@ -1397,8 +1389,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       return '<span class="inventory-section-metrics" role="group" aria-label="Peso e valore sezione">'+
         metric('weight','lb','Peso')+metric('value','mo','Valore')+'</span>';
     })():'';
-    const addButton=isScrolls?edit('scroll-create','Crea pergamena','increase'):
-      edit(key,isDocuments?'Aggiungi documento':'Aggiungi oggetto','increase');
     html+=card(name,
       visible.map(row=>'<div class="inventory-selectable-item" data-inventory-item-index="'+row.i+'">'+
         '<label class="inventory-item-batch-check" aria-label="Seleziona '+esc(c.inventory[row.i]?.name||'oggetto')+'">'+
@@ -1406,7 +1396,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         renderItem(row,section)+'</div>').join('')+
         (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+
       controls,
-      sectionMetrics?'<span class="inventory-section-head-tools">'+sectionMetrics+addButton+'</span>':addButton,
+      sectionMetrics?'<span class="inventory-section-head-tools">'+sectionMetrics+'</span>':'',
       'play-inventory-section'+(sectionMetrics?' has-section-metrics':''));
   }
  }
