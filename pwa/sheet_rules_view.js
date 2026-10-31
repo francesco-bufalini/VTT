@@ -818,7 +818,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // equivalent to a bonus selectable on a roll. Keep its Use operation unless
   // the same paid bonus already has its own benefit row.
   const abilityButtons=(key,filtered=null)=>(filtered||powerRows.filter(row=>row.key===key))
-   .filter(row=>!row.classAction?.roll_bonus||!rollBonuses.some(b=>
+   // Activated capabilities remain operable even when they also carry a roll
+   // bonus; the bonus line is not a replacement for their action.
+   .filter(row=>row.source==='activated'||!row.classAction?.roll_bonus||!rollBonuses.some(b=>
     b.tracker_id===row.tracker_id&&
     (String(b.name||'').toLowerCase()===String(row.name||'').toLowerCase()||
      String(b.origin_id||'')===String(row.classAction.origin_id||'')&&!!b.origin_id))).map(row=>{
