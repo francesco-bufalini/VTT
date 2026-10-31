@@ -27,7 +27,7 @@ import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, 
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
-import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
+import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew, catalogBenefitRows } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews, stateTraitNavigationKey } from "./trait_projection.js";
 import { traitBenefitGroups, rollGrantTraitRow } from "./trait_benefits.js";
 import { distributeTraitBenefits } from "./trait_benefit_distribution.js";
@@ -268,7 +268,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", chatOpen:false, chatUnread:false, stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, serverDeviceName:"", disclosureState:new Map(),
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, catalogCreateOpen:false, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventorySelectedIndices:new Set(), inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', scrollSpellSelectedId:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -616,7 +616,7 @@ function navigationButton(key,title){
 function syncNav(){
   const hasCreature=isCreatureOpen();
   const topbar=document.querySelector('.topbar');
-  if(topbar)topbar.hidden=state.page==='session'||state.page==='library'&&state.libraryMode;
+  if(topbar)topbar.hidden=state.page==='catalog'||state.page==='session'||state.page==='library'&&state.libraryMode;
   const topSessionButton=document.querySelector('.connection-link');
   if(topSessionButton)topSessionButton.hidden=hasCreature;
   const creature=hasCreature?(state.editor?.read()||(state.cachedCreatures||[]).find(c=>c.id===state.creatureId)):null;
@@ -831,7 +831,7 @@ async function refreshSessionCreatures(){
 }
 async function navigate(page){
   if(!sections.has(page))return;
-  if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';state.catalogAssignCreatureId='';}
+  if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';state.catalogAssignCreatureId='';state.catalogCreateOpen=false;}
   else if(state.editor)state.catalogAssignCreatureId=state.creatureId||'';
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
@@ -886,6 +886,13 @@ async function render() {
     syncLibrarySelectionUI();
     syncLibraryFilterUI();
     if(state.page==="session")sessionMapViewer.mount(app.querySelector("#session-map-canvas"),state.snapshotObjectUrl);
+    if(state.page==="catalog"&&state.catalogCreateOpen){
+      const creator=app.querySelector("#catalog-create-dialog");
+      if(creator){
+        creator.addEventListener("close",()=>{state.catalogCreateOpen=false;},{once:true});
+        openDialog(creator);
+      }
+    }
     if(pendingCode && app.querySelector("#pair-secret"))
       app.querySelector("#pair-secret").value=pendingCode;
     if(rememberPair!==undefined && app.querySelector("#pair-remember"))
@@ -1290,32 +1297,6 @@ function renderCatalogRows() {
 }
 async function catalogView() {
   state.catalogRows=await catalogEntries(state.catalogCategory);
-  let chosen=state.catalogRows[state.catalogSelected];
-  const target=catalogTargetCreature();
-  if(chosen&&target&&!isContentAvailableForRules(chosen,target.rules_version)){
-    state.catalogSelected=-1;chosen=null;
-  }
-  let detail="";
-  if(chosen){
-    const full=await detailedEntry(state.catalogCategory,chosen);
-    const description=flattenDescription(full);
-    const assignable=["spells","feats","backgrounds","races","weapons","armor","tools",
-      "mundane_items","magic_items","items"].includes(chosen._category||state.catalogCategory);
-    detail='<button type="button" class="btn catalog-back" data-act="catalog-close">← Risultati del catalogo</button>'+panel("Dettagli · "+String(full.name||""),'<p class="hint">'+
-      esc(full.source||"Fonte sconosciuta")+'</p><p class="notable catalog-description">'+
-      esc(description||"Descrizione non disponibile nell'archivio locale.")+'</p>'+
-      (full._description_warning?'<p class="warning">'+esc(full._description_warning)+'</p>':"")+
-      (assignable && (state.cachedCreatures||[]).length?
-      '<div class="separator"></div>'+(state.pendingItemOwner&&state.catalogCategory==='items'?'':'<label>Aggiungi alla scheda<select id="catalog-creature">')+
-      (state.pendingItemOwner&&state.catalogCategory==='items'?'':state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+((state.pendingItemOwner||state.catalogAssignCreatureId||state.featAssignReturnId||state.creatureId||state.cachedCreatures?.[0]?.id)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join(""))+
-      (state.pendingItemOwner&&state.catalogCategory==='items'?'':'</select></label>')+'<div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+
-      (chosen._homebrew?btn('catalog-send','Manda'):'')+'</div>'+
-      '':"")+
-      (chosen._homebrew&&!(assignable&&(state.cachedCreatures||[]).length)?
-        '<div class="actions">'+btn('catalog-send','Manda')+'</div>':'')+
-      (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
-        '<div class="actions"><button class="btn danger" data-act="quick-delete" data-id="'+esc(chosen.id)+'">Elimina personalizzato</button></div>':''));
-  }
   const quickPanel=['items','feats','backgrounds'].includes(state.catalogCategory)?panel('Crea contenuto personalizzato',
     '<label>Nome<input id="quick-name" maxlength="120"></label>'+
     '<label>Descrizione<textarea id="quick-description" rows="3" maxlength="12000"></textarea></label>'+
@@ -1326,15 +1307,46 @@ async function catalogView() {
       ''+
       Array.from({length:3},(_,i)=>'<div class="columns"><label>Tipo<select data-quick-kind="'+i+'">'+[['','Nessuna'],['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],['weapon','Arma'],['armor','Armatura'],['tool','Strumento'],['language','Linguaggio']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label><label>Competenza<input data-quick-key="'+i+'" placeholder="es. perception"></label></div>').join(''))+
     '<div class="actions">'+btn('quick-create','Crea nel catalogo locale','primary')+'</div>'):'';
-  return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
-    (chosen?detail:panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
+  return '<div class="catalog-screen">'+
+    '<div class="catalog-toolbar">'+
+    '<label class="catalog-search-wrap" for="catalog-search">'+actionGlyph('search')+
+    '<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
+    '" placeholder="Cerca nel catalogo" aria-label="Cerca nel catalogo" autocomplete="off"></label>'+
+    '<select id="catalog-category" aria-label="Filtra per tipo di contenuto">'+
       CATALOG_CATEGORIES.map(([id,label])=>
       '<option value="'+id+'" '+(state.catalogCategory===id?'selected':'')+'>'+label+'</option>').join("")+
-      '</select></label><label class="vtt-list-search">Ricerca<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
-      '" placeholder="Nome o fonte"></label></div><p class="hint">'+
-      catalogRowsForTarget().length+' voci nel catalogo · risultati caricati progressivamente</p>'+
-      '<div id="catalog-results" class="catalog-results vtt-selection-list">'+renderCatalogRows()+'</div>')+
-    (quickPanel?'<details class="archive-tools catalog-create"><summary>Crea contenuto personalizzato</summary>'+quickPanel+'</details>':''));
+    '</select></div>'+
+    '<div id="catalog-results" class="catalog-results vtt-selection-list" role="list" aria-label="Voci del catalogo">'+
+      renderCatalogRows()+'</div></div>'+
+    (state.catalogCreateOpen?'<dialog id="catalog-create-dialog" class="sheet-roll-dialog catalog-create">'+
+      '<div class="catalog-create-close">'+dialogCloseButton('catalog-create-close','Chiudi','')+'</div>'+
+      quickPanel+'</dialog>':'');
+}
+
+async function openCatalogDetailDialog(index){
+  const entry=state.catalogRows[index];
+  const category=state.catalogCategory;
+  if(!entry||!catalogRowsForTarget().some(item=>item.i===index))
+    throw Error("Voce del catalogo non disponibile.");
+  const full=await detailedEntry(category,entry);
+  if(state.page!=='catalog'||state.catalogCategory!==category)return;
+  app.querySelector('#catalog-detail-dialog')?.remove();
+  const description=flattenDescription(full)||"Descrizione non disponibile.";
+  const benefits=catalogBenefitRows(full);
+  const dlg=document.createElement('dialog');
+  dlg.id='catalog-detail-dialog';
+  dlg.className='sheet-roll-dialog catalog-detail-dialog';
+  dlg.setAttribute('aria-labelledby','catalog-detail-title');
+  dlg.innerHTML='<header class="vtt-popup-heading"><h2 id="catalog-detail-title">'+
+    esc(full.name||entry.name||'Contenuto')+'</h2>'+
+    dialogCloseButton('catalog-close','Chiudi','')+'</header>'+
+    '<div class="catalog-detail-body"><div class="catalog-description">'+esc(description)+'</div>'+
+    (benefits.length?'<section class="catalog-benefits"><h3>Benefici</h3><ul>'+
+      benefits.map(row=>'<li><strong>'+esc(row.label)+'</strong><span>'+esc(row.text)+'</span></li>').join('')+
+      '</ul></section>':'')+'</div>';
+  dlg.addEventListener('close',()=>dlg.remove(),{once:true});
+  app.append(dlg);
+  openDialog(dlg);
 }
 
 async function computeLocalData(record){
@@ -7374,7 +7386,14 @@ async function handleAction(target){
     if(source.dataset.magicTool){state.sheetPopup='';app.querySelector('#sheet-context-dialog')?.close?.();}
     await handleAction(source);return;
   }
-  if(act==='catalog-close'){state.catalogSelected=-1;await render();return;}
+  if(act==='catalog-close'){
+    closeDialog(app.querySelector('#catalog-detail-dialog'),{remove:true});
+    state.catalogSelected=-1;return;
+  }
+  if(act==='catalog-create-close'){
+    closeDialog(app.querySelector('#catalog-create-dialog'),{remove:true});
+    state.catalogCreateOpen=false;return;
+  }
   if(act==="open-place-token"){
     if(!state.map?.tokens?.length)throw Error("Serve almeno un token di riferimento sulla mappa.");
     const dialog=app.querySelector("#session-place-dialog");
@@ -8673,10 +8692,8 @@ async function handleAction(target){
     // Open on the very first catalog render: async UI tests and mobile taps
     // must not encounter a still-collapsed editor during a second render.
     state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;
-    state.disclosureState.set('catalog|'+state.sheet+'|Crea contenuto personalizzato',true);
+    state.catalogCreateOpen=true;
     await navigate("catalog");
-    const creator=app.querySelector(".catalog-create");
-    if(creator)creator.open=true;
     const name=app.querySelector("#quick-name");
     name?.scrollIntoView?.({block:"center"});
     name?.focus();
@@ -8931,7 +8948,7 @@ async function handleAction(target){
       state.inventorySelectedIndex=inventory.length-1;state.pendingItemOwner="";state.pendingItemContainer="";
       await render();message("Oggetto homebrew aggiunto all'inventario.");return;
     }
-    state.catalogSelected=-1;state.catalogQuery=created.name;
+    state.catalogSelected=-1;state.catalogQuery=created.name;state.catalogCreateOpen=false;
     await render();message('Contenuto personalizzato salvato in locale.');return;
   }
   if(act==='quick-delete'){
@@ -8942,7 +8959,7 @@ async function handleAction(target){
   }
   if(act==="catalog-open"){
     state.catalogSelected=Number(target.dataset.index);
-    await render();window.scrollTo(0,0);app.focus({preventScroll:true});return;
+    await openCatalogDetailDialog(state.catalogSelected);return;
   }
   if(act==="catalog-send"){
     const entry=state.catalogRows[state.catalogSelected];
