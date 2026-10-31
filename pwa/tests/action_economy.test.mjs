@@ -58,7 +58,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.equal(grapple.querySelector('[data-target="skill:athletics"]').tagName,'BUTTON');
  assert.equal(grapple.querySelector('.play-battle-effect').dataset.effectKind,'condition');
  assert.match(grapple.querySelector('.play-battle-effect').textContent,/Afferrato/);
- assert.match(attacks.querySelector('[data-attack-id="prone"] .play-battle-effect').textContent,/Prono/);
+ assert.match(movement.querySelector('[data-attack-id="prone"] .play-battle-effect').textContent,/Prono/);
  assert.equal(movement.querySelector('[data-attack-id="dash"] .play-battle-effect').dataset.effectKind,'movement');
  assert(movement.querySelector('[data-action-benefit="other"] [data-attack-id="movement"] .play-battle-effect'));
 
@@ -89,7 +89,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(movement.querySelector('[data-action-benefit="other"]').textContent.includes('Scattare'));
  assert(movement.querySelector('[data-action-benefit="other"]').textContent.includes('Travolgere'));
  assert(movement.querySelector('[data-action-benefit="other"]').textContent.includes('Muoversi'));
- assert(!movement.body.textContent.includes('Afferrare una creatura'));
+ assert(movement.body.textContent.includes('Afferrare una creatura'));
  assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
 });
 
