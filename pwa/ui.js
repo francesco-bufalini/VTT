@@ -57,6 +57,7 @@ import {claimFeatureItemPatch,featureItemPowers,featureItemGrants} from './featu
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
+import {attackActionUsePatch} from './attack_count_benefits.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment,minimumXpForLevel} from "./character_core.js";
 import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
@@ -7390,6 +7391,14 @@ async function handleAction(target){
     }
     await activateOtherAbility(c,ability,persistentKey,requested);
     return;
+  }
+  if(act==='attack-action-use'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Creatura non disponibile.');
+    const calculated=await computeLocalData(creature);
+    await patch(current=>attackActionUsePatch(current,calculated,
+      String(target.dataset.attackActionId||'')));
+    await render();return;
   }
   if(act==='monster-action-use'){
     const creature=state.editor?.read();

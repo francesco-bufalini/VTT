@@ -1831,5 +1831,48 @@
       "min_level": 12,
       "attacks_per_action": 3
     }
+  ],
+  "attack_actions": [
+    {
+      "id": "martial-arts-2014",
+      "class_name": "Monk",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Martial Arts",
+      "min_level": 1,
+      "name": "Arti marziali · colpo senz'armi",
+      "time": "bonus",
+      "steps": [
+        {
+          "selector": {
+            "id": "unarmed"
+          },
+          "count": 1
+        }
+      ],
+      "detail": "Dopo un'azione Attacco con colpo senz'armi o arma da monaco; richiede assenza di armatura e scudo."
+    },
+    {
+      "id": "flurry-of-blows-2014",
+      "class_name": "Monk",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Flurry of Blows",
+      "min_level": 2,
+      "name": "Raffica di colpi",
+      "time": "bonus",
+      "tracker_name": "Ki Points",
+      "tracker_cost": 1,
+      "class_feature_id": "flurry_of_blows",
+      "steps": [
+        {
+          "selector": {
+            "id": "unarmed"
+          },
+          "count": 2
+        }
+      ],
+      "detail": "Subito dopo aver usato l'azione Attacco nel tuo turno, spendi 1 punto Ki per effettuare due colpi senz'armi come azione bonus."
+    }
   ]
 }
