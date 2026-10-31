@@ -266,19 +266,33 @@ test("native reference catalog can add an item to an offline creature",async()=>
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("dice roll is usable offline; session has functioning pairing form",async()=>{
-  click('[data-nav="session"]');
-  await until(()=>document.querySelector('[data-act="open-chat-dice"]'));
-  click('[data-act="open-chat-dice"]');
+test("dice popup logs offline and chat header is creature-only; session pairing remains",async()=>{
+  const creature=(await listCreatures())[0]?.creature;
+  assert.ok(creature?.id,"A saved creature is available for the local dice and chat");
+  click('[data-act="open"][data-id="'+creature.id+'"]');
+  await until(()=>document.querySelector('#header-dice')?.hidden===false);
+  assert.equal(document.querySelector('#header-chat').hidden,false);
+  click('#header-dice');
   await until(()=>document.querySelector('#chat-dice-dialog [data-act="roll"]'));
   click('#chat-dice-dialog [data-act="select-die"][data-sides="20"]');
   click('#chat-dice-dialog [data-act="roll"]');
-  await until(()=>document.querySelector(".dice-result"));
-  const total=Number(document.querySelector(".dice-result").textContent);
+  await until(()=>document.querySelector("#chat-dice-dialog .dice-result"));
+  const total=Number(document.querySelector("#chat-dice-dialog .dice-result").textContent);
   assert.ok(Number.isInteger(total)&&total>=1&&total<=20);
   click('[data-act="close-chat-dice"]');
   await until(()=>!document.querySelector("#chat-dice-dialog"));
+  click('#header-chat');
+  await until(()=>document.querySelector("#chat-screen #chat-form"));
+  assert.equal(document.querySelector('#header-chat').hidden,true);
+  assert.equal(document.querySelector('#header-chat-notifications').hidden,false);
+  assert.ok(document.querySelector('.app-shell').classList.contains('chat-open'));
+  await until(()=>document.querySelector('#chat-screen #events').textContent.includes(String(total)));
+  click('[data-act="header-chat-close"]');
+  assert.equal(document.querySelector('#chat-screen').hidden,true);
+  click('.connection-link');
   await until(()=>document.querySelector("#pair-form"));
+  assert.equal(document.querySelector('#header-chat').hidden,true);
+  assert.equal(document.querySelector('#header-dice').hidden,true);
   assert.match(document.querySelector("#app").textContent,/Codice temporaneo del desktop/);
   assert.equal(document.querySelector("#pair-secret").getAttribute("placeholder"),"XXXX-XXXX-XXXX-XXXX");
   assert.equal(document.querySelectorAll("#nav button").length,3);
@@ -372,7 +386,15 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.equal(JSON.parse(changed.options.body).payload.condition_id,"grappled",
     "Afferrato must never be synchronized as Restrained");
   click('[data-act="close-token-dialog"]');
-  await until(()=>document.querySelector("#chat-form"));
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+  const owned=(await listCreatures()).find(row=>row.creature.name==="Arcanista mobile")?.creature;
+  assert.ok(owned,'Test character remains available after pairing');
+  click('[data-act="open"][data-id="'+owned.id+'"]');
+  await until(()=>document.querySelector('#sheet-play-view .play-identity [data-read-field="name"]')?.textContent==='Arcanista mobile');
+  assert.equal(document.querySelector('#header-chat').hidden,false);
+  click('#header-chat');
+  await until(()=>document.querySelector("#chat-screen #chat-form"));
   const input=document.querySelector("#chat-message");
   input.value="Messaggio dal browser";
   document.querySelector("#chat-form").dispatchEvent(
@@ -384,12 +406,8 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.equal(msg.text,"Messaggio dal browser");
   assert.ok(msg.id.startsWith("pwa_"));
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
-  click('[data-nav="library"]'); // Release chat polling timer.
-  await until(()=>document.querySelector('[data-act="create"]'));
-  const owned=(await listCreatures()).find(row=>row.creature.name==="Arcanista mobile")?.creature;
-  assert.ok(owned,'Test character remains available after pairing');
-  click('[data-act="open"][data-id="'+owned.id+'"]');
-  await until(()=>document.querySelector('#sheet-play-view .play-identity [data-read-field="name"]')?.textContent==='Arcanista mobile');
+  click('[data-act="header-chat-close"]');
+  assert.equal(document.querySelector("#chat-screen").hidden,true);
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="sheet-roll"][data-target="save:dex"]'));
   const rollMessages=()=>calls.filter(c=>c.url==='/api/action'&&
