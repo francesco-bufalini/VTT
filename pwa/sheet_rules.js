@@ -824,9 +824,9 @@ export function spellProgression(record,classes){
    pact_level:pactLevel,caster_level:caster,warnings:[]};
 }
 export function calculateSheet(record={},catalogs={}){
-  const inventory=effectiveEquipmentInventory(record.inventory,
+  const normalizedEquipmentInventory=effectiveEquipmentInventory(record.inventory,
     {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
-  const hydrated=hydrateGenericVariants({...record,inventory},catalogs.genericItemVariants);
+  const hydrated=hydrateGenericVariants({...record,inventory:normalizedEquipmentInventory},catalogs.genericItemVariants);
   let effective=projectSelectionBenefits(hydrated,catalogs,collectStructuredFeatures(hydrated,catalogs));
   const selectionRecord=effective;
   const withScalingDice=calculated=>{
