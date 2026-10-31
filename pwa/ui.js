@@ -494,10 +494,14 @@ function refreshSpellPickers(){
     classFilter.innerHTML=spellLearningFilterOptions();
     classFilter.value=selected;
   }
-  if(app.querySelector('#sheet-context-dialog[open] #scroll-spell-results')){
-  renderScrollSpellResults();
-  updateScrollSpellLevels();
- }
+  const scrollSearch=app.querySelector('#sheet-context-dialog[open] #scroll-spell-query');
+  if(scrollSearch){
+    scrollSearch.disabled=!(state.spellCatalog||[]).length;
+    renderScrollSpellResults();
+    updateScrollSpellLevels();
+    if(!scrollSearch.disabled)
+      app.querySelector('#sheet-context-dialog[open] .scroll-creator-fields>.warning')?.remove();
+  }
 
 }
 function refreshWhenSpellsArrive(promise,creatureId,sheet){
