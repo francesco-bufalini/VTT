@@ -1312,16 +1312,16 @@ try{
  await page.locator('.play-info-traits .trait-card[data-trait-key="state|rage"][open]').waitFor();
  await sheet('battle');
  const ragePanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
- const rageDisclosure=ragePanel.locator('details.play-battle-disclosure');
- if(!await rageDisclosure.evaluate(node=>node.open))
-   await rageDisclosure.locator('summary.play-battle-summary').click();
+ // The resources locator already points to the <details> element.
+ if(await ragePanel.getAttribute('open')===null)
+  await ragePanel.locator(':scope > summary.play-battle-summary').click();
  const rage=ragePanel.locator('.play-resource-power-row').filter({has:page.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]')});
  assert.equal(await rage.count(),1,'Rage has a single Disattiva button when active');
  await rage.locator('[data-act="condition-remove-ability"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.active_class_features?.rage;});
  await ragePanel.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]').waitFor({state:'detached'});
  await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').waitFor({state:'visible'});
- await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
+ await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');const documentsTab=page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]');if(await documentsTab.getAttribute('aria-pressed')!=='true')await documentsTab.click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: 5 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
 }finally{await f.close();}
