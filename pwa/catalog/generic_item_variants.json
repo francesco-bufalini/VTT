@@ -38,6 +38,9 @@
     "lootTables": [
      "Magic Item Table B"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -71,7 +74,10 @@
    "entries": [
     "You have a +1 bonus to attack and damage rolls made with this piece of magic ammunition. Once it hits a target, the ammunition is no longer magical.",
     "This ammunition is typically found or sold in quantities of ten or twenty pieces. Ten pieces of this ammunition are equivalent in value to a potion of the same rarity {@note ({@table Magic Item Values by Rarity; Magic Item Rarities and Values|XDMG|200 GP})}."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
+   }
   },
   {
    "id": "generic-variant:dmg:%2B1%20armor",
@@ -98,6 +104,9 @@
     "entries": [
      "You have a {=bonusAc} bonus to AC while wearing this armor."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
    }
   },
   {
@@ -133,6 +142,9 @@
      "Armaments - Rare|XDMG",
      "Relics - Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
    }
   },
   {
@@ -166,7 +178,10 @@
    "entries": [
     "{@note * This generic variant has the same name and source as the item {@item +1 shield}}.",
     "While holding this shield, you have a +1 bonus to AC. This bonus is in addition to the shield's normal bonus to AC."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
+   }
   },
   {
    "id": "generic-variant:xdmg:%2B1%20shield%20(*)",
@@ -198,7 +213,10 @@
    "entries": [
     "{@note * This generic variant has the same name and source as the item {@item +1 Shield|XDMG}}.",
     "While holding this Shield, you have a +1 bonus to {@variantrule Armor Class|XPHB}, in addition to the Shield's normal bonus to AC."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
+   }
   },
   {
    "id": "generic-variant:dmg:%2B1%20weapon",
@@ -231,6 +249,9 @@
     "lootTables": [
      "Magic Item Table F"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -259,6 +280,9 @@
     "lootTables": [
      "Armaments - Uncommon|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -280,6 +304,9 @@
     "entries": [
      "You have a {=bonusWeaponAttack} bonus to attack rolls made with this weapon."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon_attack": 1
    }
   },
   {
@@ -318,6 +345,9 @@
     "lootTables": [
      "Magic Item Table C"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -351,7 +381,10 @@
    "entries": [
     "You have a +2 bonus to attack and damage rolls made with this piece of magic ammunition. Once it hits a target, the ammunition is no longer magical.",
     "This ammunition is typically found or sold in quantities of ten or twenty pieces. Ten pieces of this ammunition are equivalent in value to a potion of the same rarity {@note ({@table Magic Item Values by Rarity; Magic Item Rarities and Values|XDMG|2,000 GP})}."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
+   }
   },
   {
    "id": "generic-variant:dmg:%2B2%20armor",
@@ -378,6 +411,9 @@
     "entries": [
      "You have a {=bonusAc} bonus to AC while wearing this armor."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 2
    }
   },
   {
@@ -413,6 +449,9 @@
      "Armaments - Very Rare|XDMG",
      "Relics - Very Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 2
    }
   },
   {
@@ -446,7 +485,10 @@
    "entries": [
     "{@note * This generic variant has the same name and source as the item {@item +2 shield}}.",
     "While holding this shield, you have a +2 bonus to AC. This bonus is in addition to the shield's normal bonus to AC."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_ac": 2
+   }
   },
   {
    "id": "generic-variant:xdmg:%2B2%20shield%20(*)",
@@ -478,7 +520,10 @@
    "entries": [
     "{@note * This generic variant has the same name and source as the item {@item +2 Shield|XDMG}}.",
     "While holding this Shield, you have a +2 bonus to {@variantrule Armor Class|XPHB}, in addition to the Shield's normal bonus to AC."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_ac": 2
+   }
   },
   {
    "id": "generic-variant:dmg:%2B2%20weapon",
@@ -511,6 +556,9 @@
     "lootTables": [
      "Magic Item Table G"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -539,6 +587,9 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -560,6 +611,9 @@
     "entries": [
      "You have a {=bonusWeaponAttack} bonus to attack rolls made with this weapon."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon_attack": 2
    }
   },
   {
@@ -598,6 +652,9 @@
     "lootTables": [
      "Magic Item Table D"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -631,7 +688,10 @@
    "entries": [
     "You have a +3 bonus to attack and damage rolls made with this piece of magic ammunition. Once it hits a target, the ammunition is no longer magical.",
     "This ammunition is typically found or sold in quantities of ten or twenty pieces. Ten pieces of this ammunition are equivalent in value to a potion of the same rarity {@note ({@table Magic Item Values by Rarity; Magic Item Rarities and Values|XDMG|20,000 GP})}."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
+   }
   },
   {
    "id": "generic-variant:dmg:%2B3%20armor",
@@ -658,6 +718,9 @@
     "entries": [
      "You have a {=bonusAc} bonus to AC while wearing this armor."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 3
    }
   },
   {
@@ -690,6 +753,9 @@
      "Armaments - Legendary|XDMG",
      "Relics - Legendary|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 3
    }
   },
   {
@@ -723,7 +789,10 @@
    "entries": [
     "{@note * This generic variant has the same name and source as the item {@item +3 shield}}.",
     "While holding this shield, you have a +3 bonus to AC. This bonus is in addition to the shield's normal bonus to AC."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_ac": 3
+   }
   },
   {
    "id": "generic-variant:xdmg:%2B3%20shield%20(*)",
@@ -752,7 +821,10 @@
    "entries": [
     "{@note * This generic variant has the same name and source as the item {@item +3 Shield|XDMG}}.",
     "While holding this Shield, you have a +3 bonus to {@variantrule Armor Class|XPHB}, in addition to the Shield's normal bonus to AC."
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_ac": 3
+   }
   },
   {
    "id": "generic-variant:dmg:%2B3%20weapon",
@@ -785,6 +857,9 @@
     "lootTables": [
      "Magic Item Table H"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -810,6 +885,9 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -831,6 +909,9 @@
     "entries": [
      "You have a {=bonusWeaponAttack} bonus to attack rolls made with this weapon."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon_attack": 3
    }
   },
   {
@@ -866,6 +947,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -1092,7 +1176,14 @@
     "resist": [
      "fire"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "fire"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:ammunition%20of%20slaying",
@@ -1232,7 +1323,19 @@
       ]
      }
     }
-   }
+   },
+   "charge_tracker": {
+    "max": 1,
+    "recovery": "manual"
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "antimagic field",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    }
+   ]
   },
   {
    "id": "generic-variant:au:aquatic%20wave-swept%20weapon",
@@ -1300,6 +1403,9 @@
       "dim": 10
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -1365,7 +1471,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "acid"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20acid%20resistance",
@@ -1397,7 +1510,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "acid"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:armor%20of%20cold%20resistance",
@@ -1427,7 +1547,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "cold"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20cold%20resistance",
@@ -1459,7 +1586,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "cold"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:armor%20of%20fire%20resistance",
@@ -1489,7 +1623,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "fire"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20fire%20resistance",
@@ -1521,7 +1662,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "fire"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:armor%20of%20force%20resistance",
@@ -1551,7 +1699,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "force"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20force%20resistance",
@@ -1583,7 +1738,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "force"
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:armor%20of%20fungal%20spores",
@@ -1696,7 +1858,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "lightning"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20lightning%20resistance",
@@ -1728,7 +1897,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "lightning"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:armor%20of%20necrotic%20resistance",
@@ -1758,7 +1934,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "necrotic"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20necrotic%20resistance",
@@ -1790,7 +1973,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "necrotic"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:armor%20of%20poison%20resistance",
@@ -1820,7 +2010,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "poison"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20poison%20resistance",
@@ -1852,7 +2049,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "poison"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:armor%20of%20psychic%20resistance",
@@ -1882,7 +2086,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "psychic"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20psychic%20resistance",
@@ -1914,7 +2125,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "psychic"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:armor%20of%20radiant%20resistance",
@@ -1944,7 +2162,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "radiant"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20radiant%20resistance",
@@ -1976,7 +2201,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "radiant"
+    }
+   ]
   },
   {
    "id": "generic-variant:bgg:armor%20of%20safeguarding",
@@ -2014,7 +2246,19 @@
       ]
      }
     }
-   }
+   },
+   "charge_tracker": {
+    "max": 1,
+    "recovery": "manual"
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "beacon of hope",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:armor%20of%20the%20fallen",
@@ -2074,7 +2318,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "thunder"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20thunder%20resistance",
@@ -2106,7 +2357,14 @@
     "entries": [
      "{#itemEntry Armor of Resistance|XDMG}"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "thunder"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20vulnerability%20(bludgeoning)",
@@ -2149,7 +2407,24 @@
       ]
      }
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "bludgeoning"
+    },
+    {
+     "type": "defenses",
+     "rank": -1,
+     "key": "piercing"
+    },
+    {
+     "type": "defenses",
+     "rank": -1,
+     "key": "slashing"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20vulnerability%20(piercing)",
@@ -2192,7 +2467,24 @@
       ]
      }
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "piercing"
+    },
+    {
+     "type": "defenses",
+     "rank": -1,
+     "key": "bludgeoning"
+    },
+    {
+     "type": "defenses",
+     "rank": -1,
+     "key": "slashing"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:armor%20of%20vulnerability%20(slashing)",
@@ -2235,7 +2527,24 @@
       ]
      }
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "slashing"
+    },
+    {
+     "type": "defenses",
+     "rank": -1,
+     "key": "bludgeoning"
+    },
+    {
+     "type": "defenses",
+     "rank": -1,
+     "key": "piercing"
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:armor%20of%20weightlessness",
@@ -2284,7 +2593,25 @@
       ]
      }
     }
-   }
+   },
+   "charge_tracker": {
+    "max": 5,
+    "recovery": "All'alba: recupera {@dice 1d4 + 1}"
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "jump",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    },
+    {
+     "type": "spells",
+     "spell_token": "levitate",
+     "payment_mode": "tracker",
+     "tracker_cost": 2
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:arrow%20of%20slaying%20(*)",
@@ -2347,6 +2674,9 @@
      "You gain a {=bonusWeapon} bonus to attack and damage rolls made using the weapon. On a hit, the weapon deals an extra {@damage 3d6} damage of the type dealt by the dragon's breath weapon.",
      "As an action, you can unleash a 60-foot cone of destructive energy from the weapon. Each creature in that area must make a {@dc 18} Dexterity saving throw, taking {@damage 12d6} damage of the type dealt by the dragon's breath weapon on a failed save, or half as much damage on a successful one. Once this action is used, it can't be used again until the next dawn."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -2424,6 +2754,9 @@
       "dim": 10
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -2501,6 +2834,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -2540,6 +2876,9 @@
     "lootTables": [
      "Magic Item Table G"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -2585,6 +2924,9 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -2673,6 +3015,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon_damage": 1
    }
   },
   {
@@ -2807,6 +3152,10 @@
      "The outside surface and internal joints of this armor whir with interlocking gears, drawing on the orderly magic of the plane of Mechanus.",
      "The armor has 4 charges. If you make a {@dice d20} roll while wearing this armor, you can expend 1 charge to change the number rolled to a 10. The armor regains {@dice 1d4} expended charges daily at dawn."
     ]
+   },
+   "charge_tracker": {
+    "max": 4,
+    "recovery": "All'alba: recupera {@dice 1d4}"
    }
   },
   {
@@ -2829,6 +3178,9 @@
      "You gain a {=bonusWeapon} bonus to attack and damage rolls made with this magic weapon.",
      "When you hit an undead creature with an attack using this weapon, the attack deals an extra {@damage 1d8} damage of the weapon's type, and the creature has disadvantage on saving throws against effects that turn undead until the start of your next turn."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -2863,6 +3215,10 @@
       "dim": 10
      }
     ]
+   },
+   "charge_tracker": {
+    "max": 3,
+    "recovery": "All'alba: recupera {@dice 1d3}"
    }
   },
   {
@@ -2959,6 +3315,13 @@
     "classFeatures": [
      "replicate magic item|artificer|efa|2|efa"
     ]
+   },
+   "charge_tracker": {
+    "max": 4,
+    "recovery": "All'alba: recupera {@dice 1d4}"
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -2991,6 +3354,10 @@
     "lootTables": [
      "Magic Item Table I"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1,
+    "bonus_weapon": 3
    }
   },
   {
@@ -3019,6 +3386,10 @@
     "lootTables": [
      "Armaments - Legendary|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1,
+    "bonus_weapon": 3
    }
   },
   {
@@ -3061,6 +3432,10 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1,
+    "bonus_weapon": 1
    }
   },
   {
@@ -3089,7 +3464,17 @@
      "This magic armor appears as a pot of bubbling black ichor. When you attune to it, the ichor adheres to and contours to your skin, and the pot disappears. The armor can be worn under normal clothes, and it doesn't impede bodily functions. Once you put it on, it can't be removed unless you choose to do so or you die, at which point the pot reappears and the ichor flows back into it.",
      "While wearing the armor, you have resistance to poison damage. The armor also doesn't impose disadvantage on Dexterity ({@skill Stealth}) checks."
     ]
-   }
+   },
+   "item_fields": {
+    "stealth": false
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "poison"
+    }
+   ]
   },
   {
    "id": "generic-variant:coa:demonbone%20polearm",
@@ -3127,6 +3512,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -3179,6 +3567,9 @@
     "lootTables": [
      "Magic Item Table G"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -3208,6 +3599,9 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -3261,6 +3655,9 @@
      "You gain a {=bonusWeapon} bonus to attack and damage rolls made with this magic weapon.",
      "When you hit a Dragon with this weapon, the Dragon takes an extra {@damage 3d6} force damage, and any Dragon of your choice that you can see within 30 feet of you can immediately use its reaction to make a melee attack."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -3312,6 +3709,9 @@
     "entries": [
      "You have a {=bonusAc} bonus to AC while wearing this armor. This armor loses its enchantment bonus permanently if it is exposed to sunlight for 1 hour or longer."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
    }
   },
   {
@@ -3335,6 +3735,9 @@
     "entries": [
      "You have a {=bonusWeapon} bonus to attack and damage rolls made with this weapon. This weapon loses its enchantment bonus permanently if it is exposed to sunlight for 1 hour or longer."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -3355,6 +3758,9 @@
     "entries": [
      "You have a {=bonusAc} bonus to AC while wearing this armor. This armor loses its enchantment bonus permanently if it is exposed to sunlight for 1 hour or longer."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 2
    }
   },
   {
@@ -3378,6 +3784,9 @@
     "entries": [
      "You have a {=bonusWeapon} bonus to attack and damage rolls made with this weapon. This weapon loses its enchantment bonus permanently if it is exposed to sunlight for 1 hour or longer."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -3398,6 +3807,9 @@
     "entries": [
      "You have a {=bonusAc} bonus to AC while wearing this armor. This armor loses its enchantment bonus permanently if it is exposed to sunlight for 1 hour or longer."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 3
    }
   },
   {
@@ -3421,6 +3833,9 @@
     "entries": [
      "You have a {=bonusWeapon} bonus to attack and damage rolls made with this weapon. This weapon loses its enchantment bonus permanently if it is exposed to sunlight for 1 hour or longer."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -3451,6 +3866,9 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 2
    }
   },
   {
@@ -3485,7 +3903,17 @@
     "lootTables": [
      "Armaments - Legendary|XDMG"
     ]
-   }
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 3
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 2,
+     "key": "fire"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:elven%20chain",
@@ -3519,6 +3947,9 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
    }
   },
   {
@@ -3587,6 +4018,9 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -3618,6 +4052,10 @@
      "The spell's saving throw DC is 13, and its attack bonus is {@hit 5}."
     ],
     "spellScrollLevel": 0
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3649,6 +4087,10 @@
      "The spell's saving throw DC is 13, and its attack bonus is {@hit 5}."
     ],
     "spellScrollLevel": 1
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3680,6 +4122,10 @@
      "The spell's saving throw DC is 13, and its attack bonus is {@hit 5}."
     ],
     "spellScrollLevel": 2
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3711,6 +4157,10 @@
      "The spell's saving throw DC is 15, and its attack bonus is {@hit 7}."
     ],
     "spellScrollLevel": 3
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3742,6 +4192,10 @@
      "The spell's saving throw DC is 15, and its attack bonus is {@hit 7}."
     ],
     "spellScrollLevel": 4
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3773,6 +4227,10 @@
      "The spell's saving throw DC is 17, and its attack bonus is {@hit 9}."
     ],
     "spellScrollLevel": 5
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3804,6 +4262,10 @@
      "The spell's saving throw DC is 17, and its attack bonus is {@hit 9}."
     ],
     "spellScrollLevel": 6
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3835,6 +4297,10 @@
      "The spell's saving throw DC is 18, and its attack bonus is {@hit 10}."
     ],
     "spellScrollLevel": 7
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3866,6 +4332,10 @@
      "The spell's saving throw DC is 18, and its attack bonus is {@hit 10}."
     ],
     "spellScrollLevel": 8
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3894,6 +4364,10 @@
      "The spell's saving throw DC is 13, and its attack bonus is {@hit 5}."
     ],
     "spellScrollLevel": 0
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3922,6 +4396,10 @@
      "The spell's saving throw DC is 13, and its attack bonus is {@hit 5}."
     ],
     "spellScrollLevel": 1
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3950,6 +4428,10 @@
      "The spell's saving throw DC is 13, and its attack bonus is {@hit 5}."
     ],
     "spellScrollLevel": 2
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -3978,6 +4460,10 @@
      "The spell's saving throw DC is 15, and its attack bonus is {@hit 7}."
     ],
     "spellScrollLevel": 3
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -4006,6 +4492,10 @@
      "The spell's saving throw DC is 15, and its attack bonus is {@hit 7}."
     ],
     "spellScrollLevel": 4
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -4034,6 +4524,10 @@
      "The spell's saving throw DC is 17, and its attack bonus is {@hit 9}."
     ],
     "spellScrollLevel": 5
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -4062,6 +4556,10 @@
      "The spell's saving throw DC is 17, and its attack bonus is {@hit 9}."
     ],
     "spellScrollLevel": 6
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -4090,6 +4588,10 @@
      "The spell's saving throw DC is 18, and its attack bonus is {@hit 10}."
     ],
     "spellScrollLevel": 7
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -4118,6 +4620,10 @@
      "The spell's saving throw DC is 18, and its attack bonus is {@hit 10}."
     ],
     "spellScrollLevel": 8
+   },
+   "charge_tracker": {
+    "max": 6,
+    "recovery": "All'alba: recupera {@dice 1d6}"
    }
   },
   {
@@ -4155,6 +4661,9 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -4202,7 +4711,19 @@
       ]
      }
     }
-   }
+   },
+   "charge_tracker": {
+    "max": 3,
+    "recovery": "All'alba: recupera {@dice 1d3}"
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "compulsion",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:flame%20tongue",
@@ -4313,6 +4834,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -4334,6 +4858,9 @@
      "You gain a {=bonusWeapon} bonus to attack and damage rolls made with this magic weapon.",
      "This weapon was crafted to destroy structures made of force, such as those created by {@spell Forcecage} or {@spell Wall of Force}. Striking a Large or smaller structure of magical force with this weapon automatically shatters that structure. If the target is a Huge or larger structure of force, this weapon shatters a 20-foot-cube portion of it."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -4374,7 +4901,14 @@
     "lootTables": [
      "Magic Item Table H"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "fire"
+    }
+   ]
   },
   {
    "id": "generic-variant:xdmg:frost%20brand",
@@ -4489,6 +5023,9 @@
     "lootTables": [
      "Magic Item Table G"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -4518,6 +5055,9 @@
     "lootTables": [
      "Armaments - Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -4546,7 +5086,27 @@
      "When you hit with a ranged attack roll using this magic bow, the target takes an extra {@damage 1d6} radiant damage. If you load no ammunition in the weapon, it produces its own, automatically creating one piece of magic ammunition when you make a ranged attack with it. The ammunition created by the bow vanishes the instant after it hits or misses a target.",
      "While wielding this magic bow, you can use a bonus action to enter a semi-incorporeal state until the start of your next turn. While semi-incorporeal, you have resistance to bludgeoning, piercing, and slashing damage. Once this bonus action is used, it can't be used again until the next dawn."
     ]
-   }
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "bludgeoning"
+    },
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "piercing"
+    },
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "slashing"
+    }
+   ]
   },
   {
    "id": "generic-variant:bmt:gloomwrought%20armor",
@@ -4593,7 +5153,19 @@
       ]
      }
     }
-   }
+   },
+   "charge_tracker": {
+    "max": 3,
+    "recovery": "All'alba: recupera {@dice 1d3}"
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "calm emotions",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    }
+   ]
   },
   {
    "id": "generic-variant:au:goading%20ammunition",
@@ -4681,6 +5253,13 @@
     "lootTables": [
      "Armaments - Legendary|XDMG"
     ]
+   },
+   "charge_tracker": {
+    "max": 5,
+    "recovery": "All'alba: recupera {@dice 1d4 + 1}"
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -4742,6 +5321,9 @@
     "lootTables": [
      "Magic Item Table I"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -4778,6 +5360,9 @@
      "Armaments - Legendary|XDMG",
      "Relics - Legendary|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -5071,6 +5656,9 @@
      "You have a {=bonusAc} bonus to AC while wearing this armor, which shimmers softly.",
      "If you die while wearing the armor, it is destroyed, and each celestial, fey, and fiend within 30 feet of you must succeed on a {@dc 15} Charisma saving throw or be banished to its home plane of existence, unless it is already there."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
    }
   },
   {
@@ -5094,6 +5682,9 @@
      "This thin, black, iron blade is popular among Thayan assassins and spies.",
      "You gain a +1 bonus to attack rolls and damage rolls made with this magic weapon. When you hit with an attack roll using this weapon, the target takes an extra {@damage 2d4} Necrotic damage, and it can't regain {@variantrule Hit Points|XPHB} until the end of its next turn. If a creature is reduced to 0 {@variantrule Hit Points|XPHB} by an attack using this weapon, the creature immediately dies and can be restored to life only by a {@spell Resurrection|XPHB} or {@spell True Resurrection|XPHB} spell."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -5129,7 +5720,27 @@
       ]
      }
     ]
-   }
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "necrotic"
+    },
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "poison"
+    },
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "psychic"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:luck%20blade",
@@ -5198,6 +5809,16 @@
      "entries": [
       "The sword has {@dice 1d4 - 1} charges. While holding it, you can use an action to expend 1 charge and cast the {@spell wish} spell from it. This property can't be used again until the next dawn. The sword loses this property if it has no charges."
      ]
+    }
+   ],
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
+   },
+   "effects": [
+    {
+     "type": "bonus",
+     "target": "saving_throw",
+     "expression": "+1"
     }
    ]
   },
@@ -5273,7 +5894,17 @@
     "lootTables": [
      "Armaments - Legendary|XDMG"
     ]
-   }
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
+   },
+   "effects": [
+    {
+     "type": "bonus",
+     "target": "saving_throw",
+     "expression": "+1"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:mariner's%20armor",
@@ -5413,6 +6044,13 @@
      "You have a {=bonusAc} bonus to AC while wearing this armor.",
      "Mithral is a light, flexible metal. A mithral chain shirt or breastplate can be worn under normal clothes. If the armor normally imposes disadvantage on Dexterity ({@skill Stealth}) checks or has a Strength requirement, the mithral version of the armor doesn't."
     ]
+   },
+   "item_fields": {
+    "stealth": false,
+    "strength": 0
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
    }
   },
   {
@@ -5455,6 +6093,10 @@
     "lootTables": [
      "Magic Item Table B"
     ]
+   },
+   "item_fields": {
+    "stealth": false,
+    "strength": 0
    }
   },
   {
@@ -5552,7 +6194,17 @@
      "This magical armor appears as a jug of molten bronze. When you attune to it, the bronze adheres and contours to your skin. The armor can be worn under normal clothes, but it doesn't impede bodily functions. Once you put it on, it can't be removed unless you choose to do so.",
      "While wearing the armor, you have resistance to fire damage. The armor also doesn't impose disadvantage on Dexterity ({@skill Stealth}) checks."
     ]
-   }
+   },
+   "item_fields": {
+    "stealth": false
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "fire"
+    }
+   ]
   },
   {
    "id": "generic-variant:xge:moon-touched%20sword",
@@ -5719,6 +6371,9 @@
     "lootTables": [
      "Armaments - Legendary|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -5751,6 +6406,9 @@
     "lootTables": [
      "Magic Item Table H"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -5788,6 +6446,9 @@
     "lootTables": [
      "Armaments - Very Rare|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -6133,6 +6794,18 @@
    "entries": [
     "{@note * This generic variant has the same name and source as the item {@item Plate Armor of Etherealness|XDMG}}.",
     "While you're wearing this armor, you can take a {@action Magic|XPHB} action and use a command word to gain the effect of the {@spell Etherealness|XPHB} spell. The spell ends immediately if you remove the armor or take a {@action Magic|XPHB} action to repeat the command word. This property of the armor can't be used again until the next dawn."
+   ],
+   "charge_tracker": {
+    "max": 1,
+    "recovery": "manual"
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "etherealness|xphb",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    }
    ]
   },
   {
@@ -6292,7 +6965,14 @@
     "propertyAdd": [
      "Evo|AU"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "psychic"
+    }
+   ]
   },
   {
    "id": "generic-variant:efa:repeating%20shot",
@@ -6322,6 +7002,9 @@
     "classFeatures": [
      "replicate magic item|artificer|efa|2|efa"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -6378,7 +7061,14 @@
     "resist": [
      "fire"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "fire"
+    }
+   ]
   },
   {
    "id": "generic-variant:efa:returning%20weapon",
@@ -6406,6 +7096,9 @@
     "classFeatures": [
      "replicate magic item|artificer|efa|2|efa"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -6469,7 +7162,17 @@
       ]
      }
     ]
-   }
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "psychic"
+    }
+   ]
   },
   {
    "id": "generic-variant:crcotn:ruidium%20weapon",
@@ -6523,6 +7226,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -6828,6 +7534,10 @@
       ]
      }
     ]
+   },
+   "charge_tracker": {
+    "max": 3,
+    "recovery": "All'alba: recupera {@dice 1d3}"
    }
   },
   {
@@ -6851,6 +7561,9 @@
      "Whenever you roll a 20 on your attack roll with this weapon, each creature of your choice within 5 feet of the target takes 5 damage of the type dealt by the dragon's breath weapon.",
      "You gain a {=bonusWeapon} bonus to attack and damage rolls made using the weapon. On a hit, the weapon deals an extra {@damage 1d6} damage of the type dealt by the dragon's breath weapon."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -6935,6 +7648,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -6978,7 +7694,14 @@
     "propertyAdd": [
      "Evo|AU"
     ]
-   }
+   },
+   "effects": [
+    {
+     "type": "defenses",
+     "rank": 1,
+     "key": "psychic"
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:sword%20of%20life%20stealing",
@@ -7091,6 +7814,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -7193,6 +7919,9 @@
      "You can specify a target destination, such as the City of Brass on the Elemental Plane of Fire or the palace of Dispater on the second layer of the Nine Hells, and the rift opens in or near that destination (DM's discretion). If you are trying to reach the City of Brass, for example, the rift might appear on the Street of Steel, before the Gate of Ashes, or facing the city from across the Sea of Fire, at the DM's discretion.",
      "Anything that enters the rift is instantly transported to the other plane, appearing in the unoccupied space nearest to the rift."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -7232,6 +7961,9 @@
     "lootTables": [
      "Magic Item Table F"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -7287,6 +8019,9 @@
     "lootTables": [
      "Armaments - Uncommon|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
    }
   },
   {
@@ -7422,7 +8157,19 @@
      "Armaments - Common|XDMG",
      "Implements - Common|XDMG"
     ]
-   }
+   },
+   "charge_tracker": {
+    "max": 1,
+    "recovery": "manual"
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "message|xphb",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    }
+   ]
   },
   {
    "id": "generic-variant:aud:thayan%20sword",
@@ -7487,7 +8234,34 @@
       ]
      }
     }
-   }
+   },
+   "charge_tracker": {
+    "max": 4,
+    "recovery": "All'alba: recupera {@dice 1d4}"
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "searing smite|xphb",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    },
+    {
+     "type": "spells",
+     "spell_token": "thunderous smite|xphb",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    },
+    {
+     "type": "spells",
+     "spell_token": "wrathful smite|xphb",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    }
+   ]
   },
   {
    "id": "generic-variant:au:tramontane%20armor",
@@ -7527,6 +8301,9 @@
       ]
      }
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_ac": 1
    }
   },
   {
@@ -7634,7 +8411,10 @@
    "entries": [
     "When you roll a 20 with this magic weapon, the target takes an extra 7 damage of the weapon's type.",
     "{@note Note: According to the SRD, it is an extra {@damage 2d6} damage, although {@link this is incorrect|https://rpg.stackexchange.com/a/174522/53884}.}"
-   ]
+   ],
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
+   }
   },
   {
    "id": "generic-variant:dmg:vicious%20weapon",
@@ -7729,6 +8509,9 @@
     "lootTables": [
      "Magic Item Table I"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -7769,6 +8552,9 @@
     "lootTables": [
      "Armaments - Legendary|XDMG"
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -7793,6 +8579,9 @@
      "You gain a {=bonusWeapon} bonus to attack and damage rolls made using the weapon. On a hit, the weapon deals an extra {@damage 2d6} damage of the type dealt by the dragon's breath weapon.",
      "As an action, you can unleash a 30-foot cone of destructive energy from the weapon. Each creature in that area must make a {@dc 16} Dexterity saving throw, taking {@damage 8d6} damage of the type dealt by the dragon's breath weapon on a failed save, or half as much damage on a successful one. Once this action is used, it can't be used again until the next dawn."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 2
    }
   },
   {
@@ -7876,6 +8665,9 @@
     "entries": [
      "You have a {=bonusWeapon} bonus to attack and damage rolls made with this magic weapon. When this weapon reduces a creature to 0 hit points, the creature doesn't die. Instead, infernal runes appear as if carved into their flesh and they're healed to 1 hit point. They now have the {@condition paralyzed} condition until the condition is removed by a {@spell Lesser Restoration} spell or similar magic. When the condition is removed, the runes disappear. At the start of each of their turns while they're {@condition paralyzed}, the creature suffers immense pain and gains a level of {@condition exhaustion}."
     ]
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 3
    }
   },
   {
@@ -7948,7 +8740,46 @@
       ]
      }
     }
-   }
+   },
+   "charge_tracker": {
+    "max": 5,
+    "recovery": "All'alba: recupera {@dice 1d4}"
+   },
+   "numeric_item_bonuses": {
+    "bonus_weapon": 1
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "command",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    },
+    {
+     "type": "spells",
+     "spell_token": "zone of truth",
+     "payment_mode": "tracker",
+     "tracker_cost": 2
+    },
+    {
+     "type": "spells",
+     "spell_token": "banishment",
+     "payment_mode": "tracker",
+     "tracker_cost": 4
+    },
+    {
+     "type": "spells",
+     "spell_token": "compulsion",
+     "payment_mode": "tracker",
+     "tracker_cost": 4
+    },
+    {
+     "type": "spells",
+     "spell_token": "dominate person",
+     "payment_mode": "tracker",
+     "tracker_cost": 5
+    }
+   ]
   },
   {
    "id": "generic-variant:dmg:weapon%20of%20warning",
@@ -8089,7 +8920,19 @@
       ]
      }
     }
-   }
+   },
+   "charge_tracker": {
+    "max": 1,
+    "recovery": "manual"
+   },
+   "effects": [
+    {
+     "type": "spells",
+     "spell_token": "wind wall",
+     "payment_mode": "tracker",
+     "tracker_cost": 1
+    }
+   ]
   }
  ]
 }

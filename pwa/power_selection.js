@@ -1,6 +1,7 @@
 import {migrateSelectionRecord} from './selection_compatibility.js';
 // One selection engine. Source definitions only supply options and stage data.
-import {targetableInventoryItems,itemAttunementCount} from './item_controls.js';
+import {targetableInventoryItems,itemAttunementCount,activeItemOptionEffects} from './item_controls.js';
+import {originSpellId} from './spell_selection.js';
 import {isContentAvailableForRules} from './source_edition.js';
 const rows=v=>Array.isArray(v)?v:[];
 const low=v=>String(v??'').trim().toLowerCase();
@@ -190,13 +191,48 @@ export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,opt
  const custom={...(record.power_selection_custom_options||{}),[id]:[...rows(record.power_selection_custom_options?.[id]),{id:optionId,name:String(name).trim(),description,source:'HOMEBREW',_homebrew:true}]};
  return {...powerSelectionPatch({...record,power_selection_custom_options:custom},calculated,catalog,id,stage,optionId),power_selection_custom_options:custom};
 }
+// Existing primitive benefit types are shared by powers and owned items.
+const EFFECT_FIELDS={bonus:'formula_bonuses',dice:'dice_bonuses',
+ scaling_die:'scaling_dice',proficiency:'proficiency_choices',
+ resources:'resource_trackers',spells:'origin_spell_grants',
+ spell_choice:'origin_spell_choices',actions:'action_grants',senses:'sense_grants',
+ defenses:'damage_defense_entries',effect_extensions:'effect_extensions',
+ roll_mode:'roll_mode_grants',base_override:'base_value_overrides'};
+function appendTypedBenefit(grants,effect,origin){
+ const field=EFFECT_FIELDS[effect?.type];if(!field)return false;
+ const {type,...values}=effect;
+ grants[field].push({...values,...values.data,...origin});return true;
+}
+// Apply only declared primitive benefits from active item extensions.
+// Old saved copies can read upgraded definitions from the offline catalog.
+export function projectItemOptionBenefits(record={},catalogs={}){
+ const catalog=new Map(rows(catalogs.genericItemVariants?.variants).map(row=>[row.id,row]));
+ const grants=Object.fromEntries(Object.values(EFFECT_FIELDS).map(field=>[field,[...rows(record[field])]]));
+ for(const active of activeItemOptionEffects(record,catalogs.abilityGrants?.artificer_infusions||[],catalogs.features||[])){
+  const declaration=catalog.get(active.option_id);
+  for(const [ordinal,effect] of rows(declaration?.effects||active.definition.effects).entries()){
+   const origin={id:'item-benefit:'+active.id+':'+ordinal,origin_id:active.id,
+    parent_origin:'item:'+active.item.id,origin_name:'Oggetto · '+active.name,
+    automatic:true,disabled:false};
+   if(effect.type==='spells'){
+    const token=String(effect.spell_token||'');
+    if(!token||!active.definition.charge_tracker&&!declaration?.charge_tracker)continue;
+    const spell_id=originSpellId(token,String(record.rules_version||'2014'),catalogs.spells||[]);
+    if(!spell_id)continue;
+    appendTypedBenefit(grants,{...effect,spell_id,mode:'granted',
+     tracker_id:active.tracker_id,tracker_cost:Number(effect.tracker_cost)||1,
+     payment_mode:'tracker',casting_ability_not_required:true},origin);
+   }else appendTypedBenefit(grants,effect,origin);
+  }
+ }
+ return {...record,...grants};
+}
 // Project effects of every applied option to its declared recipient, never a new trait.
 export function projectSelectionBenefits(raw,catalogs,features=[]){
  const catalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{}};
  const record=normalizeSelectionRecord(raw,catalog),models=powerSelectionModels(record,{features},catalog),inventory=structuredClone(rows(record.inventory)).map(item=>({...item,option_extensions:rows(item.option_extensions).filter(e=>!e.selection_id)}));
  const optional=rows(record.optional_features_catalog).filter(row=>!row.selection_origin_id);const states={...record.trait_state_selection};
- const fields={bonus:'formula_bonuses',dice:'dice_bonuses',scaling_die:'scaling_dice',proficiency:'proficiency_choices',resources:'resource_trackers',spells:'origin_spell_grants',spell_choice:'origin_spell_choices',actions:'action_grants',senses:'sense_grants',defenses:'damage_defense_entries',effect_extensions:'effect_extensions',roll_mode:'roll_mode_grants',base_override:'base_value_overrides'};
- const grants=Object.fromEntries(Object.values(fields).map(field=>[field,rows(record[field]).filter(row=>!row.selection_origin_id)]));
+ const grants=Object.fromEntries(Object.values(EFFECT_FIELDS).map(field=>[field,rows(record[field]).filter(row=>!row.selection_origin_id)]));
  // Model state choices are derived, not another persisted selection engine.
  for(const rule of definitions(catalog))for(const option of optionsFor(record,rule))for(const e of rows(option.effects))if(e.type==='state_selection')delete states[e.key];
  for(const model of models)for(const application of rows(model.layers.applied?.selected)){
@@ -207,7 +243,7 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
    item.option_extensions=[...rows(item.option_extensions),{selection_id:model.id,id:option.id,name:option.name,description:option.description,details:option.details,origin_id:model.source_origin_id,level:model.level,requires_attunement:option.requires_attunement,effect_choice:application.effect_choice||{},definition:option.item_effects||{id:option.id,name:option.name}}];
   }
   for(const [index,effect] of [...rows(model.application?.effects),...rows(option.effects)].entries()){
-   if(fields[effect.type]){const {type,...values}=effect;grants[fields[type]].push({...values,...values.data,id:'selection:'+model.id+':'+option.id+':'+index,selection_origin_id:model.id,origin_id:item?'item-instance:'+(item.instance_id||item.id):model.origin_id,parent_origin:model.source_origin_id,origin_name:option.name,automatic:false,disabled:false});}
+   appendTypedBenefit(grants,effect,{id:'selection:'+model.id+':'+option.id+':'+index,selection_origin_id:model.id,origin_id:item?'item-instance:'+(item.instance_id||item.id):model.origin_id,parent_origin:model.source_origin_id,origin_name:option.name,automatic:false,disabled:false});
    if(effect.type==='catalog_feature')optional.push({name:option.name,source:option.source,origin_id:model.origin_id,selection_origin_id:model.id,entries:[option.description||'']});
    if(effect.type==='state_selection')states[effect.key]=effect.value;
   }

@@ -159,6 +159,11 @@ export function resolveOwnedItem(saved={}){
     const props=array(effective.properties).filter(p=>!array(inherits.propertyRemove).some(r=>String(r).split('|')[0]===String(p).split('|')[0]));
     effective.properties=[...props,...array(inherits.propertyAdd).filter(p=>!props.some(r=>String(r).split('|')[0]===String(p).split('|')[0]))];
     if(inherits.rarity)effective.rarity=inherits.rarity;
+    const fields=extension.definition?.item_fields||{};
+    for(const key of ['stealth','strength'])
+      if(Object.hasOwn(fields,key))effective[key]=fields[key];
+    if(inherits.stealth===false)effective.stealth=false;
+    if(Object.hasOwn(inherits,'strength')&&inherits.strength===null)effective.strength=0;
   }
   return effective;
 }
@@ -299,6 +304,26 @@ export function genericVariantMatches(item,variant){
  return variant.requires.some(requirement=>variantRequirement(base,requirement))&&
   !Object.entries(variant.excludes||{}).some(([field,value])=>variantRequirement(base,{[field]:value}));
 }
+// Read-only recovery of newly structured benefits on older saved variants.
+export function hydrateGenericVariants(record={},catalog={}){
+ const definitions=new Map(array(catalog?.variants).map(row=>[row.id,row]));
+ if(!definitions.size)return record;
+ let changed=false;
+ const inventory=array(record.inventory).map(item=>{
+  const extensions=array(item.option_extensions);
+  if(!extensions.some(row=>row.generic_variant&&definitions.has(row.id)))return item;
+  changed=true;
+  return {...item,option_extensions:extensions.map(row=>{
+   const variant=row.generic_variant&&definitions.get(row.id);
+   if(!variant)return row;
+   const definition={...row.definition};
+   for(const field of ['numeric_item_bonuses','effects','charge_tracker','item_fields'])
+     if(Object.hasOwn(variant,field))definition[field]=variant[field];
+   return {...row,definition};
+  })};
+ });
+ return changed?{...record,inventory}:record;
+}
 export function genericVariantPatch(record,index,variant,add=true){
  const inventory=structuredClone(array(record.inventory)),selected=inventory[index];
  if(!Number.isInteger(index)||index<0||!selected||!variant?.id)throw Error('Oggetto o variante non disponibile.');
@@ -328,8 +353,12 @@ export function genericVariantPatch(record,index,variant,add=true){
    id,name:variant.name,source:variant.source,generic_variant:true,
    description,requires_attunement:Boolean(inherits.reqAttune||array(inherits.reqAttuneTags).length),
    definition:{id,name:variant.name,source:variant.source,inherits,
-    ...(Object.keys(numeric).length?{numeric_item_bonuses:numeric}:{}),
-    ...(Number(inherits.charges)>0?{charge_tracker:{max:Number(inherits.charges),recovery:String(inherits.recharge||'manual')}}:{})}
+    ...(variant.item_fields?{item_fields:variant.item_fields}:{}),
+    ...(variant.effects?{effects:variant.effects}:{}),
+    ...(variant.numeric_item_bonuses?{numeric_item_bonuses:variant.numeric_item_bonuses}:
+       Object.keys(numeric).length?{numeric_item_bonuses:numeric}:{}),
+    ...(variant.charge_tracker?{charge_tracker:variant.charge_tracker}:
+       Number(inherits.charges)>0?{charge_tracker:{max:Number(inherits.charges),recovery:String(inherits.recharge||'manual')}}:{})}
   }];
  }else{
   if(!attached.some(x=>x.id===id&&x.generic_variant))throw Error('Variante non applicata.');

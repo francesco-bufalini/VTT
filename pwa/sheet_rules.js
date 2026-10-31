@@ -1,4 +1,4 @@
-import {projectSelectionBenefits} from './power_selection.js';
+import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from './scaling_dice.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
 import {monsterTraits,bindMonsterTrackers,monsterAttackOwner} from './monster_traits.js';
@@ -19,7 +19,7 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus,hydrateGenericVariants} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
@@ -824,7 +824,8 @@ export function spellProgression(record,classes){
    pact_level:pactLevel,caster_level:caster,warnings:[]};
 }
 export function calculateSheet(record={},catalogs={}){
-  let effective=projectSelectionBenefits(record,catalogs,collectStructuredFeatures(record,catalogs));
+  const hydrated=hydrateGenericVariants(record,catalogs.genericItemVariants);
+  let effective=projectSelectionBenefits(hydrated,catalogs,collectStructuredFeatures(hydrated,catalogs));
   const selectionRecord=effective;
   const withScalingDice=calculated=>{
     const dice=scalingDiceFor(effective,catalogs.scalingDice?.dice||[],calculated.features);
@@ -876,6 +877,7 @@ function monsterStatDefenses(stat={}){
 }
 function calculateSheetValues(record={},catalogs={}){
   if(record.variant_rules_kind==='monster')record={...record,kind:'monster'};
+  record=projectItemOptionBenefits(record,catalogs);
   const suppressed=removedBenefitIds(record);
   // Suppress legacy/manual grants in the calculation as well as in the popup.
   // The original catalog grants remain untouched and recoverable.
@@ -950,13 +952,7 @@ function calculateSheetValues(record={},catalogs={}){
     instinct.roll_modes=[...arr(instinct.roll_modes),{target:'initiative',mode:'advantage'}];
   const racialRollModes=speciesRollModeEntries(record,catalogs.speciesRollModes,features,suppressed);
   const racialBonusRows=racialBonusEntries(record,catalogs.speciesConditionalBonuses||{},features,suppressed);
-  const variantDefenses=activeItemOptionEffects(record,[],features).flatMap(effect=>
-    ['resist','immune','vulnerable'].flatMap((field,index)=>
-     arr(effect.definition?.inherits?.[field]).filter(value=>typeof value==='string').map(value=>({
-      id:'generic-variant:'+effect.id+':'+field+':'+value,origin_id:effect.id,origin_name:effect.name,
-      rank:[1,2,-1][index],key:value.split('|')[0],automatic:true
-     }))));
-  const damage_defense_entries=[...arr(record.damage_defense_entries),...variantDefenses,
+  const damage_defense_entries=[...arr(record.damage_defense_entries),
     ...(kind==='monster'?monsterStatDefenses(record.stat_block):[]),
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed),
     ...classDefenseEntries(record,features,suppressed),
@@ -1781,11 +1777,14 @@ export function loadRuleCatalogs(){
       .catch(()=>({spells:[],grants:[]})),
     fetch('/catalog/spellcasting_benefits.json').then(r=>{if(!r.ok)throw Error('Benefici incantatore non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.grants)?data:{grants:[]})
-      .catch(()=>({grants:[]}))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits])=>({
+      .catch(()=>({grants:[]})),
+    fetch('/catalog/generic_item_variants.json').then(r=>r.ok?r.json():{})
+      .then(data=>data?.version===1&&Array.isArray(data.variants)?data:{variants:[]})
+      .catch(()=>({variants:[]}))
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
-    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,featureRules:featureRules||{},
+    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
     featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
