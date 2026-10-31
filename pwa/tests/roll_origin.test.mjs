@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from '../sheet_roll_origin.js';
