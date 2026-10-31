@@ -3743,11 +3743,7 @@ function inventoryItemDescription(obj,index){
   const overrides=itemKind(obj)==="weapon"?'<details class="inventory-overrides"><summary>Personalizza copia</summary>'+
     [['damage','Dadi danno'],['versatile_damage','Danno versatile'],['range','Gittata (ft)'],['bonus_weapon','Bonus magico']].map(([key,label])=>
       '<label>'+label+'<input data-item-override="'+key+'" data-item-index="'+index+
-      '" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+'</details>':
-    ["armor","shield"].includes(itemKind(obj))?'<details class="inventory-overrides"><summary>Personalizza CA</summary>'+
-    [['ac','CA base'],['bonus_ac','Bonus CA']].map(([key,label])=>'<label>'+label+
-    '<input data-item-override="'+key+'" data-item-index="'+index+'" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+
-    '</details>':'';
+      '" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+'</details>':'';
   const genericVariants=(Array.isArray(obj.option_extensions)?obj.option_extensions:[]).filter(row=>row.generic_variant);
   return '<div class="inventory-description">'+
     '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
