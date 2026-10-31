@@ -34,10 +34,10 @@ export function featureEnabled(record,feature){
 // trait previews. Battle actions consume only descriptors marked available.
 export function classFeatureDescriptors(record={},calculated={}){
  const revised=record.rules_version==='2024',output=[];
- for(const [key,owner,sourceName,label,baseResource,baseTime,mode] of CLASS_FEATURE_RULES){
-  const parent=revised&&sourceName==='Ki'?'Monk’s Focus':sourceName;
+ for(const [key,owner,sourceName,label,baseResource,baseTime,mode,options={}] of CLASS_FEATURE_RULES){
+  const resolvedMode=options.mode_by_edition?.[revised?'2024':'2014']||mode;
   const candidates=rows(calculated.features).filter(f=>
-   low(f.name).replaceAll("'",'’')===low(parent)&&String(f.origin_key||'').startsWith('class|')&&
+   low(f.name).replaceAll("'",'’')===low(sourceName)&&String(f.origin_key||'').startsWith('class|')&&
    low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(owner)&&
    (owner!=='Artificer'||low(f.class_source||String(f.origin_key).split('|')[1])==='tce'));
   const feature=candidates.find(f=>featureEnabled(record,f))||candidates[0];
@@ -55,14 +55,14 @@ export function classFeatureDescriptors(record={},calculated={}){
   output.push({id:'class_feature:'+key,class_feature_id:key,name:label,
    descriptive_only:DESCRIPTIVE_CLASS_FEATURE_IDS.has(key),
    time:revised&&key==='lay_on_hands'?'bonus':baseTime,type:'Capacità',
-   mode,description:feature.entries??feature.description??'',class_name:owner,
+   mode:resolvedMode,description:feature.entries??feature.description??'',class_name:owner,
    resource_name:resource,tracker:tracker?.name||resource,tracker_id:tracker?.id||'',
    cost:revised&&['patient_defense','step_of_the_wind'].includes(key)?0:resource?1:0,
    origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
    feature_name:feature.name,origin_name:'Tratto · '+feature.name,
    available,unavailable_reason:!featureEnabled(record,feature)?'disabled':gated?'state':'',
    required_states:requiredStates.map(({id,name})=>({id,name})),
-   active:available&&mode==='toggle'&&!!record.active_class_features?.[key]});
+   active:available&&resolvedMode==='toggle'&&!!record.active_class_features?.[key]});
  }
  return output;
 }
@@ -219,7 +219,7 @@ export function classFeatureLevel(record,name){
  return Math.max(0,Number(member?.level??(low(record.class)===low(name)?record.level:0))||0);
 }
 export function classFeatureActive(record,calculated,key){
- if(!record.active_class_features?.[key]||!classFeatureEntries(record,calculated).some(a=>a.class_feature_id===key))return false;
+ if(!record.active_class_features?.[key]||!classFeatureEntries(record,calculated).some(a=>a.class_feature_id===key&&a.mode==='toggle'))return false;
  if(key==='rage'&&(rows(record.inventory).map(resolveOwnedItem).some(i=>Number(i.quantity??1)>0&&
   rows(i.equipped_slots).includes('body')&&String(i.type||'').split('|')[0]==='HA')||
   rows(record.conditions).includes('unconscious')||record.rules_version==='2024'&&rows(record.conditions).includes('incapacitated')))return false;
@@ -418,7 +418,8 @@ export function classFeatureRollAdvantage(record,calculated,target){
  return resolveClassRollMode(classFeatureRollSources(record,calculated,target)).mode==='advantage';
 }
 export function classFeatureEffects(record,calculated){
- return Object.entries(record.active_class_features||{}).filter(([key])=>!key.startsWith('trait_state:')).map(([key,state])=>{
+ return Object.entries(record.active_class_features||{}).filter(([key])=>
+  !key.startsWith('trait_state:')&&classFeatureEntries(record,calculated).some(a=>a.class_feature_id===key&&a.mode==='toggle')).map(([key,state])=>{
   const action=classFeatureEntries(record,calculated).find(a=>a.class_feature_id===key);
   const effective=classFeatureActive(record,calculated,key);
   const summaries={rage:'Danni con attacchi di Forza validi +'+classFeatureDamage(record,calculated,{},'str')+
