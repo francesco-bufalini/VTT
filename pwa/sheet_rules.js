@@ -714,16 +714,28 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
   if(linkedIds.has('monster:'+section+':'+i))return;
   if(!action?.name)return;
+  const id='monster:'+section+':'+i;
+  const owner=monsterAttackOwner(record,id);
+  // Monster bestiary attacks use their published hit total (PB already included).
+  // Training is an independent source-bound benefit, not an extra hit modifier.
+  const ownedAttack=spec=>({...spec,id,name:action.name,
+    origin_id:'feature:'+(owner?.feature_key||''),
+    origin_name:owner?.origin||'Mostro · '+(record.stat_block?.name||record.name||''),
+    proficiency_kind:'attack',grants_proficiency:spec.grants_proficiency!==false});
   if(action.vtt_attack){
    const spec=action.vtt_attack;if(spec.attack_kind!=='attack')return;
-   append({...spec,id:'monster:'+section+':'+i,origin_id:'feature:'+(monsterAttackOwner(record,'monster:'+section+':'+i)?.feature_key||''),name:action.name},spec.source_ability||'str',true,spec.damage||'',int(spec.base_hit));
+   const attack=ownedAttack({...spec,grants_proficiency:action.grants_proficiency??spec.grants_proficiency});
+   append(attack,spec.source_ability||'str',attack.grants_proficiency,spec.damage||'',int(spec.base_hit));
    return;
   }
   const text=JSON.stringify(action.entries||[]),hit=text.match(/\{@hit\s*([+-]?\d+)\}/)||text.match(/([+-]\d+)\s+to\s+hit/i);
   if(!hit&&!/\{@atk |weapon attack:|spell attack:/i.test(text))return;
   const ranged=/ranged|\{@atk r[ws]\}/i.test(text),reach=int(text.match(/reach\s*(\d+)\s*(?:ft|feet)/i)?.[1],5);
   const range=text.match(/range\s*(\d+)(?:\/(\d+))?/i),damage=text.match(/\{@damage\s*([^}]+)\}/)?.[1]||text.match(/\d+d\d+(?:\s*[+-]\s*\d+)*/)?.[0]||'';
-  append({id:'monster:'+section+':'+i,origin_id:'feature:'+(monsterAttackOwner(record,'monster:'+section+':'+i)?.feature_key||''),name:action.name,melee:!ranged||/melee or ranged/i.test(text),range_feet:ranged?int(range?.[1],5):reach,long_range_feet:ranged?int(range?.[2]):0},ranged?'dex':'str',true,damage,int(hit?.[1]));
+  const attack=ownedAttack({melee:!ranged||/melee or ranged/i.test(text),
+    range_feet:ranged?int(range?.[1],5):reach,long_range_feet:ranged?int(range?.[2]):0,
+    grants_proficiency:action.grants_proficiency});
+  append(attack,ranged?'dex':'str',attack.grants_proficiency,damage,int(hit?.[1]));
  });
  for(const slot of ['main','off']){
   const item=slot==='off'?off:main;if(!item||itemKind(item)!=='weapon')continue;
@@ -1538,7 +1550,7 @@ function calculateSheetValues(record={},catalogs={}){
   const attackProficiencySources=new Map();
   for(const attack of attacks){
     if(attack.grants_proficiency!==true||!attack.origin_id||!attack.name)continue;
-    const key='weapon:'+norm(attack.name);
+    const key=(attack.proficiency_kind||'weapon')+':'+norm(attack.name);
     proficiencies.set(key,true);
     const sources=attackProficiencySources.get(key)||[];
     if(!sources.some(source=>source.id===attack.origin_id))

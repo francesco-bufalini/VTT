@@ -232,6 +232,10 @@ static func prepare(stat_block: Dictionary) -> Dictionary:
 					if custom_resource is Dictionary:
 						resource = (custom_resource as Dictionary).duplicate(true)
 			if not generated.is_empty() and String(generated.get("attack_kind", "")) == "attack":
+				# Published monster hit totals already contain proficiency.
+				# Preserve explicit opt-outs in curated attack overrides.
+				if not generated.has("grants_proficiency"):
+					generated["grants_proficiency"] = true
 				action["vtt_attack"] = generated
 			if not resource.is_empty():
 				resource["id"] = "recharge:%s:%d" % [section, index]

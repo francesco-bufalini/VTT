@@ -46,11 +46,15 @@ func run() -> void:
 		"Normalized monster reach must be immediately available without regex")
 	var record: Dictionary = {"kind": "monster", "stat_block": normalized}
 	var mandibles: Dictionary = _attack(record, "Mandibles")
+	assert(bool((normalized["action"][0] as Dictionary).get("vtt_attack", {}).get("grants_proficiency", false)),
+		"Normalized bestiary attacks declare their proficiency explicitly")
 	assert(int(mandibles.get("base_hit", 0)) == 11)
 	assert(int(mandibles.get("range_feet", 0)) == 10)
 	assert(mandibles.get("damage", "") == "2d10 + 6")
 	assert(_attack(record, "Shadow Caw").is_empty(),
 		"Saving-throw damage must not become a weapon attack")
+	assert(not (normalized["action"][1] as Dictionary).has("vtt_attack"),
+		"A saving throw must not inherit an attack proficiency grant")
 	var hybrid: Dictionary = _attack(record, "Versatile Lance")
 	assert(bool(hybrid.get("melee", false)) and bool(hybrid.get("has_ranged_mode", false)))
 	assert(int(hybrid.get("melee_reach_feet", 0)) == 10)

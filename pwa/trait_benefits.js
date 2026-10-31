@@ -139,8 +139,8 @@ function proficiencyLabel(key){
   save:ABILITIES[name]||name,weapon:({'firearms':'Armi da fuoco','firearm':'Armi da fuoco'}[norm(name)]||name),armor:name,tool:name,language:name}[kind]||name;
 }
 const proficiencyKinds={skill:'Abilità',expertise:'Maestria',
- save:'Tiri salvezza',weapon:'Armi',armor:'Armature',tool:'Strumenti',language:'Lingue'};
-const proficiencyOrder=['skill','expertise','save','weapon','armor','tool','language'];
+ save:'Tiri salvezza',weapon:'Armi',attack:'Attacchi',armor:'Armature',tool:'Strumenti',language:'Lingue'};
+const proficiencyOrder=['skill','expertise','save','weapon','attack','armor','tool','language'];
 /** Returns ordered groups with {type,title,items:[{label,value}]}.
  * No grouping by guessed trait names: every grant must match an origin ID.
  */
