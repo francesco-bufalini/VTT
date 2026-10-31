@@ -92,6 +92,14 @@ test('new spell scrolls preserve selected casting level and stack identical copi
  assert.equal(doubled.inventory.length,1);
  assert.equal(doubled.inventory[0].quantity,2);
  assert.equal(added.inventory[0].quantity,1,'stack operations must be immutable');
+ const bulk=addSpellScroll([],shield,3,'batch',4);
+ assert.equal(bulk.inventory[0].quantity,4);
+ const merged=addSpellScroll(bulk.inventory,shield,3,'batch-two',3);
+ assert.equal(merged.inventory[0].quantity,7);
+ assert.equal(bulk.inventory[0].quantity,4);
+ for(const quantity of [0,-1,1.5,100000,'wrong'])
+  assert.throws(()=>addSpellScroll([],shield,3,'batch-invalid',quantity),/Quantità/);
+ assert.throws(()=>addSpellScroll([{...scroll,quantity:99998}],shield,3,'overflow',2),/Quantità massima/);
  const other=addSpellScroll(doubled.inventory,shield,1,'pwa_scroll_3');
  assert.equal(other.inventory.length,2,'scrolls cast at different levels remain separate');
  assert.equal(other.inventory[1].spell_level,1);
