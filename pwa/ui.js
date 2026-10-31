@@ -611,7 +611,11 @@ function navigationButton(key,title){
     actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+'<span class="destination-label">'+esc(title)+'</span></button>';
 }
 function syncNav(){
-  const hasCreature=Boolean(state.creatureId)&&!state.libraryMode;
+  const hasCreature=isCreatureOpen();
+  const topbar=document.querySelector('.topbar');
+  if(topbar)topbar.hidden=state.page==='library'&&state.libraryMode;
+  const topSessionButton=document.querySelector('.connection-link');
+  if(topSessionButton)topSessionButton.hidden=hasCreature;
   const creature=hasCreature?(state.editor?.read()||(state.cachedCreatures||[]).find(c=>c.id===state.creatureId)):null;
   const label=document.querySelector('#creature-name'),classLabel=document.querySelector('#creature-classes');
   const back=document.querySelector('#creature-back'),primary=document.querySelector('#sheet-navigation');
@@ -623,7 +627,6 @@ function syncNav(){
   const forms=document.querySelector('#creature-forms');
   if(forms){
     forms.hidden=!hasCreature||!state.editor;
-    forms.innerHTML=actionGlyph('wild_shape');
     forms.classList.toggle('has-variant',Boolean(creature?.current_form_id));
     forms.title='Forme e varianti'+(creature?.current_form_id?' · '+(activeVariant(creature)?.name||creature.name):'');
   }
@@ -645,12 +648,19 @@ function syncNav(){
   sessionTab.innerHTML=actionGlyph('map')+'<span class="destination-label">Partita</span>';
   if(state.page==='session')sessionTab.setAttribute('aria-current','page');
   else sessionTab.removeAttribute('aria-current');
+  const sessionConnected=Boolean(state.paired&&state.online);
+  sessionTab.classList.toggle('session-connected',sessionConnected);
+  sessionTab.setAttribute('aria-label',sessionConnected?'Partita · collegato':'Partita');
   for(const [page,glyph,title] of [['library','proficiency','Creature'],['catalog','book','Catalogo'],['session','map','Partita']]){
     const button=nav.querySelector('[data-nav="'+page+'"]');
     button.className='btn dock-destination';
     button.innerHTML=actionGlyph(glyph)+'<span class="destination-label">'+title+'</span>';
     if(state.page===page)button.setAttribute('aria-current','page');
     else button.removeAttribute('aria-current');
+    if(page==='session'){
+      button.classList.toggle('session-connected',sessionConnected);
+      button.setAttribute('aria-label',sessionConnected?'Partita · collegato':'Partita');
+    }
   }
   connection.textContent=state.paired&&state.online?'● Collegato':state.online?'● Desktop disponibile':state.hostReachable?'○ Nessuna partita':'○ Offline';
   connection.title=state.paired&&state.online?'Partita collegata':state.online?'Desktop in partita':state.hostReachable?'Nessuna partita aperta':'Archivio locale disponibile offline';
@@ -833,7 +843,6 @@ async function navigate(page){
   // A damaged legacy form must not prevent access to the other saved sheets.
   const archiveRows=await listCreatures();
   state.cachedCreatures=page==="library"?archiveRows.map(row=>row.creature):readableArchiveCreatures(archiveRows);
-  if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
 }
 async function render() {
@@ -4486,9 +4495,10 @@ function recordSheetChange(before,after,requested){
 function isCreatureOpen(){
  return state.page==='library'&&!state.libraryMode&&Boolean(state.creatureId);
 }
-function chatStatusText(){
- return state.paired&&state.online?'Messaggi e tiri della partita · registro locale attivo':
-  'Registro locale · le azioni restano visibili anche senza partita';
+function activeChatCreatureName(){
+ const creature=state.editor?.read()||
+   (state.cachedCreatures||[]).find(row=>row.id===state.creatureId);
+ return String(creature?.name||'Giocatore').slice(0,80);
 }
 function syncChatScreen(){
  const visible=state.chatOpen&&isCreatureOpen();
@@ -4499,10 +4509,6 @@ function syncChatScreen(){
   chatScreen.innerHTML=chatView();
   redrawChatEvents();
  }
- const caption=chatScreen.querySelector('.chat-caption');
- if(caption)caption.textContent=chatStatusText();
- const submit=chatScreen.querySelector('#chat-form [type="submit"]');
- if(submit)submit.textContent=state.paired&&state.online?'Invia messaggio':'Aggiungi alla chat locale';
 }
 function setSheetChatOpen(open){
  if(open&&!isCreatureOpen())return;
@@ -4512,20 +4518,17 @@ function setSheetChatOpen(open){
  if(open){
   const events=chatScreen.querySelector('#events');
   if(events)events.scrollTop=events.scrollHeight;
-  chatScreen.querySelector('.chat-view-close')?.focus({preventScroll:true});
+  chatScreen.querySelector('#events')?.focus({preventScroll:true});
  }else document.querySelector('#header-chat')?.focus({preventScroll:true});
 }
 function chatView(){
- return '<section class="panel chat-main-panel">'+
-  '<div class="chat-view-head"><h2>Chat della partita</h2>'+
-  '<button type="button" class="btn small chat-view-close" data-act="header-chat-close" aria-label="Chiudi chat">✕ Chiudi</button></div>'+
-  '<div class="row between chat-toolbar"><span class="chat-caption">'+esc(chatStatusText())+'</span></div>'+
-  '<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
-  '<form id="chat-form" class="stack" autocomplete="off">'+
-  '<label>Scrivi come <select id="chat-author"><option value=""'+(!state.chatAuthor?' selected':'')+'>Giocatore</option>'+
-  (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'"'+(state.chatAuthor===x.name?' selected':'')+'>'+esc(x.name)+'</option>').join('')+
-  '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio o nota locale…" required></textarea></label>'+
-  '<button type="submit" class="btn primary full">'+(state.paired&&state.online?'Invia messaggio':'Aggiungi alla chat locale')+'</button></form></section>';
+ return '<div id="events" class="chat-timeline" role="log" aria-label="Messaggi e tiri" aria-live="polite" tabindex="-1">'+
+    renderEvents()+'</div>'+
+  '<form id="chat-form" class="chat-composer" autocomplete="off">'+
+    '<input id="chat-message" type="text" maxlength="1000" placeholder="Scrivi un messaggio…" aria-label="Messaggio" required>'+
+    '<button type="submit" class="chat-send-button" aria-label="Invia messaggio" title="Invia messaggio">'+
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+
+    '<path d="m4 12 16-8-5.5 16-3.5-7-7-1Z"/><path d="m11 13 9-9"/></svg></button></form>';
 }
 function renderEvents(){
   const all=new Map();
@@ -4996,7 +4999,7 @@ async function roll(sides) {
 async function shareRoll({quiet=false,roll=null}={}) {
   if(!roll&&!state.roll) return;
   const r=roll||state.roll;
-  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:String(r.author||state.editor?.read()?.name||document.querySelector("#chat-author")?.value||state.chatAuthor||"Giocatore").slice(0,80),
+  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:String(r.author||activeChatCreatureName()).slice(0,80),
     timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,
     ...sheetRollChatFields(r)};
   rememberChatEvent(event);
@@ -9951,8 +9954,7 @@ async function handleSubmit(form){
   if(form.id==="chat-form"){
     const body=text(document.querySelector("#chat-message")?.value);
     if(!body||body.length>1000)throw new Error("Messaggio vuoto o troppo lungo.");
-    const author=text(document.querySelector("#chat-author")?.value)||"Giocatore";
-    state.chatAuthor=author==="Giocatore"?"":author;
+    const author=activeChatCreatureName();
     const event={id:"pwa_"+crypto.randomUUID(),kind:"chat",author:author.slice(0,80),
       timestamp:Math.floor(Date.now()/1000),text:body};
     rememberChatEvent(event);
@@ -10156,7 +10158,6 @@ function listen(){
 
   window.addEventListener('popstate',event=>{void restoreBrowserScreen(event.state?.__vttMobileScreen);});
   document.addEventListener("change",e=>{
-    if(e.target?.id==="chat-author")state.chatAuthor=e.target.value||"";
     if(e.target?.matches('[data-trait-add-kind]')){
       const dialog=e.target.closest('#trait-benefits-dialog');
       for(const fields of dialog?.querySelectorAll('[data-trait-fields]')||[])

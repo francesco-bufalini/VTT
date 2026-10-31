@@ -133,7 +133,8 @@ try {
   await page.locator("#chat-screen #events").waitFor({state:"visible",timeout:15000});
   assert.equal(await page.locator("#header-chat-notifications").isVisible(),true);
   assert.equal(await page.locator("#mobile-tabs").isVisible(),false);
-  await page.locator('.connection-link').click();
+  await page.locator('#creature-back').click();
+  await page.locator('#dock-session').click();
   await page.locator("#app").waitFor();
   assert.equal(await page.locator('#pair-form button[type="submit"]').isDisabled(), true,
     "Offline pairing must be unavailable");

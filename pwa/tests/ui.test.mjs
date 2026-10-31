@@ -286,16 +286,21 @@ test("dice popup logs offline and chat header is creature-only; session pairing 
   assert.equal(document.querySelector('#header-chat').hidden,true);
   assert.equal(document.querySelector('#header-chat-notifications').hidden,false);
   assert.ok(document.querySelector('.app-shell').classList.contains('chat-open'));
+  assert.equal(document.querySelector('#chat-screen .panel'),null);
+  assert.equal(document.querySelector('#chat-author'),null);
+  assert.ok(document.querySelector('#chat-screen #chat-message').matches('input[type="text"]'));
+  assert.ok(document.querySelector('#chat-screen .chat-send-button'));
   await until(()=>document.querySelector('#chat-screen #events').textContent.includes(String(total)));
-  click('[data-act="header-chat-close"]');
-  assert.equal(document.querySelector('#chat-screen').hidden,true);
-  click('.connection-link');
+  click('#creature-back');
+  await until(()=>document.querySelector('#chat-screen').hidden);
+  click('#dock-session');
   await until(()=>document.querySelector("#pair-form"));
   assert.equal(document.querySelector('#header-chat').hidden,true);
   assert.equal(document.querySelector('#header-dice').hidden,true);
   assert.match(document.querySelector("#app").textContent,/Codice temporaneo del desktop/);
   assert.equal(document.querySelector("#pair-secret").getAttribute("placeholder"),"XXXX-XXXX-XXXX-XXXX");
   assert.equal(document.querySelectorAll("#nav button").length,3);
+  assert.equal(document.querySelector('.topbar').hidden,false,"Partita keeps its normal header");
 });
 
 
@@ -403,11 +408,12 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   const sent=calls.find(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send");
   const msg=JSON.parse(sent.options.body).payload.event;
   assert.equal(msg.kind,"chat");
+  assert.equal(msg.author,"Arcanista mobile","The opened creature is the chat author");
   assert.equal(msg.text,"Messaggio dal browser");
   assert.ok(msg.id.startsWith("pwa_"));
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
-  click('[data-act="header-chat-close"]');
-  assert.equal(document.querySelector("#chat-screen").hidden,true);
+  click('#creature-back');
+  await until(()=>document.querySelector("#chat-screen").hidden);
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="sheet-roll"][data-target="save:dex"]'));
   const rollMessages=()=>calls.filter(c=>c.url==='/api/action'&&

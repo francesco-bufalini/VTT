@@ -43,7 +43,7 @@ async function archiveRecoversFromOneBadSheet(){
   }),null);
   await f.page.locator('#creature-back').click();
   await f.page.locator('[data-act="library-add"]').waitFor();
-  await f.page.locator('[data-nav="session"]').first().click();
+  await f.page.locator('#nav [data-nav="session"]').click();
   await f.page.locator('#pair-form').waitFor();
   await f.page.locator('[data-session-creature-errors]').waitFor();
   assert.equal(await f.page.locator('#app').getAttribute('data-page'),'session');
