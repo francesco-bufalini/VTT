@@ -38,13 +38,16 @@ test('multiattack is distinct from a normal attack and uses named monster strike
  assert.deepEqual([...sequence.children].map(node=>node.textContent),['Bite','Claw','Claw','Tail']);
  assert.equal(sequence.querySelectorAll('button').length,0,'Sequence steps never roll or consume resources');
  assert.equal(sequence.querySelectorAll('[data-target],[data-damage-formula]').length,0);
- assert.equal(actions.querySelector('[data-attack-id="attack"] .play-attack-sequence').children.length,1,
-  'A normal monster attack is independent of multiattack');
+ assert.equal(actions.querySelector('[data-attack-id="attack"]'),null,'Generic Attack is absent from Azioni');
+ assert.equal(sequence.closest('.play-battle-attack-action').querySelector('.play-battle-attack-range'),null);
+ assert.equal(sequence.closest('.play-battle-attack-action').querySelector('[data-act="battle-attack-map"]'),null);
+ assert.equal(sequence.closest('.play-battle-attack-action').querySelector('.play-battle-attacks-per-action'),null);
+ assert.match(sequence.closest('.play-battle-attack-action').querySelector('.play-attack-action-cost').textContent,/Azione/);
  assert.equal(resources.querySelectorAll('[data-attack-id="monster:multiattack"]').length,0);
  assert(resources.querySelector('[data-attack-id="monster:action:1"]'));
 });
 
-test('Resources contain computed attacks while abstract combat maneuvers remain in Actions',()=>{
+test('Attacchi keeps all original attack rows and maneuvers without duplicates in Azioni',()=>{
  const rules=[
   {id:'grapple',edition:'2014',name:'Afferrare',parent_action:'attack',timings:['action'],description:'Afferrare una creatura.'},
   {id:'dash',edition:'2014',name:'Scattare',timings:['action'],description:'Muoversi più velocemente.'}
@@ -53,10 +56,10 @@ test('Resources contain computed attacks while abstract combat maneuvers remain 
   attacks:[{id:'unarmed',name:'Colpo senz’armi',melee:true,hit:3,damage:'1'}]},[],[],rules);
  const resources=doc(panels.attacks),actions=doc(panels.others);
  assert(resources.querySelector('[data-attack-id="unarmed"]'));
- assert(!resources.querySelector('[data-attack-id="grapple"]'));
- assert(actions.querySelector('[data-attack-id="grapple"]'));
+ assert(resources.querySelector('[data-attack-id="grapple"]'));
+ assert(!actions.querySelector('[data-attack-id="grapple"]'));
  assert(actions.querySelector('[data-attack-id="dash"]'));
- assert(actions.querySelector('[data-action-benefit="attacks"]'));
+ assert.equal(actions.querySelector('[data-attack-id="attack"]'),null);
  assert(actions.querySelector('[data-action-benefit="other"]'));
  assert(!actions.querySelector('[data-action-timing]'),'Timing is metadata, never the grouping key');
 });
