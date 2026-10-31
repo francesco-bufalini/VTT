@@ -281,6 +281,8 @@ let mapGeneration=0;
 let snapshotGeneration=0;
 let snapshotCaptureQueue=Promise.resolve();
 let previousMapFingerprint="";
+// PWA lifecycle guard: a stopped subscriber must not be restarted by an async render.
+let realtimeStopped=false;
 let toastTimer = null;
 let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
@@ -759,6 +761,7 @@ async function restoreBrowserScreen(screen){
     await flushPendingFields();
     if(ticket!==browserHistoryRestoreTicket)return;
     if(state.page!==screen.page)stopSubscriptions();
+    if(screen.page==="session")realtimeStopped=false;
     const oldCreatureId=state.creatureId;
     state.page=screen.page;
     state.libraryMode=Boolean(screen.libraryMode);
@@ -836,7 +839,7 @@ async function navigate(page){
   else if(state.editor)state.catalogAssignCreatureId=state.creatureId||'';
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
-  stopSubscriptions();
+  stopSubscriptions();if(page==="session")realtimeStopped=false;
   state.traitPopupKey='';state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
   state.inventorySelectedIndices.clear();
   if(page==="library"){
@@ -935,8 +938,8 @@ async function render() {
       }
     }
     if(state.page==="session" && state.map) void refreshSessionSnapshot();
-    if(state.paired && state.online && !state.stopMap) startMap();
-    if(state.paired && state.online && !state.pollChat) startChat();
+    if(state.paired && state.online && !realtimeStopped && !state.stopMap) startMap();
+    if(state.paired && state.online && !realtimeStopped && !state.pollChat) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
     console.error("VTT Mobile: rendering della scheda fallito", {page:state.page,sheet:state.sheet}, error);
@@ -4918,7 +4921,7 @@ async function refreshConnection(quiet=false) {
     }catch(error){console.warn("Desktop condition catalog unavailable; using bundled 5etools catalog",error);}
   }
   syncNav();
-  if(state.online && state.paired){
+  if(state.online && state.paired && !realtimeStopped){
     if(!state.stopMap)startMap();
     if(!state.pollChat)startChat();
   }
@@ -10098,6 +10101,7 @@ async function handleSubmit(form){
     const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
     acceptSession(pairedSession);
     serverBackups.schedule();
+    realtimeStopped=false;
     state.paired=true;state.online=true;
     state.messages=[];state.after="";state.tokenId="";
     // Pairing codes are one-time. A momentary map failure must not turn a
@@ -10693,7 +10697,9 @@ function listen(){
     refreshConnection(true).catch(error=>message(errorMessage(error),true));
   });
 }
-// Allows tests and future app lifecycle handlers to release polling resources.
+// Allows tests and future PWA lifecycle handlers to release polling resources.
+// This is browser-owned and does not rely on retired native creature interfaces.
+export function stopRealtime() { realtimeStopped=true;stopSubscriptions(); }
 
 // The public 5etools catalog ships with the PWA and is precached. Load it
 // after first paint so an offline desktop never delays the creature archive.
@@ -10731,6 +10737,7 @@ export async function flushPendingEdits() {
 }
 
 export async function mount(){
+  realtimeStopped=false;
   const openChatOnMount=new URLSearchParams(location.search).get("open")==="chat";
   if(openChatOnMount)history.replaceState(history.state,"",location.pathname);
   listen();
