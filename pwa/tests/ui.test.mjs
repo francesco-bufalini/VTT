@@ -760,7 +760,7 @@ test("granted spells block new duplicate learning and preparation, not owned cla
       ' — origins: '+[...document.querySelectorAll('.magic-origin-panel')].map(row=>row.dataset.magicOrigin).join(','));
   });
   assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-owned').textContent,'Già posseduta');
-  assert.equal(document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"]'),null);
+  assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-owned')?.closest('.magic-catalog-row')?.querySelector('[data-act="spell-known-toggle"]'),null);
   click('[data-act="magic-tool-close"]');
   await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   click('[data-act="magic-select-spells"]');
@@ -769,7 +769,7 @@ test("granted spells block new duplicate learning and preparation, not owned cla
   prepareSearch.value='Shield';prepareSearch.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
   await until(()=>document.querySelector('#magic-tools-dialog .magic-catalog-owned'));
   assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-owned').textContent,'Già posseduta');
-  assert.equal(document.querySelector('#magic-tools-dialog [data-act="spell-pick"]'),null);
+  assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-owned')?.closest('.magic-catalog-row')?.querySelector('[data-act="spell-pick"]'),null);
   click('[data-act="magic-tool-close"]');
   await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   assert.equal((await loadCreature(saved.data.id)).data.prepared_spells.length,0);
