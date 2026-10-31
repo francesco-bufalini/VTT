@@ -7,7 +7,7 @@ import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_b
 import {offhandActionEligibility} from './offhand_rules.js';
 import {equipmentRequirementMatches} from './item_controls.js';
 import {render5etoolsInline} from './5etools_inline.js';
-import {monsterActions,monsterBasicRules,monsterTraits,monsterActionOptions as projectedMonsterActionOptions} from './monster_traits.js';
+import {monsterActions,monsterBasicRules,monsterTraits,monsterMultiattack,monsterActionOptions as projectedMonsterActionOptions} from './monster_traits.js';
 export {offhandActionEligibility};
 
 let supplementsCache=null;
@@ -416,7 +416,7 @@ function attackSourceDescription(record,calculated,attack){
 // Only consuming actions describe an attack sequence; the actual hit rolls stay in Resources.
 const ATTACK_NUMBERS={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6,sette:7,otto:8};
 export function attackActionSequence(action={},record={},calculated={}){
- const count=Math.max(0,Math.min(99,Number(action.attack_count||action.attacks_per_action||0)||0));
+ const count=Math.max(0,Math.min(99,Number(action.attack_count||action.attacks_per_action||(['attack','two_weapon','opportunity'].includes(action.id)?1:0))||0));
  const declared=arr(action.attack_sequence||action.attacks_granted||action.attack_grants);
  if(declared.length){
   const named=declared.flatMap(part=>{
@@ -769,7 +769,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   const [grapple]=weapon.splice(grappleAt,1);
   weapon.splice(weapon.findIndex(row=>row.id==='unarmed')+1,0,grapple);
  }
- const specials=entries.filter(row=>!classIds.has(row)&&row.type!=='Incantesimo'&&
+ const specials=entries.filter(row=>!classIds.has(row)&&!classAbilities.some(ability=>ability.id===row.id)&&row.type!=='Incantesimo'&&
    row.type!=='Attacco'&&
    !['attack','two_weapon','opportunity','spell_cast','cast_spell'].includes(row.id));
  // Typed racial alternatives belong to Actions as well as the source trait.
@@ -790,7 +790,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const multiRow=multiCount>1?[{id:'monster:multiattack',name:'Multiattacco',
   time:'action',type:'Generale',available:true,attack_count:multiCount,
   description:details(multiattack.entries),origin_id:'feature:'+multiattack.feature_key}]:[];
- const other=[...basicInActions,...multiRow,...specials,...classAbilities.filter(row=>row.monster_action)]
+ const other=[...basicInActions,...multiRow,...specials]
   .map(row=>({...row,attack_sequence:attackActionSequence(row,record,calculated)}));
  const ordering=(a,b,time)=>{
   const order=row=>row.id==='attack'&&time==='action'?-100:
