@@ -26,6 +26,7 @@ jobs:
             /items/
             /homebrew/
             /tests/test_race_subrace_selection.gd
+            /tests/fixtures/creature_record.gd
             /assets/items/
             /assets/tokens/test/
             /assets/spell_area_geometry.json
