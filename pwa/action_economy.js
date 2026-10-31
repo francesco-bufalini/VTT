@@ -479,41 +479,75 @@ export function attackActionCategory(row={}){
  return row.type==='Capacità'||row.monster_action?'abilities':'other';
 }
 
-// An attack action spends an action economy slot to grant a sequence of
-// attacks: it is not an attack roll, has no reach, and never exposes map tools.
-export function battleAttackActionRow(item={},calculated={}){
- const timeLabels={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',
-  free:'Azione gratuita',movement:'Movimento',legendary:'Azione leggendaria',
-  legendary_resistance:'Resistenza leggendaria',lair:'Azione di tana',
-  contextual:'Secondo il privilegio'};
- const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
- const cost=Math.max(0,Number(item.cost)||0),remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
- const typeLabel=timeLabels[item.time]||String(item.time||'Azione');
- const costLabel=cost>0?' · '+cost+' '+(cost===1?'utilizzo':'utilizzi'):'';
- const trackerChip=tracker&&cost>0?'<span class="play-action-tracker" title="'+esc(tracker.name)+'" aria-label="'+
-  esc(tracker.name+' · '+remaining+' di '+tracker.max+' utilizzi, costo '+cost)+'">'+
-  '<span class="play-action-tracker-name">'+esc(tracker.name)+'</span>'+
-  '<strong class="play-action-tracker-count">'+remaining+'/'+esc(tracker.max)+'</strong></span>':
-  cost>0?'<span class="play-action-tracker play-action-tracker--missing">Tracker non disponibile</span>':'';
- const sequence=arr(item.attack_sequence),description=details(item.description||'');
- const use=tracker&&cost>0&&item.attack_action?
-  '<button type="button" class="btn small" data-act="attack-action-use" data-attack-action-id="'+
-  esc(item.id)+'"'+(remaining<cost||tracker.disabled?' disabled':'')+'>Usa · '+esc(cost)+'</button>':'';
- return '<article class="play-battle-attack-entry play-battle-attack-action'+
-  (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
-  '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+
-  actionGlyph(actionGlyphKey(item))+
-  '<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione di attacco')+'</strong>'+
-  '<small class="play-attack-action-cost">'+esc(typeLabel+costLabel)+'</small>'+
-  (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
-  '</span>'+trackerChip+'</summary>'+
-  '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p>'+use+'</div>'+
-  '</details></div>'+
-  (sequence.length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
-   sequence.map(label=>'<li>'+esc(label)+'</li>').join('')+'</ol>':'')+'</article>';
+// Shared presentation for a single actionable side control. A paid action
+// shows the resource name above remaining charges and the Use verb, all
+// inside ONE button; selecting it uses the existing validated action handler.
+export function battleActionUseBox({act='',attrs='',tracker=null,trackerName='',cost=0,label='Usa',disabled=false,name=''}={}){
+ if(!act)return '<span class="play-action-use-space" aria-hidden="true"></span>';
+ const amount=Math.max(0,Number(cost)||0);
+ const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ const resource=amount>0?String(tracker?.name||trackerName||'Tracker non disponibile'):'';
+ const off=disabled||amount>0&&(!tracker||tracker.disabled||available<amount);
+ const labelText=String(label||'Usa');
+ return '<button type="button" class="play-resource-use play-action-use-box" data-act="'+esc(act)+'"'+
+  attrs+(off?' disabled':'')+
+  ' aria-label="'+esc(labelText+' '+(name||'azione')+(resource?' · '+resource+', '+available+' di '+(tracker?.max||0)+' utilizzi, costo '+amount:''))+'">'+
+  (resource?'<span class="play-action-tracker-name" title="'+esc(resource)+'">'+esc(resource)+'</span>':'')+
+  '<span class="play-action-use-bottom">'+
+  (resource?'<strong class="play-action-tracker-count">'+available+'/'+esc(tracker?.max||0)+'</strong>':'')+
+  '<strong class="play-action-use-verb">'+esc(labelText)+'</strong></span></button>';
 }
 
-function battleAttackRow(item,calculated,attacksById,descriptions,record={},physical=false){
+export function battleActionTimeLabel(time='action'){
+ return ({action:'Azione',bonus:'Azione bonus',reaction:'Reazione',
+  free:'Azione gratuita',movement:'Movimento',legendary:'Azione leggendaria',
+  legendary_resistance:'Resistenza leggendaria',lair:'Azione di tana',
+  contextual:'Secondo il privilegio'})[time]||String(time||'Secondo il privilegio');
+}
+
+// A sequence is a list of *choices* leading to the existing Attacchi table,
+// not duplicate attack rolls or automatic tracker payments.
+export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
+ const attacks=arr(calculated.attacks);
+ const steps=arr(action.steps).length?
+  resolveAttackActionSteps(action,attacks,arr(calculated.action_entries)):null;
+ const explicit=steps?steps.flatMap(step=>Array.from({length:step.count},()=>
+  step.options.length===1?String(step.options[0].id||''):'')):[];
+ return arr(sequence).length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
+  sequence.map((label,index)=>{
+   const match=attacks.filter(row=>String(row.name||'').trim().toLocaleLowerCase('it')===
+    String(label).trim().toLocaleLowerCase('it'));
+   const targetId=explicit[index]|| (match.length===1?String(match[0].id):'');
+   return '<li class="play-battle-attack-step">'+
+    '<span class="play-battle-roll-formula">'+esc(label)+'</span>'+
+    '<button type="button" class="play-battle-attack-roll play-battle-attack-step-use"'+
+    ' data-act="battle-attack-jump" data-attack-target-id="'+esc(targetId)+'"'+
+    ' aria-label="Usa '+esc(label)+' dalla tabella Attacchi">Usa</button></li>';
+  }).join('')+'</ol>':'';
+}
+
+// Attack-granting routines and other actions use the same row as Capacità.
+// Only the actual Attacchi table owns range, hit dice and map controls.
+export function battleAttackActionRow(item={},calculated={}){
+ const tracker=arr(calculated.trackers).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
+ const cost=Math.max(0,Number(item.cost)||0),sequence=arr(item.attack_sequence);
+ const actionable=item.attack_action===true&&cost>0;
+ const control=battleActionUseBox({act:actionable?'attack-action-use':'battle-attack-jump',
+  attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':'',
+  tracker,trackerName:item.tracker,cost,label:'Usa',disabled:item.available===false,name:item.name});
+ const description=details(item.description||'');
+ return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-action'+
+  (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
+  '<details class="play-battle-benefit-details"><summary class="play-resource-power-open">'+
+  actionGlyph(actionGlyphKey(item))+'<span><strong>'+esc(item.name||'Azione di attacco')+'</strong>'+
+  '<small class="play-attack-action-cost">'+esc(battleActionTimeLabel(item.time))+'</small>'+
+  (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
+  '</span></summary>'+
+  '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p></div></details>'+
+  control+battleAttackStepMarkup(sequence,calculated,item)+'</article>';
+}
+
+function battleAttackRow(item,calculated,attacksById,descriptions,record={},physical=false,groupedAction=false){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
  const rolls=[];
  const addRoll=(target,label,kind,value)=>{
@@ -587,6 +621,38 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
  const resources=tracker&&item.monster_action?'<div class="action-resource-control"><button type="button" class="btn small" data-act="monster-action-use" data-monster-action-id="'+esc(item.id)+'"'+(remaining<item.cost||tracker.disabled?' disabled':'')+' aria-label="Usa '+esc(actionName)+'">Usa</button><span>'+remaining+' / '+esc(tracker.max)+'</span></div>':tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  const optionMarkup=monsterActionOptionsMarkup(item);
+ if(groupedAction){
+  // The underlying action may contain checks. Keep them independently
+  // clickable, but remove condition/movement effect tiles from Altre azioni.
+  const time=battleActionTimeLabel(item.time||'action');
+  const detailsContent=render5etoolsInline(description||'Dettagli non disponibili.');
+  const act=item.id==='spell_cast'?'action-open-spells':
+   item.monster_action&&tracker?'monster-action-use':
+   String(item.id||'').startsWith('activated:')?'battle-use-ability':
+   item.action_id?'combat-action':
+   rolls.length===1?'sheet-roll':null;
+  const attrs=act==='monster-action-use'?' data-monster-action-id="'+esc(item.id)+'"':
+   act==='battle-use-ability'?' data-ability-id="'+esc(item.id)+'"':
+   act==='combat-action'?' data-mode="'+esc(item.action_id)+'"':
+   act==='sheet-roll'?' data-target="'+esc(rolls[0].target)+'" data-label="'+esc(rolls[0].label)+'"':'';
+  const control=battleActionUseBox({act,attrs,tracker,cost:Number(item.cost)||0,
+   trackerName:item.tracker||'',disabled:item.available===false,name:actionName});
+  return '<article class="play-resource-power-row play-battle-benefit-row play-battle-other-action'+
+   (item.available===false?' play-battle-attack-unavailable':'')+
+   '" data-attack-id="'+esc(item.id||'')+'">'+
+   '<details class="play-battle-benefit-details"><summary class="play-resource-power-open">'+icon+
+   '<span><strong>'+esc(actionName)+'</strong><small>'+esc(time)+'</small>'+
+   (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
+   '</span></summary><div class="play-battle-attack-expanded"><p>'+detailsContent+'</p>'+
+   source+optionMarkup+'</div></details>'+control+
+   (rolls.length?'<div class="play-battle-attack-rolls play-battle-other-rolls">'+rolls.map(row=>
+     '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
+     esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
+     '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
+     '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
+     '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+'</div>':'')+
+   '</article>';
+ }
  if(item.id==='spell_cast')return '<article class="play-battle-attack-entry play-battle-action-direct" data-attack-id="spell_cast">'+
   '<button type="button" class="play-battle-attack-direct-button" data-act="action-open-spells">'+icon+
   '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span></button></article>';
@@ -887,7 +953,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  for(const row of other)categoryGroups[attackActionCategory(row)].push(row);
  const groupHtml=(rows,kind='other')=>'<div class="play-battle-action-rows">'+
   rows.map(row=>kind==='attacks'?battleAttackActionRow(row,calculated):
-   battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>';
+   battleAttackRow(row,calculated,attacksById,descriptions,record,false,true)).join('')+'</div>';
  const renderCategories=()=>[
   ['attacks','Azioni di attacco','weapon'],
   ['abilities','Capacità','spark'],
