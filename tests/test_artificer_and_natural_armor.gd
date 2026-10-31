@@ -52,6 +52,8 @@ func run() -> void:
 	assert(not Runtime.activate(armorer, "class_feature:defensive_field").ok)
 	armorer.inventory = [{"id": "test:armor", "type": "HA", "ac": 18, "quantity": 1, "equipped_slots": ["body"]}]
 	assert(not Runtime.activate(armorer, "class_feature:defensive_field").ok, "A model must be selected explicitly")
+	assert(not Runtime.activate(armorer, "class_feature:armor_guardian").ok, "Arcane Armor must be applied to the equipped armor")
+	armorer.power_applications = {"arcane_armor": [{"id": "arcane_armor", "target_item_id": "test:armor"}]}
 	armorer = Runtime.activate(armorer, "class_feature:armor_guardian").record
 	var field := Runtime.activate(armorer, "class_feature:defensive_field")
 	assert(field.ok and int(field.record.temporary_hp) == 8)
