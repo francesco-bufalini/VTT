@@ -50,21 +50,6 @@ test('all Fighting Style lists use the same manual learned/applied contract',()=
  assert.ok(styles.every(row=>row.layers?.applied?.mode==='manual'&&row.layers.applied.from==='learned'));
  assert.equal(owned(character('Warlock',2),'optional:class:phb:warlock:ei').layers.applied.automatic,true);
 });
-test('legacy active styles remain active and can be deactivated without forgetting; multiple learned styles can all apply',()=>{
- const id='optional:class:phb:ranger:fs-r';
- let r=character('Ranger',2,{fighting_styles:['Archery','Defense'],power_applications:{other:[{id:'keep'}]}});
- const selected=owned(r,id).layers.learned.selected;
- assert.equal(selected.length,2);
- assert.deepEqual(owned(r,id).layers.applied.selected,selected);
- r={...r,...powerApplicationPatch(r,context,catalog,id,selected[0],false)};
- assert.deepEqual(owned(r,id).layers.learned.selected,selected);
- assert.deepEqual(owned(r,id).layers.applied.selected,[selected[1]]);
- r={...r,...powerApplicationPatch(r,context,catalog,id,selected[0],true)};
- assert.equal(owned(r,id).layers.applied.used,2);
- assert.deepEqual(r.power_applications.other,[{id:'keep'}]);
- assert.deepEqual(r.inventory,[]);
-});
-
 test('Warlock level-one vs level-two progression and Champion additional style',()=>{
  const id='optional:class:phb:warlock:ei';
  assert.equal(owned(character('Warlock',1),id),undefined);
@@ -91,13 +76,6 @@ test('Official options use the common learned state without materializing traits
  assert.deepEqual(owned(cleared,id).layers.learned.selected,[dueling.id]);
  const empty={...cleared,...powerSelectionPatch(cleared,context,catalog,id,'learned',dueling.id)};
  assert.deepEqual(owned(empty,id).layers.learned.selected,[]);
-});
-test('Legacy choices are projected without migration and can be changed',()=>{
- const r=character('Ranger',2,{fighting_styles:['Archery']});
- const id='optional:class:phb:ranger:fs-r',selected=owned(r,id).layers.learned.selected;
- assert.equal(selected.length,1);
- const updated={...r,...powerSelectionPatch(r,context,catalog,id,'learned',selected[0])};
- assert.deepEqual(updated.fighting_styles,[]);
 });
 test('Homebrew options are created and learned atomically without changing the official list',()=>{
  const r=character('Ranger'),id='optional:class:phb:ranger:fs-r';

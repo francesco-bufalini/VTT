@@ -1,7 +1,7 @@
 // Structured companion rules shared by spells, feature buttons, and the
 // familiar picker. No feature is detected from its description text.
 import {creatureMatchesFilter} from './creature_variants.js';
-import {activeInfusions} from './item_controls.js';
+import {activeItemOptionEffects} from './item_controls.js';
 import {SKILL_ABILITY} from './skill_definitions.js';
 
 const normal=value=>String(value??'').toLowerCase().normalize('NFD')
@@ -46,8 +46,6 @@ export function companionGrantActive(owner={},child={}){
  const grant=child.companion_grant;
  if(!grant?.kind)return true;
  if(grant.kind==='item_option')return rows(owner.inventory).some(item=>Number(item.quantity??1)>0&&rows(item.option_extensions).some(option=>option.id===grant.id));
- if(grant.kind==='inventory_infusion')return rows(owner.inventory).some(item=>
-  Number(item?.quantity??1)>0&&item?.infusion?.id===grant.id&&!item.disabled);
  if(grant.kind==='spell_effect')return rows(owner.proficiency_origins).some(row=>
   row.id===grant.id&&row.group==='spell'&&!row.disabled&&owner.origin_enabled?.[grant.id]!==false);
  if(grant.kind==='feature')return owner.origin_enabled?.[grant.id]!==false&&
@@ -78,8 +76,12 @@ export function companionOwnerActions(owner={},projection={},data={}){
  for(const rule of rows(data?.features)){
   if(!rows(rule.editions).includes(String(owner.rules_version||'2014')))continue;
   if(rule.activation==='item'){
-   for(const applied of activeInfusions(owner,projection.infusion_catalog||[],projection.features||[])){
-    if(applied.infusion.creator_id!==owner.id||applied.definition.companion?.rule_id!==rule.id)continue;
+   for(const applied of activeItemOptionEffects(owner,projection.infusion_catalog||[],projection.features||[])){
+    const selection=applied.option.selection_id;
+    const applications=rows(owner.power_applications?.[selection]);
+    if(!selection||!applications.some(row=>row.id===applied.option.id&&
+      row.target_item_id===String(applied.item.instance_id||applied.item.id))||
+      applied.definition.companion?.rule_id!==rule.id)continue;
     append(rule,'item:'+String(applied.item.id)+'|'+applied.id,applied.definition.name);
    }
   }else{

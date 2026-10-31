@@ -1,17 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits,normalizeSelectionRecord,powerStateActivationPatch} from '../power_selection.js';
+import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits,powerStateActivationPatch} from '../power_selection.js';
 import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from '../scaling_dice.js';
 import {rollOptionalDice} from '../sheet_roll_origin.js';
-import {appendRollBonus} from '../sheet_rules_view.js';
+import {appendRollBonus,rollBattleDamage} from '../sheet_rules_view.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
 import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '../spell_selection.js';
 import {actionEntries,battleActionPanels} from '../action_economy.js';
 import {battleResourcePowers,trackerRollBonusRows} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts,effectiveEquipmentInventory,equipSlot} from '../item_controls.js';
+import {itemOptionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts,effectiveEquipmentInventory,equipSlot} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={powerSelections:read('power_selections'),optionalFeatureProgressions:read('optional_feature_progressions')};
@@ -45,14 +45,15 @@ test('AI and Fighting Style use one catalog and the same data progression evalua
  assert(ai.options.some(o=>o.id==='optional:tce:enhanced-defense'));
  assert.equal(ai.application.destination,'item');assert.equal(style.application.destination,'origin');
 });
-test('unbound old extension traits do not become applied options or consume a target slot',()=>{
- const r={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],power_applications:{arcane_armor:[{id:'arcane_armor',trait:{name:'Old extension'}}]}};
- const normalized=normalizeSelectionRecord(r,combined);
- const feature={name:'Arcane Armor',class_name:'Artificer',class_source:'TCE',origin_id:'feature:arcane',origin_key:'class|tce|artificer'};
- const model=powerSelectionModels(normalized,{features:[feature]},combined).find(m=>m.id==='arcane_armor');
- assert.equal(model.layers.applied.used,0);assert.equal(normalized.power_applications.arcane_armor[0].trait,undefined);
+test('an item application without a target instance is ignored',()=>{
+ const r={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],
+  power_applications:{arcane_armor:[{id:'arcane_armor'}]}};
+ const feature={name:'Arcane Armor',class_name:'Artificer',class_source:'TCE',
+  origin_id:'feature:arcane',origin_key:'class|tce|artificer'};
+ const model=powerSelectionModels(r,{features:[feature]},combined).find(m=>m.id==='arcane_armor');
+ assert.equal(model.layers.applied.used,0);
+ assert.equal(projectSelectionBenefits(r,{powerSelections:combined},[feature]).inventory[0].option_extensions.length,0);
 });
-
 test('a failed item application is atomic, including stack identity and attunement',()=>{
  const catalog=schema('item');catalog.selections[0].source.options[0].effect_choice={key:'color',options:['red']};
  const context={features:[feature]};let r=record();
@@ -87,7 +88,7 @@ test('multiple options extend the same object without replacing one another or s
   r={...r,...powerApplicationPatch(r,context,catalog,'data-choice',id,true,{itemIndex:0})};
  }
  assert.equal(r.inventory[0].option_extensions.length,2);
- const trackers=infusionChargeTrackers(r,[],context.features),effects=activeItemOptionEffects(r,[],context.features);
+ const trackers=itemOptionChargeTrackers(r,[],context.features),effects=activeItemOptionEffects(r,[],context.features);
  assert.equal(new Set(trackers.map(t=>t.id)).size,2);
  assert.deepEqual(effects.map(e=>e.tracker_id),trackers.map(t=>t.id));
  r={...r,...powerApplicationPatch(r,context,catalog,'data-choice','first',false)};
@@ -149,19 +150,6 @@ test('every optional progression attaches to an actual source-qualified owner tr
   assert(model,rule.id+' has no live trait owner');
   assert(c.features.some(feature=>feature.origin_id===model.source_origin_id&&feature.name===owner.trait),rule.id);
  }
-});
-
-test('import preserves spent item charges and consumes old model toggles at the compatibility boundary',()=>{
- const r={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],
-  inventory:[{id:'old-item',instance_id:'old-copy',name:'Old item',quantity:1,equipped_slots:['body'],infusion:{id:'infusion|tce|repulsion shield',creator_id:'owner'}}],
-  trait_state_selection:{armor_model:'armor_model:guardian'},active_class_features:{'trait_state:armor_model:guardian':{name:'Guardian'},other:{name:'Keep'}},
-  resource_tracker_spent:{'infusion-charges:infusion:owner|infusion|tce|repulsion shield|old-copy':2}};
- const migrated=normalizeSelectionRecord(r,combined);
- assert.equal(migrated.resource_tracker_spent['item-option-charges:old-copy:optional:tce:repulsion-shield'],2);
- assert.equal(migrated.trait_state_selection.armor_model,undefined);
- assert.equal(migrated.active_class_features['trait_state:armor_model:guardian'],undefined);
- assert(migrated.active_class_features.other);
- assert.equal(migrated.power_applications.armor_model[0].id,'armor_model:guardian');
 });
 
 test('real Archery catalog entry applies only while the learned style is active and weapon is ranged',()=>{
@@ -258,6 +246,80 @@ test('legacy equipped flags never create a phantom offhand that blocks Dueling',
  const bothHands=calculateSheet({...r,hand_grip_two_handed:true},completeCatalogs);
  assert.equal(bothHands.attacks.find(a=>a.id==='item:'+sword.id)?.damage_extra_modifier,0,
   'Two-handed use of a versatile weapon suppresses Dueling');
+});
+
+test('Great Weapon Fighting applies a declared reroll only to two-handed melee weapon damage dice',()=>{
+ const id='optional:class:phb:fighter:fs-f',option='optional:phb:great-weapon-fighting';
+ const greatsword={id:'greatsword',name:'Greatsword',type:'M',damage:'2d6',
+  properties:['H','2H'],equipped_slots:['main'],quantity:1};
+ let r={...record(),level:2,classes:[{name:'Fighter',source:'PHB',level:2}],
+  abilities:{str:16,dex:10,con:12,int:10,wis:10,cha:10},inventory:[greatsword]};
+ let c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerSelectionPatch(r,c,combined,id,'learned',option)};
+ c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerApplicationPatch(r,c,combined,id,option,true)};
+ c=calculateSheet(r,completeCatalogs);
+ const attack=c.attacks.find(row=>row.id==='item:greatsword');
+ assert.equal(attack?.damage_rerolls?.[0]?.reroll_at_most,2);
+ const results=[1,5,2,6,1],outcome=rollBattleDamage('2d6+1d6+3',()=>results.shift(),
+  {rerollAtMost:2,rerollDiceCount:2});
+ assert.deepEqual(outcome.parts.map(part=>part.rolls),[[5,6],[1]],
+  'Only the weapon dice reroll and the replacement is kept');
+ assert.equal(outcome.total,15);
+ assert.match(outcome.detail,/1→5/);
+ const oneHanded=calculateSheet({...r,inventory:[{...greatsword,properties:['V'],damage:'1d8'}],
+  hand_grip_two_handed:false},completeCatalogs);
+ assert.equal(oneHanded.attacks.find(row=>row.id==='item:greatsword').damage_rerolls.length,0);
+ const ranged=calculateSheet({...r,inventory:[{...greatsword,type:'R',range:'80/320'}]},completeCatalogs);
+ assert.equal(ranged.attacks.find(row=>row.id==='item:greatsword').damage_rerolls.length,0);
+});
+
+test('Thrown Weapon Fighting applies +2 exclusively to the thrown damage roll',()=>{
+ const id='optional:class:phb:ranger:fs-r',option='optional:tce:thrown-weapon-fighting';
+ const dagger={id:'dagger',name:'Dagger',type:'M',damage:'1d4',range:'20/60',
+  properties:['L','F','T'],equipped_slots:['main'],quantity:1};
+ let r={...record(),level:2,classes:[{name:'Ranger',source:'PHB',level:2}],
+  abilities:{str:12,dex:16,con:12,int:10,wis:14,cha:10},inventory:[dagger]};
+ let c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerSelectionPatch(r,c,combined,id,'learned',option)};
+ c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerApplicationPatch(r,c,combined,id,option,true)};
+ c=calculateSheet(r,completeCatalogs);
+ const melee=c.attacks.find(a=>a.id==='item:dagger');
+ const thrown=c.attacks.find(a=>a.id==='item:throw:main:dagger');
+ assert.equal(melee.damage_extra_modifier,0);
+ assert.equal(thrown.damage_extra_modifier,2);
+ const inactive=calculateSheet({...r,power_applications:{...r.power_applications,[id]:[]}},completeCatalogs);
+ assert.equal(thrown.damage,'1d4 + 3','The +2 style stacks with the +1 STR modifier');
+ assert.equal(inactive.attacks.find(a=>a.id===thrown.id).damage,'1d4 + 1');
+ assert(c.roll_components['attack_damage:'+thrown.id].some(row=>
+  row.value===2&&row.origin_name==='Thrown Weapon Fighting'));
+ assert.match(battleActionPanels(r,c,[],[],[]).attacks,/Thrown Weapon Fighting \+2/,
+  'The battle row shows the +2 source for a thrown attack');
+});
+
+test('Two-Weapon Fighting applies the offhand ability modifier from structured data',()=>{
+ const selection='optional:class:phb:fighter:fs-f',option='optional:phb:two-weapon-fighting';
+ const sword={id:'sword',name:'Shortsword',type:'M',damage:'1d6',properties:['L','F'],
+  equipped_slots:['main'],quantity:1};
+ const offhand={...sword,id:'dagger',name:'Dagger',equipped_slots:['off']};
+ let r={...record(),classes:[{name:'Fighter',source:'PHB',level:2}],level:2,
+  abilities:{str:16,dex:14,con:12,int:10,wis:10,cha:10},
+  inventory:[sword,offhand],attack_ability:'str'};
+ let c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerSelectionPatch(r,c,combined,selection,'learned',option)};
+ c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerApplicationPatch(r,c,combined,selection,option,true)};
+ c=calculateSheet(r,completeCatalogs);
+ const off=c.attacks.find(a=>a.id==='item:off:dagger');
+ assert.equal(off.damage_ability_modifier,3);
+ assert.equal(off.damage_ability_source,'Two-Weapon Fighting');
+ const inactive=calculateSheet({...r,power_applications:{...r.power_applications,[selection]:[]}},completeCatalogs);
+ assert.equal(inactive.attacks.find(a=>a.id==='item:off:dagger').damage_ability_modifier,0);
+ const panels=battleActionPanels(r,c,[],[],[]);
+ assert.doesNotMatch(panels.attacks,/item:off:dagger/,'No duplicate offhand attack');
+ assert.match(panels.others,/Two-Weapon Fighting \+3/,
+  'The offhand bonus appears on its existing bonus action');
 });
 
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{

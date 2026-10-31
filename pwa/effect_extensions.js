@@ -109,14 +109,14 @@ export function collectEffectExtensions(record={},catalog=[],features=[],infusio
  // Each infusion targets exactly its physical inventory copy. Ordinary numeric
  // infusion grants remain in itemOptionNumericBonuses: do not stack them twice.
  for(const active of activeItemOptionEffects(record,infusionDefinitions,features)){
-  const {item,infusion,definition,index}=active;
+  const {item,option,definition,index}=active;
   for(const rule of rows(definition.effect_extensions||catalog)){
    if(!definition.effect_extensions&&(rule.owner?.kind!=='infusion'||rule.target_kind!=='item'||
       rule.rules_version&&String(rule.rules_version)!==String(record.rules_version||'2014')||
       rule.owner.id&&rule.owner.id!==definition.id||
       rule.owner.name&&norm(rule.owner.name)!==norm(definition.name)))continue;
    const choiceKey=String(rule.value_from_item_choice||'');
-   const value=choiceKey?infusion.effect_choice?.[choiceKey]:rule.value;
+   const value=choiceKey?option.effect_choice?.[choiceKey]:rule.value;
    if(choiceKey&&!value)continue;
    const parent=rows(record.optional_features_catalog).find(row=>row.id===definition.id);
    const origin_id=active.id,id=String(rule.id)+'|'+origin_id;

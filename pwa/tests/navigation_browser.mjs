@@ -203,6 +203,11 @@ try{
  assert(await page.locator('#header-dice').isVisible(),'Dice icon is visible on a creature');
  assert(await page.locator('#creature-forms').isVisible(),'Variants shares the header row');
  assert(await page.locator('#creature-forms .vtt-action-glyph').isVisible(),'Variants uses the original Wild Shape paw');
+ const headerGold=await page.evaluate(()=>
+  ['creature-forms','header-chat','header-dice','header-preferences','creature-back']
+   .map(id=>getComputedStyle(document.getElementById(id)).color));
+ assert(headerGold.every(color=>color===headerGold[0]),'All visible header icons use the Variants gold');
+ assert.equal(headerGold[0],'rgb(228, 198, 149)','Header gold matches the original paw button');
  assert.equal(await page.locator('.topbar .connection-link').isVisible(),false,'Partita is only in the bottom dock inside a creature');
  await page.locator('#header-dice').click();
  await page.locator('#chat-dice-dialog').waitFor({state:'visible'});
@@ -235,6 +240,8 @@ try{
  assert(await page.locator('#chat-screen .chat-send-button').isVisible());
  assert.equal(await page.locator('#header-chat').isVisible(),false);
  assert(await page.locator('#header-chat-notifications').isVisible());
+ assert.equal(await page.locator('#header-chat-notifications').evaluate(node=>getComputedStyle(node).color),
+  headerGold[0],'Notification bell matches the same gold, even when notifications are off');
  assert.equal(await page.locator('#mobile-tabs').isVisible(),false);
  assert.equal(await page.locator('#app').isVisible(),false);
  await shot('chat');
@@ -248,12 +255,18 @@ try{
  assert.equal(await page.locator('#quick-name').isVisible(),false);
  await page.locator('.catalog-create > summary').click();assert(await page.locator('#quick-name').isVisible());
  await page.locator('.connection-link').click();await page.waitForFunction(()=>document.querySelector('#app').dataset.page==='session');
- assert(await page.locator('[data-session-content="connection"]').isVisible());
- assert.equal(await page.locator('.session-map-panel').isVisible(),false);
+ assert.equal(await page.locator('.topbar').isVisible(),false,'Partita has no topbar, like the Creature archive');
+ assert.equal(await page.locator('.page-head,.session-switcher,[data-session-content="connection"]').count(),0,'No heading or connection tab before the map');
  assert.equal(await page.locator('#header-chat').isVisible(),false,'No chat icon without an open creature');
  assert.equal(await page.locator('#header-dice').isVisible(),false,'No dice icon without an open creature');
- await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
- assert.equal(await page.locator('#pair-form').isVisible(),false);
+ assert(await page.locator('.session-map-panel').isVisible(),'Map is immediately visible without selecting a pane');
+ assert(await page.locator('#pair-form').isVisible(),'Pairing controls live above the map');
+ const connectionAboveMap=await page.locator('.session-desktop,.session-map-panel').evaluateAll(
+  nodes=>nodes.map(node=>({name:node.className,top:node.getBoundingClientRect().top})));
+ assert.equal(connectionAboveMap.length,2);
+ assert(connectionAboveMap[0].top<connectionAboveMap[1].top,'Only compact connection status precedes map');
+ assert.equal(await page.locator('.session-desktop h2').count(),0,'No large Desktop panel title');
+ assert.equal(await page.locator('.session-server-name').innerText(),'Server','Fallback name is neutral when older host lacks device_name');
  await globalPage('library');
  assert.equal(await page.locator('#creature-back').isVisible(),false,'Archive hides character back');
  assert(await page.locator('#nav [data-nav="library"]').isVisible(),'Archive dock is restored');

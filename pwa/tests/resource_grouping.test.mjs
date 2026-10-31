@@ -11,12 +11,14 @@ const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',impo
 const companions=read('companion_spells');
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),traitStates:read('trait_states').states};
+const selectionCatalogs={...catalogs,powerSelections:read('power_selections'),
+ optionalFeatureProgressions:read('optional_feature_progressions')};
 const sheet=(name,subclass,source='PHB',subclassSource='TCE')=>({
  id:'owner',kind:'character',name:'Creatore',rules_version:'2014',level:8,
  classes:[{name,source,level:8,subclass,subclass_source:subclassSource}],
  abilities:{str:10,dex:14,con:14,int:18,wis:16,cha:18},inventory:[]
 });
-const project=record=>({...calculateSheet(record,catalogs),
+const project=(record,withSelections=false)=>({...calculateSheet(record,withSelections?selectionCatalogs:catalogs),
  companion_rules:companions,infusion_catalog:catalogs.abilityGrants.artificer_infusions});
 function render(record,calculated,check,sheet='battle',bank=''){
  const dom=new JSDOM('<main id="app"><div data-local-sheet-calculations>'+bank+'</div></main>');
@@ -140,8 +142,10 @@ test('explicit free and paid actions of the same trait are never merged by origi
 });
 test('creator commands follow active, source-qualified companion grants and never transfer with infused items',()=>{
  const record=sheet('Artificer','Alchemist','TCE');
- record.inventory=[{id:'heart',name:'Crystal',quantity:1,infusion:{id:'infusion|tce|homunculus servant',creator_id:record.id}}];
- const calculated=project(record);
+ record.inventory=[{id:'heart',instance_id:'heart',name:'Crystal',quantity:1}];
+ record.power_selections={artificer_infusions:{learned:['optional:tce:homunculus-servant']}};
+ record.power_applications={artificer_infusions:[{id:'optional:tce:homunculus-servant',target_item_id:'heart'}]};
+ const calculated=project(record,true);
  const powers=abilitiesForCreature(record,[],calculated);
  const command=powers.find(row=>row.companion_rule_id==='homunculus_servant_2014');
  assert(command);
@@ -157,7 +161,7 @@ test('creator commands follow active, source-qualified companion grants and neve
  for(const next of [
   {...record,inventory:[]},
   {...record,inventory:[{...record.inventory[0],active:false}]},
-  {...record,inventory:[{...record.inventory[0],infusion:{...record.inventory[0].infusion,creator_id:'someone-else'}}]},
+  {...record,inventory:[{...record.inventory[0],instance_id:'transferred'}]},
   {...record,rules_version:'2024'},
   {...record,origin_enabled:{[calculated.features.find(row=>row.name==='Infuse Item').origin_id]:false}}
  ])assert(!abilitiesForCreature(next,[],project(next)).some(row=>row.companion_command));
@@ -170,9 +174,11 @@ test('creator commands follow active, source-qualified companion grants and neve
 });
 test('Infusions does not repeat infused item powers while Resources keeps the actions',()=>{
  const record=sheet('Artificer','Alchemist','TCE');
- record.inventory=[{id:'sword',name:'Sword',type:'M',quantity:1,equipped_slots:['main'],
-  attuned:true,attuned_count:1,infusion:{id:'infusion|tce|radiant weapon',creator_id:record.id}}];
- const calculated=project(record);
+ record.inventory=[{id:'sword',instance_id:'sword',name:'Sword',type:'M',damage:'1d8',
+  quantity:1,equipped_slots:['main'],attuned:true,attuned_count:1}];
+ record.power_selections={artificer_infusions:{learned:['optional:tce:radiant-weapon']}};
+ record.power_applications={artificer_infusions:[{id:'optional:tce:radiant-weapon',target_item_id:'sword'}]};
+ const calculated=project(record,true);
  const powers=abilitiesForCreature(record,[],calculated).filter(row=>row.infusion_action);
  assert.equal(powers.length,2);
  const rows=battleResourcePowers(calculated,[],powers);

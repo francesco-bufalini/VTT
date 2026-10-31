@@ -183,6 +183,21 @@ test('recharge-bearing 5eTools action lists expose distinct capabilities under o
   'A named list alone does not imply a rechargeable alternative action');
 });
 
+test('Unarmed Strike is immediately above Grapple in the flat attack list',()=>{
+ const attacks=[{id:'item:sword',name:'Sword',slot:'main',melee:true,range_feet:5,hit:5,damage:'1d8'},
+  {id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,range_feet:5,hit:3,damage:'1'}];
+ const actions=[{id:'grapple',name:'Afferrare una creatura',edition:'2014',
+  timings:['action'],parent_action:'attack',description:'Atletica'},
+  {id:'shove',name:'Spingere',edition:'2014',timings:['action'],parent_action:'attack'}];
+ const markup=battleActionPanels({rules_version:'2014'},
+  {attacks,skills:{athletics:3},trackers:[],features:[]},[],[],actions).attacks;
+ const ids=[...markup.matchAll(/class="play-battle-attack-entry[^"]*" data-attack-id="([^"]+)"/g)]
+  .map(row=>row[1]);
+ const index=ids.indexOf('unarmed');
+ assert(index>=0,JSON.stringify(ids));
+ assert.equal(ids[index+1],'grapple',JSON.stringify(ids));
+});
+
 test('flat attacks place unarmed between privilege and ordinary attacks; timed Azioni stay unchanged',()=>{
  const main={id:'item:blade',name:'Lama principale',slot:'main',melee:true,hit:6,damage:'1d8'};
  const off={id:'item:off:dagger',name:'Pugnale secondario',slot:'off',melee:true,

@@ -4,7 +4,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses} from './sheet_rules.js';
-import {activeItemOptionEffects,infusionInstanceOrigin,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts,ownedItemDisplayName} from './item_controls.js';
+import {activeItemOptionEffects,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts,ownedItemDisplayName} from './item_controls.js';
 import {traitIsActive} from './trait_benefit_editor.js';
 import {conditionOptions,conditionDescriptionHtml,exhaustionLevel,exhaustionConditionRows} from './condition_catalog.js';
 
@@ -78,7 +78,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    item_base_origin:String(entry.item_base_origin||''),
    extension_choice_origin:String(entry.extension_choice_origin||''),
    extension_origin_ids:arr(entry.extension_origin_ids),benefits:arr(entry.benefits),
-   infusion_origin_id:String(entry.infusion_origin_id||''),
+   item_option_origin_id:String(entry.item_option_origin_id||''),
    feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name)),
    // Keep explicit activation metadata even for a standalone feat, item or
    // monster trait that has no separate calculated feature record.
@@ -262,14 +262,10 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     slots.includes('main')||slots.includes('off');
   const active=eligible&&(!slotted||inSlot);
   const qty=Math.max(1,Math.floor(Number(item.quantity)||1)),id=String(item.id);
-  const infusion=item.infusion?.id?item.infusion:null;
-  const infusionName=infusion?
-    infusionDefinitions.find(def=>def.id===infusion.id)?.name||infusion.name||'Infusione':'';
-  const instanceOrigin=infusion?infusionInstanceOrigin(item,index):'';
   const extension=arr(item.option_extensions)[0];
-  const groupKey=infusion?id+'|'+instanceOrigin:extension?id+'|'+(item.instance_id||item.id):id;
+  const groupKey=extension?id+'|'+(item.instance_id||item.id):id;
   const group=groupedItems.get(groupKey)||{item,quantity:0,activeQuantity:0,
-   slotted,needsAttunement:false,indices:[],infusionName,infusionOrigin:''};
+   slotted,needsAttunement:false,indices:[],optionOrigin:''};
   group.indices.push(index);
   group.needsAttunement||=needsAttunement;
   group.quantity+=qty;
@@ -277,34 +273,22 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    group.activeQuantity+=needsAttunement?attunements[index]:slotted?Math.min(qty,Math.max(1,slots.length)):qty;
    group.item=item;
   }
-  // Only verified active infusions can attribute mechanical grants. An
-  // unattuned copy retains the combined title but has no infusion benefits.
-  if(activeByIndex.has(index))group.infusionOrigin=activeByIndex.get(index).id;
+  // The concrete applied option is the mechanical origin when this copy is active.
+  if(activeByIndex.has(index))group.optionOrigin=activeByIndex.get(index).id;
   groupedItems.set(groupKey,group);
  }
  for(const [groupKey,group] of groupedItems){
   const item=group.item,id=String(item.id);
   const info=await lookup('items',item.name||id,item.source||'',id)||item;
   if(isDocument(info))continue;
-  const infused=Boolean(group.infusionName);
-  const displayName=ownedItemDisplayName({...item,infusion:infused?{name:group.infusionName}:item.infusion});
+  const displayName=ownedItemDisplayName(item);
   const originKey='item:'+groupKey;
   const options={category:'oggetti',origin:'Oggetto · '+displayName,
    origin_key:originKey,level:0,inactive:group.activeQuantity===0};
   const itemDescription=info.entries??info.description??item.entries??item.description??'';
   let description=itemDescription;
-  if(infused){
-   const infusionDetail=await lookup('optional_features',group.infusionName,item.infusion?.source||'TCE');
-   const infusionDescription=infusionDetail?.entries??infusionDetail?.description??'';
-   if(infusionDescription)
-    description=[...(Array.isArray(itemDescription)?itemDescription:
-      itemDescription?[itemDescription]:[]),
-      ...(Array.isArray(infusionDescription)?infusionDescription:[infusionDescription])];
-  }
   const extensions=arr(item.option_extensions).map(e=>({id:e.id,trait:{name:e.name,description:e.description,details:e.details}}));
   for(const row of extensions){
-   // Legacy infusion descriptions are already included by the inventory adapter.
-   if(item.infusion?.id===row.id)continue;
    const reference=row.trait.details,detail=reference?await lookup(reference.category,reference.name,reference.source):null;
    const text=detail?.entries||detail?.description||row.trait.description;
    description=[...(Array.isArray(description)?description:[description]),...(Array.isArray(text)?text:[text])].filter(Boolean);
@@ -321,7 +305,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
       const names=[...arr(option?.granted_features),...arr(option?.attacks).map(row=>row.trait)];
       return arr(calculated.features).filter(feature=>names.includes(feature.name)).map(feature=>feature.origin_id);
     })])].filter(Boolean),
-   item_base_origin:'item:'+id,infusion_origin_id:group.infusionOrigin,
+   item_base_origin:'item:'+id,item_option_origin_id:group.optionOrigin,
    item_quantity:group.quantity,item_active_quantity:group.activeQuantity,
    item_requires_attunement:group.needsAttunement,
    action_type:item.action_type||info.action_type||info.activation||''}, {...options,rank:0});
@@ -454,7 +438,7 @@ export function stateTraitNavigationKey(key,traits=[],infusions=[]){
  const infusion=infusions.find(row=>String(row.id)===key.slice(prefix.length));
  if(!infusion)return key;
  return traits.find(row=>row.category==='oggetti'&&
-   (row.infusion_origin_id===infusion.id||arr(row.extension_origin_ids).includes(infusion.id))&&
+   (row.item_option_origin_id===infusion.id||arr(row.extension_origin_ids).includes(infusion.id))&&
    Array.isArray(row.item_inventory_indices)&&
    row.item_inventory_indices.includes(infusion.index))?.key||key;
 }

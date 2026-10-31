@@ -297,10 +297,12 @@ test("dice popup logs offline and chat header is creature-only; session pairing 
   await until(()=>document.querySelector("#pair-form"));
   assert.equal(document.querySelector('#header-chat').hidden,true);
   assert.equal(document.querySelector('#header-dice').hidden,true);
-  assert.match(document.querySelector("#app").textContent,/Codice temporaneo del desktop/);
+  assert.match(document.querySelector("#app").textContent,/Codice temporaneo del server/);
   assert.equal(document.querySelector("#pair-secret").getAttribute("placeholder"),"XXXX-XXXX-XXXX-XXXX");
   assert.equal(document.querySelectorAll("#nav button").length,3);
-  assert.equal(document.querySelector('.topbar').hidden,false,"Partita keeps its normal header");
+  assert.equal(document.querySelector('.topbar').hidden,true,"Partita hides its topbar like Creature archive");
+  assert.equal(document.querySelector('.session-switcher'),null,"Connection has no separate tab");
+  assert.ok(document.querySelector('.session-map-panel'),"Map remains visible while unpaired");
 });
 
 
@@ -318,9 +320,9 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   globalThis.fetch=async (url,options={})=>{
     calls.push({url,options});
     if(url==='/catalog/spells.json'||url==='/catalog/spells/selected')return referenceCatalogFetch(url,options);
-    if(url==="/api/status")return new Response(JSON.stringify({protocol:1,desktop_online:true}),{status:200});
+    if(url==="/api/status")return new Response(JSON.stringify({protocol:1,desktop_online:true,device_name:"DRAGON-SERVER"}),{status:200});
     if(url==="/api/pair")return new Response(JSON.stringify({token:"a".repeat(64)}),{status:200});
-    if(url==="/api/session")return new Response(JSON.stringify({protocol:1,session:"3",mobile_protocol:3}),{status:200});
+    if(url==="/api/session")return new Response(JSON.stringify({protocol:1,session:"3",mobile_protocol:3,device_name:"DRAGON-SERVER"}),{status:200});
     if(url==="/api/map")return new Response(JSON.stringify({version:1,mobile_protocol:3,
       tokens:[{id:"token_1",name:"Guardiano",free:false,conditions:[]}],
       combat:{active:true,round:2,active_index:0,entries:[{name:"Guardiano",token_id:"token_1",initiative:12}]}}),{status:200});
@@ -350,6 +352,14 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   const desktop=document.querySelector(".session-desktop");
   const preview=document.querySelector(".session-map-panel");
   const roster=document.querySelector(".session-token-panel");
+  assert.equal(desktop.querySelector('.session-server-name').textContent,'DRAGON-SERVER');
+  assert.equal(desktop.querySelector('.session-connection-state').textContent,'Partita connessa');
+  assert.equal(desktop.querySelector('h2'),null,"Compact server status replaces the old Desktop heading");
+  assert.ok(desktop.querySelector('.session-device-icon'),"Server icon remains visible");
+  assert.ok(desktop.querySelector('.session-connection-actions [data-act="check"]'));
+  assert.ok(desktop.querySelector('.session-connection-actions [data-act="disconnect"]'));
+  assert.equal(document.querySelector('.topbar').hidden,true);
+  assert.equal(document.querySelector('.session-switcher'),null);
   assert.ok(desktop.compareDocumentPosition(preview)&dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
   assert.ok(preview.compareDocumentPosition(roster)&dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
   assert.ok(document.querySelector('[data-act="edit-token"]'));

@@ -1,120 +1,35 @@
-import {learnInfusionPatch,learnedInfusions,applyInfusionPatch} from './fixtures/legacy_infusion_records.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {collectTraitRows,stateTraitNavigationKey} from '../trait_projection.js';
-import {traitBenefitGroups} from '../trait_benefits.js';
-import {calculateSheet} from '../sheet_rules.js';
-import {activeInfusions,clearInfusionPatch} from '../item_controls.js';
+import {activeItemOptionEffects} from '../item_controls.js';
 
-const abilityGrants=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
-const effectExtensions=JSON.parse(readFileSync(new URL('../catalog/effect_extensions.json',import.meta.url),'utf8')).extensions;
-const definitions=abilityGrants.artificer_infusions;
-const entry=definitions.find(row=>row.name==='Enhanced Arcane Focus');
-const infuseItem={id:'infuse_item',name:'Infuse Item',class_name:'Artificer',class_source:'TCE',
- level:2,origin_key:'class|tce|artificer',origin_id:'feature:class|tce|artificer|infuse_item'};
-const classMechanics={classes:[{name:'Artificer',source:'TCE',columns:[{
- name:'Infused Items',levels:[0,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6]}]}]};
-const classFeatures={class_features:[infuseItem],subclass_features:[]};
-const ruleCatalogs={abilityGrants,effectExtensions,classFeatures,classMechanics};
-const base=()=>({id:'artificer_rod',kind:'character',name:'Artefice',rules_version:'2014',
- classes:[{name:'Artificer',source:'TCE',level:10}],
- abilities:{str:10,dex:14,con:12,int:18,wis:10,cha:10},
- inventory:[],optional_features_catalog:[],formula_bonuses:[]});
-const rod=(instance_id,attuned=true)=>({id:'local_rod',instance_id,name:'Rod',type:'RD',
- custom_item_type:'other',quantity:1,rarity:'none',active:true,equipped:true,
- attuned,attuned_count:attuned?1:0});
-const providers={entries:async category=>category==='optional_features'?
- [{id:entry.id,name:entry.name,source:'TCE',entries:['Testo 5etools della infusione']}]:
- category==='items'?[{id:'local_rod',name:'Rod',entries:['Descrizione originale della Rod']}]:[],
- detail:async(_category,row)=>row};
-const project=async record=>{
- const sheet=calculateSheet(record,ruleCatalogs);
- const calculated={...sheet,infusion_catalog:definitions};
- return {sheet,traits:await collectTraitRows(record,calculated,providers),calculated};
-};
-const infuse=()=>{
- const initial=base();
- initial.inventory=[rod('infused'),rod('ordinary',false)];
- const learned={...initial,...learnInfusionPatch(initial,entry,definitions,classMechanics,-1,[infuseItem])};
- const known=learnedInfusions(learned,definitions)[0];
- const infused={...learned,...applyInfusionPatch(learned,known,definitions,classMechanics,0,[infuseItem])};
- // Applying the infusion resets attunement; attune only the infused copy.
- infused.inventory[0].attuned=true;
- infused.inventory[0].attuned_count=1;
- return infused;
-};
-
-test('rod and Enhanced Arcane Focus produce exactly one combined trait for the infused instance',async()=>{
- const record=infuse();
- const {traits,sheet,calculated}=await project(record);
- const items=traits.filter(row=>row.category==='oggetti');
- assert.deepEqual(items.map(row=>row.name).sort(),
-  ['Rod','Rod - Enhanced Arcane Focus']);
- assert.equal(traits.some(row=>row.origin.startsWith('Privilegio opzionale')),false);
- assert.equal(traits.some(row=>row.name.startsWith('Infusione ·')),false);
- assert.equal(traits.some(row=>row.infusion_id),false);
- const infused=items.find(row=>row.name==='Rod - Enhanced Arcane Focus');
- const ordinary=items.find(row=>row.name==='Rod');
- assert.deepEqual(infused.item_inventory_indices,[0]);
- assert.deepEqual(ordinary.item_inventory_indices,[1]);
- assert.ok(infused.entries.includes('Descrizione originale della Rod'));
- assert.ok(infused.entries.includes('Testo 5etools della infusione'));
- const groups=traitBenefitGroups(infused,record,calculated);
- const bonus=groups.find(row=>row.type==='bonus')?.items||[];
- assert.ok(bonus.some(row=>/Attacco/i.test(row.label)&&/\+2/.test(row.value)),
-  'Enhancement numeric spell attack bonus belongs to the Rod');
- assert.equal(bonus.filter(row=>/Attacco/i.test(row.label)).length,1);
- const effects=groups.find(row=>row.type==='effect_extensions')?.items||[];
- assert.equal(effects.length,1);
- assert.match(effects[0].value,/mezza copertura/i);
- const other=traitBenefitGroups(ordinary,record,calculated);
- assert.equal(other.some(row=>row.type==='effect_extensions'),false);
- assert.equal(other.some(row=>row.type==='bonus'&&row.items.some(item=>/Attacco/i.test(item.label))),false);
- assert.equal(sheet.effect_extensions.length,1);
+const item=id=>({id:'weapon:dagger',instance_id:id,name:'Dagger',type:'M',
+ quantity:1,equipped_slots:['main'],option_extensions:[{id:'enhanced',name:'Enhanced Weapon',
+ selection_id:'artificer_infusions',description:'Weapon gains a magical bonus.',
+ definition:{id:'enhanced',name:'Enhanced Weapon'}}]});
+const providers={entries:async category=>category==='items'?
+ [{id:'weapon:dagger',name:'Dagger',entries:['Ordinary dagger description']}]:[],
+ detail:async(_,row)=>row};
+test('an item extension appears in the owning item trait, not a second trait card',async()=>{
+ const record={inventory:[item('copy-a')]};
+ const traits=await collectTraitRows(record,{features:[]},providers);
+ const owned=traits.filter(trait=>trait.category==='oggetti');
+ assert.equal(owned.length,1);
+ assert.match(String(owned[0].name),/Enhanced Weapon/);
+ assert.match(JSON.stringify(owned[0].entries),/magical bonus/);
+ assert.equal(owned[0].item_inventory_indices[0],0);
 });
-
-test('unattuning retains the combined object title, but suppresses its mechanical grants',async()=>{
- const record=infuse();
- record.inventory[0].attuned=false;
- record.inventory[0].attuned_count=0;
- const {traits,calculated}=await project(record);
- const combined=traits.find(row=>row.name==='Rod - Enhanced Arcane Focus');
- assert.equal(combined.inactive,true);
- const groups=traitBenefitGroups(combined,record,calculated);
- assert.equal(groups.some(row=>row.type==='effect_extensions'),false);
- assert.equal(groups.some(row=>row.type==='bonus'&&row.items.some(item=>/Attacco/i.test(item.label))),false);
+test('two physically different extended copies retain distinct trait origins',async()=>{
+ const one=item('copy-a'),two=item('copy-b');
+ const traits=await collectTraitRows({inventory:[one,two]}, {features:[]},providers);
+ const owned=traits.filter(trait=>trait.category==='oggetti');
+ assert.equal(owned.length,2);
+ assert.notEqual(owned[0].key,owned[1].key);
 });
-
-test('removing an infusion collapses identical rods back into one ordinary item trait',async()=>{
- const record=infuse();
- const cleared={...record,...clearInfusionPatch(record,0)};
- const {traits,calculated}=await project(cleared);
- assert.deepEqual(traits.filter(row=>row.category==='oggetti').map(row=>row.name),['Rod']);
- assert.equal(traitBenefitGroups(traits.find(row=>row.name==='Rod'),cleared,calculated)
-   .some(row=>row.type==='effect_extensions'),false);
-});
-
-test('infusion status jumps to the extended item trait, not a fabricated state or another copy',async()=>{
- const record=infuse();
- const {traits,calculated}=await project(record);
- const applied=activeInfusions(record,definitions,calculated.features||[]);
- assert.equal(applied.length,1);
- const destination=stateTraitNavigationKey('state|infusion:'+applied[0].id,traits,applied);
- const infused=traits.find(row=>row.name==='Rod - Enhanced Arcane Focus');
- const ordinary=traits.find(row=>row.name==='Rod');
- assert.equal(destination,infused.key);
- assert.notEqual(destination,ordinary.key);
- assert.equal(stateTraitNavigationKey('state|condition:poisoned',traits,applied),
-  'state|condition:poisoned');
- assert.equal(stateTraitNavigationKey('state|infusion:missing',traits,applied),
-  'state|infusion:missing');
-
- const identicalCopies=[
-  {category:'oggetti',key:'item:one',infusion_origin_id:'infused:one',item_inventory_indices:[3]},
-  {category:'oggetti',key:'item:two',infusion_origin_id:'infused:two',item_inventory_indices:[4]}
- ];
- const copies=[{id:'infused:one',index:3},{id:'infused:two',index:4}];
- assert.equal(stateTraitNavigationKey('state|infusion:infused:one',identicalCopies,copies),'item:one');
- assert.equal(stateTraitNavigationKey('state|infusion:infused:two',identicalCopies,copies),'item:two');
+test('option state navigation resolves to the precise extended item',async()=>{
+ const sword=item('copy-a'),record={inventory:[sword]};
+ const active=activeItemOptionEffects(record);
+ const traits=await collectTraitRows(record,{features:[]},providers);
+ const key='state|infusion:'+active[0].id;
+ assert.equal(stateTraitNavigationKey(key,traits,active),traits.find(t=>t.category==='oggetti').key);
 });

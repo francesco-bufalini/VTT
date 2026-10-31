@@ -44,8 +44,8 @@ test('inventory distinguishes unknown data from explicitly recorded zero',()=>{
 test('inventory preserves distinct attunement, activation and document states',()=>{
  const pending=inventoryReadout({id:'magic_item:ring',req_attune:true,active:false,value_gp:2.5,quantity:3});
  assert.equal(pending.value,7.5);assert.deepEqual(pending.status,['Richiede sintonia','Disattivato']);
- const active=inventoryReadout({req_attune:true,attuned:true,infusion:{id:'enhanced'}});
- assert.deepEqual(active.status,['In sintonia','Infuso']);
+ const active=inventoryReadout({req_attune:true,attuned:true,option_extensions:[{id:'enhanced',name:'Enhanced'}]});
+ assert.deepEqual(active.status,['In sintonia']);
  const document=inventoryReadout({id:'homebrew:vttdoc:documents:doc_test',weight:1,value:100});
  assert.equal(document.kind,'document');assert.equal(document.weight,null);assert.equal(document.value,null);
  const scroll=inventoryReadout({type:'SC',spell_level:0});assert.equal(scroll.type,'Pergamena');assert(scroll.facts.some(row=>row.value==='Trucchetto'));
@@ -122,12 +122,12 @@ test('armor class appears once as a structured fact, not again in the properties
  assert.equal(sword.properties,'Versatile');
 });
 
-test('infused inventory titles append the infusion without modifying the saved item name',()=>{
- const item={id:'shield:one',name:'Scudo',type:'S',infusion:{name:'Repulsion Shield'}};
+test('extended inventory titles use applied options without altering the base name',()=>{
+ const item={id:'shield:one',name:'Scudo',type:'S',
+  option_extensions:[{id:'repulsion',name:'Repulsion Shield',selection_id:'artificer_infusions'}]};
  const original=structuredClone(item);
  assert.equal(ownedItemDisplayName(item),'Scudo - Repulsion Shield');
  assert.equal(inventoryReadout(item).displayName,'Scudo - Repulsion Shield');
  assert.deepEqual(item,original);
- assert.equal(ownedItemDisplayName({...item,infusion:undefined}),'Scudo');
- assert.equal(ownedItemDisplayName({...item,infusion:{id:'infusion',name:''}}),'Scudo');
+ assert.equal(ownedItemDisplayName({...item,option_extensions:[]}), 'Scudo');
 });

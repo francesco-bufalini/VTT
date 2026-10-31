@@ -8,11 +8,12 @@ import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeatu
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, monsterActionOptionsMarkup, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { activeItemOptionEffects, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, targetableInventoryItems, clearInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
+import { activeItemOptionEffects, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, targetableInventoryItems, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
 import {structuredItemFacts} from "./item_detail_facts.js";
+import {itemAppliedOptions} from "./item_applied_options.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, knownSpellProgress, knownClassSpellIds, knownClassCantripIds, changeKnownClassSpell, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -146,7 +147,7 @@ async function createOptionCompanion(owner,infusion,calculated){
  const row=await summonSubcreature(owner.id,await choice.load(),{
   name:choice.name,source:choice.source,template_id:choice.template_id,rule_id:rule.id,
   origin_name:rule.names?.[0]||infusion.name,
-  limit_per_owner_rule:rule.limit_per_owner_rule??1,grant:{kind:infusion.item_effects?'item_option':'inventory_infusion',id:infusion.id}
+  limit_per_owner_rule:rule.limit_per_owner_rule??1,grant:{kind:'item_option',id:infusion.id}
  });
  await askCompanionRest(row);return row;
 }
@@ -266,7 +267,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", chatOpen:false, chatUnread:false, stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, sessionPane:"", disclosureState:new Map(),
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, serverDeviceName:"", disclosureState:new Map(),
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -306,6 +307,7 @@ function acceptSession(info){
   }
   if(next)currentGameSession=next;
   state.session=info;
+  if(info?.device_name)state.serverDeviceName=String(info.device_name).trim().slice(0,80);
 }
 const pendingFieldTimers = new Map();
 // Input/change handlers may already be writing when a popup closes. Include
@@ -614,7 +616,7 @@ function navigationButton(key,title){
 function syncNav(){
   const hasCreature=isCreatureOpen();
   const topbar=document.querySelector('.topbar');
-  if(topbar)topbar.hidden=state.page==='library'&&state.libraryMode;
+  if(topbar)topbar.hidden=state.page==='session'||state.page==='library'&&state.libraryMode;
   const topSessionButton=document.querySelector('.connection-link');
   if(topSessionButton)topSessionButton.hidden=hasCreature;
   const creature=hasCreature?(state.editor?.read()||(state.cachedCreatures||[]).find(c=>c.id===state.creatureId)):null;
@@ -721,7 +723,7 @@ let browserHistoryRestoreTicket=0;
 function screenSnapshot(){
   return {
     page:state.page,libraryMode:state.libraryMode,creatureId:state.creatureId,
-    sheet:state.sheet,detail:state.detail,sessionPane:state.sessionPane,
+    sheet:state.sheet,detail:state.detail,
     inventorySubtab:state.inventorySubtab,inventorySelectedTabs:[...state.inventorySelectedTabs],
     catalogSelected:state.catalogSelected
   };
@@ -756,7 +758,6 @@ async function restoreBrowserScreen(screen){
     state.creatureId=state.libraryMode?null:(screen.creatureId||null);
     state.sheet=screen.sheet;
     state.detail=screen.detail||'overview';
-    state.sessionPane=screen.sessionPane||'';
     state.inventorySubtab=screen.inventorySubtab||'items';
     state.inventorySelectedTabs=Array.isArray(screen.inventorySelectedTabs)?
       screen.inventorySelectedTabs.slice(0,100):
@@ -2527,8 +2528,24 @@ async function editorView() {
           description:detail.description??selected.item.description};
       }
     }
+    // Resolve only the selected object's granting traits, not the full catalog.
+    const optionDescriptions=new Map();
+    const extensionOptions=(selected?.item?.option_extensions||[]).filter(option=>!option.generic_variant&&option.details);
+    if(extensionOptions.length){
+      const request=Promise.all(extensionOptions.map(async option=>{
+       try{
+        const detail=await detailedEntry(option.details.category||'optional_features',{
+         name:option.details.name||option.name,source:option.details.source||option.source,
+         _category:option.details.category||'optional_features'});
+        return [option.id,flattenDescription(detail)];
+       }catch{return [option.id,''];}
+      }));
+      try{for(const [id,description] of await sheetLoadingDeadline(request,1400,"delle estensioni"))optionDescriptions.set(id,description);}
+      catch(error){if(error.code==='SHEET_LOADING_TIMEOUT')
+        refreshSheetAfterLateLoad(request,creatureId,'inventory');}
+    }
     const description=selected?panel("Descrizione · "+ownedItemDisplayName(selected.item),
-      inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"";
+      inventoryItemDescription(resolvedDetail,selected.index,optionDescriptions),"inventory-native-panel inventory-description-panel"):"";
     const showingItems=selectedTabs.some(key=>key==='items'||key.startsWith('container:'));
     body=nav+
       (showingItems?inventoryEquipmentView(c,calculated)+
@@ -3579,7 +3596,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
         name=isCatalogItem(item)?'<strong>'+esc(displayName)+'</strong>':
           '<input class="inventory-item-name-input" aria-label="Nome oggetto" data-item-index="'+index+
           '" data-item-key="name" value="'+esc(item.name||"")+'">'+
-          (item.infusion?.name?'<small class="inventory-item-extension"> - '+esc(item.infusion.name)+'</small>':''),
+          '',
         nameCell='<span class="inventory-col-name">'+
           '<button type="button" class="inventory-select" data-act="inventory-select" data-index="'+index+
           '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:scrolls?esc(displayName):'Dettagli')+'</button>'+
@@ -3755,7 +3772,22 @@ async function openGenericVariantDialog(index){
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
 }
-function inventoryItemDescription(obj,index){
+function itemExtensionOriginDescription(extension){
+ const origin=String(extension.origin_id||''),parent=String(extension.parent_origin||'');
+ const sourceName=String(extension.origin_name||'').replace(/^Oggetto · /,'').trim();
+ const record=state.editor?.read()||{};
+ const sources=[...(state.traitRows||[]),...(state.calculated?.features||[]),
+  ...(record.optional_features_catalog||[])];
+ const source=sources.find(row=>(origin&&[row.origin_id,row.feature_origin,row.origin_key].includes(origin))||
+   (parent&&[row.origin_id,row.feature_origin,row.origin_key].includes(parent)))||
+  sources.find(row=>sourceName&&row.name===sourceName);
+ const text=source?flattenDescription({entries:source.entries??source.description??''}):'';
+ if(text)return text;
+ const catalog=(state.referenceCatalogs.optional_features||[]).find(row=>row.name===sourceName);
+ return catalog?flattenDescription(catalog)||'Descrizione del tratto non disponibile.':
+  extension.spell_description||'Descrizione del tratto non disponibile.';
+}
+function inventoryItemDescription(obj,index,optionDescriptions=new Map()){
   if(requiresAttunement(resolveOwnedItem(obj))&&state.calculated?.attunements)
     obj={...obj,attuned_count:state.calculated.attunements.counts[index]||0};
   const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
@@ -3778,36 +3810,41 @@ function inventoryItemDescription(obj,index){
     [['damage','Dadi danno'],['versatile_damage','Danno versatile'],['range','Gittata ('+distanceUnitLabel()+')'],['bonus_weapon','Bonus magico']].map(([key,label])=>
       '<label>'+label+'<input data-item-override="'+key+'" data-item-index="'+index+
       '" value="'+esc(key==='range'?distanceFieldDisplay(obj.instance_overrides?.[key]??''):(obj.instance_overrides?.[key]??''))+'"></label>').join('')+'</details>':'';
-  const genericVariants=(Array.isArray(obj.option_extensions)?obj.option_extensions:[]).filter(row=>row.generic_variant);
+  const applied=itemAppliedOptions(obj,itemExtensions,{
+   optionDescription:option=>optionDescriptions.get(option.id)||
+     flattenDescription({entries:option.description||option.definition?.description||[]})||
+     (option.generic_variant?'Descrizione della variante non disponibile.':'Descrizione del tratto non disponibile.'),
+   originDescription:itemExtensionOriginDescription
+  });
+  const storedPowerControls=extension=>
+   ['spell_storing_item','spell_imprint'].includes(extension.stored_spell_feature)?
+   '<div class="inventory-prose">'+esc(extension.spell_description||'')+'</div>'+
+   (()=>{const tracker=(state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id);
+     const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
+     const imprint=extension.stored_spell_feature==='spell_imprint';
+     const valid=!imprint||spellImprintActive(extension);
+     return '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'"'+
+      (!valid||remaining<1?' disabled':'')+'>'+
+      (imprint?'Lancia dalla carta · '+(extension.action_type==='bonus'?'azione bonus':'azione'):
+       'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
+   })():'';
   return '<div class="inventory-description">'+
     '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
       '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools">'+actionGlyph('spark')+
       '<span>Varianti 5eTools</span></button></div>'+
-    (genericVariants.length?'<section class="inventory-detail-section"><h3>Varianti applicate</h3>'+
-     genericVariants.map(row=>'<div class="infusion-dialog-item"><span>'+esc(row.name)+' · '+esc(row.source||'')+
-      '</span><button type="button" class="btn small" data-act="item-variant-remove" data-index="'+index+
-      '" data-variant-id="'+esc(row.id)+'" aria-label="Rimuovi '+esc(row.name)+'">Rimuovi</button></div>').join('')+
-     '</section>':'')+
+    (applied.length?'<section class="inventory-detail-section inventory-applied-options"><h3>Modifiche applicate</h3>'+
+      applied.map(option=>'<article class="inventory-applied-entry">'+
+       '<div class="inventory-applied-heading"><strong>'+esc(option.name)+'</strong>'+
+       (option.removable?'<button type="button" class="inventory-applied-remove" data-act="item-variant-remove" data-index="'+index+
+        '" data-variant-id="'+esc(option.variant_id)+'" aria-label="Rimuovi '+esc(option.name)+'" title="Rimuovi">'+
+        '<span aria-hidden="true">×</span></button>':'')+'</div>'+
+       '<p class="inventory-applied-description">'+esc(option.description)+'</p>'+
+       option.effects.map(storedPowerControls).join('')+'</article>').join('')+
+      '</section>':'')+
     (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
       '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
     '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+
     (properties!=='—'?'<section class="inventory-detail-section"><h3>Proprietà</h3><p>'+esc(properties)+'</p></section>':'')+
-    (itemExtensions.length?'<section class="inventory-detail-section magic-effect-extensions">'+
-       '<h3>Estensioni attive</h3><ul>'+itemExtensions.map(extension=>
-       '<li><strong>'+esc(extension.origin_name||'Beneficio')+'</strong> · '+
-       esc(effectExtensionLabel(extension,{cha_mod:state.calculated?.abilities?.cha?.modifier}))+
-       (['spell_storing_item','spell_imprint'].includes(extension.stored_spell_feature)?
-        '<div class="inventory-prose">'+esc(extension.spell_description||'')+'</div>'+
-        (()=>{const tracker=(state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id);
-         const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
-         const imprint=extension.stored_spell_feature==='spell_imprint';
-         const valid=!imprint||spellImprintActive(extension);
-         return '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'"'+
-          (!valid||remaining<1?' disabled':'')+'>'+
-          (imprint?'Lancia dalla carta · '+(extension.action_type==='bonus'?'azione bonus':'azione'):
-            'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
-        })():'')+
-       '</li>').join('')+'</ul></section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
 }
 function inventoryRow(item,index) {
@@ -4610,37 +4647,42 @@ function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
     '<button class="btn small session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
     '" aria-label="Modifica '+esc(token.name)+'" title="Condizioni, incantesimi e miniatura">⚙</button></div>').join('');
 }
-function sessionLayout(table,desktop){
-  const pane=['table','connection'].includes(state.sessionPane)?state.sessionPane:
-    (state.paired&&state.online?'table':'connection');
-  const choices=[['table','Mappa'],['connection','Collegamento']];
-  const unavailable=state.sessionCreatureErrors.length?
-    '<p class="warning" role="status" data-session-creature-errors>Schede non disponibili in Partita: '+
-      esc(state.sessionCreatureErrors.map(row=>row.name).join(', '))+'. Le altre creature restano utilizzabili.</p>':'';
-  return header('Al tavolo','La tua partita','Il tavolo condiviso, sempre a portata di mano.')+unavailable+
-    '<div class="session-switcher" role="group" aria-label="Sezioni della partita">'+choices.map(([key,title])=>'<button type="button" class="btn" data-act="session-pane" data-session-pane="'+key+'" aria-pressed="'+(pane===key)+'">'+title+'</button>').join('')+'</div>'+
-    '<div data-session-content="connection"'+(pane==='connection'?'':' hidden')+'>'+desktop+'</div>'+
-    '<div data-session-content="table"'+(pane==='table'?'':' hidden')+'>'+table+'</div>';
+function sessionCreatureWarnings(){
+ return state.sessionCreatureErrors.length?
+  '<p class="warning" role="status" data-session-creature-errors>Schede non disponibili in Partita: '+
+   esc(state.sessionCreatureErrors.map(row=>row.name).join(', '))+
+   '. Le altre creature restano utilizzabili.</p>':'';
 }
 function sessionView() {
   const entries=Array.isArray(state.map?.tokens)?state.map.tokens:[];
   const groups=tokenGroups(state.map);
   const selected=entries.find(t=>t.id===state.tokenId);
   const online=state.online&&state.paired;
-  const statusMarkup='<div class="row between"><span>'+tag(online?'Partita connessa':
-    state.hostReachable?'Desktop attivo · nessuna partita':'Desktop non raggiungibile')+'</span>'+
-    '<button type="button" class="btn small" data-act="check">Aggiorna</button></div>';
-  const pairing='<form id="pair-form" class="stack"><label>Codice temporaneo del desktop'+
+  const serverName=state.serverDeviceName||'Server';
+  const serverIcon='<svg class="session-device-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+   'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+
+   '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8m-4-3v3"/></svg>';
+  const statusText=online?'Partita connessa':
+    state.online?'Partita disponibile':state.hostReachable?'Nessuna partita attiva':'Non raggiungibile';
+  const statusMarkup='<div class="session-connection-top">'+
+   '<div class="session-server-identity">'+serverIcon+
+   '<strong class="session-server-name">'+esc(serverName)+'</strong>'+
+   '<span class="tag session-connection-state">'+esc(statusText)+'</span></div>'+
+   '<div class="session-connection-actions"><button type="button" class="btn small" data-act="check">Aggiorna</button>'+
+   (state.paired?btn('disconnect','Dissocia','danger'):'')+'</div></div>';
+  const pairing='<form id="pair-form" class="session-pair-form">'+
+    '<label>Codice temporaneo del server'+
     '<input id="pair-secret" type="text" inputmode="text" minlength="16" maxlength="19" pattern="[a-fA-F0-9 -]{16,19}" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>'+
-    '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda desktop</label>'+
-    '<button type="submit" class="btn primary full"'+(state.hostReachable?'':' disabled')+'>Collega alla partita</button></form>';
-  const desktop=panel('Desktop',statusMarkup+(state.paired?'<div class="actions">'+btn('disconnect','Dissocia desktop','danger')+'</div>':pairing),'session-desktop');
+    '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda server</label>'+
+    '<button type="submit" class="btn primary"'+(state.hostReachable?'':' disabled')+'>Collega alla partita</button></form>';
+  const desktop='<section class="panel session-desktop" aria-label="Collegamento al server">'+
+    statusMarkup+(state.paired?'':pairing)+'</section>';
   let html='';
   const image=state.snapshotObjectUrl;
   const snapshotMatches=state.liveSnapshot?.token_id===state.tokenId;
   html+='<section class="panel session-map-panel" aria-label="Mappa della partita">'+
     '<div class="session-map-stage">'+
-    (image?'<canvas id="session-map-canvas" role="img" aria-label="Mappa della partita: trascina per spostarti, pizzica per ingrandire"></canvas>':'<div class="session-map-placeholder">⧉<span>'+(online?'Acquisizione mappa…':'Mappa disponibile quando il desktop è collegato')+'</span></div>')+
+    (image?'<canvas id="session-map-canvas" role="img" aria-label="Mappa della partita: trascina per spostarti, pizzica per ingrandire"></canvas>':'<div class="session-map-placeholder">⧉<span>'+(online?'Acquisizione mappa…':'Mappa disponibile quando il server è collegato')+'</span></div>')+
     (state.snapshotPending||image&&!snapshotMatches?'<span class="session-map-loading" role="status">Aggiornamento…</span>':'')+
     '</div>'+
     (selected?'<div class="session-selected-controls"><strong>'+esc(selected.name)+'</strong>'+
@@ -4652,7 +4694,8 @@ function sessionView() {
     '<button type="button" class="btn small" data-act="move-up" aria-label="Quota più">+↑</button>'+
     '<button type="button" class="btn small" data-act="move-down" aria-label="Quota meno">−↓</button></div></div>':'')+
     '</section>';
-  if(!online)return sessionLayout(html,desktop);
+  html+=sessionCreatureWarnings();
+  if(!online)return desktop+html;
   html+='<section class="panel session-token-panel">'+
     '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
     '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
@@ -4695,7 +4738,7 @@ function sessionView() {
     '<label>Direzione<select id="place-direction"><option value="north">Nord</option><option value="east">Est</option><option value="south">Sud</option><option value="west">Ovest</option></select></label>'+
     '<div class="session-dialog-footer"><button class="btn primary" type="button" data-act="place-creature">Piazza token</button>'+
     '<button class="btn" type="button" data-act="close-place-dialog">Annulla</button></div></dialog>';
-  return sessionLayout(html,desktop);
+  return desktop+html;
 }
 
 function openSessionDialog(dialog) { openDialog(dialog); }
@@ -4804,6 +4847,7 @@ async function refreshConnection(quiet=false) {
     const result=await status();
     state.hostReachable=true;
     state.online=!!result.desktop_online;
+    state.serverDeviceName=String(result.device_name||'').trim().slice(0,80);
     // /api/status is intentionally public. An unpaired phone must NOT call
     // /api/session yet: its expected HTTP 401 must not overwrite the public
     // desktop-online result or disable the pairing button.
@@ -5765,8 +5809,11 @@ function rollDieResultMarkup(outcome){
    '<div class="sheet-roll-dice-group"><span class="sheet-roll-dice-label">'+esc(part.notation)+'</span>'+
    '<div class="sheet-roll-dice-values">'+(part.kind==='flat'?
      '<span class="sheet-roll-die-value">'+esc(part.notation)+'</span>':
-     (part.rolls||[]).map(n=>
-       '<span class="sheet-roll-die-value">'+esc(n)+'</span>').join(''))+'</div></div>').join('')+'</div>';
+     (part.rolls||[]).map((n,i)=>{
+       const reroll=(part.rerolls||[]).find(row=>row.index===i);
+       return '<span class="sheet-roll-die-value">'+esc(n)+
+         (reroll?'<small title="Ritiro automatico">'+esc(reroll.previous+'→'+reroll.next)+'</small>':'')+'</span>';
+     }).join(''))+'</div></div>').join('')+'</div>';
 }
 function chosenRollBonuses(dialog){
  return [...(dialog.usedRollBonuses||[])];
@@ -7327,7 +7374,6 @@ async function handleAction(target){
     if(source.dataset.magicTool){state.sheetPopup='';app.querySelector('#sheet-context-dialog')?.close?.();}
     await handleAction(source);return;
   }
-  if(act==='session-pane'){state.sessionPane=target.dataset.sessionPane;await render();return;}
   if(act==='catalog-close'){state.catalogSelected=-1;await render();return;}
   if(act==="open-place-token"){
     if(!state.map?.tokens?.length)throw Error("Serve almeno un token di riferimento sulla mappa.");
@@ -7936,6 +7982,11 @@ async function handleAction(target){
       bonuses,creatureId:creature.id||'',damageFormula:formula,damageLabel:label,damageType:type});
     dialog.dataset.damageAttackId=attackId;
     dialog.rollAttack=sourceAttack;
+    dialog.damageRerolls=sourceAttack?.damage_rerolls||[];
+    // Only the original weapon damage dice can be rerolled, never extra dice.
+    dialog.damageRerollDiceCount=[...String(sourceAttack?.damage_base_formula||'')
+      .matchAll(/([1-9]\d*)d(?:2|3|4|6|8|10|12|20|100)/gi)]
+      .reduce((sum,match)=>sum+Number(match[1]),0);
     dialog.renderRollFormula=()=>{dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
         [...damageRollTerms(formula,type,dialog.rollAttack).segments,...[...chosenRollBonuses(dialog),...(dialog.postRollBonuses||[])].map(rollBonusTerm)],esc);};
     return;
@@ -8285,7 +8336,10 @@ async function handleAction(target){
         const chosen=chosenRollBonuses(dialog);
         const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>
           Object.hasOwn(row,'flat_bonus')?(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice).join('');
-        const outcome=rollBattleDamage(fullFormula,randomDie);
+        const threshold=dialog.dataset.rollKind==='damage'?
+          Math.max(0,...(dialog.damageRerolls||[]).map(row=>Number(row.reroll_at_most)||0)):0;
+        const outcome=rollBattleDamage(fullFormula,randomDie,{
+          rerollAtMost:threshold,rerollDiceCount:dialog.damageRerollDiceCount||0});
         const featureTarget=dialog.dataset.featureRollTarget||'';
         state.roll={...outcome,label:(featureTarget?'Tiro capacità · ':'Danni · ')+dialog.dataset.damageLabel+
           (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName(),
@@ -9481,13 +9535,12 @@ async function handleAction(target){
     await patch(changes);closeDialog(dialog,{remove:true});await render();
     await openBenefitSelectionDialog(id,stage);return;
   }
-  if(act==='item-option-remove'||act==='infusion-clear'){
+  if(act==='item-option-remove'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
-    if(target.dataset.selectionId){
-      const calculated=await computeLocalData(creature);
-      await patch(powerApplicationPatch(creature,calculated,calculated.power_selection_catalog,target.dataset.selectionId,target.dataset.optionId,false));
-    }else await patch(clearInfusionPatch(creature,Number(target.dataset.index)));
+    if(!target.dataset.selectionId)throw Error('Opzione applicata non disponibile.');
+    const calculated=await computeLocalData(creature);
+    await patch(powerApplicationPatch(creature,calculated,calculated.power_selection_catalog,target.dataset.selectionId,target.dataset.optionId,false));
     await render();return;
   }
   if(["inventory-container-add","inventory-container-rename","inventory-container-delete"].includes(act)){
@@ -9738,8 +9791,8 @@ async function handleAction(target){
   }
   if(act==="check"){await refreshConnection();if(state.paired){try{state.map=await map();}catch{state.map=null;}}await render();return;}
   if(act==="disconnect"){
-    if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
-    await unpair();stopSubscriptions();state.sessionPane='connection';state.paired=false;state.session=null;state.map=null;
+    if(!confirm("Dissociare questo server? Le schede locali rimarranno sul dispositivo.")) return;
+    await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;
     state.messages=[];state.after="";state.tokenId="";currentGameSession="";state.desktopConditionCatalog=null;state.conditionCatalog=state.offlineConditionCatalog;
     await render();return;
   }
@@ -10016,12 +10069,12 @@ async function handleSubmit(form){
     acceptSession(pairedSession);
     serverBackups.schedule();
     realtimeStopped=false;
-    state.paired=true;state.online=true;state.sessionPane='table';
+    state.paired=true;state.online=true;
     state.messages=[];state.after="";state.tokenId="";
     // Pairing codes are one-time. A momentary map failure must not turn a
     // successful enrollment into a visible failure or require a new QR.
     try{state.map=await map();}catch{state.map=null;}
-    await render();message("Desktop associato.");return;
+    await render();message("Server associato.");return;
   }
   if(form.id==="chat-form"){
     const body=text(document.querySelector("#chat-message")?.value);
@@ -10389,8 +10442,8 @@ function listen(){
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.matches('[data-hp-autosave]')){
-      // Current and temporary HP share a single draft and a single commit.
-      // Independent timers can race, restoring stale values from one field.
+      // Commit current and temporary HP as one draft: independent timers
+      // can race and restore a stale value from the other field.
       const field=target.closest('#hp-adjust-dialog')
         ?.querySelector('[data-hp-autosave="current_hp"]')||target;
       clearTimeout(pendingFieldTimers.get(field));
@@ -10666,7 +10719,7 @@ export async function mount(){
   // Possession of a local credential is unrelated to reachability. Render
   // IndexedDB creatures FIRST: an offline desktop must never gate the editor.
   state.paired=await hasPairingCredential();
-  if(qrCode){state.page="session";state.sessionPane="connection";}
+  if(qrCode)state.page="session";
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   try{
     const saved=await setting(LOCAL_CHAT_KEY);
@@ -10700,7 +10753,7 @@ export async function mount(){
       try {
         acceptSession(await pair(qrCode,{remember:true}));
         state.paired=true;state.online=true;state.hostReachable=true;
-        state.page="session";state.sessionPane="table";
+        state.page="session";
         state.messages=[];state.after="";state.tokenId="";
         try{state.map=await map();}catch{state.map=null;}
         await render();
@@ -10711,11 +10764,11 @@ export async function mount(){
         // pair() remembers the issued bearer so a reconnect can recover.
         await refreshConnection(true);
         if(state.paired&&state.online){
-          state.page="session";state.sessionPane="table";
+          state.page="session";
           await render();
           message("Telefono associato tramite QR.");
         }else{
-          state.page="session";state.sessionPane="connection";
+          state.page="session";
           await render();
           const input=document.querySelector("#pair-secret");
           if(input)input.value=qrCode;

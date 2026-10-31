@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerSelectionLimit,
-  powerApplicationPatch,powerSelectionTargets,normalizeSelectionRecord} from '../power_selection.js';
+  powerApplicationPatch,powerSelectionTargets} from '../power_selection.js';
 const data={...JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8')),optionalFeatureProgressions:JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'))};
 const owner=(className,source,name)=>({name,origin_id:'feature:'+name,
  origin_key:'class|'+source.toLowerCase()+'|'+className.toLowerCase(),
@@ -47,19 +47,6 @@ test('alternative packages choose one monster type or two humanoid races within 
  assert.equal(pick(record,ctx).layers.learned.used,3);
 });
 
-test('legacy Ranger choices move from prepared to learned without losing selected races',()=>{
- const old={...ranger(6),selection_state_version:2,power_selections:{ranger_favored_enemy_phb:{
-  prepared:['dragons',{id:'humanoids',subchoices:['Elf','Orc']}]
- }}};
- const next=normalizeSelectionRecord(old,data);
- assert.deepEqual(next.power_selections.ranger_favored_enemy_phb.learned,[
-  {id:'monster_types:1',subchoices:['dragons']},
-  {id:'humanoid_races:2',subchoices:['elf','orc']}
- ]);
- assert.equal(next.power_selections.ranger_favored_enemy_phb.prepared,undefined);
- assert.equal(pick(next,context()).layers.learned.used,2);
-});
-
 test('spell selection benefits project the same stage and source contract as optional powers',()=>{
  const calculated={casting_classes:[
   {id:'wizard',name:'Wizard',level:7,book:true,mode:'Preparati',limit:10,cantrips:4,
@@ -88,27 +75,17 @@ test('spell selection benefits project the same stage and source contract as opt
  assert.equal(sorcerer.layers.learned.trigger,'level_up');
 });
 
-test('Armor Model and infusion JSON share the same stage contract',()=>{
- const artificer={id:'a',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],
-  trait_state_selection:{armor_model:'armor_model:guardian'},inventory:[{id:'old-armor',type:'MA',quantity:1,equipped_slots:['body']}]};
- const features=[owner('Artificer','TCE','Arcane Armor'),owner('Artificer','TCE','Armor Model'),
-   owner('Artificer','TCE','Infuse Item')];
- const calculated={features,trait_state_catalog:[{group:'armor_model',id:'armor_model:guardian',
-  name:'Guardian'}, {group:'armor_model',id:'armor_model:infiltrator',name:'Infiltrator'}],
-  infusion_catalog:[],infusion_mechanics:{}};
- const models=powerSelectionModels(artificer,calculated,data);
- const armor=models.find(row=>row.id==='armor_model');
+test('Artificer infusions use the canonical learned and applied selection stages',()=>{
+ const artificer={id:'a',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],inventory:[]};
+ const features=[owner('Artificer','TCE','Infuse Item')];
+ const models=powerSelectionModels(artificer,{features},data);
  const infusion=models.find(row=>row.id==='artificer_infusions');
- assert.deepEqual(Object.keys(armor.layers),['applied']);
- assert.equal(armor.layers.applied.used,1);
- assert.equal(armor.layers.applied.limit,1);
- assert.equal(armor.layers.applied.trigger,'short_rest');
+ assert.ok(infusion);
  assert.deepEqual(Object.keys(infusion.layers),['learned','applied']);
  assert.equal(infusion.layers.applied.trigger,'long_rest');
  assert.equal(infusion.layers.learned.trigger,'level_up');
  assert.equal(powerSelectionLimit({by_class_level:[[1,1],[3,2],[8,3]]},7),2);
 });
-
 test('generic applied powers spend and refund exactly one owned tracker use',()=>{
  const custom={selections:[{id:'item_grant',owner:{class_name:'Ranger',
   class_source:'PHB',trait:'Favored Enemy'},source:{type:'inline',
@@ -176,11 +153,10 @@ test('option benefit targets are defined by data, including equipped armor and o
  const target={kind:'equipped_item',slot:'body',kinds:['armor']};
  assert.deepEqual(powerSelectionTargets(record,{layers:{applied:{target}}},option).map(row=>row.index),[0]);
  assert.deepEqual(powerSelectionTargets(record,{layers:{applied:{}}},option),[]);
- const extension={kind:'item',selector:'option.item_selector',extension_field:'infusion'};
+ const extension={kind:'item',selector:'option.item_selector'};
  const model={layers:{applied:{target:extension}}};
  assert.deepEqual(powerSelectionTargets(record,model,option).map(row=>row.index),[0,1]);
- assert.deepEqual(powerSelectionTargets({...record,inventory:inventory.map(item=>({...item,
-  infusion:{creator_id:'someone-else'}}))},model,option),[]);
+ assert.deepEqual(powerSelectionTargets(record,model,option).map(row=>row.index),[0,1]);
  assert.deepEqual(powerSelectionTargets({...record,inventory:inventory.map(item=>({...item,disabled:true}))},model,option),[]);
 });
 

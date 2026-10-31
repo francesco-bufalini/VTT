@@ -19,7 +19,7 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,effectiveEquipmentInventory,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus,hydrateGenericVariants} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,effectiveEquipmentInventory,matchingDamageDieRerolls,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,itemOptionChargeTrackers,armorDexterityBonus,hydrateGenericVariants} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
@@ -660,18 +660,22 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
    record.hand_grip_two_handed&&hasProperty(main,'V'))&&record.hand_off_with_two_handed!==true);
  const off=offBlocked?null:physicalOff;
  const offAllowed=offhandAttackAllowed(record,main,off);
- const style=record.two_weapon_fighting||['fighting_styles','optional_features_catalog','proficiency_choices','proficiency_origins','selected_features','feats_catalog','trait_choices'].some(field=>arr(record[field]).some(row=>{
-   if(row?.disabled)return false;
-   const label=typeof row==='string'?row:[row?.name||row?.label||row?.key||'',...['fighting_style','fightingStyle','selected_style','selected','choice'].map(k=>typeof row?.[k]!=='boolean'?row?.[k]||'':'')].join(' ');
-   return label.toLowerCase().includes('two-weapon fighting');
- }));
+ // Ability-modifier damage is projected from active typed benefits, not
+ // inferred by matching the names of known features or optional selections.
+ const abilityDamageBenefit=attack=>arr(record.damage_ability_grants).find(row=>
+  row?.modifier==='full'&&!row.disabled&&
+  record.origin_enabled?.[row.origin_id]!==false&&
+  record.origin_enabled?.[row.parent_origin]!==false&&
+  requirementsAllow(record,row,{target:'attack_damage:'+attack.id,attack}));
  const sign=n=>n>0?' + '+n:n<0?' − '+Math.abs(n):'';
  const append=(attack,ability,proficient,damage,baseHit=null)=>{
   const settings=record.attack_overrides?.[attack.id]||{};
   const modifier=abilities[ability]?.modifier??0;
   const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id,attack);
   let damageMod=baseHit!==null||attack.damage_ability_modifier===false?0:modifier;
-  if(attack.slot==='off'&&offAllowed&&!style)damageMod=Math.min(0,damageMod);
+  const abilityBenefit=attack.slot==='off'&&offAllowed?abilityDamageBenefit(attack):null;
+  if(attack.slot==='off'&&offAllowed&&!record.two_weapon_fighting&&!abilityBenefit)
+   damageMod=Math.min(0,damageMod);
   const damageAbilityModifier=damageMod;
   const featureDamage=classFeatureDamage(record,featureContext,attack,ability);
   const damageExtraModifier=bonus('attack_damage:'+attack.id,attack)+featureDamage;
@@ -681,7 +685,8 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const usedBase=featureContext.damageBase?featureContext.damageBase(attack.id,damage):damage;
   out.push({...attack,ability,proficient,hit,damage:usedBase?usedBase+sign(damageMod):'Come da bestiario',
     damage_base_formula:usedBase||'',damage_ability_modifier:damageAbilityModifier,
-    damage_extra_modifier:damageExtraModifier,range_feet:range,long_range_feet:longRange,
+    damage_extra_modifier:damageExtraModifier,
+   damage_ability_source:abilityBenefit?.origin_name||'',range_feet:range,long_range_feet:longRange,
     explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id,attack),
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
     offhand_bonus:attack.slot==='off'||attack.slot==='shield'&&attack.hand==='off'});
@@ -833,7 +838,9 @@ export function calculateSheet(record={},catalogs={}){
     const dice=scalingDiceFor(effective,catalogs.scalingDice?.dice||[],calculated.features);
     const resolve=row=>resolveScalingDieBenefit(row,dice,calculated.trackers,
       expression=>formulaValue(expression,calculated));
-    return {...calculated,scaling_dice:dice,selection_record:{
+    return {...calculated,attacks:arr(calculated.attacks).map(attack=>({...attack,
+      damage_rerolls:matchingDamageDieRerolls(selectionRecord,attack)})),
+      scaling_dice:dice,selection_record:{
       ...selectionRecord,
       dice_bonuses:arr(selectionRecord.dice_bonuses).map(resolve),
       action_grants:arr(selectionRecord.action_grants).map(resolve)}};
@@ -1455,7 +1462,7 @@ function calculateSheetValues(record={},catalogs={}){
     name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featTrackers,
     ...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
     ...racialBonusTrackers(racialBonusRows,safe('proficiency')??2),
-    ...infusionChargeTrackers(record,index?.artificer_infusions||[],features)];
+    ...itemOptionChargeTrackers(record,index?.artificer_infusions||[],features)];
   const contextualTrackerIds=new Map();
   for(const extra of contextual.trackers){
     const native=baseTrackers.find(row=>row.origin_id===extra.origin_id&&

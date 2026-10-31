@@ -55,6 +55,7 @@ const FILES := {
 	"/d20_rerolls.js": ["res://pwa/d20_rerolls.js", "text/javascript; charset=utf-8"],
 	"/source_edition.js": ["res://pwa/source_edition.js", "text/javascript; charset=utf-8"],
   "/item_controls.js": ["res://pwa/item_controls.js", "text/javascript; charset=utf-8"],
+  "/item_applied_options.js": ["res://pwa/item_applied_options.js", "text/javascript; charset=utf-8"],
   "/inventory_search.js": ["res://pwa/inventory_search.js", "text/javascript; charset=utf-8"],
   "/item_detail_facts.js": ["res://pwa/item_detail_facts.js", "text/javascript; charset=utf-8"],
   "/documents.js": ["res://pwa/documents.js", "text/javascript; charset=utf-8"],
@@ -123,7 +124,6 @@ const FILES := {
 	"/chat_notifications.js": ["res://pwa/chat_notifications.js", "text/javascript; charset=utf-8"],
 	"/feature_mechanics.js": ["res://pwa/feature_mechanics.js", "text/javascript; charset=utf-8"],
 	"/trait_state_rules.js": ["res://pwa/trait_state_rules.js", "text/javascript; charset=utf-8"],
-	"/selection_compatibility.js": ["res://pwa/selection_compatibility.js", "text/javascript; charset=utf-8"],
 	"/power_selection.js": ["res://pwa/power_selection.js", "text/javascript; charset=utf-8"],
 	"/optional_feature_progression.js": ["res://pwa/optional_feature_progression.js", "text/javascript; charset=utf-8"],
 	"/action_economy.js": ["res://pwa/action_economy.js", "text/javascript; charset=utf-8"],
@@ -652,6 +652,27 @@ func _inspect_request(client: Dictionary) -> void:
 		bytes.slice(header_end + 4, header_end + 4 + content_length))
 
 
+# Expose the server computer's human-readable device name, never its machine ID.
+# Windows supplies COMPUTERNAME; Unix often supplies HOSTNAME. If the game was
+# launched without that environment (common on macOS), resolve it once via
+# the system hostname utility instead of spawning a process on every poll.
+var _pwa_device_name: String = ""
+
+func _server_device_name() -> String:
+	if _pwa_device_name != "":
+		return _pwa_device_name
+	var name: String = OS.get_environment("COMPUTERNAME").strip_edges()
+	if name == "":
+		name = OS.get_environment("HOSTNAME").strip_edges()
+	if name == "":
+		var hostname_output: Array = []
+		if OS.execute("hostname", PackedStringArray(), hostname_output) == 0 and not hostname_output.is_empty():
+			name = String(hostname_output[0]).strip_edges()
+	_pwa_device_name = name.replace("\n", " ").replace("\r", " ").substr(0, 80)
+	if _pwa_device_name == "":
+		_pwa_device_name = "Server"
+	return _pwa_device_name
+
 func _handle_http(client: Dictionary, method: String, path: String,
 		headers: Dictionary, body: PackedByteArray) -> void:
 	if method == "GET" and path == VERSION_PATH:
@@ -765,6 +786,7 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		var board := _board_sync()
 		_answer(client, 200, {"protocol": 1,
 			"desktop_online": _web_board_controller(board) != null,
+			"device_name": _server_device_name(),
 			"pairing_required": true})
 		return
 	if path.begins_with("/api/backup/"):
@@ -812,7 +834,7 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		return
 	if path == "/api/session":
 		_answer(client, 200, {"protocol": 1, "session": board.get("session_key"),
-			"mobile_protocol": 3})
+			"mobile_protocol": 3, "device_name": _server_device_name()})
 	elif path == "/api/conditions":
 		_answer(client, 200, _condition_public_catalog())
 	elif path == "/api/map":

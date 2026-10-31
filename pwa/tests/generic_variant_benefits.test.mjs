@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {genericVariantPatch,hydrateGenericVariants,resolveOwnedItem,requiresAttunement,
- itemOptionNumericBonuses,infusionChargeTrackers} from '../item_controls.js';
+ itemOptionNumericBonuses,itemOptionChargeTrackers} from '../item_controls.js';
 import {projectItemOptionBenefits} from '../power_selection.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {BENEFIT_TYPES} from '../trait_benefit_editor.js';
@@ -62,7 +62,7 @@ test('saving throws, exact spell costs and charges use existing bonus/spell/trac
  const spells=benefits.origin_spell_grants;
  assert.deepEqual(spells.map(row=>[row.spell_id,row.tracker_cost]),[
   ['phb2014_jump',1],['phb2014_levitate',2]]);
- const tracker=infusionChargeTrackers(record);
+ const tracker=itemOptionChargeTrackers(record);
  assert.equal(tracker.length,1);
  assert(spells.every(row=>row.tracker_id===tracker[0].id&&row.payment_mode==='tracker'));
 });
