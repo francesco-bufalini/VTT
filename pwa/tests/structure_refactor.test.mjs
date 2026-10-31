@@ -45,11 +45,11 @@ const benefits=(record,calculated,f)=>traitBenefitGroups({rank:2,category:'class
 test('actions and benefits share 2024 timing, resource and free base costs',()=>{
  for(const [name,owner,expectedTime,expectedCost] of [
   ['Lay on Hands','Paladin','bonus',1],['Divine Sense','Paladin','action',1],
-  ['Monk’s Focus','Monk','bonus',0]]){
+  ['Patient Defense','Monk','bonus',0]]){
   const f=feature(name,owner),record={rules_version:'2024'},calculated={features:[f]};
   const descriptors=classFeatureDescriptors(record,calculated);
   const action=classFeatureEntries(record,calculated).find(row=>
-   name==='Monk’s Focus'?row.class_feature_id==='patient_defense':true);
+   row.feature_name===name);
   assert.equal(action.time,expectedTime);assert.equal(action.cost,expectedCost);
   assert(descriptors.some(row=>row.id===action.id&&row.available));
   const preview=benefits(record,calculated,f).find(row=>row.label===action.name);

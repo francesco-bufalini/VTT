@@ -485,7 +485,8 @@ test('Battle nests general free actions under Other Actions, without duplicate r
 });
 test('Only explicit persistent self-powers toggle, not conditions inflicted on targets',()=>{
  assert(persistentBattleAbility({power:{id:'vtt_wild_shape'}}));
- assert(persistentBattleAbility({classAction:{class_feature_id:'rage'}}));
+ assert(persistentBattleAbility({classAction:{class_feature_id:'rage',mode:'toggle'}}));
+  assert(!persistentBattleAbility({classAction:{class_feature_id:'patient_defense',mode:'context'}}));
  assert(persistentBattleAbility({power:{effects:[{kind:'condition',target:'self',condition:'invisible'}]}}));
  assert(!persistentBattleAbility({power:{effects:[{kind:'condition',target:'target',condition:'prone'}]}}));
  assert(!persistentBattleAbility({classAction:{name:'Attacco ordinario'}}));

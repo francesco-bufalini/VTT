@@ -397,7 +397,7 @@ const powerIdentity=power=>{
 // explicitly typed self/toggle powers have reversible sheet state.
 export function persistentBattleAbility(row={}){
  const power=row.power||{},action=row.classAction||{};
- if(power.persistent_key||action.persistent_key||action.mode==='trait_state'||['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)||
+ if(power.persistent_key||action.persistent_key||action.mode==='trait_state'||action.mode==='toggle'||
    power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape')return true;
  const sources=[power,action],isSelf=field=>['self','actor','owner','caster'].includes(String(field||'').toLowerCase());
  return sources.some(source=>{

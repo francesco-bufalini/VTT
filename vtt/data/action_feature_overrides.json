@@ -71,7 +71,7 @@
       "activation": "bonus",
       "display_name": "Raffica di colpi",
       "resource_name": "Ki Points",
-      "description": "Esegui gli attacchi aggiuntivi previsti dall'edizione spendendo la risorsa del monaco."
+      "description": "Dopo l'azione Attacco nel tuo turno, spendi 1 punto Ki per effettuare due colpi senz'armi come azione bonus."
     },
     {
       "class_name": "Monk",
@@ -81,7 +81,7 @@
       "activation": "bonus",
       "display_name": "Difesa paziente",
       "resource_name": "Ki Points",
-      "description": "Effettua l'opzione difensiva del privilegio; la spesa cambia con l'edizione."
+      "description": "Spendi 1 punto Ki per eseguire Schivare come azione bonus nel tuo turno; non è un effetto attivabile permanente."
     },
     {
       "class_name": "Monk",
@@ -91,7 +91,7 @@
       "activation": "bonus",
       "display_name": "Passo del vento",
       "resource_name": "Ki Points",
-      "description": "Ottieni le opzioni di mobilità del privilegio; la spesa cambia con l'edizione."
+      "description": "Spendi 1 punto Ki per Scattare o Disimpegnarti come azione bonus, raddoppiando la distanza dei salti per il turno."
     },
     {
       "class_name": "Paladin",
@@ -191,7 +191,7 @@
       "activation": "bonus",
       "display_name": "Raffica di colpi",
       "resource_name": "Focus Points",
-      "description": "Esegui gli attacchi aggiuntivi previsti dall'edizione spendendo la risorsa del monaco."
+      "description": "Spendi 1 punto Focus per effettuare due colpi senz'armi come azione bonus."
     },
     {
       "class_name": "Monk",
@@ -201,7 +201,7 @@
       "activation": "bonus",
       "display_name": "Difesa paziente",
       "resource_name": "Focus Points",
-      "description": "Effettua l'opzione difensiva del privilegio; la spesa cambia con l'edizione."
+      "description": "Come azione bonus puoi Disimpegnarti gratuitamente oppure spendere 1 punto Focus per Disimpegnarti e Schivare insieme."
     },
     {
       "class_name": "Monk",
@@ -211,7 +211,7 @@
       "activation": "bonus",
       "display_name": "Passo del vento",
       "resource_name": "Focus Points",
-      "description": "Ottieni le opzioni di mobilità del privilegio; la spesa cambia con l'edizione."
+      "description": "Come azione bonus puoi Scattare gratuitamente oppure spendere 1 punto Focus per Scattare e Disimpegnarti insieme, raddoppiando la distanza dei salti per il turno."
     },
     {
       "class_name": "Paladin",
