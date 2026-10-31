@@ -891,7 +891,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     battleActionUseBox({act:descriptive&&!monsterPayment?'':active?'condition-remove-ability':useAction,
      attrs:active?' data-ability-key="'+esc(statusKey)+'"':useIdentity+
       (persistent?' data-persistent-key="'+esc(statusKey)+'"':''),
-     tracker,cost:active?0:row.cost,label:active?'Disattiva':use,disabled:active?false:disabled,name:row.name})+
+     tracker,cost:active?0:row.cost,label:active?'Disattiva':use,disabled:active?false:disabled,
+     allowDepleted:!monsterPayment&&!row.power?.infusion_action,name:row.name})+
     '</div>'+sequenceMarkup(steps);
   }).join('');
   // Resources are a flat catalogue of counters and *actual* attack options.
