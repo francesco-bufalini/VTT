@@ -238,8 +238,13 @@ test('legacy equipped flags never create a phantom offhand that blocks Dueling',
  c=calculateSheet(r,completeCatalogs);
  assert.deepEqual(c.selection_record.inventory.map(item=>item.equipped_slots),
   [['main'],[]],'A legacy flag alone must not assign the second hand');
- assert.equal(c.attacks.find(a=>a.id==='item:'+sword.id)?.damage_extra_modifier,2,
-  'The lone one-handed weapon receives Dueling');
+ const duel=c.attacks.find(a=>a.id==='item:'+sword.id);
+ assert.equal(duel?.damage_extra_modifier,2,
+  'The generic attack_damage bonus applies Dueling to the one-handed weapon');
+ assert.match(battleActionPanels(r,c,[],[],[]).attacks,/data-damage-formula="1d8 \+ 4"/,
+  'Dueling is included in the standard damage roll formula');
+ assert.doesNotMatch(battleActionPanels(r,c,[],[],[]).attacks,/play-battle-damage-benefits/,
+  'Dueling must not add a second damage display');
  const realOff=calculateSheet({...r,inventory:[sword,{...legacy,equipped_slots:['off']}]},completeCatalogs);
  assert.equal(realOff.attacks.find(a=>a.id==='item:'+sword.id)?.damage_extra_modifier,0,
   'An explicitly wielded second weapon suppresses Dueling');
@@ -294,8 +299,11 @@ test('Thrown Weapon Fighting applies +2 exclusively to the thrown damage roll',(
  assert.equal(inactive.attacks.find(a=>a.id===thrown.id).damage,'1d4 + 1');
  assert(c.roll_components['attack_damage:'+thrown.id].some(row=>
   row.value===2&&row.origin_name==='Thrown Weapon Fighting'));
- assert.match(battleActionPanels(r,c,[],[],[]).attacks,/Thrown Weapon Fighting \+2/,
-  'The battle row shows the +2 source for a thrown attack');
+ const thrownRows=battleActionPanels(r,c,[],[],[]).attacks;
+ assert.match(thrownRows,/data-damage-formula="1d4 \+ 3"/,
+  'Thrown Weapon Fighting is included in the standard damage roll formula');
+ assert.doesNotMatch(thrownRows,/play-battle-damage-benefits/,
+  'Thrown Weapon Fighting must not add a second damage display');
 });
 
 test('Two-Weapon Fighting applies the offhand ability modifier from structured data',()=>{
@@ -318,8 +326,10 @@ test('Two-Weapon Fighting applies the offhand ability modifier from structured d
  assert.equal(inactive.attacks.find(a=>a.id==='item:off:dagger').damage_ability_modifier,0);
  const panels=battleActionPanels(r,c,[],[],[]);
  assert.doesNotMatch(panels.attacks,/item:off:dagger/,'No duplicate offhand attack');
- assert.match(panels.others,/Two-Weapon Fighting \+3/,
-  'The offhand bonus appears on its existing bonus action');
+ assert.match(panels.others,/data-damage-formula="1d6 \+ 3"/,
+  'The offhand modifier appears in the existing bonus-action damage roll');
+ assert.doesNotMatch(panels.others,/play-battle-damage-benefits/,
+  'The offhand style must not add a second damage display');
 });
 
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
