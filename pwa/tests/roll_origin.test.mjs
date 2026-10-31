@@ -221,7 +221,7 @@ test('numeric base damage expansion has its own divider before the damage type',
   'The numeric row must be separated from the symbolic formula by a line');
 });
 test('negative base damage ability modifiers expand without including detached benefits',()=>{
- const attack={ability:'str',damage:'1d6 − 1',damage_base_formula:'1d6',
+ const attack={ability:'str',damage:'1d6 - 1',damage_base_formula:'1d6',
   damage_ability_modifier:-3,damage_extra_modifier:2,damage_ability_applies:true,
   damage_bonus_components:[{value:2,origin_id:'feature:style',origin_name:'Bonus'}]};
  const rows=damageRollSegments(rollBattleDamage(attack.damage,()=>1),'slashing',attack);
