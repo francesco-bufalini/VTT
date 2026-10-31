@@ -136,9 +136,9 @@ try{
  assert.equal(await secondary.count(),1);
  assert.equal(await page.locator('[data-battle-action="others"]').getAttribute('open'),'',
   'Selecting offhand base rule reveals its matching action');
- await page.locator('[data-battle-action="others"] [data-attack-id="spell_cast"] [data-act="action-open-spells"]').click();
- await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
- await sheet('battle');
+ // A new non-caster has no spellcasting action; the Powers destination remains reachable.
+ assert.equal(await page.locator('[data-battle-action="others"] [data-attack-id="spell_cast"]').count(),0);
+ await sheet('magic');await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="spells"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
   'Class-only filtering no longer exists');
