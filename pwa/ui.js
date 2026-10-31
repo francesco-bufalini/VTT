@@ -8025,7 +8025,10 @@ async function handleAction(target){
       String(row.id)===attackId&&
       String(row.damage||'').replace(/\s+/g,'')===formula.replace(/\s+/g,''));
     const attackOrigin=attackGrantOrigin(calculated,attackId);
-    const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
+    const sourceAttack=attack?{...attack,origin_id:attackOrigin,
+      // Numeric conditional bonuses have already been applied to attack.damage.
+      // Preserve their verified sources for separate damage-type-matched terms.
+      damage_bonus_components:calculated.roll_components?.['attack_damage:'+attackId]||[]}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
     const bonusTarget=actionId?'action_damage:'+actionId:attackId?'attack_damage:'+attackId:'spell_damage';
     const bonuses=rollOptionalDice(creature,calculated,[
