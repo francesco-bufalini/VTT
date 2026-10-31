@@ -94,6 +94,22 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
 });
 
+test('ranged attack rows and descriptions label short and long range separately',()=>{
+ const record={rules_version:'2014',inventory:[{id:'bow',name:'Longbow',type:'R',
+  range:'150/600',damage:'1d8',equipped_slots:['main'],quantity:1}]};
+ const calculated={attacks:[{id:'item:bow',name:'Arco lungo',slot:'main',melee:false,
+  range_feet:150,long_range_feet:600,hit:5,damage:'1d8'}]};
+ const panels=battleActionPanels(record,calculated,[],[],catalog.actions);
+ const bow=doc(panels.attacks).querySelector('[data-attack-id="item:bow"]');
+ assert(bow,'The computed ranged attack appears in the attack list');
+ assert.equal(bow.querySelector('.play-battle-attack-range')?.textContent,
+  'Gittata corta 150 ft · lunga 600 ft');
+ assert.equal(bow.querySelector('[data-act="battle-attack-map"]')?.dataset.mapAttackId,'item:bow');
+ const entry=actionEntries(record,calculated,[],[],catalog.actions).find(row=>row.id==='item:bow');
+ assert.match(entry?.description||'',/Gittata corta 150 ft · lunga 600 ft/);
+ assert(!entry.description.includes('Portata/gittata: 150 ft'),
+  'The short distance alone is no longer sufficient in the attack description');
+});
 test('flat Attacks retain unarmed and equipped weapons; the basic actions are timed',()=>{
  const unarmed={id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,range_feet:5,hit:5,damage:'4'};
  const off={id:'unarmed:off',name:'Colpo senz’armi · secondaria',slot:'off',
