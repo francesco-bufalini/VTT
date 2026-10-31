@@ -949,11 +949,13 @@ try{
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
- await popup('tools');
+ await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
+ // The former dedicated "tools" context button was replaced by the shared
+ // skill/proficiency editor. Use the visible proxy rather than a dead selector.
+ await page.locator('#sheet-play-view .play-skills-tools [data-act="sheet-proxy"]').click();
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
  await dismiss();
- await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  const skillMarker=key=>page.locator('#sheet-play-view .play-skills [data-target="skill:'+key+'"] .play-skill-rank');
  assert.equal(await skillMarker('arcana').getAttribute('aria-label'),'Competenza');
  assert.equal(await skillMarker('arcana').locator('svg path').count(),1);
