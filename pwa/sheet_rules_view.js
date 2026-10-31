@@ -1373,6 +1373,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       info.kind!=='document'&&!isSpellScroll(c.inventory[i])&&
         itemContainerId(c.inventory[i],containers)===destination);
     const name=isDocuments?'Documenti':isScrolls?'Pergamene magiche':activeContainer?.name||'Zaino';
+    if(isScrolls)target('scroll-create','.inventory-scroll-create');
+    const specialAction=isDocuments?
+      '<div class="inventory-special-create"><button type="button" class="btn small" data-act="document-add">Nuovo documento</button></div>':
+      isScrolls?'<div class="inventory-special-create"><button type="button" class="btn small" data-act="sheet-context" data-sheet-context="scroll-create">Crea pergamena</button></div>':'';
     const controls=activeContainer?
       '<div class="inventory-container-management">'+
         btn('Rinomina '+name,'settings','data-act="inventory-container-rename" data-container-id="'+esc(activeContainer.id)+'"','<span>Rinomina</span>')+
@@ -1395,7 +1399,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         '<input type="checkbox" data-inventory-select="'+row.i+'"><span class="inventory-check-graphic" aria-hidden="true">✓</span></label>'+
         renderItem(row,section)+'</div>').join('')+
         (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+
-      controls,
+        specialAction+controls,
       sectionMetrics?'<span class="inventory-section-head-tools">'+sectionMetrics+'</span>':'',
       'play-inventory-section'+(sectionMetrics?' has-section-metrics':''));
   }
