@@ -628,6 +628,7 @@ function syncNav(){
   const forms=document.querySelector('#creature-forms');
   if(forms){
     forms.hidden=!hasCreature||!state.editor;
+    forms.innerHTML=actionGlyph('wild_shape');
     forms.classList.toggle('has-variant',Boolean(creature?.current_form_id));
     forms.title='Forme e varianti'+(creature?.current_form_id?' · '+(activeVariant(creature)?.name||creature.name):'');
   }
@@ -4437,7 +4438,7 @@ function diceResult(){
     '<p class="hint" data-dice-chat-status>'+(state.roll.chatStatus||'')+'</p>';
 }
 function diceView(){
-  return '<h2 id="chat-dice-title">Lancia i dadi</h2><div class="columns">'+
+  return '<h2 id="chat-dice-title" tabindex="-1" autofocus>Lancia i dadi</h2><div class="columns">'+
     '<label>Numero dadi<input id="die-count" type="number" min="1" max="20" value="1" required></label>'+
     '<label>Modificatore<input id="die-mod" type="number" min="-999" max="999"></label></div>'+
     '<div class="dice-options">'+[4,6,8,10,12,20,100].map(n=>
@@ -6083,10 +6084,10 @@ function openDistancePreferences(){
  dialog.innerHTML='<header class="sheet-context-head"><h2>Preferenze</h2>'+
   dialogCloseButton('distance-preferences-close','Chiudi','play-button')+'</header>'+
   '<div class="sheet-context-body distance-preferences-body"><fieldset><legend>Unità di distanza</legend>'+
-  [['feet','Piedi (ft)','Unità originale delle regole D&D'],['meters','Metri (m)','5 ft = 1,5 m']].map(([id,title,note])=>
+  [['feet','Piedi (ft)'],['meters','Metri (m)']].map(([id,title])=>
   '<label class="distance-preferences-option"><input type="radio" name="distance-unit" value="'+id+'"'+
-  (current===id?' checked':'')+'><span><strong>'+title+'</strong><small>'+note+'</small></span></label>').join('')+
-  '</fieldset><p class="hint">La preferenza cambia solo le distanze visualizzate nella GUI: velocità, salti, sensi, portate e gittate. I valori salvati e le descrizioni dei tratti restano invariati.</p>'+
+  (current===id?' checked':'')+'><span>'+title+'</span></label>').join('')+
+  '</fieldset>'+
   '<div class="actions"><button type="button" class="btn primary" data-act="distance-preferences-save">Salva</button></div></div>';
  document.body.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
