@@ -4519,7 +4519,7 @@ function setSheetChatOpen(open){
  }
 }
 function chatView(){
- return panel('Chat della partita',
+ return '<section class="panel chat-main-panel">'+
   '<div class="chat-view-head"><h2>Chat della partita</h2>'+
   '<button type="button" class="btn small chat-view-close" data-act="header-chat-close" aria-label="Chiudi chat">✕ Chiudi</button></div>'+
   '<div class="row between chat-toolbar"><span class="chat-caption">'+esc(chatStatusText())+'</span></div>'+
@@ -4528,8 +4528,7 @@ function chatView(){
   '<label>Scrivi come <select id="chat-author"><option value=""'+(!state.chatAuthor?' selected':'')+'>Giocatore</option>'+
   (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'"'+(state.chatAuthor===x.name?' selected':'')+'>'+esc(x.name)+'</option>').join('')+
   '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio o nota locale…" required></textarea></label>'+
-  '<button type="submit" class="btn primary full">'+(state.paired&&state.online?'Invia messaggio':'Aggiungi alla chat locale')+'</button></form>',
-  'chat-main-panel');
+  '<button type="submit" class="btn primary full">'+(state.paired&&state.online?'Invia messaggio':'Aggiungi alla chat locale')+'</button></form></section>';
 }
 function renderEvents(){
   const all=new Map();
