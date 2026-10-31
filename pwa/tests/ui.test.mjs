@@ -232,36 +232,27 @@ test("prototype sample creature is editable, private and persists offline",async
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("native reference catalog can add an item to an offline creature",async()=>{
+test("catalog entries are shown immediately and selected details stay in a small popup",async()=>{
   click('[data-nav="catalog"]');
   await until(()=>document.querySelector('[data-act="catalog-open"]'));
-  assert.match(document.querySelector("#app").textContent,/Spada lunga/);
+  assert.equal(document.querySelector('.topbar').hidden,true);
+  assert.equal(document.querySelector('.page-head'),null);
+  assert.equal(document.querySelector('#app .panel'),null);
+  assert.equal(document.querySelector('#app .catalog-create'),null);
+  assert.ok(document.querySelector('#catalog-search'));
+  assert.ok(document.querySelector('#catalog-category'));
+  assert.match(document.querySelector('#app').textContent,/Spada lunga/);
+  assert.ok(document.querySelector('.catalog-entry'),'The list is populated without a search');
+  const before=document.querySelectorAll('.catalog-entry').length;
   click('[data-act="catalog-open"]');
-  await until(()=>document.querySelector('[data-act="catalog-assign"]'));
-  click('[data-act="catalog-assign"]');
-  await until(async()=>{
-    const rows=await listCreatures();
-    return rows.some(row=>row.creature.inventory?.some(item=>item.name==="Spada lunga"));
-  });
-  click('[data-nav="library"]');
-  await until(()=>document.querySelector('[data-act="create"]'));
-  const owner=(await listCreatures()).find(row=>row.creature.inventory?.some(item=>item.name==="Spada lunga"));
-  assert.ok(owner,"Catalog item with null AC is saved to the creature");
-  click('[data-act="open"][data-id="'+owner.creature.id+'"]');
-  await until(()=>document.querySelector('[data-sheet="inventory"]'));
-  click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('[data-inventory-row]'));
-  const sword=(await listCreatures()).find(row=>row.creature.id===owner.creature.id).creature.inventory
-    .findIndex(item=>item.name==="Spada lunga");
-  click('#sheet-play-view [data-sheet-context="item:'+sword+'"]');
-  await until(()=>document.querySelector('.inventory-description-panel')?.textContent.includes("Spada lunga"),
-    5000); // Wait for the asynchronous selected-item render to finish.
-  assert.ok(document.querySelector('.inventory-description-panel').textContent.includes("Spada lunga"),
-    "Opening item with ac:null must render its description rather than crash");
-  assert.ok(!document.querySelector('.inventory-description-panel').textContent.includes("CA: null"),
-    "Null AC must not appear as an armor class");
-  assert.ok(!document.querySelector("#app").textContent.includes("Cannot read properties of null"),
-    "No null .base exception may reach the error page");
+  await until(()=>document.querySelector('#catalog-detail-dialog[open]'));
+  assert.ok(document.querySelector('#catalog-detail-dialog .catalog-description'));
+  assert.equal(document.querySelector('#catalog-detail-dialog [data-act="catalog-assign"]'),null);
+  assert.equal(document.querySelector('#catalog-detail-dialog [data-act="catalog-send"]'),null);
+  assert.equal(document.querySelectorAll('.catalog-entry').length,before,'The list stays mounted behind the popup');
+  click('#catalog-detail-dialog [data-act="catalog-close"]');
+  await until(()=>!document.querySelector('#catalog-detail-dialog'));
+  assert.ok(document.querySelector('#catalog-search'));
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
