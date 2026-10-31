@@ -118,6 +118,9 @@ try{
  await flashRow.locator('[data-act="sheet-roll-use-bonus"]').click();
  await flashDialog.locator('[data-ability-payment]').selectOption('');
  await flashDialog.locator('[data-feature-confirm]').click();
+ // A click does not await the asynchronous feature-payment and roll-update handler.
+ // Assert the bonus only after it is actually reflected in the roll preview.
+ await page.waitForFunction(()=>document.querySelector('#sheet-roll-dialog [data-roll-formula]')?.textContent?.includes('+4'));
  assert.equal((await record()).resource_tracker_spent?.[flashTracker]||0,1);
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/\+4/);
  await rollDialog.locator('[data-act="close-sheet-roll"]').click();
