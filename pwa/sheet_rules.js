@@ -693,13 +693,15 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
     offhand_bonus:attack.slot==='off'||attack.slot==='shield'&&attack.hand==='off'});
  };
  for(const weapon of traitStateAttacks(record,featureContext.features,featureContext.traitStates))
-  append(weapon,weapon.ability,trainedWeapon(weapon.id,weapon.name,weapon.weapon_category),weapon.damage);
+  append(weapon,weapon.ability,weapon.grants_proficiency===true||
+    trainedWeapon(weapon.id,weapon.name,weapon.weapon_category),weapon.damage);
  // Grant a distinct natural strike from a typed feat without changing all
  // unarmed strikes or making the weapon depend on inventory equipment.
  for(const strike of arr(featureContext.featAttacks))if(strike?.id&&strike.damage){
   append({...strike,slot:'natural',melee:strike.melee!==false,
     origin_id:strike.origin_id,origin_name:strike.origin_name,
-    range_feet:Number(strike.range_feet)||5},strike.ability||'str',true,strike.damage);
+    range_feet:Number(strike.range_feet)||5},strike.ability||'str',strike.grants_proficiency===true||
+      trainedWeapon(strike.id,strike.name,strike.weapon_category),strike.damage);
  }
  for(const linked of arr(featureContext.companionAttacks))if(linked.id&&Number.isFinite(linked.hit)){
    append({id:linked.id,name:linked.name,damage_type:linked.damage_type,
@@ -791,9 +793,10 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
      const type=({slashing:'taglienti',piercing:'perforanti',bludgeoning:'contundenti'})[natural.damage_type]||natural.damage_type;
      append({id,name:natural.trait,slot:'natural',melee:true,range_feet:5,long_range_feet:0,
        damage_type:type,damage_ability_modifier:natural.damage_ability_modifier!==false,
+       grants_proficiency:natural.grants_proficiency!==false,
        origin_id:traitId,origin_name:'Tratto · '+natural.trait,
        description:'Attacco naturale concesso dal tratto '+natural.trait+'.'},
-       natural.ability||'str',true,natural.damage);
+       natural.ability||'str',natural.grants_proficiency!==false,natural.damage);
    }
  }
  // Explicit improvised attacks remain selectable without affecting unarmed strikes.
@@ -1530,6 +1533,18 @@ function calculateSheetValues(record={},catalogs={}){
     if(attack)attackContexts.set(target,attack);
     return safe(target)??0;
   },featureContext);
+  // An explicitly trained granted attack is also a source-bound weapon
+  // proficiency. The attack data, not a name-specific rule, defines this.
+  const attackProficiencySources=new Map();
+  for(const attack of attacks){
+    if(attack.grants_proficiency!==true||!attack.origin_id||!attack.name)continue;
+    const key='weapon:'+norm(attack.name);
+    proficiencies.set(key,true);
+    const sources=attackProficiencySources.get(key)||[];
+    if(!sources.some(source=>source.id===attack.origin_id))
+      sources.push({id:attack.origin_id,name:attack.origin_name||'Tratto · '+attack.name});
+    attackProficiencySources.set(key,sources);
+  }
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const effect_extensions=equippedExtensions;
   const originMap=new Map();
@@ -1656,10 +1671,12 @@ function calculateSheetValues(record={},catalogs={}){
     proficiency_sources:Object.fromEntries([...proficiencies.keys()]
       .map(key=>{
         const [type,...parts]=key.split(':'),name=parts.join(':');
-        const sources=proficiencyGrantOrigins(record,proficiencyIndex,type,name,features);
+        const sources=[...proficiencyGrantOrigins(record,proficiencyIndex,type,name,features),
+          ...(attackProficiencySources.get(key)||[])];
+        const uniqueSources=[...new Map(sources.map(source=>[source.id,source])).values()];
         const linked=type==='save'?companionValues.save_ranks?.[name]:
           type==='skill'||type==='expertise'?companionValues.skill_ranks?.[name]:null;
-        return [key,sources.length?sources:linked&&companionValues.proficiency_origin?
+        return [key,uniqueSources.length?uniqueSources:linked&&companionValues.proficiency_origin?
           [companionValues.proficiency_origin]:[]];
       })),
     casting_classes:spellClasses,
