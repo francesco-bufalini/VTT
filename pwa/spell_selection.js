@@ -810,7 +810,12 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
     payment_mode:choice.ritual_only?'free':choice.tracker_id?'tracker':
       Number(definition?.level)===0?'free':choice.payment_mode||'free'});
  }
- output.saved_grants=saved;
+ // Applied options reuse the existing spells grant and origin picker.
+ const optionChoices=arr(record.origin_spell_grants).filter(row=>row?.id&&row?.filter&&!row?.spell_id);
+ const activeChoices=new Set(optionChoices.map(row=>row.id));
+ output.saved_grants=saved.filter(row=>
+   !String(row.source_choice_id||'').startsWith('selection:')||activeChoices.has(row.source_choice_id));
+ output.choices.push(...optionChoices);
  for(const choice of output.choices){
   choice.selected=saved.filter(row=>row.source_choice_id===choice.id&&!row.disabled);
   if(!choice.tracker_per_spell)continue;

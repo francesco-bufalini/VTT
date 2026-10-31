@@ -193,6 +193,8 @@ test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker
   {className:'Ranger',id:'optional:class:phb:ranger:fs-r',option:'optional:tce:druidic-warrior',ability:'wis',list:'Druid'}
  ];
  for(const example of cases){
+  const style=catalogs.optionalFeatureProgressions.options.find(row=>row.id===example.option);
+  assert.equal(style.effects[0].type,'spells','Both styles reuse the existing spells benefit');
   const spell={id:'test_'+example.list.toLowerCase()+'_cantrip',name:'Test cantrip',source:'PHB',level:0,classes:[example.list]};
   const wrong={...spell,id:'wrong_spell',classes:['Wizard']};
   const definitions={...completeCatalogs,spells:[spell,wrong]};

@@ -1585,7 +1585,7 @@
       "description": "You learn two cantrips of your choice from the {@filter cleric spell list|spells|level=0|class=Cleric}. They count as paladin spells for you, and Charisma is your spellcasting ability for them. Whenever you gain a level ",
       "effects": [
         {
-          "type": "spell_choice",
+          "type": "spells",
           "mode": "known",
           "stage": "0",
           "filter": "level=0|class=cleric",
@@ -2211,7 +2211,7 @@
       "description": "You learn two cantrips of your choice from the {@filter druid spell list|spells|level=0|class=druid}. They count as ranger spells for you, and Wisdom is your spellcasting ability for them. Whenever you gain a level in th",
       "effects": [
         {
-          "type": "spell_choice",
+          "type": "spells",
           "mode": "known",
           "stage": "0",
           "filter": "level=0|class=druid",

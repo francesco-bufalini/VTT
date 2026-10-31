@@ -195,7 +195,7 @@ export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,opt
 const EFFECT_FIELDS={bonus:'formula_bonuses',dice:'dice_bonuses',
  scaling_die:'scaling_dice',proficiency:'proficiency_choices',
  resources:'resource_trackers',spells:'origin_spell_grants',
- spell_choice:'origin_spell_choices',actions:'action_grants',senses:'sense_grants',
+ actions:'action_grants',senses:'sense_grants',
  defenses:'damage_defense_entries',effect_extensions:'effect_extensions',
  roll_mode:'roll_mode_grants',base_override:'base_value_overrides'};
 function appendTypedBenefit(grants,effect,origin){
