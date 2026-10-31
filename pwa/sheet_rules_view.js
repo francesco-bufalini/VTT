@@ -1014,17 +1014,25 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const classNames=classIdentitySummary(classMembers);
   const portrait=isPortraitDataUrl(c.sheet_portrait_data)?c.sheet_portrait_data:'';
   const otherNames=identityEntries(c,'names').filter(row=>!row.active);
+  // Mirror backgrounds selected in Build without repeating the primary one.
+  const backgrounds=[...new Set([c.background,...(c.backgrounds_catalog||[])
+   .filter(row=>row&&!row.disabled).map(row=>row.name)]
+   .map(name=>String(name||'').trim()).filter(Boolean))];
+  const speciesName=[c.species,c.subrace].filter(Boolean).join(' · ');
+  const identityMetadata='<div class="play-identity-metadata"><small>'+esc(c.alignment||'Completamente neutrale')+'</small>'+
+   '<small>'+esc(c.rules_version||'2014')+'</small></div>';
   const identityMarkup='<div class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
    '<div class="play-identity-other-names" aria-label="Altri nomi"'+
-    (c.identity_hide_other_names!==false||!otherNames.length?' hidden':'')+'>'+
-    otherNames.map(row=>'<span class="play-identity-alias">'+esc(row.value)+'</span>').join('')+'</div>'+
-   '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
-   (classMembers.length?'<p class="play-identity-classes">'+esc(classNames)+'</p>':'')+'</div>';
+   (c.identity_hide_other_names!==false||!otherNames.length?' hidden':'')+'>'+
+   otherNames.map(row=>'<span class="play-identity-alias">'+esc(row.value)+'</span>').join('')+'</div>'+
+   (backgrounds.length?'<p class="play-identity-backgrounds">'+esc(backgrounds.join(' · '))+'</p>':'')+
+   (speciesName?'<p class="play-identity-species">'+esc(speciesName)+'</p>':'')+
+   (classMembers.length?'<p class="play-identity-classes">'+esc(classNames)+'</p>':'')+
+   (portrait?identityMetadata:'')+'</div>';
   html='<section class="play-character-portrait'+(portrait?' has-portrait':'')+'" data-act="sheet-context" data-sheet-context="identity" role="button" tabindex="0" aria-label="Apri identità e foto del personaggio">'+
    (portrait?'<figure class="play-portrait-frame"><img src="'+esc(portrait)+'" alt="Ritratto di '+esc(c.name)+'"></figure>':'')+
    identityMarkup+
-   '<div class="play-identity-metadata"><small>'+esc(c.alignment||'Completamente neutrale')+'</small>'+
-   '<small>'+esc(c.rules_version||'2014')+'</small></div>'+
+   (portrait?'':identityMetadata)+
    '</section>';
   // Show the actual ability modifier, never the ability-check total, while keeping the click target as the check.
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';

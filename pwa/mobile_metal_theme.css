@@ -5905,8 +5905,14 @@ dialog.benefit-selection-dialog .magic-editor-search{width:100%;min-width:0;box-
  margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;
 }
 #sheet-play-view .play-character-portrait .play-identity-metadata>small{
- font:inherit;font-size:11px;color:inherit;min-width:0;overflow-wrap:anywhere;
+ font:inherit;font-size:11px;color:#f4d7a6;min-width:0;overflow-wrap:anywhere;
 }
+/* With a portrait the complete identity, including its metadata, stays in
+   the overlapping nameplate instead of splitting onto an outside row. */
+#sheet-play-view .play-character-portrait.has-portrait .play-identity .play-identity-metadata{
+ margin-top:10px;padding-top:9px;border-top:1px solid #b9936266;
+}
+#sheet-play-view .play-character-portrait.has-portrait .play-identity-metadata>small{color:#ffe2b5}
 #sheet-play-view .play-character-portrait.has-portrait .play-identity{padding-inline:20px}
 #sheet-play-view .play-identity-other-names{display:grid;gap:2px;margin:-3px 0 9px;min-width:0}
 #sheet-play-view .play-identity-other-names[hidden]{display:none}
