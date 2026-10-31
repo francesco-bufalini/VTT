@@ -62,9 +62,8 @@ try{
     assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
     assert.equal(await page.locator('.page-head [data-act="action-variants"]').count(),1);
     assert.equal(await page.locator('#sheet-navigation [data-sheet="actions"]').count(),0);
-    const expand=page.locator('[data-act="battle-expand-all"]');
-    const collapse=page.locator('[data-act="battle-collapse-all"]');
-    assert(await expand.isVisible()&&await collapse.isVisible(),'Global list controls appear above attacks');
+    assert.equal(await page.locator('[data-act="battle-expand-all"],[data-act="battle-collapse-all"]').count(),0,
+      'Each Battle category controls its own expansion, without global toggles');
     if(width===360){
      const physical=page.locator('[data-battle-action="attacks"]');
      assert.match(await physical.locator('summary.play-battle-summary').textContent(),/^Attacchi$/);
@@ -137,10 +136,7 @@ try{
      await movement.locator('summary.play-battle-summary').click();
      assert.equal(await movement.locator('.play-battle-action-group[data-action-timing][open]').count(),await groups.count(),
       'Reopening a category re-expands all timing subsections');
-     await expand.click();
-     assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure:not([open]), #sheet-play-view .play-battle-action-group:not([open])').count(),0);
-     await collapse.click();
-     assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure[open], #sheet-play-view .play-battle-action-group[open]').count(),0);
+     assert.equal(await movement.getAttribute('open'),'','A reopened category remains expanded');
     }
     const rangedAttack=page.locator('[data-battle-action="attacks"] [data-act="battle-attack-map"]').first();
     assert(await rangedAttack.count(),'Each computed weapon has a map range action');
