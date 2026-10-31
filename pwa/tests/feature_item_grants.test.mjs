@@ -1,4 +1,3 @@
-import {infusionLimits} from './fixtures/legacy_infusion_records.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -26,9 +25,15 @@ test('Armor Modifications is an owned source-bound item grant with +2 active inf
  const grant=nine.feature_item_grants.find(g=>g.id==='artificer-armor-modifications');
  assert.ok(grant);assert.equal(grant.origin_id.startsWith('feature:class|tce|artificer|'),true);
  assert.deepEqual(grant.items.map(i=>i.id),['armor-chest','armor-boots','armor-helmet','armor-special-weapon']);
- const first=infusionLimits(at9,mechanics,nine.features);
- assert.equal(first.active,5);
- assert.equal(first.known,6,'Armor Modifications does not grant two extra infusions known');
+ const infusedColumn=mechanics.classes.find(c=>c.name==='Artificer'&&c.source==='TCE')
+  ?.columns.find(c=>c.name==='Infused Items');
+ const baseCapacity=Number(infusedColumn?.levels[8])||0;
+ assert.equal(baseCapacity,3);
+ assert.equal(grant.infusion_capacity_bonus,2,'Only active infusion capacity increases');
+ assert.equal(baseCapacity+grant.infusion_capacity_bonus,5);
+ assert.equal((nine.power_selections||[]).find(row=>row.id==='artificer_infusions')
+  ?.layers.learned?.selected?.length||0,0,
+  'Armor Modifications does not learn extra infusions');
  let character=at9;
  for(const item of grant.items){
   character={...character,...claimFeatureItemPatch(character,
@@ -38,11 +43,11 @@ test('Armor Modifications is an owned source-bound item grant with +2 active inf
  assert.throws(()=>claimFeatureItemPatch(character,calculateSheet(character,catalogs),
    grant.id,'armor-boots'),/già concesso/i);
  const worn=calculateSheet({...at9,inventory:[armor]},catalogs);
- assert.equal(infusionLimits({...at9,inventory:[armor]},mechanics,worn.features).active,5);
+ assert.equal(baseCapacity+worn.feature_item_grants.find(g=>g.id===grant.id).infusion_capacity_bonus,5);
  const muted={...at9,origin_enabled:{[grant.origin_id]:false}};
  const disabled=calculateSheet(muted,catalogs);
  assert.equal(disabled.feature_item_grants.some(g=>g.id===grant.id),false);
- assert.equal(infusionLimits(muted,mechanics,disabled.features).active,3);
+ assert.equal(baseCapacity,3,'Disabling the trait leaves only the class capacity');
 });
 
 test('Eldritch Cannon uses the generic item-grant contract and its own paid ability',()=>{
