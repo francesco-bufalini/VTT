@@ -399,42 +399,6 @@ static func active_range(record: Dictionary) -> float:
 	return float(range_for(record, attack))
 
 
-# Legacy migration helper, no longer called by the sheet. A newly owned
-# weapon is never automatically placed in an empty hand.
-static func equip_first_inventory_weapon(record: Dictionary) -> bool:
-	var raw: Variant = record.get("inventory", [])
-	if not raw is Array or Items.has_equipped_weapon(raw):
-		return false
-	var rows: Array = raw
-	for index: int in range(rows.size()):
-		if not rows[index] is Dictionary:
-			continue
-		var owned: Dictionary = rows[index]
-		if int(owned.get("quantity", 0)) <= 0 or Items.kind(Items.entry_for(owned)) != "weapon":
-			continue
-		var slots: Array = Items.slots(owned)
-		if Items.is_two_handed(Items.entry_for(owned)):
-			# Do not leave a shield/offhand item in the same two hands.
-			for other_index: int in range(rows.size()):
-				if not rows[other_index] is Dictionary:
-					continue
-				var other: Dictionary = rows[other_index]
-				var other_slots: Array = Items.slots(other)
-				other_slots.erase("off")
-				other["equipped_slots"] = other_slots
-				rows[other_index] = other
-			slots.erase("off")
-		elif "off" in slots and int(owned.get("quantity", 1)) == 1:
-			slots.erase("off")
-		if not "main" in slots:
-			slots.append("main")
-		owned["equipped_slots"] = slots
-		rows[index] = owned
-		record["inventory"] = rows
-		return true
-	return false
-
-
 # Extract an actual dice formula without its displayed damage-type suffix.
 # Fixed damage and unstructured effects are not passed to the dice parser.
 static func damage_expression(record: Dictionary, attack: Dictionary) -> String:
