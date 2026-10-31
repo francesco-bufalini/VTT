@@ -122,7 +122,9 @@ export function itemKind(item={}){
   if(item.category==="documents")return "document";
   if(["weapon","shield","armor","tool","magic","other"].includes(item.custom_item_type))return item.custom_item_type;
   const code=String(item.type||"").split("|")[0].toUpperCase();
-  if(["M","R"].includes(code)&&(item.weapon_category||item.damage||item.properties!==undefined))return "weapon";
+  // The 5eTools M/R type is itself a weapon category; minimal imported
+  // records can omit the damage/properties fields without becoming "other".
+  if(["M","R"].includes(code))return "weapon";
   if(code==="S")return "shield";
   if(["LA","MA","HA"].includes(code))return "armor";
   if(["AT","INS","T","SCF","GS","P","MNT"].includes(code))return "tool";

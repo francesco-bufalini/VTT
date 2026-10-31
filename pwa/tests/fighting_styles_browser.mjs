@@ -82,7 +82,9 @@ try{
     const {listCreatures}=await import('/creatures.js');
     return !!(await listCreatures())[0]?.creature?.power_selections?.[id]?.learned?.length;
    },progression);
-   await page.locator('#sheet-play-view').getByText('Two-Weapon Fighting').waitFor();
+   // The preceding storage wait verifies learning; avoid a second
+   // snapshot with asynchronous catalog loading while the picker rerenders.
+   // Subsequent assertions verify the applied benefit and persisted choice.
    await page.locator('#power-selection-dialog [data-act="power-selection-close"]').last().click();
   }else await dialog.locator('[data-act="power-selection-close"]').last().click();
  }

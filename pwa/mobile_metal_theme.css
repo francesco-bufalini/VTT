@@ -6358,6 +6358,10 @@ html:has(dialog[open]) #sheet-play-view .inventory-bulk-bar.vtt-selection-toolba
 .chat-screen #chat-form .chat-send-button:disabled{opacity:.4}
 .app-shell.chat-open .toast{bottom:calc(70px + env(safe-area-inset-bottom))}
 
+/* Expanded Battle lists never draw an old index rail or branch before a row. */
+#sheet-play-view [data-battle-action="others"] .play-battle-action-rows{border-left:0}
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-entry::before{content:none}
+
 
 /* Keep the familiar Wild Shape paw in the compact header icon frame. */
 .topbar #creature-forms .vtt-action-glyph{

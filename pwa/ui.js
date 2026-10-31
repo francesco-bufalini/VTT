@@ -370,8 +370,17 @@ function trackIdentityWrite(target){
  void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
  return write;
 }
+// HP edits may arrive from a debounce while an earlier save is in flight.
+// Serialize them and read the latest dialog values after the previous write.
+let pendingHpFieldWrite=Promise.resolve();
 function trackFieldWrite(target) {
-  const write=handleField(target);
+  let write;
+  if(target?.matches?.('[data-hp-autosave]')){
+    const editor=state.editor;
+    write=pendingHpFieldWrite.then(()=>
+      target.isConnected&&state.editor===editor?handleField(target):undefined);
+    pendingHpFieldWrite=write.catch(()=>{});
+  }else write=handleField(target);
   pendingFieldWrites.add(write);
   void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
   return write;
@@ -1847,8 +1856,11 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
    await patch(changes);if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();
     if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
-    dialog.dataset.confirmed='true';dialog.close();await render();
-   if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
+    dialog.dataset.confirmed='true';dialog.close();
+    // Apply roll-scoped bonuses before the sheet refresh can replace the
+    // view/roll owner. Payment has already been committed and flushed.
+    if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
+    await render();
    if(reroll){state.roll={...reroll,label:ability.name,author:selectedName()};state.rollHistory.unshift({...state.roll});}
    message(reroll?ability.name+': '+reroll.notation+' → '+reroll.total+' · usa i nuovi risultati.':ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
   }catch(error){button.disabled=false;dialog.querySelector('[data-feature-result]').textContent=errorMessage(error);}
