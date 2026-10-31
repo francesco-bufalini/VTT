@@ -6917,8 +6917,13 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  font:400 12px/1.4 system-ui
 }
 #sheet-play-view .play-battle-attack-step>.play-battle-attack-step-use{
- flex:0 0 auto;min-width:58px;min-height:32px;
- padding:5px 9px;font:600 11px/1.2 system-ui
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+ min-width:58px;min-height:32px;padding:5px 9px;
+ border:1px solid #a77c493f;border-radius:7px;background:#8a644c24;
+ color:#f2d39a;font:600 11px/1.2 system-ui;cursor:pointer
+}
+#sheet-play-view .play-battle-attack-step>.play-battle-attack-step-use:focus-visible{
+ outline:2px solid var(--accent);outline-offset:2px
 }
 #sheet-play-view .play-action-benefit-rows>.play-attack-sequence{
  margin:0 8px 8px 40px;padding:0 8px;list-style:none
