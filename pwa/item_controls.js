@@ -680,7 +680,6 @@ export function equipmentRequirementMatches(record={},requirements={},target='',
  if(!selected(kind,rule.kind)||!selected(mode,rule.mode)||!selected(range,rule.range_kind)||
     !selected(item?.weapon_type||'',rule.weapon_type)||
     !selected(item?.slot||'',rule.slot)||
-    !selected(String(attack?.ability||''),rule.ability)||
     !selected(String(attack?.damage_type||item?.damage_type||'').toLowerCase(),rule.damage_type))return false;
  if(array(rule.properties).length&&!item||array(rule.properties).some(p=>!item?.properties.includes(String(p).toUpperCase())))return false;
  if(array(rule.any_properties).length&&!rule.any_properties.some(p=>item?.properties.includes(String(p).toUpperCase())))return false;
