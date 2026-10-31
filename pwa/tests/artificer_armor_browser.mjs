@@ -25,8 +25,8 @@ try{
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  await sheet('battle');
  // A selected model must expose its actual attack in the Actions list.
- await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').waitFor({state:"attached"});
- assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').count(),0);
+ await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Lightning Launcher'}).waitFor({state:"attached"});
+ assert.equal(await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Thunder Gauntlets'}).count(),0);
 
  const resources=page.locator('[data-battle-action="resources"]');
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
@@ -65,8 +65,8 @@ try{
  assert.equal(await guardian.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'true');
  assert.equal(await infiltrator.locator('.play-infusion-state').evaluate(node=>String(node.classList.contains('is-active'))),'false');
  await sheet('battle');
- await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').waitFor({state:"attached"});
- assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').count(),0);
+ await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Thunder Gauntlets'}).waitFor({state:"attached"});
+ assert.equal(await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Lightning Launcher'}).count(),0);
 
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  await page.getByRole('button',{name:'Usa Campo difensivo',exact:true}).click();

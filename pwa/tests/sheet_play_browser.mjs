@@ -1091,7 +1091,14 @@ try{
    return Number((await listCreatures())[0].creature.resource_tracker_spent?.focus||0)===before;
   },spentBefore);
  }
- await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
+ // Slot management now opens directly from the always-visible Power overview.
+ const manageSlots=page.locator('#sheet-play-view .magic-overview-manage[data-magic-tool="slots"]');
+ await manageSlots.waitFor({state:'visible'});
+ await manageSlots.click();
+ await page.locator('#magic-tools-dialog[open]').waitFor();
+ assert.match(await page.locator('#magic-tools-dialog').textContent(),/Slot/i);
+ assert.equal(await page.locator('#sheet-context-dialog').count(),0);
+ await page.locator('#magic-tools-dialog [data-act="magic-tool-close"]').click();
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  const traitSection=page.locator('.play-info-traits');
  assert.equal(await traitSection.count(),1);
