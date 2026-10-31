@@ -259,6 +259,63 @@ export function flattenDescription(value) {
  return [...new Set(result)].join("\n\n")
   .replace(/\{@[^ ]+ ([^}|]+)(?:\|[^}]*)?\}/g,"$1").slice(0,15000);
 }
+// Show only actual structured grants in the compact catalog detail popup.
+// Do not infer mechanics from lore/descriptions.
+const CATALOG_GRANT_FIELDS=[
+ ["Competenze",[ "skillProficiencies","toolProficiencies","languageProficiencies",
+   "weaponProficiencies","armorProficiencies","saveProficiencies","expertise"]],
+ ["Resistenze",["resist","resistances"]],
+ ["Immunità",["immune","immunities","conditionImmune"]],
+ ["Vulnerabilità",["vulnerable","vulnerabilities"]],
+ ["Caratteristiche",["ability"]],
+ ["Sensi",["senses","darkvision","blindsight","tremorsense","truesight"]],
+ ["Movimento",["speed"]],
+ ["Incantesimi concessi",["additionalSpells"]],
+ ["Privilegi concessi",["feats"]],
+ ["Bonus",["bonus","numeric_grants","modifiers"]]
+];
+function grantText(value,depth=0){
+ if(depth>5||value==null||value===false)return [];
+ if(typeof value==="string")return [value.replace(/\{@[^ ]+ ([^}|]+)(?:\|[^}]*)?\}/g,"$1")];
+ if(typeof value==="number")return [String(value)];
+ if(Array.isArray(value))return value.flatMap(item=>grantText(item,depth+1));
+ if(typeof value!=="object")return [];
+ if(value.name&&typeof value.name==="string")return [value.name];
+ if(value.entry||value.entries||value.description){
+  const message=flattenDescription(value);
+  if(message)return [message];
+ }
+ return Object.entries(value).flatMap(([key,part])=>{
+  if(part===true)return [key];
+  if(part===false||part==null)return [];
+  if(typeof part==="number")return [key+" "+(part>0?"+":"")+part];
+  if(typeof part==="string")return [key+": "+part];
+  return grantText(part,depth+1);
+ });
+}
+export function catalogBenefitRows(entry){
+ if(!entry||typeof entry!=="object")return [];
+ const result=[];
+ const add=(label,content)=>{
+  const values=[...new Set(grantText(content).map(x=>String(x).trim()).filter(Boolean))];
+  if(values.length)result.push({label,text:values.slice(0,30).join(", ").slice(0,1700)});
+ };
+ for(const key of ["benefits","grants"]){
+  for(const item of Array.isArray(entry[key])?entry[key]:entry[key]?[entry[key]]:[]){
+   if(typeof item==="string")add("Beneficio",item);
+   else if(item&&typeof item==="object"){
+    const label=String(item.name||item.label||item.kind||item.type||"Beneficio");
+    const details=item.description??item.entry??item.entries??item.text??item;
+    add(label,details);
+   }
+  }
+ }
+ for(const [label,fields] of CATALOG_GRANT_FIELDS){
+  for(const field of fields)if(entry[field]!=null)add(label,entry[field]);
+ }
+ return result;
+}
+
 // 5etools uses {#itemEntry Name|Source} for shared magic-item prose.
 // Offline item indexes omit some item-group parents; resolve what is packaged
 // and provide a compact rule summary for the missing Absorbing Tattoo group.
