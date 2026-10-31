@@ -41,7 +41,6 @@ try{
  for(const selector of ['[data-battle-action="checks"]','[data-action-ability="str"]']){
   const group=page.locator(selector);if(!await group.evaluate(n=>n.open))await group.locator(':scope > summary').click();
  }
- await sheet('info');
  const strength=page.locator('#sheet-play-view [data-target="ability_mod:str"]').first();
  await strength.click();
  assert.match(await page.locator('[data-roll-formula]').textContent(),/2d20kh1/);

@@ -82,9 +82,9 @@ try{
     const {listCreatures}=await import('/creatures.js');
     return !!(await listCreatures())[0]?.creature?.power_selections?.[id]?.learned?.length;
    },progression);
-   // Persistence is the contract: collapsed source cards need not expose
-   // their learned labels until expanded.
-   assert((await snapshot()).record.power_selections?.[progression]?.learned?.length>=1);
+   // The preceding storage wait verifies learning; avoid a second
+   // snapshot with asynchronous catalog loading while the picker rerenders.
+   // Subsequent assertions verify the applied benefit and persisted choice.
    await page.locator('#power-selection-dialog [data-act="power-selection-close"]').last().click();
   }else await dialog.locator('[data-act="power-selection-close"]').last().click();
  }

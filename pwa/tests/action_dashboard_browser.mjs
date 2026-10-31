@@ -29,7 +29,7 @@ try{
  await page.evaluate(async()=>{
   const {createCreature,saveCreature}=await import('/creatures.js');
   const saved=await createCreature('character','Esploratrice di prova');
-  await saveCreature({...saved.data,class:'Rogue',class_source:'PHB',level:2,rules_version:'2014',abilities:{str:12,dex:16,con:14,int:12,wis:14,cha:10},
+  await saveCreature({...saved.data,class:'Rogue',class_source:'PHB',level:2,xp:300,rules_version:'2014',abilities:{str:12,dex:16,con:14,int:12,wis:14,cha:10},
    inventory:[{id:'shortsword',name:'Shortsword',source:'PHB',type:'M',damage:'1d6',weapon_category:'martial',properties:['L','F'],equipped_slots:['main','off'],quantity:2}],
    prepared_spells:['action','bonus','reaction'].map(unit=>({id:'test_spell_'+unit,name:'Incantesimo '+unit,level:1,time:[{unit,number:1}],entries:['Testo della selezione di prova']})),
    action_grants:[{id:'resource_demo',name:'Capacità di prova',action_type:'bonus',tracker_id:'charge'}],

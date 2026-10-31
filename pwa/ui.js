@@ -10360,7 +10360,16 @@ function listen(){
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.matches('[data-hp-autosave]')){
-      clearTimeout(pendingFieldTimers.get(target));
+      // Both HP inputs represent one atomic edit. Schedule only one write
+      // per dialog: separate timers can finish out of order and restore
+      // an older current HP after temporary HP was changed.
+      const dialog=target.closest('#hp-adjust-dialog');
+      for(const other of [...pendingFieldTimers.keys()]){
+        if(other?.matches?.('[data-hp-autosave]')&&other.closest('#hp-adjust-dialog')===dialog){
+          clearTimeout(pendingFieldTimers.get(other));
+          pendingFieldTimers.delete(other);
+        }
+      }
       const editor=state.editor;
       pendingFieldTimers.set(target,setTimeout(()=>{
         pendingFieldTimers.delete(target);
