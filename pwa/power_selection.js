@@ -223,7 +223,8 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
   const item=application.target_item_id?inventory.find(i=>(i.instance_id||i.id)===application.target_item_id):null;
   if(model.application?.destination==='item'){
    if(!item)continue;
-   item.option_extensions=[...rows(item.option_extensions),{selection_id:model.id,id:option.id,name:option.name,description:option.description,details:option.details,origin_id:model.source_origin_id,level:model.level,requires_attunement:option.requires_attunement,effect_choice:application.effect_choice||{},definition:option.item_effects||{id:option.id,name:option.name}}];
+   const nativeDefinition=rows(catalogs.abilityGrants?.artificer_infusions).find(row=>row.id===option.item_effects?.id);
+   item.option_extensions=[...rows(item.option_extensions),{selection_id:model.id,id:option.id,name:option.name,description:option.description,details:option.details,origin_id:model.source_origin_id,level:model.level,requires_attunement:option.requires_attunement,effect_choice:application.effect_choice||{},definition:nativeDefinition?{...option.item_effects,...nativeDefinition}:option.item_effects||{id:option.id,name:option.name}}];
   }
   for(const [index,effect] of [...rows(model.application?.effects),...rows(option.effects)].entries()){
    appendTypedBenefit(grants,effect,{id:'selection:'+model.id+':'+option.id+':'+index,selection_origin_id:model.id,origin_id:item?'item-instance:'+(item.instance_id||item.id):model.origin_id,parent_origin:model.source_origin_id,origin_name:option.name,automatic:false,disabled:false});
