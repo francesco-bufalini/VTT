@@ -500,6 +500,19 @@ input:disabled{opacity:.75;cursor:default}
  font-variant-numeric:tabular-nums;
  color:#f9f3eb;
 }
+/* Separate the evaluated weapon damage from its symbolic base formula.
+   Bonus-source cards remain independent and the roll itself is unchanged. */
+.sheet-roll-dialog .sheet-roll-origin-term.is-base:has(.sheet-roll-origin-damage-type)
+ .sheet-roll-origin-value{
+ display:block;
+ box-sizing:border-box;
+ align-self:stretch;
+ width:100%;
+ padding-top:5px;
+ margin-top:2px;
+ border-top:1px solid #8e7356a6;
+ text-align:center;
+}
 .sheet-roll-dialog .sheet-roll-origin-name{
  margin-top:auto;
  padding-top:6px;
