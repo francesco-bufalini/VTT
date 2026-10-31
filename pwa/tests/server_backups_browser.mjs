@@ -63,7 +63,6 @@ try{
  assert.equal(deltas[1].upserts.length,1);assert.equal(archive.blobs.length,1);
  const wrong=await fetch(origin+'/api/backup/manifest',{method:'POST',headers,
   body:JSON.stringify({owner:seeded.owner,key:'0'.repeat(64)})});assert.equal(wrong.status,403);
- await page.evaluate(async()=>{await (await import('/ui.js')).desktopSheetSession.showLibrary();});
  await page.locator('.library-backup > summary').click();
  assert.ok(await page.locator('#server-backup-panel').isVisible());
  await page.locator('[data-act="server-backup-now"]').click();
