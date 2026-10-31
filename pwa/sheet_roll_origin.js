@@ -209,7 +209,7 @@ const damageSign=value=>Number(value)<0?' − '+Math.abs(Number(value)):' + '+Nu
 const normalizeDamage=value=>String(value||'').replace(/\s+/g,'').replace(/−/g,'-');
 const damageDie=term=>/^\+?[1-9]\d*d(?:2|3|4|6|8|10|12|20|100)$/i.test(term);
 const damageInteger=term=>/^[+-]?\d+$/.test(term);
-function damageModifierExpression(value,attack,notation){
+function damageModifierExpression(value,attack,notation,detached=0){
  if(!value)return '';
  const ability=String(attack?.ability||'').toLowerCase();
  const source=normalizeDamage(attack?.damage_base_formula);
@@ -222,8 +222,8 @@ function damageModifierExpression(value,attack,notation){
  const abilityAmount=Number(attack?.damage_ability_modifier);
  const extra=Number(attack?.damage_extra_modifier);
  if(matches&&Object.hasOwn(abilityNames,ability)&&Number.isFinite(abilityAmount)&&
-   Number.isFinite(extra)&&staticBase+abilityAmount+extra===value&&abilityAmount!==0){
-   const remaining=staticBase+extra;
+   Number.isFinite(extra)&&staticBase+abilityAmount+extra-detached===value&&abilityAmount!==0){
+   const remaining=staticBase+extra-detached;
    return ' + Mod.'+abilityNames[ability]+(remaining?damageSign(remaining):'');
  }
  // An unknown source must not be falsely identified as a Strength modifier.
@@ -247,14 +247,37 @@ export function damageRollSegments(roll,type='',attack=null){
    else groups.push({damageType:kind,dice:[term]});
  }
  const modifier=Number(roll?.modifier)||0;
- return groups.map((group,index)=>{
+ // The calculated roll already includes unconditional numeric benefits. Use
+ // their verified origin breakdown only for presentation: the roll formula and
+ // result must remain unchanged. No particular Fighting Style is special here.
+ const source=normalizeDamage(attack?.damage_base_formula);
+ const attackMod=Number(attack?.damage_ability_modifier)+Number(attack?.damage_extra_modifier);
+ const expected=source+(attackMod>0?'+'+attackMod:attackMod<0?String(attackMod):'');
+ const verified=source&&Number.isFinite(attackMod)&&
+   expected===notation&&normalizeDamage(attack?.damage)===notation;
+ const bonusRows=verified?list(attack?.damage_bonus_components)
+   .filter(row=>Number.isSafeInteger(Number(row?.value))&&Number(row.value)!==0):[];
+ const detached=bonusRows.reduce((total,row)=>total+Number(row.value),0);
+ const baseModifier=modifier-detached;
+ const segments=groups.map((group,index)=>{
    const base=index===0;
    const formula=group.dice.join(' + ');
    return {key:'damage:'+index,kind:base?'base':'formula',
-     formula:(base?'':' + ')+formula+(base?damageModifierExpression(modifier,attack,notation):''),
+     formula:(base?'':' + ')+formula+(base?damageModifierExpression(baseModifier,attack,notation,detached):''),
      expanded:'',damageType:group.damageType,originName:base?'Danno base':'Danno aggiuntivo',
-     originId:base?String(attack?.origin_id||''):'',value:base?modifier:0};
+     originId:base?String(attack?.origin_id||''):'',value:base?baseModifier:0};
  });
+ // Numeric grants inherit the damage type of the weapon's base dice unless
+ // their mechanics explicitly model a separately typed damage component.
+ for(const [index,row] of bonusRows.entries()){
+   const value=Number(row.value);
+   segments.push({key:'damage:bonus:'+index,kind:'formula',
+     formula:signed(value),expanded:signed(value),value,
+     damageType:groups[0]?.damageType||'',originId:String(row.origin_id||''),
+     originName:row.origin_name||'Bonus',
+     section:row.origin_id?'':'formula_bonuses'});
+ }
+ return segments;
 }
 export const rollDamageName=type=>{
  const labels={L:'Fulmine',T:'Tuono',A:'Acido',C:'Freddo',F:'Fuoco',
