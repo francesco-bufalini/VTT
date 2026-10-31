@@ -31,6 +31,7 @@ const SHELL = [
   "/ui_primitives.js",
   "/item_applied_options.js",
   "/distance_units.js",
+  "/attack_range.js",
   "/trait_benefits.js",
   "/trait_benefit_distribution.js",
   "/trait_benefit_editor.js",
