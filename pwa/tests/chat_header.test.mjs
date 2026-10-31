@@ -34,7 +34,7 @@ test('chat replaces the sheet and dock without replacing the topbar',()=>{
  assert.match(ui,/const author=activeChatCreatureName\(\)/);
  assert.doesNotMatch(ui,/id="chat-author"/);
  assert.match(ui,/const topbar=document\.querySelector\('\.topbar'\)/);
- assert.match(ui,/topbar\.hidden=state\.page==='session'\|\|state\.page==='library'&&state\.libraryMode/);
+ assert.match(ui,/topbar\.hidden=state\.page==='catalog'\|\|state\.page==='session'\|\|state\.page==='library'&&state\.libraryMode/);
  assert.match(ui,/topSessionButton\.hidden=hasCreature/);
  assert.match(ui,/sessionTab\.classList\.toggle\('session-connected',sessionConnected\)/);
  assert.match(ui,/button\.classList\.toggle\('session-connected',sessionConnected\)/);
