@@ -202,11 +202,30 @@ try{
  assert(await page.locator('#header-chat').isVisible(),'Chat icon is visible on a creature');
  assert(await page.locator('#header-dice').isVisible(),'Dice icon is visible on a creature');
  assert(await page.locator('#creature-forms').isVisible(),'Variants shares the header row');
+ assert(await page.locator('#creature-forms .vtt-action-glyph').isVisible(),'Variants uses the original Wild Shape paw');
  assert.equal(await page.locator('.topbar .connection-link').isVisible(),false,'Partita is only in the bottom dock inside a creature');
  await page.locator('#header-dice').click();
+ await page.locator('#chat-dice-dialog').waitFor({state:'visible'});
+ const initialDiceFocus=await page.evaluate(()=>document.activeElement?.id);
+ assert.notEqual(initialDiceFocus,'die-count','Dice popup must not focus number of dice or open the virtual keyboard');
+ assert.notEqual(initialDiceFocus,'die-mod','Dice popup must not focus modifier or open the virtual keyboard');
  await page.locator('#chat-dice-dialog [data-act="roll"]').click();
  await page.locator('#chat-dice-dialog .dice-result').waitFor();
  await page.locator('[data-act="close-chat-dice"]').click();
+ await page.locator('#header-preferences').click();
+ const options=page.locator('#distance-preferences-dialog .distance-preferences-option');
+ assert.equal(await options.count(),2,'Only the two selectable distance units remain');
+ const positions=await options.evaluateAll(nodes=>nodes.map(node=>{
+  const bounds=node.getBoundingClientRect();
+  const radio=node.querySelector('input[type=radio]').getBoundingClientRect();
+  return {top:bounds.top,left:bounds.left,width:radio.width,height:radio.height};
+ }));
+ assert(Math.abs(positions[0].top-positions[1].top)<2,'Unit options are side by side');
+ assert(positions[0].left<positions[1].left,'Units follow the displayed horizontal order');
+ assert(positions.every(p=>p.width<=18&&p.height<=18),'Unit selectors are compact');
+ assert.equal(await page.locator('#distance-preferences-dialog small, #distance-preferences-dialog p.hint').count(),0,
+  'Preferences contain no descriptive notes');
+ await page.locator('#distance-preferences-dialog [data-act="distance-preferences-close"]').click();
  await page.locator('#header-chat').click();
  await page.locator('#chat-screen #events').waitFor({state:'visible'});
  assert.equal(await page.locator('#chat-screen .panel').count(),0,'Chat has no enclosing card');
