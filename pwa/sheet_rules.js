@@ -669,6 +669,11 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   let damageMod=baseHit!==null||attack.damage_ability_modifier===false?0:modifier;
   if(attack.slot==='off'&&offAllowed)damageMod=Math.min(0,damageMod);
   const damageAbilityModifier=damageMod;
+  // Whether the base attack uses an ability modifier is different from its
+  // numeric value: a +0 modifier still belongs in the base damage formula.
+  // Offhand bonuses that grant that modifier remain distinct contributions.
+  const damageAbilityApplies=baseHit===null&&attack.damage_ability_modifier!==false&&
+    !(attack.slot==='off'&&offAllowed&&modifier>=0);
   const featureDamage=classFeatureDamage(record,featureContext,attack,ability);
   const damageExtraModifier=bonus('attack_damage:'+attack.id,attackContext)+featureDamage;
   damageMod+=damageExtraModifier;
@@ -677,7 +682,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const usedBase=featureContext.damageBase?featureContext.damageBase(attack.id,damage):damage;
   out.push({...attack,ability,proficient,hit,damage:usedBase?usedBase+sign(damageMod):'Come da bestiario',
     damage_base_formula:usedBase||'',damage_ability_modifier:damageAbilityModifier,
-    damage_extra_modifier:damageExtraModifier,
+    damage_ability_applies:damageAbilityApplies,damage_extra_modifier:damageExtraModifier,
    range_feet:range,long_range_feet:longRange,
     explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id,attackContext),
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
