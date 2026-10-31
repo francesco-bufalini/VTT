@@ -64,6 +64,7 @@ import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choices
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
+import {render5etoolsInline} from './5etools_inline.js';
 import {isContentAvailableForRules} from './source_edition.js';
 
 // A service worker can briefly serve an older item_controls.js alongside a
@@ -5680,6 +5681,36 @@ async function saveInfoPortrait(input){
   message('Foto salvata nella scheda, disponibile anche offline.');
  }catch(error){message(errorMessage(error),true);}
 }
+// Full 5eTools item prose is intentionally not loaded for every attack on startup.
+// Resolve the granting item's description only when its attack is expanded.
+let expandedAttackItemCatalogRequest=null;
+async function hydrateExpandedAttackDescription(summary){
+  const entry=summary.closest('details.play-battle-attack-details')?.closest('.play-battle-attack-entry');
+  const attackId=String(entry?.dataset.attackId||'');
+  if(!attackId.startsWith('item:')&&!attackId.startsWith('shield:improvised:'))return;
+  const creatureId=state.creatureId,record=state.calculated?.companion_view||state.editor?.read();
+  const attack=(state.calculated?.attacks||[]).find(row=>String(row.id)===attackId);
+  if(!record||!attack)return;
+  const source=String(attack.equipped_item_id||'');
+  const item=(record.inventory||[]).find(row=>source&&
+    (String(row.instance_id||'')===source||String(row.id||'')===source));
+  if(!item||flattenDescription(item)||!item.source||
+    String(item.id||'').startsWith('local_'))return;
+  try{
+    const catalog=state.referenceCatalogs.items?.length?state.referenceCatalogs.items:
+      await (expandedAttackItemCatalogRequest||=catalogEntries('items')
+        .finally(()=>{expandedAttackItemCatalogRequest=null;}));
+    const same=(a,b)=>String(a||'').toLowerCase()===String(b||'').toLowerCase();
+    const listed=catalog.find(row=>row.id===item.id&&(!item.source||same(row.source,item.source)))||
+      catalog.find(row=>same(row.name,item.name)&&same(row.source,item.source));
+    const resolved=await detailedEntry('items',listed||item);
+    const description=flattenDescription(resolved);
+    const body=entry.querySelector('.play-battle-attack-expanded>p');
+    if(description&&body?.isConnected&&state.creatureId===creatureId&&state.sheet==='battle'&&
+       entry.dataset.attackId===attackId)body.innerHTML=render5etoolsInline(description);
+  }catch{ /* An offline catalog miss leaves the original attack details usable. */ }
+}
+
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
   state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventoryHighlightedIndices:state.inventoryHighlightedIndices,inventorySubtab:state.inventorySubtab,inventorySelectedTabs:inventoryVisibleSections(state.editor.read()),search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.calculated?.companion_view||state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
@@ -10345,6 +10376,8 @@ function listen(){
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button){
+      const attackSummary=e.target.closest('#sheet-play-view[data-sheet="battle"] .play-battle-attack-details > summary');
+      if(attackSummary){void hydrateExpandedAttackDescription(attackSummary);return;}
       // An HP card is a single click target, except for its own controls.
       const card=e.target.closest('#sheet-play-view .play-health[data-act="hp-adjust-open"],#sheet-play-view .play-character-portrait[data-sheet-context="identity"]');
       if(card&&!e.target.closest('button,input,select,textarea,a,[role="button"]:not(.play-health):not(.play-character-portrait)')){
