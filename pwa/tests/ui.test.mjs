@@ -413,7 +413,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.ok(msg.id.startsWith("pwa_"));
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
   click('#creature-back');
-  assert.equal(document.querySelector("#chat-screen").hidden,true);
+  await until(()=>document.querySelector("#chat-screen").hidden);
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="sheet-roll"][data-target="save:dex"]'));
   const rollMessages=()=>calls.filter(c=>c.url==='/api/action'&&
