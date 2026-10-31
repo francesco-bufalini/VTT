@@ -3783,9 +3783,7 @@ function inventoryContainerSections(record,entries,containers,selectedIndex,menu
     '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(active.id)+'">Rinomina sezione</button></div>':'';
   return '<div data-inventory-section="'+esc(key)+'">'+
     panel(active?.name||'Zaino',
-      controls+inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
-      '<div class="actions"><button type="button" class="btn small" data-act="item-catalog" data-container-id="'+esc(destination)+'">＋ Dal catalogo</button>'+
-      '<button type="button" class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(destination)+'">＋ Homebrew</button></div>',
+      controls+inventoryTable(rows,false,selectedIndex,menuIndex,containers),
       "inventory-native-panel inventory-items-panel")+'</div>';
 }
 async function openGenericVariantDialog(index){
