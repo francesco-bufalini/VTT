@@ -182,17 +182,14 @@ test('recharge-bearing 5eTools action lists expose distinct capabilities under o
  assert.deepEqual(variants.map(row=>row.option_metadata.save_ability),['constitution','constitution']);
  assert.equal(variants[0].option_metadata.damage_formula,'13d8');
  assert.deepEqual(variants[1].option_metadata.conditions,['paralyzed']);
- const rendered=doc(battleActionPanels(record,calculated,[],[],catalog.actions).others);
- assert.equal(rendered.querySelector('[data-attack-id="monster:action:0"]'),null);
- const row=rendered.querySelector('[data-attack-id="monster:action:0:option:0"]');
- assert(row,'Each variant appears as a separate capability');
- assert.equal(rendered.querySelectorAll('.play-battle-monster-option').length,0);
- assert.equal(row.querySelectorAll('.action-resource-control').length,1,
-  'Alternatives share a single parent recharge pool');
- assert.equal(row.querySelector('[data-act="monster-action-use"]').dataset.monsterActionId,variants[0].id);
+ const panels=battleActionPanels(record,calculated,[],[],catalog.actions);
+ const options=panels.abilityEntries.filter(row=>row.parent_action_id==='monster:action:0');
+ assert.equal(options.length,2,'Recharge alternatives are distinct capabilities in Azioni');
+ assert.deepEqual(options.map(row=>row.name),['Cold Breath','Paralyzing Breath']);
+ assert.ok(options.every(row=>row.tracker_id===tracker.id&&row.cost===1));
+ assert.equal(doc(panels.others).querySelector('[data-attack-id="monster:action:0"]'),null,
+  'Shared recharge is a capacity, not an attack-action sequence');
  assert.equal(variants[0].cost,1,'Each capability spends one use of the parent pool');
- assert.match(row.textContent,/13d8/);
- assert.match(rendered.querySelector('[data-attack-id="monster:action:0:option:1"]').textContent,/paralyzed/);
  const ordinary={...record,stat_block:{action:[{...breath,name:'Not Rechargeable'}]}};
  assert.equal(actionEntries(ordinary,{attacks:[]}).find(row=>row.id==='monster:action:0').options.length,0,
   'A named list alone does not imply a rechargeable alternative action');
