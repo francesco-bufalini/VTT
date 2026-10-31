@@ -146,7 +146,7 @@ test('flat Attacks retain unarmed and equipped weapons; the basic actions are ti
 test('multiattack counter uses active structured features or a monster multiattack',()=>{
  assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (2)',attacks_per_action:3}]}),3);
  assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (3)',attacks_per_action:4,inactive:true}]}),1);
- const monster={stat_block:{action:[{name:'Multiattack',entries:[
+ const monster={kind:'monster',stat_block:{action:[{name:'Multiattack',entries:[
   'The creature makes three attacks: one with its bite and two with its claws.'
  ]}]}};
  const projectedMonster=collectStructuredFeatures({...monster,kind:'monster'});
@@ -156,7 +156,8 @@ test('multiattack counter uses active structured features or a monster multiatta
  const attack={id:'monster:action:0',name:'Bite',melee:true,hit:6,damage:'1d8'};
  const html=doc(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions,[],[],true).others);
  assert.equal(html.querySelectorAll('[data-attack-id="attack"] .play-attack-sequence > li').length,1);
- assert.equal(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions).basicActions.find(row=>row.id==='attack').attack_count,3);
+ assert.equal(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions).basicActions.find(row=>row.id==='attack').attack_count,1);
+ assert.equal(html.querySelectorAll('[data-attack-id="monster:multiattack"] .play-attack-sequence > li').length,3);
 });
 
 test('recharge-bearing 5eTools action lists expose distinct capabilities under one shared tracker',()=>{
