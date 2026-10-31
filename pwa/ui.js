@@ -25,7 +25,7 @@ import {exportInventoryItems} from './inventory_transfer.js';
 import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, createBestiaryMonster, importCreatureFile, exportCreature, exportCreatureBatch, exportCreatureArchive, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
-import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
+import { tokenGroups, tokenOwnershipGlyphKey, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew, catalogBenefitRows } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews, stateTraitNavigationKey } from "./trait_projection.js";
@@ -268,7 +268,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", chatOpen:false, chatUnread:false, stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, serverDeviceName:"", disclosureState:new Map(),
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, catalogCreateOpen:false, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogEmbedMode:"5etools", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, catalogCreateOpen:false, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventorySelectedIndices:new Set(), inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['all'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', scrollSpellSelectedId:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -1296,6 +1296,23 @@ function renderCatalogRows() {
     resultsFooter('catalog-more',shown,total,90);
 }
 async function catalogView() {
+  // The embedded reference is optional: browsers may block cross-site frames,
+  // and the same locally packaged 5etools data must remain usable offline.
+  const online=typeof navigator==="undefined"||navigator.onLine!==false;
+  const localOnly=state.catalogEmbedMode==="local"||!online||
+    Boolean(state.pendingItemOwner||state.catalogCreateOpen);
+  if(!localOnly){
+    return '<section class="catalog-web" aria-label="5etools, manuale 2014">'+
+      '<div class="catalog-source-bar">'+
+      '<strong>5etools · 2014</strong>'+
+      '<button type="button" class="play-button" data-act="catalog-source-local">Catalogo offline</button>'+
+      '<a href="https://2014.5e.tools/" target="_blank" rel="noopener noreferrer">Apri nel browser</a></div>'+
+      '<iframe class="catalog-web-frame" title="5etools, regole D&D 2014" src="https://2014.5e.tools/" '+
+      'loading="eager" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads" '+
+      'aria-label="Catalogo 5etools 2014"></iframe>'+
+      '<p class="catalog-embed-note">Se 5etools non si visualizza o non risponde sul dispositivo, aprilo nel browser oppure usa il catalogo offline.</p>'+
+      '</section>';
+  }
   state.catalogRows=await catalogEntries(state.catalogCategory);
   const quickPanel=['items','feats','backgrounds'].includes(state.catalogCategory)?panel('Crea contenuto personalizzato',
     '<label>Nome<input id="quick-name" maxlength="120"></label>'+
@@ -1308,6 +1325,9 @@ async function catalogView() {
       Array.from({length:3},(_,i)=>'<div class="columns"><label>Tipo<select data-quick-kind="'+i+'">'+[['','Nessuna'],['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],['weapon','Arma'],['armor','Armatura'],['tool','Strumento'],['language','Linguaggio']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label><label>Competenza<input data-quick-key="'+i+'" placeholder="es. perception"></label></div>').join(''))+
     '<div class="actions">'+btn('quick-create','Crea nel catalogo locale','primary')+'</div>'):'';
   return '<div class="catalog-screen">'+
+    '<div class="catalog-source-bar"><strong>Catalogo offline</strong>'+
+    (online?'<button type="button" class="play-button" data-act="catalog-source-5etools">5etools 2014</button>':'<small>Dispositivo offline</small>')+
+    '</div>'+
     '<div class="catalog-toolbar">'+
     '<label class="catalog-search-wrap" for="catalog-search">'+actionGlyph('search')+
     '<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
@@ -4656,8 +4676,11 @@ function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
     (token.id===turnId?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
     sessionTokenDetails(token)+'</button>'+
     (token.initiative!==undefined?'<span class="session-initiative" title="Iniziativa">'+esc(token.initiative)+'</span>':'')+
-    '<button class="btn small session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
-    '" aria-label="Modifica '+esc(token.name)+'" title="Condizioni, incantesimi e miniatura">⚙</button></div>').join('');
+    '<button class="play-button session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
+    '" aria-label="Modifica '+esc(token.name)+'" title="'+
+    (tokenOwnershipGlyphKey(token,state.cachedCreatures)==='map'?'Scheda locale collegata':'Token non controllato')+
+    ' · condizioni, incantesimi e miniatura">'+
+    actionGlyph(tokenOwnershipGlyphKey(token,state.cachedCreatures))+'</button></div>').join('');
 }
 function sessionCreatureWarnings(){
  return state.sessionCreatureErrors.length?
@@ -4708,15 +4731,18 @@ function sessionView() {
     '</section>';
   html+=sessionCreatureWarnings();
   if(!online)return desktop+html;
-  html+='<section class="panel session-token-panel">'+
-    '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
-    '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
+  html+='<section class="panel session-token-panel play-card">'+
+    '<div class="session-token-header play-card-head">'+
+    '<h2>Token sulla mappa</h2>'+
+    '<button type="button" class="play-button session-add-token-icon" data-act="open-place-token"'+
+      (!online||!entries.length?' disabled':'')+
+      ' aria-label="Aggiungi token da una tua scheda" title="Aggiungi token da una tua scheda">+</button>'+
+    (groups.active?'<span class="session-combat-round">Round '+esc(groups.round)+' · Iniziativa</span>':'')+
+    '</div>'+
     (groups.participants.length?sessionTokenRows(groups.participants,groups.turnId,groups.activeEnvironment):
-      '<p class="hint">Nessun token sulla mappa.</p>')+
+      '<p class="hint session-token-empty">Nessun token sulla mappa.</p>')+
     (groups.active&&groups.outside.length?'<h3 class="session-outside-heading">Fuori dal combattimento</h3>'+
       sessionTokenRows(groups.outside):'')+
-    '<button type="button" class="btn primary full session-add-token" data-act="open-place-token"'+
-      (!online||!entries.length?' disabled':'')+'>＋ Aggiungi token da una tua scheda</button>'+
     '</section>';
   if(state.editTokenId){
     const edited=entries.find(t=>t.id===state.editTokenId);
@@ -7386,7 +7412,11 @@ async function handleAction(target){
     if(source.dataset.magicTool){state.sheetPopup='';app.querySelector('#sheet-context-dialog')?.close?.();}
     await handleAction(source);return;
   }
-  if(act==='catalog-close'){
+  if(act==='catalog-source-local'||act==='catalog-source-5etools'){
+     state.catalogEmbedMode=act==='catalog-source-local'?'local':'5etools';
+     await render();return;
+   }
+   if(act==='catalog-close'){
     closeDialog(app.querySelector('#catalog-detail-dialog'),{remove:true});
     state.catalogSelected=-1;return;
   }
