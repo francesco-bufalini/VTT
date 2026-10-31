@@ -426,7 +426,7 @@ export function attackActionSequence(action={},record={},calculated={}){
   });
   return count?named.slice(0,count).concat(Array.from({length:Math.max(0,count-named.length)},()=> 'Attacco')):named;
  }
- if(!count)return [];
+ if(!count||action.id==='two_weapon'&&action.available===false)return [];
  if(action.id==='two_weapon')return ['Attacco con arma secondaria'];
  if(action.id==='opportunity')return ['Attacco in mischia'];
  if(action.id==='attack')return Array.from({length:count},()=> 'Attacco');
@@ -719,7 +719,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    /\b(?:improvvisat|improvised)/i.test(String(attack?.name||''));
  };
  const realImprovised=[...attacksById.values()].filter(improvised);
- const weapon=entries.filter(row=>row.type==='Attacco'&&
+ const isActualAttack=row=>attacksById.has(String(row.attack_id||row.id||''));
+ const weapon=entries.filter(row=>row.type==='Attacco'&&isActualAttack(row)&&
   !['attack','opportunity','two_weapon','unarmed:off'].includes(row.id)&&
   row.parent_action!=='two_weapon'&&
   !realImprovised.some(attack=>String(row.attack_id||row.id)===String(attack.id)));
@@ -770,7 +771,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   weapon.splice(weapon.findIndex(row=>row.id==='unarmed')+1,0,grapple);
  }
  const specials=entries.filter(row=>!classIds.has(row)&&!classAbilities.some(ability=>ability.id===row.id)&&row.type!=='Incantesimo'&&
-   row.type!=='Attacco'&&
+   (row.type!=='Attacco'||!isActualAttack(row))&&
    !['attack','two_weapon','opportunity','spell_cast','cast_spell'].includes(row.id));
  // Typed racial alternatives belong to Actions as well as the source trait.
  // Their use button re-enters the shared ability payment/effect pipeline;
@@ -822,7 +823,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
    weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>',
-  others:renderCategories(),actionGroups:Object.fromEntries(Object.entries(categoryGroups).map(([key,rows])=>[key,groupHtml(rows)])),movement:'',
+  others:renderCategories(),actionGroups:Object.fromEntries(Object.entries(categoryGroups).map(([key,rows])=>[key,rows.length?groupHtml(rows):''])),movement:'',
   checks:battleSkillChecksPanel(calculated),
   spells:'',
   abilityEntries:classAbilities,
