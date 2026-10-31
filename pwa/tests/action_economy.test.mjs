@@ -183,7 +183,7 @@ test('recharge-bearing 5eTools action lists expose distinct capabilities under o
   'A named list alone does not imply a rechargeable alternative action');
 });
 
-test('Unarmed Strike is immediately above Grapple in the flat attack list',()=>{
+test('Unarmed Strike opens the final basic-attack group, immediately above Grapple',()=>{
  const attacks=[{id:'item:sword',name:'Sword',slot:'main',melee:true,range_feet:5,hit:5,damage:'1d8'},
   {id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,range_feet:5,hit:3,damage:'1'}];
  const actions=[{id:'grapple',name:'Afferrare una creatura',edition:'2014',
@@ -193,12 +193,11 @@ test('Unarmed Strike is immediately above Grapple in the flat attack list',()=>{
   {attacks,skills:{athletics:3},trackers:[],features:[]},[],[],actions).attacks;
  const ids=[...markup.matchAll(/class="play-battle-attack-entry[^"]*" data-attack-id="([^"]+)"/g)]
   .map(row=>row[1]);
- const index=ids.indexOf('unarmed');
- assert(index>=0,JSON.stringify(ids));
- assert.equal(ids[index+1],'grapple',JSON.stringify(ids));
+ assert.deepEqual(ids,['item:sword','unarmed','grapple','shove'],
+  'All ordinary attacks precede the final basic group, which starts with Unarmed Strike');
 });
 
-test('flat attacks place unarmed between privilege and ordinary attacks; timed Azioni stay unchanged',()=>{
+test('flat attacks place every basic attack after weapons and monster attacks; timed Azioni stay unchanged',()=>{
  const main={id:'item:blade',name:'Lama principale',slot:'main',melee:true,hit:6,damage:'1d8'};
  const off={id:'item:off:dagger',name:'Pugnale secondario',slot:'off',melee:true,
   offhand_bonus:true,hit:4,damage:'1d4'};
@@ -209,9 +208,15 @@ test('flat attacks place unarmed between privilege and ordinary attacks; timed A
  },{attacks:[monster,off,main]},[],[],catalog.actions);
  const flat=doc(result.attacks),others=doc(result.others);
  const ids=[...flat.querySelectorAll('.play-battle-attack-entry')].map(n=>n.dataset.attackId);
- assert.equal(ids[0],'unarmed','Unarmed is above ordinary equipment attacks');
- assert(ids.indexOf('unarmed')<ids.indexOf('item:blade'));
- assert(ids.includes('monster:action:0'),'Monster attack choices remain available');
+ const firstBasic=ids.indexOf('unarmed');
+ assert(firstBasic>0,'Unarmed opens the last group, after other attacks');
+ assert(ids.indexOf('item:blade')<firstBasic,'Equipped weapons precede the basic group');
+ assert(ids.indexOf('monster:action:0')<firstBasic,'Monster attacks precede the basic group');
+ assert.equal(ids[firstBasic+1],'grapple','Grapple immediately follows Unarmed Strike');
+ const baseIds=new Set(catalog.actions.filter(rule=>rule.edition==='2014'&&
+  rule.parent_action==='attack').map(rule=>rule.id));
+ assert(ids.slice(firstBasic).every(id=>id==='unarmed'||id==='improvised'||baseIds.has(id)),
+  'No specialized attack may appear after a basic attack: '+ids.join(', '));
  assert(!ids.includes('item:off:dagger'),'Offhand weapon attacks live in the bonus-action entry');
  assert(ids.includes('unarmed'),'Unarmed is always available');
  assert(!flat.querySelector('[data-action-timing]'));
@@ -621,7 +626,7 @@ test('improvised shield offhand is usable through feat only in 2014 rules',()=>{
   {attacks:[main,shield]},[],[],catalog.actions).offhandEligibility.feat_available,false);
 });
 
-test('privilege attacks precede improvised and unarmed, which precede ordinary attacks',()=>{
+test('privilege and equipped attacks precede the full basic group, starting with unarmed',()=>{
  const computed={attacks:[
   {id:'class_feature:thunder_gauntlets',name:'Guanti tonanti',slot:'natural',melee:true,
    range_feet:5,hit:4,origin_id:'feature:class|artificer|armorer|thunder-gauntlets'},
@@ -640,18 +645,22 @@ test('privilege attacks precede improvised and unarmed, which precede ordinary a
   'Damaging privilege attacks lead within the privilege tier');
  assert.equal(ids[1],'class_feature:thunder_gauntlets',
   'Even a privilege attack without damage precedes ordinary attacks');
- assert(ids.indexOf('class_feature:thunder_gauntlets')<ids.indexOf('improvised'));
- assert(ids.indexOf('improvised')<ids.indexOf('unarmed'));
- assert(ids.indexOf('unarmed')<ids.indexOf('item:blade'),
-  'The generic strikes appear above equipped weapons');
- assert(ids.indexOf('unarmed')<ids.indexOf('monster:action:0'),
-  'The generic strikes appear above non-privilege monster attacks');
- assert(ids.indexOf('unarmed')<ids.indexOf('item:empty'),
-  'Even non-damaging equipment attacks follow the generic strikes');
+ const firstBasic=ids.indexOf('unarmed');
+ for(const id of ['natural:claws','class_feature:thunder_gauntlets',
+  'item:blade','item:bow','item:empty','monster:action:0']){
+  assert(ids.indexOf(id)>=0&&ids.indexOf(id)<firstBasic,
+   id+' must appear before every basic attack: '+ids.join(', '));
+ }
+ assert.equal(ids[firstBasic+1],'grapple','Unarmed is immediately followed by Grapple');
+ assert(ids.indexOf('improvised')>firstBasic,'Improvised attacks belong to the basic group');
+ const baseIds=new Set(catalog.actions.filter(rule=>rule.edition==='2014'&&
+  rule.parent_action==='attack').map(rule=>rule.id));
+ assert(ids.slice(firstBasic).every(id=>id==='unarmed'||id==='improvised'||baseIds.has(id)),
+  'Every base action stays at the end: '+ids.join(', '));
  assert(ids.indexOf('item:blade')<ids.indexOf('monster:action:0'),
-  'Ordinary damaging main-hand weapons keep precedence within the base tier');
+  'Main-hand weapons retain priority among ordinary damage attacks');
  assert(ids.indexOf('monster:action:0')<ids.indexOf('item:empty'),
-  'Ordinary damaging monster attacks precede non-damaging base attacks');
+  'Damaging monster attacks precede non-damaging equipment');
  assert.equal(attackRowGlyphKey({melee:true}),'sword');
  assert.equal(attackRowGlyphKey({melee:false}),'target');
  const sword=rows.querySelector('[data-attack-id="item:blade"] summary>.vtt-action-glyph');
