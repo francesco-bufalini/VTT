@@ -1064,7 +1064,10 @@ try{
   return (await listCreatures())[0].creature.exhaustion===0;
  });
  assert.equal((await record()).exhaustion,0);
- assert.equal(await page.locator('[data-active-condition="exhaustion:4"]').count(),0);
+ // Persistence can finish before the asynchronous sheet re-render. Keep the
+ // DOM regression check, but observe the final rendered state first.
+ await page.locator('#sheet-play-view [data-active-condition="exhaustion:4"]').first().waitFor({state:'detached'});
+ assert.equal(await page.locator('#sheet-play-view [data-active-condition="exhaustion:4"]').count(),0);
  await popup('apply-spell');await page.locator('#condition-spell-picker').selectOption('phb2014_light');await page.locator('#sheet-context-dialog [data-act="condition-add-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light'&&r.applied===true);});
  await page.waitForFunction(()=>/Incantesimi[\s\S]*Light/.test(document.querySelector('#sheet-play-view')?.textContent||''));

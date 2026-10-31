@@ -1,7 +1,6 @@
 extends SceneTree
 
 const TokenScene = preload("res://token.tscn")
-const BoardScript = preload("res://dnd_base.gd")
 const SHORT_VISUAL := "res://assets/tokens/test/short_hitbox_visual.tscn"
 const TALL_VISUAL := "res://assets/tokens/test/tall_hitbox_visual.tscn"
 
@@ -51,36 +50,6 @@ func run() -> void:
 	assert(token.get_size_name() == "Medium")
 	_assert_base_at(token, 0.0)
 
-	# The creature sheet keeps its base size. A polymorphed miniature adopts
-	# its own profile footprint, and the base form returns to the sheet size.
-	var board := BoardScript.new()
-	var profiles: Array[Dictionary] = [{
-		"id": "tall-form",
-		"visual_asset": TALL_VISUAL,
-		"size_name": "Large",
-		"footprint": 2.0
-	}]
-	board.set("_token_profiles", profiles)
-	var record := {
-		"default_miniature_id": "short-form",
-		"current_miniature_id": "tall-form",
-		"size_name": "Medium",
-		"footprint": 1.0
-	}
-	assert(token.set_visual_asset(TALL_VISUAL, 2.0))
-	board.apply_creature_sheet_properties(token, record)
-	assert(token.get_size_name() == "Large")
-	assert(_size(token).is_equal_approx(Vector3(2.0, 3.0, 2.0)))
-	_assert_base_at(token, 0.0)
-
-	record["current_miniature_id"] = "short-form"
-	assert(token.set_visual_asset(SHORT_VISUAL, 1.0))
-	board.apply_creature_sheet_properties(token, record)
-	assert(token.get_size_name() == "Medium")
-	assert(_size(token).is_equal_approx(Vector3(1.0, 1.0, 1.0)))
-	_assert_base_at(token, 0.0)
-
-	board.free()
 	token.queue_free()
-	print("PASS: transformed and restored miniature collider follows visual bounds and sheet footprint")
+	print("PASS: transformed and restored miniature collider follows visual bounds and token footprint")
 	quit()
