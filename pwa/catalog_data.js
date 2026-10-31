@@ -260,6 +260,8 @@ export function flattenDescription(value) {
   .replace(/\{@[^ ]+ ([^}|]+)(?:\|[^}]*)?\}/g,"$1").slice(0,15000);
 }
 export async function detailedEntry(category,entry) {
+  // Keep homebrew entries independent from the published compendium.
+  if(entry?._homebrew||String(entry?.origin||'').toLowerCase()==='homebrew')return entry;
   const path=GROUPS[category]||GROUPS[entry?._category];
   if(!path)return entry;
   if(!details.has(path)){
