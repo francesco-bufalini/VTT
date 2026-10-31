@@ -55,8 +55,17 @@ try{
  assert(await selection.isVisible(),'Inventory multi-selection opens immediately near the viewport bottom');
  assert.equal(await selection.locator('[data-selection-count]').textContent(),'1 selezionato');
  assert.match(await selection.locator('[data-selection-last]').textContent(),/Ultima selezione/);
- assert(await selection.evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight),
-   'Inventory selected-entry actions remain visible without scrolling');
+ assert(await selection.evaluate(el=>{
+   const navigation=document.querySelector('#mobile-tabs').getBoundingClientRect();
+   return el.getBoundingClientRect().bottom<=navigation.top-6;
+ }), 'Inventory selection bar stays above the persistent bottom navigation');
+ await selection.locator('[data-act="inventory-bulk-move"]').click();
+ const moveDialog=page.locator('#inventory-bulk-move-dialog[open]');
+ await moveDialog.waitFor();
+ assert.equal(await selection.isVisible(),false,'Open dialogs hide the selection bar');
+ await moveDialog.locator('[data-inventory-move-cancel]').click();
+ await moveDialog.waitFor({state:'detached'});
+ assert(await selection.isVisible(),'Selection returns after the popup closes');
  await selection.locator('[data-act="inventory-selection-clear"]').click();
  assert.equal(await selection.isVisible(),false,'Fine exits inventory selection');
  const search=page.locator('#sheet-play-view [data-play-search]');
@@ -109,6 +118,27 @@ try{
  },addedName);
  assert.equal(await page.locator('#inventory-search-add-dialog').count(),0);
  assert.equal((await record()).inventory.filter(row=>row.name===addedName&&row.container_id==='chest').length,1);
+ // Select entries from different sections and move both in one transaction.
+ const lastIndex=(await record()).inventory.length-1;
+ const sword=page.locator('#sheet-play-view [data-inventory-item-index="0"] .inventory-play-item');
+ await sword.dispatchEvent('pointerdown',{pointerId:11,button:0,clientX:18,clientY:18});
+ await page.waitForTimeout(610);
+ await sword.dispatchEvent('pointerup',{pointerId:11,button:0,clientX:18,clientY:18});
+ await page.locator('#sheet-play-view [data-inventory-item-index="'+lastIndex+'"] .inventory-play-item').click();
+ const bulk=page.locator('#sheet-play-view [data-inventory-bulk]');
+ assert.equal(await bulk.locator('[data-selection-count]').textContent(),'2 selezionati');
+ await bulk.locator('[data-act="inventory-bulk-move"]').click();
+ const target=page.locator('#inventory-bulk-move-dialog[open]');
+ await target.locator('[data-inventory-move-destination]').selectOption('chest');
+ await target.locator('[data-inventory-move-confirm]').click();
+ await target.waitFor({state:'detached'});
+ const afterMove=await record();
+ assert.equal(afterMove.inventory[0].container_id,'chest');
+ assert.equal(afterMove.inventory[lastIndex].container_id,'chest');
+ assert.equal(afterMove.inventory[0].quantity,(await record()).inventory[0].quantity);
+ assert.equal(await bulk.isVisible(),false,'Selection is cleared after a successful bulk move');
+ await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');
+ assert.equal((await record()).inventory[0].container_id,'chest','Bulk move survives reload');
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);assert.deepEqual(f.writes,[]);
  console.log('PASS: section totals, unified owned+catalog search, highlights and add-item dialog.');
 }finally{await f.close();}

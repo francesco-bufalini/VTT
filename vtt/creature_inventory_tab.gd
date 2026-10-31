@@ -673,7 +673,7 @@ func receive_item() -> void:
 		if String(owned.get("id", "")).is_empty() or String(owned.get("name", "")).is_empty():
 			ItemInbox.requeue(delivery)
 			continue
-		owned["quantity"] = 1
+		owned["quantity"] = clampi(int(raw.get("quantity", 1)), 1, 99999)
 		owned["equipped"] = false
 		owned["equipped_slots"] = []
 		owned["attuned"] = false

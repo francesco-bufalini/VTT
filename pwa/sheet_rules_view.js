@@ -1223,6 +1223,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<div class="inventory-bulk-actions vtt-selection-actions">'+
     '<button type="button" class="library-bulk-button" data-act="inventory-bulk-export">Esporta</button>'+
     '<button type="button" class="library-bulk-button" data-act="inventory-bulk-send">Manda</button>'+
+    '<button type="button" class="library-bulk-button" data-act="inventory-bulk-move">Sposta</button>'+
     '<button type="button" class="library-bulk-button library-bulk-delete" data-act="inventory-bulk-delete">Elimina</button>'+
      '<button type="button" class="vtt-selection-done" data-act="inventory-selection-clear">Fine</button>'+
     '</div></div>';

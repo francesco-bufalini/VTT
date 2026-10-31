@@ -82,6 +82,12 @@ func run() -> void:
 	var receiver_id := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 	var stranger_id := "cccccccccccccccccccccccccccccccc"
 	var transfer_id := "dddddddddddddddddddddddddddddddd"
+	var host_transfer_id := "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+	var desktop_id := "00000000000000000000000000000000"
+	var host_import: Script = load("res://vtt/pwa_desktop_share_import.gd")
+	assert(host_import != null, "Native desktop import module must compile")
+	assert(host_import.call("import_received", "inventory", {"format": "invalid"}, host_transfer_id) == ERR_INVALID_DATA,
+		"Malformed inventory packets must never enter the native inbox")
 	var fake_client: Dictionary = {"out": PackedByteArray()}
 	var fake_clients: Array = host.get("_clients")
 	fake_clients.append(fake_client)
@@ -93,6 +99,15 @@ func run() -> void:
 		host.call("_handle_share", fake_client, "/api/share/peers", JSON.stringify(row).to_utf8_buffer())
 		assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"),
 			"Paired browsers must be discoverable")
+		if row.device_id == sender_id:
+			assert((fake_client.out as PackedByteArray).get_string_from_utf8().contains(desktop_id),
+				"The desktop host is a valid recipient even with no other PWA connected")
+	# The host ID is reserved; paired browsers cannot impersonate desktop.
+	fake_client.out = PackedByteArray()
+	host.call("_handle_share", fake_client, "/api/share/peers", JSON.stringify({
+		"device_id": desktop_id, "device_token": sender_token, "device_name": "Falso desktop"
+	}).to_utf8_buffer())
+	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 400"))
 	var content := "{\"format\":\"vtt_homebrew_share_v1\",\"version\":1}"
 	var encoded := Marshalls.raw_to_base64(content.to_utf8_buffer())
 	fake_client.out = PackedByteArray()
@@ -129,6 +144,17 @@ func run() -> void:
 	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"))
 	assert(not (host.get("_share_deliveries") as Dictionary).has(transfer_id),
 		"Acknowledgment must remove temporary transfer data")
+	fake_client.out = PackedByteArray()
+	host.call("_handle_share", fake_client, "/api/share/chunk", JSON.stringify({
+		"device_id": sender_id, "device_token": sender_token, "recipient_id": desktop_id,
+		"transfer_id": host_transfer_id, "kind": "homebrew", "title": "Desktop",
+		"size": content.to_utf8_buffer().size(), "index": 0, "parts": 1, "data": encoded
+	}).to_utf8_buffer())
+	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"),
+		"Sending to desktop must work without another PWA receiver")
+	assert((host.get("_share_deliveries") as Dictionary).has(host_transfer_id),
+		"The desktop offer must remain pending until its native confirmation")
+	host.call("_share_forget", host_transfer_id)
 	fake_clients.erase(fake_client)
 	(host.get("_share_peers") as Dictionary).clear()
 

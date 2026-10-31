@@ -87,6 +87,7 @@ const requiresUpdatedInventoryModule=()=>{
   throw Error("Modulo inventario non aggiornato. Riapri la PWA quando la connessione è disponibile.");
 };
 const moveInventoryItem=inventoryModule.moveInventoryItem||requiresUpdatedInventoryModule;
+const moveInventoryItems=inventoryModule.moveInventoryItems||requiresUpdatedInventoryModule;
 const createInventoryContainer=inventoryModule.createInventoryContainer||requiresUpdatedInventoryModule;
 const deleteInventoryContainer=inventoryModule.deleteInventoryContainer||requiresUpdatedInventoryModule;
 const setItemEquipped=inventoryModule.setItemEquipped||((inventory,index,enabled)=>{
@@ -3567,6 +3568,71 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
         (item.attuned?' attuned':'')+'" role="row" data-inventory-row="'+index+'">'+cells.join('')+'</div>';
     }).join('')+'</div>';
 }
+function openInventoryBulkMoveDialog(indices){
+  const editor=state.editor,record=editor?.read();
+  if(!record||state.sheet!=='inventory'||!Array.isArray(indices)||!indices.length)
+    throw Error('Seleziona prima gli oggetti da spostare.');
+  const original=indices.map(index=>({index,
+    item:record.inventory?.[index],name:record.inventory?.[index]?.name,
+    instanceId:record.inventory?.[index]?.instance_id}));
+  if(original.some(row=>!row.item))throw Error('Selezione inventario non valida.');
+  if(original.some(row=>isSpellScroll(row.item)||isDocument(row.item)))
+    throw Error('Pergamene e documenti hanno una sezione propria: seleziona solo gli altri oggetti.');
+  document.querySelector('#inventory-bulk-move-dialog')?.remove();
+  const dialog=document.createElement('dialog');
+  dialog.id='inventory-bulk-move-dialog';
+  dialog.className='sheet-context-dialog inventory-bulk-move-dialog';
+  dialog.innerHTML='<header class="sheet-context-head"><h2>Sposta '+original.length+
+    (original.length===1?' oggetto':' oggetti')+'</h2>'+
+    dialogCloseButton('inventory-move-close','Chiudi','play-button')+'</header>'+
+    '<div class="sheet-context-body"><p>Scegli il contenitore di destinazione. La quantità e le proprietà delle copie non cambiano.</p>'+
+    '<label>Contenitore<select data-inventory-move-destination required>'+
+    '<option value="">Seleziona destinazione</option>'+
+    inventoryContainers(record).map(section=>'<option value="'+esc(section.id)+'">'+esc(section.name)+'</option>').join('')+
+    '</select></label><p class="warning" data-inventory-move-error role="alert" hidden></p></div>'+
+    '<footer class="pending-choice-actions"><button type="button" data-inventory-move-cancel>Annulla</button>'+
+    '<button type="button" data-inventory-move-confirm disabled>Sposta oggetti</button></footer>';
+  const destination=dialog.querySelector('[data-inventory-move-destination]');
+  const confirm=dialog.querySelector('[data-inventory-move-confirm]');
+  const cancel=dialog.querySelector('[data-inventory-move-cancel]');
+  const close=()=>closeDialog(dialog,{remove:true});
+  let saving=false;
+  destination.addEventListener('change',()=>{confirm.disabled=!destination.value||saving;});
+  cancel.addEventListener('click',close);
+  dialog.querySelector('[data-act="inventory-move-close"]').addEventListener('click',event=>{
+    event.stopPropagation();close();
+  });
+  dialog.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  confirm.addEventListener('click',async()=>{
+    if(saving||!destination.value)return;
+    saving=true;confirm.disabled=true;cancel.disabled=true;destination.disabled=true;
+    const errorView=dialog.querySelector('[data-inventory-move-error]');
+    try{
+      await flushPendingFields();
+      if(state.editor!==editor||state.sheet!=='inventory'||state.creatureId!==record.id)
+        throw Error('La scheda è cambiata. Riapri il selettore.');
+      const current=editor.read();
+      if(original.some(row=>{
+        const item=current.inventory?.[row.index];
+        return !item||item.name!==row.name||item.instance_id!==row.instanceId;
+      }))throw Error('Gli oggetti selezionati sono cambiati. Selezionali di nuovo.');
+      const target=destination.value,changes=moveInventoryItems(current,indices,target);
+      await patch(changes);await editor.flush();
+      state.inventorySelectedIndices.clear();
+      state.inventorySelectedIndex=indices.at(-1);
+      state.inventoryMenuIndex=-1;
+      focusInventorySection(editor.read(),target===DEFAULT_INVENTORY_CONTAINER?'items':'container:'+target);
+      close();await render();
+      message(original.length+(original.length===1?' oggetto spostato in ':' oggetti spostati in ')+
+        (inventoryContainers(current).find(row=>row.id===target)?.name||'Zaino')+'.');
+    }catch(error){
+      errorView.hidden=false;errorView.textContent=errorMessage(error);
+      saving=false;confirm.disabled=false;cancel.disabled=false;destination.disabled=false;
+    }
+  });
+  document.body.append(dialog);openDialog(dialog);destination.focus();
+}
 function openInventoryContainerDelete(id){
   const editor=state.editor,record=editor?.read(),containers=inventoryContainers(record);
   const original=containers.find(row=>row.id===id);
@@ -6732,11 +6798,14 @@ async function handleAction(target){
   if(act==='library-selection-clear'){
     state.librarySelectedIds.clear();syncLibrarySelectionUI();return;
   }
-  if(['inventory-bulk-export','inventory-bulk-send','inventory-bulk-delete'].includes(act)){
+  if(['inventory-bulk-export','inventory-bulk-send','inventory-bulk-delete','inventory-bulk-move'].includes(act)){
     if(state.sheet!=='inventory'||!state.editor)throw Error('Apri prima un inventario.');
     await flushPendingFields();
     const record=state.editor.read(),indices=[...state.inventorySelectedIndices].sort((a,b)=>a-b);
     if(!indices.length||indices.some(i=>!record.inventory?.[i]))throw Error('Seleziona almeno un oggetto.');
+    if(act==='inventory-bulk-move'){
+      openInventoryBulkMoveDialog(indices);return;
+    }
     if(act==='inventory-bulk-delete'){
       if(!await confirmInventoryDeletion(indices.map(i=>record.inventory[i])))return;
       const inventory=structuredClone(record.inventory);

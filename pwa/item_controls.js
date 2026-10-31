@@ -17,14 +17,26 @@ export function itemContainerId(item={},containers=[]){
   const id=String(item?.container_id||DEFAULT_INVENTORY_CONTAINER);
   return containers.some(row=>row.id===id)?id:DEFAULT_INVENTORY_CONTAINER;
 }
-export function moveInventoryItem(record,index,destination){
+// The item editor and bulk selection share one atomic storage mutation.
+export function moveInventoryItems(record,indices,destination){
   const containers=inventoryContainers(record);
   if(!containers.some(row=>row.id===destination))throw Error("Contenitore non disponibile.");
+  if(!Array.isArray(indices)||!indices.length||indices.length>200||
+    indices.some(i=>!Number.isSafeInteger(i)||i<0))
+    throw Error("Seleziona da 1 a 200 oggetti validi.");
   const inventory=structuredClone(Array.isArray(record.inventory)?record.inventory:[]);
-  if(!inventory[index])throw Error("Oggetto non trovato.");
-  if(destination===DEFAULT_INVENTORY_CONTAINER)delete inventory[index].container_id;
-  else inventory[index].container_id=destination;
+  const selected=[...new Set(indices)];
+  if(selected.some(i=>!inventory[i]))throw Error("Oggetto non trovato.");
+  if(selected.some(i=>inventory[i].category==='documents'||isSpellScroll(inventory[i])))
+    throw Error("Pergamene e documenti hanno una sezione propria e non possono cambiare contenitore.");
+  for(const i of selected){
+    if(destination===DEFAULT_INVENTORY_CONTAINER)delete inventory[i].container_id;
+    else inventory[i].container_id=destination;
+  }
   return {inventory};
+}
+export function moveInventoryItem(record,index,destination){
+  return moveInventoryItems(record,[index],destination);
 }
 export function createInventoryContainer(record,id,name){
   id=String(id||"").trim();name=String(name||"").trim();
