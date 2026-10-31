@@ -1000,7 +1000,7 @@ try{
  await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]').click();
  assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,
   'Hiding the objects section removes its rows from Documents-only view');
- await popup('inventory-add');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
+ await popup('inventory-add:documents');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
  assert(await page.locator('#sheet-play-view').textContent().then(t=>t.includes('Lettera della Luna')));
  await sheet('conditions');assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 2/);
  assert.equal(await page.locator('#sheet-play-view .play-status-card').count(),1);
