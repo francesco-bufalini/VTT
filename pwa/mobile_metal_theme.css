@@ -4268,7 +4268,7 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
  display:block;min-height:16px;line-height:16px
 }
 #sheet-context-dialog[data-context^="item:"] .play-item-fields>label>input:not([type=checkbox]){
- box-sizing:border-box;width:100%;min-width:0;height:42px;min-height:42px;
+ box-sizing:border-box;width:100%;min-width:0;height:44px;min-height:44px;
  border:1px solid #b38f5d6e;border-radius:7px;background:#2d2421;
  color:#ead1aa;font:500 12px/1.4 system-ui,sans-serif;padding:6px 8px
 }
@@ -4278,7 +4278,7 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
 #sheet-context-dialog[data-context^="item:"] .play-item-main-fields>label{min-width:0;gap:6px;
  font:600 11px/1.4 system-ui,sans-serif;color:#ccb392}
 #sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-quantity-controls{
- grid-template-columns:32px minmax(0,1fr) 32px;gap:4px;width:100%;min-width:0;min-height:42px
+ grid-template-columns:32px minmax(0,1fr) 32px;gap:4px;width:100%;min-width:0;height:44px;min-height:44px;box-sizing:border-box
 }
 #sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-quantity-controls input{
  height:42px;min-height:42px!important;padding:4px;min-width:0!important;
@@ -4291,7 +4291,7 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
  color:#eed3ae;font-size:18px
 }
 #sheet-context-dialog[data-context^="item:"] .play-item-main-fields select{
- box-sizing:border-box;display:block;min-height:42px;height:42px;width:100%;min-width:0;
+ box-sizing:border-box;display:block;min-height:44px;height:44px;width:100%;min-width:0;
  border:1px solid #b38f5d6e;border-radius:7px;background:#2d2421;
  color:#ead1aa;font:500 12px/1.4 system-ui,sans-serif;padding:6px 8px
 }

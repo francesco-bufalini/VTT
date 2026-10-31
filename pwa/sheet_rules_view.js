@@ -1045,8 +1045,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
 
   // Competences are one flat, line-divided section rather than another card.
-  // Skills expand inline while equipment/language proficiencies retain their
-  // existing full editor, including the button for changing selections.
+  // Skills expand inline without search/edit controls. Altre competenze remains
+  // editable from its dedicated context elsewhere in the character sheet.
   const tools=panelNamed('Altre competenze');bind('tools',tools);
   html+='<section class="play-competences" aria-label="Abilità e prove">'+
    '<details class="play-skills-disclosure">'+
