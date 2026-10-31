@@ -5687,26 +5687,11 @@
         {
           "type": "bonus",
           "target": "attack_damage:*",
-          "expression": "str_mod",
+          "expression": "attack_ability_mod",
           "requirements": {
             "attack": {
               "kind": "weapon",
               "slot": "off",
-              "ability": "str",
-              "min_ability_modifier": 1,
-              "offhand_eligible": true
-            }
-          }
-        },
-        {
-          "type": "bonus",
-          "target": "attack_damage:*",
-          "expression": "dex_mod",
-          "requirements": {
-            "attack": {
-              "kind": "weapon",
-              "slot": "off",
-              "ability": "dex",
               "min_ability_modifier": 1,
               "offhand_eligible": true
             }
