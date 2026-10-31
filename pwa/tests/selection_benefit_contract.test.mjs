@@ -11,7 +11,7 @@ import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '..
 import {actionEntries,battleActionPanels} from '../action_economy.js';
 import {battleResourcePowers,trackerRollBonusRows} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts} from '../item_controls.js';
+import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts,effectiveEquipmentInventory,equipSlot} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={powerSelections:read('power_selections'),optionalFeatureProgressions:read('optional_feature_progressions')};
@@ -185,6 +185,54 @@ test('real Archery catalog entry applies only while the learned style is active 
  r={...r,...powerApplicationPatch(r,c,combined,id,option,false)};
  c=calculateSheet(r,completeCatalogs);
  assert.equal(hit(c),before,'Unapplying the same style withdraws the bonus');
+});
+
+test('legacy equipped flags are reconciled before calculating Ranger conditional styles',()=>{
+ const selection='optional:class:phb:ranger:fs-r';
+ const examples=[
+  {name:'Defense',option:'optional:phb:defense',item:{id:'studded-leather',name:'Studded Leather',type:'LA',
+   ac:12,quantity:1,equipped:true,equipped_slots:[]},slot:'body',measure:c=>c.values.ac,delta:1},
+  {name:'Dueling',option:'optional:phb:dueling',item:{id:'longsword',name:'Longsword',type:'M',
+   damage:'1d8',properties:['V'],quantity:1,equipped:true,equipped_slots:[]},slot:'main',
+   measure:c=>c.attacks.find(a=>a.id==='item:longsword')?.damage_extra_modifier,delta:2},
+  {name:'Thrown Weapon Fighting',option:'optional:tce:thrown-weapon-fighting',
+   item:{id:'dagger',name:'Dagger',type:'M',damage:'1d4',range:'20/60',
+    properties:['F','L','T'],quantity:1,equipped:true,equipped_slots:[]},slot:'main',
+   measure:c=>c.attacks.find(a=>a.id==='item:throw:main:dagger')?.damage_extra_modifier,delta:2}
+ ];
+ for(const example of examples){
+  let r={...record(),classes:[{name:'Ranger',source:'PHB',level:2}],level:2,
+   abilities:{str:14,dex:16,con:12,int:10,wis:14,cha:10},
+   inventory:[example.item]};
+  let c=calculateSheet(r,completeCatalogs);
+  r={...r,...powerSelectionPatch(r,c,combined,selection,'learned',example.option)};
+  c=calculateSheet(r,completeCatalogs);
+  r={...r,...powerApplicationPatch(r,c,combined,selection,example.option,true)};
+  const active=calculateSheet(r,completeCatalogs);
+  const before=calculateSheet({...r,power_applications:{...r.power_applications,[selection]:[]}},completeCatalogs);
+  assert.equal(example.measure(active),example.measure(before)+example.delta,
+   example.name+' must work with an old equipped flag and no slots');
+  assert.deepEqual(active.selection_record.inventory[0].equipped_slots,[example.slot]);
+  assert.deepEqual(r.inventory[0].equipped_slots,[],'The saved source record is not mutated');
+  const explicit=calculateSheet({...r,inventory:[{...example.item,equipped_slots:[example.slot]}]},completeCatalogs);
+  assert.equal(example.measure(active),example.measure(explicit),
+   example.name+' must agree with explicit modern equipment slots');
+  const off=calculateSheet({...r,inventory:[{...example.item,equipped:false}]},completeCatalogs);
+  const offBaseline=calculateSheet({...r,inventory:[{...example.item,equipped:false}],
+   power_applications:{...r.power_applications,[selection]:[]}},completeCatalogs);
+  assert.equal(example.measure(off),example.measure(offBaseline),
+   example.name+' must not apply to unequipped items');
+ }
+ const long={id:'greatsword',name:'Greatsword',type:'M',damage:'2d6',
+  properties:['2H'],quantity:1,equipped:true};
+ const shield={id:'shield',name:'Shield',type:'S',quantity:1,equipped:true};
+ assert.deepEqual(effectiveEquipmentInventory([long,shield]).map(x=>x.equipped_slots||[]),
+  [['main'],[]],'Legacy flags must not create impossible two-handed equipment');
+ const changed=equipSlot([{...long,equipped_slots:['main']},
+  {id:'sword',name:'Sword',type:'M',damage:'1d8',quantity:1,equipped:true,equipped_slots:[]}],
+  'main',1);
+ assert.equal(changed[0].equipped,false,'Replacing gear must clear stale equipped flags');
+ assert.equal(changed[1].equipped,true);
 });
 
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{

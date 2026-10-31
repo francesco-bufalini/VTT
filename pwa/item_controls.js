@@ -620,6 +620,30 @@ export function hasProperty(item,code){
 }
 // A read-only, resolved snapshot for every benefit engine. The slot, not a
 // display name or catalog ID, identifies which copy is being wielded/worn.
+// Imported sheets may mark equipment as worn using only the old `equipped`
+ // flag. This read-only projection reconciles that with the canonical slots
+ // without taking a slot already occupied by another item.
+export function effectiveEquipmentInventory(inventory=[],{allowOffhandWithTwoHanded=false}={}){
+ const items=array(inventory).map(item=>({...item}));
+ const occupied=new Map();
+ const usable=(item,slot)=>itemKind(resolveOwnedItem(item))==='armor'?slot==='body':
+   ['main','off'].includes(slot)&&['weapon','shield'].includes(itemKind(resolveOwnedItem(item)))&&
+   !(slot==='off'&&itemKind(resolveOwnedItem(item))==='weapon'&&hasProperty(item,'2H'));
+ for(const [index,item] of items.entries())for(const slot of array(item.equipped_slots)){
+  if(usable(item,slot)&&!occupied.has(slot))occupied.set(slot,index);
+ }
+ for(const [index,item] of items.entries()){
+  if(item.equipped!==true||array(item.equipped_slots).length||item.active===false)continue;
+  const kind=itemKind(resolveOwnedItem(item));
+  const choices=kind==='armor'?['body']:kind==='shield'?['off','main']:
+   kind==='weapon'?['main','off']:[];
+  const slot=choices.find(slot=>usable(item,slot)&&!occupied.has(slot)&&
+   (slot!=='off'||allowOffhandWithTwoHanded||!hasProperty(items[occupied.get('main')],'2H')));
+  if(!slot)continue;
+  item.equipped_slots=[slot];occupied.set(slot,index);
+ }
+ return items;
+}
 export function equippedItemFacts(record={}){
  const out=[];
  for(const saved of array(record.inventory)){
@@ -740,6 +764,9 @@ export function equipSlot(inventory,slot,index,{allowOffhandWithTwoHanded=false}
   const main=rows.find(row=>row.equipped_slots.includes("main"));
   if(main&&hasProperty(main,"2H")&&!allowOffhandWithTwoHanded)
     for(const row of rows)row.equipped_slots=row.equipped_slots.filter(v=>v!=="off");
+  // Keep the legacy display flag consistent with the authoritative slots.
+  for(const row of rows)if(['weapon','shield','armor'].includes(itemKind(row)))
+    row.equipped=row.equipped_slots.length>0;
   return rows;
 }
 

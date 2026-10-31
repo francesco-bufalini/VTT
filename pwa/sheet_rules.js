@@ -19,7 +19,7 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus,hydrateGenericVariants} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,effectiveEquipmentInventory,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus,hydrateGenericVariants} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
@@ -824,7 +824,9 @@ export function spellProgression(record,classes){
    pact_level:pactLevel,caster_level:caster,warnings:[]};
 }
 export function calculateSheet(record={},catalogs={}){
-  const hydrated=hydrateGenericVariants(record,catalogs.genericItemVariants);
+  const inventory=effectiveEquipmentInventory(record.inventory,
+    {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
+  const hydrated=hydrateGenericVariants({...record,inventory},catalogs.genericItemVariants);
   let effective=projectSelectionBenefits(hydrated,catalogs,collectStructuredFeatures(hydrated,catalogs));
   const selectionRecord=effective;
   const withScalingDice=calculated=>{
