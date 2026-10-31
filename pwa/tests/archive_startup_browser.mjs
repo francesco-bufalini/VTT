@@ -138,8 +138,11 @@ async function updatePreservesEdits(failSave=false){
   await f.page.waitForFunction(()=>typeof window.__controllerChange==='function');
   const id=await f.page.evaluate(async()=>{
    const {createCreature}=await import('/creatures.js');const saved=await createCreature('character','Prima');
-   const {desktopSheetSession}=await import('/ui.js');await desktopSheetSession.open(saved.id);return saved.id;
+   return saved.id;
   });
+  await f.page.reload();
+  await f.page.locator('[data-act="open"][data-id="'+id+'"]').click();
+  await f.page.locator('#sheet-play-view').waitFor();
   await f.popup('identity');
   let navigations=0;f.page.on('request',request=>{if(request.isNavigationRequest()&&request.frame()===f.page.mainFrame())++navigations;});
   if(failSave){
@@ -177,7 +180,7 @@ async function updatePreservesEdits(failSave=false){
  }finally{await f.close();}
 }
 
-async function desktopExportOver200(){
+async function pwaExportOver200(){
  const f=await browserFixture();
  try{
   await f.page.goto(f.origin);await f.page.locator('[data-act="library-add"]').waitFor();
@@ -186,17 +189,17 @@ async function desktopExportOver200(){
    const {insertRecords}=await import('/storage.js');const owner=await ownerId();
    await insertRecords(Array.from({length:201},(_,i)=>({scope:'default',type:'creature',id:'whole_'+i,
     data:initialCreature('character','Intero '+i,'whole_'+i,owner)})));
-   const {desktopSheetSession}=await import('/ui.js');const blob=await desktopSheetSession.exportArchive();
+   const {exportCreatureArchive}=await import('/creatures.js');const blob=await exportCreatureArchive();
    return {count:JSON.parse(await blob.text()).entries.length};
   });
   assert.equal(result.count,201);
   assert.deepEqual(f.errors,[]);
-  console.log('PASS: desktop export entry point includes an entire archive with over 200 creatures');
+  console.log('PASS: PWA export includes the entire archive with over 200 creatures');
  }finally{await f.close();}
 }
 
 await archiveRecoversFromOneBadSheet();
-await desktopExportOver200();
+await pwaExportOver200();
 await aasimarSheetsOpen();
 await updatePreservesEdits();
 await updatePreservesEdits(true);

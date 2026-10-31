@@ -1,6 +1,5 @@
 extends Node
 
-const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 signal turn_changed(entry_id: String, round_number: int, turn_count: int)
@@ -418,40 +417,11 @@ func _popup_dialog_safe(dialog: Window, preferred_size: Vector2i) -> void:
 	# This picker intentionally keeps its own footer buttons.
 	DialogLayout.popup(dialog, preferred_size, 0.92)
 
-func _creature_names_from_archive() -> Dictionary:
-	var names: Dictionary = {}
-	if board_root == null:
-		return names
-	var area: Node = board_root.get_node_or_null("CreatureArea")
-	if area == null:
-		return names
-	# The hot path (auto-sync every 150 ms) must not reload/normalize all sheets.
-	# The live archive remains available to the creature placement picker.
-	if area.has_method("get_owned_creature_name_index"):
-		var cached: Variant = area.call("get_owned_creature_name_index")
-		return cached as Dictionary if cached is Dictionary else names
-	if not area.has_method("get_owned_creatures_for_placement"):
-		return names
-	var records: Variant = area.call("get_owned_creatures_for_placement")
-	if not records is Array:
-		return names
-	for value: Variant in records:
-		if not value is Dictionary:
-			continue
-		var record: Dictionary = value as Dictionary
-		var id := String(record.get("id", "")).strip_edges()
-		if not id.is_empty():
-			names[id] = String(record.get("name", "")).strip_edges()
-	return names
-
-
 func _creature_candidates() -> Array[Dictionary]:
 	# Only creatures with a living scene token can join a new encounter.
 	# The user selects creatures, never arbitrary tokens or optional links.
 	var candidates: Array[Dictionary] = []
 	var seen: Dictionary = {}
-	var local_owner: String = CreatureOwner.local_id()
-	var local_names := _creature_names_from_archive()
 	for token: Node3D in _tokens():
 		var creature_id := String(token.get_meta("creature_id", "")).strip_edges()
 		if creature_id.is_empty():
@@ -476,11 +446,7 @@ func _creature_candidates() -> Array[Dictionary]:
 				break
 		if already_present:
 			continue
-		var creature_name := ""
-		if owner_id == local_owner:
-			creature_name = String(local_names.get(creature_id, ""))
-		if creature_name.is_empty():
-			creature_name = _token_display_name(token)
+		var creature_name := _token_display_name(token)
 		if creature_name.is_empty():
 			creature_name = "Creatura senza nome"
 		candidates.append({
@@ -936,32 +902,15 @@ func _entry_display_name(entry: Dictionary) -> String:
 
 
 func _synchronize_linked_entry_names() -> void:
-	if entries.is_empty():
-		return
-	var local_owner: String = CreatureOwner.local_id()
-	var names: Dictionary = {}
-	# Skip even the lightweight lookup when every participant is remote or
-	# when the saved initiative only contains legacy token identities.
-	if board_root != null:
-		for entry: Dictionary in entries:
-			if (not String(entry.get("creature_id", "")).is_empty()
-				and String(entry.get("creature_owner_id", "")) == local_owner):
-				names = _creature_names_from_archive()
-				break
+	# All combatants are represented by live map tokens; the PWA owns
+	# character names and the native creature archive no longer exists.
 	for entry: Dictionary in entries:
-		var creature_id := String(entry.get("creature_id", ""))
-		if not creature_id.is_empty():
-			if String(entry.get("creature_owner_id", "")) == local_owner:
-				var sheet_name := String(names.get(creature_id, ""))
-				if not sheet_name.is_empty():
-					entry["name"] = sheet_name
+		var token_id: String = String(entry.get("token_id", ""))
+		if token_id.is_empty():
 			continue
-		# Older saved combats had only a token link. Keep those names intact.
-		var token_id := String(entry.get("token_id", ""))
-		if not token_id.is_empty():
-			var token_name := _token_display_name_by_id(token_id)
-			if not token_name.is_empty():
-				entry["name"] = token_name
+		var token_name := _token_display_name_by_id(token_id)
+		if not token_name.is_empty():
+			entry["name"] = token_name
 
 
 func _entry_index(entry_id: String) -> int:

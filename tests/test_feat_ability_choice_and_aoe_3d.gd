@@ -2,7 +2,6 @@ extends SceneTree
 
 const Structured = preload("res://vtt/creature_structured_bonuses.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
-const Store = preload("res://vtt/player_character_store.gd")
 const Overlay = preload("res://vtt/spells/spell_target_overlay_2d.gd")
 
 
@@ -92,9 +91,9 @@ func _run() -> void:
 	}]
 	assert(Bonuses.value(record, "ability:cha") == 10, "Muting feat must withdraw its ability increase")
 	record.proficiency_origins = []
-	var restored: Dictionary = Store.new().normalize_character(record)
+	var restored: Dictionary = JSON.parse_string(JSON.stringify(record))
 	assert(String((restored.feats_catalog[0] as Dictionary).get("ability_choice", "")) == "cha",
-		"Choice must survive save normalization")
+		"Choice must survive JSON roundtrip")
 	assert(Bonuses.value(restored, "ability:cha") == 11)
 	restored.feats_catalog = []
 	assert(Bonuses.value(restored, "ability:cha") == 10, "Removing feat must withdraw the bonus")

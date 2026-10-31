@@ -640,8 +640,8 @@ try{
  // Cross the production pending-edit barrier before asserting durable HP.
  await page.locator('#hp-adjust-temporary').press('Tab');
  await page.evaluate(async()=>{
-  const {desktopSheetSession}=await import('/ui.js');
-  await desktopSheetSession.flush();
+  const {flushPendingEdits}=await import('/ui.js');
+  await flushPendingEdits();
  });
  await page.waitForFunction(async creatureId=>{
   const {loadCreature}=await import('/creatures.js');
@@ -683,8 +683,8 @@ try{
   },seededCreatureId);
  }
  await page.evaluate(async()=>{
-  const {desktopSheetSession}=await import('/ui.js');
-  await desktopSheetSession.flush();
+  const {flushPendingEdits}=await import('/ui.js');
+  await flushPendingEdits();
  });
  assert.equal((await record()).current_hp,37,'Subsequent damage restores expected HP');
 

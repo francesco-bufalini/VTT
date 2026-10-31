@@ -641,7 +641,7 @@ async function boot() {
     phase = "Caricamento dei moduli";
     showStage("Caricamento dell'interfaccia…");
     // Dynamic import ensures syntax/network/module-link errors are caught here.
-    const [{ mount, desktopSheetSession }, { openStorage, requestPersistentStorage, storageEstimate }] =
+    const [{ mount, flushPendingEdits }, { openStorage, requestPersistentStorage, storageEstimate }] =
       await loadStartupModules();
     phase = "Apertura archivio locale";
     showStage("Apertura archivio locale…");
@@ -654,7 +654,7 @@ async function boot() {
     // On iOS/WebKit, precaching dozens of assets in parallel with the ESM
     // graph can exhaust connections through the desktop bridge.
     // Update the offline shell only after the local UI is usable.
-    void installOfflineShell(desktopSheetSession.flush);
+    void installOfflineShell(flushPendingEdits);
     // Browser persistence requests, cache downloads and diagnostics are optional.
     // None of them may delay painting the usable character library.
     Promise.resolve().then(() => requestPersistentStorage()).catch(error =>

@@ -144,8 +144,8 @@ func test_subrace_bonuses() -> void:
 	assert(found)
 	record.proficiency_origins = [{"id": "subrace|scag|ghostwise", "name": "Ghostwise", "group": "subrace", "disabled": true}]
 	assert(Bonuses.value(record, "ability:wis") == 10, "Disabling the child origin must withdraw its numeric bonus")
-	var restored: Dictionary = load("res://vtt/player_character_store.gd").new().normalize_character(record)
-	assert(Bonuses.value(restored, "ability:wis") == 10, "Numeric-only origin state must survive save normalization")
+	var restored: Dictionary = JSON.parse_string(JSON.stringify(record))
+	assert(Bonuses.value(restored, "ability:wis") == 10, "Numeric-only origin state must survive JSON roundtrip")
 	assert(restored.proficiency_origins.size() > 0)
 	var saved_child := false
 	for origin: Dictionary in restored.proficiency_origins:

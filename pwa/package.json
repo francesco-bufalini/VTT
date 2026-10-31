@@ -4,7 +4,6 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "test:structure-browser": "node tests/structure_refactor_browser.mjs",
-    "test:desktop-browser": "node tests/desktop_browser.mjs",
     "sync-catalogs": "node tools/sync_native_catalogs.mjs",
     "test:browser": "node tests/browser_parity.mjs",
     "test:tactical-browser": "node tests/tactical_browser.mjs",
@@ -23,8 +22,6 @@
     "test:native-mechanics": "node tests/compare_native_mechanics.mjs",
     "test:rapid-browser": "node tests/rapid_updates_browser.mjs",
     "test:save-failure-browser": "node tests/save_failure_browser.mjs",
-    "test:desktop-startup-browser": "node tests/desktop_startup_browser.mjs",
-    "test:creature-variants-desktop-browser": "node tests/creature_variants_desktop_browser.mjs",
     "test:legacy-browser-parity": "node tests/browser_parity.mjs"
   },
   "devDependencies": {

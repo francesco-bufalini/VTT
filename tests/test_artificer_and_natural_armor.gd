@@ -1,12 +1,12 @@
 extends SceneTree
-const Store = preload("res://vtt/player_character_store.gd")
+const Fixtures = preload("res://tests/fixtures/creature_record.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Runtime = preload("res://vtt/class_feature_activation.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 func _initialize() -> void:
 	call_deferred("run")
 func character(owner: String, level: int, book: String = "PHB", sub: String = "") -> Dictionary:
-	var r := Store.new().create_character()
+	var r := Fixtures.character()
 	r.classes = [{"name": owner, "source": book, "level": level, "subclass": sub, "subclass_source": book}]
 	r.level = level
 	r.armor_natural_formula = "10 + dex_mod"

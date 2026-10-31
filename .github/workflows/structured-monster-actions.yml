@@ -7,7 +7,6 @@ on:
       - "vtt/creature_attack_data.gd"
       - "vtt/creature_rules.gd"
       - "vtt/structured_resource_trackers.gd"
-      - "vtt/master_creature_store.gd"
       - "vtt/creature_active_spells.gd"
       - "vtt/data/monster_action_overrides.json"
       - "tests/test_monster_action_metadata.gd"
@@ -20,12 +19,11 @@ on:
       - "vtt/creature_attack_data.gd"
       - "vtt/creature_rules.gd"
       - "vtt/structured_resource_trackers.gd"
-      - "vtt/master_creature_store.gd"
       - "vtt/creature_active_spells.gd"
       - "vtt/data/monster_action_overrides.json"
 
 jobs:
-  native-regression:
+  rule-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -41,7 +39,6 @@ jobs:
             /tests/test_monster_action_metadata.gd
             /tests/test_structured_resource_trackers.gd
             /tests/test_attack_range_formulas.gd
-            /tests/test_spell_effect_tracking.gd
             /assets/spell_area_geometry.json
       - name: Install Godot 4.7.2
         shell: bash
@@ -51,7 +48,7 @@ jobs:
             https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
           unzip -q /tmp/godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
-      - name: Native import and targeted regressions
+      - name: Import and test retained structured rules
         shell: bash
         run: |
           set -euo pipefail
@@ -59,7 +56,7 @@ jobs:
           GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
           "$GODOT" --headless --path . --editor --import --quit
           for test in test_monster_action_metadata test_structured_resource_trackers \
-            test_attack_range_formulas test_spell_effect_tracking; do
+            test_attack_range_formulas; do
             echo "RUN $test"
             output=$(timeout 120s "$GODOT" --headless --path . --script "res://tests/${test}.gd" 2>&1) || {
               printf '%s\n' "$output"

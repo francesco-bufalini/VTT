@@ -1,44 +1,24 @@
-name: Origin granted spells regression (Godot)
-
+name: Origin granted spells and structured bonuses (Godot)
 on:
-  push:
-    branches:
-      - feature/origin-spells-dice-bonuses
-      - main
-    paths:
-      - "vtt/**"
-      - "tests/test_mobile_chat_sync.gd"
-      - "tests/test_share_recipients.gd"
-      - "tests/test_origin_granted_spells.gd"
-      - "tests/test_document_homebrew.gd"
-      - "tests/test_document_delivery_ack.gd"
-      - "tests/test_charoptions_as_feats.gd"
-      - "tests/test_origin_spell_editor.gd"
-      - "tests/test_creature_spellcasting_cast.gd"
-      - "tests/test_spellcasting_columns.gd"
-      - "tests/test_spellcasting_scaled_layout.gd"
-      - "tests/test_global_hover_captions.gd"
-      - "tests/test_physics_layout.gd"
-      - "tests/test_powers_tracker_layout.gd"
-      - ".github/workflows/origin-granted-spells.yml"
   pull_request:
     paths:
-      - "vtt/**"
-      - "tests/test_mobile_chat_sync.gd"
-      - "tests/test_share_recipients.gd"
+      - "vtt/origin_spell_grants.gd"
+      - "vtt/creature_active_spells.gd"
+      - "vtt/creature_dice_bonuses.gd"
+      - "vtt/structured_origin_spells_5etools.gd"
+      - "vtt/creature_proficiency_rules.gd"
+      - "vtt/data/**"
       - "tests/test_origin_granted_spells.gd"
       - "tests/test_charoptions_as_feats.gd"
-      - "tests/test_origin_spell_editor.gd"
-      - "tests/test_creature_spellcasting_cast.gd"
-      - "tests/test_spellcasting_columns.gd"
-      - "tests/test_spellcasting_scaled_layout.gd"
-      - "tests/test_global_hover_captions.gd"
-      - "tests/test_physics_layout.gd"
-      - "tests/test_powers_tracker_layout.gd"
       - ".github/workflows/origin-granted-spells.yml"
-
+  push:
+    branches: [main]
+    paths:
+      - "vtt/origin_spell_grants.gd"
+      - "vtt/creature_active_spells.gd"
+      - "vtt/structured_origin_spells_5etools.gd"
 jobs:
-  origin-regression:
+  origin-rules:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -49,103 +29,33 @@ jobs:
             /vtt/
             /pwa/icons/
             /pwa/catalog/trait_states.json
-            /network/
-            /tests/test_mobile_chat_sync.gd
-            /tests/test_share_recipients.gd
+            /homebrew/
             /tests/test_origin_granted_spells.gd
-            /tests/test_document_homebrew.gd
-            /tests/test_document_delivery_ack.gd
             /tests/test_charoptions_as_feats.gd
-            /tests/test_origin_spell_editor.gd
-            /tests/test_creature_spellcasting_cast.gd
-            /tests/test_spell_effect_tracking.gd
-            /tests/test_spellcasting_columns.gd
-            /tests/test_spellcasting_scaled_layout.gd
-            /tests/test_global_hover_captions.gd
-            /tests/test_physics_layout.gd
-            /tests/test_powers_tracker_layout.gd
-            /tests/test_bonus_origin_highlight.gd
-            /.github/workflows/origin-granted-spells.yml
-
-      - name: Install matching Godot 4.7.2
+      - name: Install Godot 4.7.2
         shell: bash
         run: |
           set -euo pipefail
-          curl -fL --retry 3 \
-            -o /tmp/godot.zip \
+          curl -fL --retry 3 -o /tmp/godot.zip \
             https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
           unzip -q /tmp/godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
-
-      - name: Run isolated structured spell grants
+      - name: Validate source-qualified spell and feat grants
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/vtt-origin-test/tests
-          cp -R vtt /tmp/vtt-origin-test/
-          mkdir -p /tmp/vtt-origin-test/pwa
-          cp -R pwa/icons /tmp/vtt-origin-test/pwa/
-          mkdir -p /tmp/vtt-origin-test/pwa/catalog
-          cp pwa/catalog/trait_states.json /tmp/vtt-origin-test/pwa/catalog/
-          cp -R network /tmp/vtt-origin-test/
-          cp tests/test_mobile_chat_sync.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_share_recipients.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_origin_granted_spells.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_document_homebrew.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_document_delivery_ack.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_charoptions_as_feats.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_origin_spell_editor.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_creature_spellcasting_cast.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_spell_effect_tracking.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_spellcasting_columns.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_spellcasting_scaled_layout.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_global_hover_captions.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_physics_layout.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_powers_tracker_layout.gd /tmp/vtt-origin-test/tests/
-          cp tests/test_bonus_origin_highlight.gd /tmp/vtt-origin-test/tests/
-          printf 'config_version=5\n[autoload]\nTokenPackManager="*res://vtt/token_pack_manager.gd"\n' > /tmp/vtt-origin-test/project.godot
-          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
-            --path /tmp/vtt-origin-test --editor --import --quit
-          for script in \
-            vtt/item_inbox.gd \
-            network/creature_presence.gd \
-            vtt/creature_inventory_tab.gd \
-            vtt/portable_creature_content.gd \
-            vtt/creature_documents_tab.gd \
-            vtt/creature_area.gd \
-            vtt/mobile/creatures_mobile.gd
-          do
-            /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
-              --path /tmp/vtt-origin-test --check-only --script "res://${script}"
-          done
-          for test in \
-            test_mobile_chat_sync \
-            test_share_recipients \
-            test_document_homebrew \
-            test_document_delivery_ack \
-            test_powers_tracker_layout \
-            test_origin_granted_spells \
-            test_charoptions_as_feats \
-            test_origin_spell_editor \
-            test_creature_spellcasting_cast \
-            test_spell_effect_tracking \
-            test_spellcasting_columns \
-            test_spellcasting_scaled_layout \
-            test_global_hover_captions \
-            test_physics_layout \
-            test_bonus_origin_highlight
-          do
-            echo "RUN Godot regression: ${test}"
-            output=$(timeout 45s /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
-              --path /tmp/vtt-origin-test \
-              --script "res://tests/${test}.gd" 2>&1) || {
+          printf 'config_version=5\n[autoload]\nTokenPackManager="*res://vtt/token_pack_manager.gd"\n' > project.godot
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          "$GODOT" --headless --path . --editor --import --quit
+          for test in test_origin_granted_spells test_charoptions_as_feats; do
+            output=$(timeout 90s "$GODOT" --headless --path . --script "res://tests/${test}.gd" 2>&1) || {
               printf '%s\n' "$output"
               exit 1
             }
             printf '%s\n' "$output"
-            # Godot can print parser errors yet return exit code 0.
-            if grep -Eq 'SCRIPT ERROR:|ERROR: Failed to load script' <<< "$output"; then
-              echo "Godot script compilation/runtime failure: ${test}"
+            if grep -Eq 'SCRIPT ERROR:|ERROR: Failed to load script|Assertion failed' <<< "$output" \
+              || ! grep -Eq '^PASS' <<< "$output"; then
+              echo "Regression failed: $test"
               exit 1
             fi
           done

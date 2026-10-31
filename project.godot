@@ -30,9 +30,6 @@ window/size/viewport_width=1600
 window/size/viewport_height=900
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/size/viewport_width.mobile=1152
-window/size/viewport_height.mobile=648
-window/handheld/orientation.mobile=6
 
 [editor_plugins]
 
@@ -141,5 +138,3 @@ interact={
 [rendering]
 
 rendering_device/driver.windows="d3d12"
-renderer/rendering_method.mobile="gl_compatibility"
-textures/vram_compression/import_etc2_astc=true

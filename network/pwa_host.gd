@@ -9,7 +9,6 @@ const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const BestiaryClient = preload("res://vtt/bestiary_5etools_client.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const BackupStore = preload("res://network/pwa_backup_store.gd")
-const DesktopShareImport = preload("res://vtt/pwa_desktop_share_import.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
@@ -19,8 +18,6 @@ const SHARE_CHUNK_BYTES := 128 * 1024
 const SHARE_MAX_BYTES := 16 * 1024 * 1024
 const SHARE_MAX_QUEUED_BYTES := 32 * 1024 * 1024
 const SHARE_PEER_TTL_MS := 25000
-# Reserved desktop recipient: a running board is always a valid destination.
-const DESKTOP_SHARE_ID := "00000000000000000000000000000000"
 const SHARE_TRANSFER_TTL_MS := 15 * 60 * 1000
 # A single ES module graph can request over 35 files in parallel; two tabs,
 # HTTPS reverse-proxy requests and a Service Worker can overlap. The former
@@ -223,7 +220,6 @@ var _share_session_key := ""
 var _share_peers: Dictionary = {}
 var _share_deliveries: Dictionary = {}
 var _share_queued_bytes := 0
-var _share_host_dialog: ConfirmationDialog = null
 var _backup_store = BackupStore.new()
 var _backup_jobs := 0
 
@@ -232,7 +228,7 @@ var _backup_jobs := 0
 # outside the board. Godot F5/F6 launches include autoloads too.
 func _ready() -> void:
 	set_process(false)
-	if OS.has_feature("mobile") or OS.has_feature("web") or OS.has_feature("vtt_mobile"):
+	if OS.has_feature("web"):
 		return
 	_token = _pairing_token()
 	if _token.is_empty():
@@ -302,9 +298,6 @@ func _stop_listener() -> void:
 		if peer != null:
 			peer.disconnect_from_host()
 	_clients.clear()
-	if is_instance_valid(_share_host_dialog):
-		_share_host_dialog.queue_free()
-	_share_host_dialog = null
 	_share_peers.clear()
 	_share_deliveries.clear()
 	_share_queued_bytes = 0
@@ -892,7 +885,7 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 		return
 	var request: Dictionary = value
 	var device_id: Variant = request.get("device_id", null)
-	if not _share_valid_id(device_id) or device_id == DESKTOP_SHARE_ID:
+	if not _share_valid_id(device_id) :
 		_answer(client, 400, {"error": "invalid_device_id"})
 		return
 	var device_token: Variant = request.get("device_token", null)
@@ -910,9 +903,7 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 			_answer(client, 401, {"error": "device_credential_mismatch"})
 			return
 		_share_peers[device_id] = {"name": nickname, "token": device_token, "seen": now}
-		var others: Array[Dictionary] = [
-			{"id": DESKTOP_SHARE_ID, "name": "Desktop · Server della partita", "kind": "desktop"}
-		]
+		var others: Array[Dictionary] = []
 		for peer_id: Variant in _share_peers.keys():
 			if peer_id != device_id:
 				others.append({"id": peer_id, "name": _share_peers[peer_id].name})
@@ -949,7 +940,7 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 			_answer(client, 400, {"error": "invalid_chunk_encoding"})
 			return
 		if not _share_deliveries.has(transfer_id):
-			if index != 0 or (recipient != DESKTOP_SHARE_ID and not _share_peers.has(recipient)) or _share_deliveries.size() >= 24:
+			if index != 0 or (not _share_peers.has(recipient)) or _share_deliveries.size() >= 24:
 				_answer(client, 400, {"error": "recipient_offline_or_queue_full"})
 				return
 			var chunks: Array = []
@@ -981,8 +972,6 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 			_share_queued_bytes += decoded.size()
 			_share_deliveries[transfer_id] = entry
 		_answer(client, 200, {"ok": true, "uploaded": entry.received_parts, "parts": count})
-		if recipient == DESKTOP_SHARE_ID and entry.received_parts == count:
-			call_deferred("_share_prompt_host")
 		return
 	if path == "/api/share/pull":
 		var transfer_id: Variant = request.get("transfer_id", null)
@@ -1010,89 +999,8 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 	_answer(client, 404, {"error": "unknown_share_route"})
 
 
-# Native desktop is a real recipient, not merely the PWA's HTTP relay.
-# The host sees an explicit confirmation before imported content is stored.
-func _share_prompt_host() -> void:
-	if is_instance_valid(_share_host_dialog) or not _is_board_scene(get_tree().current_scene):
-		return
-	for raw_id: Variant in _share_deliveries.keys():
-		var transfer_id := String(raw_id)
-		var entry: Dictionary = _share_deliveries[transfer_id]
-		if entry.recipient != DESKTOP_SHARE_ID or entry.received_parts != entry.parts:
-			continue
-		var label := "creatura" if entry.kind == "creature" else (
-			"oggetti" if entry.kind == "inventory" else "contenuto homebrew")
-		var note := "Il dispositivo %s ha inviato %s: %s." % [
-			String(entry.sender_name), label, String(entry.title)]
-		if entry.kind == "inventory":
-			note += "\nGli oggetti saranno disponibili nel prossimo inventario nativo aperto."
-		elif entry.kind == "creature":
-			note += "\nLe creature saranno aggiunte come copie indipendenti nell'archivio desktop."
-		else:
-			note += "\nIl contenuto homebrew sarà installato nell'archivio desktop."
-		note += "\n\nAccettare il trasferimento?"
-		var dialog := ConfirmationDialog.new()
-		dialog.title = "Contenuto ricevuto dalla PWA"
-		dialog.dialog_text = note
-		dialog.ok_button_text = "Importa"
-		dialog.cancel_button_text = "Rifiuta"
-		dialog.exclusive = true
-		get_tree().root.add_child(dialog)
-		_share_host_dialog = dialog
-		dialog.confirmed.connect(func() -> void: _share_resolve_host_offer(transfer_id, true))
-		dialog.canceled.connect(func() -> void: _share_resolve_host_offer(transfer_id, false))
-		dialog.close_requested.connect(func() -> void: _share_resolve_host_offer(transfer_id, false))
-		dialog.popup_centered(Vector2i(560, 240))
-		return
-
-
-func _share_resolve_host_offer(transfer_id: String, accepted: bool) -> void:
-	if not is_instance_valid(_share_host_dialog):
-		return
-	_share_host_dialog.queue_free()
-	_share_host_dialog = null
-	if not _share_deliveries.has(transfer_id):
-		call_deferred("_share_prompt_host")
-		return
-	var entry: Dictionary = _share_deliveries[transfer_id]
-	var result: Error = OK
-	if accepted:
-		var bytes := PackedByteArray()
-		for raw: Variant in entry.chunks:
-			if not raw is String:
-				result = ERR_INVALID_DATA
-				break
-			bytes.append_array(Marshalls.base64_to_raw(String(raw)))
-		if result == OK and bytes.size() != int(entry.size):
-			result = ERR_INVALID_DATA
-		if result == OK:
-			var payload: Variant = JSON.parse_string(bytes.get_string_from_utf8())
-			result = DesktopShareImport.import_received(String(entry.kind), payload, transfer_id)
-	_share_forget(transfer_id)
-	if accepted:
-		var notice := AcceptDialog.new()
-		notice.title = "Trasferimento dalla PWA"
-		notice.dialog_text = (
-			"Contenuto importato sul desktop." if result == OK else
-			"Impossibile importare il contenuto (errore %d). Il mittente può riprovare." % result
-		)
-		get_tree().root.add_child(notice)
-		notice.confirmed.connect(func() -> void:
-			notice.queue_free()
-			call_deferred("_share_prompt_host")
-		)
-		notice.close_requested.connect(func() -> void:
-			notice.queue_free()
-			call_deferred("_share_prompt_host")
-		)
-		notice.popup_centered(Vector2i(500, 170))
-	else:
-		call_deferred("_share_prompt_host")
-
-
-# Serve exactly the selection available in the native sheet/token dialogs,
-# including edition-specific effects and locally installed content. IDs never
-# depend on the translated PWA labels.
+# This HTTP endpoint relays offers between PWA browsers only.
+# The Godot board has no creature/inventory library of its own.
 func _condition_public_catalog() -> Dictionary:
 	var editions: Dictionary = {}
 	for edition: String in ["2014", "2024"]:

@@ -2,21 +2,6 @@ extends SceneTree
 
 const InitiativeTracker = preload("res://vtt/initiative_tracker.gd")
 const TokenScene = preload("res://token.tscn")
-const CreatureOwner = preload("res://vtt/creature_owner.gd")
-
-
-class CachedCreatureArea:
-	extends Node
-	var names: Dictionary = {"creature-aria": "Aria aggiornata"}
-	var full_archive_reads := 0
-
-	func get_owned_creature_name_index() -> Dictionary:
-		return names.duplicate()
-
-	func get_owned_creatures_for_placement() -> Array[Dictionary]:
-		full_archive_reads += 1
-		return []
-
 
 
 func _initialize() -> void:
@@ -91,20 +76,10 @@ func run() -> void:
 		== "creature-aria"
 	)
 
-	# Repeated snapshots must read cached names, never re-normalize archive.
-	var cached_area := CachedCreatureArea.new()
-	cached_area.name = "CreatureArea"
-	board.add_child(cached_area)
-	(tracker.get("entries") as Array)[1]["creature_owner_id"] = CreatureOwner.local_id()
-	var cached_snapshot: Dictionary = tracker.call("get_save_state")
-	assert(String(cached_snapshot.entries[1].name) == "Aria aggiornata")
-	cached_area.names["creature-aria"] = "Aria rinominata"
-	cached_snapshot = tracker.call("get_save_state")
-	assert(String(cached_snapshot.entries[1].name) == "Aria rinominata")
-	assert(cached_area.full_archive_reads == 0,
-		"Initiative snapshots must never request full creature records")
-	board.remove_child(cached_area)
-	cached_area.free()
+	# Initiative snapshots derive names from live tokens, not obsolete archives.
+	linked.call("set_display_name", "Aria rinominata")
+	var updated_snapshot: Dictionary = tracker.call("get_save_state")
+	assert(String(updated_snapshot.entries[1].name) == "Aria rinominata")
 
 	var invalid: Dictionary = state.duplicate(true)
 	invalid.entries[0]["token_id"] = ""

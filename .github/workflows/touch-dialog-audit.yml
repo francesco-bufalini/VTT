@@ -1,4 +1,4 @@
-name: Touch dialogs and statistics regression (Godot)
+name: Board dialogs and autosave regression (Godot)
 on:
   pull_request:
     paths:
@@ -8,19 +8,7 @@ on:
       - "vtt/runtime_toolbar.gd"
       - "tests/test_map_autosave_history.gd"
       - "tests/test_runtime_save_feedback.gd"
-      - "vtt/creature_area.gd"
-      - "vtt/creature_documents_tab.gd"
-      - "vtt/creature_inventory_tab.gd"
-      - "tests/test_share_recipients.gd"
-      - "tests/test_document_homebrew.gd"
-      - "tests/test_document_inbox_safety.gd"
-      - "vtt/document_inbox.gd"
-      - "vtt/document_homebrew.gd"
-      - "vtt/portable_creature_content.gd"
-      - "tests/test_creature_gui_layout.gd"
       - "tests/test_dialog_layout.gd"
-      - "tests/test_desktop_menu_navigation.gd"
-      - "tests/test_desktop_inventory_table.gd"
       - ".github/workflows/touch-dialog-audit.yml"
   workflow_dispatch:
 jobs:
@@ -43,16 +31,9 @@ jobs:
             /pwa/icons/gold_generated/
             /assets/creature_info/
             /encounter/*.gd
-            /tests/test_share_recipients.gd
-            /tests/test_document_homebrew.gd
-            /tests/test_document_inbox_safety.gd
-            /tests/test_creature_gui_layout.gd
             /tests/test_map_autosave_history.gd
             /tests/test_runtime_save_feedback.gd
             /tests/test_dialog_layout.gd
-            /tests/test_desktop_menu_navigation.gd
-            /tests/test_desktop_inventory_table.gd
-            /tests/test_creature_sheets.gd
             /assets/items/
             /assets/tokens/test/
             /assets/spell_area_geometry.json
@@ -68,12 +49,12 @@ jobs:
         shell: bash
         run: |
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --import --quit
-      - name: Run relevant touch regressions
+      - name: Run board UI regressions
         shell: bash
         run: |
           set -euo pipefail
           failures=()
-          for test in test_runtime_save_feedback.gd test_map_autosave_history.gd test_creature_sheets.gd test_share_recipients.gd test_document_homebrew.gd test_document_inbox_safety.gd test_dialog_layout.gd test_desktop_menu_navigation.gd test_creature_gui_layout.gd test_desktop_inventory_table.gd; do
+          for test in test_runtime_save_feedback.gd test_map_autosave_history.gd test_dialog_layout.gd; do
             echo "::group::$test"
             log=$(mktemp)
             if ! timeout 45s /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --script "res://tests/$test" >"$log" 2>&1; then
@@ -89,4 +70,4 @@ jobs:
             printf 'FAILED: %s\\n' "${failures[@]}"
             exit 1
           fi
-          echo "PASS: touch dialog and responsive layout regressions"
+          echo "PASS: board dialogs and autosave regressions"

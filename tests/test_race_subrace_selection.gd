@@ -4,8 +4,7 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
-const PlayerStore = preload("res://vtt/player_character_store.gd")
-const MonsterStore = preload("res://vtt/master_creature_store.gd")
+const Fixtures = preload("res://tests/fixtures/creature_record.gd")
 
 
 func _initialize() -> void:
@@ -44,7 +43,7 @@ func run() -> void:
 		"A dwarf offers its dwarf subraces")
 	assert(_find(RaceRules.subraces_for(dwarf), "High", "PHB").is_empty(),
 		"An elf subrace must never be selectable for a dwarf")
-	var record := PlayerStore.new().create_character()
+	var record := Fixtures.character()
 	record["species"] = "Elf"
 	record["species_source"] = "PHB"
 	record["species_id"] = String(elf.get("id", ""))
@@ -79,7 +78,7 @@ func run() -> void:
 		and RaceRules.has_speed({"walk": 30, "fly": 60})
 		and not RaceRules.has_speed({}) and not RaceRules.has_speed(null),
 		"Numeric and structured racial speeds need type-safe detection")
-	var numeric_race: Dictionary = PlayerStore.new().create_character()
+	var numeric_race: Dictionary = Fixtures.character()
 	numeric_race["species"] = "Elf"
 	numeric_race["species_source"] = "PHB"
 	numeric_race["species_id"] = String(elf.get("id", ""))
@@ -91,9 +90,6 @@ func run() -> void:
 	])
 	RaceRules._speed_cache_revision = ContentCatalog.revision()
 	RaceRules._speed_cache[race_key] = 20.0
-	var restored_numeric: Dictionary = PlayerStore.new().normalize_character(numeric_race)
-	assert(restored_numeric.speed_base == 20 and restored_numeric.speed == 20,
-		"Float racial speed must override stale saved speed in both normalization and formulas")
 	RaceRules._speed_cache.erase(race_key)
 	assert(Bonuses.value({"kind": "character", "species_speed": 25.0,
 		"speed_base": 99}, "speed") == 25,
@@ -101,26 +97,5 @@ func run() -> void:
 	assert(Bonuses.value({"kind": "character", "species_speed": {"walk": 40, "fly": 60},
 		"speed_base": 99}, "speed") == 40,
 		"Structured walking speed must still be honored by formula evaluation")
-	assert(PlayerStore.new().normalize_character({
-		"speed_base": 27, "species": "", "species_id": ""
-	}).speed_base == 27,
-		"No race speed must preserve the legacy base-speed fallback")
-	var stat := {"name": "Sample Monster", "source": "MM", "cr": "1/4", "type": "beast"}
-	var monsters := MonsterStore.new()
-	var creature := monsters.create_creature(stat, "enemy")
-	assert(creature.classes.is_empty() and creature.level == 0
-		and creature.stat_block.cr == "1/4",
-		"Bestiary CR must be independent from class levels")
-	var old := creature.duplicate(true)
-	old["class"] = "Mostro"
-	old["class_source"] = "5etools"
-	old["classes"] = [
-		{"name": "Mostro", "source": "5etools", "level": 1},
-		{"name": "Fighter", "source": "PHB", "level": 2}
-	]
-	var restored := monsters.normalize_creature(old)
-	assert(restored.classes.size() == 1 and restored.class == "Fighter"
-		and restored.level == 2 and restored.stat_block.cr == "1/4",
-		"Legacy synthetic Monster levels must be removed without changing CR")
-	print("PASS: structured subrace filtering, legacy migration and monster CR/classes")
+	print("PASS: structured subrace filtering, legacy migration, numeric speed and proficiencies")
 	quit()

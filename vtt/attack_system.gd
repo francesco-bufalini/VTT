@@ -483,17 +483,8 @@ func _try_attack_target(screen_position: Vector2) -> void:
 	var attack_name := String(_attack_data.get("name", "Attacco"))
 	var target_name := _token_name(target)
 
-	var applied := false
-	var hp_result: Dictionary = {}
-	var sheets: Node = board_root.get_node_or_null("CreatureArea")
-	if sheets != null and is_instance_valid(sheets) and sheets.has_method("apply_attack_damage_to_token"):
-		var result: Variant = sheets.call("apply_attack_damage_to_token", target, damage)
-		if result is Dictionary:
-			hp_result = result as Dictionary
-			applied = bool(hp_result.get("applied", false))
 
-	# Keep the rolled damage on every token, including NPCs that do not yet
-	# have a managed HP pool. This lets later monster-sheet work reuse it.
+	# Combat damage remains informational; the owning PWA manages hit points.
 	target.set_meta("last_attack_damage", damage)
 	target.set_meta("last_attack_name", attack_name)
 
@@ -510,19 +501,6 @@ func _try_attack_target(screen_position: Vector2) -> void:
 	]
 	if _range_long_feet > _range_normal_feet and distance_feet > _range_normal_feet + 0.001:
 		message += " · gittata lunga: svantaggio al tiro per colpire"
-	if applied:
-		if int(hp_result.get("second_form_hp", 0)) > 0:
-			message += " · Forma %d/%d PF" % [
-				int(hp_result.get("second_form_hp", 0)),
-				int(hp_result.get("second_form_max_hp", 0))
-			]
-		else:
-			message += " · PF %d/%d" % [
-				int(hp_result.get("current_hp", 0)),
-				int(hp_result.get("max_hp", 0)),
-			]
-	else:
-		message += " · bersaglio senza PF gestiti"
 	_show_temporary_result(message, 3.0)
 
 

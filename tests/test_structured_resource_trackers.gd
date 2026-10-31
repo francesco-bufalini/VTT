@@ -4,7 +4,6 @@ const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
-const Locale = preload("res://vtt/creature_gui_locale.gd")
 
 
 func _initialize() -> void:
@@ -36,9 +35,6 @@ func run() -> void:
 		"Disabled class trait must keep the source-bound counter inspectable but unusable")
 	assert(String(rage.get("id", "")) == "class:barbarian:phb:rages",
 		"Stored resource use keys must survive table regeneration")
-	assert(Locale.text_for("Rages", "it") == "Rages"
-		and Locale.text_for("Rages", "en") == "Rages",
-		"Catalog resource names remain unchanged in both GUI languages")
 	assert(ClassMechanics.column_value("Barbarian", "PHB", "Rage Damage", 9) == 3
 		and ClassMechanics.column("Barbarian", "PHB", "Rage Damage").get("kind") == "bonus",
 		"Typed bonus column is available but must never become a spent resource")
@@ -146,8 +142,6 @@ func run() -> void:
 			and String(derived.get("origin", "")) == String(reference[3]),
 			"Structured class resource regression: " + str(reference))
 
-	var druid_locale := Locale.text_for("Wild Shape", "it")
-	assert(druid_locale == "Wild Shape")
 	var cleric: Array[Dictionary] = Trackers.for_creature({
 		"kind": "character", "classes": [{"name": "Cleric", "source": "XPHB", "level": 2}]
 	})

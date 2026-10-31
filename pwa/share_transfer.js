@@ -58,7 +58,7 @@ async function send(recipient,kind,title,payload,progress){
 export async function openSendDialog(kind,title,makePayload,notify=()=>{}){
  if(!['creature','homebrew','inventory'].includes(kind))throw Error('Tipo di condivisione non valido.');
  const roster=await directory(),peers=roster.devices||[];
- if(!peers.length)throw Error('Nessun altro dispositivo collegato alla partita.');
+ if(!peers.length)throw Error('Nessun’altra PWA collegata alla partita. Apri la PWA anche sul dispositivo destinatario, incluso il PC server.');
  const dialog=document.createElement('dialog');
  dialog.className='library-create-dialog';dialog.id='share-send-dialog';
  dialog.innerHTML='<div class="library-create-body">'+

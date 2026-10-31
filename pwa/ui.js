@@ -281,6 +281,7 @@ let mapGeneration=0;
 let snapshotGeneration=0;
 let snapshotCaptureQueue=Promise.resolve();
 let previousMapFingerprint="";
+// PWA lifecycle guard: a stopped subscriber must not be restarted by an async render.
 let realtimeStopped=false;
 let toastTimer = null;
 let chatPollGenerationInFlight=-1;
@@ -767,7 +768,7 @@ async function restoreBrowserScreen(screen){
     await flushPendingFields();
     if(ticket!==browserHistoryRestoreTicket)return;
     if(state.page!==screen.page)stopSubscriptions();
-    if(screen.page==='session')realtimeStopped=false;
+    if(screen.page==="session")realtimeStopped=false;
     const oldCreatureId=state.creatureId;
     state.page=screen.page;
     state.libraryMode=Boolean(screen.libraryMode);
@@ -790,12 +791,6 @@ async function restoreBrowserScreen(screen){
 }
 
 async function download(blob, filename) {
-  // The embedded desktop WebView cannot reliably fetch its own blob: URLs.
-  // Send the original Blob directly to the native save dialog instead.
-  if (typeof globalThis.vttDesktopSaveFile === "function") {
-    await globalThis.vttDesktopSaveFile(blob, filename);
-    return false; // Desktop reports its own save/cancel/error result.
-  }
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url; link.download = filename; link.hidden = true;
@@ -5585,21 +5580,9 @@ async function refreshMapOnce() {
   }
 }
 
-// Android and PWA use the same native targeting commands, not independent
-// spell/area calculations. Never send a private creature sheet to the host.
-let desktopHooks=null;
+// Targeting commands share Godot's tactical geometry; private creature data
+// stays in the PWA and never goes to the board.
 async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken='',companionSource=null){
-  if(desktopHooks?.cast){
-    await flushPendingFields();
-    const result=await desktopHooks.cast({casterId,selection,requestedLevel,payment});
-    if(companionSource?.rule?.grant_kind==='spell_effect'){
-      const editor=state.editor&&state.creatureId===casterId?state.editor:await openCreatureEditor(casterId);
-      await editor.update(companionSpellEffectPatch(editor.read(),companionSource.rule,selection.id));
-    }
-    if(companionSource)
-      await summonSpellCompanion(casterId,companionSource,companionSource);
-    return result;
-  }
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
   const stored=await loadCreature(casterId);
   if(!stored)throw Error("Scheda locale non trovata.");
@@ -7695,7 +7678,7 @@ async function handleAction(target){
     const plan=spellCastPlan(creature,selection,0,calculated,'auto');
     target.disabled=true;
     try{
-      if(desktopHooks?.cast||(state.paired&&state.online)){
+      if(state.paired&&state.online){
         await startTargetedCast(creature.id,structuredClone(selection),0,'auto');
       }else{
         if(Object.keys(plan.patch).length)await patch(plan.patch);
@@ -7844,7 +7827,7 @@ async function handleAction(target){
     const [payment,levelText]=choice.split(':');const level=Number(levelText);
     if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)
       throw Error('Risorsa di lancio non valida.');
-    if(desktopHooks?.cast||(state.paired&&state.online)){
+    if(state.paired&&state.online){
       app.querySelector('#action-cast-dialog')?.close();
       await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
         companionSource?{...companionSource,spell_id:selection.id,rule:companion.rule,
@@ -7853,14 +7836,17 @@ async function handleAction(target){
           limit_per_owner_rule:companion.rule.limit_per_owner_spell??1}:null);return;
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
-    app.querySelector('#action-cast-dialog')?.close();
     const effect=companion?companionSpellEffectPatch(record,companion.rule,selection.id):{};
+    // Confirmation only dismisses the popup after IndexedDB has committed the
+    // spell payment (including Metamagic). Closing early makes the UI appear
+    // finished while a reader can still observe the unspent tracker.
     if(Object.keys({...plan.patch,...effect}).length)await patch({...plan.patch,...effect});
     if(companionSource)await summonSpellCompanion(record.id,companionSource,{
       ...companionSource,spell_id:selection.id,rule_id:companion.rule.id,
       origin_name:companion.rule.names?.[0]||selection.name,
       grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
       limit_per_owner_rule:companion.rule.limit_per_owner_spell??1});
+    app.querySelector('#action-cast-dialog')?.close();
     await render();
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
@@ -10723,7 +10709,8 @@ function listen(){
     refreshConnection(true).catch(error=>message(errorMessage(error),true));
   });
 }
-// Allows tests and future app lifecycle handlers to release polling resources.
+// Allows tests and future PWA lifecycle handlers to release polling resources.
+// This is browser-owned and does not rely on retired native creature interfaces.
 export function stopRealtime() { realtimeStopped=true;stopSubscriptions(); }
 
 // The public 5etools catalog ships with the PWA and is precached. Load it
@@ -10755,16 +10742,12 @@ window.addEventListener("message", event => {
   if(event.origin===location.origin && event.data?.type==="OPEN_CHAT")
     void openChatFromNotification().catch(error=>message(errorMessage(error),true));
 });
-// Desktop-only callers reuse the same editor and its pending-write barrier.
-export const desktopSheetSession={
-  configure(hooks){desktopHooks=hooks;},
-  currentId:()=>state.creatureId,
-  flush:flushPendingFields,
-  notify:message,
-  showLibrary:()=>navigate('library'),
-  async exportArchive(){await flushPendingFields();return exportCreatureArchive();},
-  async open(id){await flushPendingFields();state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await refreshCharacterHomebrewOptions();await render();}
-};
+// Explicit barrier for PWA lifecycle and browser integration tests.
+// Flush debounced creature edits before inspecting durable IndexedDB state.
+export async function flushPendingEdits() {
+  await flushPendingFields();
+}
+
 export async function mount(){
   realtimeStopped=false;
   const openChatOnMount=new URLSearchParams(location.search).get("open")==="chat";
@@ -10787,8 +10770,7 @@ export async function mount(){
   }catch(error){console.warn('Cronologia chat locale non disponibile',error);}
   await render();
   if(openChatOnMount&&!qrCode)void openChatFromNotification().catch(error=>message(errorMessage(error),true));
-  if(typeof globalThis.vttDesktopSaveFile!=='function')
-    void serverBackups.start();
+  void serverBackups.start();
   void loadBundledConditionCatalog();
   // Idle-only background prefetch: never gate the library, sheet or pairing.
   // The service worker also caches the complete catalog for later offline use.
