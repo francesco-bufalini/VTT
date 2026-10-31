@@ -262,7 +262,7 @@ try{
  assert.equal(await page.locator('.catalog-web-frame').getAttribute('src'),'https://2014.5e.tools/');
  assert(await page.locator('[data-act="catalog-source-local"]').isVisible(),'Offline fallback remains available');
  await page.locator('[data-act="catalog-source-local"]').click();
- assert(await page.locator('#catalog-search').isVisible());
+ await page.locator('#catalog-search').waitFor({state:'visible'});
  assert(await page.locator('#catalog-category').isVisible());
  assert(await page.locator('.catalog-entry').first().isVisible(),'Entries are visible before typing a search');
  const toolbar=await page.locator('.catalog-search-wrap,#catalog-category').evaluateAll(nodes=>
