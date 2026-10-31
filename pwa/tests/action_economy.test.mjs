@@ -59,8 +59,9 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.equal(grapple.querySelector('.play-battle-effect').dataset.effectKind,'condition');
  assert.match(grapple.querySelector('.play-battle-effect').textContent,/Afferrato/);
  assert.match(attacks.querySelector('[data-attack-id="prone"] .play-battle-effect').textContent,/Prono/);
- assert.equal(movement.querySelector('[data-attack-id="dash"] .play-battle-effect').dataset.effectKind,'movement');
- assert(movement.querySelector('[data-action-benefit="other"] [data-attack-id="movement"] .play-battle-effect'));
+ assert.equal(movement.querySelector('[data-attack-id="dash"] .play-battle-effect'),null,
+  'Effects and conditions no longer appear beneath Other actions');
+ assert.equal(movement.querySelector('[data-attack-id="movement"] .play-battle-effect'),null);
 
  assert(attacks.querySelector('[data-attack-id="disarm"] .play-battle-attack-roll'));
  assert.equal(movement.querySelector('[data-action-benefit="attacks"] summary>.vtt-action-glyph')?.tagName,'SPAN');
@@ -711,7 +712,8 @@ test('basic actions never show unarmed damage unless a benefit explicitly target
   assert.equal(row.querySelector('[data-effect-kind="damage"]'),null,
    id+' must not use the unarmed strike damage');
  }
- assert(actions.querySelector('[data-attack-id="dash"] [data-effect-kind="movement"]'));
+ assert.equal(actions.querySelector('[data-attack-id="dash"] [data-effect-kind="movement"]'),null,
+  'Other actions have no effect tiles');
  assert(doc(base.attacks).querySelector('[data-attack-id="unarmed"] [data-effect-kind="damage"]'),
   'The actual unarmed strike keeps its damage');
  const grant={id:'bonus-dash',action_id:'dash',formula:'1d6',damage_type:'fire',
@@ -719,12 +721,8 @@ test('basic actions never show unarmed damage unless a benefit explicitly target
  const withDamage=battleActionPanels({rules_version:'2014'},
   {...computed,action_damage_bonuses:[grant]},[],[],catalog.actions);
  const dash=doc(withDamage.others).querySelector('[data-attack-id="dash"]');
- assert.equal(dash.querySelector('[data-effect-kind="damage"] [data-damage-formula]').dataset.damageFormula,'1d6');
- assert.equal(dash.querySelector('[data-damage-action-id]').dataset.damageActionId,'dash');
- assert.equal(dash.querySelector('[data-damage-attack-id]').dataset.damageAttackId,'',
-  'A generic damage roll cannot masquerade as an unarmed strike');
- assert(dash.querySelector('[data-effect-kind="movement"]'),
-  'A damage benefit does not erase the basic action effect');
+ assert.equal(dash.querySelector('.play-battle-effect'),null,
+  'Bonus damage and movement effects are not drawn beneath Other actions');
  assert.equal(doc(withDamage.others).querySelector('[data-attack-id="attack"] [data-effect-kind="damage"]'),null);
  assert(withDamage.modifiedActions.some(row=>row.id==='dash'&&
   row.action_change_origin==='feature:test'&&row.action_damage[0].formula==='1d6'));
