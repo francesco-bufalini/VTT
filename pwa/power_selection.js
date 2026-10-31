@@ -1,4 +1,3 @@
-import {migrateSelectionRecord} from './selection_compatibility.js';
 // One selection engine. Source definitions only supply options and stage data.
 import {targetableInventoryItems,itemAttunementCount,activeItemOptionEffects} from './item_controls.js';
 import {originSpellId} from './spell_selection.js';
@@ -35,25 +34,8 @@ function optionsFor(record,rule){
  return [...rows(rule.source?.options),...packages,...rows(record.power_selection_custom_options?.[rule.id])].filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014'))).map(row=>({...row,
  min_level:row.min_level||(rows(row.prerequisite).length?Math.min(...rows(row.prerequisite).map(p=>Number(p.level?.level||p.level)||0)):0),
  details:row.details||(!row._homebrew&&row.source?{category:'optional_features',name:row.name,source:row.source}:undefined)}));}
-export function normalizeSelectionRecord(record={},catalog={}){
- let normalized=migrateSelectionRecord(record,definitions(catalog),optionsFor,member);
- for(const rule of definitions(catalog)){
-  if(!rule.legacy_stage||!rows(rule.source?.packages).length)continue;
-  const saved=normalized.power_selections?.[rule.id],legacy=rows(saved?.[rule.legacy_stage]);
-  if(!legacy.length)continue;
-  const stage=rule.layers?.learned?'learned':'prepared';
-  const converted=legacy.map((row,i)=>{
-   const key=identity(row),pack=rule.source.packages.find(p=>p.id===key||rows(p.legacy_ids).includes(key)||rows(p.options).some(o=>o.id===key));
-   if(!pack)return row;
-   const values=rows(row?.subchoices).length?row.subchoices:[key];
-   return {id:pack.id+':'+(i+1),subchoices:values.map(value=>rows(pack.options).find(o=>low(o.id)===low(value)||low(o.name)===low(value))?.id||value)};
-  });
-  const next={...saved,[stage]:[...rows(saved?.[stage]),...converted]};
-  if(stage!==rule.legacy_stage)delete next[rule.legacy_stage];
-  normalized={...normalized,power_selections:{...normalized.power_selections,[rule.id]:next}};
- }
- return normalized;
-}
+// Selections and applications are already stored in canonical form.
+export function normalizeSelectionRecord(record={}){return record;}
 export function powerSelectionModels(raw={},calculated={},catalog={}){
  const record=normalizeSelectionRecord(raw,catalog),models=[];
  for(const rule of definitions(catalog)){
@@ -119,7 +101,7 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
  return available;
 }
 export function optionalFeatureSelectionModels(record,calculated,catalog){return powerSelectionModels(record,calculated,{optionalFeatureProgressions:catalog});}
-function statePatch(record){return {selection_state_version:2,power_selections:record.power_selections||{},power_applications:record.power_applications||{},inventory:record.inventory||[],optional_features_catalog:record.optional_features_catalog||[],fighting_styles:record.fighting_styles||[],...(record.resource_tracker_spent?{resource_tracker_spent:record.resource_tracker_spent}:{}),...(record.trait_state_selection?{trait_state_selection:record.trait_state_selection}:{}),...(record.active_class_features?{active_class_features:record.active_class_features}:{})};}
+function statePatch(record){return {power_selections:record.power_selections||{},power_applications:record.power_applications||{},inventory:record.inventory||[],optional_features_catalog:record.optional_features_catalog||[],fighting_styles:record.fighting_styles||[],...(record.resource_tracker_spent?{resource_tracker_spent:record.resource_tracker_spent}:{}),...(record.trait_state_selection?{trait_state_selection:record.trait_state_selection}:{}),...(record.active_class_features?{active_class_features:record.active_class_features}:{})};}
 export function powerSelectionPatch(raw,calculated,catalog,id,stage,optionId,details=[]){
  const record=structuredClone(normalizeSelectionRecord(raw,catalog)),model=powerSelectionModels(record,calculated,catalog).find(m=>m.id===id),option=model?.options.find(o=>o.id===optionId),layer=model?.layers[stage];
  if(!layer||!option||!['learned','prepared'].includes(stage))throw Error('Selezione non disponibile.');
@@ -137,7 +119,7 @@ export function powerSelectionPatch(raw,calculated,catalog,id,stage,optionId,det
  if(exists&&!updating)record.power_applications={...record.power_applications,[id]:rows(record.power_applications?.[id]).filter(row=>row.id!==optionId)};
  return statePatch({...record,inventory:projectSelectionBenefits(record,{powerSelections:catalog,optionalFeatureProgressions:catalog.optionalFeatureProgressions},calculated.features||[]).inventory});
 }
-export function powerSelectionTargets(record,model,option){const target=model?.layers.applied?.target;if(!target)return [];const selector=target.selector==='option.item_selector'?option.item_selector||{}:target;return targetableInventoryItems(record,selector,item=>!item.disabled&&(!target.slot||rows(item.equipped_slots).includes(target.slot))&&(!target.extension_field||!item[target.extension_field]?.creator_id||item[target.extension_field].creator_id===record.id));}
+export function powerSelectionTargets(record,model,option){const target=model?.layers.applied?.target;if(!target)return [];const selector=target.selector==='option.item_selector'?option.item_selector||{}:target;return targetableInventoryItems(record,selector,item=>!item.disabled&&(!target.slot||rows(item.equipped_slots).includes(target.slot)));}
 export function powerApplicationPatch(raw,calculated,catalog,id,optionId,apply,{itemIndex=-1,effectChoice={}}={}){
  const record=structuredClone(normalizeSelectionRecord(raw,catalog)),model=powerSelectionModels(record,calculated,catalog).find(m=>m.id===id),option=model?.options.find(o=>o.id===optionId),layer=model?.layers.applied;
  if(!option||!layer)throw Error('Applicazione non disponibile.');

@@ -37,3 +37,25 @@ test('nested and unknown item metadata is preserved without inventing values',()
  assert.equal(facts.get('Enabled'),'No');
  assert(!facts.has('Notes'));assert(!facts.has('Empty'));
 });
+
+test('internal item options stay out of structured facts',()=>{
+ const facts=structuredItemFacts({
+  id:'armor:chain',name:'Chain Mail',type:'HA',strength:13,stealth:true,
+  option_extensions:[{id:'enhanced',name:'Enhanced Defense',definition:{effects:[{type:'bonus'}]}}],
+  effect_extensions:[{id:'hidden'}]
+ });
+ const pairs=new Map(facts);
+ assert.equal(pairs.get('Forza minima richiesta'),'13');
+ assert.equal(pairs.get('Svantaggio alla furtività'),'Sì');
+ assert(!facts.some(([label,value])=>/Option Extensions|Effect Extensions|Enhanced Defense|hidden/.test(label+' '+value)));
+});
+test('armor without a strength requirement shows a dash, including zero',()=>{
+ for(const strength of [undefined,null,0]){
+  const item={id:'armor:leather',type:'LA',stealth:false};
+  if(strength!==undefined)item.strength=strength;
+  const facts=new Map(structuredItemFacts(item));
+  assert.equal(facts.get('Forza minima richiesta'),'—');
+  assert.equal(facts.get('Svantaggio alla furtività'),'No');
+ }
+ assert(!new Map(structuredItemFacts({id:'weapon:dagger',type:'M'})).has('Forza minima richiesta'));
+});

@@ -2,7 +2,7 @@
 // stays in the description below and per-instance UI fields stay in the controls.
 const hidden=new Set(['name','id','instance_id','instanceId','quantity',
  'container_id','equipped','equipped_slots','attuned','attuned_count','active','disabled',
- 'instance_overrides','description','entries','text','fluff','additionalEntries',
+ 'instance_overrides','option_extensions','effect_extensions','infusion','description','entries','text','fluff','additionalEntries',
  'entriesHigherLevel','_category','_homebrew','_description_warning',
  'raw','hash','uid','index','page','foundryData','foundryType']);
 const labels={
@@ -27,7 +27,7 @@ const labels={
  vulnerable:'Vulnerabilità',conditionImmune:'Immunità alle condizioni',
  curse:'Maledizione',cursed:'Maledetto',baseItem:'Oggetto di base',
  attachedSpells:'Incantesimi associati',spells:'Incantesimi',
- strength:'Forza richiesta',stealth:'Furtività',speed:'Velocità',
+ strength:'Forza minima richiesta',stealth:'Svantaggio alla furtività',speed:'Velocità',
  srd:'SRD',basicRules:'Regole base',age:'Età',poison:'Veleno',
  containerCapacity:'Capienza',weaponSize:'Taglia arma'
 };
@@ -52,7 +52,15 @@ function printable(value,depth=0,seen=new WeakSet()){
 }
 export function structuredItemFacts(item={}){
  if(!item||typeof item!=='object'||Array.isArray(item))return [];
- return Object.entries(item).filter(([key])=>!hidden.has(key)&&!key.startsWith('_'))
+ const type=String(item.type||'').split('|')[0].toUpperCase();
+ const armor=['LA','MA','HA'].includes(type)||String(item.category||'').toLowerCase()==='armor';
+ const facts=Object.entries(item).filter(([key])=>!hidden.has(key)&&!key.startsWith('_')&&
+   !(armor&&key==='strength'))
   .map(([key,value])=>[normalizeLabel(key),printable(value)])
   .filter(([,value])=>value!==''&&value!==undefined);
+ if(armor){
+  const minimum=Number(item.strength);
+  facts.push(['Forza minima richiesta',Number.isFinite(minimum)&&minimum>0?String(minimum):'—']);
+ }
+ return facts;
 }

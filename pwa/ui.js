@@ -8,11 +8,12 @@ import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeatu
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, monsterActionOptionsMarkup, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { activeItemOptionEffects, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, targetableInventoryItems, clearInfusionPatch, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
+import { activeItemOptionEffects, itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, ownedItemDisplayName, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, targetableInventoryItems, validSlot, equipSlot, hasProperty, armorDexterityLabel } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
 import {structuredItemFacts} from "./item_detail_facts.js";
+import {itemAppliedOptions} from "./item_applied_options.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, knownSpellProgress, knownClassSpellIds, knownClassCantripIds, changeKnownClassSpell, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -2527,8 +2528,24 @@ async function editorView() {
           description:detail.description??selected.item.description};
       }
     }
+    // Resolve only the selected object's granting traits, not the full catalog.
+    const optionDescriptions=new Map();
+    const extensionOptions=(selected?.item?.option_extensions||[]).filter(option=>!option.generic_variant&&option.details);
+    if(extensionOptions.length){
+      const request=Promise.all(extensionOptions.map(async option=>{
+       try{
+        const detail=await detailedEntry(option.details.category||'optional_features',{
+         name:option.details.name||option.name,source:option.details.source||option.source,
+         _category:option.details.category||'optional_features'});
+        return [option.id,flattenDescription(detail)];
+       }catch{return [option.id,''];}
+      }));
+      try{for(const [id,description] of await sheetLoadingDeadline(request,1400,"delle estensioni"))optionDescriptions.set(id,description);}
+      catch(error){if(error.code==='SHEET_LOADING_TIMEOUT')
+        refreshSheetAfterLateLoad(request,creatureId,'inventory');}
+    }
     const description=selected?panel("Descrizione · "+ownedItemDisplayName(selected.item),
-      inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"";
+      inventoryItemDescription(resolvedDetail,selected.index,optionDescriptions),"inventory-native-panel inventory-description-panel"):"";
     const showingItems=selectedTabs.some(key=>key==='items'||key.startsWith('container:'));
     body=nav+
       (showingItems?inventoryEquipmentView(c,calculated)+
@@ -3579,7 +3596,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
         name=isCatalogItem(item)?'<strong>'+esc(displayName)+'</strong>':
           '<input class="inventory-item-name-input" aria-label="Nome oggetto" data-item-index="'+index+
           '" data-item-key="name" value="'+esc(item.name||"")+'">'+
-          (item.infusion?.name?'<small class="inventory-item-extension"> - '+esc(item.infusion.name)+'</small>':''),
+          '',
         nameCell='<span class="inventory-col-name">'+
           '<button type="button" class="inventory-select" data-act="inventory-select" data-index="'+index+
           '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:scrolls?esc(displayName):'Dettagli')+'</button>'+
@@ -3755,7 +3772,22 @@ async function openGenericVariantDialog(index){
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
 }
-function inventoryItemDescription(obj,index){
+function itemExtensionOriginDescription(extension){
+ const origin=String(extension.origin_id||''),parent=String(extension.parent_origin||'');
+ const sourceName=String(extension.origin_name||'').replace(/^Oggetto · /,'').trim();
+ const record=state.editor?.read()||{};
+ const sources=[...(state.traitRows||[]),...(state.calculated?.features||[]),
+  ...(record.optional_features_catalog||[])];
+ const source=sources.find(row=>(origin&&[row.origin_id,row.feature_origin,row.origin_key].includes(origin))||
+   (parent&&[row.origin_id,row.feature_origin,row.origin_key].includes(parent)))||
+  sources.find(row=>sourceName&&row.name===sourceName);
+ const text=source?flattenDescription({entries:source.entries??source.description??''}):'';
+ if(text)return text;
+ const catalog=(state.referenceCatalogs.optional_features||[]).find(row=>row.name===sourceName);
+ return catalog?flattenDescription(catalog)||'Descrizione del tratto non disponibile.':
+  extension.spell_description||'Descrizione del tratto non disponibile.';
+}
+function inventoryItemDescription(obj,index,optionDescriptions=new Map()){
   if(requiresAttunement(resolveOwnedItem(obj))&&state.calculated?.attunements)
     obj={...obj,attuned_count:state.calculated.attunements.counts[index]||0};
   const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
@@ -3778,36 +3810,41 @@ function inventoryItemDescription(obj,index){
     [['damage','Dadi danno'],['versatile_damage','Danno versatile'],['range','Gittata ('+distanceUnitLabel()+')'],['bonus_weapon','Bonus magico']].map(([key,label])=>
       '<label>'+label+'<input data-item-override="'+key+'" data-item-index="'+index+
       '" value="'+esc(key==='range'?distanceFieldDisplay(obj.instance_overrides?.[key]??''):(obj.instance_overrides?.[key]??''))+'"></label>').join('')+'</details>':'';
-  const genericVariants=(Array.isArray(obj.option_extensions)?obj.option_extensions:[]).filter(row=>row.generic_variant);
+  const applied=itemAppliedOptions(obj,itemExtensions,{
+   optionDescription:option=>optionDescriptions.get(option.id)||
+     flattenDescription({entries:option.description||option.definition?.description||[]})||
+     (option.generic_variant?'Descrizione della variante non disponibile.':'Descrizione del tratto non disponibile.'),
+   originDescription:itemExtensionOriginDescription
+  });
+  const storedPowerControls=extension=>
+   ['spell_storing_item','spell_imprint'].includes(extension.stored_spell_feature)?
+   '<div class="inventory-prose">'+esc(extension.spell_description||'')+'</div>'+
+   (()=>{const tracker=(state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id);
+     const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
+     const imprint=extension.stored_spell_feature==='spell_imprint';
+     const valid=!imprint||spellImprintActive(extension);
+     return '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'"'+
+      (!valid||remaining<1?' disabled':'')+'>'+
+      (imprint?'Lancia dalla carta · '+(extension.action_type==='bonus'?'azione bonus':'azione'):
+       'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
+   })():'';
   return '<div class="inventory-description">'+
     '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
       '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools">'+actionGlyph('spark')+
       '<span>Varianti 5eTools</span></button></div>'+
-    (genericVariants.length?'<section class="inventory-detail-section"><h3>Varianti applicate</h3>'+
-     genericVariants.map(row=>'<div class="infusion-dialog-item"><span>'+esc(row.name)+' · '+esc(row.source||'')+
-      '</span><button type="button" class="btn small" data-act="item-variant-remove" data-index="'+index+
-      '" data-variant-id="'+esc(row.id)+'" aria-label="Rimuovi '+esc(row.name)+'">Rimuovi</button></div>').join('')+
-     '</section>':'')+
+    (applied.length?'<section class="inventory-detail-section inventory-applied-options"><h3>Modifiche applicate</h3>'+
+      applied.map(option=>'<article class="inventory-applied-entry">'+
+       '<div class="inventory-applied-heading"><strong>'+esc(option.name)+'</strong>'+
+       (option.removable?'<button type="button" class="inventory-applied-remove" data-act="item-variant-remove" data-index="'+index+
+        '" data-variant-id="'+esc(option.variant_id)+'" aria-label="Rimuovi '+esc(option.name)+'" title="Rimuovi">'+
+        '<span aria-hidden="true">×</span></button>':'')+'</div>'+
+       '<p class="inventory-applied-description">'+esc(option.description)+'</p>'+
+       option.effects.map(storedPowerControls).join('')+'</article>').join('')+
+      '</section>':'')+
     (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
       '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
     '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+
     (properties!=='—'?'<section class="inventory-detail-section"><h3>Proprietà</h3><p>'+esc(properties)+'</p></section>':'')+
-    (itemExtensions.length?'<section class="inventory-detail-section magic-effect-extensions">'+
-       '<h3>Estensioni attive</h3><ul>'+itemExtensions.map(extension=>
-       '<li><strong>'+esc(extension.origin_name||'Beneficio')+'</strong> · '+
-       esc(effectExtensionLabel(extension,{cha_mod:state.calculated?.abilities?.cha?.modifier}))+
-       (['spell_storing_item','spell_imprint'].includes(extension.stored_spell_feature)?
-        '<div class="inventory-prose">'+esc(extension.spell_description||'')+'</div>'+
-        (()=>{const tracker=(state.calculated?.trackers||[]).find(row=>row.id===extension.tracker_id);
-         const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
-         const imprint=extension.stored_spell_feature==='spell_imprint';
-         const valid=!imprint||spellImprintActive(extension);
-         return '<div class="actions"><button type="button" class="btn small" data-act="spell-storing-use" data-index="'+index+'"'+
-          (!valid||remaining<1?' disabled':'')+'>'+
-          (imprint?'Lancia dalla carta · '+(extension.action_type==='bonus'?'azione bonus':'azione'):
-            'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
-        })():'')+
-       '</li>').join('')+'</ul></section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
 }
 function inventoryRow(item,index) {
@@ -9498,13 +9535,12 @@ async function handleAction(target){
     await patch(changes);closeDialog(dialog,{remove:true});await render();
     await openBenefitSelectionDialog(id,stage);return;
   }
-  if(act==='item-option-remove'||act==='infusion-clear'){
+  if(act==='item-option-remove'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
-    if(target.dataset.selectionId){
-      const calculated=await computeLocalData(creature);
-      await patch(powerApplicationPatch(creature,calculated,calculated.power_selection_catalog,target.dataset.selectionId,target.dataset.optionId,false));
-    }else await patch(clearInfusionPatch(creature,Number(target.dataset.index)));
+    if(!target.dataset.selectionId)throw Error('Opzione applicata non disponibile.');
+    const calculated=await computeLocalData(creature);
+    await patch(powerApplicationPatch(creature,calculated,calculated.power_selection_catalog,target.dataset.selectionId,target.dataset.optionId,false));
     await render();return;
   }
   if(["inventory-container-add","inventory-container-rename","inventory-container-delete"].includes(act)){

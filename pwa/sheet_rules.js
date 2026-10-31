@@ -19,7 +19,7 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,effectiveEquipmentInventory,matchingDamageDieRerolls,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,infusionChargeTrackers,armorDexterityBonus,hydrateGenericVariants} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,effectiveEquipmentInventory,matchingDamageDieRerolls,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,itemOptionChargeTrackers,armorDexterityBonus,hydrateGenericVariants} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
@@ -1462,7 +1462,7 @@ function calculateSheetValues(record={},catalogs={}){
     name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featTrackers,
     ...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
     ...racialBonusTrackers(racialBonusRows,safe('proficiency')??2),
-    ...infusionChargeTrackers(record,index?.artificer_infusions||[],features)];
+    ...itemOptionChargeTrackers(record,index?.artificer_infusions||[],features)];
   const contextualTrackerIds=new Map();
   for(const extra of contextual.trackers){
     const native=baseTrackers.find(row=>row.origin_id===extra.origin_id&&

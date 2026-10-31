@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerSelectionLimit,
-  powerApplicationPatch,powerSelectionTargets,normalizeSelectionRecord} from '../power_selection.js';
+  powerApplicationPatch,powerSelectionTargets} from '../power_selection.js';
 const data={...JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8')),optionalFeatureProgressions:JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'))};
 const owner=(className,source,name)=>({name,origin_id:'feature:'+name,
  origin_key:'class|'+source.toLowerCase()+'|'+className.toLowerCase(),
@@ -45,19 +45,6 @@ test('alternative packages choose one monster type or two humanoid races within 
  record.classes[0].level=14;
  record={...record,...powerSelectionPatch(record,ctx,data,id,'learned','humanoid_races:3',['elf','human'])};
  assert.equal(pick(record,ctx).layers.learned.used,3);
-});
-
-test('legacy Ranger choices move from prepared to learned without losing selected races',()=>{
- const old={...ranger(6),selection_state_version:2,power_selections:{ranger_favored_enemy_phb:{
-  prepared:['dragons',{id:'humanoids',subchoices:['Elf','Orc']}]
- }}};
- const next=normalizeSelectionRecord(old,data);
- assert.deepEqual(next.power_selections.ranger_favored_enemy_phb.learned,[
-  {id:'monster_types:1',subchoices:['dragons']},
-  {id:'humanoid_races:2',subchoices:['elf','orc']}
- ]);
- assert.equal(next.power_selections.ranger_favored_enemy_phb.prepared,undefined);
- assert.equal(pick(next,context()).layers.learned.used,2);
 });
 
 test('spell selection benefits project the same stage and source contract as optional powers',()=>{
@@ -176,11 +163,10 @@ test('option benefit targets are defined by data, including equipped armor and o
  const target={kind:'equipped_item',slot:'body',kinds:['armor']};
  assert.deepEqual(powerSelectionTargets(record,{layers:{applied:{target}}},option).map(row=>row.index),[0]);
  assert.deepEqual(powerSelectionTargets(record,{layers:{applied:{}}},option),[]);
- const extension={kind:'item',selector:'option.item_selector',extension_field:'infusion'};
+ const extension={kind:'item',selector:'option.item_selector'};
  const model={layers:{applied:{target:extension}}};
  assert.deepEqual(powerSelectionTargets(record,model,option).map(row=>row.index),[0,1]);
- assert.deepEqual(powerSelectionTargets({...record,inventory:inventory.map(item=>({...item,
-  infusion:{creator_id:'someone-else'}}))},model,option),[]);
+ assert.deepEqual(powerSelectionTargets(record,model,option).map(row=>row.index),[0,1]);
  assert.deepEqual(powerSelectionTargets({...record,inventory:inventory.map(item=>({...item,disabled:true}))},model,option),[]);
 });
 

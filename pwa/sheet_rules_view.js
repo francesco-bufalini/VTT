@@ -387,7 +387,7 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
  const attuned=requiresAttunement(effective)?itemAttunementCount(item):item.attuned?1:0;
  if(attuned)status.push('In sintonia'+(attuned>1?' ×'+attuned:''));else if(requiresAttunement(effective))status.push('Richiede sintonia');
  if(item.active===false)status.push('Disattivato');
- if(item.infusion)status.push('Infuso');
+
  const properties=String(propertyText==='—'?'':propertyText||'').split(' · ').filter(part=>
    !(facts.some(fact=>fact.label==='CA')&&/^CA(?:\s|\+|$)/i.test(part))).join(' · ');
  return {kind,type,glyph,quantity,displayName:ownedItemDisplayName(item),
@@ -1454,7 +1454,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const infusionRows=infused.map(row=>
    '<div class="play-effect-row">'+activeLink('infusion:'+row.id,'spark',row.name,
     (row.item.name||row.item.id)+' · Beneficio dell’oggetto')+
-   btn('Rimuovi beneficio dall’oggetto','cross','data-act="item-option-remove" data-index="'+row.index+'" data-selection-id="'+esc(row.infusion.selection_id||'')+'" data-option-id="'+esc(row.option_id||'')+'"','<span class="sr-only">Termina</span>')+
+   btn('Rimuovi beneficio dall’oggetto','cross','data-act="item-option-remove" data-index="'+row.index+'" data-selection-id="'+esc(row.option.selection_id||'')+'" data-option-id="'+esc(row.option_id||'')+'"','<span class="sr-only">Termina</span>')+
    '</div>').join('');
   const concentrationRow=(c.conditions||[]).includes('concentrating')?
    '<div class="play-effect-row">'+activeLink('condition:concentrating','spark','Concentrazione',c.concentrating_spell_id||'Attiva')+

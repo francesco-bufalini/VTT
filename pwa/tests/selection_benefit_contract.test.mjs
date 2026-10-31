@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits,normalizeSelectionRecord,powerStateActivationPatch} from '../power_selection.js';
+import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits,powerStateActivationPatch} from '../power_selection.js';
 import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from '../scaling_dice.js';
 import {rollOptionalDice} from '../sheet_roll_origin.js';
@@ -11,7 +11,7 @@ import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '..
 import {actionEntries,battleActionPanels} from '../action_economy.js';
 import {battleResourcePowers,trackerRollBonusRows} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-import {infusionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts,effectiveEquipmentInventory,equipSlot} from '../item_controls.js';
+import {itemOptionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts,effectiveEquipmentInventory,equipSlot} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={powerSelections:read('power_selections'),optionalFeatureProgressions:read('optional_feature_progressions')};
@@ -45,14 +45,15 @@ test('AI and Fighting Style use one catalog and the same data progression evalua
  assert(ai.options.some(o=>o.id==='optional:tce:enhanced-defense'));
  assert.equal(ai.application.destination,'item');assert.equal(style.application.destination,'origin');
 });
-test('unbound old extension traits do not become applied options or consume a target slot',()=>{
- const r={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],power_applications:{arcane_armor:[{id:'arcane_armor',trait:{name:'Old extension'}}]}};
- const normalized=normalizeSelectionRecord(r,combined);
- const feature={name:'Arcane Armor',class_name:'Artificer',class_source:'TCE',origin_id:'feature:arcane',origin_key:'class|tce|artificer'};
- const model=powerSelectionModels(normalized,{features:[feature]},combined).find(m=>m.id==='arcane_armor');
- assert.equal(model.layers.applied.used,0);assert.equal(normalized.power_applications.arcane_armor[0].trait,undefined);
+test('an item application without a target instance is ignored',()=>{
+ const r={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],
+  power_applications:{arcane_armor:[{id:'arcane_armor'}]}};
+ const feature={name:'Arcane Armor',class_name:'Artificer',class_source:'TCE',
+  origin_id:'feature:arcane',origin_key:'class|tce|artificer'};
+ const model=powerSelectionModels(r,{features:[feature]},combined).find(m=>m.id==='arcane_armor');
+ assert.equal(model.layers.applied.used,0);
+ assert.equal(projectSelectionBenefits(r,{powerSelections:combined},[feature]).inventory[0].option_extensions.length,0);
 });
-
 test('a failed item application is atomic, including stack identity and attunement',()=>{
  const catalog=schema('item');catalog.selections[0].source.options[0].effect_choice={key:'color',options:['red']};
  const context={features:[feature]};let r=record();
@@ -87,7 +88,7 @@ test('multiple options extend the same object without replacing one another or s
   r={...r,...powerApplicationPatch(r,context,catalog,'data-choice',id,true,{itemIndex:0})};
  }
  assert.equal(r.inventory[0].option_extensions.length,2);
- const trackers=infusionChargeTrackers(r,[],context.features),effects=activeItemOptionEffects(r,[],context.features);
+ const trackers=itemOptionChargeTrackers(r,[],context.features),effects=activeItemOptionEffects(r,[],context.features);
  assert.equal(new Set(trackers.map(t=>t.id)).size,2);
  assert.deepEqual(effects.map(e=>e.tracker_id),trackers.map(t=>t.id));
  r={...r,...powerApplicationPatch(r,context,catalog,'data-choice','first',false)};
@@ -149,19 +150,6 @@ test('every optional progression attaches to an actual source-qualified owner tr
   assert(model,rule.id+' has no live trait owner');
   assert(c.features.some(feature=>feature.origin_id===model.source_origin_id&&feature.name===owner.trait),rule.id);
  }
-});
-
-test('import preserves spent item charges and consumes old model toggles at the compatibility boundary',()=>{
- const r={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],
-  inventory:[{id:'old-item',instance_id:'old-copy',name:'Old item',quantity:1,equipped_slots:['body'],infusion:{id:'infusion|tce|repulsion shield',creator_id:'owner'}}],
-  trait_state_selection:{armor_model:'armor_model:guardian'},active_class_features:{'trait_state:armor_model:guardian':{name:'Guardian'},other:{name:'Keep'}},
-  resource_tracker_spent:{'infusion-charges:infusion:owner|infusion|tce|repulsion shield|old-copy':2}};
- const migrated=normalizeSelectionRecord(r,combined);
- assert.equal(migrated.resource_tracker_spent['item-option-charges:old-copy:optional:tce:repulsion-shield'],2);
- assert.equal(migrated.trait_state_selection.armor_model,undefined);
- assert.equal(migrated.active_class_features['trait_state:armor_model:guardian'],undefined);
- assert(migrated.active_class_features.other);
- assert.equal(migrated.power_applications.armor_model[0].id,'armor_model:guardian');
 });
 
 test('real Archery catalog entry applies only while the learned style is active and weapon is ranged',()=>{
