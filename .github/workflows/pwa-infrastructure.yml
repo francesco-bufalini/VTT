@@ -51,6 +51,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /pwa/
+            /tests/fixtures/monster_traits.json
             /network/pwa_host.gd
             /network/board_sync.gd
             /vtt/content_catalog.gd
@@ -117,7 +118,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [startup, navigation, sheets]
+        suite: [startup, navigation, sheets, choices, inventory, variants]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -165,6 +166,24 @@ jobs:
               node tests/action_dashboard_browser.mjs
               node tests/infusions_browser.mjs
               node tests/artificer_armor_browser.mjs
+              ;;
+            choices)
+              node tests/ability_payments_browser.mjs
+              node tests/benefit_option_ui_browser.mjs
+              node tests/class_feature_effects_browser.mjs
+              node tests/feat_spell_audit_browser.mjs
+              node tests/legacy_feature_spells_browser.mjs
+              node tests/permanent_subtraits_browser.mjs
+              node tests/powers_slots_concentration_browser.mjs
+              ;;
+            inventory)
+              node tests/generic_item_variants_browser.mjs
+              node tests/inventory_bulk_browser.mjs
+              node tests/numeric_fields_browser.mjs
+              node tests/share_dialog_browser.mjs
+              ;;
+            variants)
+              node tests/creature_variants_browser.mjs
               ;;
             *)
               echo "Unknown Chromium suite" >&2
