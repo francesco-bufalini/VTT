@@ -482,12 +482,12 @@ export function attackActionCategory(row={}){
 // Shared presentation for a single actionable side control. A paid action
 // shows the resource name above remaining charges and the Use verb, all
 // inside ONE button; selecting it uses the existing validated action handler.
-export function battleActionUseBox({act='',attrs='',tracker=null,trackerName='',cost=0,label='Usa',disabled=false,name=''}={}){
+export function battleActionUseBox({act='',attrs='',tracker=null,trackerName='',cost=0,label='Usa',disabled=false,allowDepleted=false,name=''}={}){
  if(!act)return '<span class="play-action-use-space" aria-hidden="true"></span>';
  const amount=Math.max(0,Number(cost)||0);
  const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
  const resource=amount>0?String(tracker?.name||trackerName||'Tracker non disponibile'):'';
- const off=disabled||amount>0&&(!tracker||tracker.disabled||available<amount);
+ const off=disabled||!allowDepleted&&amount>0&&(!tracker||tracker.disabled||available<amount);
  const labelText=String(label||'Usa');
  return '<button type="button" class="play-resource-use play-action-use-box" data-act="'+esc(act)+'"'+
   attrs+(off?' disabled':'')+
