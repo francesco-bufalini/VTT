@@ -24,7 +24,7 @@ test('normal sight uses DMG outdoor reference and does not pretend to see throug
   assert.match(senseLightRows()[0].bright,/10\.560 ft/);
   assert.doesNotMatch(senseLightRows()[0].bright,/Linea di vista/);
   setDistanceUnit('meters');
-  assert.match(senseLightRows()[0].bright,/3\.168 m/);
+  assert.match(senseLightRows()[0].bright,/3168 m/);
   assert.equal(senseLightRows()[0].dark,'Nessuna');
  }finally{setDistanceUnit('feet');}
 });

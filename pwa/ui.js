@@ -892,7 +892,6 @@ async function render() {
     app.dataset.renderedSheet=state.page==="library"&&!state.libraryMode?state.sheet:"";
     decorateSheetHeadings();
     organizeSheetPanels();
-    applyDistanceUnits(app);
     // Live token synchronization can finish while the first character load
     // is pending. Apply at most one queued refresh after its main panel exists,
     // rather than canceling every in-flight render before the sheet can paint.
@@ -5652,6 +5651,8 @@ function organizeSheetPanels(){
     });
   }
 
+  // Apply presentation-only unit labels after the sheet is mounted.
+  applyDistanceUnits(app);
   if(!state.sheetPopup)return;
   const source=state.sheetSources.get(state.sheetPopup);
   if(!source){state.sheetPopup="";return;}
