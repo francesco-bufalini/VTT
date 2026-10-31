@@ -22,7 +22,10 @@
     "test:native-origins": "node tests/compare_native_origins.mjs",
     "test:native-mechanics": "node tests/compare_native_mechanics.mjs",
     "test:rapid-browser": "node tests/rapid_updates_browser.mjs",
-    "test:save-failure-browser": "node tests/save_failure_browser.mjs"
+    "test:save-failure-browser": "node tests/save_failure_browser.mjs",
+    "test:desktop-startup-browser": "node tests/desktop_startup_browser.mjs",
+    "test:creature-variants-desktop-browser": "node tests/creature_variants_desktop_browser.mjs",
+    "test:legacy-browser-parity": "node tests/browser_parity.mjs"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.0.0",

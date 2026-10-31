@@ -20,14 +20,26 @@ try{
  });
  await page.reload();await page.locator('[data-act="open"]').click();
  await page.locator('#sheet-play-view').waitFor();await sheet('battle');
- await page.locator('[data-battle-action="resources"] > summary').click();
- for(const id of ['first','second'])
-  assert(await page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]:visible').count());
+ const resources=page.locator('[data-battle-action="resources"]');
+ if(await resources.getAttribute('open')===null)
+  await resources.locator(':scope > summary').click();
+ const use=id=>page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]');
+ for(const id of ['first','second']){
+  const button=use(id);
+  assert.equal(await button.count(),1,'The shared-tracker action remains in Resources');
+  // The legacy power archive is intentionally hidden. The real button must
+  // exist in the visible Resources group, not just in that hidden editor.
+  const visible=page.locator('#sheet-play-view [data-battle-action="resources"] [data-ability-id="activated:'+id+'"] [data-act="battle-use-ability"]');
+  assert.equal(await visible.count(),1,'The active resource contains a use control');
+  await visible.evaluate(node=>{for(let p=node.parentElement;p;p=p.parentElement)
+    if(p.tagName==='DETAILS')p.open=true;});
+  assert(await visible.isVisible(),'Players can reveal the action inside Resources');
+ }
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].revision;});
  // The popup opens without charging the tracker and each confirmed use
  // commits its own atomic payment, even when two abilities share one pool.
  for(const [index,id] of ['first','second'].entries()){
-  await page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]').click();
+  await page.locator('#sheet-play-view [data-battle-action="resources"] [data-ability-id="activated:'+id+'"] [data-act="battle-use-ability"]').click();
   const dialog=page.locator('#other-ability-dialog');
   await dialog.locator('[data-ability-confirm]').waitFor();
   assert.equal(await dialog.locator('[data-ability-payment] option').count(),2);
