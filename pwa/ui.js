@@ -18,7 +18,7 @@ import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilit
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
 import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_CONDITION_CATEGORY, exhaustionLevel, exhaustionConditionRows, exhaustionSelectionPatch, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
-import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
+import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat, isIncomingExternalEvent } from "./chat_notifications.js";
 import {openSendDialog,pollIncomingShares} from './share_transfer.js';
 import {exportInventoryItems} from './inventory_transfer.js';
 import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, createBestiaryMonster, importCreatureFile, exportCreature, exportCreatureBatch, exportCreatureArchive, exportHomebrewPackage, exportCatalogHomebrewEntry,
@@ -252,6 +252,8 @@ async function openManualCompanionDialog(owner,descriptor){
 
 
 const app = document.querySelector("#app");
+const appShell = document.querySelector(".app-shell");
+const chatScreen = document.querySelector("#chat-screen");
 const nav = document.querySelector("#nav");
 const connection = document.querySelector("#connection");
 const creatureInput = document.querySelector("#import-creature");
@@ -262,7 +264,7 @@ const sections = new Set(["library", "catalog", "session"]);
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
-  after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
+  after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", chatOpen:false, chatUnread:false, stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, sessionPane:"", disclosureState:new Map(),
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
@@ -295,7 +297,7 @@ function acceptSession(info){
   const next=String(info?.session??"");
   if(currentGameSession && next && next!==currentGameSession){
     // A different desktop game must not inherit the old chat cursor.
-    state.messages=[];state.after="";state.map=null;state.tokenId="";chatNotificationBaseline=false;locallySentEventIds.clear();
+    state.messages=[];state.after="";state.map=null;state.tokenId="";state.chatUnread=false;chatNotificationBaseline=false;locallySentEventIds.clear();
     releaseSessionSnapshot();++snapshotGeneration;
     previousMapFingerprint="";
     tokenStatusFingerprint="";
@@ -653,6 +655,27 @@ function syncNav(){
   connection.textContent=state.paired&&state.online?'● Collegato':state.online?'● Desktop disponibile':state.hostReachable?'○ Nessuna partita':'○ Offline';
   connection.title=state.paired&&state.online?'Partita collegata':state.online?'Desktop in partita':state.hostReachable?'Nessuna partita aperta':'Archivio locale disponibile offline';
   connection.classList.toggle('connected',state.paired&&state.online);
+  const onCreature=isCreatureOpen();
+  if(!onCreature)state.chatOpen=false;
+  const actions=document.querySelector('#header-actions');
+  actions?.classList.toggle('with-creature',onCreature);
+  const headerChat=document.querySelector('#header-chat');
+  const headerBell=document.querySelector('#header-chat-notifications');
+  const headerDice=document.querySelector('#header-dice');
+  if(headerChat){
+    headerChat.hidden=!onCreature||state.chatOpen;
+    headerChat.classList.toggle('has-unread',state.chatUnread);
+    headerChat.setAttribute('aria-label',state.chatUnread?'Apri chat: nuovi messaggi':'Apri chat');
+  }
+  if(headerBell){
+    headerBell.hidden=!onCreature||!state.chatOpen;
+    headerBell.disabled=!notificationsSupported();
+    headerBell.setAttribute('aria-pressed',String(notificationsEnabled()));
+    headerBell.setAttribute('aria-label',notificationsEnabled()?'Disattiva notifiche chat':'Attiva notifiche chat');
+    headerBell.title=notificationsEnabled()?'Disattiva notifiche':'Attiva notifiche';
+  }
+  if(headerDice)headerDice.hidden=!onCreature;
+  syncChatScreen();
 }
 
 // Each section is independent, including an empty selection. Migrate the
@@ -4464,18 +4487,49 @@ function recordSheetChange(before,after,requested){
  if(changes.length)recordSheetAction(changes.join(' · '),after);
 }
 
+function isCreatureOpen(){
+ return state.page==='library'&&!state.libraryMode&&Boolean(state.creatureId);
+}
+function chatStatusText(){
+ return state.paired&&state.online?'Messaggi e tiri della partita · registro locale attivo':
+  'Registro locale · le azioni restano visibili anche senza partita';
+}
+function syncChatScreen(){
+ const visible=state.chatOpen&&isCreatureOpen();
+ appShell.classList.toggle('chat-open',visible);
+ chatScreen.hidden=!visible;
+ if(!visible){if(chatScreen.childElementCount)chatScreen.replaceChildren();return;}
+ if(!chatScreen.querySelector('#events')){
+  chatScreen.innerHTML=chatView();
+  redrawChatEvents();
+ }
+ const caption=chatScreen.querySelector('.chat-caption');
+ if(caption)caption.textContent=chatStatusText();
+ const submit=chatScreen.querySelector('#chat-form [type="submit"]');
+ if(submit)submit.textContent=state.paired&&state.online?'Invia messaggio':'Aggiungi alla chat locale';
+}
+function setSheetChatOpen(open){
+ if(open&&!isCreatureOpen())return;
+ state.chatOpen=Boolean(open);
+ if(open)state.chatUnread=false;
+ syncNav();
+ if(open){
+  const events=chatScreen.querySelector('#events');
+  if(events)events.scrollTop=events.scrollHeight;
+ }
+}
 function chatView(){
-  return panel("Chat della partita",
-    '<div class="row between chat-toolbar"><span class="chat-caption">'+
-    (state.paired&&state.online?'Messaggi e tiri della partita · registro locale attivo':
-      'Registro locale · le azioni restano visibili anche senza partita')+
-    '</span>'+(notificationsSupported()?'<button type="button" class="btn chat-notify-toggle" data-act="toggle-chat-notifications" aria-label="Notifiche chat" title="Notifiche di sistema (mentre la PWA è attiva)">'+(notificationsEnabled()?'🔔 Attive':Notification.permission==='default'?'🔔 Autorizza':'🔕 Notifiche')+'</button>':'')+'<button type="button" class="btn chat-dice-trigger" data-act="open-chat-dice" aria-label="Apri lanciadadi" title="Lancia i dadi">🎲</button></div>'+
-    '<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
-    '<form id="chat-form" class="stack" autocomplete="off">'+
-    '<label>Scrivi come <select id="chat-author"><option value=""'+(!state.chatAuthor?' selected':'')+'>Giocatore</option>'+
-    (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'"'+(state.chatAuthor===x.name?' selected':'')+'>'+esc(x.name)+'</option>').join("")+
-    '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio o nota locale…" required></textarea></label>'+
-    '<button type="submit" class="btn primary full">'+(state.paired&&state.online?'Invia messaggio':'Aggiungi alla chat locale')+'</button></form>');
+ return panel('Chat della partita',
+  '<div class="chat-view-head"><h2>Chat della partita</h2>'+
+  '<button type="button" class="btn small chat-view-close" data-act="header-chat-close" aria-label="Chiudi chat">✕ Chiudi</button></div>'+
+  '<div class="row between chat-toolbar"><span class="chat-caption">'+esc(chatStatusText())+'</span></div>'+
+  '<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
+  '<form id="chat-form" class="stack" autocomplete="off">'+
+  '<label>Scrivi come <select id="chat-author"><option value=""'+(!state.chatAuthor?' selected':'')+'>Giocatore</option>'+
+  (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'"'+(state.chatAuthor===x.name?' selected':'')+'>'+esc(x.name)+'</option>').join('')+
+  '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio o nota locale…" required></textarea></label>'+
+  '<button type="submit" class="btn primary full">'+(state.paired&&state.online?'Invia messaggio':'Aggiungi alla chat locale')+'</button></form>',
+  'chat-main-panel');
 }
 function renderEvents(){
   const all=new Map();
@@ -4536,16 +4590,16 @@ function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
     '" aria-label="Modifica '+esc(token.name)+'" title="Condizioni, incantesimi e miniatura">⚙</button></div>').join('');
 }
 function sessionLayout(table,desktop){
-  const pane=state.sessionPane||(state.paired&&state.online?'table':'connection');
-  const choices=[['table','Mappa'],['chat','Chat e dadi'],['connection','Collegamento']];
+  const pane=['table','connection'].includes(state.sessionPane)?state.sessionPane:
+    (state.paired&&state.online?'table':'connection');
+  const choices=[['table','Mappa'],['connection','Collegamento']];
   const unavailable=state.sessionCreatureErrors.length?
     '<p class="warning" role="status" data-session-creature-errors>Schede non disponibili in Partita: '+
       esc(state.sessionCreatureErrors.map(row=>row.name).join(', '))+'. Le altre creature restano utilizzabili.</p>':'';
   return header('Al tavolo','La tua partita','Il tavolo condiviso, sempre a portata di mano.')+unavailable+
     '<div class="session-switcher" role="group" aria-label="Sezioni della partita">'+choices.map(([key,title])=>'<button type="button" class="btn" data-act="session-pane" data-session-pane="'+key+'" aria-pressed="'+(pane===key)+'">'+title+'</button>').join('')+'</div>'+
     '<div data-session-content="connection"'+(pane==='connection'?'':' hidden')+'>'+desktop+'</div>'+
-    '<div data-session-content="table"'+(pane==='table'?'':' hidden')+'>'+table+'</div>'+
-    '<div data-session-content="chat"'+(pane==='chat'?'':' hidden')+'>'+chatView()+'</div>';
+    '<div data-session-content="table"'+(pane==='table'?'':' hidden')+'>'+table+'</div>';
 }
 function sessionView() {
   const entries=Array.isArray(state.map?.tokens)?state.map.tokens:[];
@@ -4863,19 +4917,26 @@ async function fetchChat() {
     const incomingEvents = [];
     if(Array.isArray(reply.events) && reply.events.length){
       const ids=new Set(state.messages.map(e=>e.id));
+      const localIds=new Set(state.localMessages.map(row=>row.id));
       for(const entry of reply.events){
         if(!entry || !entry.id) continue;
-        if(!ids.has(entry.id)){ state.messages.push(entry); ids.add(entry.id); if(!initialHistory && (entry.kind==="chat" || entry.kind==="roll") && !locallySentEventIds.has(entry.id)) incomingEvents.push(entry); }
+        if(!ids.has(entry.id)){
+          state.messages.push(entry);ids.add(entry.id);
+          if(isIncomingExternalEvent(entry,{initialHistory,locallySentIds:locallySentEventIds,localIds}))
+            incomingEvents.push(entry);
+        }
         state.after=entry.id;
       }
       chatNotificationBaseline=true;
        state.messages=state.messages.slice(-100);
+       if(incomingEvents.length&&!state.chatOpen){
+         state.chatUnread=true;syncNav();
+       }
        for(const entry of incomingEvents){
          void notifyIncomingChat(entry, currentGameSession).catch(console.warn);
-         if(document.visibilityState==="visible") message((entry.kind==="roll"?"🎲 ":"💬 ")+(entry.author||"Giocatore")+": "+(entry.kind==="roll"?((entry.label||entry.die||"Tiro")+": "+entry.total):(entry.text||"Messaggio")),false);
+         if(document.visibilityState==="visible")message((entry.kind==="roll"?"🎲 ":"💬 ")+(entry.author||"Giocatore")+": "+(entry.kind==="roll"?((entry.label||entry.die||"Tiro")+": "+entry.total):(entry.text||"Messaggio")),false);
        }
-      const container=document.querySelector("#events");
-      if(state.page==="session"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
+      redrawChatEvents();
     }
   }catch(error){
     if(generation===chatGeneration && error.status===401){
@@ -9700,12 +9761,13 @@ async function handleAction(target){
       const enabled=await toggleChatNotifications();
       // Permission UI can temporarily background the app. Do not rebuild the
       // entire session screen after the permission prompt closes.
-      const button=document.querySelector('[data-act="toggle-chat-notifications"]');
-      if(button)button.textContent=enabled?"🔔 Attive":"🔕 Notifiche";
+      syncNav();
       message(enabled?"Notifiche abilitate.":"Notifiche disabilitate.");
     } catch(error) { message(errorMessage(error),true); }
     return;
   }
+  if(act==="header-chat-open"){setSheetChatOpen(true);return;}
+  if(act==="header-chat-close"){setSheetChatOpen(false);return;}
   if(act==="open-chat-dice"){openDiceDialog();return;}
   if(act==="close-chat-dice"){closeDialog(document.querySelector("#chat-dice-dialog"),{remove:true});return;}
   if(act==="select-die"){
@@ -10183,6 +10245,12 @@ function listen(){
       return;
     }
     if(button.disabled)return;
+    // Notification permission must be requested within the user's gesture,
+    // not after an asynchronous autosave or UI refresh.
+    if(closeAction==='toggle-chat-notifications'){
+      try{await handleAction(button);}catch(error){message(errorMessage(error),true);}
+      return;
+    }
     // Picking a spell changes only this popup; paint the selection immediately.
     if(closeAction==='scroll-spell-choose'){
       try{await handleAction(button);}catch(error){message(errorMessage(error),true);}
@@ -10218,13 +10286,15 @@ function listen(){
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();
   });
-  app.addEventListener("submit",async e=>{
+  const onFormSubmit=async e=>{
     if(!(e.target instanceof HTMLFormElement))return;
     e.preventDefault();
     const button=e.target.querySelector('[type="submit"]');if(button)button.disabled=true;
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
-  });
+  };
+  app.addEventListener("submit",onFormSubmit);
+  chatScreen.addEventListener("submit",onFormSubmit);
   const editable = "[data-item-container],[data-coin-code],[data-slot-weapon-size],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener('focusout',e=>{
     const target=e.target;
@@ -10478,14 +10548,20 @@ async function loadBundledConditionCatalog(){
  }catch(error){console.warn("Bundled 5etools effects not available; using standard conditions",error);}
 }
 
-// Notification taps should return to the live chat, not just focus the page.
-function openChatFromNotification(){
-  if(!state.paired) return;
-  if(state.page!=="session") void navigate("session");
-  else { state.sessionPane="chat"; void render(); }
+// Notification taps open the chat belonging to a creature, even after a cold start.
+async function openChatFromNotification(){
+ if(isCreatureOpen()){setSheetChatOpen(true);return;}
+ const candidate=(state.cachedCreatures||[]).find(row=>row.id===state.creatureId)||
+   (state.cachedCreatures||[])[0];
+ if(!candidate?.id){message('Apri una creatura per visualizzare la chat.');return;}
+ if(state.page!=='library'||state.libraryMode)await navigate('library');
+ state.page='library';state.libraryMode=false;state.creatureId=candidate.id;state.editor=null;
+ await render();
+ if(state.editor)setSheetChatOpen(true);
 }
 window.addEventListener("message", event => {
-  if(event.origin===location.origin && event.data?.type==="OPEN_CHAT") openChatFromNotification();
+  if(event.origin===location.origin && event.data?.type==="OPEN_CHAT")
+    void openChatFromNotification().catch(error=>message(errorMessage(error),true));
 });
 // Desktop-only callers reuse the same editor and its pending-write barrier.
 export const desktopSheetSession={
@@ -10499,10 +10575,8 @@ export const desktopSheetSession={
 };
 export async function mount(){
   realtimeStopped=false;
-  if(new URLSearchParams(location.search).get("open")==="chat") {
-    history.replaceState(null,"",location.pathname);
-    state.sessionPane="chat";
-  }
+  const openChatOnMount=new URLSearchParams(location.search).get("open")==="chat";
+  if(openChatOnMount)history.replaceState(history.state,"",location.pathname);
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
@@ -10518,6 +10592,7 @@ export async function mount(){
       event&&typeof event.id==='string'&&['chat','roll','action'].includes(event.kind)).slice(-250):[];
   }catch(error){console.warn('Cronologia chat locale non disponibile',error);}
   await render();
+  if(openChatOnMount&&!qrCode)void openChatFromNotification().catch(error=>message(errorMessage(error),true));
   if(typeof globalThis.vttDesktopSaveFile!=='function')
     void serverBackups.start();
   void loadBundledConditionCatalog();
