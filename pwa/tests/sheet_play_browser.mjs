@@ -641,6 +641,9 @@ try{
   const creature=(await loadCreature(creatureId))?.data;
   return creature?.current_hp===39&&creature?.temporary_hp===5;
  },seededCreatureId);
+ // Autosaving both inputs uses separate 500ms debounces. Ensure all writes
+ // settle before inspecting the final persisted record, not a transient one.
+ await page.waitForTimeout(750);
  assert.equal((await record()).current_hp,39,'Direct current HP edits are saved');
  assert.equal((await record()).temporary_hp,5,'Temporary HP are editable');
  await page.locator('#hp-adjust-dialog [data-act="hp-adjust-cancel"]').click();
