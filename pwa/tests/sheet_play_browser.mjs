@@ -980,7 +980,20 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),3,
   'Global inventory search must not hide the owned items in their sections');
  await page.locator('[data-play-search]').fill('');
- await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());await shot('item-popup');await dismiss();
+ await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());
+ assert.equal((await page.locator('#sheet-context-dialog .inventory-variant-heading h3').textContent()).trim(),'Varianti');
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="item-variant-open"]').count(),1,'Variant picker has one plus icon');
+ const popupControls=await page.locator('#sheet-context-dialog').evaluate(dialog=>{
+  const quantity=dialog.querySelector('.inventory-quantity-controls');
+  const container=dialog.querySelector('.play-item-main-fields select');
+  const labelA=dialog.querySelector('.play-item-main-fields>label:first-child>span');
+  const labelB=dialog.querySelector('.play-item-main-fields>label:last-child>span');
+  return {quantity:quantity?.getBoundingClientRect().height,container:container?.getBoundingClientRect().height,
+   captionA:labelA&&getComputedStyle(labelA).fontSize,captionB:labelB&&getComputedStyle(labelB).fontSize};
+ });
+ assert(Math.abs(popupControls.quantity-popupControls.container)<=1,'Quantity and container controls align in height');
+ assert.equal(popupControls.captionA,popupControls.captionB,'Item popup captions use equal font sizes');
+ await shot('item-popup');await dismiss();
  const inlineCoins=page.locator('#sheet-play-view .inventory-play-coins');
  assert.equal(await inlineCoins.count(),1,'Coin editor must be visible in the shortcut row');
  assert.equal(await inlineCoins.locator('[data-coin-code]').count(),5,'All five denominations must be editable inline');
