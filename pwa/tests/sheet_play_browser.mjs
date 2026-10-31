@@ -366,10 +366,13 @@ try{
 
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="movement"]').count(),0,
    'Empty generic action categories disappear by default');
- const weaponPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
+ const weaponPanel=page.locator('#sheet-play-view [data-battle-action="attacks"]');
  const movementPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
- assert.match(await weaponPanel.locator('summary.play-battle-summary').textContent(),/Risorse/);
+ assert.match(await weaponPanel.locator('summary.play-battle-summary').textContent(),/Attacchi/);
+ assert.equal(await weaponPanel.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is in Attacchi');
+ assert.equal(await page.locator('[data-battle-action="resources"] [data-attack-id="unarmed"]').count(),0,
+  'Unarmed cannot appear in Risorse');
  const otherPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
 
  assert.equal(await otherPanel.count(),1);
