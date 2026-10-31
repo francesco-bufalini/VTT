@@ -84,8 +84,12 @@ test('battle resources display monster costs and the granting attack description
   globalThis.document=dom.window.document;
   const app=document.querySelector('#app');
   mountPlaySheet(app,{creature:fixture,calculated:data,sheet:'battle',icon:actionGlyph,view:{battleActions,battleTraits:data.features}});
-  assert.match(app.querySelector('[data-rule-action="attack"] small').textContent,/three attacks/);
-  for(const id of ['legendary_action','legendary_resistance','lair_action'])assert.ok(app.querySelector('[data-rule-action="'+id+'"]'));
+  const multiattack=app.querySelector('[data-battle-action="others"] [data-attack-id="monster:multiattack"]');
+  assert(multiattack,'Multiattack appears as its own action');
+  assert.equal(multiattack.querySelectorAll('.play-attack-sequence > li').length,3,
+   'Multiattack has three independent descriptive attack steps');
+  for(const id of ['legendary_action','legendary_resistance','lair_action'])
+   assert.ok(app.querySelector('[data-battle-action="others"] [data-attack-id="'+id+'"]'));
   const wing=app.querySelector('[data-ability-id="monster:legendary:1"]');
   assert.match(wing.textContent,/Azione leggendaria.*Costo 2/);
   assert.equal(wing.querySelector('[data-act="monster-action-use"]').dataset.monsterActionId,'monster:legendary:1');
