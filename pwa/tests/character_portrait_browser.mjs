@@ -5,6 +5,16 @@ const fixture=await browserFixture({imagePolicy:true});
 const {page,origin,close,errors}=fixture;
 try{
  await seedPlayCreature(page,origin);
+ // Additional backgrounds are shown once each, while disabled entries are not.
+ await page.evaluate(async()=>{
+  const {listCreatures,saveCreature}=await import('/creatures.js');
+  const row=(await listCreatures())[0];
+  await saveCreature({...row.creature,backgrounds_catalog:[
+   {name:'Archaeologist',source:'ToA'}, {name:'Sage',source:'PHB'},
+   {name:'Inactive Background',disabled:true}
+  ]},'default',row.revision);
+ });
+ await page.reload();await page.locator('[data-act="open"]').click();
  const portrait=page.locator('#sheet-play-view .play-character-portrait');
  await portrait.waitFor();
  const order=await page.locator('#sheet-play-view').evaluate(root=>
@@ -17,6 +27,19 @@ try{
    'Unresolved character choices must be below the portrait button');
  }
  assert.equal(await portrait.locator('img').count(),0);
+ const expectedIdentity=['Sage · Archaeologist','Elf','Wizard 5'];
+ const identityLines=()=>portrait.locator('.play-identity-backgrounds,.play-identity-species,.play-identity-classes')
+  .allTextContents().then(lines=>lines.map(line=>line.trim()));
+ assert.deepEqual(await identityLines(),expectedIdentity,
+  'Backgrounds precede species and classes and do not repeat the primary background');
+ assert.equal(await portrait.locator(':scope > .play-identity-metadata').count(),1,
+  'Without a portrait, alignment and edition stay outside the identity block');
+ const metadataMatchesTitle=()=>portrait.evaluate(card=>{
+  const name=getComputedStyle(card.querySelector('.play-identity h2')).color;
+  return [...card.querySelectorAll('.play-identity-metadata > small')]
+   .every(node=>getComputedStyle(node).color===name);
+ });
+ assert(await metadataMatchesTitle(),'Alignment and edition use the exact title color');
  assert.equal(await portrait.locator('[data-act="info-portrait-pick"]').count(),0,'Portrait controls were moved to the identity settings dialog');
  await portrait.click();
  assert.equal(await page.locator('#sheet-context-dialog [data-act="info-portrait-pick"]').count(),1);
@@ -49,6 +72,12 @@ try{
  }));
  assert(visible.width>0&&visible.height>0&&visible.frameWidth>0,
   'Uploaded portrait must really decode and render under the Godot host image CSP: '+JSON.stringify(visible));
+ assert.deepEqual(await identityLines(),expectedIdentity,'Adding a portrait keeps every background, species and class');
+ assert.equal(await portrait.locator(':scope > .play-identity-metadata').count(),0,
+  'Alignment and edition no longer appear outside the portrait nameplate');
+ assert.equal(await portrait.locator(':scope > .play-identity .play-identity-metadata > small').count(),2,
+  'Both metadata values move into the nameplate beneath the portrait');
+ assert(await metadataMatchesTitle(),'The portrait nameplate metadata shares its title color');
  const read=()=>page.evaluate(async creatureId=>{
   const {loadCreature}=await import('/creatures.js');
   return (await loadCreature(creatureId)).data.sheet_portrait_data;
@@ -72,6 +101,10 @@ try{
  await portrait.click();
  await page.locator('#sheet-context-dialog [data-act="info-portrait-remove"]').click();
  await page.waitForFunction(()=>!document.querySelector('#sheet-play-view .play-portrait-frame'));
+ assert.equal(await portrait.locator(':scope > .play-identity-metadata > small').count(),2,
+  'Removing the portrait restores the ordinary metadata layout');
+ assert.deepEqual(await identityLines(),expectedIdentity);
+ assert(await metadataMatchesTitle());
  assert.equal(await read(),'');
  assert.equal(await page.locator('#sheet-context-dialog [data-act="info-portrait-pick"]').textContent().then(s=>s.trim()),'▧Aggiungi foto');
  // Use actual shipped artwork, deliberately choosing a different current form.
