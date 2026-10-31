@@ -891,7 +891,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     battleActionUseBox({act:descriptive&&!monsterPayment?'':active?'condition-remove-ability':useAction,
      attrs:active?' data-ability-key="'+esc(statusKey)+'"':useIdentity+
       (persistent?' data-persistent-key="'+esc(statusKey)+'"':''),
-     tracker,cost:row.cost,label:active?'Disattiva':use,disabled,name:row.name})+
+     tracker,cost:active?0:row.cost,label:active?'Disattiva':use,disabled:active?false:disabled,name:row.name})+
     '</div>'+sequenceMarkup(steps);
   }).join('');
   // Resources are a flat catalogue of counters and *actual* attack options.
@@ -927,7 +927,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // battleActions.actionGroups, not again as an activated power below.
   const routineOrigins=new Set((d.attack_actions||[]).map(row=>String(row.origin_id||'')).filter(Boolean));
   const combatPowers=powerRows.filter(row=>!grantedAttackRows.includes(row)&&
-   !routineOrigins.has(String(row.classAction?.origin_id||row.power?.feature_id||row.power?.origin_id||'')));
+   // User-activated optional abilities remain individually operable even if
+   // their granting feature also defines a typed attack routine.
+   (row.source==='activated'||!routineOrigins.has(String(
+    row.classAction?.origin_id||row.power?.feature_id||row.power?.origin_id||''))));
   const actionGroups=view.battleActions?.actionGroups||{};
   const powerAttacks=combatPowers.filter(row=>powerAttackSteps(row).length>0);
   const powerAbilities=combatPowers.filter(row=>!powerAttacks.includes(row));
