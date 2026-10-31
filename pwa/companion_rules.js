@@ -1,7 +1,7 @@
 // Structured companion rules shared by spells, feature buttons, and the
 // familiar picker. No feature is detected from its description text.
 import {creatureMatchesFilter} from './creature_variants.js';
-import {activeInfusions} from './item_controls.js';
+import {activeItemOptionEffects} from './item_controls.js';
 import {SKILL_ABILITY} from './skill_definitions.js';
 
 const normal=value=>String(value??'').toLowerCase().normalize('NFD')
@@ -78,8 +78,8 @@ export function companionOwnerActions(owner={},projection={},data={}){
  for(const rule of rows(data?.features)){
   if(!rows(rule.editions).includes(String(owner.rules_version||'2014')))continue;
   if(rule.activation==='item'){
-   for(const applied of activeInfusions(owner,projection.infusion_catalog||[],projection.features||[])){
-    if(applied.infusion.creator_id!==owner.id||applied.definition.companion?.rule_id!==rule.id)continue;
+   for(const applied of activeItemOptionEffects(owner,projection.infusion_catalog||[],projection.features||[])){
+    if(applied.option.creator_id!==owner.id||applied.definition.companion?.rule_id!==rule.id)continue;
     append(rule,'item:'+String(applied.item.id)+'|'+applied.id,applied.definition.name);
    }
   }else{
