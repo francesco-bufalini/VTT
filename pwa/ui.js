@@ -2671,9 +2671,7 @@ async function editorView() {
     break;
   }
   return header(['info','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+
-    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+btn("send","Manda")+
-    '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
-    btn("delete","Elimina scheda","danger")+'</div></details>';
+    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div>';
 }
 function resourceView(c,configure=false,compact=false){
  const active=state.calculated?.trackers||[],saved=Array.isArray(c.resource_trackers)?c.resource_trackers:[],origins=state.calculated?.origins||[];
@@ -3873,10 +3871,10 @@ function inventoryItemDescription(obj,index,optionDescriptions=new Map()){
        'Usa incantesimo')+' · '+esc(remaining)+' rimasti</button></div>';
    })():'';
   return '<div class="inventory-description">'+
-    '<div class="actions"><button type="button" class="play-button" data-act="item-variant-open" data-index="'+index+
-      '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools">'+actionGlyph('spark')+
-      '<span>Varianti 5eTools</span></button></div>'+
-    (applied.length?'<section class="inventory-detail-section inventory-applied-options"><h3>Modifiche applicate</h3>'+
+    '<section class="inventory-detail-section inventory-applied-options">'+
+     '<div class="inventory-variant-heading"><h3>Varianti</h3>'+
+      '<button type="button" class="inventory-variant-add" data-act="item-variant-open" data-index="'+index+
+      '" title="Aggiungi variante 5eTools" aria-label="Aggiungi variante 5eTools"><span aria-hidden="true">+</span></button></div>'+
       applied.map(option=>'<article class="inventory-applied-entry">'+
        '<div class="inventory-applied-heading"><strong>'+esc(option.name)+'</strong>'+
        (option.removable?'<button type="button" class="inventory-applied-remove" data-act="item-variant-remove" data-index="'+index+
@@ -3884,7 +3882,7 @@ function inventoryItemDescription(obj,index,optionDescriptions=new Map()){
         '<span aria-hidden="true">×</span></button>':'')+'</div>'+
        '<p class="inventory-applied-description">'+esc(option.description)+'</p>'+
        option.effects.map(storedPowerControls).join('')+'</article>').join('')+
-      '</section>':'')+
+    '</section>'+
     (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
       '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
     '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+

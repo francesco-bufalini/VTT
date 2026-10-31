@@ -963,19 +963,17 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
- // The former dedicated "tools" context button was replaced by the shared
- // skill/proficiency editor. Use the visible proxy rather than a dead selector.
- await page.locator('#sheet-play-view .play-skills-tools [data-act="sheet-context"][data-sheet-context="tools"]').click();
- assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
- assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
- await dismiss();
+ assert.equal(await page.locator('#sheet-play-view .play-skills-tools').count(),0,'No competence editor button in Info');
+ assert.equal(await page.locator('#sheet-play-view [data-play-search]').count(),0,'No skills search in Info');
+ assert.deepEqual(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').evaluateAll(rows=>
+  rows.map(row=>row.dataset.target)),['ability_check:str','ability_check:dex','ability_check:con','ability_check:int','ability_check:wis','ability_check:cha']);
  const skillMarker=key=>page.locator('#sheet-play-view .play-skills [data-target="skill:'+key+'"] .play-skill-rank');
  assert.equal(await skillMarker('arcana').getAttribute('aria-label'),'Competenza');
  assert.equal(await skillMarker('arcana').locator('svg path').count(),1);
  assert.equal(await skillMarker('stealth').getAttribute('aria-label'),'Maestria');
  assert.equal(await skillMarker('stealth').locator('svg path').count(),2);
  assert.equal(await skillMarker('athletics').count(),0,'Untrained skills have no rank indicator');
- await page.locator('[data-play-search]').fill('furt');assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),1);
+ assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),24,'Six ability checks before eighteen skills');
  await page.locator('#sheet-play-view [data-target="skill:stealth"]').click();await page.locator('[data-act="roll-sheet-confirm"]').click();assert(Number(await page.locator('.dice-result').textContent())>0);await page.locator('[data-act="close-sheet-roll"]').click();
  await sheet('inventory');
  await popup('equipment');
@@ -994,7 +992,23 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),3,
   'Global inventory search must not hide the owned items in their sections');
  await page.locator('[data-play-search]').fill('');
- await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());await shot('item-popup');await dismiss();
+ await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());
+ assert.equal((await page.locator('#sheet-context-dialog .inventory-variant-heading h3').textContent()).trim(),'Varianti');
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="item-variant-open"]').count(),1,'Variant picker has one plus icon');
+ await dismiss();await popup('item:1');
+ const popupControls=await page.locator('#sheet-context-dialog').evaluate(dialog=>{
+  const quantity=dialog.querySelector('.inventory-quantity-controls');
+  const container=dialog.querySelector('.play-item-main-fields select');
+  const labelA=dialog.querySelector('.play-item-main-fields>label:first-child>span');
+  const labelB=dialog.querySelector('.play-item-main-fields>label:last-child>span');
+  return {quantity:quantity?.getBoundingClientRect().height,container:container?.getBoundingClientRect().height,
+   captionA:labelA&&getComputedStyle(labelA).fontSize,captionB:labelB&&getComputedStyle(labelB).fontSize};
+ });
+ assert(popupControls.quantity&&popupControls.container,'Editable quantity and container controls must be present');
+ assert(Math.abs(popupControls.quantity-popupControls.container)<=1,
+  'Quantity and container controls align in height: '+JSON.stringify(popupControls));
+ assert.equal(popupControls.captionA,popupControls.captionB,'Item popup captions use equal font sizes');
+ await shot('item-popup');await dismiss();
  const inlineCoins=page.locator('#sheet-play-view .inventory-play-coins');
  assert.equal(await inlineCoins.count(),1,'Coin editor must be visible in the shortcut row');
  assert.equal(await inlineCoins.locator('[data-coin-code]').count(),5,'All five denominations must be editable inline');

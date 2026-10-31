@@ -168,7 +168,7 @@ try{
  await sheet('info');
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
- assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
+ assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),24);
  assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').count(),0,'No duplicate Competenze heading');
  assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0,'Info contains no creature icon');
@@ -181,7 +181,10 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),null);
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
- assert(await page.locator('#sheet-play-view [data-play-search]').isVisible());
+ assert.equal(await page.locator('#sheet-play-view [data-play-search]').count(),0,'Info has no skill search');
+ assert.equal(await page.locator('#sheet-play-view .play-skills-tools').count(),0,'Info has no competence edit button');
+ assert.deepEqual(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').evaluateAll(rows=>
+  rows.map(row=>row.dataset.target)),['ability_check:str','ability_check:dex','ability_check:con','ability_check:int','ability_check:wis','ability_check:cha']);
  await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-competences-open"]').innerText().then(s=>s.includes('Competenze')),true);
  await page.locator('#sheet-play-view [data-act="battle-competences-open"]').click();
