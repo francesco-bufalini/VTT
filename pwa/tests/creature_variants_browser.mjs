@@ -54,7 +54,14 @@ try{
  await page.locator('#form-depleted-dialog[open]').waitFor();assert.equal((await record()).current_hp,25);
  assert((await page.locator('#form-depleted-dialog').textContent()).includes('4 danni'));
  await page.locator('[data-form-keep]').click();assert.equal((await record()).current_form_id,wolfId);
- await popup('hp');await page.locator('#sheet-context-dialog [data-field="current_hp"]').fill('7');await dismiss();
+ await page.locator('#sheet-play-view .play-health[data-act="hp-adjust-open"]').click();
+ await page.locator('#hp-adjust-current').fill('7');
+ await page.locator('#hp-adjust-current').press('Tab');
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures()).find(r=>r.creature.kind==='character')?.creature.current_hp===7;
+ });
+ await page.locator('#hp-adjust-dialog [data-act="hp-adjust-cancel"]').click();
  await damage(10);await page.locator('#form-depleted-dialog[open]').waitFor();
  await page.locator('[data-form-restore]').click();await waitForm('');assert.equal((await record()).current_hp,22);
  await forms();await page.locator('[data-variant-switch="'+aliasId+'"]').click();await closeForms();

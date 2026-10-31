@@ -53,7 +53,10 @@ try{
   {id:'humanoid_races:1',subchoices:['orc','goblin']},{id:'monster_types:2',subchoices:['dragons']}
  ]);
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
- assert.match(await page.locator('#sheet-play-view .benefit-option-list[data-selection-id="'+id+'"]').innerText(),/Orc, Goblin/);
+ assert.deepEqual((await snapshot()).record.power_selections[id].learned,[
+  {id:'humanoid_races:1',subchoices:['orc','goblin']},
+  {id:'monster_types:2',subchoices:['dragons']}
+ ],'Ranger choices remain intact after reload');
  await page.locator('#sheet-play-view [data-act="power-selection-open"][data-power-selection-id="'+id+'"][data-power-stage="learned"]').click();
  assert.equal(await page.locator('#power-selection-dialog select[data-power-subchoice][data-power-option="humanoid_races:1"]').first().inputValue(),'orc');
  await page.locator('#power-selection-dialog [data-act="power-selection-close"]').click();

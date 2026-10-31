@@ -76,7 +76,8 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
  await sheet('info');
  const objectTrait=page.locator('#sheet-play-view .trait-row').filter({has:page.locator('.trait-title',{hasText:'Oggetto libero - Armatura Arcana'})});
- assert.equal(await objectTrait.locator('[data-act="power-selection-open"][data-power-selection-id="armor_model"]').count(),1);
+ assert.equal(await objectTrait.locator('[data-act="trait-benefits-open"]').count(),1,
+  'The original trait opens its benefits instead of embedding another selection picker');
  await sheet('magic');
  await open('armor_model','armor_model:infiltrator');
  await action.locator('[data-act="benefit-option-apply"]').click();await action.waitFor({state:'detached'});

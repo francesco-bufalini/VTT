@@ -62,9 +62,11 @@ try{
     assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
     assert.equal(await page.locator('.page-head [data-act="action-variants"]').count(),1);
     assert.equal(await page.locator('#sheet-navigation [data-sheet="actions"]').count(),0);
-    const expand=page.locator('[data-act="battle-expand-all"]');
-    const collapse=page.locator('[data-act="battle-collapse-all"]');
-    assert(await expand.isVisible()&&await collapse.isVisible(),'Global list controls appear above attacks');
+    // The old global expand/collapse buttons were removed: independently
+    // expandable action groups are the current Battle navigation.
+    assert.equal(await page.locator('[data-act="battle-expand-all"],[data-act="battle-collapse-all"]').count(),0);
+    assert(await page.locator('[data-battle-action="attacks"] > summary').isVisible(),
+      'The attacks group remains independently expandable');
     if(width===360){
      const physical=page.locator('[data-battle-action="attacks"]');
      assert.match(await physical.locator('summary.play-battle-summary').textContent(),/^Attacchi$/);
