@@ -34,8 +34,14 @@ export async function toggleChatNotifications() {
   try { localStorage.setItem(PREF_KEY, "true"); } catch (_) {}
   return true;
 }
+// Only genuinely remote chat events may set an unread marker. Local activity
+// has a persistent event ID; matching echoes and map traffic are never unread.
+export function isIncomingExternalEvent(entry,{initialHistory=false,locallySentIds=null,localIds=null}={}){
+ return Boolean(!initialHistory&&entry?.id&&['chat','roll','action'].includes(entry.kind)&&
+   !locallySentIds?.has(entry.id)&&!localIds?.has(entry.id));
+}
 export async function notifyIncomingChat(entry, sessionId = "") {
-  if (!notificationsEnabled() || !entry || !["chat", "roll"].includes(entry.kind)) return;
+  if (!notificationsEnabled() || !entry || !["chat", "roll", "action"].includes(entry.kind)) return;
   // Avoid distracting duplicate alerts while the chat is visible and focused.
   if (document.visibilityState === "visible" && document.hasFocus() &&
       (document.querySelector("#events") && !document.querySelector("#events").closest("[hidden]"))) return;

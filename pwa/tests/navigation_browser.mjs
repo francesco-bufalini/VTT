@@ -198,6 +198,22 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').count(),0,
   'The legacy all-in-one tools popup has been replaced by contextual controls');
  await shot('powers');
+ assert(await page.locator('#header-chat').isVisible(),'Chat icon is visible on a creature');
+ assert(await page.locator('#header-dice').isVisible(),'Dice icon is visible on a creature');
+ await page.locator('#header-dice').click();
+ await page.locator('#chat-dice-dialog [data-act="roll"]').click();
+ await page.locator('#chat-dice-dialog .dice-result').waitFor();
+ await page.locator('[data-act="close-chat-dice"]').click();
+ await page.locator('#header-chat').click();
+ await page.locator('#chat-screen #events').waitFor({state:'visible'});
+ assert.equal(await page.locator('#header-chat').isVisible(),false);
+ assert(await page.locator('#header-chat-notifications').isVisible());
+ assert.equal(await page.locator('#mobile-tabs').isVisible(),false);
+ assert.equal(await page.locator('#app').isVisible(),false);
+ await shot('chat');
+ await page.locator('#chat-screen [data-act="header-chat-close"]').click();
+ assert(await page.locator('#app').isVisible());
+ assert(await page.locator('#mobile-tabs').isVisible());
  await globalPage('catalog');
  await page.locator('.catalog-entry').first().click();await page.locator('[data-act="catalog-close"]').waitFor();
  assert.equal(await page.locator('#catalog-search').count(),0,'Selected detail gets its own focused screen');
@@ -207,9 +223,8 @@ try{
  await page.locator('.connection-link').click();await page.waitForFunction(()=>document.querySelector('#app').dataset.page==='session');
  assert(await page.locator('[data-session-content="connection"]').isVisible());
  assert.equal(await page.locator('.session-map-panel').isVisible(),false);
- await page.locator('[data-session-pane="chat"]').click();await page.locator('[data-act="open-chat-dice"]').click();
- await page.locator('#chat-dice-dialog [data-act="roll"]').click();await page.locator('.dice-result').waitFor();
- await page.locator('[data-act="close-chat-dice"]').click();await shot('chat');
+ assert.equal(await page.locator('#header-chat').isVisible(),false,'No chat icon without an open creature');
+ assert.equal(await page.locator('#header-dice').isVisible(),false,'No dice icon without an open creature');
  await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
  assert.equal(await page.locator('#pair-form').isVisible(),false);
  await globalPage('library');

@@ -685,3 +685,45 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 }
 .class-level-row .hint{display:block;margin:1px 0 0}
 .columns.class-level-fields>:nth-child(n+3){grid-column:1/-1}
+
+
+/* Chat and dice are sheet-only header tools, never a Partita pane. */
+.topbar .header-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex:none;min-width:0}
+.topbar .header-icon-button{position:relative;display:grid;place-items:center;flex:0 0 42px;width:42px;height:44px;padding:8px;border:1px solid #b18b5966;border-radius:10px;background:linear-gradient(150deg,#584136,#302623);color:#f2d4a5;box-shadow:inset 0 1px #ffe4ab22,0 2px 6px #0005}
+.topbar .header-icon-button svg{display:block;width:22px;height:22px;flex:none}
+.topbar .header-icon-button[hidden]{display:none!important}
+.topbar .header-icon-button:hover{border-color:#f0c68c;background:#624939}
+.topbar .header-icon-button:focus-visible{outline:2px solid #ffd99e;outline-offset:2px}
+.topbar .header-chat-notify[aria-pressed="false"]{color:#baac98}
+.topbar .header-chat-notify[aria-pressed="true"]{border-color:#edbd77;color:#f7d89e}
+.topbar .header-chat-button.has-unread::after{content:"";position:absolute;top:4px;right:4px;width:9px;height:9px;border:2px solid #302623;border-radius:50%;background:#ffad61;box-shadow:0 0 0 1px #f4d59a}
+@media(max-width:440px){
+ .topbar .header-actions{gap:4px}
+ .topbar .header-icon-button{flex-basis:36px;width:36px;height:40px;padding:7px;border-radius:9px}
+ .topbar .header-icon-button svg{width:21px;height:21px}
+ .topbar .header-actions.with-creature .connection-link .connection{display:none!important}
+ .topbar .header-actions.with-creature .connection-link{max-width:none;min-height:40px;padding-left:2px}
+ .topbar .header-actions.with-creature .connection-label{font-size:11px}
+ .topbar .brand{gap:5px!important}
+ .topbar .header-forms{flex-basis:39px;width:39px;height:39px;padding:7px}
+ .topbar .header-back{flex-basis:35px;width:35px;height:39px}
+}
+
+/* Full-height chat replaces the sheet and bottom dock, but not the top bar. */
+.app-shell.chat-open{height:100dvh;min-height:0;overflow:hidden}
+.app-shell.chat-open #app,.app-shell.chat-open #mobile-tabs{display:none!important}
+.chat-screen[hidden]{display:none!important}
+.app-shell.chat-open .chat-screen{display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;width:100%;padding:12px 12px calc(12px + env(safe-area-inset-bottom));overflow:hidden}
+.chat-screen .chat-main-panel{display:flex;flex:1;flex-direction:column;min-height:0;margin:0;padding:14px 14px 12px;overflow:hidden}
+.chat-screen .chat-view-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:5px}
+.chat-screen .chat-view-head h2{margin:0}
+.chat-screen .chat-view-close{min-height:38px;padding:5px 12px;flex:none}
+.chat-screen .chat-toolbar{margin-bottom:10px}
+.chat-screen #events{flex:1;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+.chat-screen #chat-form{flex:none;min-height:0;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);gap:8px}
+.chat-screen #chat-form label{display:block}
+.chat-screen #chat-form select,.chat-screen #chat-form textarea{width:100%}
+.chat-screen #chat-form textarea{min-height:54px;max-height:20dvh;resize:vertical}
+.chat-screen #chat-form button[type="submit"]{min-height:44px}
+.app-shell.chat-open .toast{bottom:calc(12px + env(safe-area-inset-bottom))}
+@media(max-height:550px){.chat-screen .chat-main-panel{padding:9px}.chat-screen #chat-form textarea{min-height:36px;max-height:12dvh}.chat-screen .chat-toolbar{margin-bottom:5px}}

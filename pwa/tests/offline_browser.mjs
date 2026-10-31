@@ -129,8 +129,11 @@ try {
   assert.equal(await page.locator('#sheet-context-dialog [data-identity-value="names"]').first().inputValue(),
     "Creatura modificata offline");
   await page.goto(origin + "/?open=chat");
-  await archive();
-  await page.locator('[data-nav="session"]').first().click();
+  // Chat links now open the full-height chat on a saved creature, even offline.
+  await page.locator("#chat-screen #events").waitFor({state:"visible",timeout:15000});
+  assert.equal(await page.locator("#header-chat-notifications").isVisible(),true);
+  assert.equal(await page.locator("#mobile-tabs").isVisible(),false);
+  await page.locator('.connection-link').click();
   await page.locator("#app").waitFor();
   assert.equal(await page.locator('#pair-form button[type="submit"]').isDisabled(), true,
     "Offline pairing must be unavailable");
