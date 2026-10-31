@@ -116,6 +116,37 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(calculateSheet(disabled,catalogs).attacks.some(row=>row.id==='class_feature:thunder_gauntlets'),false);
 });
 
+test('state-created weapons receive source-bound training and use ordinary attack proficiency',()=>{
+ for(const [state,attackId,weaponName] of [
+  ['armor_model:infiltrator','class_feature:lightning_launcher','Lightning Launcher'],
+  ['armor_model:guardian','class_feature:thunder_gauntlets','Thunder Gauntlets']
+ ]){
+  const r={...sheet('Artificer',8,'TCE','Armorer'),attack_ability:'int',
+   inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],
+   power_applications:{arcane_armor:[{id:'arcane_armor',target_item_id:'armor'}]},
+   trait_state_selection:{armor_model:state}};
+  const calculated=calculateSheet(r,catalogs),key='weapon:'+weaponName.toLowerCase();
+  const attack=calculated.attacks.find(row=>row.id===attackId);
+  const trait=calculated.features.find(row=>row.name===weaponName);
+  assert(attack,attackId+' must be granted by its currently selected state');
+  assert(trait?.origin_id,weaponName+' must have a real source trait');
+  assert(calculated.proficiencies.includes(key),weaponName+' must grant its own named weapon training');
+  assert(calculated.proficiency_sources[key]?.some(row=>row.id===trait.origin_id),
+   'Weapon training must be attributed to the concrete granting trait');
+  assert.equal(attack.weapon_category,'simple');
+  assert.equal(attack.proficient,true);
+  assert.equal(attack.hit,calculated.values['ability_mod:int']+calculated.values.proficiency,
+   'A trained feature weapon gets exactly one proficiency bonus');
+  const benefitGroups=traitBenefitGroups({key:trait.key,feature_origin:trait.origin_id,
+   origin_key:trait.origin_key},r,calculated);
+  assert(benefitGroups.some(group=>group.type==='proficiency'&&group.items.some(row=>
+   row.label.toLowerCase().includes(weaponName.toLowerCase()))),
+   'The source trait must list the granted proficiency');
+  const muted=calculateSheet({...r,origin_enabled:{[trait.origin_id]:false}},catalogs);
+  assert(!muted.proficiencies.includes(key),'Disabling the source revokes its proficiency');
+  assert(!muted.attacks.some(row=>row.id===attackId),'Disabling the source also revokes its attack');
+ }
+});
 test('Armor Model can be reselected before a rest with no resource payment',()=>{
  const r=sheet('Artificer',8,'TCE','Armorer');
  r.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
