@@ -25,7 +25,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Ombra');
  let c=await record();const aliasId=c.current_form_id;assert.equal(c.name,'Lyria base');assert.equal(c.variants[0].values.name,'Ombra');
  assert.equal(await page.locator('#sheet-play-view .play-identity [data-read-field="name"]').textContent(),'Ombra');
- await forms();assert.equal(await page.locator('#creature-variants-dialog p').count(),0);assert.match(await page.locator('.variant-list [aria-current="true"] .variant-copy small').textContent(),/Alias/);
+ await forms();assert(await page.locator('#creature-variants-dialog .variant-list article').count());assert.match(await page.locator('.variant-list [aria-current="true"] .variant-copy small').textContent(),/Alias/);
  await page.locator('[data-variant-edit="'+aliasId+'"]').click();await page.locator('[data-variant-name]').fill('Ombra della luna');await page.locator('[data-variant-save]').click();await closeForms();
  await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Ombra della luna');
  assert.equal(await page.locator('#sheet-play-view .play-identity [data-read-field="name"]').textContent(),'Ombra della luna');

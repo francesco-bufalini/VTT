@@ -21,13 +21,20 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();
  await page.locator('#sheet-play-view').waitFor();await sheet('battle');
  await page.locator('[data-battle-action="resources"] > summary').click();
- for(const id of ['first','second'])
-  assert(await page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]:visible').count());
+ const use=id=>page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]');
+ for(const id of ['first','second']){
+  const button=use(id);
+  assert.equal(await button.count(),1,'The shared-tracker action remains in Resources');
+  const details=button.locator('xpath=ancestor::details[1]');
+  if(await details.count()&&!(await details.getAttribute('open')))
+   await details.locator(':scope > summary').click();
+  assert(await button.isVisible(),'The action is visible when its resource details are expanded');
+ }
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].revision;});
  // The popup opens without charging the tracker and each confirmed use
  // commits its own atomic payment, even when two abilities share one pool.
  for(const [index,id] of ['first','second'].entries()){
-  await page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]').click();
+  await use(id).click();
   const dialog=page.locator('#other-ability-dialog');
   await dialog.locator('[data-ability-confirm]').waitFor();
   assert.equal(await dialog.locator('[data-ability-payment] option').count(),2);
