@@ -4635,12 +4635,12 @@ function sessionView() {
   html+='<section class="panel session-token-panel">'+
     '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
     '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
+    '<button type="button" class="btn primary full session-add-token" data-act="open-place-token"'+
+      (!online||!entries.length?' disabled':'')+'>＋ Aggiungi token da una tua scheda</button>'+
     (groups.participants.length?sessionTokenRows(groups.participants,groups.turnId,groups.activeEnvironment):
       '<p class="hint">Nessun token sulla mappa.</p>')+
     (groups.active&&groups.outside.length?'<h3 class="session-outside-heading">Fuori dal combattimento</h3>'+
       sessionTokenRows(groups.outside):'')+
-    '<button type="button" class="btn primary full session-add-token" data-act="open-place-token"'+
-      (!online||!entries.length?' disabled':'')+'>＋ Aggiungi token da una tua scheda</button>'+
     '</section>';
   if(state.editTokenId){
     const edited=entries.find(t=>t.id===state.editTokenId);

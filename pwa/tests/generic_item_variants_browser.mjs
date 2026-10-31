@@ -36,6 +36,11 @@ try{
  assert.match(await page.locator('#sheet-context-title').innerText(),/\+1 Weapon.*\+2 Weapon/);
  await page.locator('#item-variant-dialog [data-act="item-variant-close"]').click();
  await popup.locator('[data-act="item-variant-remove"]').first().click();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature?.inventory?.[0]?.option_extensions
+    ?.map(row=>row.name).join('|')==='+2 Weapon';
+ });
  assert.deepEqual((await snapshot()).inventory[0].option_extensions.map(row=>row.name),['+2 Weapon']);
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
  console.log('PASS: multiple 5eTools variants can be added and removed from one inventory popup');

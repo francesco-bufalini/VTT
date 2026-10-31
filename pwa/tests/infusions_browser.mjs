@@ -20,7 +20,7 @@ try{
  await page.locator('#benefit-option-dialog [data-act="benefit-option-close"]').first().click();
  await learner.locator('[data-act="power-selection-toggle"][data-power-option-id="optional:tce:enhanced-arcane-focus"]').click();
  await learner.locator('[data-act="power-selection-close"]').first().click();
- const infusion=page.locator('#sheet-play-view [data-act="benefit-option-open"]');
+ const infusion=page.locator('#sheet-play-view [data-act="benefit-option-open"][data-power-selection-id="artificer_infusions"]');
  assert.equal(await infusion.count(),1,'Known infusion appears once with spell-like UI');
  assert.equal(await page.locator('#sheet-play-view .play-infusion-card .casting-statistics').count(),0);
  assert.equal(await infusion.locator('.play-infusion-state').getAttribute('title'),'Conosciuta');

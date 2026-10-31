@@ -36,7 +36,7 @@ try{
       tracker_cost:0,description:'Attiva un impulso gratuito.'}],
    origin_spell_grants:[...(creature.origin_spell_grants||[]),
      {id:'arcane_light',spell_id:'spell:light|phb',tracker_id:'focus',
-      payment_mode:'tracker',tracker_cost:1,origin_id:'feature:class|phb|wizard|arcane_light',
+      payment_mode:'tracker',tracker_cost:1,origin_id:'class|phb|wizard',
       origin_name:'Mago'}]},
    'default',row.revision);
  });

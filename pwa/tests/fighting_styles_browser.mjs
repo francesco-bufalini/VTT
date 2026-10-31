@@ -82,7 +82,9 @@ try{
     const {listCreatures}=await import('/creatures.js');
     return !!(await listCreatures())[0]?.creature?.power_selections?.[id]?.learned?.length;
    },progression);
-   await page.locator('#sheet-play-view').getByText('Two-Weapon Fighting').waitFor();
+   // Persistence is the contract: collapsed source cards need not expose
+   // their learned labels until expanded.
+   assert((await snapshot()).record.power_selections?.[progression]?.learned?.length>=1);
    await page.locator('#power-selection-dialog [data-act="power-selection-close"]').last().click();
   }else await dialog.locator('[data-act="power-selection-close"]').last().click();
  }

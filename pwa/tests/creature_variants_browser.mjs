@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import {browserFixture} from './browser_fixture.mjs';
 const f=await browserFixture(),{page,origin,sheet,popup,dismiss,shot}=f;
 const record=()=>page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures()).find(r=>r.creature.kind==='character').creature;});
+const damage=async amount=>{
+ await page.locator('#sheet-play-view .play-health[data-act="hp-adjust-open"]').click();
+ const popup=page.locator('#hp-adjust-dialog[open]');
+ await popup.waitFor();
+ await popup.locator('#hp-adjust-amount').fill(String(amount));
+ await popup.locator('[data-act="hp-adjust-apply"][data-hp-mode="damage"]').click();
+ await popup.waitFor({state:'hidden'});
+};
 const waitForm=id=>page.waitForFunction(async id=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures()).find(r=>r.creature.kind==='character').creature.current_form_id===id;},id);
 const forms=async()=>{await page.locator('[data-act="creature-variants"]').click();await page.locator('#creature-variants-dialog[open]').waitFor();};
 const closeForms=async()=>{await page.locator('[data-act="variant-close"]').click();await page.locator('#creature-variants-dialog').waitFor({state:'detached'});};
@@ -25,7 +33,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Ombra');
  let c=await record();const aliasId=c.current_form_id;assert.equal(c.name,'Lyria base');assert.equal(c.variants[0].values.name,'Ombra');
  assert.equal(await page.locator('#sheet-play-view .play-identity [data-read-field="name"]').textContent(),'Ombra');
- await forms();assert.equal(await page.locator('#creature-variants-dialog p').count(),0);assert.match(await page.locator('.variant-list [aria-current="true"] .variant-copy small').textContent(),/Alias/);
+ await forms();assert(await page.locator('#creature-variants-dialog .variant-list article').count());assert.match(await page.locator('.variant-list [aria-current="true"] .variant-copy small').textContent(),/Alias/);
  await page.locator('[data-variant-edit="'+aliasId+'"]').click();await page.locator('[data-variant-name]').fill('Ombra della luna');await page.locator('[data-variant-save]').click();await closeForms();
  await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Ombra della luna');
  assert.equal(await page.locator('#sheet-play-view .play-identity [data-read-field="name"]').textContent(),'Ombra della luna');
@@ -33,7 +41,7 @@ try{
  await page.locator('#creature-back').click();await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).waitFor();assert.equal(await page.locator('#creature-forms:visible').count(),0);
  await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).click();await page.locator('#sheet-play-view').waitFor();
 
- await sheet('battle');await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('5');await page.locator('#hp-adjust-confirm').click();
+ await sheet('battle');await damage(5);
  await page.waitForFunction(()=>document.querySelector('[data-read-field="current_hp"]')?.textContent==='25');assert.equal((await record()).current_hp,25);
  await forms();await create('Lupo','custom');
  await page.locator('[data-variant-section="hp"]').check();await page.locator('[data-variant-section="str"]').check();
@@ -42,12 +50,19 @@ try{
  await page.locator('.variant-list article').filter({hasText:'Lupo'}).getByRole('button',{name:'Usa forma'}).click();await closeForms();
  const wolfId=(await record()).current_form_id;
  await page.waitForFunction(()=>document.querySelector('[data-read-field="current_hp"]')?.textContent==='11');
- await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('15');await page.locator('#hp-adjust-confirm').click();
+ await damage(15);
  await page.locator('#form-depleted-dialog[open]').waitFor();assert.equal((await record()).current_hp,25);
  assert((await page.locator('#form-depleted-dialog').textContent()).includes('4 danni'));
  await page.locator('[data-form-keep]').click();assert.equal((await record()).current_form_id,wolfId);
- await popup('hp');await page.locator('#sheet-context-dialog [data-field="current_hp"]').fill('7');await dismiss();
- await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('10');await page.locator('#hp-adjust-confirm').click();await page.locator('#form-depleted-dialog[open]').waitFor();
+ await page.locator('#sheet-play-view .play-health[data-act="hp-adjust-open"]').click();
+ await page.locator('#hp-adjust-current').fill('7');
+ await page.locator('#hp-adjust-current').press('Tab');
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures()).find(r=>r.creature.kind==='character')?.creature.current_hp===7;
+ });
+ await page.locator('#hp-adjust-dialog [data-act="hp-adjust-cancel"]').click();
+ await damage(10);await page.locator('#form-depleted-dialog[open]').waitFor();
  await page.locator('[data-form-restore]').click();await waitForm('');assert.equal((await record()).current_hp,22);
  await forms();await page.locator('[data-variant-switch="'+aliasId+'"]').click();await closeForms();
  assert.equal(await page.locator('#creature-name').textContent(),'Ombra della luna');
