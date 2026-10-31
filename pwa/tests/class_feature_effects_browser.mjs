@@ -113,7 +113,7 @@ try{
  const light=page.locator('#sheet-play-view [data-power-spell-id="meta-light"] [data-act="power-spell"]');
  await light.click();await page.locator('.metamagic-options > summary').click();
  await page.locator('[data-metamagic-name]').selectOption('Extended Spell');
- await page.locator('[data-act="action-cast-cancel"]').click();assert.deepEqual((await record()).resource_tracker_spent,{});
+ await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').last().click();assert.deepEqual((await record()).resource_tracker_spent,{});
  await light.click();await page.locator('.metamagic-options > summary').click();
  await page.locator('[data-metamagic-name]').selectOption('Extended Spell');
  await page.locator('[data-act="action-cast-confirm"]').click();await page.locator('#action-cast-dialog').waitFor({state:'detached'});
