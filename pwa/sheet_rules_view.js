@@ -8,7 +8,7 @@ import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 import {inventoryRangeLabel} from './attack_range.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
-import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup} from "./action_economy.js";
+import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,attackActionSequence} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeItemOptionEffects,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
@@ -792,8 +792,28 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      (Number(tracker.spent||0)===0?' disabled':'')+'>Ripristina tutti gli utilizzi</button></section>';
    source.insertAdjacentHTML('beforeend',bonusRows(tracker.id)+detail);
   }
+  // Read attack counts from typed grants first; 5eTools prose is only a
+  // fallback for explicit statements such as "make two unarmed strikes".
+  // Neither the name of the class nor a specific privilege is special-cased.
+  const powerAttackSteps=row=>{
+   const sources=[row.classAction,row.power].filter(Boolean);
+   const typed=sources.find(source=>Number(source.attack_count||source.attacks_per_action)>0||
+    Array.isArray(source.attack_sequence)&&source.attack_sequence.length||
+    Array.isArray(source.attacks_granted)&&source.attacks_granted.length);
+   if(typed)return attackActionSequence(typed,c,d);
+   const description=String(sources.map(source=>source.description||'').join(' '));
+   const hit=description.match(/\b(?:make|makes|effettua|effettuare|sferra|sferrare)\s+(one|two|three|four|five|six|uno|una|due|tre|quattro|cinque|sei|\d+)\s+((?:[\w'-]+\s+){0,3}?)(?:attacks?|strikes?|attacchi|colpi)\b/i);
+   if(!hit)return [];
+   const quantity=({one:1,two:2,three:3,four:4,five:5,six:6,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6})[hit[1].toLowerCase()]||Number(hit[1])||0;
+   if(!(quantity>0&&quantity<=20))return [];
+   const name=/unarmed|senz.?armi/i.test(hit[2])?'Colpo senz’armi':'Attacco';
+   return Array.from({length:quantity},()=>name);
+  };
+  const sequenceMarkup=steps=>steps.length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
+   steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'';
   const abilityButtons=(key,filtered=null)=>(filtered||powerRows.filter(row=>row.key===key))
    .filter(row=>!row.classAction?.roll_bonus).map(row=>{
+   const steps=powerAttackSteps(row);
    const tracker=(d.trackers||[]).find(t=>String(t.id)===String(row.tracker_id));
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
    // Abilities can confirm "Nessun tracker" even if their resource is spent.
@@ -855,7 +875,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-use" data-act="'+useAction+'"'+useIdentity+
     (persistent?' data-persistent-key="'+esc(statusKey)+'"':'')+
     (disabled?' disabled':'')+' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+
-    trackerChip(row.tracker_id,row.cost)+'</div>';
+    trackerChip(row.tracker_id,row.cost)+'</div>'+sequenceMarkup(steps);
   }).join('');
   // Resources are a flat catalogue of counters and *actual* attack options.
   // An action which spends a counter is rendered separately under Actions.
@@ -880,11 +900,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button></div>';
   }).join('');
   const actionGroups=view.battleActions?.actionGroups||{};
-  const powerAttacks=powerRows.filter(row=>{
-   const source=row.classAction||row.power||{};
-   return Number(source.attack_count||source.attacks_per_action)>0||
-    (Array.isArray(source.attack_sequence)&&source.attack_sequence.length>0);
-  });
+  const powerAttacks=powerRows.filter(row=>powerAttackSteps(row).length>0);
   const powerAbilities=powerRows.filter(row=>!powerAttacks.includes(row));
   const actionGroup=(key,title,glyph,body)=>!body?'':'<details class="play-battle-action-group" data-action-benefit="'+key+'" open>'+
    '<summary class="play-battle-action-heading">'+icon(glyph)+'<span>'+esc(title)+'</span></summary>'+
