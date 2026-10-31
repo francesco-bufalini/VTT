@@ -6574,13 +6574,13 @@ dialog.catalog-create .panel{margin:0;padding:11px;border:0;box-shadow:none}
   border:1px solid #a27b4a55;border-radius:9px;
   background:#60483238;color:#f0ddbd;box-shadow:none;
 }
-#app[data-page="session"] .session-map-panel{padding:8px}
+#app[data-page="session"] .session-map-panel{padding:0;overflow:hidden}
 #app[data-page="session"] .session-map-stage{
-  border:1px solid #a27b4a38;border-radius:10px;background:#1b1918;
+  border:0;border-radius:0;background:#1b1918;
 }
 #app[data-page="session"] .session-map-placeholder{color:#b9ac9c;line-height:1.5}
 #app[data-page="session"] .session-selected-controls{
-  min-height:48px;padding:9px 4px 2px;
+  min-height:48px;padding:9px 12px 10px;
   color:#f1d4a5;font-size:13px;
 }
 #app[data-page="session"] .session-selected-controls strong{

@@ -25,7 +25,7 @@ import {exportInventoryItems} from './inventory_transfer.js';
 import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, createBestiaryMonster, importCreatureFile, exportCreature, exportCreatureBatch, exportCreatureArchive, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
-import { tokenGroups, tokenOwnershipGlyphKey, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
+import { tokenGroups, linkedLocalCreature, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew, catalogBenefitRows } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews, stateTraitNavigationKey } from "./trait_projection.js";
@@ -4672,25 +4672,27 @@ function sessionTokenDetails(token) {
     '</span>';
 }
 function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
-  return rows.map(token => token.environment ?
-    '<div class="session-token-row session-environment-row'+(activeEnvironment?' active':'')+'"' +
-    (activeEnvironment?' aria-current="true"':'')+'>'+
-    '<span class="session-token-name session-environment-name">'+
-    (activeEnvironment?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
-    '<span>'+esc(token.name||"Turno ambientale")+'</span></span>'+
-    '<span class="session-initiative" title="Iniziativa">'+esc(token.initiative??20)+'</span></div>' :
-    '<div class="session-token-row'+(state.tokenId===token.id?' selected':'')+
-    '" data-token-row="'+esc(token.id)+'">'+
-    '<button type="button" class="session-token-name" data-act="select-token" data-id="'+esc(token.id)+
-    '" aria-pressed="'+(state.tokenId===token.id)+'">'+
-    (token.id===turnId?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
-    sessionTokenDetails(token)+'</button>'+
-    (token.initiative!==undefined?'<span class="session-initiative" title="Iniziativa">'+esc(token.initiative)+'</span>':'')+
-    '<button class="play-button session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
-    '" aria-label="Modifica '+esc(token.name)+'" title="'+
-    (tokenOwnershipGlyphKey(token,state.cachedCreatures)==='map'?'Scheda locale collegata':'Token non controllato')+
-    ' · condizioni, incantesimi e miniatura">'+
-    actionGlyph(tokenOwnershipGlyphKey(token,state.cachedCreatures))+'</button></div>').join('');
+  return rows.map(token => {
+    if(token.environment)return '<div class="session-token-row session-environment-row'+(activeEnvironment?' active':'')+'"' +
+      (activeEnvironment?' aria-current="true"':'')+'>'+
+      '<span class="session-token-name session-environment-name">'+
+      (activeEnvironment?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
+      '<span>'+esc(token.name||"Turno ambientale")+'</span></span>'+
+      '<span class="session-initiative" title="Iniziativa">'+esc(token.initiative??20)+'</span></div>';
+    const linked=linkedLocalCreature(token,state.cachedCreatures);
+    return '<div class="session-token-row'+(state.tokenId===token.id?' selected':'')+
+      '" data-token-row="'+esc(token.id)+'">'+
+      '<button type="button" class="session-token-name" data-act="select-token" data-id="'+esc(token.id)+
+      '" aria-pressed="'+(state.tokenId===token.id)+'">'+
+      (token.id===turnId?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
+      sessionTokenDetails(token)+'</button>'+
+      (token.initiative!==undefined?'<span class="session-initiative" title="Iniziativa">'+esc(token.initiative)+'</span>':'')+
+      '<button class="play-button session-edit-btn" type="button" data-act="'+
+      (linked?'open-token-creature':'edit-token')+'" data-id="'+esc(token.id)+
+      '" aria-label="'+(linked?'Apri scheda di ':'Modifica condizioni di ')+esc(token.name)+'" title="'+
+      (linked?'Apri scheda collegata: '+esc(linked.name):'Token non controllato · condizioni, incantesimi e miniatura')+
+      '">'+actionGlyph(linked?'map':'poison')+'</button></div>';
+  }).join('');
 }
 function sessionCreatureWarnings(){
  return state.sessionCreatureErrors.length?
@@ -9181,9 +9183,17 @@ async function handleAction(target){
       message("Backup esportato. Conservalo fuori dal browser.");
     return;
   }
-  if(act==="open"){
-    const id=target.dataset.id;
-    if(state.librarySelectedIds.size){
+  if(act==="open"||act==="open-token-creature"){
+    let id=target.dataset.id;
+    if(act==="open-token-creature"){
+      const token=state.map?.tokens?.find(row=>row.id===id);
+      const linked=linkedLocalCreature(token,state.cachedCreatures);
+      if(!linked)throw Error("Scheda locale non più collegata a questo token.");
+      id=linked.id;
+      stopSubscriptions();
+      state.page="library";
+    }
+    if(act==="open"&&state.librarySelectedIds.size){
       if(state.librarySelectedIds.has(id))state.librarySelectedIds.delete(id);
       else state.librarySelectedIds.add(id);
       syncLibrarySelectionUI();return;

@@ -1,10 +1,13 @@
 // A token is ours only when a local creature is explicitly linked to its
 // immutable token ID. Names are not unique and must never imply ownership.
-export function tokenOwnershipGlyphKey(token, localCreatures=[]) {
+export function linkedLocalCreature(token, localCreatures=[]) {
   const id=String(token?.id||"");
-  return id && Array.isArray(localCreatures) &&
-    localCreatures.some(creature=>String(creature?.linked_token_sync_id||"")===id)
-      ? "map" : "poison";
+  if(!id||!Array.isArray(localCreatures))return null;
+  return localCreatures.find(creature=>
+    String(creature?.linked_token_sync_id||"")===id)||null;
+}
+export function tokenOwnershipGlyphKey(token, localCreatures=[]) {
+  return linkedLocalCreature(token,localCreatures)?"map":"poison";
 }
 
 // Read-only tactical presentation: initiative order is native, never inferred.
@@ -139,7 +142,15 @@ export class SessionMapViewer {
   transform(){
     const w=this.canvas?.clientWidth||300,h=this.canvas?.clientHeight||300;
     const iw=this.image?.naturalWidth||2048,ih=this.image?.naturalHeight||2048;
-    const scale=Math.min(w/iw,h/ih)*this.zoom;
+    // Cover the entire viewport: a "contain" fit leaves blank bands when
+    // the host snapshot aspect ratio differs from the phone's map panel.
+    const scale=Math.max(w/iw,h/ih)*this.zoom;
+    const maxPanX=Math.max(0,(iw*scale-w)/2);
+    const maxPanY=Math.max(0,(ih*scale-h)/2);
+    // At every zoom and after a viewport resize the image must cover all
+    // edges; dragging or pinching cannot reveal anything outside its bounds.
+    this.panX=Math.max(-maxPanX,Math.min(maxPanX,this.panX));
+    this.panY=Math.max(-maxPanY,Math.min(maxPanY,this.panY));
     return {w,h,iw,ih,scale,x:(w-iw*scale)/2+this.panX,y:(h-ih*scale)/2+this.panY};
   }
   zoomAt(factor,x,y){
