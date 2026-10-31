@@ -262,11 +262,10 @@ test('an explicit action-damage trait bonus moves its basic action into the owni
  const owner=calculated.features.find(row=>row.origin_id);
  calculated.action_damage_bonuses[0].parent_origin=owner?.origin_id||'class|phb|bard';
  calculated.action_damage_bonuses[0].origin_name=owner?.name||'Bard';
- render(record,calculated,app=>{
-  assert.equal(app.querySelectorAll('[data-battle-action="resources"] [data-attack-id="attack"]').length,0,
-   'The Attack action is not a separate weapon resource');
-  const action=app.querySelector('[data-attack-id="attack"]');
-  assert(action.querySelector('[data-effect-kind="damage"]'),
-   'The action also shows its explicit damage in the Actions panel');
+ render(record,calculated,(app,_abilities,actions)=>{
+  assert.equal(app.querySelector('[data-battle-action="others"] [data-attack-id="attack"]'),null,
+   'Generic Attack is not an attack-action grant');
+  assert(actions.modifiedActions.some(row=>row.id==='attack'&&row.action_damage?.some(x=>x.formula==='1d6')),
+   'The saved damage modifier remains modeled even when Attack is not listed in Actions');
  });
 });
