@@ -479,6 +479,10 @@ function spellLearningClassNames(castingClasses=state.calculated?.casting_classe
   }
   return [...names].sort((a,b)=>a.localeCompare(b,'it',{sensitivity:'base'}));
 }
+const spellLearningDefaultFilter=id=>{
+  const member=(state.calculated?.casting_classes||[]).find(row=>row.id===id);
+  return member?.spell_list_class_name||member?.name||'all';
+};
 function spellLearningFilterOptions(){
   return '<option value="all"'+(state.spellLearnFilter==='all'?' selected':'')+'>Tutte le classi</option>'+
     spellLearningClassNames().map(name=>'<option value="'+esc(name)+'"'+
@@ -7312,7 +7316,7 @@ async function handleAction(target){
     if(state.sheet!=='magic')return;
     state.spellClass=target.dataset.magicClass||'manual';
     state.spellTarget='prepared_spells';
-    state.magicPopup='learn';state.spellLearnFilter='all';
+    state.magicPopup='learn';state.spellLearnFilter=spellLearningDefaultFilter(state.spellClass);
     state.spellQuery='';state.spellResultLimit=60;
     requireFullSpellsForPicker();await render();return;
   }
@@ -7320,7 +7324,7 @@ async function handleAction(target){
     state.magicPopup='learn';
     state.spellTarget='prepared_spells';
     state.spellQuery='';state.spellResultLimit=60;
-    state.spellLearnFilter='all';requireFullSpellsForPicker();
+    state.spellLearnFilter=spellLearningDefaultFilter(state.spellClass);requireFullSpellsForPicker();
     await render();return;
   }
   if(act==='magic-tool-open'||act==='magic-select-spells'){
@@ -7333,7 +7337,7 @@ async function handleAction(target){
       state.spellClass=act==='magic-select-spells'?target.dataset.magicClass||classes[0]?.id||'manual':
         classes.some(row=>row.id===state.spellClass)?state.spellClass:classes[0]?.id||'manual';
       state.spellTarget='prepared_spells';
-      state.spellLearnFilter='all';
+      state.spellLearnFilter=spellLearningDefaultFilter(state.spellClass);
       state.spellQuery='';state.spellResultLimit=60;
       state.spellKnownView=classes.find(row=>row.id===state.spellClass)?.mode==='Preparati'?'known':'all';
     }

@@ -666,6 +666,8 @@ test("inline spell catalog adds available and spellbook choices without divergin
     'Class filter and spell search occupy the same toolbar row');
   assert.equal(preparationFilters.querySelector('#spell-learn-filter option[value="all"]')?.textContent,
     'Tutte le classi');
+  assert.equal(preparationFilters.querySelector('#spell-learn-filter')?.value,'Wizard',
+    'Preparation defaults to the spell list declared by its class benefit');
   const preparationLayout=[...preparationDialog.querySelector('.magic-tools-body').children]
     .map(element=>element.className);
   const search=document.querySelector('#spell-search');
@@ -701,8 +703,11 @@ test("inline spell catalog adds available and spellbook choices without divergin
   const learningDialog=document.querySelector('#magic-tools-dialog[open]');
   assert.equal(learningDialog.querySelector('h2')?.textContent,'Impara nuovi incantesimi');
   assert.equal(learningDialog.querySelector('.magic-editor-filters #spell-search')?.id,'spell-search');
-  assert.equal(learningDialog.querySelector('#spell-learn-filter')?.value,'all',
-    'Learning defaults to all class spell lists');
+  assert.equal(learningDialog.querySelector('#spell-learn-filter')?.value,'Wizard',
+    'Learning defaults to the spell list declared by its class benefit');
+  const classFilter=learningDialog.querySelector('#spell-learn-filter');
+  classFilter.value='all';classFilter.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  assert.equal(classFilter.value,'all','All classes remains a selectable override');
   assert.deepEqual([...learningDialog.querySelector('.magic-tools-body').children]
     .map(element=>element.className),preparationLayout,
     'Learning and preparation use exactly the same popup view');
