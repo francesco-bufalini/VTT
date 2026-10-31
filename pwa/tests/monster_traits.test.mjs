@@ -86,8 +86,8 @@ test('battle resources display monster costs and the granting attack description
   mountPlaySheet(app,{creature:fixture,calculated:data,sheet:'battle',icon:actionGlyph,view:{battleActions,battleTraits:data.features}});
   const multiattack=app.querySelector('[data-battle-action="others"] [data-attack-id="monster:multiattack"]');
   assert(multiattack,'Multiattack appears as its own action');
-  assert.equal(multiattack.querySelectorAll('.play-attack-sequence > li').length,3,
-   'Multiattack has three independent descriptive attack steps');
+  assert.equal(multiattack.querySelectorAll('.play-attack-sequence > li').length,4,
+   'Multiattack has four independent descriptive sequence elements');
   for(const id of ['legendary_action','legendary_resistance','lair_action'])
    assert.ok(app.querySelector('[data-battle-action="others"] [data-attack-id="'+id+'"]'));
   const wing=app.querySelector('[data-ability-id="monster:legendary:1"]');
