@@ -38,7 +38,7 @@ export function applyDistanceUnits(root){
  if(unit!=='meters'||!root)return;
  const doc=root.ownerDocument||(root.nodeType===9?root:null);
  if(!doc?.createTreeWalker)return;
- const skip='input,textarea,option,script,style,pre,code,[contenteditable],[class*="description"],[class*="descrizione"],[data-trait-description]';
+ const skip='input,textarea,option,script,style,pre,code,[contenteditable],[class*="description"],[class*="descrizione"],[data-trait-description],.distance-preferences-dialog';
  const walker=doc.createTreeWalker(root,4),nodes=[];
  while(walker.nextNode())nodes.push(walker.currentNode);
  for(const node of nodes){
