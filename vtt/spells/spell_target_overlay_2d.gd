@@ -258,20 +258,7 @@ func _target_display_name(token: Node3D) -> String:
 	if not _is_internal_token_name(visible_name):
 		return visible_name
 
-	# A linked sheet can be renamed independently from the node's identifier.
-	# Its lightweight name index avoids loading/normalizing full records.
-	var creature_id: String = String(token.get_meta("creature_id", "")).strip_edges()
-	if not creature_id.is_empty() and board != null and is_instance_valid(board):
-		var sheets: Node = board.get_node_or_null("CreatureArea")
-		if sheets != null and sheets.has_method("get_owned_creature_name_index"):
-			var index_value: Variant = sheets.call("get_owned_creature_name_index")
-			if index_value is Dictionary:
-				var sheet_name: String = String((index_value as Dictionary).get(creature_id, "")).strip_edges()
-				if not _is_internal_token_name(sheet_name):
-					return sheet_name
-
-	# Remote-owned creatures can lack a local sheet but retain synchronized
-	# character/monster names as metadata.
+	# Linked creatures carry their PWA names as synchronized token metadata.
 	for key: String in ["player_character_name", "master_creature_name"]:
 		var metadata_name: String = String(token.get_meta(key, "")).strip_edges()
 		if not _is_internal_token_name(metadata_name):

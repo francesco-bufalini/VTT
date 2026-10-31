@@ -136,44 +136,6 @@ static func effective_race(race: Dictionary, subrace: Dictionary) -> Dictionary:
 	return race
 
 
-# Existing character saves stored "Dwarf (Hill)" as the species.
-static func migrate_legacy_species(record: Dictionary) -> Dictionary:
-	var name := String(record.get("species", ""))
-	var source := String(record.get("species_source", ""))
-	# Most saves already have a base race; avoid remerging the entire
-	# 5etools catalog every time a creature sheet is normalized.
-	if (name.is_empty() or not String(record.get("subrace", "")).is_empty()
-		or not name.ends_with(")") or name.rfind(" (") < 0):
-		return record
-	var rows: Array[Dictionary] = Catalog.entries("races")
-	for entry: Dictionary in rows:
-		if (String(entry.get("name", "")).nocasecmp_to(name) != 0
-			or String(entry.get("source", "")) != source):
-			continue
-		var parent := _parent_of_flattened(entry, rows)
-		if parent.is_empty():
-			break
-		var base_name := String(parent.get("name", ""))
-		var base_source := String(parent.get("source", ""))
-		var race: Dictionary = {}
-		for candidate: Dictionary in rows:
-			if (String(candidate.get("name", "")).nocasecmp_to(base_name) == 0
-				and String(candidate.get("source", "")) == base_source):
-				race = candidate
-				break
-		for child: Dictionary in subraces_for(race):
-			if name.nocasecmp_to(base_name + " (" + String(child.get("name", "")) + ")") == 0 and String(child.get("source", "")) == source:
-				var copy: Dictionary = record.duplicate(true)
-				copy["species"] = base_name
-				copy["species_source"] = base_source
-				copy["species_id"] = String(race.get("id", ""))
-				copy["subrace"] = String(child.get("name", ""))
-				copy["subrace_source"] = String(child.get("source", ""))
-				copy["subrace_id"] = String(child.get("id", ""))
-				return copy
-	return record
-
-
 # Racial movement can be a scalar (including a JSON-decoded float) or a
 # structured walk/fly/swim map. Comparing either scalar to {} is invalid
 # in GDScript and used to crash sheet loads and token placement.

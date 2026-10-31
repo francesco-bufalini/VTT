@@ -63,15 +63,6 @@ func run() -> void:
 			has_wood = true
 	assert(not has_high and has_wood,
 		"Switching subrace must revoke the previous origin without removing shared proficiencies")
-	var legacy := record.duplicate(true)
-	legacy["species"] = "Elf (High)"
-	legacy["species_source"] = "PHB"
-	legacy["subrace"] = ""
-	legacy["subrace_id"] = ""
-	legacy["subrace_source"] = ""
-	var migrated := RaceRules.migrate_legacy_species(legacy)
-	assert(migrated.species == "Elf" and migrated.subrace == "High",
-		"Legacy flattened races migrate without discarding selected child")
 	# Reproduce the real crash: a cached 5etools race speed is a float,
 	# while legacy saves may keep a stale numeric speed_base.
 	assert(RaceRules.has_speed(25.0) and RaceRules.has_speed(25)
@@ -97,5 +88,5 @@ func run() -> void:
 	assert(Bonuses.value({"kind": "character", "species_speed": {"walk": 40, "fly": 60},
 		"speed_base": 99}, "speed") == 40,
 		"Structured walking speed must still be honored by formula evaluation")
-	print("PASS: structured subrace filtering, legacy migration, numeric speed and proficiencies")
+	print("PASS: structured subrace filtering, numeric speed and proficiencies")
 	quit()

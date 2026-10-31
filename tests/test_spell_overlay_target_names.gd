@@ -13,13 +13,11 @@ class FakeToken:
 		return visible_name
 
 
-class FakeSheet:
+class FakeSpell:
 	extends Node
 
-	var creature_names: Dictionary = {"npc-42": "Duergar"}
-
-	func get_owned_creature_name_index() -> Dictionary:
-		return creature_names.duplicate()
+	func is_targeting() -> bool:
+		return false
 
 
 class FakeMeasure:
@@ -46,10 +44,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var board := Node3D.new()
 	root.add_child(board)
-	var sheet := FakeSheet.new()
-	sheet.name = "CreatureArea"
-	board.add_child(sheet)
-	var spell := Node.new()
+	var spell := FakeSpell.new()
 	board.add_child(spell)
 	var measure := FakeMeasure.new()
 	board.add_child(measure)
@@ -71,10 +66,10 @@ func _run() -> void:
 	sheet_panel.z_index = 30
 	canvas.add_child(sheet_panel)
 	if not (token_overlay.z_index < aoe.z_index and aoe.z_index < sheet_panel.z_index):
-		_fail("spell AoE should be above portraits, below creature sheets")
+		_fail("spell AoE should be above portraits, below active UI panels")
 		return
 	if not (token_overlay.z_index < attack_range.z_index and attack_range.z_index < sheet_panel.z_index):
-		_fail("weapon range overlay should stay below creature sheets")
+		_fail("weapon range overlay should stay below active UI panels")
 		return
 	if aoe.mouse_filter != Control.MOUSE_FILTER_IGNORE:
 		_fail("spell overlay intercepts clicks meant for UI controls")
@@ -92,10 +87,11 @@ func _run() -> void:
 	var linked := FakeToken.new()
 	linked.name = "Token"
 	linked.set_meta("creature_id", "npc-42")
+	linked.set_meta("player_character_name", "Duergar")
 	linked.add_to_group("dnd_token")
 	board.add_child(linked)
 	if String(aoe.call("_target_display_name", linked)) != "Duergar":
-		_fail("linked creature sheet name was not resolved")
+		_fail("linked PWA creature metadata name was not resolved")
 		return
 
 	var remote := FakeToken.new()
