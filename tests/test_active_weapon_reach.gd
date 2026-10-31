@@ -48,6 +48,7 @@ func _run() -> void:
 	equipped[1]["equipped_slots"] = []
 	record["inventory"] = equipped
 	assert(Attacks.active_attack(record).get("id") == "improvised", "Equipped shield remains a valid improvised attack after sheathing")
+	assert(Attacks.active_range(record) == 5.0, "An improvised shield strike keeps normal melee reach")
 	record["hand_main_special"] = "unarmed"
 	assert(Attacks.active_attack(record).get("id") == "unarmed", "Explicitly selected unarmed attacks remain available")
 
