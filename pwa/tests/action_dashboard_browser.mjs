@@ -154,7 +154,8 @@ try{
  assert((await page.locator('#app').textContent()).includes('Disarmare'));
  await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
- await page.locator('.play-battle-disclosure[data-battle-action="others"] > summary').click();
+ const actionsDisclosure=page.locator('.play-battle-disclosure[data-battle-action="others"]');
+ if(await actionsDisclosure.getAttribute('open')===null)await actionsDisclosure.locator(':scope > summary').click();
  assert.equal(await page.locator('[data-battle-action="others"] .play-battle-action-group:has([data-attack-id="stealth_movement"])').getAttribute('open'),'',
   'Stealth movement is visible automatically when its parent opens');
  await page.locator('[data-attack-id="stealth_movement"] [data-target="skill:stealth"]').click();
