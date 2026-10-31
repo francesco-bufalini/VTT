@@ -717,6 +717,21 @@ test("inline spell catalog adds available and spellbook choices without divergin
   const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
   assert.equal(current?.prepared_spells?.[0]?.id,'phb2014_shield',
     'Repreparing restores the spell without changing its learned state');
+  click('[data-act="magic-learn-select"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
+  const forgetSearch=document.querySelector('#spell-search');
+  forgetSearch.value='Shield';forgetSearch.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  click('#magic-tools-dialog .magic-catalog-row.is-selected [data-act="spell-known-toggle"]');
+  await until(async()=>{
+    const updated=(await loadCreature(saved.data.id)).data;
+    return updated.prepared_spells?.length===0 &&
+      updated.known_spell_overrides?.['class|phb|wizard']?.removed?.includes('phb2014_shield');
+  });
+  await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]'));
+  assert.equal((await loadCreature(saved.data.id)).data.spellbook_spells.length,1,
+    'Forgetting a legacy learned spell leaves the historical book data intact');
+  click('[data-act="magic-tool-close"]');
+  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -734,6 +749,7 @@ test("granted spells block new duplicate learning and preparation, not owned cla
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="magic"]');
+  await until(()=>document.querySelector('[data-act="magic-learn-select"]'));
   click('[data-act="magic-learn-select"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const learnSearch=document.querySelector('#spell-search');
