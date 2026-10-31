@@ -293,13 +293,13 @@ test('Two-Weapon Fighting uses generic conditional damage bonuses',()=>{
  const selection='optional:class:phb:fighter:fs-f',option='optional:phb:two-weapon-fighting';
  const definition=catalogs.optionalFeatureProgressions.options.find(row=>row.id===option);
  assert.deepEqual(definition.effects.map(row=>[row.type,row.target,row.expression]),
-  [['bonus','attack_damage:*','str_mod'],['bonus','attack_damage:*','dex_mod']]);
+  [['bonus','attack_damage:*','attack_ability_mod']]);
  const sword={id:'sword',name:'Shortsword',type:'M',damage:'1d6',
   properties:['L','F'],equipped_slots:['main'],quantity:1};
  const dagger={...sword,id:'dagger',name:'Dagger',equipped_slots:['off']};
- for(const ability of ['str','dex']){
+ for(const ability of ['str','dex','wis']){
   let r={...record(),classes:[{name:'Fighter',source:'PHB',level:2}],level:2,
-   abilities:{str:16,dex:14,con:12,int:10,wis:10,cha:10},
+   abilities:{str:16,dex:14,con:12,int:10,wis:18,cha:10},
    inventory:[sword,dagger],attack_ability:ability};
   let calculated=calculateSheet(r,completeCatalogs);
   r={...r,...powerSelectionPatch(r,calculated,combined,selection,'learned',option)};
@@ -308,7 +308,7 @@ test('Two-Weapon Fighting uses generic conditional damage bonuses',()=>{
   r={...r,...powerApplicationPatch(r,calculated,combined,selection,option,true)};
   calculated=calculateSheet(r,completeCatalogs);
   const attack=calculated.attacks.find(row=>row.id==='item:off:dagger');
-  const amount=ability==='str'?3:2;
+  const amount=ability==='str'?3:ability==='dex'?2:4;
   assert.equal(attack.damage_ability_modifier,0);
   assert.equal(attack.damage_extra_modifier,amount);
   assert.equal(attack.damage,'1d6 + '+amount);
