@@ -13,7 +13,7 @@ try{
  await page.evaluate(async()=>{
   const {createCreature,saveCreature}=await import('/creatures.js');
   const saved=await createCreature('character','Benefici comuni');
-  await saveCreature({...saved.data,rules_version:'2014',level:10,
+  await saveCreature({...saved.data,rules_version:'2014',class:'Ranger',class_source:'PHB',level:10,
    classes:[{name:'Ranger',source:'PHB',level:2},{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
    abilities:{str:12,dex:14,con:14,int:18,wis:12,cha:10},attack_ability:'int',
    inventory:[{id:'test:armor',name:'Armatura bersaglio',type:'MA',ac:14,quantity:1,equipped_slots:['body']}]
