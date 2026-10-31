@@ -12,8 +12,6 @@ const ARMOR_STATE_CATALOG := "res://pwa/catalog/trait_states.json"
 static var _armor_states_cache: Array[Dictionary] = []
 static var _armor_states_loaded := false
 const RULES := [
-	["armor_guardian", "Artificer", "Armor Model", "Modello armatura · Guardiano", "", "armor_model", "free"],
-	["armor_infiltrator", "Artificer", "Armor Model", "Modello armatura · Infiltratore", "", "armor_model", "free"],
 	["magical_tinkering", "Artificer", "Magical Tinkering", "Congegni magici", "", "context", "action"],
 	["flash_of_genius", "Artificer", "Flash of Genius", "Lampo di genio", "Flash of Genius", "context", "reaction"],
 	["defensive_field", "Artificer", "Defensive Field", "Campo difensivo", "Defensive Field", "temporary_hp", "bonus"],
@@ -108,8 +106,23 @@ static func _model_trait(record: Dictionary, rule: Dictionary, features: Array[D
 		return {}
 	var needed: Dictionary = rule.get("require_equipped", {})
 	if not needed.is_empty():
-		if String(needed.get("slot", "")) != "body" or Items.equipped_armor(record.get("inventory", [])).is_empty():
+		var armor: Dictionary = Items.equipped_armor(record.get("inventory", []))
+		if armor.is_empty():
 			return {}
+		var selection: String = String(needed.get("extension_selection", ""))
+		if not selection.is_empty():
+			var applications: Variant = record.get("power_applications", {}).get(selection, [])
+			var has_extension := false
+			if applications is Array:
+				for raw: Variant in applications:
+					if not raw is Dictionary:
+						continue
+					var target: String = String((raw as Dictionary).get("target_item_id", ""))
+					if not target.is_empty() and target in [String(armor.get("id", "")), String(armor.get("instance_id", ""))]:
+						has_extension = true
+						break
+			if not has_extension:
+				return {}
 	var flags := Profs.origin_enabled_map(record)
 	for feature: Dictionary in features:
 		if String(feature.get("name", "")).nocasecmp_to(String(rule.get("trait", ""))) != 0:
@@ -158,10 +171,6 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	var enabled := Profs.origin_enabled_map(record)
 	var revised := String(record.get("rules_version", "2014")) == "2024"
 	for rule: Array in RULES:
-		# The models are resolved from the shared catalog, not these
-		# historical action IDs. Keep the IDs only for save compatibility.
-		if String(rule[5]) == "armor_model":
-			continue
 		for feature: Dictionary in collected:
 			var parent: String = String(rule[2])
 			if revised and parent == "Ki": parent = "Monk’s Focus"
