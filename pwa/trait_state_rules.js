@@ -24,7 +24,7 @@ function eligible(record,features,rule) {
   const requirement=rule.require_equipped;
   if(requirement?.extension_selection){
     if(arr(record.selection_definition_ids).includes(requirement.extension_selection)&&
-      !activeItemOptionEffects(record,[],features).some(effect=>effect.infusion.selection_id===requirement.extension_selection))return null;
+      !activeItemOptionEffects(record,[],features).some(effect=>effect.option.selection_id===requirement.extension_selection))return null;
     const legacy=!Object.hasOwn(record.power_applications||{},requirement.extension_selection)&&selection(record,rule)&&arr(record.inventory).some(item=>arr(item.equipped_slots).includes('body')&&['MA','LA','HA'].includes(String(item.type).split('|')[0]));
     if(!legacy&&!arr(record.power_applications?.[requirement.extension_selection]).some(row=>row.target_item_id&&
       arr(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id&&Number(item.quantity??1)>0)))return null;
