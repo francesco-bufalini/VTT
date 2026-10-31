@@ -166,7 +166,7 @@ function grantLiteral(kind,raw){
   let key=norm(raw);
   if(key.startsWith("{@item ")&&key.endsWith("}"))
     key=key.slice(7,-1).split("|")[0].trim();
-  else if(key.includes(" ")&&!["skill","language"].includes(kind)&&
+  else if(key.includes(" ")&&!["skill","language","weapon"].includes(kind)&&
       !["simple","martial","all"].includes(key))return "";
   if(key.startsWith("{@")||!key)return "";
   return key;
