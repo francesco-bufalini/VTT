@@ -47,8 +47,8 @@ test("class available spells merge legacy duplicates and stay mirrored on add/re
   assert.deepEqual(rm.prepared_spells,[b]);
   assert.deepEqual(rm.spells,[b]);
   assert.equal(spellId("spell:a"),"spell:a");
-  assert.deepEqual(addSelectedSpell(old,a,"spellbook_spells").spellbook_spells,[b,a]);
-  assert.deepEqual(removeSelectedSpell(old,"spellbook_spells",0).spellbook_spells,[]);
+  assert.throws(()=>addSelectedSpell(old,a,"spellbook_spells"),/Elenco non valido/);
+  assert.throws(()=>removeSelectedSpell(old,"spellbook_spells",0),/Elenco non valido/);
   assert.throws(()=>removeSelectedSpell(old,"spells",0),/non valido/);
 });
 test("spell catalog rejects missing IDs or unsupported levels",()=>{

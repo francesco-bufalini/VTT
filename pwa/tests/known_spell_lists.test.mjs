@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {knownClassSpellIds,knownClassCantripIds,knownSpellProgress,sessionSpellEntries,classSelectionCount,
   changeKnownClassSpell,addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 
-const cleric={id:'class|phb|cleric',name:'Cleric',mode:'Preparati',max_level:3,book:false};
+const cleric={id:'class|phb|cleric',name:'Cleric',mode:'Preparati',max_level:3,
+ selection_layers:{learned:{mode:'class_list'}}};
 const wizard={id:'class|phb|wizard',name:'Wizard',mode:'Preparati',max_level:3,book:true};
 const bard={id:'class|phb|bard',name:'Bard',mode:'Conosciuti',max_level:3,book:false};
 const catalog=[
@@ -39,17 +40,19 @@ test('known-spell overrides can remove class spells and add non-class spells',()
  assert.equal(knownClassSpellIds(record,cleric,catalog).has('shield'),false);
 });
 
-test('wizard spellbook stays the source of known spells and known-only preparation',()=>{
+test('wizard learning precedes preparation without reviving the legacy book editor',()=>{
  const base={rules_version:'2014',prepared_spells:[],spellbook_spells:[]};
  assert.throws(()=>addSelectedSpell(base,catalog[1],'prepared_spells',
-   {member:wizard,classes:[wizard],catalog}),/Impara prima/);
- const book=addSelectedSpell(base,catalog[1],'spellbook_spells',
-   {member:wizard,classes:[wizard],catalog});
- let record={...base,...book};
+   {member:wizard,classes:[wizard],catalog}),/non conosciuto/);
+ assert.throws(()=>addSelectedSpell(base,catalog[1],'spellbook_spells',
+   {member:wizard,classes:[wizard],catalog}),/Elenco non valido/);
+ const learned=changeKnownClassSpell(base,wizard,catalog[1],true,catalog);
+ let record={...base,...learned};
  assert.equal(knownClassSpellIds(record,wizard,catalog).has('shield'),true);
  record={...record,...addSelectedSpell(record,catalog[1],'prepared_spells',
    {member:wizard,classes:[wizard],catalog})};
  assert.equal(record.prepared_spells.length,1);
+ assert.deepEqual(record.spellbook_spells,[]);
 });
 
 test('wizard cantrips can be learned and forgotten without changing the spellbook',()=>{
