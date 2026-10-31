@@ -37,7 +37,7 @@ try{
  assert.match(await flashResource.locator('.play-resource-bonus-row').filter({hasText:'Lampo di genio'}).innerText(),/\+4.*Lampo di genio[\s\S]*Prove di caratteristica.*Tiri salvezza/);
  assert.equal(await flashResource.locator('[data-act="battle-use-ability"]').count(),0,
   'roll bonuses are listed under trackers instead of duplicated as ability buttons');
- const lightningResource=page.locator('#sheet-play-view [data-action-benefit="roll-bonuses"]');
+ const lightningResource=page.locator('#sheet-play-view [data-action-benefit="damage-bonuses"]');
  assert.match(await lightningResource.locator('.play-resource-bonus-row').filter({hasText:'1d6'}).innerText(),/\+1d6[\s\S]*Danni/);
  // The rest label does not block an immediate model switch.
   assert.equal(await page.locator('#sheet-play-view [data-resource-tracker="feature:armor_model:activation"]').count(),0);
