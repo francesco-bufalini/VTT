@@ -521,7 +521,7 @@ export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
    const targetId=explicit[index]|| (match.length===1?String(match[0].id):'');
    return '<li class="play-battle-attack-step">'+
     '<span class="play-battle-roll-formula">'+esc(label)+'</span>'+
-    '<button type="button" class="play-battle-attack-roll play-battle-attack-step-use"'+
+    '<button type="button" class="play-battle-attack-step-use"'+
     ' data-act="battle-attack-jump" data-attack-target-id="'+esc(targetId)+'"'+
     ' aria-label="Usa '+esc(label)+' dalla tabella Attacchi">Usa</button></li>';
   }).join('')+'</ol>':'';
@@ -651,7 +651,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
    (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
    '</span></summary><div class="play-battle-attack-expanded"><p>'+detailsContent+'</p>'+
    source+optionMarkup+'</div></details>'+control+
-   (rolls.length?'<div class="play-battle-attack-rolls play-battle-other-rolls">'+rolls.map(row=>
+   (rolls.length?'<div class="play-battle-attack-rolls play-battle-other-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map(row=>
      '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
      esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
      '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
