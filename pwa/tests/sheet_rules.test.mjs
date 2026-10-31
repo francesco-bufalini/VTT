@@ -5,6 +5,7 @@ import {fileURLToPath} from "node:url";
 import {calculateSheet,parseArithmetic,spellProgression,formulaValue,requirementsAllow,localClasses}
   from "../sheet_rules.js";
 import {rollBattleDamage,sheetRollChatFields} from "../sheet_rules_view.js";
+import {equippedItemFacts,equipmentRequirementMatches} from "../item_controls.js";
 import {fixedProficiencies,structuredFeatureGrants,automaticId} from "../structured_effects.js";
 
 const load=file=>JSON.parse(readFileSync(fileURLToPath(new URL("../catalog/"+file+".json",import.meta.url)),"utf8"));
@@ -311,6 +312,81 @@ test("battle damage rolls use bounded dice notation and desktop-compatible chat 
  assert.equal(rollBattleDamage("1d6 - 2",()=>4).total,2);
  for(const invalid of ["", "alert(1)", "1d6-1d4", "101d6", "1d0", "10000","2d6+1d4+foo"])
   assert.throws(()=>rollBattleDamage(invalid,()=>1),/danni|dadi/i);
+});
+
+test("declarative equipment rules track active armor, slots and instance properties",()=>{
+ const worn={id:"armor",name:"Plate",custom_item_type:"armor",type:"HA",ac:18,
+   strength:15,stealth:true,material:"iron",quantity:1,equipped_slots:["body"]};
+ const shield={id:"shield",custom_item_type:"shield",type:"S",quantity:1,equipped_slots:["off"]};
+ const dagger={id:"dagger",instance_id:"dagger-copy",custom_item_type:"weapon",type:"M",
+   damage:"1d4",properties:["F|PHB","T|PHB"],instance_overrides:{properties:["F|PHB"]},
+   quantity:1,equipped_slots:["main"]};
+ const record=character({inventory:[worn,shield,dagger]});
+ const equipped=equippedItemFacts(record);
+ assert.deepEqual(equipped.map(row=>row.slot),["body","off","main"]);
+ assert.deepEqual(equipped.find(row=>row.id==="dagger").properties,["F"]);
+ assert.equal(equipped.find(row=>row.id==="armor").armor_class,18);
+ assert.equal(equipped.find(row=>row.id==="armor").armor_strength_required,15);
+ assert.equal(equipped.find(row=>row.id==="armor").armor_stealth_disadvantage,true);
+ assert.equal(equipmentRequirementMatches(record,{equipment:{kind:"armor",armor_stealth_disadvantage:true,material:"iron"}}),true);
+ assert.equal(equipmentRequirementMatches(record,{equipment:{all:[{kind:"armor",type:"HA",slot:"body"}],none:[{kind:"weapon",properties:["2H"]}]}}),true);
+ assert.equal(equipmentRequirementMatches(record,{equipment:{none:[{kind:"shield"}]}}),false);
+ assert.equal(equipmentRequirementMatches(record,{equipment:{any:[{kind:"weapon",properties:["T"]}]}}),false);
+ assert.equal(equipmentRequirementMatches({...record,inventory:[{...worn,equipped_slots:[]},dagger]},
+  {equipment:{kind:"armor",slot:"body"}}),false);
+ assert.equal(requirementsAllow(record,{requirements:{scope:"class",class_name:"Fighter",min_level:3}}),false);
+});
+test("generic weapon hit and damage bonuses filter melee, ranged and thrown without matching names",()=>{
+ const bow={id:"bow",name:"Shortbow",custom_item_type:"weapon",type:"R",damage:"1d6",damage_type:"piercing",
+   range:"80/320",properties:["2H","A"],quantity:1,equipped_slots:["main"]};
+ const dagger={id:"dagger",name:"Dagger",custom_item_type:"weapon",type:"M",damage:"1d4",damage_type:"piercing",
+   range:"20/60",properties:["F","L","T"],quantity:1,equipped_slots:["main"]};
+ const dart={id:"dart",name:"Dart",custom_item_type:"weapon",type:"R",damage:"1d4",damage_type:"piercing",
+   range:"20/60",properties:["F","T"],quantity:1,equipped_slots:["main"]};
+ const grants=[
+  {id:"archery",target:"attack_hit:*",expression:"2",requirements:{attack:{kind:"weapon",weapon_type:"ranged",range_kind:"ranged"}}},
+  {id:"thrown",target:"attack_damage:*",expression:"2",requirements:{attack:{kind:"weapon",mode:"thrown",properties:["T"]}}},
+  {id:"melee",target:"attack_hit:*",expression:"1",requirements:{attack:{kind:"weapon",mode:"melee",properties:["F"]}}}
+ ];
+ const sheet=(weapon,bonuses=grants)=>calculateSheet(character({inventory:[weapon],formula_bonuses:bonuses}),catalogs);
+ const base=weapon=>sheet(weapon,[]),byId=(c,id)=>c.attacks.find(row=>row.id===id);
+ const b=sheet(bow),b0=base(bow);
+ assert.equal(byId(b,"item:bow").hit-byId(b0,"item:bow").hit,2);
+ assert.equal(byId(b,"item:bow").damage_extra_modifier,0);
+ assert.equal(byId(b,"unarmed").hit-byId(b0,"unarmed").hit,0);
+ const d=sheet(dagger),d0=base(dagger);
+ assert.equal(byId(d,"item:dagger").hit-byId(d0,"item:dagger").hit,1);
+ assert.equal(byId(d,"item:dagger").damage_extra_modifier,0);
+ assert.equal(byId(d,"item:throw:main:dagger").damage_extra_modifier,2);
+ assert.equal(byId(d,"item:throw:main:dagger").hit-byId(d0,"item:throw:main:dagger").hit,0);
+ const dartRoll=byId(sheet(dart),"item:dart"),dartBase=byId(base(dart),"item:dart");
+ assert.equal(dartRoll.hit-dartBase.hit,2,"Thrown ranged weapons remain ranged weapons for Archery");
+ assert.equal(dartRoll.damage_extra_modifier-dartBase.damage_extra_modifier,2,"Thrown property applies to darts, too");
+ assert(b.roll_components["attack_hit:item:bow"].some(r=>r.id==="archery"));
+ assert(!d.roll_components["attack_hit:item:dagger"]?.some(r=>r.id==="archery"));
+});
+test("generic AC and one-handed melee requirements follow real armor and occupied hands",()=>{
+ const armor={id:"coat",custom_item_type:"armor",type:"MA",ac:14,quantity:1,equipped_slots:["body"]};
+ const shield={id:"shield",custom_item_type:"shield",type:"S",ac:2,quantity:1,equipped_slots:["off"]};
+ const blade={id:"blade",custom_item_type:"weapon",type:"M",name:"Longsword",damage:"1d8",damage_type:"slashing",
+   properties:["V"],quantity:1,equipped_slots:["main"]};
+ const off={...blade,id:"offblade",name:"Offhand longsword",equipped_slots:["off"]};
+ const grants=[
+  {id:"defense",target:"ac",expression:"1",requirements:{equipment:{kind:"armor",slot:"body"}}},
+  {id:"dueling",target:"attack_damage:*",expression:"2",requirements:{attack:{kind:"weapon",mode:"melee",one_handed:true,no_other_weapon:true}}},
+  {id:"slashing",target:"attack_damage:*",expression:"3",requirements:{attack:{damage_type:"slashing",kind:"weapon"}}}
+ ];
+ const run=(inventory,extra={})=>calculateSheet(character({inventory,formula_bonuses:grants,...extra}),catalogs);
+ const naked=run([blade]),coat=run([armor,blade]),shielded=run([armor,blade,shield]);
+ assert.equal(coat.stats.armor_class-naked.stats.armor_class,5,"Medium armor replaces unarmored AC and Defense adds 1");
+ const withoutDefense=calculateSheet(character({inventory:[armor,blade],formula_bonuses:grants.slice(1)}),catalogs);
+ assert.equal(coat.stats.armor_class-withoutDefense.stats.armor_class,1);
+ assert.equal(coat.attacks.find(a=>a.id==="item:blade").damage_extra_modifier,5);
+ assert.equal(shielded.attacks.find(a=>a.id==="item:blade").damage_extra_modifier,5,"Shield is not another weapon");
+ assert.equal(run([armor,blade,off]).attacks.find(a=>a.id==="item:blade").damage_extra_modifier,3,"Offhand weapon removes Dueling");
+ assert.equal(run([armor,blade],{hand_grip_two_handed:true}).attacks.find(a=>a.id==="item:blade").damage_extra_modifier,3);
+ assert.equal(run([armor,{...blade,damage_type:"bludgeoning"}]).attacks.find(a=>a.id==="item:blade").damage_extra_modifier,2);
+ assert.equal(run([armor,blade],{origin_enabled:{style:false},formula_bonuses:[{...grants[1],origin_id:"style"}]}).attacks.find(a=>a.id==="item:blade").damage_extra_modifier,0);
 });
 
 test("characters above level 20 retain every hit die and their last published proficiency",()=>{
