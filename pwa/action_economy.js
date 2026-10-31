@@ -729,11 +729,16 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  ];
  const baseById=new Map(baseRules.map(row=>[row.id,row]));
  for(const row of monsterBasicRules(record,calculated))baseById.set(row.id,row);
- const grants=arr(calculated.attack_count_benefits).filter(row=>Number(row.attacks_per_action)===count);
+ const attackGrants=Array.isArray(calculated.attack_count_benefits)?
+  calculated.attack_count_benefits:attackCountBenefits(record,calculated.features);
+ const grants=arr(attackGrants).filter(row=>Number(row.attacks_per_action)===count);
  const grant=grants[0];
  const grantingTrait=arr(calculated.features).find(row=>row.origin_id===grant?.origin_id)||
   (record.kind==='monster'?monsterTraits(record).find(row=>row.monster_role==='multiattack')||monsterTraits(record)[0]:null);
  baseById.get('attack').grant_description=details(grantingTrait?.entries)||grant?.origin_name||descriptions.main;
+ // Multiattack is its own named action, never an enhancement of the generic
+ // single Attack action in monster rules metadata.
+ if(record.kind==='monster')baseById.get('attack').attack_count=1;
  const opportunity=entries.find(row=>row.id==='opportunity');
  if(opportunity)baseById.set('opportunity',{...opportunity,...baseById.get('opportunity')});
  const offhand=entries.find(row=>row.id==='two_weapon');
