@@ -79,3 +79,15 @@ test('chat is frameless and uses the current creature as sender',()=>{
  assert.doesNotMatch(ui,/Scrivi come|Chat della partita<\/h2>|data-act="header-chat-close"/);
  assert.match(ui,/author:String\(r\.author\|\|activeChatCreatureName\(\)\)/);
 });
+
+test('dice avoids input autofocus, variants use paw icon and preferences are minimal',()=>{
+ const theme=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+ assert.match(ui,/<h2 id="chat-dice-title" tabindex="-1" autofocus>/);
+ assert.match(ui,/forms\.innerHTML=actionGlyph\('wild_shape'\)/);
+ assert.doesNotMatch(html,/id="creature-forms"[^>]*><svg/);
+ assert.match(theme,/\.topbar #creature-forms \.vtt-action-glyph\{/);
+ assert.match(theme,/\.distance-preferences-body fieldset\{\s*display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(theme,/\.distance-preferences-body \.distance-preferences-option input\[type="radio"\]\{/);
+ assert.doesNotMatch(ui,/Unità originale delle regole D&D|La preferenza cambia solo le distanze visualizzate/);
+ assert.match(ui,/\[\['feet','Piedi \(ft\)'\],\['meters','Metri \(m\)'\]\]/);
+});
