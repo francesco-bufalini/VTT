@@ -381,7 +381,7 @@ func _build_ui() -> void:
 func configure_touch_layout() -> void:
 	_touch_layout = true
 	roll_mode_input.custom_minimum_size.x = 160
-	var touch = preload("res://vtt/mobile/touch_layout.gd")
+	var touch = preload("res://vtt/touch_layout.gd")
 	toggle_button.hide()
 	panel.z_index = 30
 	history_view.custom_minimum_size.y = 140

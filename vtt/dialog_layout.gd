@@ -72,7 +72,7 @@ static func popup(
 		_keep_body_within_viewport(accept, fallback_ratio)
 	var touch: bool = _touch(dialog)
 	if touch:
-		preload("res://vtt/mobile/touch_layout.gd").fit_dialog(dialog)
+		preload("res://vtt/touch_layout.gd").fit_dialog(dialog)
 	# Desktop previously re-enabled wrap_controls, letting a late Label/HBox
 	# minimum size override max_size and push the modal off the screen.
 	dialog.wrap_controls = false
