@@ -73,7 +73,7 @@ export function attackCategories(attack={}){
  return [...categories];
 }
 export function resolveAttackActionSteps(action={},attacks=[],otherActions=[]){
- const options=[...rows(attacks),...rows(otherActions).filter(row=>row?.check_target||row?.action_id)];
+ const options=[...rows(attacks),...rows(otherActions).filter(row=>row?.check_target||row?.action_id||row?.monster_action)];
  const result=[];
  for(const step of rows(action.steps)){
   const selector=step.selector||{};
@@ -87,7 +87,7 @@ export function resolveAttackActionSteps(action={},attacks=[],otherActions=[]){
    if(selector.kind==='attack'&&!categories.includes('attack'))return false;
    return selector.kind==='ability'||categories.includes('attack')||categories.includes('check');
   });
-  result.push({...step,count:Math.max(1,Number(step.count)||1),options:candidates,
+  result.push({...step,count:Math.min(99,Math.max(1,Math.trunc(Number(step.count)||1))),options:candidates,
    resolved:candidates.length>0});
  }
  return result;
@@ -129,7 +129,7 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
    if(trait&&!active(trait))continue;
    const tracker=rows(trackers).find(t=>t.id===spec.tracker_id);
    const cost=Math.max(0,Number(spec.tracker_cost)||0);
-   result.push({id:'attack_action:monster:action:'+i,name:spec.name||row.name,
+   result.push({id:i===0?'monster:multiattack':'monster:multiattack:'+i,name:spec.name||row.name,
     time:spec.time||'action',description:row.entries||row.description||'',
     origin_id:trait?.origin_id||'',feature_id:trait?.origin_id||'',
     steps:spec.steps,attack_action:true,monster_action:true,

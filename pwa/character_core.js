@@ -46,7 +46,7 @@ export function normalizeMonsterStatBlock(stat={}){
   // Explicit homebrew counts take precedence over a parsed text description.
   const explicit=Number.isSafeInteger(direct)&&direct>=2&&!derived&&
    !(sequence.specials>0&&!row.vtt_multiattack_count_version&&direct===sequence.attacks);
-  const parsed=multiattackSteps(row);
+  const parsed=multiattackSteps({...row,attack_action:undefined});
   const parsedAttacks=parsed.filter(step=>step.selector?.kind!=='ability')
    .reduce((n,step)=>n+Number(step.count||0),0);
   const steps=explicit&&direct!==parsedAttacks?[{selector:{category:'attack'},count:direct}]:parsed;

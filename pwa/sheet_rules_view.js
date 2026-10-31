@@ -918,7 +918,11 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const attackId=resourceAttackId(row,d.attacks||[]);
    return !!attackId&&!['unarmed','unarmed:off'].includes(attackId);
   });
-  const combatPowers=powerRows.filter(row=>!grantedAttackRows.includes(row));
+  // Actions backed by a typed attack routine are rendered once in
+  // battleActions.actionGroups, not again as an activated power below.
+  const routineOrigins=new Set((d.attack_actions||[]).map(row=>String(row.origin_id||'')).filter(Boolean));
+  const combatPowers=powerRows.filter(row=>!grantedAttackRows.includes(row)&&
+   !routineOrigins.has(String(row.classAction?.origin_id||row.power?.feature_id||row.power?.origin_id||'')));
   const actionGroups=view.battleActions?.actionGroups||{};
   const powerAttacks=combatPowers.filter(row=>powerAttackSteps(row).length>0);
   const powerAbilities=combatPowers.filter(row=>!powerAttacks.includes(row));
