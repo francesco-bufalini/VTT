@@ -74,12 +74,13 @@ try{
     assert.equal(await page.locator('[data-act="battle-expand-all"],[data-act="battle-collapse-all"]').count(),0);
     const resources=page.locator('[data-battle-action="resources"]');
     const actionSection=page.locator('[data-battle-action="others"]');
-    assert(await resources.locator(':scope > summary').isVisible(),'Resources is the flat counter and attack list');
-    assert.equal(await page.locator('[data-battle-action="attacks"]').count(),0,
-      'Physical attacks now share the Resources section');
-    assert.equal(await resources.locator('[data-attack-id="unarmed"]').count(),1);
-    assert.equal(await resources.locator('[data-rule-action],[data-ability-id],[data-action-benefit]').count(),0,
-      'Resources has no action, ability or nested benefit groups');
+    const attacks=page.locator('[data-battle-action="attacks"]');
+    assert(await resources.locator(':scope > summary').isVisible(),'Resources keeps its counter list');
+    assert.equal(await attacks.count(),1,'Attacchi is restored as a separate table');
+    assert.equal(await attacks.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is in Attacchi');
+    assert.equal(await resources.locator('[data-attack-id="unarmed"]').count(),0,'Unarmed never appears in Risorse');
+    assert.equal(await resources.locator('[data-rule-action],[data-action-benefit]').count(),0,
+      'Resources contains no generic actions or benefit subgroups');
     assert.equal(await resources.locator('[data-resource-tracker="charge"]').count(),1);
     assert.equal(await resources.locator('[data-resource-privilege]').count(),0);
     assert.match(await actionSection.locator('summary.play-battle-summary').textContent(),/^Azioni$/);
@@ -89,11 +90,12 @@ try{
     assert.equal(await attackGroup.count(),1);
     assert.equal(await abilityGroup.count(),1);
     assert.equal(await otherGroup.count(),1);
-    const primaryAttack=attackGroup.locator('[data-attack-id="attack"]');
-    assert.equal(await primaryAttack.count(),1);
-    assert.equal(await primaryAttack.locator('.play-attack-sequence > li').count(),1,
-      'Basic Attack has one descriptive hit');
-    assert.equal(await primaryAttack.locator('.play-attack-sequence button').count(),0);
+    assert.equal(await attackGroup.locator('[data-attack-id="attack"]').count(),0,
+      'The default Attack action is not listed as an attack-granting capability');
+    assert.equal(await attackGroup.locator('[data-act="battle-attack-map"],.play-battle-attack-range').count(),0,
+      'Attack actions cannot show weapon range or map controls');
+    assert.equal(await attackGroup.locator('.play-attack-action-cost').count()>0,true,
+      'Each attack-granting action shows its action-economy cost');
     assert.equal(await attackGroup.locator('[data-attack-id="opportunity"]').count(),1);
     assert.equal(await attackGroup.locator('[data-attack-id="two_weapon"]').count(),1);
     assert(await otherGroup.getByText('Scattare').count()>0);
@@ -116,7 +118,7 @@ try{
      await first.locator(':scope > summary').click();
      assert.notEqual(await first.getAttribute('open'),null);
     }
-    const rangedAttack=page.locator('[data-battle-action="resources"] [data-act="battle-attack-map"]').first();
+    const rangedAttack=page.locator('[data-battle-action="attacks"] [data-act="battle-attack-map"]').first();
     assert(await rangedAttack.count(),'Each computed weapon has a map range action');
     assert(await rangedAttack.getAttribute('aria-label'),'Map range action has an accessible label');
     assert.equal(await page.locator('[data-battle-action="spells"]').count(),0,
