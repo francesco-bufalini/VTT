@@ -29,7 +29,18 @@ test('chat replaces the sheet and dock without replacing the topbar',()=>{
  assert.match(ui,/chatScreen\.addEventListener\("submit",onFormSubmit\)/);
  assert.match(ui,/function setSheetChatOpen\(open\)/);
  assert.match(ui,/if\(!onCreature\)state\.chatOpen=false/);
- assert.match(ui,/chatScreen\.querySelector\('\.chat-view-close'\)\?\.focus/);
+ assert.match(ui,/chatScreen\.querySelector\('#events'\)\?\.focus/);
+ assert.doesNotMatch(ui,/chat-view-close|chat-main-panel|chat-view-head/);
+ assert.match(ui,/const author=activeChatCreatureName\(\)/);
+ assert.doesNotMatch(ui,/id="chat-author"/);
+ assert.match(ui,/const topbar=document\.querySelector\('\.topbar'\)/);
+ assert.match(ui,/topbar\.hidden=state\.page==='library'&&state\.libraryMode/);
+ assert.match(ui,/topSessionButton\.hidden=hasCreature/);
+ assert.match(ui,/sessionTab\.classList\.toggle\('session-connected',sessionConnected\)/);
+ assert.match(ui,/button\.classList\.toggle\('session-connected',sessionConnected\)/);
+ assert.match(html,/id="creature-forms" class="header-icon-button header-forms"/);
+ assert.match(ui,/id="chat-message" type="text"/);
+ assert.match(ui,/class="chat-send-button"/);
 });
 
 test('incoming marker excludes own activity, local echoes, old history and map updates',()=>{
@@ -56,4 +67,15 @@ test('dice stays a dialog and logs completed rolls to local chat',()=>{
  assert.match(ui,/async function shareRoll\(\{quiet=false,roll=null\}=\{\}\)/);
  assert.match(ui,/rememberChatEvent\(event\)/);
  assert.match(ui,/chatScreen\.querySelector\('#events'\)/);
+});
+
+test('chat is frameless and uses the current creature as sender',()=>{
+ const theme=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+ assert.match(theme,/\.app-shell\.chat-open \.chat-screen\{[\s\S]*?padding:0;overflow:hidden/);
+ assert.match(theme,/\.chat-screen #chat-form\.chat-composer\{[\s\S]*?display:flex/);
+ assert.match(theme,/\.chat-screen #chat-message\{[\s\S]*?height:42px/);
+ assert.match(theme,/\.play-dock #dock-session\.session-connected::after/);
+ assert.match(theme,/\.topbar\[hidden\],\.topbar \.connection-link\[hidden\]/);
+ assert.doesNotMatch(ui,/Scrivi come|Chat della partita<\/h2>|data-act="header-chat-close"/);
+ assert.match(ui,/author:String\(r\.author\|\|activeChatCreatureName\(\)\)/);
 });
