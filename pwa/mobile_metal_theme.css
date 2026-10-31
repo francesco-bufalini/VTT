@@ -6826,3 +6826,113 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 #sheet-play-view .play-battle-attack-action .play-attack-sequence{
  margin-top:0;margin-bottom:9px;list-style:decimal
 }
+
+
+/* One battle benefit row across Capacità, attack routines, other actions and
+   roll bonuses: title/time left, an operable resource-and-Use box right. */
+#sheet-play-view .play-battle-benefit-row{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
+ min-width:0;margin:0;padding:0;border:0;border-top:1px solid #ad87412d;
+ border-radius:0;background:linear-gradient(90deg,#6745261e,#39291d12)
+}
+#sheet-play-view .play-battle-benefit-details{
+ display:block;min-width:0;margin:0;padding:0;border:0;
+}
+#sheet-play-view .play-battle-benefit-details>summary.play-resource-power-open{
+ display:flex;align-items:center;gap:9px;min-height:53px;padding:8px 10px;
+ list-style:none;cursor:pointer;color:#edd5af;
+}
+#sheet-play-view .play-battle-benefit-details>summary::-webkit-details-marker{display:none}
+#sheet-play-view .play-battle-benefit-details>summary>.vtt-action-glyph{
+ flex:0 0 22px;width:22px;height:22px
+}
+#sheet-play-view .play-battle-benefit-details .play-battle-attack-copy{
+ display:flex;flex:1 1 auto;flex-direction:column;min-width:0;gap:3px;
+ overflow-wrap:break-word
+}
+#sheet-play-view .play-battle-benefit-details .play-battle-attack-copy>strong{
+ font:550 13px/1.4 system-ui;color:#f4dbb6
+}
+#sheet-play-view .play-battle-benefit-details .play-battle-attack-copy>small{
+ margin:0;font:400 11px/1.4 system-ui;color:#c5a982
+}
+#sheet-play-view .play-battle-benefit-details>.play-battle-attack-expanded{
+ margin:0;padding:0 12px 10px 41px;font:400 12px/1.5 system-ui;color:#d4c1a8
+}
+#sheet-play-view .play-resource-power-row>.play-action-use-box,
+#sheet-play-view .play-battle-benefit-row>.play-action-use-box{
+ display:flex;flex:0 0 auto;flex-direction:column;align-items:stretch;justify-content:center;
+ gap:4px;min-width:80px;width:clamp(88px,28vw,145px);max-width:100%;
+ min-height:41px;height:auto;margin:5px 7px 5px 3px;padding:5px 8px;
+ border:1px solid #bb965f79;border-radius:8px;background:#7550334a;
+ color:#f1d8b4;text-align:center;cursor:pointer
+}
+#sheet-play-view .play-action-use-box .play-action-tracker-name{
+ display:block;max-width:100%;min-width:0;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;
+ font:600 10px/1.25 system-ui;color:#e8c693
+}
+#sheet-play-view .play-action-use-box .play-action-use-bottom{
+ display:flex;align-items:center;justify-content:center;gap:7px;
+ min-width:0;white-space:nowrap
+}
+#sheet-play-view .play-action-use-box .play-action-use-bottom:has(.play-action-tracker-count){
+ justify-content:space-between
+}
+#sheet-play-view .play-action-use-box .play-action-tracker-count{
+ color:#f5d8a9;font:700 11px/1.25 system-ui;font-variant-numeric:tabular-nums
+}
+#sheet-play-view .play-action-use-box .play-action-use-verb{
+ color:#f9ddb3;font:700 12px/1.25 system-ui
+}
+#sheet-play-view .play-action-use-box:hover:not(:disabled){
+ border-color:#e5bd7d;background:#865c354d
+}
+#sheet-play-view .play-action-use-box:disabled{opacity:.45;cursor:default}
+#sheet-play-view .play-action-use-space{
+ flex:0 0 auto;width:clamp(88px,28vw,145px);max-width:100%;margin:5px 7px 5px 3px
+}
+#sheet-play-view .play-battle-other-rolls{
+ grid-column:1/-1;display:grid;gap:0;width:auto;min-width:0;
+ margin:0;padding:0 12px 8px 42px
+}
+#sheet-play-view .play-battle-other-rolls>.play-battle-attack-roll-line{
+ display:flex;align-items:center;justify-content:space-between;
+ min-height:37px;gap:9px
+}
+/* Attack action subrows reuse the compact other-action roll-line layout.
+   The button opens the authoritative attack, rather than duplicating its dice. */
+#sheet-play-view .play-battle-benefit-row>.play-attack-sequence{
+ grid-column:1/-1;display:grid;gap:0;list-style:none;
+ margin:0 7px 7px 40px;padding:0 8px;border:0;border-radius:0;
+ background:transparent;color:#d9c39f
+}
+#sheet-play-view .play-battle-attack-step{
+ display:flex;align-items:center;justify-content:space-between;gap:9px;
+ min-height:39px;width:100%;padding:3px 0;
+ border-top:1px solid #a27b4a2a
+}
+#sheet-play-view .play-battle-attack-step>.play-battle-roll-formula{
+ flex:1 1 auto;min-width:0;overflow-wrap:anywhere;color:#cbb591;
+ font:400 12px/1.4 system-ui
+}
+#sheet-play-view .play-battle-attack-step>.play-battle-attack-step-use{
+ flex:0 0 auto;min-width:58px;min-height:32px;
+ padding:5px 9px;font:600 11px/1.2 system-ui
+}
+#sheet-play-view .play-action-benefit-rows>.play-attack-sequence{
+ margin:0 8px 8px 40px;padding:0 8px;list-style:none
+}
+#sheet-play-view .play-action-benefit-rows>.play-attack-sequence>.play-battle-attack-step{
+ padding:3px 0
+}
+@media(max-width:380px){
+ #sheet-play-view .play-resource-power-row>.play-action-use-box,
+ #sheet-play-view .play-battle-benefit-row>.play-action-use-box{
+  min-width:76px;width:clamp(78px,27vw,110px);margin-inline:2px 4px;padding:4px 5px
+ }
+ #sheet-play-view .play-action-use-space{width:clamp(78px,27vw,110px);margin-inline:2px 4px}
+ #sheet-play-view .play-battle-other-rolls{padding-left:34px;padding-right:6px}
+ #sheet-play-view .play-battle-benefit-row>.play-attack-sequence{margin-left:31px;margin-right:5px}
+ #sheet-play-view .play-battle-benefit-details>summary.play-resource-power-open{gap:6px;padding-inline:6px}
+}
