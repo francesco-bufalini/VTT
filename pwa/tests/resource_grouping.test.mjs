@@ -16,6 +16,11 @@ const sheet=(name,subclass,source='PHB',subclassSource='TCE')=>({
  classes:[{name,source,level:8,subclass,subclass_source:subclassSource}],
  abilities:{str:10,dex:14,con:14,int:18,wis:16,cha:18},inventory:[]
 });
+const appliedInfusion=(id,creatorId)=>{
+ const definition=catalogs.abilityGrants.artificer_infusions.find(row=>row.id===id);
+ return {id,name:definition.name,selection_id:'artificer_infusions',
+  creator_id:creatorId,requires_attunement:definition.requires_attunement===true,definition};
+};
 const project=record=>({...calculateSheet(record,catalogs),
  companion_rules:companions,infusion_catalog:catalogs.abilityGrants.artificer_infusions});
 function render(record,calculated,check,sheet='battle',bank=''){
@@ -140,7 +145,8 @@ test('explicit free and paid actions of the same trait are never merged by origi
 });
 test('creator commands follow active, source-qualified companion grants and never transfer with infused items',()=>{
  const record=sheet('Artificer','Alchemist','TCE');
- record.inventory=[{id:'heart',name:'Crystal',quantity:1,infusion:{id:'infusion|tce|homunculus servant',creator_id:record.id}}];
+ record.inventory=[{id:'heart',name:'Crystal',quantity:1,
+  option_extensions:[appliedInfusion('infusion|tce|homunculus servant',record.id)]}];
  const calculated=project(record);
  const powers=abilitiesForCreature(record,[],calculated);
  const command=powers.find(row=>row.companion_rule_id==='homunculus_servant_2014');
@@ -157,7 +163,8 @@ test('creator commands follow active, source-qualified companion grants and neve
  for(const next of [
   {...record,inventory:[]},
   {...record,inventory:[{...record.inventory[0],active:false}]},
-  {...record,inventory:[{...record.inventory[0],infusion:{...record.inventory[0].infusion,creator_id:'someone-else'}}]},
+  {...record,inventory:[{...record.inventory[0],option_extensions:[
+    {...record.inventory[0].option_extensions[0],creator_id:'someone-else'}]}]},
   {...record,rules_version:'2024'},
   {...record,origin_enabled:{[calculated.features.find(row=>row.name==='Infuse Item').origin_id]:false}}
  ])assert(!abilitiesForCreature(next,[],project(next)).some(row=>row.companion_command));
@@ -171,7 +178,8 @@ test('creator commands follow active, source-qualified companion grants and neve
 test('Infusions does not repeat infused item powers while Resources keeps the actions',()=>{
  const record=sheet('Artificer','Alchemist','TCE');
  record.inventory=[{id:'sword',name:'Sword',type:'M',quantity:1,equipped_slots:['main'],
-  attuned:true,attuned_count:1,infusion:{id:'infusion|tce|radiant weapon',creator_id:record.id}}];
+  attuned:true,attuned_count:1,option_extensions:[
+    appliedInfusion('infusion|tce|radiant weapon',record.id)]}];
  const calculated=project(record);
  const powers=abilitiesForCreature(record,[],calculated).filter(row=>row.infusion_action);
  assert.equal(powers.length,2);

@@ -77,7 +77,9 @@ test('spell selection benefits project the same stage and source contract as opt
 
 test('Armor Model and infusion JSON share the same stage contract',()=>{
  const artificer={id:'a',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],
-  trait_state_selection:{armor_model:'armor_model:guardian'},inventory:[{id:'old-armor',type:'MA',quantity:1,equipped_slots:['body']}]};
+  power_applications:{arcane_armor:[{id:'arcane_armor',target_item_id:'old-armor'}],
+    armor_model:[{id:'armor_model:guardian'}]},
+  inventory:[{id:'old-armor',type:'MA',quantity:1,equipped_slots:['body']}]};
  const features=[owner('Artificer','TCE','Arcane Armor'),owner('Artificer','TCE','Armor Model'),
    owner('Artificer','TCE','Infuse Item')];
  const calculated={features,trait_state_catalog:[{group:'armor_model',id:'armor_model:guardian',
