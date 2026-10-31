@@ -43,7 +43,9 @@ try{
  }
  const strength=page.locator('#sheet-play-view [data-target="ability_check:str"]').first();
  await strength.click();
- assert.match(await page.locator('[data-roll-formula]').textContent(),/2d20kh1/);
+ assert.match(await page.locator('[data-roll-formula]').textContent(),/ADV/);
+ assert.match(await page.locator('[data-roll-formula]').textContent(),/Ira/,
+  'Rage grants automatic advantage');
  await page.locator('[data-act="roll-sheet-confirm"]').click();
  assert.match(await page.locator('[data-roll-result]').textContent(),/vantaggio/);
  await page.locator('[data-act="close-sheet-roll"]').click();

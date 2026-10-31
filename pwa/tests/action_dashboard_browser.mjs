@@ -10,7 +10,14 @@ const routes=new Map([...String(await readFile(new URL('network/pwa_host.gd',roo
 const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
+  const revision='a'.repeat(40);
+  if(path==='/__vtt_version'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({revision}));return;}
+  if(path==='/sw.js'){res.setHeader('Content-Type','text/javascript; charset=utf-8');res.end((await readFile(new URL('pwa/sw.js',root),'utf8')).replaceAll('__VTT_COMMIT_SHA__',revision));return;}
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
+  if(path==='/catalog/spells/selected'&&req.method==='POST'){
+   for await(const _chunk of req){} // No known spells in this isolated fixture.
+   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;
+  }
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;}
   const route=routes.get(path);if(!route){res.writeHead(404);res.end();return;}
   res.setHeader('Content-Type',route[1]);res.end(await readFile(new URL(route[0],root)));

@@ -636,6 +636,12 @@ try{
  await hpCard.click({position:{x:22,y:80}});
  await page.locator('#hp-adjust-current').fill('39');
  await page.locator('#hp-adjust-temporary').fill('5');
+ // Cross the production pending-edit barrier before asserting durable HP.
+ await page.locator('#hp-adjust-temporary').press('Tab');
+ await page.evaluate(async()=>{
+  const {desktopSheetSession}=await import('/ui.js');
+  await desktopSheetSession.flush();
+ });
  await page.waitForFunction(async creatureId=>{
   const {loadCreature}=await import('/creatures.js');
   const creature=(await loadCreature(creatureId))?.data;
