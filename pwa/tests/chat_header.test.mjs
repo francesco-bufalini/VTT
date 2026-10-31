@@ -24,7 +24,7 @@ test('chat replaces the sheet and dock without replacing the topbar',()=>{
  assert(appEnd>=0&&screen>appEnd,'Chat is outside the sheet <main>');
  assert.match(styles,/\.app-shell\.chat-open #app,\.app-shell\.chat-open #mobile-tabs\{display:none!important\}/);
  assert.match(styles,/\.app-shell\.chat-open \.chat-screen\{display:flex/);
- assert.match(ui,/const choices=\[\['table','Mappa'\],\['connection','Collegamento'\]\]/);
+ assert.doesNotMatch(ui,/data-session-pane="connection"|sessionLayout\(/);
  assert.doesNotMatch(ui,/data-session-content="chat"/);
  assert.match(ui,/chatScreen\.addEventListener\("submit",onFormSubmit\)/);
  assert.match(ui,/function setSheetChatOpen\(open\)/);
@@ -34,7 +34,7 @@ test('chat replaces the sheet and dock without replacing the topbar',()=>{
  assert.match(ui,/const author=activeChatCreatureName\(\)/);
  assert.doesNotMatch(ui,/id="chat-author"/);
  assert.match(ui,/const topbar=document\.querySelector\('\.topbar'\)/);
- assert.match(ui,/topbar\.hidden=state\.page==='library'&&state\.libraryMode/);
+ assert.match(ui,/topbar\.hidden=state\.page==='session'\|\|state\.page==='library'&&state\.libraryMode/);
  assert.match(ui,/topSessionButton\.hidden=hasCreature/);
  assert.match(ui,/sessionTab\.classList\.toggle\('session-connected',sessionConnected\)/);
  assert.match(ui,/button\.classList\.toggle\('session-connected',sessionConnected\)/);
@@ -90,4 +90,21 @@ test('dice avoids input autofocus, variants use paw icon and preferences are min
  assert.match(theme,/\.distance-preferences-body \.distance-preferences-option input\[type="radio"\]\{/);
  assert.doesNotMatch(ui,/Unità originale delle regole D&D|La preferenza cambia solo le distanze visualizzate/);
  assert.match(ui,/\[\['feet','Piedi \(ft\)'\],\['meters','Metri \(m\)'\]\]/);
+});
+
+test('Partita uses one compact server bar before the map with no switcher or header',()=>{
+ const theme=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+ const gd=readFileSync(new URL('../../network/pwa_host.gd',import.meta.url),'utf8');
+ assert.match(ui,/const desktop='<section class="panel session-desktop" aria-label="Collegamento al server">/);
+ assert.match(ui,/return desktop\+html/);
+ assert.match(ui,/html\+=sessionCreatureWarnings\(\)/);
+ assert.doesNotMatch(ui,/header\('Al tavolo'|class="session-switcher"|data-session-content="connection"/);
+ assert.match(ui,/state\.serverDeviceName=String\(result\.device_name\|\|''\)/);
+ assert.match(ui,/esc\(serverName\)/);
+ assert.match(ui,/session-server-name.*?\+.*?session-connection-state/);
+ assert.match(ui,/class="session-connection-actions"/);
+ assert.match(ui,/btn\('disconnect','Dissocia','danger'\)/);
+ assert.match(theme,/\.session-connection-actions\{display:flex/);
+ assert.match(gd,/"device_name": _server_device_name\(\)/);
+ assert.match(gd,/OS\.get_environment\("COMPUTERNAME"\)/);
 });
