@@ -95,7 +95,16 @@ try{
   const {listCreatures}=await import('/creatures.js');
   return ((await listCreatures())[0].creature.resource_tracker_spent?.[id]||0)===1;
  },flashTracker);
- assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/\+4/);
+ const rollBonusState=await rollDialog.evaluate(dialog=>({
+   connected:dialog.isConnected,
+   used:dialog.usedRollBonuses?.map(row=>({id:row.id,flat_bonus:row.flat_bonus,dice:row.dice})),
+   post:dialog.postRollBonuses?.map(row=>({id:row.id,flat_bonus:row.flat_bonus,dice:row.dice})),
+   applied:[...(dialog.appliedBonusIds||[])],
+   flash:dialog.querySelector('.sheet-roll-bonus-item')?.querySelector('[data-roll-use]')?.outerHTML,
+   formula:dialog.querySelector('[data-roll-formula]')?.textContent
+ }));
+ assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/\+4/,
+   'Confirmed Flash of Genius must change the roll formula: '+JSON.stringify(rollBonusState));
  const modifier=Number((await rollDialog.locator('.sheet-roll-math strong').first().textContent()).trim());
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  const total=Number(await rollDialog.locator('.dice-result').textContent());
