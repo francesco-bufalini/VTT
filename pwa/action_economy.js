@@ -491,7 +491,8 @@ export function battleActionUseBox({act='',attrs='',tracker=null,trackerName='',
  const labelText=String(label||'Usa');
  return '<button type="button" class="play-resource-use play-action-use-box" data-act="'+esc(act)+'"'+
   attrs+(off?' disabled':'')+
-  ' aria-label="'+esc(labelText+' '+(name||'azione')+(resource?' · '+resource+', '+available+' di '+(tracker?.max||0)+' utilizzi, costo '+amount:''))+'">'+
+  ' aria-label="'+esc(labelText+' '+(name||'azione'))+'"'+
+  (resource?' title="'+esc(resource+': '+available+'/'+(tracker?.max||0)+', costo '+amount)+'"':'')+'>'+
   (resource?'<span class="play-action-tracker-name" title="'+esc(resource)+'">'+esc(resource)+'</span>':'')+
   '<span class="play-action-use-bottom">'+
   (resource?'<strong class="play-action-tracker-count">'+available+'/'+esc(tracker?.max||0)+'</strong>':'')+
@@ -531,16 +532,19 @@ export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
 export function battleAttackActionRow(item={},calculated={}){
  const tracker=arr(calculated.trackers).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
  const cost=Math.max(0,Number(item.cost)||0),sequence=arr(item.attack_sequence);
- const actionable=item.attack_action===true&&cost>0;
- const control=battleActionUseBox({act:actionable?'attack-action-use':'battle-attack-jump',
-  attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':'',
+ const actionable=item.attack_action===true&&cost>0&&
+  arr(calculated.attack_actions).some(row=>String(row.id)===String(item.id));
+ const useAct=actionable?'attack-action-use':cost>0&&tracker?'battle-action-activate':'battle-attack-jump';
+ const control=battleActionUseBox({act:useAct,
+  attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':
+   useAct==='battle-action-activate'?' data-action-id="'+esc(item.id||'')+'"':'',
   tracker,trackerName:item.tracker,cost,label:'Usa',disabled:item.available===false,name:item.name});
  const description=details(item.description||'');
  return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-attack-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
   '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+
   actionGlyph(actionGlyphKey(item))+'<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione di attacco')+'</strong>'+
-  '<small class="play-attack-action-cost">'+esc(battleActionTimeLabel(item.time))+'</small>'+
+  '<small class="play-attack-action-cost">'+esc(battleActionTimeLabel(item.time)+(cost>1?' · Costo '+cost:''))+'</small>'+
   (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
   '</span></summary>'+
   '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p></div></details>'+
@@ -628,11 +632,13 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
   const detailsContent=render5etoolsInline(description||'Dettagli non disponibili.');
   const act=item.id==='spell_cast'?'action-open-spells':
    item.monster_action&&tracker?'monster-action-use':
-   String(item.id||'').startsWith('activated:')?'battle-use-ability':
+   item.class_feature_id||String(item.id||'').startsWith('activated:')?'battle-use-ability':
+   item.tracker_id&&Number(item.cost)>0?'battle-action-activate':
    item.action_id?'combat-action':
    rolls.length===1?'sheet-roll':null;
   const attrs=act==='monster-action-use'?' data-monster-action-id="'+esc(item.id)+'"':
    act==='battle-use-ability'?' data-ability-id="'+esc(item.id)+'"':
+   act==='battle-action-activate'?' data-action-id="'+esc(item.id)+'"':
    act==='combat-action'?' data-mode="'+esc(item.action_id)+'"':
    act==='sheet-roll'?' data-target="'+esc(rolls[0].target)+'" data-label="'+esc(rolls[0].label)+'"':'';
   const control=battleActionUseBox({act,attrs,tracker,cost:Number(item.cost)||0,
