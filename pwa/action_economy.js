@@ -979,7 +979,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
    weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record,true)).join('')+'</div>',
-  others:renderCategories(),actionGroups:Object.fromEntries(Object.entries(categoryGroups).map(([key,rows])=>[key,rows.length?groupHtml(rows,key):''])),movement:'',
+  others:renderCategories(),actionRows:other,actionGroups:Object.fromEntries(Object.entries(categoryGroups).map(([key,rows])=>[key,rows.length?groupHtml(rows,key):''])),movement:'',
   checks:battleSkillChecksPanel(calculated),
   spells:'',
   abilityEntries:classAbilities,
