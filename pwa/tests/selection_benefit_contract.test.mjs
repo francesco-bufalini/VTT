@@ -5,7 +5,7 @@ import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSe
 import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from '../scaling_dice.js';
 import {rollOptionalDice} from '../sheet_roll_origin.js';
-import {appendRollBonus} from '../sheet_rules_view.js';
+import {appendRollBonus,rollBattleDamage} from '../sheet_rules_view.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
 import {applyOriginSpellChoice,originChoiceMatches,sessionSpellEntries} from '../spell_selection.js';
 import {actionEntries,battleActionPanels} from '../action_economy.js';
@@ -258,6 +258,52 @@ test('legacy equipped flags never create a phantom offhand that blocks Dueling',
  const bothHands=calculateSheet({...r,hand_grip_two_handed:true},completeCatalogs);
  assert.equal(bothHands.attacks.find(a=>a.id==='item:'+sword.id)?.damage_extra_modifier,0,
   'Two-handed use of a versatile weapon suppresses Dueling');
+});
+
+test('Great Weapon Fighting applies a declared reroll only to two-handed melee weapon damage dice',()=>{
+ const id='optional:class:phb:fighter:fs-f',option='optional:phb:great-weapon-fighting';
+ const greatsword={id:'greatsword',name:'Greatsword',type:'M',damage:'2d6',
+  properties:['H','2H'],equipped_slots:['main'],quantity:1};
+ let r={...record(),level:2,classes:[{name:'Fighter',source:'PHB',level:2}],
+  abilities:{str:16,dex:10,con:12,int:10,wis:10,cha:10},inventory:[greatsword]};
+ let c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerSelectionPatch(r,c,combined,id,'learned',option)};
+ c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerApplicationPatch(r,c,combined,id,option,true)};
+ c=calculateSheet(r,completeCatalogs);
+ const attack=c.attacks.find(row=>row.id==='item:greatsword');
+ assert.equal(attack?.damage_rerolls?.[0]?.reroll_at_most,2);
+ const results=[1,5,2,6,1],outcome=rollBattleDamage('2d6+1d6+3',()=>results.shift(),
+  {rerollAtMost:2,rerollDiceCount:2});
+ assert.deepEqual(outcome.parts.map(part=>part.rolls),[[5,6],[1]],
+  'Only the weapon dice reroll and the replacement is kept');
+ assert.equal(outcome.total,15);
+ assert.match(outcome.detail,/1→5/);
+ const oneHanded=calculateSheet({...r,inventory:[{...greatsword,properties:['V'],damage:'1d8'}],
+  hand_grip_two_handed:false},completeCatalogs);
+ assert.equal(oneHanded.attacks.find(row=>row.id==='item:greatsword').damage_rerolls.length,0);
+ const ranged=calculateSheet({...r,inventory:[{...greatsword,type:'R',range:'80/320'}]},completeCatalogs);
+ assert.equal(ranged.attacks.find(row=>row.id==='item:greatsword').damage_rerolls.length,0);
+});
+
+test('Thrown Weapon Fighting applies +2 exclusively to the thrown damage roll',()=>{
+ const id='optional:class:phb:ranger:fs-r',option='optional:tce:thrown-weapon-fighting';
+ const dagger={id:'dagger',name:'Dagger',type:'M',damage:'1d4',range:'20/60',
+  properties:['L','F','T'],equipped_slots:['main'],quantity:1};
+ let r={...record(),level:2,classes:[{name:'Ranger',source:'PHB',level:2}],
+  abilities:{str:12,dex:16,con:12,int:10,wis:14,cha:10},inventory:[dagger]};
+ let c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerSelectionPatch(r,c,combined,id,'learned',option)};
+ c=calculateSheet(r,completeCatalogs);
+ r={...r,...powerApplicationPatch(r,c,combined,id,option,true)};
+ c=calculateSheet(r,completeCatalogs);
+ const melee=c.attacks.find(a=>a.id==='item:dagger');
+ const thrown=c.attacks.find(a=>a.id==='item:throw:main:dagger');
+ assert.equal(melee.damage_extra_modifier,0);
+ assert.equal(thrown.damage_extra_modifier,2);
+ assert.match(thrown.damage,/\+ 2/);
+ assert(c.roll_components['attack_damage:'+thrown.id].some(row=>
+  row.value===2&&row.origin_name==='Thrown Weapon Fighting'));
 });
 
 test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
