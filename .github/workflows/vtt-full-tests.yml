@@ -2,6 +2,12 @@ name: VTT Godot Full Tests
 
 on:
   workflow_dispatch:
+  # Run the full suite when changing the shared Godot validation entry point.
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/validate.ps1"
 
 concurrency:
   group: vtt-godot-full
