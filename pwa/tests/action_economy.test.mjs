@@ -583,7 +583,7 @@ test('spellcasting action opens Powers directly without an intermediary dialog',
  const cast=dom.querySelector('[data-attack-id="spell_cast"]');
  assert(cast);
  assert.equal(cast.querySelector('[data-act="action-open-spells"]').tagName,'BUTTON');
- assert.equal(cast.querySelector('[data-act="action-open-spells"]').closest('details'),null,
+ assert.equal(cast.querySelector('[data-act="action-open-spells"]').closest('.play-battle-benefit-details'),null,
   'The Use control opens Powers directly, independently of the optional description disclosure');
  assert.equal(result.spells,'','The separate battle spell section has been removed');
 });
