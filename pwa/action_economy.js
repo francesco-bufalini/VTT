@@ -5,6 +5,7 @@ import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 import {offhandActionEligibility} from './offhand_rules.js';
 import {equipmentRequirementMatches} from './item_controls.js';
+import {render5etoolsInline} from './5etools_inline.js';
 import {monsterActions,monsterBasicRules,monsterTraits,monsterActionOptions as projectedMonsterActionOptions} from './monster_traits.js';
 export {offhandActionEligibility};
 
@@ -383,7 +384,35 @@ function battleEffectMarkup(item,attack){
 export function attackRowGlyphKey(attack={}){
  return attack.melee===false?'target':'sword';
 }
-function battleAttackRow(item,calculated,attacksById,descriptions){
+// Expanded attack details come from the source that grants them.
+function attackSourceDescription(record,calculated,attack){
+ const id=String(attack?.id||''),inventory=arr(record.inventory);
+ // A generic unarmed strike must never inherit the description of a held weapon.
+ if(id.startsWith('item:')||id.startsWith('shield:improvised:')){
+  const instance=String(attack.equipped_item_id||'');
+  const item=inventory.find(row=>instance&&
+   (String(row.instance_id||'')===instance||String(row.id||'')===instance))||
+   inventory.find(row=>arr(row.equipped_slots).includes(attack.slot==='off'?'off':'main')&&
+    String(row.id||'')===id.split(':').at(-1));
+  const description=details(item?.description||item?.entries||item?.text);
+  if(description)return description;
+ }
+ const monster=/^monster:(action|bonus|reaction|legendary|mythic):(\d+)$/.exec(id);
+ if(monster){
+  const entry=arr(record.stat_block?.[monster[1]])[Number(monster[2])];
+  const description=details(entry?.entries||entry?.description||entry?.text);
+  if(description)return description;
+ }
+ const origin=String(attack.origin_id||'');
+ const feature=arr(calculated.features).find(row=>origin&&
+  (row.origin_id===origin||row.origin_key===origin||'feature:'+row.key===origin))||
+  arr(calculated.features).find(row=>attack.slot==='natural'&&row.name===attack.name);
+ const trait=details(feature?.entries||feature?.description||feature?.text);
+ if(trait)return trait;
+ const manual=arr(record.attacks).find(row=>String(row.id||'')===id);
+ return details(manual?.description||manual?.entries||attack.description);
+}
+function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
  const rolls=[];
  const addRoll=(target,label,kind,value)=>{
@@ -434,10 +463,9 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    weapon.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+weapon.id]??weapon.hit);
  }
  const offhand=attack&&(attack.slot==='off'||String(attack.id).startsWith('shield:improvised:off:'));
- const isHandAttack=attack&&(attack.slot==='main'||attack.slot==='off'||
-   attack.slot==='shield'||['unarmed','improvised'].includes(attack.id));
  const description=item.id==='improvised'?item.description||'Attacco con un oggetto equipaggiato impugnato come arma improvvisata.':
-  isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
+  attack?(attackSourceDescription(record,calculated,attack)||item.description||
+   (offhand?descriptions.off:descriptions.main)):item.description||'';
  const rangeFeet=Number(selectedAttack?.range_feet);
  const longRangeFeet=Number(selectedAttack?.long_range_feet);
  const rangeLabel=Number.isFinite(rangeFeet)&&rangeFeet>0?
@@ -470,7 +498,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
     (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+'</span>'+
    (Number(item.attack_count)>1?'<span class="play-battle-attacks-per-action" title="Attacchi per azione" aria-label="'+esc(item.attack_count)+' attacchi per azione">×'+esc(item.attack_count)+'</span>':'')+
    (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
-   '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
+   '</summary><div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p>'+
    source+target+resources+optionMarkup+
    (String(item.id||'').startsWith('activated:')&&!item.descriptive_only?'<button type="button" class="btn small" data-act="battle-use-ability" data-ability-id="'+esc(item.id)+'">Usa</button>':'')+
    '</div></details>')+
@@ -724,7 +752,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'"'+' open'+'>'+
     '<summary class="play-battle-action-heading">'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+
     '<span>'+esc(label)+'</span></summary>'+
-    '<div class="play-battle-action-rows">'+matching.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
+    '<div class="play-battle-action-rows">'+matching.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div></details>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
  const timingOverrides=entries.filter(row=>row.action_change_origin&&row.time!==row.original_time);
  const damageOverrides=arr(calculated.action_damage_bonuses).flatMap(grant=>{
@@ -735,7 +763,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  });
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
-   weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div>',
+   weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>',
   others:renderTiming(other),movement:'',
   checks:battleSkillChecksPanel(calculated),
   spells:'',
