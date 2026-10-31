@@ -192,7 +192,7 @@ try {
   pairingDesktopOnline = true;
   await manualPage.locator('[data-act="check"]').click();
   await manualPage.locator("#pair-form button[type=submit]").click();
-  await manualPage.locator('[data-session-pane="table"][aria-pressed="true"]')
+  await manualPage.locator('.session-connection-state', {hasText:'Partita connessa'})
     .waitFor({timeout:8000}).catch(async error => {
       console.log("PAIR DEBUG", {
         pairRequests,unauthenticatedSessionRequests,
@@ -229,9 +229,9 @@ try {
     if (frame === qrPage.mainFrame()) ++qrNavigations;
   });
   await qrPage.goto(origin + "/#pair=" + testShortCode);
-  await qrPage.locator('[data-session-pane="table"][aria-pressed="true"]')
+  await qrPage.locator('.session-connection-state', {hasText:'Partita connessa'})
     .waitFor({timeout:35000});
-  await qrPage.waitForFunction(() => document.querySelector("#connection")?.textContent?.includes("Collegato"));
+  assert.equal(await qrPage.locator('.topbar').isVisible(),false,'QR pairing opens the map with no topbar');
   assert.equal(pairRequests,1,"One-time QR must be redeemed exactly once");
   assert.equal(unauthenticatedSessionRequests,0,
     "The client must exchange #pair before trying /api/session without a bearer");
