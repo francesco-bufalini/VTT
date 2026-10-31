@@ -457,6 +457,37 @@ export function attackActionCategory(row={}){
  return row.type==='Capacità'||row.monster_action?'abilities':'other';
 }
 
+// An attack action spends an action economy slot to grant a sequence of
+// attacks: it is not an attack roll, has no reach, and never exposes map tools.
+export function battleAttackActionRow(item={},calculated={}){
+ const timeLabels={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',
+  free:'Azione gratuita',movement:'Movimento',legendary:'Azione leggendaria',
+  legendary_resistance:'Resistenza leggendaria',lair:'Azione di tana',
+  contextual:'Secondo il privilegio'};
+ const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
+ const cost=Math.max(0,Number(item.cost)||0),remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ const typeLabel=timeLabels[item.time]||String(item.time||'Azione');
+ const costLabel=cost>0?' · '+cost+' '+(cost===1?'utilizzo':'utilizzi'):'';
+ const trackerChip=tracker&&cost>0?'<span class="play-action-tracker" title="'+esc(tracker.name)+'" aria-label="'+
+  esc(tracker.name+' · '+remaining+' di '+tracker.max+' utilizzi, costo '+cost+'">'+
+  '<span class="play-action-tracker-name">'+esc(tracker.name)+'</span>'+
+  '<strong class="play-action-tracker-count">'+remaining+'/'+esc(tracker.max)+'</strong></span>':
+  cost>0?'<span class="play-action-tracker play-action-tracker--missing">Tracker non disponibile</span>':'';
+ const sequence=arr(item.attack_sequence),description=details(item.description||'');
+ return '<article class="play-battle-attack-entry play-battle-attack-action'+
+  (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
+  '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+
+  actionGlyph(actionGlyphKey(item))+
+  '<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione di attacco')+'</strong>'+
+  '<small class="play-attack-action-cost">'+esc(typeLabel+costLabel)+'</small>'+
+  (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
+  '</span>'+trackerChip+'</summary>'+
+  '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p></div>'+
+  '</details></div>'+
+  (sequence.length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
+   sequence.map(label=>'<li>'+esc(label)+'</li>').join('')+'</ol>':'')+'</article>';
+}
+
 function battleAttackRow(item,calculated,attacksById,descriptions,record={}){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
  const rolls=[];
@@ -724,8 +755,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    /\b(?:improvvisat|improvised)/i.test(String(attack?.name||''));
  };
  const realImprovised=[...attacksById.values()].filter(improvised);
- const isActualAttack=row=>attacksById.has(String(row.attack_id||row.id||''));
- const weapon=entries.filter(row=>row.type==='Attacco'&&isActualAttack(row)&&
+ const weapon=entries.filter(row=>row.type==='Attacco'&&
   !['attack','opportunity','two_weapon','unarmed:off'].includes(row.id)&&
   row.parent_action!=='two_weapon'&&
   !realImprovised.some(attack=>String(row.attack_id||row.id)===String(attack.id)));
@@ -775,27 +805,42 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   const [grapple]=weapon.splice(grappleAt,1);
   weapon.splice(weapon.findIndex(row=>row.id==='unarmed')+1,0,grapple);
  }
+ // The restored Attacchi table owns every physical and basic attack row.
+ // Never duplicate one of those concrete attacks in Azioni.
+ const physicalAttackIds=new Set(weapon.map(row=>String(row.id||'')));
  const specials=entries.filter(row=>!classIds.has(row)&&!classAbilities.some(ability=>ability.id===row.id)&&row.type!=='Incantesimo'&&
-   (row.type!=='Attacco'||!isActualAttack(row))&&
+   !physicalAttackIds.has(String(row.id||''))&&
+   (row.type!=='Attacco'||!attacksById.has(String(row.attack_id||row.id||'')))&&
    !['attack','two_weapon','opportunity','spell_cast','cast_spell'].includes(row.id));
  // Typed racial alternatives belong to Actions as well as the source trait.
  // Their use button re-enters the shared ability payment/effect pipeline;
  // Hide also exposes the ordinary Stealth check without inventing a new roll.
- for(const row of classAbilities.filter(row=>row.action_ref||
-   String(row.id||'').startsWith('activated:')&&row.time==='reaction')){
+ for(const row of classAbilities.filter(row=>!arr(calculated.attacks).some(attack=>
+   String(attack.id)===String(row.roll_attack?.id||row.attack_id||''))&&
+   (row.action_ref||String(row.id||'').startsWith('activated:')&&row.time==='reaction'))){
    if(specials.some(item=>item.id===row.id))continue;
    specials.push({...row,
      ...(row.action_ref==='hide'?{skill_ids:['stealth']}:{}),
      type:'Capacità'});
  }
- const basicInActions=actionsBase.filter(row=>row.id==='attack'||row.id==='two_weapon'||
+ // The generic Attack action is intentionally absent. Only a real
+ // attack-granting privilege (e.g. Extra Attack or a monster's Multiattack)
+ // occupies its place in the attack-action category.
+ const basicInActions=actionsBase.filter(row=>row.id==='two_weapon'||
   row.id==='opportunity'&&row.available||row.id==='spell_cast'&&row.available||row.monster_action);
- const multiattack=record.kind==='monster'?
+ const monsterMulti=record.kind==='monster'?
   monsterTraits(record).find(row=>row.monster_role==='multiattack'&&!row.disabled&&!row.inactive):null;
- const multiCount=multiattack?Math.max(Number(multiattack.attacks_per_action)||0,count):0;
- const multiRow=multiCount>1?[{id:'monster:multiattack',name:'Multiattacco',
-  time:'action',type:'Generale',available:true,attack_count:multiCount,
-  description:details(multiattack.entries),origin_id:'feature:'+multiattack.feature_key}]:[];
+ const multiCount=monsterMulti?Math.max(Number(monsterMulti.attacks_per_action)||0,count):count;
+ const grantedMulti=multiCount>1&&(monsterMulti||grantingTrait);
+ const rawMulti=arr(record.stat_block?.action).find(monsterMultiattack)||{};
+ const multiTrackerId=String(rawMulti.tracker_id||rawMulti.vtt_resource?.id||'');
+ const multiTracker=arr(calculated.trackers).find(row=>row.id===multiTrackerId);
+ const multiRow=grantedMulti?[{id:monsterMulti?'monster:multiattack':'feature:multiattack',
+  name:monsterMulti?'Multiattacco':String(grantingTrait?.name||grant?.origin_name||'Attacco extra'),
+  time:monsterMulti?(rawMulti.action_type||'action'):'action',type:'Generale',available:true,
+  attack_count:multiCount,description:details(monsterMulti?.entries||grantingTrait?.entries||grantingTrait?.description),
+  origin_id:monsterMulti?'feature:'+monsterMulti.feature_key:grant?.origin_id||'',
+  tracker_id:multiTrackerId,tracker:multiTracker?.name||'',cost:multiTrackerId?Math.max(1,Number(rawMulti.tracker_cost)||1):0}]:[];
  const other=[...basicInActions,...multiRow,...specials]
   .map(row=>({...row,attack_sequence:attackActionSequence(row,record,calculated)}));
  const ordering=(a,b,time)=>{
@@ -807,8 +852,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  };
  const categoryGroups={attacks:[],abilities:[],other:[]};
  for(const row of other)categoryGroups[attackActionCategory(row)].push(row);
- const groupHtml=rows=>'<div class="play-battle-action-rows">'+
-  rows.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>';
+ const groupHtml=(rows,kind='other')=>'<div class="play-battle-action-rows">'+
+  rows.map(row=>kind==='attacks'?battleAttackActionRow(row,calculated):
+   battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>';
  const renderCategories=()=>[
   ['attacks','Azioni di attacco','weapon'],
   ['abilities','Capacità','spark'],
@@ -816,7 +862,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  ].filter(([id])=>categoryGroups[id].length).map(([id,label,glyph])=>
   '<details class="play-battle-action-group" data-action-benefit="'+id+'" open>'+
   '<summary class="play-battle-action-heading">'+actionGlyph(glyph)+
-  '<span>'+label+'</span></summary>'+groupHtml(categoryGroups[id])+'</details>').join('')||
+  '<span>'+label+'</span></summary>'+groupHtml(categoryGroups[id],id)+'</details>').join('')||
   '<p class="play-empty">Nessuna azione disponibile.</p>';
  const timingOverrides=entries.filter(row=>row.action_change_origin&&row.time!==row.original_time);
  const damageOverrides=arr(calculated.action_damage_bonuses).flatMap(grant=>{
@@ -828,7 +874,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
    weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record)).join('')+'</div>',
-  others:renderCategories(),actionGroups:Object.fromEntries(Object.entries(categoryGroups).map(([key,rows])=>[key,rows.length?groupHtml(rows):''])),movement:'',
+  others:renderCategories(),actionGroups:Object.fromEntries(Object.entries(categoryGroups).map(([key,rows])=>[key,rows.length?groupHtml(rows,key):''])),movement:'',
   checks:battleSkillChecksPanel(calculated),
   spells:'',
   abilityEntries:classAbilities,
