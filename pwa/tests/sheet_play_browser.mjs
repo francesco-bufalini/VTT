@@ -1019,6 +1019,10 @@ try{
  assert.equal(await poisonedChip.locator('[data-act="state-trait-jump"]').count(),1);
  assert.equal(await poisonedChip.locator('[data-act="condition-remove"]').count(),1);
  await poisonedChip.locator('[data-act="condition-remove"]').click();
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return !(await listCreatures())[0].creature.conditions?.includes('poisoned');
+ });
  assert.equal((await record()).conditions.includes('poisoned'),false);
  await popup('conditions');assert.match(await page.locator('#sheet-context-dialog [data-condition-category="exhaustion_levels"] summary').textContent(),/Indebolimento/);
  await page.locator('#sheet-context-dialog [data-condition="exhaustion:4"]').check();await dismiss();
