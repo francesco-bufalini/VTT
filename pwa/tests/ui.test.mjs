@@ -1214,8 +1214,9 @@ test("scroll creation selects a spell and casting level without opening item cat
   const search=document.querySelector('#scroll-spell-query');
   search.value="shi";
   search.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  assert.ok([...document.querySelectorAll('#scroll-spell-select option')].some(row=>row.value==='phb2014_shield'));
-  change('#scroll-spell-select','phb2014_shield');
+  await until(()=>document.querySelector('#scroll-spell-results [data-spell-id="phb2014_shield"]'));
+  click('#scroll-spell-results [data-spell-id="phb2014_shield"]');
+  assert.match(document.querySelector('#scroll-spell-picked').textContent,/Shield/);
   assert.equal(document.querySelector('#scroll-spell-level').options[0].value,'1');
   assert.ok([...document.querySelector('#scroll-spell-level').options].some(opt=>opt.value==='3'));
   change('#scroll-spell-level','3');
@@ -1231,14 +1232,16 @@ test("scroll creation selects a spell and casting level without opening item cat
   const again=document.querySelector('#scroll-spell-query');
   again.value="shield";
   again.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-  change('#scroll-spell-select','phb2014_shield');
+  await until(()=>document.querySelector('#scroll-spell-results [data-spell-id="phb2014_shield"]'));
+  click('#scroll-spell-results [data-spell-id="phb2014_shield"]');
   change('#scroll-spell-level','3');
+  change('#scroll-spell-quantity','2');
   click('#sheet-context-dialog [data-act="scroll-spell-add"]');
   await until(async()=>{
     const rows=(await listCreatures()).find(row=>row.creature.name==="Scriba degli incantesimi")?.creature.inventory||[];
-    return rows.length===1&&rows[0].quantity===2;
+    return rows.length===1&&rows[0].quantity===3;
   });
-  assert.ok(document.querySelector('#sheet-play-view [data-sheet-context="item:0"] .play-badge')?.textContent.includes('2'));
+  assert.ok(document.querySelector('#sheet-play-view [data-sheet-context="item:0"] .play-badge')?.textContent.includes('3'));
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
