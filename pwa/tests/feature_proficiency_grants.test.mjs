@@ -79,6 +79,34 @@ test('2014 Kensei offers exactly one tool from its own Path trait',()=>{
  assert(!calculateSheet(sheet(3,'XPHB'),catalogs).proficiency_sources["tool:painter's supplies"]?.some(row=>row.id===trait.origin_id));
 });
 
+test('a subclass feature can grant proficiency with a non-catalogue homebrew weapon',()=>{
+ const weaponName='Clockwork Emitter';
+ const record={...armorer(3),inventory:[{id:'custom-emitter',name:weaponName,
+  type:'R',custom_item_type:'weapon',weapon_category:'homebrew',damage:'1d8',
+  damage_type:'force',range:'30/120',quantity:1,equipped_slots:['main']}]};
+ const original=calculateSheet(record,catalogs);
+ const ordinary=original.attacks.find(attack=>attack.id==='item:custom-emitter');
+ assert(ordinary,'The custom weapon should produce a normal attack');
+ assert.equal(ordinary.proficient,false,
+  'No catalog weapon type or class proficiency makes this weapon trained');
+ const index=structuredClone(catalogs.proficiencyGrants);
+ const feature=index.subclassFeature.find(row=>row.name==='Lightning Launcher'&&
+   row.class_source==='TCE');
+ assert(feature,'Source-bound feature weapon training is included in the index');
+ feature.weaponProficiencies=[...feature.weaponProficiencies,weaponName];
+ const trained=calculateSheet(record,{...catalogs,proficiencyGrants:index});
+ const key='weapon:clockwork emitter',attack=trained.attacks.find(row=>row.id==='item:custom-emitter');
+ assert(trained.proficiencies.includes(key),'Multiword homebrew weapon names work as data grants');
+ assert(trained.proficiency_sources[key]?.some(row=>row.name.includes('Lightning Launcher')),
+  'The added training retains its exact granting feature');
+ assert.equal(attack?.proficient,true);
+ assert.equal(attack.hit,ordinary.hit+trained.values.proficiency,
+  'The custom weapon gains exactly the normal proficiency bonus');
+ const without={...record,origin_enabled:{[trained.proficiency_sources[key][0].id]:false}};
+ assert.equal(calculateSheet(without,{...catalogs,proficiencyGrants:index})
+  .attacks.find(row=>row.id==='item:custom-emitter')?.proficient,false,
+  'Disabling the granting source withdraws the custom weapon training');
+});
 test('Armorer grants heavy armor and smith tools at level 3 on its actual trait in both editions',()=>{
  for(const source of ['TCE','EFA']){
   const before=calculateSheet(armorer(2,source),catalogs);
