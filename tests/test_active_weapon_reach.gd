@@ -30,11 +30,12 @@ func _run() -> void:
 		"attack_overrides": {}, "abilities": {"str": 16, "dex": 12},
 		"ability_bonuses": {}
 	}
-	assert(Attacks.equip_first_inventory_weapon(record))
+	assert(Items.slots(record.inventory[0]).is_empty(), "Owned weapons are not auto-equipped")
+	assert(Attacks.active_attack(record).get("id") == "improvised", "Equipped shield remains available without a weapon")
+	record.inventory[0]["equipped_slots"] = ["main"]
 	assert("main" in Items.slots(record.inventory[0]))
-	assert("off" in Items.slots(record.inventory[2]), "One-handed default preserves shield")
+	assert("off" in Items.slots(record.inventory[2]), "Equipping a one-handed weapon keeps the shield")
 	assert(Attacks.active_range(record) == 5.0)
-	assert(not Attacks.equip_first_inventory_weapon(record), "Explicit equipment must be respected")
 
 	var equipped: Array = record.inventory
 	equipped[0]["equipped_slots"] = []
@@ -68,5 +69,5 @@ func _run() -> void:
 	assert(Attacks.damage_expression(monster, tail) == "2d6+4")
 	monster["formula_bonuses"] = [{"id": "tail-damage", "target": "attack_damage:monster:action:1", "expression": "2", "origin_id": ""}]
 	assert(Attacks.damage_expression(monster, tail) == "2d6+4+2", "Manual damage bonus must reach roller")
-	print("PASS: first equip, sheathing, weapon selection, monster attack reach and dice expressions")
+	print("PASS: explicit equip, sheathing, weapon selection, monster attack reach and dice expressions")
 	quit()
