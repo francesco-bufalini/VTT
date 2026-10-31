@@ -306,6 +306,7 @@ function acceptSession(info){
   }
   if(next)currentGameSession=next;
   state.session=info;
+  if(info?.device_name)state.serverDeviceName=String(info.device_name).trim().slice(0,80);
 }
 const pendingFieldTimers = new Map();
 // Input/change handlers may already be writing when a popup closes. Include
