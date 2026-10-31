@@ -299,9 +299,6 @@ func run() -> void:
 	var web_action: Dictionary = await local_controller.call("execute_web_action", "chat_poll", {})
 	assert(bool(web_action.get("ok", false)),
 		"Authenticated web actions should work without a legacy UDP listener")
-	var tcp_action: Dictionary = await local_controller.call("execute_local_action", "chat_poll", {})
-	assert(not bool(tcp_action.get("ok", false)),
-		"Legacy TCP actions still require their own listener")
 	local_controller.free()
 	local_sync.free()
 	# One-time codes are short, random, single-use and never replace the

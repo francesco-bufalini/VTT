@@ -902,32 +902,15 @@ func _entry_display_name(entry: Dictionary) -> String:
 
 
 func _synchronize_linked_entry_names() -> void:
-	if entries.is_empty():
-		return
-	var local_owner: String = CreatureOwner.local_id()
-	var names: Dictionary = {}
-	# Skip even the lightweight lookup when every participant is remote or
-	# when the saved initiative only contains legacy token identities.
-	if board_root != null:
-		for entry: Dictionary in entries:
-			if (not String(entry.get("creature_id", "")).is_empty()
-				and String(entry.get("creature_owner_id", "")) == local_owner):
-				names = _creature_names_from_archive()
-				break
+	# All combatants are represented by live map tokens; the PWA owns
+	# character names and the native creature archive no longer exists.
 	for entry: Dictionary in entries:
-		var creature_id := String(entry.get("creature_id", ""))
-		if not creature_id.is_empty():
-			if String(entry.get("creature_owner_id", "")) == local_owner:
-				var sheet_name := String(names.get(creature_id, ""))
-				if not sheet_name.is_empty():
-					entry["name"] = sheet_name
+		var token_id: String = String(entry.get("token_id", ""))
+		if token_id.is_empty():
 			continue
-		# Older saved combats had only a token link. Keep those names intact.
-		var token_id := String(entry.get("token_id", ""))
-		if not token_id.is_empty():
-			var token_name := _token_display_name_by_id(token_id)
-			if not token_name.is_empty():
-				entry["name"] = token_name
+		var token_name := _token_display_name_by_id(token_id)
+		if not token_name.is_empty():
+			entry["name"] = token_name
 
 
 func _entry_index(entry_id: String) -> int:

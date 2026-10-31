@@ -44,33 +44,22 @@ jobs:
           set -euo pipefail
           GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
           tests=(
-            test_creature_sheets.gd
-            test_creature_sheet_controller.gd
-            test_creature_modularization_audit.gd
-            test_creature_archive_revisions.gd
-            test_creature_equipment_regressions.gd
-            test_creature_sync.gd
-            test_mobile_map_actions.gd
-            test_mobile_board_commands.gd
             test_map_data_controller.gd
-            test_mobile_action_limits.gd
-            test_document_homebrew.gd
-            test_document_delivery_ack.gd
-            test_share_recipients.gd
+            test_lan_presence.gd
             test_item_transport.gd
-            test_inventory_quantities.gd
             test_race_subrace_selection.gd
-            test_proficiency_sources.gd
-            test_standalone_creatures.gd
-            test_creature_gui_layout.gd
-            test_creature_sheet_ui.gd
+            test_initiative_creature_selection.gd
+            test_token_spawn_targeting.gd
+            test_tactical_overlay.gd
+            test_spell_targeting_lifecycle.gd
+            test_aoe_sync.gd
+            test_pwa_host.gd
           )
           failures=()
           for test in "${tests[@]}"; do
             echo "::group::$test"
             log=$(mktemp)
             limit=100
-            if [[ "$test" == "test_creature_sheet_ui.gd" ]]; then limit=320; fi
             if ! timeout "${limit}s" "$GODOT" --headless --path . --script "res://tests/$test" >"$log" 2>&1; then
               failures+=("$test (crash/timeout)")
             elif grep -Eq '^SCRIPT ERROR:|^ERROR:' "$log" || ! grep -Eq '(^PASS:|^PASS )' "$log"; then
@@ -84,4 +73,4 @@ jobs:
             printf 'FAILED REGRESSIONS: %s\\n' "${failures[@]}"
             exit 1
           fi
-          echo "PASS: all 20 extended regressions"
+          echo "PASS: extended tactical/PWA regressions"

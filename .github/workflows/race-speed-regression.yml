@@ -2,11 +2,9 @@ name: Character racial speed regression (Godot)
 on:
   pull_request:
     paths:
-      - "vtt/player_character_store.gd"
       - "vtt/creature_race_rules.gd"
       - "vtt/creature_bonus_rules.gd"
       - "tests/test_race_subrace_selection.gd"
-      - "tests/test_creature_sheets.gd"
       - ".github/workflows/race-speed-regression.yml"
   workflow_dispatch:
 jobs:
@@ -28,7 +26,6 @@ jobs:
             /items/
             /homebrew/
             /tests/test_race_subrace_selection.gd
-            /tests/test_creature_sheets.gd
             /assets/items/
             /assets/tokens/test/
             /assets/spell_area_geometry.json
@@ -46,7 +43,7 @@ jobs:
           set -euo pipefail
           GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
           "$GODOT" --headless --path . --editor --import --quit
-          for test in test_race_subrace_selection.gd test_creature_sheets.gd; do
+          for test in test_race_subrace_selection.gd; do
             echo "::group::$test"
             log=$(mktemp)
             if ! timeout 60s "$GODOT" --headless --path . --script "res://tests/$test" >"$log" 2>&1; then

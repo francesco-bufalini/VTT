@@ -11,8 +11,6 @@ on:
       - "network/board_sync.gd"
       - "dnd_base.gd"
       - "vtt/token_list.gd"
-      - "vtt/creature_area.gd"
-      - "vtt/creature_archive.gd"
       - "vtt/qr/**"
       - "tests/test_pwa_host.gd"
       - "export_presets.cfg"
@@ -27,8 +25,6 @@ on:
       - "network/board_sync.gd"
       - "dnd_base.gd"
       - "vtt/token_list.gd"
-      - "vtt/creature_area.gd"
-      - "vtt/creature_archive.gd"
       - "vtt/qr/**"
       - "tests/test_pwa_host.gd"
       - "vtt/map_data_controller.gd"
@@ -209,7 +205,7 @@ jobs:
           PWA_BROWSER=webkit node tests/startup_browser.mjs
           PWA_BROWSER=webkit node tests/fighting_styles_browser.mjs
 
-  native-loopback:
+  godot-loopback:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -247,9 +243,6 @@ jobs:
           timeout 90s "$GODOT" --headless --path . --script res://tests/test_pwa_host.gd 2>&1 | tee /tmp/pwa-godot.log
           ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-godot.log
           grep -q 'PASS: desktop PWA' /tmp/pwa-godot.log
-          timeout 30s "$GODOT" --headless --path . --script res://tests/test_large_creature_batch.gd 2>&1 | tee /tmp/pwa-large-archive.log
-          ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-large-archive.log
-          grep -q 'PASS: full portable archives' /tmp/pwa-large-archive.log
       - name: Assemble standalone offline prototype
         shell: bash
         run: |

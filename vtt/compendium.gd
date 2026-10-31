@@ -1,6 +1,6 @@
 extends Node
 
-# Read-only, role-independent reference browser. Creature sheets belong to CreatureArea.
+# Read-only, role-independent reference browser. Creature and inventory sheets live exclusively in the PWA.
 const BestiaryClient = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
@@ -142,7 +142,7 @@ func configure_touch_layout() -> void:
 	_allow_remote_catalog = true
 	if DisplayServer.get_name() != "headless":
 		_client.load_catalog()
-	var touch = preload("res://vtt/mobile/touch_layout.gd")
+	var touch = preload("res://vtt/touch_layout.gd")
 	var outer := _panel.get_child(0) as VBoxContainer
 	var header := outer.get_child(0) as HBoxContainer
 	(header.get_child(0) as Label).text = "Compendio"

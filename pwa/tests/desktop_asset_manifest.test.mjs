@@ -8,9 +8,9 @@ const root=fileURLToPath(new URL('../../',import.meta.url));
 const host=readFileSync(path.join(root,'network/pwa_host.gd'),'utf8');
 const served=new Map([...host.matchAll(/"([^"]+\.(?:js|json|css))"\s*:\s*\["(res:\/\/[^"]+)",/g)]
  .map(([,url,file])=>[url,file.slice(6)]));
-const desktop=new Set(['/desktop/startup.js','/desktop/main.js','/desktop/bridge.js',
- '/desktop/storage.js','/desktop/desktop.css']);
-const all=new Map([...served, ...[...desktop].map(uri=>[uri,'pwa'+uri])]);
+// All served assets now belong to the PWA; the embedded native desktop
+// browser and its IPC modules have been removed.
+const all=new Map(served);
 function imports(content){
  const staticModules=[...content.matchAll(/\bfrom\s*['"]([^'"]+\.js(?:#[^'"]+)?)['"]/g)].map(x=>x[1]);
  const dynamic=[...content.matchAll(/\bimport\s*\(\s*['"]([^'"]+\.js(?:#[^'"]+)?)['"]\s*\)/g)].map(x=>x[1]);

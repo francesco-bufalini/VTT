@@ -1,6 +1,6 @@
 extends Node
 
-const EYE_ICON := preload("res://vtt/icons/eye.svg")
+const EYE_ICON_PATH := "res://vtt/icons/eye.svg"
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var board_root: Node3D
@@ -254,7 +254,12 @@ func _add_token_row(token: CharacterBody3D) -> void:
 	row.add_child(name_label)
 
 	var focus_button := Button.new()
-	focus_button.icon = EYE_ICON
+	# Asset imports may not exist yet when HTTP loopback tests load the scene.
+	# Resolve the icon only when its texture is available.
+	if ResourceLoader.exists(EYE_ICON_PATH):
+		focus_button.icon = load(EYE_ICON_PATH) as Texture2D
+	else:
+		focus_button.text = "👁"
 	focus_button.expand_icon = false
 	focus_button.custom_minimum_size = Vector2(38, 34)
 	focus_button.tooltip_text = "Porta la camera davanti al token"
