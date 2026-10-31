@@ -31,6 +31,31 @@ test('Slot-paid trait is grouped once as a normal first-level spell',()=>{
  assert.match(html,/<eye-toggle data-section="origin:feature:ranger" data-visible="false"\/>/);
  assert.doesNotMatch(html,/slot-feature-open|slot-feature-id|<casting-statistics\/>/);
 });
+test('optional power cards reuse the manual casting-statistic control',()=>{
+ const start=ui.indexOf('function optionBenefitPanels(c,calculated){');
+ const end=ui.indexOf('async function openBenefitSelectionDialog',start);
+ assert.ok(start>=0&&end>start);
+ const source=ui.slice(start,end);
+ const parameters=['selectedPowerId','selectedPowerLabel','powerLayerNames','panel','esc',
+  'castingStatisticsToggle','castingStatisticsVisible','castingStatistics'];
+ const render=new Function(...parameters,source+';return optionBenefitPanels;');
+ const model={id:'fighting_style',title:'Fighting Style',benefit_type:'option_selection',
+  options:[],layers:{learned:{enabled:true,selected:[],limit:1}}};
+ const calls=[];
+ const make=visible=>render(x=>x,(_,row)=>String(row),{learned:'Imparati'},
+  (title,body)=>'<section>'+title+body+'</section>',String,
+  (_creature,key,initial)=>{calls.push([key,initial]);return '<eye/>';},
+  (_creature,_key,initial)=>visible,
+  (_creature,key)=>'<casting-statistics section="'+key+'"/>');
+ const hidden=make(false)({}, {power_selections:[model]});
+ assert.deepEqual(calls,[['selection:fighting_style',false]]);
+ assert.match(hidden,/<eye\/>/);
+ assert.doesNotMatch(hidden,/<casting-statistics/);
+ const shown=make(true)({}, {power_selections:[model]});
+ assert.match(shown,/casting-statistics section="selection:fighting_style"/);
+ assert.match(view,/castingEye\(source\)\+\(counters/);
+});
+
 test('Class granted powers reuse spell casting, not a separate popup or Resources row',()=>{
  assert.doesNotMatch(ui,/slotFeature|slot_feature|slot-feature/);
  assert.doesNotMatch(view,/slotFeature|slot_feature|slot-feature/);
