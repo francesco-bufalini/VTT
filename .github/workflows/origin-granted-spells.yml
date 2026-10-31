@@ -1,20 +1,17 @@
-name: Origin granted spells and structured bonuses (Godot)
+name: Origin feats and structured spells (Godot)
 on:
   pull_request:
     paths:
-      - "vtt/origin_spell_grants.gd"
       - "vtt/creature_active_spells.gd"
-      - "vtt/creature_dice_bonuses.gd"
       - "vtt/structured_origin_spells_5etools.gd"
+      - "tests/test_charoptions_as_feats.gd"
       - "vtt/creature_proficiency_rules.gd"
       - "vtt/data/**"
-      - "tests/test_origin_granted_spells.gd"
       - "tests/test_charoptions_as_feats.gd"
       - ".github/workflows/origin-granted-spells.yml"
   push:
     branches: [main]
     paths:
-      - "vtt/origin_spell_grants.gd"
       - "vtt/creature_active_spells.gd"
       - "vtt/structured_origin_spells_5etools.gd"
 jobs:
@@ -30,7 +27,6 @@ jobs:
             /pwa/icons/
             /pwa/catalog/trait_states.json
             /homebrew/
-            /tests/test_origin_granted_spells.gd
             /tests/test_charoptions_as_feats.gd
       - name: Install Godot 4.7.2
         shell: bash
@@ -47,7 +43,7 @@ jobs:
           printf 'config_version=5\n[autoload]\nTokenPackManager="*res://vtt/token_pack_manager.gd"\n' > project.godot
           GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
           "$GODOT" --headless --path . --editor --import --quit
-          for test in test_origin_granted_spells test_charoptions_as_feats; do
+          for test in test_charoptions_as_feats; do
             output=$(timeout 90s "$GODOT" --headless --path . --script "res://tests/${test}.gd" 2>&1) || {
               printf '%s\n' "$output"
               exit 1

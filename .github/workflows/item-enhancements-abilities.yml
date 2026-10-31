@@ -5,7 +5,6 @@ on:
       - "vtt/creature_infusions.gd"
       - "vtt/item_enhancement_rules.gd"
       - "vtt/activated_ability_catalog.gd"
-      - "vtt/origin_spell_grants.gd"
       - "vtt/spells/spell_catalog.gd"
       - "vtt/structured_resource_trackers.gd"
       - "vtt/data/artificer_infusions_5etools.json"
@@ -31,7 +30,6 @@ jobs:
             /homebrew/
             /tests/test_structured_resource_trackers.gd
             /tests/test_split_item_bonuses.gd
-            /tests/test_origin_granted_spells.gd
       - name: Install Godot 4.7.2
         shell: bash
         run: |
@@ -47,7 +45,7 @@ jobs:
           printf 'config_version=5\n[autoload]\nTokenPackManager="*res://vtt/token_pack_manager.gd"\n' > project.godot
           GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
           "$GODOT" --headless --path . --editor --import --quit
-          for test in test_structured_resource_trackers test_split_item_bonuses test_origin_granted_spells; do
+          for test in test_structured_resource_trackers test_split_item_bonuses; do
             output=$(timeout 90s "$GODOT" --headless --path . --script "res://tests/${test}.gd" 2>&1) || {
               printf '%s\n' "$output"
               exit 1

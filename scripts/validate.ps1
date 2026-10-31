@@ -172,7 +172,6 @@ $fastTests = @(
     "test_linked_token_motion.gd",
     "test_token_effects_and_group_movement.gd",
     "test_quick_custom_dialogs.gd",
-    "test_dice_bonus_scopes.gd",
     "test_creature_formula_bonuses.gd",
     "test_race_subrace_selection.gd",
     "test_dialog_layout.gd",
@@ -198,7 +197,6 @@ $fastTests = @(
 $ciSmokeTestNames = @(
     "test_spell_catalog_smoke.gd",
     "test_spell_slot_profiles.gd",
-    "test_origin_granted_spells.gd",
     "test_structured_resource_trackers.gd",
     "test_monster_action_metadata.gd",
     "test_board_smoke.gd",
