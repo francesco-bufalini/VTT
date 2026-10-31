@@ -243,16 +243,21 @@ function textOf(value,items,depth=0){
   if(typeof value==="string")items.push(value);
   else if(Array.isArray(value))for(const part of value)textOf(part,items,depth+1);
   else if(typeof value==="object"){
-    for(const field of ["name","entry","entries","items","description","text","fluff","additionalEntries"])
+    for(const field of ["name","entry","entries","items","description","text","fluff","additionalEntries","entriesTemplate","itemTypeAdditionalEntries"])
       if(field in value)textOf(value[field],items,depth+1);
   }
 }
+const DESCRIPTION_FIELDS=["entries","description","text","fluff","additionalEntries","entriesTemplate","itemTypeAdditionalEntries"];
 export function flattenDescription(value) {
-  const result=[];
-  for(const key of ["entries","description","text","fluff","additionalEntries"]){
-    if(value?.[key]!==undefined)textOf(value[key],result);
-  }
-  return result.join("\n\n").replace(/\{@[^ ]+ ([^}|]+)(?:\|[^}]*)?\}/g,"$1").slice(0,15000);
+ const result=[];
+ for(const key of DESCRIPTION_FIELDS)
+  if(value?.[key]!==undefined)textOf(value[key],result);
+ // 5etools tattoos and some other items keep descriptive text in inherits.
+ if(value?.inherits&&typeof value.inherits==="object")
+  for(const key of DESCRIPTION_FIELDS)
+   if(value.inherits[key]!==undefined)textOf(value.inherits[key],result);
+ return [...new Set(result)].join("\n\n")
+  .replace(/\{@[^ ]+ ([^}|]+)(?:\|[^}]*)?\}/g,"$1").slice(0,15000);
 }
 export async function detailedEntry(category,entry) {
   const path=GROUPS[category]||GROUPS[entry?._category];
@@ -267,19 +272,27 @@ export async function detailedEntry(category,entry) {
     }
   }
   const index=details.get(path);
-  const cat=entry._category||category;
-  const name=String(entry.name||"").trim().toLowerCase();
-  const source=String(entry.source||"").trim().toLowerCase();
-  const lookup=name+"|"+source;
-  const candidate=index?.[cat]?.[lookup];
-  if(!candidate || typeof candidate!=="object")return entry;
-  const copy={...entry};
-  for(const field of ["entries","description","text","fluff","feats","feature_sections"]){
-    if(copy[field]==null||copy[field]===""||(Array.isArray(copy[field])&&!copy[field].length)){
-      if(candidate[field]!=null)copy[field]=candidate[field];
-    }
-  }
-  return copy;
+ const cat=entry._category||category;
+ const name=String(entry.name||"").trim().toLowerCase();
+ const source=String(entry.source||"").trim().toLowerCase();
+ const lookup=name+"|"+source;
+ // Owned inventory uses "items"; the complete compendium is categorized.
+ const itemCategories=["magic_items","mundane_items","weapons","armor","tools"];
+ const prefix=String(entry.id||"").toLowerCase().split(":")[0];
+ const byId={magic_item:"magic_items",mundane_item:"mundane_items",
+  weapon:"weapons",armor:"armor",tool:"tools"}[prefix];
+ const categories=cat==="items"||category==="items"?
+  [...new Set([cat!=="items"?cat:null,byId,...itemCategories].filter(Boolean))]:[cat];
+ const candidate=categories.map(key=>index?.[key]?.[lookup])
+  .find(value=>value&&typeof value==="object");
+ if(!candidate)return entry;
+ const copy={...entry};
+ for(const field of ["entries","description","text","fluff","additionalEntries",
+  "entriesTemplate","itemTypeAdditionalEntries","inherits","feats","feature_sections"]){
+  if(copy[field]==null||copy[field]===""||(Array.isArray(copy[field])&&!copy[field].length))
+   if(candidate[field]!=null)copy[field]=candidate[field];
+ }
+ return copy;
 }
 
 // Portable quick homebrew domain in a URL already allowed by the native PWA server.
