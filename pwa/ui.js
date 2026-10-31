@@ -368,8 +368,17 @@ function trackIdentityWrite(target){
  void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
  return write;
 }
+// HP edits may arrive from a debounce while an earlier save is in flight.
+// Serialize them and read the latest dialog values after the previous write.
+let pendingHpFieldWrite=Promise.resolve();
 function trackFieldWrite(target) {
-  const write=handleField(target);
+  let write;
+  if(target?.matches?.('[data-hp-autosave]')){
+    const editor=state.editor;
+    write=pendingHpFieldWrite.then(()=>
+      target.isConnected&&state.editor===editor?handleField(target):undefined);
+    pendingHpFieldWrite=write.catch(()=>{});
+  }else write=handleField(target);
   pendingFieldWrites.add(write);
   void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
   return write;
