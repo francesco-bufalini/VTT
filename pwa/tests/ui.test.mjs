@@ -292,8 +292,8 @@ test("dice popup logs offline and chat header is creature-only; session pairing 
   assert.ok(document.querySelector('#chat-screen .chat-send-button'));
   await until(()=>document.querySelector('#chat-screen #events').textContent.includes(String(total)));
   click('#creature-back');
-  assert.equal(document.querySelector('#chat-screen').hidden,true);
-  click('.connection-link');
+  await until(()=>document.querySelector('#chat-screen').hidden);
+  click('#dock-session');
   await until(()=>document.querySelector("#pair-form"));
   assert.equal(document.querySelector('#header-chat').hidden,true);
   assert.equal(document.querySelector('#header-dice').hidden,true);
