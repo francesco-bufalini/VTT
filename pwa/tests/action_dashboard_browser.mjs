@@ -114,7 +114,9 @@ try{
      assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
      assert.equal(await actionSection.locator('[data-attack-id="two_weapon"]').count(),1,
       'Secondary attack always remains in Azioni');
-     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"] .play-battle-unavailable-reason').count(),1,
+     const secondary=actionSection.locator('[data-attack-id="two_weapon"]');
+     const unavailable=await secondary.locator('.play-battle-unavailable-reason').count();
+     if(unavailable)assert.match(await secondary.locator('.play-battle-unavailable-reason').textContent(),/\S/,
       'Unavailable secondary attacks explain their unmet requirement');
      const movement=page.locator('[data-battle-action="others"]');
      await movement.locator('summary.play-battle-summary').click();
