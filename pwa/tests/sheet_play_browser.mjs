@@ -984,6 +984,10 @@ try{
  await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').uncheck();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===false;});
  await dismiss();
+ assert.equal(await page.locator('#sheet-play-view .inventory-quick-homebrew-add').count(),1,
+  'Only one homebrew plus is beside the inventory search bar');
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context^="inventory-add:"]').count(),0,
+  'Inventory sections do not expose per-card add buttons');
  await page.locator('[data-play-search]').fill('pozione');await popup('item:1');await page.locator('#sheet-context-dialog [data-item-key="quantity"]').fill('5');await dismiss();assert.equal((await record()).inventory[1].quantity,5);assert.match(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').textContent(),/×5/);
  assert.equal(await page.locator('[data-play-search]').inputValue(),'pozione');
  assert(await page.locator('#inventory-search-results').isVisible(),
@@ -1027,7 +1031,7 @@ try{
  await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]').click();
  assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,
   'Hiding the objects section removes its rows from Documents-only view');
- await popup('inventory-add:documents');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
+ await page.locator('#sheet-play-view [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
  assert(await page.locator('#sheet-play-view').textContent().then(t=>t.includes('Lettera della Luna')));
  await sheet('conditions');
  assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);

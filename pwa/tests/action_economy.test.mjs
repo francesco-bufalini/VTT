@@ -709,3 +709,23 @@ test('basic actions never show unarmed damage unless a benefit explicitly target
  assert(withDamage.modifiedActions.some(row=>row.id==='dash'&&
   row.action_change_origin==='feature:test'&&row.action_damage[0].formula==='1d6'));
 });
+
+test('expanded attacks describe their granting items, traits and monster actions',()=>{
+ const record={rules_version:'2014',inventory:[
+  {id:'blade',instance_id:'copy-1',name:'Lama',description:'Una lama {@i incantata}.',equipped_slots:['main']}
+ ],stat_block:{action:[{name:'Morso',entries:['Il morso infligge danni perforanti.']}]}};
+ const calculated={attacks:[
+  {id:'item:blade',name:'Lama',slot:'main',equipped_item_id:'copy-1',melee:true,hit:4,damage:'1d6',range_feet:5},
+  {id:'natural:claw',name:'Artiglio',slot:'natural',origin_id:'feature:trait:claw',melee:true,hit:4,damage:'1d4',range_feet:5},
+  {id:'monster:action:0',name:'Morso',melee:true,hit:4,damage:'1d8',range_feet:5},
+  {id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,hit:4,damage:'1',range_feet:5}
+ ],features:[{origin_id:'feature:trait:claw',name:'Artiglio',entries:['Gli artigli sono armi naturali.']}]};
+ const attacks=doc(battleActionPanels(record,calculated,[],[],catalog.actions).attacks);
+ const item=attacks.querySelector('[data-attack-id="item:blade"] .play-battle-attack-expanded');
+ assert.match(item.textContent,/Una lama incantata/);
+ assert.equal(item.querySelector('em')?.textContent,'incantata');
+ assert.doesNotMatch(item.textContent,/Colpire:|The most common action/);
+ assert.match(attacks.querySelector('[data-attack-id="natural:claw"] .play-battle-attack-expanded').textContent,/Gli artigli sono armi naturali/);
+ assert.match(attacks.querySelector('[data-attack-id="monster:action:0"] .play-battle-attack-expanded').textContent,/Il morso infligge danni perforanti/);
+ assert.doesNotMatch(attacks.querySelector('[data-attack-id="unarmed"] .play-battle-attack-expanded').textContent,/Una lama incantata/);
+});
