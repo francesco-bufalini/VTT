@@ -37,7 +37,6 @@ const CONTEXT_AUTO_SYNC := 40
 const CONTEXT_REPOSITION_SELECTED := 43
 const CONTEXT_MOVE_WITH_TOKEN := 44
 const CONTEXT_STOP_MOVING_TOGETHER := 45
-const CONTEXT_CREATURE_AREA := 100
 const CONTEXT_TOKEN_CONDITIONS := 101
 const CONTEXT_TOKEN_ACTIVE_SPELL := 102
 const CONTEXT_CLEAR_SPELL_HIGHLIGHT := 103
@@ -51,7 +50,6 @@ const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
 const TopDownTokenOverlay = preload("res://vtt/top_down_elevation_overlay.gd")
-const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
@@ -104,24 +102,17 @@ var _context_reposition_position := Vector3.ZERO
 var _context_reposition_valid := false
 var _context_reposition_air := false
 var _context_reposition_support: Node3D
-var _sheet_spawn_picking: bool = false
-var _sheet_spawn_record: Dictionary = {}
-var _creature_spawn_sheet_id: String = ""
 var _token_generation_confirmed_callback: Callable = Callable()
 var _token_generation_canceled_callback: Callable = Callable()
 var _token_generation_exact_position: bool = false
 var _token_generation_place_on_surface: bool = false
 var _token_generation_transform_target: CharacterBody3D
-var _sheet_spawn_pending_record: Dictionary = {}
-var _sheet_visual_waiting: Dictionary = {}
 var identity_placement_panel: PanelContainer
 var identity_placement_label: Label
+var _pending_token_appearance: Dictionary = {}
 var _identity_placement_notice_generation: int = 0
-var identity_free_tokens_panel: PanelContainer
-var identity_free_tokens_rows: VBoxContainer
 var token_resize_menu: PopupMenu
 var context_token_menu: PopupMenu
-var context_place_creature_menu: PopupMenu
 var context_game_menu: PopupMenu
 var context_measure_menu: PopupMenu
 var context_view_menu: PopupMenu
@@ -201,7 +192,7 @@ var initiative_tracker: Node
 var token_list: Node
 var compendium: Node
 var dice_roller_chat: Node
-var creature_presence: Node
+var lan_presence: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _pending_history_actions: Array[int] = []
@@ -317,16 +308,6 @@ func _ready() -> void:
 	add_child(compendium)
 	compendium.call("setup", self)
 
-	var creature_script: Script = load("res://vtt/creature_area.gd")
-	if creature_script == null:
-		push_error("CreatureArea: script non disponibile")
-	else:
-		var creature_area: Node = creature_script.new()
-		creature_area.name = "CreatureArea"
-		add_child(creature_area)
-		creature_area.call("setup", self)
-		creature_area.set_map_data_controller(board_sync.map_data_controller)
-
 	dice_roller_chat = preload("res://vtt/dice_roller_chat.gd").new()
 	dice_roller_chat.name = "DiceRollerChat"
 	add_child(dice_roller_chat)
@@ -336,36 +317,15 @@ func _ready() -> void:
 		_share_session_key(),
 		Callable(board_sync, "get_session_chat_peer_ipv4s")
 	)
-	creature_presence = preload("res://network/creature_presence.gd").new()
-	creature_presence.name = "CreaturePresence"
-	add_child(creature_presence)
-	creature_presence.call(
+	lan_presence = preload("res://network/lan_presence.gd").new()
+	lan_presence.name = "LanPresence"
+	add_child(lan_presence)
+	lan_presence.call(
 		"setup",
 		_share_session_key(),
 		Callable(board_sync, "get_presence_discovery_hosts")
 	)
-	board_sync.set_lan_presence(creature_presence)
-	var creature_sheet: Node = get_node_or_null("CreatureArea")
-	if creature_sheet != null:
-		creature_presence.document_received.connect(
-			Callable(creature_sheet, "receive_shared_document")
-		)
-		creature_presence.document_delivered.connect(
-			func(_delivery_id: String) -> void:
-				creature_sheet.call("_set_status", "Documento consegnato al destinatario.")
-		)
-		creature_presence.item_received.connect(
-			Callable(creature_sheet, "receive_shared_item")
-		)
-		creature_presence.item_delivered.connect(
-			func(_delivery_id: String) -> void:
-				creature_sheet.call("_set_status", "Oggetto consegnato al destinatario.")
-		)
-		creature_presence.item_failed.connect(
-			func(_delivery_id: String) -> void:
-				creature_sheet.call("_set_status", "Invio oggetto non riuscito: destinatario non raggiunto.")
-		)
-
+	board_sync.set_lan_presence(lan_presence)
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
 	)
@@ -707,85 +667,10 @@ func _build_identity_placement_hint() -> void:
 	identity_placement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	identity_placement_label.add_theme_font_size_override("font_size", 15)
 	identity_placement_panel.add_child(identity_placement_label)
-	identity_free_tokens_panel = PanelContainer.new()
-	identity_free_tokens_panel.name = "FreeCreaturePlacementTokens"
-	identity_free_tokens_panel.anchor_left = 1.0
-	identity_free_tokens_panel.anchor_right = 1.0
-	identity_free_tokens_panel.offset_left = -248.0
-	identity_free_tokens_panel.offset_right = -10.0
-	identity_free_tokens_panel.offset_top = 115.0
-	identity_free_tokens_panel.offset_bottom = 465.0
-	$UI.add_child(identity_free_tokens_panel)
-	var body := VBoxContainer.new()
-	identity_free_tokens_panel.add_child(body)
-	var caption := Label.new()
-	caption.text = "Oppure usa un token libero:"
-	body.add_child(caption)
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(scroll)
-	identity_free_tokens_rows = VBoxContainer.new()
-	identity_free_tokens_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(identity_free_tokens_rows)
-	identity_free_tokens_panel.hide()
+
 
 
 # A token with any existing creature ownership must never be claimed.
-func is_free_scene_token(node: Node) -> bool:
-	if not node is CharacterBody3D or not tokens_root.is_ancestor_of(node):
-		return false
-	if node.is_queued_for_deletion() or not node.is_visible_in_tree() or not node.is_in_group("dnd_token"):
-		return false
-	for key: String in ["creature_id", "creature_owner_id", "player_character_id", "master_creature_id"]:
-		if not String(node.get_meta(key, "")).is_empty():
-			return false
-	return true
-
-
-func _refresh_free_placement_tokens() -> void:
-	if identity_free_tokens_rows == null:
-		return
-	for child: Node in identity_free_tokens_rows.get_children():
-		identity_free_tokens_rows.remove_child(child)
-		child.queue_free()
-	var count: int = 0
-	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
-		if not is_free_scene_token(node):
-			continue
-		var free_token: CharacterBody3D = node as CharacterBody3D
-		var button := Button.new()
-		button.text = String(free_token.call("get_display_name"))
-		button.tooltip_text = "Associa questa scheda al token, mantenendone la posizione"
-		button.pressed.connect(_claim_free_token_from_placement.bind(free_token))
-		identity_free_tokens_rows.add_child(button)
-		count += 1
-	identity_free_tokens_panel.visible = _sheet_spawn_picking
-	if count == 0:
-		var empty := Label.new()
-		empty.text = "Nessun token libero"
-		identity_free_tokens_rows.add_child(empty)
-
-
-func _claim_free_token_from_placement(token: CharacterBody3D) -> bool:
-	if not _sheet_spawn_picking or not is_instance_valid(token) or not is_free_scene_token(token):
-		_set_identity_placement_hint("Il token non è più libero: scegline un altro.")
-		_refresh_free_placement_tokens()
-		return false
-	var area: Node = get_node_or_null("CreatureArea")
-	if area == null or not area.has_method("claim_free_scene_token"):
-		return false
-	if not bool(area.call("claim_free_scene_token", token, String(_sheet_spawn_record.get("id", "")))):
-		_set_identity_placement_hint("Associazione non riuscita: controlla la scheda o la miniatura.")
-		_refresh_free_placement_tokens()
-		return false
-	_sheet_spawn_picking = false
-	_sheet_spawn_record.clear()
-	_hide_identity_placement_hint()
-	_replace_selection(token)
-	call_deferred("_sync_explicit_token_change", token)
-	return true
-
-
 func _set_identity_placement_hint(text: String) -> void:
 	_identity_placement_notice_generation += 1
 	if identity_placement_panel == null or identity_placement_label == null:
@@ -798,25 +683,10 @@ func _hide_identity_placement_hint() -> void:
 	_identity_placement_notice_generation += 1
 	if identity_placement_panel != null:
 		identity_placement_panel.hide()
-	if identity_free_tokens_panel != null:
-		identity_free_tokens_panel.hide()
 
 
 # An unsuccessful placement is not an ongoing placement command. Clear the
 # pending world point and show a non-modal notice that dismisses itself.
-func _cancel_sheet_spawn_with_notice(message: String) -> void:
-	_sheet_spawn_picking = false
-	_sheet_spawn_record.clear()
-	_sheet_spawn_pending_record.clear()
-	_reset_token_generation_state()
-	_hide_identity_placement_hint()
-	_set_identity_placement_hint(message)
-	var notice_generation: int = _identity_placement_notice_generation
-	await get_tree().create_timer(3.0).timeout
-	if is_inside_tree() and _identity_placement_notice_generation == notice_generation:
-		_hide_identity_placement_hint()
-
-
 func _connect_token_pack_manager() -> void:
 	if TokenPackManager == null:
 		return
@@ -869,12 +739,17 @@ func _on_remote_token_downloaded(
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
 			ok_button.disabled = false
-	if not _sheet_spawn_pending_record.is_empty() and String(_sheet_spawn_pending_record.get(
-		"current_miniature_id", _sheet_spawn_pending_record.get("default_miniature_id", "")
-	)) == token_id:
-		call_deferred("_finish_sheet_spawn_without_dialog")
-	if _sheet_visual_waiting.values().has(token_id):
-		call_deferred("_apply_waiting_sheet_appearance", token_id)
+	for key: Variant in _pending_token_appearance.keys():
+		var entry: Dictionary = _pending_token_appearance[key]
+		if String(entry.get("miniature_id", "")) != token_id:
+			continue
+		_pending_token_appearance.erase(key)
+		var pending_token: CharacterBody3D = entry.get("token") as CharacterBody3D
+		if pending_token != null and is_instance_valid(pending_token):
+			apply_token_record_appearance(
+				pending_token, entry.get("record", {}),
+				bool(entry.get("update_properties", true))
+			)
 	call_deferred("_reload_token_miniature_list", token_id)
 
 
@@ -897,10 +772,9 @@ func _on_remote_token_download_failed(
 	token_id: String,
 	message: String
 ) -> void:
-	if not _sheet_spawn_pending_record.is_empty() and String(_sheet_spawn_pending_record.get(
-		"current_miniature_id", _sheet_spawn_pending_record.get("default_miniature_id", "")
-	)) == token_id:
-		_cancel_sheet_spawn_with_notice("Piazzamento annullato: download fallito: " + message)
+	for key: Variant in _pending_token_appearance.keys():
+		if String((_pending_token_appearance[key] as Dictionary).get("miniature_id", "")) == token_id:
+			_pending_token_appearance.erase(key)
 
 	if String(_selected_token_profile.get("id", "")) == token_id:
 		var ok_button := color_dialog.get_ok_button()
@@ -1254,17 +1128,6 @@ func _current_token_display_names(
 		)
 		if not display_name.is_empty():
 			names.append(display_name)
-	var sheets: Node = get_node_or_null("CreatureArea")
-	if sheets != null and sheets.has_method("get_owned_creature_names"):
-		var except_sheet_id: String = _creature_spawn_sheet_id
-		if excluded_token != null and is_instance_valid(excluded_token):
-			except_sheet_id = String(excluded_token.get_meta("creature_id", ""))
-		var owned_names: Variant = sheets.call(
-			"get_owned_creature_names", except_sheet_id
-		)
-		if owned_names is Array:
-			for owned_name: Variant in owned_names:
-				names.append(String(owned_name))
 	return names
 
 
@@ -1625,9 +1488,6 @@ func _input(event: InputEvent) -> void:
 	if _linked_token_pick_follower != null and _handle_move_with_token_pick_input(event):
 		get_viewport().set_input_as_handled()
 		return
-	if _sheet_spawn_picking and _handle_sheet_spawn_placement_input(event):
-		get_viewport().set_input_as_handled()
-		return
 
 	if (
 		_map_edit_layer_active
@@ -1681,20 +1541,6 @@ func _input(event: InputEvent) -> void:
 		):
 			get_viewport().set_input_as_handled()
 			return
-
-	# The creature sheet owns its own persisted undo history; never apply a
-	# tactical-map undo while the creature archive has keyboard focus.
-	if (
-		event is InputEventKey
-		and event.pressed
-		and event.ctrl_pressed
-		and event.keycode in [KEY_Z, KEY_Y]
-	):
-		var creature_sheet := get_node_or_null("CreatureArea")
-		if creature_sheet != null:
-			var sheet_panel: Control = creature_sheet.get("_panel") as Control
-			if sheet_panel != null and sheet_panel.visible:
-				return
 
 	# Undo/redo sono shortcut globali e devono essere gestite prima dei
 	# pannelli UI. In precedenza il pannello Incantesimi poteva lasciare
@@ -1807,233 +1653,13 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-func begin_creature_token_placement(record: Dictionary) -> bool:
-	if (
-		record.is_empty()
-		or _sheet_spawn_picking
-		or not _sheet_spawn_pending_record.is_empty()
-		or color_dialog.visible
-	):
-		return false
-	_sheet_spawn_record = record.duplicate(true)
-	_sheet_spawn_picking = true
-	_refresh_free_placement_tokens()
-	_ui_owns_mouse = false
-	_set_identity_placement_hint(
-		"Clicca sulla mappa per piazzare la creatura. "
-		+ "Se possiede già un token, sarà spostato senza duplicarlo. "
-		+ "Tasto destro per annullare."
-	)
-	return true
-
-
-func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		_sheet_spawn_picking = false
-		_sheet_spawn_record.clear()
-		_hide_identity_placement_hint()
-		return true
-	if not event is InputEventMouseButton:
-		return false
-	var button_event: InputEventMouseButton = event as InputEventMouseButton
-	if not button_event.pressed:
-		return false
-	if button_event.button_index == MOUSE_BUTTON_RIGHT:
-		_sheet_spawn_picking = false
-		_sheet_spawn_record.clear()
-		_hide_identity_placement_hint()
-		return true
-	if button_event.button_index != MOUSE_BUTTON_LEFT:
-		return false
-	if identity_free_tokens_panel != null and identity_free_tokens_panel.visible and identity_free_tokens_panel.get_global_rect().has_point(button_event.position):
-		return false
-	var point: Vector2 = (
-		_screen_center()
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-		else button_event.position
-	)
-	var picked: Node = _raycast_token_from_screen(point, true).get("collider") as Node
-	if is_free_scene_token(picked):
-		_claim_free_token_from_placement(picked as CharacterBody3D)
-		return true
-	if not _set_pending_spawn_from_screen(point):
-		_set_identity_placement_hint(
-			"Punta una superficie valida e clicca per piazzare la creatura."
-		)
-		return true
-	var record: Dictionary = _sheet_spawn_record.duplicate(true)
-	_sheet_spawn_picking = false
-	_sheet_spawn_record.clear()
-	_hide_identity_placement_hint()
-	_place_creature_at_pending_position(record)
-	return true
-
-
-# Both the creature sheet and the right-click placement menu use this
-# path. The context menu has ALREADY picked a valid world position, so it
-# must not require another click or open the token generator.
-func _place_creature_at_pending_position(record: Dictionary) -> bool:
-	if (
-		record.is_empty()
-		or not _has_pending_spawn_position
-		or not _sheet_spawn_pending_record.is_empty()
-		or color_dialog.visible
-	):
-		return false
-	var area: Node = get_node_or_null("CreatureArea")
-	var token: CharacterBody3D
-	if area != null and area.has_method("find_linked_token_for_creature"):
-		token = area.call(
-			"find_linked_token_for_creature", String(record.get("id", ""))
-		) as CharacterBody3D
-	if token != null and is_instance_valid(token):
-		push_undo_state()
-		# Restore saved appearance/size BEFORE computing ground clearance.
-		# Otherwise switching back from a polymorphed/taller miniature
-		# would place its base too high or partially through the floor.
-		apply_creature_sheet_appearance(token, record)
-		apply_creature_sheet_properties(token, record)
-		var token_height: float = float(token.get("token_height_cells"))
-		var token_cell: float = float(token.get("cell_size"))
-		token.global_position = Vector3(
-			_pending_spawn_position.x,
-			_pending_spawn_position.y + token_height * token_cell * 0.5,
-			_pending_spawn_position.z
-		)
-		if token.has_method("snap_horizontal_to_grid"):
-			token.call("snap_horizontal_to_grid")
-		var support_y: float = _pending_spawn_position.y
-		if volumetric_grid.has_method("get_clear_spawn_floor_for_footprint"):
-			support_y = float(volumetric_grid.call(
-				"get_clear_spawn_floor_for_footprint",
-				token.global_position,
-				float(token.call("get_footprint_cells")),
-				token_height,
-				support_y
-			))
-		token.global_position.y = support_y + token_height * token_cell * 0.5
-		token.set("grid_support", _pending_spawn_support)
-		if _pending_spawn_support != null and is_instance_valid(_pending_spawn_support):
-			token.set("_support_transform", _pending_spawn_support.global_transform)
-		_replace_selection(token)
-		_has_pending_spawn_position = false
-		# Reposition using the restored geometry, without duplicating a
-		# creature already on the board.
-		call_deferred("_sync_explicit_token_change", token)
-		return true
-
-	if area == null or not area.has_method("link_spawned_token"):
-		return false
-	# Appearance and combat parameters live on the creature sheet. Never
-	# reopen the token generator when a sheet already specifies them.
-	_begin_sheet_spawn_without_dialog(record)
-	return true
-
-
-
-# An appearance may refer to a downloadable PCK. Keep the clicked position
-# while it downloads and finish the spawn without an additional popup.
-func _begin_sheet_spawn_without_dialog(record: Dictionary) -> void:
-	var miniature_id := String(record.get(
-		"current_miniature_id", record.get("default_miniature_id", "")
-	)).strip_edges()
-	if miniature_id.is_empty():
-		miniature_id = String(record.get("default_miniature_id", "")).strip_edges()
-	var profile := _identity_profile_by_id(miniature_id)
-	if profile.is_empty():
-		_cancel_sheet_spawn_with_notice(
-			"Piazzamento annullato: miniatura %s non disponibile. Scegli un altro aspetto nella scheda." % miniature_id
-		)
-		return
-	_sheet_spawn_pending_record = record.duplicate(true)
-	var origin := String(profile.get("_pack_origin", ""))
-	if origin == "remote" and not TokenPackManager.is_downloaded(miniature_id) and not TokenPackManager.is_mounted(miniature_id):
-		_set_identity_placement_hint("Scaricamento della miniatura attuale in corso: %s" % miniature_id)
-		var error: Error = TokenPackManager.download_token(miniature_id)
-		if error != OK:
-			_cancel_sheet_spawn_with_notice("Piazzamento annullato: impossibile scaricare la miniatura (%s)." % error_string(error))
-		return
-	_finish_sheet_spawn_without_dialog()
-
-
-func _finish_sheet_spawn_without_dialog() -> void:
-	if _sheet_spawn_pending_record.is_empty():
-		return
-	var record: Dictionary = _sheet_spawn_pending_record.duplicate(true)
-	var miniature_id := String(record.get(
-		"current_miniature_id", record.get("default_miniature_id", "")
-	)).strip_edges()
-	if miniature_id.is_empty():
-		miniature_id = String(record.get("default_miniature_id", "")).strip_edges()
-	var profile := _identity_profile_by_id(miniature_id)
-	if profile.is_empty():
-		_cancel_sheet_spawn_with_notice("Piazzamento annullato: miniatura non più disponibile: %s" % miniature_id)
-		return
-	var origin := String(profile.get("_pack_origin", ""))
-	if origin == "remote" and not TokenPackManager.is_mounted(miniature_id):
-		if TokenPackManager.mount_token(miniature_id) != OK:
-			_cancel_sheet_spawn_with_notice("Piazzamento annullato: impossibile montare %s" % miniature_id)
-			return
-	if origin == "local_pack" and not TokenPackManager.is_mounted(miniature_id):
-		var err: Error = TokenPackManager.mount_local_token(
-			miniature_id, profile, String(profile.get("_local_pck_path", ""))
-		)
-		if err != OK:
-			_cancel_sheet_spawn_with_notice("Piazzamento annullato: impossibile montare %s" % miniature_id)
-			return
-	var area := get_node_or_null("CreatureArea")
-	if area == null:
-		_cancel_sheet_spawn_with_notice("Piazzamento annullato: archivio creature non disponibile.")
-		return
-	_creature_spawn_sheet_id = String(record.get("id", ""))
-	_token_generation_confirmed_callback = Callable(
-		area, "link_spawned_token"
-	).bind(_creature_spawn_sheet_id)
-	_token_generation_canceled_callback = Callable()
-	_token_generation_transform_target = null
-	_token_generation_exact_position = true
-	_token_generation_place_on_surface = true
-	_token_name_is_auto = false
-	_refresh_token_miniature_filter("", miniature_id)
-	if String(_selected_token_profile.get("id", "")) != miniature_id:
-		_cancel_sheet_spawn_with_notice("Piazzamento annullato: selezione miniatura non riuscita: %s" % miniature_id)
-		return
-	_prepare_shared_token_editor()
-	_set_token_name_input(
-		_unique_token_display_name(String(record.get("name", "Creatura"))), false
-	)
-	if token_party_input != null:
-		token_party_input.text = String(record.get("party_id", ""))
-	var chosen_size := String(record.get("size_name", "Medium"))
-	for i: int in range(TOKEN_SIZES.size()):
-		if String(TOKEN_SIZES[i].get("name", "")) == chosen_size:
-			size_selector.select(i)
-			break
-	if token_reach_input != null:
-		token_reach_input.value = float(record.get("reach_feet", 5.0))
-	if token_front_selector != null:
-		token_front_selector.select(clampi(
-			int(record.get("visual_front_quarter_turns", 0)), 0, 3
-		))
-	_refresh_shared_condition_choices(
-		ContentCatalog.condition_definitions(
-			String(record.get("rules_version", "2014"))
-		)
-	)
-	_set_shared_token_editor_conditions(record.get("conditions", []))
-	_sheet_spawn_pending_record.clear()
-	_hide_identity_placement_hint()
-	_on_token_dialog_confirmed()
-
-
-# Change scene parameters without going through the token generator.
-func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary) -> void:
+func apply_token_record_properties(token: CharacterBody3D, record: Dictionary) -> void:
 	if token == null or not is_instance_valid(token):
 		return
 	var size_name := String(record.get("size_name", "Medium"))
 	var footprint := maxf(0.5, float(record.get("footprint", 1.0)))
 	# A changed miniature can have a different tactical footprint than the
-	# creature's base sheet. Only adopt it after that model has loaded; the
+	# creature's base form. Only adopt it after that model has loaded; the
 	# original sheet size is authoritative again when the base form returns.
 	var current_id := String(record.get(
 		"current_miniature_id", record.get("default_miniature_id", "")
@@ -2080,8 +1706,8 @@ func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary)
 
 
 # Apply an explicitly chosen miniature immediately when it is available.
-# Undownloaded PCKs are fetched; the selection is already safe in the sheet.
-func apply_creature_sheet_appearance(token: CharacterBody3D, record: Dictionary, update_properties: bool = true) -> bool:
+# Undownloaded PCKs are fetched; the selection is already safe in the token metadata.
+func apply_token_record_appearance(token: CharacterBody3D, record: Dictionary, update_properties: bool = true) -> bool:
 	if token == null or not is_instance_valid(token):
 		return false
 	var miniature_id := String(record.get(
@@ -2093,7 +1719,10 @@ func apply_creature_sheet_appearance(token: CharacterBody3D, record: Dictionary,
 	var origin := String(profile.get("_pack_origin", ""))
 	if origin == "remote" and not TokenPackManager.is_mounted(miniature_id):
 		if not TokenPackManager.is_downloaded(miniature_id):
-			_sheet_visual_waiting[String(record.get("id", ""))] = miniature_id
+			_pending_token_appearance[token.get_instance_id()] = {
+				"token": token, "record": record.duplicate(true),
+				"miniature_id": miniature_id, "update_properties": update_properties
+			}
 			TokenPackManager.download_token(miniature_id)
 			return false
 		if TokenPackManager.mount_token(miniature_id) != OK:
@@ -2114,30 +1743,9 @@ func apply_creature_sheet_appearance(token: CharacterBody3D, record: Dictionary,
 			if origin == "current" else miniature_id
 		))
 	if update_properties:
-		apply_creature_sheet_properties(token, record)
+		apply_token_record_properties(token, record)
 	_refresh_token_views_after_appearance_change()
 	return true
-
-
-func _apply_waiting_sheet_appearance(miniature_id: String) -> void:
-	var sheet_area := get_node_or_null("CreatureArea")
-	if sheet_area == null:
-		return
-	for creature_id: String in _sheet_visual_waiting.keys():
-		if String(_sheet_visual_waiting.get(creature_id, "")) != miniature_id:
-			continue
-		_sheet_visual_waiting.erase(creature_id)
-		if not sheet_area.has_method("find_linked_token_for_creature"):
-			continue
-		var token: CharacterBody3D = sheet_area.call(
-			"find_linked_token_for_creature", creature_id
-		) as CharacterBody3D
-		if token == null:
-			continue
-		for record: Dictionary in sheet_area.get("_archive").list_owned():
-			if String(record.get("id", "")) == creature_id and String(record.get("current_miniature_id", "")) == miniature_id:
-				apply_creature_sheet_appearance(token, record)
-				break
 
 
 func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
@@ -2992,12 +2600,6 @@ func list_available_miniatures() -> Array[Dictionary]:
 	return available
 
 
-func toggle_creature_area() -> void:
-	var area := get_node_or_null("CreatureArea")
-	if area != null:
-		area.call("toggle_panel")
-
-
 func toggle_spell_menu() -> void:
 	if spell_system == null or not is_instance_valid(spell_system):
 		return
@@ -3233,10 +2835,6 @@ func _build_context_submenus() -> void:
 	context_token_menu = _create_context_submenu("ContextTokenMenu")
 	context_game_menu = _create_context_submenu("ContextGameMenu")
 	_create_context_submenu("ContextMasterMenu")
-	context_place_creature_menu = PopupMenu.new()
-	context_place_creature_menu.name = "ContextPlaceCreatureMenu"
-	context_place_creature_menu.id_pressed.connect(_on_place_creature_id_pressed)
-	context_token_menu.add_child(context_place_creature_menu)
 	context_measure_menu = _create_context_submenu("ContextMeasureMenu")
 	context_view_menu = _create_context_submenu("ContextViewMenu")
 
@@ -3250,9 +2848,7 @@ func _create_context_submenu(menu_name: String) -> PopupMenu:
 
 
 func _prepare_context_submenus() -> void:
-	context_place_creature_menu.clear()
 	_limit_popup_menu(context_menu)
-	_limit_popup_menu(context_place_creature_menu)
 	for child: Node in context_menu.get_children():
 		if child is PopupMenu:
 			child.clear()
@@ -3261,82 +2857,6 @@ func _prepare_context_submenus() -> void:
 
 # Rebuild on each right-click so the chooser includes both present and
 # absent creatures, including any just imported or transferred to us.
-func _populate_place_creature_menu() -> void:
-	context_place_creature_menu.clear()
-	var area: Node = get_node_or_null("CreatureArea")
-	if area == null or not area.has_method("get_owned_creatures_for_placement"):
-		context_place_creature_menu.add_item("Archivio creature non disponibile")
-		context_place_creature_menu.set_item_disabled(0, true)
-		return
-	var available_value: Variant = area.call("get_owned_creatures_for_placement")
-	if not available_value is Array:
-		return
-	var present_ids: Dictionary = {}
-	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
-		if not node is CharacterBody3D or not is_ancestor_of(node):
-			continue
-		if node.is_queued_for_deletion():
-			continue
-		if String(node.get_meta("creature_owner_id", "")) != CreatureOwner.local_id():
-			continue
-		present_ids[String(node.get_meta("creature_id", ""))] = true
-	for value: Variant in available_value as Array:
-		if not value is Dictionary:
-			continue
-		var record: Dictionary = value as Dictionary
-		if not CreatureOwner.is_owner(record):
-			continue
-		var creature_id: String = String(record.get("id", "")).strip_edges()
-		var creature_kind: String = String(record.get("kind", ""))
-		if creature_id.is_empty() or creature_kind not in ["character", "monster"]:
-			continue
-		var display_name: String = String(record.get("name", "Creatura")).strip_edges()
-		if display_name.is_empty():
-			display_name = "Creatura"
-		var icon: String = "♙" if creature_kind == "character" else "◇"
-		var status: String = "in mappa" if present_ids.has(creature_id) else "non in mappa"
-		var index: int = context_place_creature_menu.item_count
-		context_place_creature_menu.add_item(
-			"%s %s · %s" % [icon, display_name, status], index + 1
-		)
-		context_place_creature_menu.set_item_metadata(
-			index, {"id": creature_id, "kind": creature_kind}
-		)
-	if context_place_creature_menu.item_count == 0:
-		context_place_creature_menu.add_item("Nessuna creatura posseduta")
-		context_place_creature_menu.set_item_disabled(0, true)
-
-
-func _on_place_creature_id_pressed(item_id: int) -> void:
-	var index: int = context_place_creature_menu.get_item_index(item_id)
-	if index < 0 or not _has_pending_spawn_position:
-		_close_context_menu_to_game()
-		return
-	var metadata_value: Variant = context_place_creature_menu.get_item_metadata(index)
-	if not metadata_value is Dictionary:
-		_close_context_menu_to_game()
-		return
-	var metadata: Dictionary = metadata_value as Dictionary
-	var area: Node = get_node_or_null("CreatureArea")
-	if area != null and area.has_method("get_owned_creatures_for_placement"):
-		# Validate from disk again: an owner transfer or edit may have occurred
-		# after the submenu opened. Never move a foreign-owned token.
-		var owned_value: Variant = area.call("get_owned_creatures_for_placement")
-		if owned_value is Array:
-			for value: Variant in owned_value as Array:
-				if not value is Dictionary:
-					continue
-				var record: Dictionary = value as Dictionary
-				if (
-					String(record.get("id", "")) == String(metadata.get("id", ""))
-					and String(record.get("kind", "")) == String(metadata.get("kind", ""))
-					and CreatureOwner.is_owner(record)
-				):
-					_place_creature_at_pending_position(record)
-					break
-	_close_context_menu_to_game()
-
-
 func _limit_popup_menu(menu: PopupMenu) -> void:
 	var window_size: Vector2i = Vector2i(get_tree().root.get_visible_rect().size)
 	menu.max_size = (window_size - Vector2i(24, 24)).max(Vector2i(1, 1))
@@ -3358,20 +2878,10 @@ func _popup_dialog_safe(
 
 # All token effects use the same write path whether they come from a cast,
 # the context menu, or the owning creature sheet.
-func _effect_sheet() -> Node:
-	return get_node_or_null("CreatureArea")
-
-
 func _set_token_status(target: Node3D, condition_id: String, enabled: bool) -> void:
 	if target == null or not is_instance_valid(target) or not target.has_method("set_condition"):
 		return
 	target.call("set_condition", condition_id, enabled)
-	var sheet: Node = _effect_sheet()
-	if sheet != null:
-		if condition_id == "concentrating" and not enabled and sheet.has_method("update_token_concentration"):
-			sheet.call("update_token_concentration", target, "")
-		elif sheet.has_method("sync_linked_token_editor"):
-			sheet.call("sync_linked_token_editor", target)
 	call_deferred("_sync_explicit_token_change", target)
 
 
@@ -3385,19 +2895,11 @@ func _set_token_active_spell(target: Node3D, spell_id: String, enabled: bool, co
 		target.call("add_active_spell_id", spell_id)
 	elif not enabled and target.has_method("remove_active_spell_id"):
 		target.call("remove_active_spell_id", spell_id)
-	var sheet: Node = _effect_sheet()
-	if sheet != null and sheet.has_method("update_token_spell_effect"):
-		sheet.call("update_token_spell_effect", target, spell_id, enabled, context)
-	if not enabled and sheet != null and sheet.has_method("update_token_concentration"):
-		sheet.call("update_token_concentration", target,
-			String(target.call("get_concentrating_spell_id")) if target.has_method("get_concentrating_spell_id") else "")
 	call_deferred("_sync_explicit_token_change", target)
 
 
 func cancel_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
-	var sheet: Node = _effect_sheet()
-	if sheet != null and sheet.has_method("cancel_origin_spell_cast"):
-		sheet.call("cancel_origin_spell_cast", caster, spell)
+	pass # Cast resource bookkeeping is owned by the PWA, not by a native sheet.
 
 
 func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array) -> void:
@@ -3406,19 +2908,11 @@ func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array)
 	var spell_id: String = String(spell.get("id", ""))
 	if spell_id.is_empty():
 		return
-	var sheet: Node = _effect_sheet()
-	var context: Dictionary = {}
-	if sheet != null and sheet.has_method("origin_spell_cast_context"):
-		context = sheet.call("origin_spell_cast_context", caster, spell)
 	if ActiveSpells.requires_concentration(spell):
 		if caster.has_method("set_concentrating_spell_id"):
 			caster.call("set_concentrating_spell_id", spell_id)
-		if sheet != null and sheet.has_method("update_token_concentration"):
-			sheet.call("update_token_concentration", caster, spell_id)
 		call_deferred("_sync_explicit_token_change", caster)
 	if not ActiveSpells.has_duration(spell):
-		if sheet != null and sheet.has_method("complete_origin_spell_cast"):
-			sheet.call("complete_origin_spell_cast", caster, spell)
 		return
 	var visited: Dictionary = {}
 	for entry: Variant in targets:
@@ -3431,9 +2925,7 @@ func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array)
 		if visited.has(id):
 			continue
 		visited[id] = true
-		_set_token_active_spell(target, spell_id, true, context)
-	if sheet != null and sheet.has_method("complete_origin_spell_cast"):
-		sheet.call("complete_origin_spell_cast", caster, spell)
+		_set_token_active_spell(target, spell_id, true)
 
 
 # The main context menu closes asynchronously. Keep GUI ownership while a
@@ -3670,15 +3162,10 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_token_menu.add_item("Elimina token selezionati" + selection_suffix, CONTEXT_DELETE_SELECTED)
 		context_token_menu.add_item("Applica gravità" + selection_suffix, CONTEXT_FLYING)
 		context_token_menu.add_separator()
-	if _has_pending_spawn_position:
-		_populate_place_creature_menu()
-		context_token_menu.add_submenu_node_item(
-			"Piazza creatura", context_place_creature_menu
-		)
 		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
 	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
 	var token_help: Dictionary = {
-		CONTEXT_DELETE_SELECTED: "Rimuove i token selezionati dalla mappa. Le schede nell'archivio restano disponibili.",
+		CONTEXT_DELETE_SELECTED: "Rimuove i token selezionati dalla mappa.",
 		CONTEXT_EXPORT_SELECTED: "Salva i token selezionati con aspetto e condizioni in un file .vtttokens.",
 		CONTEXT_FLYING: "Applica una caduta temporanea ai token selezionati.",
 		CONTEXT_CREATE_TOKEN: "Crea un nuovo token nella posizione del clic.",
@@ -3709,7 +3196,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 	context_game_menu.add_separator()
-	context_game_menu.add_item("Creature · schede", CONTEXT_CREATURE_AREA)
 	context_game_menu.add_item("Compendio", CONTEXT_COMPENDIUM)
 	var master_menu: PopupMenu = context_menu.get_node("ContextMasterMenu")
 	master_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
@@ -3842,11 +3328,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		context_menu.hide()
 		return
 
-	if id == CONTEXT_CREATURE_AREA:
-		context_menu.hide()
-		call_deferred("toggle_creature_area")
-		return
-
 	if id == CONTEXT_ITEM_CREATE or id == CONTEXT_ITEM_MANAGE:
 		context_menu.hide()
 		if item_controller != null:
@@ -3915,12 +3396,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			):
 				push_undo_state()
 				if bool(token.call("restore_previous_transformation")):
-					var linked_sheets := get_node_or_null("CreatureArea")
-					if (
-						linked_sheets != null
-						and linked_sheets.has_method("sync_linked_token_editor")
-					):
-						linked_sheets.call("sync_linked_token_editor", token)
 					_refresh_token_views_after_appearance_change()
 					call_deferred("_sync_explicit_token_change", token)
 		_close_context_menu_to_game()
@@ -4603,14 +4078,7 @@ func open_selected_token_state_editor() -> void:
 	if context_menu.visible:
 		context_menu.hide()
 	var token: CharacterBody3D = _selected_tokens[0]
-	var sheets: Node = get_node_or_null("CreatureArea")
-	if (
-		sheets != null
-		and sheets.has_method("open_for_token")
-		and bool(sheets.call("open_for_token", token))
-	):
-		return
-	# Unlinked or remotely owned tokens can still edit their appearance.
+	# This is the tactical token editor, not an archived creature sheet.
 	open_token_transformation(token)
 
 
@@ -4667,13 +4135,7 @@ func _finish_context_menu_close() -> void:
 		and compendium.has_method("is_panel_open")
 		and bool(compendium.call("is_panel_open"))
 	)
-	var creature_sheet: Node = get_node_or_null("CreatureArea")
-	var creature_panel_open: bool = (
-		creature_sheet != null
-		and creature_sheet.has_method("is_panel_open")
-		and bool(creature_sheet.call("is_panel_open"))
-	)
-	if spell_panel_open or compendium_panel_open or creature_panel_open:
+	if spell_panel_open or compendium_panel_open:
 		_pending_aoe_index = -1
 		_context_token = null
 		_ui_owns_mouse = true
@@ -4911,7 +4373,6 @@ func _reset_token_generation_state() -> void:
 	_has_pending_spawn_position = false
 	_pending_spawn_support = null
 	_pending_spawn_on_grid_surface = false
-	_creature_spawn_sheet_id = ""
 	_token_name_is_auto = true
 	_updating_token_name_input = false
 	_ui_owns_mouse = false
@@ -4919,7 +4380,6 @@ func _reset_token_generation_state() -> void:
 
 
 func _on_token_dialog_confirmed() -> void:
-	var spawning_sheet_token: bool = not _creature_spawn_sheet_id.is_empty()
 	var selected_origin := String(
 		_selected_token_profile.get("_pack_origin", "")
 	)
@@ -4940,10 +4400,6 @@ func _on_token_dialog_confirmed() -> void:
 					push_warning(
 						"DnDBase: scarica prima il token remoto: %s" % pack_id
 					)
-					if spawning_sheet_token:
-						_cancel_sheet_spawn_with_notice(
-							"Piazzamento annullato: miniatura non scaricata: %s" % pack_id
-						)
 					return
 				mount_error = TokenPackManager.mount_token(pack_id)
 			if mount_error != OK:
@@ -4951,10 +4407,6 @@ func _on_token_dialog_confirmed() -> void:
 					pack_id,
 					"Mount non riuscito: %s" % error_string(mount_error)
 				)
-				if spawning_sheet_token:
-					_cancel_sheet_spawn_with_notice(
-						"Piazzamento annullato: impossibile montare %s" % pack_id
-					)
 				return
 		_selected_token_profile["visual_asset"] = _remote_visual_path(pack_id)
 
@@ -5101,13 +4553,6 @@ func _on_token_dialog_confirmed() -> void:
 		if initiative_tracker != null and is_instance_valid(initiative_tracker):
 			initiative_tracker.call("refresh")
 		if editing_existing:
-			# Do not let a saved creature sheet overwrite a token edit later.
-			var linked_sheets: Node = get_node_or_null("CreatureArea")
-			if linked_sheets != null and linked_sheets.has_method("sync_linked_token_editor"):
-				linked_sheets.call("sync_linked_token_editor", created_token)
-			# Party, condizioni, taglia, reach, nome e miniatura sono già stati
-			# applicati al nodo: forza uno snapshot adesso, invece di lasciare
-			# che il primo poll possa assorbirli come nuova baseline.
 			call_deferred("_sync_explicit_token_change", created_token)
 
 	var confirmed_callback: Callable = (
@@ -5117,10 +4562,6 @@ func _on_token_dialog_confirmed() -> void:
 		_token_generation_canceled_callback
 	)
 	_reset_token_generation_state()
-	if spawning_sheet_token and (created_token == null or not is_instance_valid(created_token)):
-		_cancel_sheet_spawn_with_notice(
-			"Piazzamento annullato: impossibile caricare la miniatura della creatura."
-		)
 
 	if (
 		created_token != null
@@ -5213,10 +4654,6 @@ func _spawn_token(
 			)
 		):
 			push_warning("DnDBase: miniatura non caricata: %s" % visual_asset)
-			if not _creature_spawn_sheet_id.is_empty():
-				# Never leave a linked creature represented by a dummy token.
-				token.queue_free()
-				return null
 	if token.has_method("set_visual_front_quarter_turns"):
 		token.call(
 			"set_visual_front_quarter_turns",
@@ -5273,19 +4710,7 @@ func _spawn_token(
 		token.call("set_vision_cone_visible", _vision_cones_visible)
 
 	_replace_selection(token)
-	# The miniature profile is finalized after _spawn_token returns, so defer
-	# creation of the independent sheet until its pack ID is available.
-	if _creature_spawn_sheet_id.is_empty():
-		call_deferred("_ensure_new_token_sheet", token)
 	return token
-
-
-func _ensure_new_token_sheet(token: CharacterBody3D) -> void:
-	if token == null or not is_instance_valid(token):
-		return
-	var area := get_node_or_null("CreatureArea")
-	if area != null and area.has_method("ensure_sheet_for_token"):
-		area.call("ensure_sheet_for_token", token, true)
 
 
 func _interact_or_select_under_mouse(
@@ -5908,18 +5333,6 @@ func capture_camera_control() -> void:
 func _capture_mouse() -> void:
 	if _ui_owns_mouse:
 		return
-	# Context menus and deferred callbacks may request capture one frame
-	# after "Modifica token" opened the creature sheet. Keep the cursor
-	# visible for as long as that sheet is actually on screen.
-	var creature_sheet: Node = get_node_or_null("CreatureArea")
-	if (
-		creature_sheet != null
-		and creature_sheet.has_method("is_panel_open")
-		and bool(creature_sheet.call("is_panel_open"))
-	):
-		_ui_owns_mouse = true
-		_release_mouse()
-		return
 	if _view_2d_enabled or measurement_tool.is_box_drawing_mode():
 		Input.set_default_cursor_shape(Input.CURSOR_CROSS)
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -6002,8 +5415,8 @@ func _on_share_session_changed(_value: float) -> void:
 	board_sync.listen(true, key)
 	if dice_roller_chat != null and is_instance_valid(dice_roller_chat):
 		dice_roller_chat.call("set_session_key", key)
-	if creature_presence != null and is_instance_valid(creature_presence):
-		creature_presence.call("set_session_key", key)
+	if lan_presence != null and is_instance_valid(lan_presence):
+		lan_presence.call("set_session_key", key)
 
 
 func _build_share_dialog() -> void:

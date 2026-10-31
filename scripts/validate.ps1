@@ -114,30 +114,14 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 
 $fastTests = @(
     "test_character_token_images.gd",
-    "test_creature_variants.gd",
-    "test_item_attunement_roundtrip.gd",
-    "test_desktop_sheet_archive.gd",
-    "test_large_creature_batch.gd",
-    "test_action_rules_2014.gd",
-    "test_action_dashboard_ui.gd",
-    "test_action_spell_groups.gd",
-    "test_creature_action_economy.gd",
     "test_class_feature_activation.gd",
-    "test_metamagic_cast_lifecycle.gd",
-    "test_metamagic_dialog.gd",
-    "test_class_feature_ui.gd",
-    "test_attack_action_summary.gd",
-    "test_feature_timing_recovery.gd",
+    "test_lan_presence.gd",
     "test_combat_basic_actions.gd",
     "test_map_data_controller.gd",
     "test_initiative_tracker.gd",
-    "test_activated_abilities.gd",
-    "test_artificer_infusions.gd",
     "test_artificer_and_natural_armor.gd",
     "test_spell_catalog_smoke.gd",
-    "test_spell_selection_and_multiclass.gd",
     "test_spell_slot_profiles.gd",
-    "test_spellcasting_initial_resources.gd",
     "test_spell_catalog_edition_geometry.gd",
     "test_spell_targeting_lifecycle.gd",
     "test_pwa_backup_store.gd",
@@ -147,57 +131,26 @@ $fastTests = @(
     "test_token_catalog_merge.gd",
     "test_scene_token_pack_recovery.gd",
     "test_board_smoke.gd",
-    # Creature-sheet interactions are a common source of parser/UI regressions:
-    # validate them before independent tactical-grid rendering assertions.
     "test_structured_resource_trackers.gd",
     "test_monster_action_metadata.gd",
-    "test_monster_traits.gd",
-    "test_monster_recharge_options.gd",
     "test_structured_numeric_bonuses.gd",
     "test_split_item_bonuses.gd",
     "test_movement_speeds.gd",
     "test_linked_token_motion.gd",
     "test_token_effects_and_group_movement.gd",
-    "test_creature_equipment_regressions.gd",
-    "test_bonus_origin_highlight.gd",
-    "test_benefit_first_origins_trackers.gd",
     "test_quick_custom_dialogs.gd",
-    "test_spell_origins.gd",
     "test_dice_bonus_scopes.gd",
-    "test_inventory_quantities.gd",
-    "test_item_catalog_search.gd",
-    # test_creature_sheet_ui.gd is an expensive UI integration test (up to 300s).
-    # Keep it in -FullTests; do not block the fast validation on it.
-    "test_creature_gui_layout.gd",
-    "test_creature_gui_locale.gd",
-    "test_equipped_weapons.gd",
-    "test_damage_defenses.gd",
     "test_creature_formula_bonuses.gd",
-    "test_proficiency_sources.gd",
-    "test_trait_origins.gd",
-    "test_desktop_menu_navigation.gd",
     "test_race_subrace_selection.gd",
     "test_dialog_layout.gd",
     "test_tactical_overlay.gd",
-    "test_creature_presence.gd",
-    "test_document_delivery_ack.gd",
-    "test_document_inbox_safety.gd",
-    "test_document_homebrew.gd",
     "test_content_layer_separation.gd",
     "test_camera_2d_height.gd",
     "test_measurement_token_elevation.gd",
     "test_grid_2d_elevation_colors.gd",
     "test_encounter_sync_scripts.gd",
-    "test_creature_sheets.gd",
-    "test_creature_sheet_controller.gd",
-    "test_creature_features_standalone.gd",
-    "test_standalone_creatures.gd",
-    "test_creature_archive_revisions.gd",
-    "test_creature_reference_completion.gd",
     "test_initiative_creature_selection.gd",
     "test_content_catalog.gd",
-    "test_compendium_descriptions.gd",
-    "test_creature_sync.gd",
     "test_item_transport.gd",
     "test_item_board_integration.gd",
     "test_dice_chat_sync.gd",
@@ -211,12 +164,10 @@ $fastTests = @(
 # remain available for broader regression coverage outside the 60s CI gate.
 $ciSmokeTestNames = @(
     "test_spell_catalog_smoke.gd",
-    "test_activated_abilities.gd",
     "test_spell_slot_profiles.gd",
     "test_origin_granted_spells.gd",
     "test_structured_resource_trackers.gd",
     "test_monster_action_metadata.gd",
-    "test_creature_sheet_controller.gd",
     "test_board_smoke.gd",
     "test_dialog_layout.gd"
 )
@@ -246,13 +197,9 @@ foreach ($test in $testFiles) {
     Write-Host "== $relative =="
     $testTimeout = if ($SmokeTests) {
         10
-    } elseif ($FullTests -and $test.Name -eq "test_creature_sheet_ui.gd") {
-        # Full suite only: exercises hundreds of UI callbacks.
-        300
     } elseif ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_class_feature_ui.gd", "test_token_effects_and_group_movement.gd", "test_creature_gui_layout.gd", "test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd",
-    "test_desktop_menu_navigation.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
+    } elseif ($test.Name -in @("test_token_effects_and_group_movement.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_race_subrace_selection.gd")) {
         45
     } else {
         12

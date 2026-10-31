@@ -4,7 +4,6 @@ const Metadata = preload("res://vtt/monster_action_metadata.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
-const Store = preload("res://vtt/master_creature_store.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 
 
@@ -93,12 +92,12 @@ func run() -> void:
 	assert(String(_tracker(chaos_record,
 		"Chaos Cloud (Recharges after a Short or Long Rest)").get("id", "")) == "fightclub:action:0")
 
-	var generated: Dictionary = Store.new().create_creature({
+	var generated: Dictionary = {"kind": "monster", "stat_block": Metadata.prepare({
 		"source": "PHB", "name": "Animated Object (Huge)",
 		"hp": {"special": "80"}, "speed": {"walk": 30},
 		"action": [{"name": "Slam", "entries": [
 			"{@atk mw} {@hit 8} to hit, reach 5 ft. {@damage 2d12 + 4}."]}]
-	}, "enemy")
+	})}
 	assert(int((generated.get("stat_block", {}) as Dictionary).get("vtt_action_metadata_version", 0)) == 1)
 	assert(_attack(generated, "Slam").get("damage") == "2d12 + 4")
 	assert(int(_attack(generated, "Slam").get("base_hit", 0)) == 8)

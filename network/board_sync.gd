@@ -8,7 +8,7 @@ signal map_autosave_committed(snapshot: Dictionary, previous_snapshot: Dictionar
 signal map_synchronized()
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
-const CreaturePresence = preload("res://network/creature_presence.gd")
+const LanPresence = preload("res://network/lan_presence.gd")
 const PORT := 45454
 const SNAPSHOT_VERSION := 6
 const MAGIC := "DND_MAP_SYNC_V6"
@@ -644,7 +644,7 @@ func set_lan_presence(presence: Node) -> void:
 
 
 func get_presence_discovery_hosts() -> Array[String]:
-	return CreaturePresence.discovery_targets(get_cached_tailscale_peer_ipv4s())
+	return LanPresence.discovery_targets(get_cached_tailscale_peer_ipv4s())
 
 
 func get_session_peer_ipv4s() -> Array[String]:
@@ -1343,38 +1343,6 @@ func valid_snapshot(snapshot: Variant) -> bool:
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
 
-	if snapshot.has("health_bars"):
-		var health_value: Variant = snapshot.get("health_bars", [])
-		if not health_value is Array or (health_value as Array).size() > 4096:
-			return false
-		var seen_health_tokens: Dictionary = {}
-		for entry_value: Variant in health_value as Array:
-			if not entry_value is Dictionary:
-				return false
-			var entry: Dictionary = entry_value as Dictionary
-			var token_id_value: Variant = entry.get("token_id")
-			if not token_id_value is String:
-				return false
-			var health_token_id := String(token_id_value).strip_edges()
-			if (
-				health_token_id.is_empty()
-				or health_token_id.length() > 96
-				or seen_health_tokens.has(health_token_id)
-				or not item_token_ids.has(health_token_id)
-			):
-				return false
-			seen_health_tokens[health_token_id] = true
-			var percent_value: Variant = entry.get("percent")
-			if not (percent_value is float or percent_value is int):
-				return false
-			var percent := float(percent_value)
-			if (
-				not is_finite(percent)
-				or percent < 0.0
-				or percent > 100.0
-			):
-				return false
-
 	if board_root.get("item_controller") != null:
 		if not board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids):
 			return false
@@ -1517,95 +1485,6 @@ func _apply_party_manifest(value: Variant) -> void:
 				node.set_meta("party_id", stored_party_id)
 
 
-func _owned_health_bar_entries() -> Array[Dictionary]:
-	var by_token: Dictionary = {}
-	var current_nodes := _current_nodes_by_id()
-	for area_name: String in ["CreatureArea", "PlayerArea", "MasterArea"]:
-		var area := board_root.get_node_or_null(area_name)
-		if (
-			area == null
-			or not is_instance_valid(area)
-			or not area.has_method("get_owned_health_bar_sync_entries")
-		):
-			continue
-		var entries_value: Variant = area.call(
-			"get_owned_health_bar_sync_entries"
-		)
-		if not entries_value is Array:
-			continue
-		for entry_value: Variant in entries_value as Array:
-			if not entry_value is Dictionary:
-				continue
-			var entry: Dictionary = entry_value as Dictionary
-			var token_id := String(
-				entry.get("token_id", "")
-			).strip_edges()
-			var percent_value: Variant = entry.get("percent")
-			if (
-				token_id.is_empty()
-				or by_token.has(token_id)
-				or not current_nodes.has(token_id)
-				or not (
-					(current_nodes.get(token_id) as Node).is_in_group(
-						"dnd_token"
-					)
-				)
-				or not (percent_value is float or percent_value is int)
-			):
-				continue
-			var percent := float(percent_value)
-			if not is_finite(percent):
-				continue
-			by_token[token_id] = {
-				"token_id": token_id,
-				"percent": clampf(percent, 0.0, 100.0)
-			}
-
-	var result: Array[Dictionary] = []
-	for token_id_value: Variant in by_token.keys():
-		result.append(
-			(by_token[token_id_value] as Dictionary).duplicate(true)
-		)
-	result.sort_custom(
-		func(a: Dictionary, b: Dictionary) -> bool:
-			return String(a.get("token_id", "")).naturalnocasecmp_to(
-				String(b.get("token_id", ""))
-			) < 0
-	)
-	return result
-
-
-func _locally_owned_health_token_ids() -> Dictionary:
-	var owned: Dictionary = {}
-	for entry: Dictionary in _owned_health_bar_entries():
-		owned[String(entry.get("token_id", ""))] = true
-	return owned
-
-
-func _apply_partial_health_bars(value: Variant) -> void:
-	if not value is Array:
-		return
-	var current := _current_nodes_by_id()
-	var locally_owned := _locally_owned_health_token_ids()
-	for entry_value: Variant in value as Array:
-		if not entry_value is Dictionary:
-			continue
-		var entry: Dictionary = entry_value as Dictionary
-		var token_id := String(entry.get("token_id", "")).strip_edges()
-		if token_id.is_empty() or locally_owned.has(token_id):
-			continue
-		var node_value: Variant = current.get(token_id)
-		if not node_value is Node3D:
-			continue
-		var token := node_value as Node3D
-		if not token.has_method("set_synced_hit_point_percent"):
-			continue
-		token.call(
-			"set_synced_hit_point_percent",
-			float(entry.get("percent", 0.0))
-		)
-
-
 func create_snapshot() -> Dictionary:
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.flush_motion()
@@ -1642,7 +1521,6 @@ func create_snapshot() -> Dictionary:
 		"aoes": aoes,
 		"encounter": state,
 		"initiative": initiative,
-		"health_bars": _owned_health_bar_entries()
 	}
 	return snapshot
 
@@ -1821,7 +1699,6 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 
 
 	_apply_party_manifest(snapshot.get("parties", []))
-	_apply_partial_health_bars(snapshot.get("health_bars", []))
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.apply_items(snapshot.get("items", []))
 	_restore_token_supports(wanted)
@@ -1849,11 +1726,6 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		if flanking_node.has_method("refresh_now"):
 			flanking_node.call_deferred("refresh_now")
 	_queue_snapshot_token_packs(snapshot)
-	# Ownership changes are public token metadata. The receiving installation
-	# creates/reattaches its private sheet without an acceptance dialog.
-	var creature_area := board_root.get_node_or_null("CreatureArea")
-	if creature_area != null and creature_area.has_method("refresh_owned_sheets"):
-		creature_area.call_deferred("refresh_owned_sheets")
 	return true
 
 func _restore_token_supports(wanted: Dictionary) -> void:
@@ -2205,19 +2077,6 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			)
 		if apply_shared_appearance:
 			_remember_received_token_appearance(node, data)
-		# Only propagate changed tactical effects to an owned private sheet.
-		# Do not persist on every incoming map snapshot or polling update.
-		var effects_changed := false
-		if node.has_method("get_conditions"):
-			effects_changed = old_conditions != node.call("get_conditions")
-		if node.has_method("get_active_spell_ids"):
-			effects_changed = effects_changed or old_active_spells != node.call("get_active_spell_ids")
-		if node.has_method("get_concentrating_spell_id"):
-			effects_changed = effects_changed or old_concentration != String(node.call("get_concentrating_spell_id"))
-		if board_root != null and effects_changed:
-			var creature_area: Node = board_root.get_node_or_null("CreatureArea")
-			if creature_area != null and creature_area.has_method("sync_linked_token_status"):
-				creature_area.call_deferred("sync_linked_token_status", node)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
 
@@ -2657,7 +2516,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		var owner := String(payload.get("owner_id", ""))
 		var wanted := String(payload.get("miniature_id", ""))
 		if owner.is_empty() or owner != String(target.get_meta("creature_owner_id", "")) or wanted.length() > 256:
-			return {"ok": false, "error": "Questa creatura non è controllata dal telefono."}
+			return {"ok": false, "error": "Questa creatura non appartiene al dispositivo."}
 		var display_name := String(payload.get("display_name", target.call("get_display_name"))).strip_edges()
 		if payload.has("display_name") and (display_name.is_empty() or display_name.length() > 160):
 			return {"ok": false, "error": "Nome della forma non valido."}
@@ -2666,7 +2525,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 			return {"ok": false, "error": "Miniatura non disponibile sul desktop."}
 		var undo: Dictionary = board_root.call("begin_undo_transaction")
 		var record := {"id": String(target.get_meta("creature_id", "")), "current_miniature_id": wanted}
-		if not wanted.is_empty() and not bool(board_root.call("apply_creature_sheet_appearance", target, record, false)):
+		if not wanted.is_empty() and not bool(board_root.call("apply_token_record_appearance", target, record, false)):
 			return {"ok": false, "error": "La miniatura deve essere disponibile sul desktop prima di applicarla."}
 		if payload.has("display_name"):
 			target.call("set_display_name", display_name)
@@ -2943,7 +2802,7 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: b
 	if claim_free:
 		# Validate/model-load before assigning ownership; a failed claim
 		# leaves the existing token unmodified and still available.
-		if not bool(board_root.call("apply_creature_sheet_appearance", token, creature, false)):
+		if not bool(board_root.call("apply_token_record_appearance", token, creature, false)):
 			return {"ok": false, "error": "Miniatura non pronta sul desktop. Scaricala e riprova."}
 		token.set_meta("creature_id", id)
 		token.set_meta("creature_owner_id", owner)
@@ -2962,9 +2821,9 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: b
 	token.set_meta("rules_version", rules_version if rules_version in ["2014", "2024"] else "2014")
 	token.call("set_token_pack_id", miniature)
 	if not claim_free:
-		board_root.call("apply_creature_sheet_appearance", token, creature)
-	elif board_root.has_method("apply_creature_sheet_properties"):
-		board_root.call("apply_creature_sheet_properties", token, creature)
+		board_root.call("apply_token_record_appearance", token, creature)
+	elif board_root.has_method("apply_token_record_properties"):
+		board_root.call("apply_token_record_properties", token, creature)
 	token.call("set_reach_feet", float(reach), true)
 	token.call("set_conditions", conditions)
 	var position: Vector3 = token.global_position if claim_free else _mobile_adjacent_position(token, support, direction)

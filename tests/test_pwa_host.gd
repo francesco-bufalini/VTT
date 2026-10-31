@@ -40,11 +40,7 @@ func http(method: String, path: String, body: String = "", extra: String = "") -
 func run() -> void:
 	await process_frame
 	await process_frame
-	var creature_area_script: Script = load("res://vtt/creature_area.gd")
-	var creature_archive_script: Script = load("res://vtt/creature_archive.gd")
-	var token_list_script: Script = load("res://vtt/token_list.gd")
-	assert(creature_area_script != null and creature_archive_script != null and token_list_script != null,
-		"Creature archive and token-list batch UI scripts must compile")
+	assert(load("res://vtt/token_list.gd") != null, "Tactical token list must compile")
 	var serve_helper: Script = load("res://network/tailscale_serve.gd")
 	var empty_config: Dictionary = serve_helper.call("parse_serve_status", {})
 	assert(not bool(empty_config.active))
@@ -82,12 +78,6 @@ func run() -> void:
 	var receiver_id := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 	var stranger_id := "cccccccccccccccccccccccccccccccc"
 	var transfer_id := "dddddddddddddddddddddddddddddddd"
-	var host_transfer_id := "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-	var desktop_id := "00000000000000000000000000000000"
-	var host_import: Script = load("res://vtt/pwa_desktop_share_import.gd")
-	assert(host_import != null, "Native desktop import module must compile")
-	assert(host_import.call("import_received", "inventory", {"format": "invalid"}, host_transfer_id) == ERR_INVALID_DATA,
-		"Malformed inventory packets must never enter the native inbox")
 	var fake_client: Dictionary = {"out": PackedByteArray()}
 	var fake_clients: Array = host.get("_clients")
 	fake_clients.append(fake_client)
@@ -100,14 +90,8 @@ func run() -> void:
 		assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"),
 			"Paired browsers must be discoverable")
 		if row.device_id == sender_id:
-			assert((fake_client.out as PackedByteArray).get_string_from_utf8().contains(desktop_id),
-				"The desktop host is a valid recipient even with no other PWA connected")
-	# The host ID is reserved; paired browsers cannot impersonate desktop.
-	fake_client.out = PackedByteArray()
-	host.call("_handle_share", fake_client, "/api/share/peers", JSON.stringify({
-		"device_id": desktop_id, "device_token": sender_token, "device_name": "Falso desktop"
-	}).to_utf8_buffer())
-	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 400"))
+			assert((fake_client.out as PackedByteArray).get_string_from_utf8().contains("\"devices\":[]"),
+				"The Godot server only relays between PWA browsers")
 	var content := "{\"format\":\"vtt_homebrew_share_v1\",\"version\":1}"
 	var encoded := Marshalls.raw_to_base64(content.to_utf8_buffer())
 	fake_client.out = PackedByteArray()
@@ -144,17 +128,6 @@ func run() -> void:
 	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"))
 	assert(not (host.get("_share_deliveries") as Dictionary).has(transfer_id),
 		"Acknowledgment must remove temporary transfer data")
-	fake_client.out = PackedByteArray()
-	host.call("_handle_share", fake_client, "/api/share/chunk", JSON.stringify({
-		"device_id": sender_id, "device_token": sender_token, "recipient_id": desktop_id,
-		"transfer_id": host_transfer_id, "kind": "homebrew", "title": "Desktop",
-		"size": content.to_utf8_buffer().size(), "index": 0, "parts": 1, "data": encoded
-	}).to_utf8_buffer())
-	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"),
-		"Sending to desktop must work without another PWA receiver")
-	assert((host.get("_share_deliveries") as Dictionary).has(host_transfer_id),
-		"The desktop offer must remain pending until its native confirmation")
-	host.call("_share_forget", host_transfer_id)
 	fake_clients.erase(fake_client)
 	(host.get("_share_peers") as Dictionary).clear()
 
@@ -322,7 +295,7 @@ func run() -> void:
 	local_sync.set("map_data_controller", local_controller)
 	assert(not bool(local_sync.get("receiving")))
 	assert(host.call("_web_board_controller", local_sync) == local_controller,
-		"HTTPS PWA must see a local board even without the native TCP listener")
+		"HTTPS PWA must see a local board even without a separate tactical TCP listener")
 	var web_action: Dictionary = await local_controller.call("execute_web_action", "chat_poll", {})
 	assert(bool(web_action.get("ok", false)),
 		"Authenticated web actions should work without a legacy UDP listener")
@@ -369,7 +342,7 @@ func run() -> void:
 	host.call("_stop_listener")
 	assert(not (host.get("_server") as TCPServer).is_listening(),
 		"PWA port must be closed on board shutdown")
-	# Simulate F5/F6 starting and closing the native board without the heavy
+	# Simulate F5/F6 starting and closing the Godot board without the heavy
 	# 3D assets. The scene-scoped autoload must bind and release automatically.
 	var board := Node3D.new()
 	board.name = "SceneLifecycleFixture"

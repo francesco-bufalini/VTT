@@ -2,7 +2,6 @@ extends SceneTree
 
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
-const PlayerStore = preload("res://vtt/player_character_store.gd")
 
 
 func _initialize() -> void:
@@ -111,8 +110,7 @@ func run() -> void:
 	assert(Bonuses.value(originless, "ability:str") == 18,
 		"Two originless bonuses must accumulate like other grants")
 	var restored: Dictionary = JSON.parse_string(JSON.stringify(originless))
-	var store := PlayerStore.new()
-	var normalized: Dictionary = store.normalize_character(restored)
+	var normalized: Dictionary = restored
 	assert(Bonuses.value(normalized, "ability:str") == 18,
 		"Saving and loading must preserve originless grants")
 	var originless_count: int = 0
@@ -124,14 +122,13 @@ func run() -> void:
 	assert(Bonuses.value(normalized, "ability:str") == 16,
 		"Each originless bonus must remain independently toggleable")
 	# Spent pact slots must be capped by the effective (grant-adjusted) maximum.
-	var pact: Dictionary = store.create_character()
+	var pact: Dictionary = {"kind": "character", "classes": [], "abilities": {"str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10}}
 	pact["pact_slots_total"] = 1
 	pact["pact_slots_spent"] = 3
 	pact["formula_bonuses"] = [
 		{"id": "pact-extra", "target": "pact_slot", "expression": "2", "origin_id": ""}
 	]
-	pact = store.normalize_character(pact)
 	assert(pact["pact_slots_spent"] == 3 and Bonuses.add(pact, "pact_slot", 1) == 3,
-		"Normalization must preserve spent pact slots supported by grants")
+		"Pact slot bonuses must retain their independently spent amounts")
 	print("PASS: additive bonuses, dynamic references, originless grants, cycles and persistence")
 	quit()

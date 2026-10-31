@@ -1,144 +1,44 @@
 extends Node
-## Shared tactical boundary: UDP public reads and explicit framed TCP actions.
-## Desktop owns the board; mobile keeps sheets and cached map images only.
+## Tactical map boundary shared with the authenticated PWA HTTP host.
+## The old Android/iOS UDP polling and raw TCP action listener are retired.
+## No local TCP/UDP socket is opened here.
 signal data_changed(data: Dictionary)
 signal status_changed(message: String)
-signal action_completed(request_id: String, action: String, result: Dictionary)
 
-const PORT := 45457
-const MAGIC := "VTT_TACTICAL_READ_V1"
-const MAX_BYTES := 60000
-const POLL_MS := 1500
-const TIMEOUT_MS := 5000
-
-var port := PORT
 const ACTIONS := ["place_token", "claim_free_token", "snapshot", "move_token", "set_condition", "battle_action", "hit_attack", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack", "preview_spell", "spell_status", "set_appearance", "set_token_spell", "chat_send", "chat_poll"]
-const ACTION_MAX_BYTES := 2 * 1024 * 1024
-const ACTION_TIMEOUT_MS := 15000
-var _action_provider: Callable
-var _action_server := TCPServer.new()
-var _actions: Array[Dictionary] = []
-var _action_sequence := 0
+
 var _provider: Callable
-var _udp := PacketPeerUDP.new()
-var _session := ""
-var _host := ""
-var _serving := false
-var _last_poll := -POLL_MS
-var _last_received := 0
-var _request_id := 0
-var _pending_id := ""
-var _data: Dictionary = {}
+var _action_provider: Callable
 
 func source_name() -> String:
-	return "board" if _provider.is_valid() else ("tailscale" if not _host.is_empty() else "offline")
+	return "board" if _provider.is_valid() else "offline"
 
 func use_board(provider: Callable) -> void:
-	disconnect_remote()
 	_provider = provider
+	data_changed.emit(get_map_data())
 
 func serve(enabled: bool, session: String) -> Error:
-	_udp.close()
-	_serving = false
-	_close_actions()
-	_session = session.strip_edges()
-	if not enabled:
-		return OK
-	if not _provider.is_valid() or _session.is_empty():
+	# Compatibility for BoardSync.listen(): the PWA host owns the HTTP listener.
+	# No native client-facing UDP/TCP service is started.
+	if enabled and (not _provider.is_valid() or session.strip_edges().is_empty()):
 		return ERR_INVALID_PARAMETER
-	var error := _udp.bind(port)
-	_serving = error == OK
-	if _serving and _action_provider.is_valid():
-		var action_error := _action_server.listen(action_port())
-		if action_error != OK:
-			status_changed.emit("Comandi mobile non disponibili: " + error_string(action_error))
-	return error
-
-func connect_remote(host: String, session: String) -> Error:
-	disconnect_remote()
-	_provider = Callable()
-	if not host.is_valid_ip_address() or session.strip_edges().is_empty():
-		return ERR_INVALID_PARAMETER
-	var error := _udp.bind(0)
-	if error != OK:
-		return error
-	_host = host
-	_session = session.strip_edges()
-	_last_poll = -POLL_MS
-	_last_received = Time.get_ticks_msec()
-	status_changed.emit("Connessione alla partita…")
 	return OK
 
-func disconnect_remote() -> void:
-	_udp.close()
-	_host = ""
-	_session = ""
-	_serving = false
-	_pending_id = ""
-	_data.clear()
-	_close_actions()
-	data_changed.emit({})
-
 func get_map_data() -> Dictionary:
-	if _provider.is_valid():
-		var value: Variant = _provider.call()
-		return value.duplicate(true) if value is Dictionary else {}
-	return _data.duplicate(true)
+	if not _provider.is_valid():
+		return {}
+	var value: Variant = _provider.call()
+	return value.duplicate(true) if value is Dictionary else {}
 
-func _process(_delta: float) -> void:
-	_process_actions()
-	if not _serving and _host.is_empty():
-		return
-	for _i in range(mini(16, _udp.get_available_packet_count())):
-		var bytes := _udp.get_packet()
-		var sender := _udp.get_packet_ip()
-		var sender_port := _udp.get_packet_port()
-		if bytes.size() > MAX_BYTES:
-			continue
-		var value: Variant = JSON.parse_string(bytes.get_string_from_utf8())
-		if not value is Dictionary:
-			continue
-		_accept(value, sender, sender_port)
-	if not _host.is_empty():
-		var now := Time.get_ticks_msec()
-		if now - _last_received > TIMEOUT_MS:
-			if not _data.is_empty():
-				_data.clear()
-				data_changed.emit({})
-			status_changed.emit("Partita non raggiungibile")
-			_last_received = now
-		if now - _last_poll >= POLL_MS:
-			_last_poll = now
-			_request_id += 1
-			_pending_id = str(_request_id)
-			_send(_host, port, {"kind": "request", "request_id": _pending_id})
+func set_action_provider(provider: Callable) -> void:
+	_action_provider = provider
 
-func _send(host: String, destination_port: int, message: Dictionary) -> void:
-	message["magic"] = MAGIC
-	message["session"] = _session
-	var bytes := JSON.stringify(message).to_utf8_buffer()
-	if bytes.size() > MAX_BYTES:
-		return
-	_udp.set_dest_address(host, destination_port)
-	_udp.put_packet(bytes)
-
-func _accept(message: Dictionary, sender: String, sender_port: int) -> void:
-	if message.get("magic") != MAGIC or message.get("session") != _session:
-		return
-	var kind := String(message.get("kind", ""))
-	var request_id := String(message.get("request_id", ""))
-	if request_id.is_empty() or request_id.length() > 32:
-		return
-	if _serving and kind == "request":
-		_send(sender, sender_port, {"kind": "response", "request_id": request_id, "data": get_map_data()})
-	elif kind == "response" and sender == _host and sender_port == port and request_id == _pending_id:
-		var value: Variant = message.get("data")
-		if not valid_data(value):
-			return
-		_data = value.duplicate(true)
-		_last_received = Time.get_ticks_msec()
-		data_changed.emit(get_map_data())
-		status_changed.emit("Partita connessa")
+func execute_web_action(action: String, payload: Dictionary) -> Dictionary:
+	# Authentication and origin checks are enforced upstream in PwaHost.
+	if not _provider.is_valid() or not _action_provider.is_valid() or action not in ACTIONS:
+		return {"ok": false, "error": "Comando PWA non disponibile."}
+	var value: Variant = await _action_provider.call(action, payload)
+	return value if value is Dictionary else {"ok": false, "error": "Risposta non valida."}
 
 static func valid_data(value: Variant) -> bool:
 	if not value is Dictionary or value.get("version") != 1:
@@ -148,7 +48,7 @@ static func valid_data(value: Variant) -> bool:
 	if value.tokens.size() > 512:
 		return false
 	if value.has("revision"):
-		# JSON numbers arrive as floats on the Android/UDP path too.
+		# Revision numbers must survive transport as integer-valued JSON numbers.
 		var revision: Variant = value.revision
 		if not (revision is int or revision is float) or not is_finite(float(revision)) or float(revision) < 0 or float(revision) != floorf(float(revision)):
 			return false
@@ -192,161 +92,3 @@ static func valid_data(value: Variant) -> bool:
 			return false
 	return true
 
-
-func _exit_tree() -> void:
-	_close_actions()
-	_udp.close()
-
-# Small framed TCP requests share the tactical session. Images never go over UDP.
-func set_action_provider(provider: Callable) -> void:
-	_action_provider = provider
-
-func action_port() -> int:
-	return (_udp.get_local_port() if port == 0 else port) + 1
-
-func request_action(action: String, payload: Dictionary) -> String:
-	if _host.is_empty() or action not in ACTIONS or _actions.size() >= 4:
-		status_changed.emit("Collega prima un desktop nella sezione Partita.")
-		return ""
-	_action_sequence += 1
-	var id := str(Time.get_ticks_usec()) + "_" + str(_action_sequence)
-	var frame := _action_frame({"magic": MAGIC, "session": _session, "request_id": id,
-		"action": action, "payload": payload})
-	if frame.is_empty():
-		status_changed.emit("Richiesta troppo grande per la connessione mobile.")
-		return ""
-	var peer := StreamPeerTCP.new()
-	var error := peer.connect_to_host(_host, port + 1)
-	if error != OK:
-		status_changed.emit("Richiesta non avviata: " + error_string(error))
-		return ""
-	_actions.append({"peer": peer, "client": true, "id": id, "action": action,
-		"buffer": PackedByteArray(), "size": -1, "sent": 0,
-		"deadline": Time.get_ticks_msec() + ACTION_TIMEOUT_MS,
-		"out": frame})
-	return id
-
-static func _action_frame(message: Dictionary) -> PackedByteArray:
-	var payload := JSON.stringify(message).to_utf8_buffer()
-	if payload.size() > ACTION_MAX_BYTES:
-		return PackedByteArray()
-	var frame := PackedByteArray()
-	frame.resize(4)
-	frame.encode_u32(0, payload.size())
-	frame.append_array(payload)
-	return frame
-
-func _close_actions() -> void:
-	_action_server.stop()
-	var closing := _actions.duplicate()
-	_actions.clear()
-	for item: Dictionary in closing:
-		item.peer.disconnect_from_host()
-		if bool(item.client) and not bool(item.get("done", false)):
-			item.done = true
-			action_completed.emit(item.id, item.action, {"ok": false, "error": "Connessione alla partita chiusa."})
-
-func _process_actions() -> void:
-	while _action_server.is_connection_available():
-		var peer := _action_server.take_connection()
-		if _actions.size() >= 8:
-			peer.disconnect_from_host()
-			continue
-		_actions.append({"peer": peer, "client": false, "buffer": PackedByteArray(),
-			"size": -1, "sent": 0, "out": PackedByteArray(),
-			"deadline": Time.get_ticks_msec() + ACTION_TIMEOUT_MS})
-	var processing := _actions.duplicate()
-	processing.reverse()
-	for item: Dictionary in processing:
-		# Completion callbacks can close/reconnect and replace the live queue.
-		if not _actions.has(item):
-			continue
-		var peer: StreamPeerTCP = item.peer
-		peer.poll()
-		if Time.get_ticks_msec() > int(item.deadline) or peer.get_status() in [StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE]:
-			_actions.erase(item)
-			peer.disconnect_from_host()
-			if bool(item.client) and not bool(item.get("done", false)):
-				item.done = true
-				action_completed.emit(item.id, item.action, {"ok": false, "error": "Il desktop non ha risposto. Aggiorna anche VTT sul PC."})
-			continue
-		if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
-			continue
-		var output: PackedByteArray = item.out
-		if int(item.sent) < output.size():
-			var written := peer.put_partial_data(output.slice(item.sent, mini(int(item.sent) + 65536, output.size())))
-			if written[0] != OK:
-				item.deadline = 0
-				continue
-			item.sent = int(item.sent) + int(written[1])
-		if bool(item.get("replied", false)) and int(item.sent) == output.size():
-			# Client ACK keeps the socket alive until its whole image was read.
-			if peer.get_available_bytes() > 0:
-				peer.get_data(1)
-				item.deadline = 0
-			continue
-		var available := peer.get_available_bytes()
-		if available > 0:
-			var read := peer.get_data(mini(available, 131072))
-			if read[0] != OK:
-				item.deadline = 0
-				continue
-			var buffer: PackedByteArray = item.buffer
-			buffer.append_array(read[1])
-			item.buffer = buffer
-		var buffer: PackedByteArray = item.buffer
-		if int(item.size) == -1 and buffer.size() >= 4:
-			item.size = buffer.decode_u32(0)
-			buffer = buffer.slice(4)
-			item.buffer = buffer
-			if int(item.size) <= 0 or int(item.size) > ACTION_MAX_BYTES:
-				item.deadline = 0
-				continue
-		if int(item.size) > 0 and buffer.size() >= int(item.size) and not bool(item.get("busy", false)):
-			item.busy = true
-			var message: Variant = JSON.parse_string(buffer.slice(0, item.size).get_string_from_utf8())
-			if not message is Dictionary or message.get("magic") != MAGIC or message.get("session") != _session:
-				item.deadline = 0
-				continue
-			if bool(item.client):
-				if message.get("request_id") == item.id and message.get("result") is Dictionary:
-					item.done = true
-					peer.put_data(PackedByteArray([1]))
-					action_completed.emit(item.id, item.action, message.result)
-				item.deadline = 0
-			else:
-				_dispatch_action.call_deferred(item, message)
-
-## LAN TCP requests still require the legacy mobile UDP/TCP listener.
-## The mobile allowlist remains authoritative for both transports.
-func execute_local_action(action: String, payload: Dictionary) -> Dictionary:
-	if not _serving or not _action_provider.is_valid() or action not in ACTIONS:
-		return {"ok": false, "error": "Comando mobile non disponibile."}
-	var value: Variant = await _action_provider.call(action, payload)
-	return value if value is Dictionary else {"ok": false, "error": "Risposta non valida."}
-
-
-## HTTPS PWA requests are authenticated by PwaHost itself. They should still
-## work with an open local board even when the unrelated legacy listener is
-## disabled or its port cannot bind. Never allow actions on a remote map.
-func execute_web_action(action: String, payload: Dictionary) -> Dictionary:
-	if not _provider.is_valid() or not _action_provider.is_valid() or action not in ACTIONS:
-		return {"ok": false, "error": "Comando mobile non disponibile."}
-	var value: Variant = await _action_provider.call(action, payload)
-	return value if value is Dictionary else {"ok": false, "error": "Risposta non valida."}
-
-
-func _dispatch_action(item: Dictionary, message: Dictionary) -> void:
-	var result := {"ok": false, "error": "Il desktop non supporta questo comando. Aggiorna e riavvia anche il VTT sul computer."}
-	if message.get("action") is String and message.get("payload") is Dictionary:
-		result = await execute_local_action(String(message.action), message.payload)
-	if not _actions.has(item):
-		return
-	item.out = _action_frame({"magic": MAGIC, "session": _session,
-		"request_id": String(message.get("request_id", "")), "result": result})
-	if item.out.is_empty():
-		item.out = _action_frame({"magic": MAGIC, "session": _session,
-			"request_id": String(message.get("request_id", "")),
-			"result": {"ok": false, "error": "Risposta troppo grande per la connessione mobile."}})
-	item.sent = 0
-	item.replied = true

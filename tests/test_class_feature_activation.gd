@@ -1,13 +1,12 @@
 extends SceneTree
 const Runtime = preload("res://vtt/class_feature_activation.gd")
 const Meta = preload("res://vtt/spell_metamagic.gd")
-const Store = preload("res://vtt/player_character_store.gd")
-const Defenses = preload("res://vtt/creature_damage_defenses_tab.gd")
+const Fixtures = preload("res://tests/fixtures/creature_record.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 func _initialize() -> void:
 	call_deferred("run")
 func make_record(name: String, level: int, book: String = "PHB") -> Dictionary:
-	var record := Store.new().create_character()
+	var record := Fixtures.character()
 	record["classes"] = [{"name": name, "source": book, "level": level}]
 	record["rules_version"] = "2024" if book == "XPHB" else "2014"
 	record["abilities"] = {"str": 18, "dex": 20, "con": 16, "int": 14, "wis": 14, "cha": 18}
@@ -28,9 +27,7 @@ func run() -> void:
 	assert(Runtime.roll_advantage(raging, "save:str"))
 	assert(Runtime.roll_advantage(raging, "skill:athletics"))
 	assert(not Runtime.roll_advantage(raging, "save:dex"))
-	assert(Defenses.rank(raging, "slashing") == 1)
-	assert(Defenses.rank(raging, "fire") == 0)
-	assert(Store.new().normalize_character(raging).active_class_features.has("rage"))
+	assert(JSON.parse_string(JSON.stringify(raging)).active_class_features.has("rage"))
 	# The same typed effect must power the sheet state, the actual damage and
 	# the modifier breakdown. A status entry cannot quietly change the total.
 	var effects := Runtime.active_effects(raging)
@@ -158,7 +155,7 @@ func run() -> void:
 	var converted := Runtime.convert_slots(sorcerer, 2, true)
 	assert(converted.ok and int(converted.record.created_spell_slots[2]) == 1)
 	assert(int(converted.record.resource_tracker_spent.values()[0]) == 3)
-	var normalized := Store.new().normalize_character(converted.record)
+	var normalized: Dictionary = JSON.parse_string(JSON.stringify(converted.record))
 	assert(normalized.created_spell_slots[2] == 1)
 	var point_recovery := Runtime.convert_slots(converted.record, 1, false)
 	assert(point_recovery.ok and int(point_recovery.record.spell_slots_spent[1]) == 1)
@@ -179,24 +176,9 @@ func run() -> void:
 	assert(revised_twin.ok and revised_twin.spell.metamagic_effective_level == 4)
 	var extended := Meta.apply_to_spell({"duration": "Concentration, up to 1 minute"}, 1, {"names": ["Extended Spell"]}, false)
 	assert(extended.ok and extended.spell.requires_concentration and extended.spell.metamagic_duration_seconds == 120)
-	var archive = preload("res://vtt/creature_archive.gd").new()
-	archive.setup()
-	archive._storage.path = "user://class_feature_atomic_%d.json" % Time.get_ticks_usec()
-	var a := make_record("Paladin", 3)
-	a["kind"] = "character"
-	var b := make_record("Fighter", 3)
-	b["kind"] = "character"
-	assert(archive.save(a) == OK and archive.save(b) == OK)
-	var original := FileAccess.get_file_as_string(archive._storage.path)
-	var invalid := b.duplicate(true)
-	invalid["id"] = "missing_target"
-	assert(archive.update_owned_many([a, invalid]) == ERR_DOES_NOT_EXIST)
-	assert(FileAccess.get_file_as_string(archive._storage.path) == original)
-	var heal := Runtime.activate(a, "class_feature:lay_on_hands", {"amount": 5, "apply_to_self": false})
-	assert(heal.ok and heal.record.current_hp == a.current_hp)
-	b["current_hp"] = int(b.current_hp) + 5
-	assert(archive.update_owned_many([heal.record, b]) == OK)
-	assert(archive.list_owned().size() == 2)
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(archive._storage.path))
+	var paladin := make_record("Paladin", 3)
+	paladin["kind"] = "character"
+	var heal := Runtime.activate(paladin, "class_feature:lay_on_hands", {"amount": 5, "apply_to_self": false})
+	assert(heal.ok and heal.record.current_hp == paladin.current_hp)
 	print("PASS: class activations, independent payments, Rage editions, defenses, healing, normalization and metamagic plans")
 	quit()

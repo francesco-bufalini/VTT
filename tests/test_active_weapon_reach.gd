@@ -2,8 +2,6 @@ extends SceneTree
 
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
-const PlayerStore = preload("res://vtt/player_character_store.gd")
-const MonsterStore = preload("res://vtt/master_creature_store.gd")
 
 
 func _initialize() -> void:
@@ -46,9 +44,6 @@ func _run() -> void:
 	assert(Attacks.active_range(record) == 10.0, "Map reach follows active weapon")
 	record["attack_overrides"] = {"item:test:polearm": {"range_feet": 15}}
 	assert(Attacks.active_range(record) == 15.0, "Per-attack reach overrides are respected")
-	var stored_player: Dictionary = PlayerStore.new().normalize_character(record)
-	assert(stored_player.get("equipped_attack_id", "") == "item:test:polearm",
-		"Character store must preserve selected weapon")
 	assert(Attacks.damage_expression(record, Attacks.active_attack(record)) == "1d8+3")
 	equipped[1]["equipped_slots"] = []
 	record["inventory"] = equipped
@@ -68,9 +63,6 @@ func _run() -> void:
 	assert(Attacks.active_range(monster) == 5.0)
 	monster["equipped_attack_id"] = "monster:action:1"
 	assert(Attacks.active_range(monster) == 15.0, "Monster may select natural attack reach")
-	var stored_monster: Dictionary = MonsterStore.new().normalize_creature(monster)
-	assert(stored_monster.get("equipped_attack_id", "") == "monster:action:1",
-		"Monster store must preserve selected natural attack")
 	var tail: Dictionary = Attacks.active_attack(monster)
 	assert(Attacks.damage_expression(monster, tail) == "2d6+4")
 	monster["formula_bonuses"] = [{"id": "tail-damage", "target": "attack_damage:monster:action:1", "expression": "2", "origin_id": ""}]

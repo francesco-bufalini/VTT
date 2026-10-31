@@ -112,20 +112,6 @@ func _build_toolbar() -> void:
 		["Gestisci item / associa token…", ITEM_MANAGE]
 	], _on_master))
 
-	# Direct action: one click opens the creature archive, no submenu.
-	var creatures_button := Button.new()
-	creatures_button.text = "Creature"
-	creatures_button.focus_mode = Control.FOCUS_NONE
-	creatures_button.custom_minimum_size = Vector2(88, 34)
-	creatures_button.tooltip_text = "Apri direttamente la scheda delle creature"
-	creatures_button.pressed.connect(
-		func() -> void:
-			var area: Node = board_root.get_node_or_null("CreatureArea")
-			if area != null:
-				area.call("show_panel")
-	)
-	row.add_child(creatures_button)
-
 	row.add_child(_menu("Compendio", [
 		["Apri Compendio", COMPENDIUM_OPEN]
 	], _on_compendium))
