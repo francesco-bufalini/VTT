@@ -748,7 +748,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<span class="play-action-tracker-name">'+esc(tracker.name)+'</span>'+
     '<strong class="play-action-tracker-count">'+left+'/'+esc(tracker.max)+'</strong></span>';
   };
-  const bonusRows=trackerId=>rollBonuses.filter(row=>row.tracker_id===trackerId).map(row=>{
+  const bonusIsDamage=row=>(Array.isArray(row.targets)?row.targets:[row.target]).some(target=>
+   /^(?:attack_damage:|action_damage:|damage_roll$|spell_damage$)/.test(String(target||'')));
+  const bonusRows=(trackerId,group='roll')=>rollBonuses.filter(row=>
+   row.tracker_id===trackerId&&(bonusIsDamage(row)?'damage':'roll')===group).map(row=>{
    const value=Object.hasOwn(row,'flat_bonus')?String(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice;
    const originId=row.origin_id||'';
    const content='<span><strong>'+esc(value+' · '+(row.name||'Bonus'))+'</strong><small>'+esc(trackerRollBonusTargets(row,d))+'</small></span>';
@@ -908,7 +911,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const actionsMarkup=[
    actionGroup('abilities','Capacità','spark',abilityButtons('all',powerAbilities)+linkedAbilities.join('')+(actionGroups.abilities||'')),
    actionGroup('attacks','Azioni di attacco','weapon',(actionGroups.attacks||'')+abilityButtons('all',powerAttacks)),
-   actionGroup('roll-bonuses','Bonus ai tiri','dice',(d.trackers||[]).filter(t=>!t.disabled).map(t=>bonusRows(t.id)).join('')),
+   actionGroup('roll-bonuses','Bonus ai tiri','dice',(d.trackers||[]).filter(t=>!t.disabled).map(t=>bonusRows(t.id,'roll')).join('')),
+   actionGroup('damage-bonuses','Bonus ai danni','dice',(d.trackers||[]).filter(t=>!t.disabled).map(t=>bonusRows(t.id,'damage')).join('')),
    actionGroup('other','Altre azioni','hand',actionGroups.other||'')
   ].join('');
   // Keep buttons independent from the summary to preserve their actions.
