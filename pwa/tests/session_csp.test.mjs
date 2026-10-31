@@ -46,3 +46,15 @@ test("Partita pinch gestures stay inside a high-DPI canvas and never zoom the ap
  assert.match(viewer,/devicePixelRatio/);
  assert.ok(!ui.includes('id="session-map-image"'));
 });
+
+test("the embedded 2014 rules reference has a narrow frame policy and offline escape",()=>{
+ const ui=read("../ui.js");
+ const host=read("../../network/pwa_host.gd");
+ assert.ok(host.includes("frame-src https://2014.5e.tools;"));
+ assert.ok(host.includes("frame-ancestors 'none'"),"Other sites cannot embed the PWA itself");
+ assert.ok(host.includes("script-src 'self'"),"No external script privilege is added to our app");
+ assert.ok(ui.includes('src="https://2014.5e.tools/"'));
+ assert.ok(ui.includes('data-act="catalog-source-local"'));
+ assert.ok(ui.includes('referrerpolicy="no-referrer"'));
+ assert.ok(ui.includes('sandbox="allow-same-origin allow-scripts'));
+});
