@@ -640,8 +640,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
    act==='battle-use-ability'?' data-ability-id="'+esc(item.id)+'"':
    act==='battle-action-activate'?' data-action-id="'+esc(item.id)+'"':
    act==='combat-action'?' data-mode="'+esc(item.action_id)+'"':
-   act==='sheet-roll'?' data-target="'+esc(rolls[0].target)+'" data-label="'+esc(rolls[0].label)+'"':'';
-  const control=battleActionUseBox({act,attrs,tracker,cost:Number(item.cost)||0,
+   act==='sheet-roll'?' data-action-roll-target="'+esc(rolls[0].target)+'" data-action-roll-label="'+esc(rolls[0].label)+'"':'';
+  const control=battleActionUseBox({act:act==='sheet-roll'?'battle-action-roll':act,attrs,tracker,cost:Number(item.cost)||0,
    trackerName:item.tracker||'',disabled:item.available===false,name:actionName});
   return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-other-action'+
    (item.available===false?' play-battle-attack-unavailable':'')+
