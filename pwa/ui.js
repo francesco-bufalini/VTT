@@ -7433,6 +7433,13 @@ async function handleAction(target){
   }
   // Manual action grants share the same tracker counter as native powers.
   // Recompute the projected action before spending; never trust DOM costs.
+  if(act==='battle-action-roll'){
+    const rollTarget=String(target.dataset.actionRollTarget||'');
+    const rollLabel=String(target.dataset.actionRollLabel||'Prova');
+    if(!rollTarget)throw Error('Tiro non disponibile.');
+    await handleAction({dataset:{act:'sheet-roll',target:rollTarget,label:rollLabel}});
+    return;
+  }
   if(act==='battle-action-activate'){
     const creature=state.editor?.read();if(!creature)throw Error('Creatura non disponibile.');
     const calculated=await computeLocalData(creature);
