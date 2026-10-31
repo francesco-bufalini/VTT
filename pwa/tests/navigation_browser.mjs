@@ -255,7 +255,7 @@ try{
  assert(await page.locator('#catalog-search').isVisible());
  assert(await page.locator('#catalog-category').isVisible());
  assert(await page.locator('.catalog-entry').first().isVisible(),'Entries are visible before typing a search');
- const toolbar=await page.locator('#catalog-search,#catalog-category').evaluateAll(nodes=>
+ const toolbar=await page.locator('.catalog-search-wrap,#catalog-category').evaluateAll(nodes=>
   nodes.map(n=>({top:n.getBoundingClientRect().top,left:n.getBoundingClientRect().left})));
  assert(Math.abs(toolbar[0].top-toolbar[1].top)<6&&toolbar[1].left>toolbar[0].left,
   'Category selector sits next to the search');
