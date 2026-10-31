@@ -68,7 +68,8 @@ async function archiveRecoversFromOneBadSheet(){
   assert.equal(await f.page.locator('#place-creature option[value="legacy_missing_body"]').count(),0);
   assert.equal(await f.page.locator('#place-creature option[value="'+ids.unnamed+'"]').count(),0);
   await f.page.locator('[data-session-creature-errors]').waitFor();
-  await f.page.locator('[data-session-pane="table"]').click();
+  await f.page.locator('.session-connection-state', {hasText:'Partita connessa'}).waitFor();
+  assert(await f.page.locator('.session-map-panel').isVisible(),'Map is shown without selecting a pane');
   await f.page.locator('[data-act="open-place-token"]').click();
   await f.page.locator('#place-creature').selectOption(ids.good);
   await f.page.locator('[data-act="place-creature"]').click();
