@@ -82,3 +82,44 @@ Ogni lotto deve migrare la proiezione runtime e la validazione,
 evitando di concedere nuove competenze, spell o altri benefici già
 strutturati in 5eTools. Le modifiche manuali degli utenti rimangono
 nella scheda e non vengono riscritte da questa migrazione.
+
+
+## Classi e sottoclassi: secondo lotto — risorse e azioni composte
+
+Le nuove dichiarazioni sono raggruppate **solo per meccanica**, non per classe:
+
+| Tipo | Voci di classi/sottoclassi | Origine legacy |
+| --- | ---: | --- |
+| [`action.json`](action.json) | 65 ulteriori (117 totali di classe) | `feature_timing_recovery_rules.actions` |
+| [`activation.json`](activation.json) | 31 | `feature_timing_recovery_rules.contextual_actions` |
+| [`resource_recovery.json`](resource_recovery.json) | 17 | `feature_timing_recovery_rules.recoveries` |
+| [`attack_count.json`](attack_count.json) | 26 | `feature_timing_recovery_rules.attack_count_grants` |
+| [`action_sequence.json`](action_sequence.json) | 12 | `feature_timing_recovery_rules.attack_actions` |
+| [`resource.json`](resource.json) | 90 | `class_resource_overrides.classes[].resources` |
+
+`pwa/class_benefit_progression.js` ricompone solo **in memoria** le strutture
+attualmente usate dall'app, rispettando i nomi dei tracker, le priorità,
+le sequenze OR e le condizioni per classe/sottoclasse. Il nuovo `resource.json`
+integra il catalogo della classe; i valori dei contatori derivati dalle
+**tabelle strutturate di 5eTools** restano prioritari nel calcolo di
+`resourceTrackers()`. I dettagli ridondanti delle tabelle sono ancora presenti
+nei supplementi legacy per compatibilità, ma non devono essere aggiunti come
+nuove concessioni se già forniti da 5eTools.
+
+L'`action.json` comune distingue le 52 precedenti regole di override dalle
+65 attivazioni temporizzate mediante il campo transitorio `projection`.
+È una distinzione esclusivamente dell'adattatore di migrazione, non una
+nuova tipologia di beneficio: il file resta **uno per tipo**.
+
+I vecchi JSON rimangono esclusivamente per compatibilità con host precedenti,
+test di regressione e sistemi non ancora migrati. Non usarli per nuovi
+benefici. I dati globali non collegati a un privilegio, incluse le regole
+generali di riposo, **non** diventano concessioni di classe.
+
+Verifica: `pwa/tests/class_benefit_progression_migration.test.mjs` confronta
+**tutte** le 241 nuove voci con le proiezioni legacy originali e controlla
+i riferimenti alle sottoclassi e il fallback degli host vecchi.
+
+**Ancora da migrare:** stati, concessioni di oggetti/incantesimi, meccaniche
+speciali e scelte dei privilegi. Le aggiunte manuali dei giocatori rimangono
+memorizzate nelle rispettive schede, non nel catalogo condiviso.

@@ -114,12 +114,20 @@ def main():
         check(benefit_type + ".schema.json", data, path.name)
 
     # Class and subclass rules are added to the same type catalogs as species.
-    for benefit_type, expected in (("action", 52), ("roll_bonus", 15)):
+    migrated_counts = {
+        "action": 117, "roll_bonus": 15, "activation": 31,
+        "resource_recovery": 17, "attack_count": 26,
+        "action_sequence": 12, "resource": 90,
+    }
+    for benefit_type, expected in migrated_counts.items():
         data = load(live / f"{benefit_type}.json")
         owned = [entry for entry in data["entries"] if
                  entry["granted_by"]["ref"]["category"] in ("class_feature", "subclass_feature")]
         assert len(owned) == expected, f"{benefit_type}: missing migrated class/subclass entries"
         assert all(entry["granted_by"]["ref"].get("class_source") for entry in owned)
+    action_rules = load(live / "action.json")["entries"]
+    assert len([entry for entry in action_rules if entry.get("projection") == "timing_action"]) == 65
+    assert len([entry for entry in action_rules if entry.get("projection") != "timing_action"]) == 52
 
     legacy = load(SCHEMAS / "legacy_sources.json")
     for source in legacy["sources"]:
