@@ -146,37 +146,33 @@ Un passo `{ "one_of": [...] }` concede **esattamente una** delle alternative. Og
 
 ### Azioni leggendarie
 
-Il gruppo viene proiettato dalle voci `stat_block.legendary` senza elencare i nomi dei mostri nel motore. Il costo effettivo dipende dalla scelta, ad esempio:
+Le azioni leggendarie **non sono un nuovo tipo di azione consumabile**: si
+rappresentano come **azioni gratuite** (`time: "free"`) con un tracker
+condiviso `legendary_actions`. Ogni alternativa ha il proprio costo, recuperato
+dall'azione originale del mostro, e non deve generare un'azione fittizia.
+
+Per esempio, per un mostro che possiede le opzioni originali «Detect» e
+«Wing Attack», la prima concede direttamente la **prova di Percezione**;
+non viene creata una distinta capacità «Detect» con un altro costo:
 
 ```json
 {
-  "time": "legendary",
+  "id": "monster:legendary:choices",
+  "time": "free",
   "tracker_id": "legendary_actions",
   "steps": [
     {
       "one_of": [
         {
-          "id": "detect",
-          "selector": {
-            "kind": "check",
-            "target": "skill:perception"
-          },
+          "id": "monster:legendary:0",
+          "label": "Prova di Percezione",
+          "selector": {"kind": "check", "target": "skill:perception"},
           "tracker_cost": 1
         },
         {
-          "id": "tail",
-          "selector": {
-            "kind": "attack",
-            "name": "Tail"
-          },
-          "tracker_cost": 1
-        },
-        {
-          "id": "wing",
-          "selector": {
-            "kind": "ability",
-            "name": "Wing Attack"
-          },
+          "id": "monster:legendary:1",
+          "label": "Wing Attack (Costs 2 Actions)",
+          "selector": {"kind": "ability", "id": "monster:legendary:1"},
           "tracker_cost": 2
         }
       ]
@@ -185,4 +181,21 @@ Il gruppo viene proiettato dalle voci `stat_block.legendary` senza elencare i no
 }
 ```
 
-Il motore valida la scelta prima di consumare la risorsa. Le prove usano il popup d20, i singoli attacchi la tabella Attacchi e le azioni generali i rispettivi handler. `repeat: "per_target"` indica che i tiri si ripetono per ogni bersaglio lecito, senza fissare il numero o tirare automaticamente. I requisiti situazionali rimangono documentati nel tratto fino alla disponibilità di predicati verificabili.
+Le opzioni sono proiettate dai dati `stat_block.legendary`. Un'eventuale
+proprietà strutturata `action_selector` (o `vtt_action_selector`) sulla voce
+di bestiario prevale sull'interpretazione di una semplice prova citata nel
+testo. I target `skill:...` e `ability_check:...` devono essere prove
+effettivamente definite; gli ID di attacchi e capacità devono risolvere a
+operazioni già esistenti. Una scelta non risolvibile non può consumare
+risorse né essere attivata dalla GUI.
+
+La capacità «Wing Attack», già esistente nei dati del mostro, usa lo
+**stesso handler** per convalidare e consumare i suoi 2 utilizzi: non
+si spende prima il tracker della lista per poi spenderlo di nuovo nella
+capacità. Le prove aprono invece direttamente il popup d20.
+
+`repeat: "per_target"` indica un'azione ripetibile per bersaglio valido,
+senza fissarne un numero arbitrario. Le condizioni situazionali, ad
+esempio «solo alla fine del turno di un'altra creatura», restano
+esplicitate nella descrizione del privilegio fino alla disponibilità
+di predicati strutturati.
