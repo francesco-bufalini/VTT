@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "category": "backgrounds",
+  "source": "PHB",
+  "entries": [
+    {
+      "ref": {
+        "name": "Acolyte",
+        "source": "PHB"
+      },
+      "benefits": [
+        {
+          "type": "proficiency",
+          "proficiencies": [
+            {
+              "kind": "skill",
+              "id": "insight"
+            },
+            {
+              "kind": "skill",
+              "id": "religion"
+            }
+          ]
+        },
+        {
+          "type": "language",
+          "count": 2,
+          "selection": {
+            "id": "acolyte:languages",
+            "kind": "language",
+            "source": {
+              "type": "inline"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
