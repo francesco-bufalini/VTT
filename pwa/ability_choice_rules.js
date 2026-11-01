@@ -7,14 +7,27 @@ export function allocationVariants(definitions=[]){
  return arr(definitions).flatMap(raw=>{
   if(!raw||typeof raw!=='object')return [];
   const fields=arr(raw.parts).length?raw.parts:[raw];
-  const parts=fields.map(field=>{
-   const choose=field.choose;
-   if(!choose||!Array.isArray(choose.from))return null;
+  // 5eTools backgrounds 2024 use choose.weighted: +2/+1 OR +1/+1/+1
+  // among three abilities. Keep each weight as an independent, distinct pick.
+  const parts=fields.flatMap(field=>{
+   const choose=field?.choose;
+   const weighted=choose?.weighted;
+   if(weighted){
+    if(!Array.isArray(weighted.from)||!Array.isArray(weighted.weights))return [null];
+    const options=[...new Set(weighted.from.map(norm).filter(s=>STATS.includes(s)))];
+    if(weighted.weights.length<1||weighted.weights.length>options.length)return [null];
+    return weighted.weights.map(rawAmount=>{
+     const amount=Number(rawAmount);
+     return options.length&&Number.isInteger(amount)&&amount>0&&amount<=20?
+      {options,count:1,amount}:null;
+    });
+   }
+   if(!choose||!Array.isArray(choose.from))return [null];
    const options=[...new Set(choose.from.map(norm).filter(s=>STATS.includes(s)))];
    const count=Number(choose.count??1),amount=Number(choose.amount??1);
-   return options.length&&Number.isInteger(count)&&count>0&&count<=6&&
+   return [options.length&&Number.isInteger(count)&&count>0&&count<=6&&
       Number.isInteger(amount)&&amount>0&&amount<=20&&count<=options.length?
-      {options,count,amount}:null;
+      {options,count,amount}:null];
   });
   return parts.every(Boolean)?[{parts,distinct:raw.distinct!==false}]:[];
  });
