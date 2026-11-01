@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
     paths:
+      - 'scripts/generate_proficiency_grants.py'
+      - 'scripts/generate_structured_ability_grants.py'
+      - 'scripts/test_background_5etools_generators.py'
+      - 'vtt/data/proficiency_grants_5etools.json'
+      - 'vtt/data/structured_ability_grants_5etools.json'
       - 'vtt/enrichment/authoring/**'
       - 'vtt/enrichment/benefits/**'
       - 'assets/spell_area_geometry.json'
@@ -13,6 +18,11 @@ on:
       - '.github/workflows/benefit-type-enrichment-schemas.yml'
   pull_request:
     paths:
+      - 'scripts/generate_proficiency_grants.py'
+      - 'scripts/generate_structured_ability_grants.py'
+      - 'scripts/test_background_5etools_generators.py'
+      - 'vtt/data/proficiency_grants_5etools.json'
+      - 'vtt/data/structured_ability_grants_5etools.json'
       - 'vtt/enrichment/authoring/**'
       - 'vtt/enrichment/benefits/**'
       - 'assets/spell_area_geometry.json'
@@ -38,5 +48,7 @@ jobs:
         run: python scripts/validate_enrichment_authoring_schemas.py
       - name: Test background audit and catalog contract
         run: python -m unittest discover -s scripts -p test_background_benefit_migration.py
+      - name: Check background generators
+        run: python -m unittest discover -s scripts -p test_background_5etools_generators.py
       - name: Audit bundled background indexes
         run: python scripts/audit_background_benefits.py --output /tmp/vtt-background-index-audit.json
