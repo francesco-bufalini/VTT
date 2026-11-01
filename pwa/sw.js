@@ -86,6 +86,7 @@ const SHELL = [
   "/item_detail_facts.js",
   "/documents.js",
   "/spell_selection.js",
+  "/species_trait_text.js",
   "/species_powers.js",
   "/feature_rolls.js",
   "/zero_hp_responses.js",

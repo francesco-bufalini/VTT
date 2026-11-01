@@ -79,6 +79,7 @@ const FILES := {
 	"/attack_hit_effects.js": ["res://pwa/attack_hit_effects.js", "text/javascript; charset=utf-8"],
 	"/catalog/feature_item_grants.json": ["res://pwa/catalog/feature_item_grants.json", "application/json; charset=utf-8"],
 	"/sense_rules.js": ["res://pwa/sense_rules.js", "text/javascript; charset=utf-8"],
+	"/species_trait_text.js": ["res://pwa/species_trait_text.js", "text/javascript; charset=utf-8"],
 	"/species_powers.js": ["res://pwa/species_powers.js", "text/javascript; charset=utf-8"],
 	"/feature_rolls.js": ["res://pwa/feature_rolls.js", "text/javascript; charset=utf-8"],
 	"/zero_hp_responses.js": ["res://pwa/zero_hp_responses.js", "text/javascript; charset=utf-8"],
