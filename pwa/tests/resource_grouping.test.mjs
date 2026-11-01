@@ -236,7 +236,8 @@ test('trait operation identity deduplicates translated descriptive actions and a
   assert(group);
   assert(!group.textContent.includes('Congegni magici'));
   const attack=app.querySelector('[data-ability-id="activated:trait-attack:class_feature:lightning_launcher"]');
-  assert.match(attack.textContent,/Azione di attacco/);
+  assert.match(attack.textContent,/Lightning Launcher.*Azione/);
+  assert(!attack.textContent.includes('Azione di attacco'));
  });
 });
 test('health presents temporary HP alongside current HP and active defenses below the bar',()=>{
