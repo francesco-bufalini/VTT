@@ -22,9 +22,9 @@ try{
  const capabilities=page.locator('#trait-benefits-dialog .trait-capability');
  await capabilities.first().waitFor();
  assert.equal(await capabilities.count(),2,'both armor models remain inspectable in the granting trait');
- assert.equal(await capabilities.filter({hasText:'Modello armatura · Guardiano'}).count(),1);
- assert.match(await capabilities.filter({hasText:'Modello armatura · Infiltratore'}).innerText(),/Lightning Launcher/);
- assert.match(await capabilities.filter({hasText:'Modello armatura · Infiltratore'}).innerText(),/Azione gratuita|Nessun costo/);
+ assert.equal(await capabilities.filter({hasText:'Armor Model · Guardian'}).count(),1);
+ assert.match(await capabilities.filter({hasText:'Armor Model · Infiltrator'}).innerText(),/Lightning Launcher/);
+ assert.match(await capabilities.filter({hasText:'Armor Model · Infiltrator'}).innerText(),/Azione gratuita|Nessun costo/);
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  await sheet('battle');
  // A selected model must expose its actual attack in the Actions list.
@@ -43,7 +43,7 @@ try{
   assert.equal(await page.locator('#sheet-play-view [data-resource-tracker="feature:armor_model:activation"]').count(),0);
  // Armor Models use the same option-benefit card and application dialog.
  await sheet('magic');
- const modelCard=page.locator('#sheet-play-view .play-infusion-card').filter({has:page.getByRole('heading',{name:'Modelli di armatura',exact:true})});
+ const modelCard=page.locator('#sheet-play-view .play-infusion-card').filter({has:page.getByRole('heading',{name:'Armor Model',exact:true})});
  assert.equal(await modelCard.locator('[data-act="benefit-option-open"]').count(),2);
  const guardian=modelCard.locator('[data-power-option-id="armor_model:guardian"]');
  const infiltrator=modelCard.locator('[data-power-option-id="armor_model:infiltrator"]');
