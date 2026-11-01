@@ -43,7 +43,7 @@ test('typed supplement tracks feature, class source, level and subclass without 
  assert.equal(activation(newDruid)[0].time,'bonus');
  assert.equal(activation({...basic,level:1}).length,0);
  const out=calculateSheet(moon,catalogs),choices=actionEntries(moon,out);
- assert(choices.some(a=>a.name==='Wild Shape'&&a.time==='bonus'&&a.tracker==='Wild Shape'));
+ assert(choices.some(a=>a.name==='Combat Wild Shape'&&a.time==='bonus'&&a.tracker==='Wild Shape'));
  assert(!choices.some(a=>a.name==='Wild Shape'&&a.time==='action'));
  const cunning=calculateSheet(creature('Rogue','2014',2),catalogs);
  assert.equal(cunning.attack_actions.filter(row=>row.feature_name==='Cunning Action').length,1);
