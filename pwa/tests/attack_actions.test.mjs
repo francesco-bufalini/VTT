@@ -91,11 +91,11 @@ test('a typed attack action is a battle action rather than a synthetic attack in
  const grants=attackActionGrants(record,features,[ki],rules);
  const calculated={features,trackers:[ki],attacks:[{id:'unarmed',name:'Colpo senz’armi',melee:true,hit:5}],attack_actions:grants};
  const entries=actionEntries(record,calculated);
- assert(entries.some(row=>row.name==='Raffica di colpi'&&row.type==='Azione di attacco'));
+ assert(entries.some(row=>row.name==='Flurry of Blows'&&row.type==='Azione di attacco'));
  const panels=battleActionPanels(record,calculated);
- assert.match(panels.others,/Raffica di colpi/);
+ assert.match(panels.others,/Flurry of Blows/);
  assert.match(panels.others,/data-attack-action-id="attack_action:flurry-of-blows-2014"/);
- assert.doesNotMatch(panels.attacks,/Raffica di colpi/);
+ assert.doesNotMatch(panels.attacks,/Flurry of Blows/);
 });
 
 test('Cunning Action grants exactly one of Dash, Disengage or Hide as a bonus action',()=>{
