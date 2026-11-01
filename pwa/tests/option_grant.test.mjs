@@ -110,3 +110,30 @@ test('a homebrew trait can grant fixed passive choices with no selection stages'
  const without=projectSelectionBenefits(record,{powerSelections:catalog},[]);
  assert.equal(without.selection_traits.length,0,'Lost source feature removes the derived trait');
 });
+
+test('spell option grant selects and casts through a separate canonical grant origin',()=>{
+ const catalog=customCatalog({learned:{limit:2},prepared:{limit:1}});
+ const rule=catalog.optionGrants.entries[0].benefit.option_grant;
+ rule.option_kind='spell';
+ rule.source={type:'inline',options:[{id:'spell:shield|phb',name:'Shield',level:1}]};
+ rule.payment={tracker:{id:'arcane_charge',cost:1,cast_level:3},slot:{min_level:2}};
+ let record=basis();
+ let model=powerSelectionModels(record,context,catalog)[0];
+ assert.equal(model.option_kind,'spell');
+ assert.deepEqual(Object.keys(model.layers),['learned','prepared']);
+ record={...record,...powerSelectionPatch(record,context,catalog,model.id,'learned','spell:shield|phb')};
+ let unprepared=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
+ assert.equal(unprepared.origin_spell_grants.length,0);
+ record={...record,...powerSelectionPatch(record,context,catalog,model.id,'prepared','spell:shield|phb')};
+ let projection=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
+ const grant=projection.origin_spell_grants[0];
+ assert.equal(grant.spell_id,'spell:shield|phb');
+ assert.equal(grant.payment_mode,'tracker');
+ assert.equal(grant.slot_alternative,true);
+ assert.equal(grant.tracker_cast_level,3);
+ assert.equal(grant.slot_min_level,2);
+ assert.equal(grant.option_grant_id,model.id);
+ record={...record,...powerSelectionPatch(record,context,catalog,model.id,'prepared','spell:shield|phb')};
+ projection=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
+ assert.equal(projection.origin_spell_grants.length,0,'Removing preparation removes spell grant');
+});

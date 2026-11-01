@@ -3256,7 +3256,8 @@ function learningPickerOptionGroups(options,renderRow,levelOf,minLevel=0) {
 }
 function optionBenefitPanels(c,calculated){
  return (calculated.power_selections||[]).filter(model=>
-   ['option_selection','option_grant'].includes(model.benefit_type)&&model.option_kind!=='spell').map(model=>{
+   ['option_selection','option_grant'].includes(model.benefit_type)&&
+   (model.option_kind!=='spell'||model.source?.type!=='spell_catalog')).map(model=>{
   const primary=model.layers.learned||model.layers.prepared;
   const byId=new Map(model.options.map(option=>[option.id,option]));
   const entries=primary?primary.selected:model.fixed?.length?model.fixed:model.options.map(option=>option.id);
@@ -3268,13 +3269,16 @@ function optionBenefitPanels(c,calculated){
    '<button type="button" class="btn small magic-selection-button" data-act="power-selection-open" data-power-selection-id="'+esc(model.id)+'" data-power-stage="'+stage+'">'+
    (stage==='learned'?'Impara':'Prepara')+'</button>').join('');
   const castingId='selection:'+model.id;
-  return panel(model.title,'<div class="benefit-option-list" data-selection-id="'+esc(model.id)+'">'+
+  return panel(model.title,'<div class="benefit-option-list" data-selection-id="'+esc(model.id)+'" data-option-kind="'+esc(model.option_kind||'capability')+'">'+
    (model.ability?castingStatisticsToggle(c,castingId,false):'')+
    (model.ability&&castingStatisticsVisible(c,castingId,false)?castingStatistics(c,castingId,model.ability):'')+
    '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(selection=>{
     const id=selectedPowerId(selection),option=byId.get(id);if(!option)return '';
+    const cast=model.option_kind==='spell';
+    const casting=cast?'data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc('option_grant:'+model.id+':'+(option.spell_id||option.id))+'"':
+      'data-act="benefit-option-open" data-power-selection-id="'+esc(model.id)+'" data-power-option-id="'+esc(id)+'"';
     return '<div class="magic-spell-row" data-power-option-id="'+esc(id)+'" data-option-active="'+
-     active.some(row=>selectedPowerId(row)===id)+'"><button type="button" class="magic-spell-open" data-act="benefit-option-open" data-power-selection-id="'+esc(model.id)+'" data-power-option-id="'+esc(id)+'">'+esc(selectedPowerLabel(option,selection))+'</button></div>';
+     (cast||active.some(row=>selectedPowerId(row)===id))+'"><button type="button" class="magic-spell-open" '+casting+'>'+esc(selectedPowerLabel(option,selection))+'</button></div>';
    }).join('')+'</div>');
  }).join('');
 }
@@ -4055,6 +4059,7 @@ function originSpellSections(c,calculated,renderRow){
  // payment methods or share a tracker with a different origin.
  const origins=new Map();
  for(const grant of calculated.origin_spells||[]){
+   if(grant.option_grant_id)continue; // It owns a dedicated option-grant card.
    const origin=String(grant.origin_id||'other');
    if(!origins.has(origin))origins.set(origin,{
      name:grant.origin_name||'Origine non specificata',
@@ -7952,10 +7957,10 @@ async function handleAction(target){
         }
         if(mode==='slot'||assigned?.slot_alternative===true){
           for(const slot of calculated.spell_slots||[]){
-            if(Number(slot.level)>=level&&Number(slot.total)-Number(slot.spent)>0)
+            if(Number(slot.level)>=Math.max(level,Number(assigned?.slot_min_level)||0)&&Number(slot.total)-Number(slot.spent)>0)
               options.push(['slot:'+slot.level,'Slot '+slot.level+'° · '+(slot.total-slot.spent)+' disponibili']);
           }
-          if(calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
+          if(calculated.pact_slots?.level>=Math.max(level,Number(assigned?.slot_min_level)||0)&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
             options.push(['pact:'+calculated.pact_slots.level,'Patto · '+calculated.pact_slots.level+'° livello']);
         }
       }

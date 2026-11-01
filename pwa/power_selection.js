@@ -50,7 +50,9 @@ export function normalizeSelectionRecord(record={}){return record;}
 export function powerSelectionModels(raw={},calculated={},catalog={}){
  const record=normalizeSelectionRecord(raw,catalog),models=[];
  for(const rule of definitions(catalog)){
-  if(rule.option_kind==='spell')continue; // Spells are cast, not applied as capabilities.
+  if(rule.option_kind==='spell'&&rule.source?.type==='spell_catalog')continue;
+  // Class progression continues through the existing casting engine; list
+  // and fixed spell grants use the same selection phases as capabilities.
   // Source-owned grants can originate from any trait, not only a character class.
   const classOwner=Boolean(rule.owner?.class_name);
   const owner=classOwner?member(record,rule.owner):{level:record.level||1};
@@ -249,6 +251,45 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
  const optional=rows(record.optional_features_catalog).filter(row=>!row.selection_origin_id);const states={...record.trait_state_selection};
  const grants=Object.fromEntries(Object.values(EFFECT_FIELDS).map(field=>[field,rows(record[field]).filter(row=>!row.selection_origin_id)]));
  const selectionTraits=[];
+ // Spell options do not have an application stage. The last declared
+ // selection phase determines which spells are castable through this grant.
+ // Each grant keeps an independent origin even for the same canonical spell.
+ for(const model of models.filter(row=>row.option_kind==='spell')){
+  const phase=model.layers.prepared||model.layers.learned;
+  const picked=rows(phase?.selected||model.fixed);
+  const visible=new Set(picked.map(identity));
+  if(model.layers.prepared&&model.layers.learned){
+   for(const id of rows(model.layers.learned.selected)){
+    const option=model.options.find(row=>row.id===identity(id));
+    if(Number(option?.level)===0)visible.add(identity(id));
+   }
+  }
+  for(const option of model.options.filter(row=>visible.has(row.id))){
+   const spellId=String(option.spell_id||option.id||'');
+   if(!spellId)continue;
+   const payment={...(model.payment||{}),...(option.payment||{})};
+   const tracker=payment.tracker;
+   const slot=payment.slot;
+   const trackerId=String(tracker?.id||payment.tracker_id||'');
+   const usesTracker=Boolean(trackerId);
+   const allowsSlot=slot!==false&&(slot===true||typeof slot==='object'||!usesTracker);
+   const origin_id='option_grant:'+model.id+':'+model.source_origin_id;
+   const origin={origin_id,parent_origin:model.source_origin_id,
+    origin_name:model.title||option.name||model.id};
+   const declaration={type:'spells',id:'option_grant:'+model.id+':'+spellId,
+    spell_id:spellId,owner_origin_id:model.source_origin_id,
+    mode:'granted',payment_mode:usesTracker?'tracker':allowsSlot?'slot':'free',
+    tracker_id:trackerId,tracker_cost:Number(tracker?.cost||payment.tracker_cost)||1,
+    slot_alternative:usesTracker&&allowsSlot,
+    tracker_cast_level:Number(tracker?.cast_level??payment.tracker_cast_level)||undefined,
+    slot_min_level:Number(slot?.min_level??payment.slot_min_level)||undefined,
+    spellcasting_ability:option.ability||model.ability||'',
+    ...(option.ability||model.ability?{}:{casting_ability_not_required:true}),
+    source_option_id:option.id,option_grant_id:model.id,
+    automatic:true};
+   appendTypedBenefit(grants,declaration,origin);
+  }
+ }
  // Model state choices are derived, not another persisted selection engine.
  for(const rule of definitions(catalog))for(const option of optionsFor(record,rule,catalog))for(const e of rows(option.effects))if(e.type==='state_selection')delete states[e.key];
  for(const model of models)for(const application of [

@@ -127,10 +127,14 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
  if(mode==='tracker'){
   const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1),spent=Math.max(Number(c.resource_tracker_spent?.[grant.tracker_id]||0),Number(tracker?.spent)||0);
   if(!tracker||spent+cost>tracker.max)throw Error('Risorsa insufficiente per questo incantesimo');
-  patch={resource_tracker_spent:{...c.resource_tracker_spent,[tracker.id]:spent+cost}};slotLevel=level;
+  patch={resource_tracker_spent:{...c.resource_tracker_spent,[tracker.id]:spent+cost}};
+  slotLevel=Math.max(0,Number(grant.tracker_cast_level)||level);
+  if(!Number.isInteger(slotLevel)||slotLevel<level||slotLevel>9)
+    throw Error('Livello di lancio del tracker non valido');
  }else if(mode==='slot'||mode==='pact'){
   slotLevel=mode==='pact'?calculated.pact_slots.level:requestedLevel||level;
-  if(slotLevel<level||slotLevel<1)throw Error('Scegli uno slot almeno del livello dell’incantesimo');
+  if(slotLevel<Math.max(level,Number(grant?.slot_min_level)||1))
+    throw Error('Scegli uno slot almeno del livello minimo previsto dalla concessione');
   patch=slotUsePatch(c,mode==='pact'?0:slotLevel,1,calculated);
  }else slotLevel=level;
  if(grant?.active_key){
