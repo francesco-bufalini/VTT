@@ -29,7 +29,7 @@ export function inventoryItemSection(item={},containers=[]){
   const id=itemContainerId(item,containers);
   return id===DEFAULT_INVENTORY_CONTAINER?'items':'container:'+id;
 }
-function isDocumentItem(item){return item?.category==='documents';}
+function isDocumentItem(item){return item?.category==='documents'||String(item?.id||'').includes(':documents:');}
 export function inventoryCountsTowardCarriedWeight(record={},item={}){
   if(isDocumentItem(item))return false;
   return !inventoryExcludedWeightSections(record).includes(inventoryItemSection(item,inventoryContainers(record)));
