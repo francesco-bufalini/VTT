@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {powerSelectionModels} from '../power_selection.js';
+import {calculateSheet} from '../sheet_rules.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const index=read('../catalog/classes.json');
@@ -77,4 +78,38 @@ test('audit: source-qualified 2024 Fighting Style features reveal non-option-gra
  });
  console.log('OPTION_GRANT_2024_FIGHTING_STYLE_AUDIT '+JSON.stringify(findings));
  assert(findings.every(row=>row.level>=1));
+});
+
+test('audit: optional spell-choice privileges create source-scoped spell pickers',()=>{
+ const catalogs={
+  classFeatures:index,classMechanics:read('../catalog/class_mechanics.json'),
+  abilityGrants:read('../catalog/ability_grants.json'),
+  spellcastingBenefits:spellcasting,optionGrants:grants,
+  powerSelections:powerCatalog,optionalFeatureProgressions:optionCatalog
+ };
+ const checks=[
+  {className:'Ranger',level:2,rule:'optional:class:phb:ranger:fs-r',
+   option:'optional:tce:druidic-warrior',mode:'manual'},
+  {className:'Paladin',level:2,rule:'optional:class:phb:paladin:fs-p',
+   option:'optional:tce:blessed-warrior',mode:'manual'},
+  {className:'Warlock',level:3,rule:'optional:class:phb:warlock:pb',
+   option:'optional:phb:pact-of-the-tome',mode:'automatic'}
+ ];
+ const findings=[];
+ for(const check of checks){
+  const record={kind:'character',rules_version:'2014',level:check.level,
+   class:check.className,class_source:'PHB',
+   classes:[{name:check.className,source:'PHB',level:check.level}],
+   abilities:{str:10,dex:10,con:12,int:12,wis:16,cha:16},
+   power_selections:{[check.rule]:{learned:[check.option]}},
+   ...(check.mode==='manual'?{power_applications:{[check.rule]:[{id:check.option}]}}:{})};
+  const calculated=calculateSheet(record,catalogs);
+  const candidates=(calculated.origin_choices||[]).filter(row=>
+   /Druidic Warrior|Blessed Warrior|Pact of the Tome/i.test(row.origin_name||''));
+  findings.push({className:check.className,option:check.option,
+   choices:candidates.map(row=>({origin:row.origin_name,count:row.count,
+    filter:row.filter||'',spell_options:row.spell_options?.length||0}))});
+ }
+ console.log('OPTION_GRANT_SPELL_CHOICE_AUDIT '+JSON.stringify(findings));
+ assert.equal(findings.length,3);
 });
