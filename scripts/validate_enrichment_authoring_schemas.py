@@ -59,6 +59,22 @@ def main():
         seen.add(benefit_type)
     assert len(seen) == len(types)
 
+    # Validate real migrated catalogs, not only illustrative fixtures. A
+    # background grant goes into the file for its mechanical type, never a
+    # background-specific file and never a character-scoped shared catalog.
+    benefits = ROOT / "vtt" / "enrichment" / "benefits"
+    migrated = 0
+    for path in sorted(benefits.glob("*.json")):
+        benefit_type = path.stem
+        assert benefit_type in types, f"Unknown benefit catalog: {path}"
+        document = load(path)
+        assert document.get("scope") == "catalog", f"Character override in {path}"
+        assert document.get("benefit_type") == benefit_type, path
+        ids = [entry["id"] for entry in document["entries"]]
+        assert len(ids) == len(set(ids)), f"Duplicate grant IDs: {path}"
+        check(benefit_type + ".schema.json", document, str(path))
+        migrated += len(ids)
+
     manual = load(EXAMPLES / "roll_bonus.character.json")
     check("roll_bonus.schema.json", manual, "manually added trait benefit")
     assert manual["entries"][0]["granted_by"]["kind"] == "character_trait"
@@ -113,7 +129,7 @@ def main():
 
     print(f"PASS: {len(types)} typed catalogs/examples, one character override, "
           f"{len(schema_paths)} schemas, {len(legacy['sources'])} legacy source inventories, "
-          f"{len(geometries)} spell geometries, and negative tests")
+          f"{len(geometries)} spell geometries, {migrated} migrated grants, and negative tests")
 
 
 if __name__ == "__main__":
