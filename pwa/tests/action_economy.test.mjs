@@ -53,7 +53,9 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
   'An attack routine without a tracker has no Use control');
  assert.equal(dagger.closest('[data-action-source]').dataset.actionSource,'rules',
   'The secondary-hand strike is a core rule action');
- assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
+ assert.equal(dagger.querySelector('.play-battle-attack-expanded'),null);
+ assert.equal(dagger.querySelector('.play-battle-action-detail-open')?.dataset.sheetContext,
+  'battle-action:two_weapon','Rule action descriptions open the shared detail popup');
  assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
  assert(!attacks.querySelector('[data-attack-id="item:off:dagger"]'),
   'The offhand strike does not appear twice in the physical attack catalogue');
@@ -593,15 +595,15 @@ test('improvised shield strike remains among Attacchi while the offhand action i
  assert(!actions.querySelector('[data-attack-id="opportunity"] .play-battle-attack-roll'));
 });
 
-test('spellcasting action opens Powers directly without an intermediary dialog',()=>{
+test('spellcasting action opens its detail dialog with a link to Powers',()=>{
  const record={rules_version:'2014'};
  const result=battleActionPanels(record,{spell_slots:[{level:1,total:2}]},[],[],catalog.actions);
  const dom=doc(result.others);
  const cast=dom.querySelector('[data-attack-id="spell_cast"]');
  assert(cast);
- assert.equal(cast.querySelector('[data-act="action-open-spells"]').tagName,'BUTTON');
- assert.equal(cast.querySelector('[data-act="action-open-spells"]').closest('.play-battle-benefit-details'),null,
-  'The Use control opens Powers directly, independently of the optional description disclosure');
+ assert.equal(cast.querySelector('[data-act="sheet-context"]')?.dataset.sheetContext,'battle-action:spell_cast');
+ assert.equal(cast.querySelector('.play-battle-attack-expanded'),null,
+  'No action descriptions expand beneath the action list');
  assert.equal(result.spells,'','The separate battle spell section has been removed');
 });
 
