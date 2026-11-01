@@ -1181,7 +1181,7 @@ test("custom section deletion confirms transfers and preserves inventory on canc
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("magic scrolls use a dedicated inventory tab and keep quantities across section changes",async()=>{
+test("magic scrolls remain in a collapsible inventory section with preserved quantities",async()=>{
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   await renameFromIdentity("Arcanista delle pergamene");
@@ -1197,18 +1197,14 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
   click('[data-act="open"][data-id="'+saved.creature.id+'"]');
   await until(()=>document.querySelector('[data-sheet="inventory"]'));
   click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('#sheet-play-view [data-subtab="items"]'));
-  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-subtabs [data-act="inventory-subtab"]').length,3);
-  assert.ok(document.querySelectorAll('#sheet-play-view .inventory-play-item').length>=1,'The dagger remains in the inventory');
-  if(document.querySelector('#sheet-play-view [data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
-   click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
-  await until(()=>document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length===2);
+  await until(()=>document.querySelector('#sheet-play-view [data-inventory-section-key="scrolls"]'));
+  const scrolls=document.querySelector('#sheet-play-view [data-inventory-section-key="scrolls"]');
+  assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,3);
+  assert.ok(document.querySelector('#sheet-play-view .inventory-play-coins'));
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length,2);
   assert.match(document.querySelector('#sheet-play-view').textContent,/Incantesimo non specificato/);
   assert.match(document.querySelector('#sheet-play-view').textContent,/Scudo/);
   assert.equal(document.querySelector('#sheet-play-view .inventory-play-scroll .inventory-scroll-level').textContent,"3°");
-  assert.equal(document.querySelector('#sheet-play-view [data-subtab="scrolls"]').getAttribute("aria-pressed"),"true");
-  assert.ok(document.querySelector('#sheet-play-view .inventory-play-coins'),
-    "Zaino is still selected alongside Pergamene");
   click('#sheet-play-view [data-sheet-context="item:1"]');
   await until(()=>document.querySelector('#sheet-context-dialog [data-item-index="1"][data-item-key="quantity"]'));
   change('#sheet-context-dialog [data-item-index="1"][data-item-key="quantity"]',"4");
@@ -1220,21 +1216,14 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
     click('#sheet-context-dialog [data-act="sheet-context-close"]');
     await until(()=>!document.querySelector('#sheet-context-dialog'));
   }
-  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]');
-  await until(()=>document.querySelector('#sheet-play-view [data-subtab="documents"][aria-pressed="true"]'));
+  const stillScrolls=document.querySelector('#sheet-play-view [data-inventory-section-key="scrolls"]');
+  stillScrolls.querySelector('summary').click();
+  await until(()=>stillScrolls.open===false);
   assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length,2,
-    "Pergamene stays visible when Documenti is selected too");
-  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
-  await until(()=>document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length===0);
-  if(document.querySelector('#sheet-play-view [data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
-   click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
+    'Closing a section preserves its items in the DOM');
+  stillScrolls.querySelector('summary').click();
+  await until(()=>stillScrolls.open===true);
   await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="item:1"] .play-badge')?.textContent.includes('4'));
-  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]');
-  await until(()=>document.querySelector('#sheet-play-view [data-subtab="documents"][aria-pressed="false"]'));
-  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
-  await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"][aria-pressed="false"]'));
-  await until(()=>document.querySelector('#sheet-play-view .inventory-play-coins'));
-  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-item').length,1);
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
