@@ -94,7 +94,9 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
    .sort((a,b)=>(Number(a.level)||0)-(Number(b.level)||0));
   const instances=rule.instances?.mode==='per_feature'?candidates:candidates.slice(0,1);
   for(const [index,feature] of instances.entries()){
-  const instanceId=index===0?rule.id:rule.id+':level:'+(Number(feature.level)||0);
+  const firstLevel=Number(rows(rule.layers?.[rule.instances?.stage]?.limit?.by_class_level)[0]?.[0])||0;
+  const instanceId=rule.instances?.mode==='per_feature'&&
+   Number(feature.level)!==firstLevel?rule.id+':level:'+(Number(feature.level)||0):rule.id;
   const origin=feature?.origin_id||'';
   if([origin,feature.origin_key,String(feature.origin_key||'').split('|').slice(0,3).join('|')].some(id=>id&&(record.origin_enabled?.[id]===false||rows(record.proficiency_origins).some(row=>row.id===id&&row.disabled))))continue;
   const parent=rule.requires_application,binding=parent?rows(record.power_applications?.[parent.selection]).find(row=>!parent.bound||rows(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id)):null;
@@ -114,8 +116,10 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
    let limit=powerSelectionLimit(spec.limit,level);
    if(rule.instances?.mode==='per_feature'&&stage===rule.instances.stage&&spec.limit?.by_class_level){
     const current=powerSelectionLimit(spec.limit,Number(feature.level)||0);
-    const previous=index?powerSelectionLimit(spec.limit,Number(instances[index-1].level)||0):0;
-    limit=Math.max(0,current-previous);
+    const thresholds=rows(spec.limit.by_class_level);
+    const earlier=thresholds.filter(([at])=>Number(at)<Number(feature.level))
+     .reduce((previous,[,value])=>Math.max(previous,Number(value)||0),0);
+    limit=Math.max(0,current-earlier);
    }
    if(stage==='applied'&&rule.capacity_bonus_field)limit+=rows(catalog.capacity_grants||calculated.selection_capacity_grants).reduce((n,r)=>n+Number(r[rule.capacity_bonus_field]||0),0);
    if(stage==='applied'&&!rule.application?.target&&!spec.target)selected=selected.map(identity);
