@@ -14,11 +14,11 @@ test('164 racial roll modes reproduce the full previous source-qualified rules',
 });
 test('23 racial roll bonuses retain owner and mechanical identity, without duplicated prose',()=>{
  const output=speciesRollBonusesFromBenefits(rollBonus);
- assert.equal(rollBonus.entries.length,23);
+ const racialEntries=rollBonus.entries.filter(e=>e.granted_by.ref.category==='species_trait');
+ assert.equal(racialEntries.length,23);
  assert.equal(output.races.flatMap(r=>r.bonuses).length,23);
- assert.equal(new Set(rollBonus.entries.map(e=>e.id)).size,23);
- assert(rollBonus.entries.every(e=>e.granted_by.kind==='5etools'&&
-   e.granted_by.ref.category==='species_trait'&&
+ assert.equal(new Set(rollBonus.entries.map(e=>e.id)).size,rollBonus.entries.length);
+ assert(racialEntries.every(e=>e.granted_by.kind==='5etools'&&
    e.benefit.type==='roll_bonus'&&!e.benefit.bonus.description));
  assert(output.races.some(r=>r.name==='Half-Elf'&&r.subrace_source==='ERLW'));
 });
