@@ -1151,7 +1151,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      bind('selection:'+i,node);
      const counters=[...source.querySelector('.infusion-overview')?.children||[]]
       .map(row=>'<span class="play-magic-source-resource">'+esc(row.textContent.trim())+'</span>').join('');
-     const entries=[...source.querySelectorAll('[data-power-option-id]')].map(row=>({
+     const entries=[...source.querySelectorAll('.magic-spell-row[data-power-option-id]')].map(row=>({
       name:row.querySelector('.magic-spell-open').textContent.trim(),applied:row.dataset.optionActive==='true',
       attrs:'data-act="benefit-option-open" data-power-selection-id="'+esc(id)+'" data-power-option-id="'+esc(row.dataset.powerOptionId)+'"'
      }));
