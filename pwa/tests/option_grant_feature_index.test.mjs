@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {powerSelectionModels} from '../power_selection.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {applyOriginSpellChoice} from '../spell_selection.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const index=read('../catalog/classes.json');
@@ -117,4 +118,37 @@ test('audit: optional spell-choice privileges create source-scoped spell pickers
  assert.deepEqual(findings.map(row=>row.choices.map(c=>c.filter)),[
   ['level=0|class=druid'],['level=0|class=cleric'],['level=0']
  ]);
+});
+
+test('Pact of the Tome PHB: three cantrips chosen, persisted, castable, and withdrawn with the trait',()=>{
+ const ruleId='optional:class:phb:warlock:pb';
+ const rules={classFeatures:index,classMechanics:read('../catalog/class_mechanics.json'),
+  abilityGrants:read('../catalog/ability_grants.json'),
+  spellcastingBenefits:spellcasting,optionGrants:grants,
+  powerSelections:powerCatalog,optionalFeatureProgressions:optionCatalog};
+ const spellCatalog=Array.from({length:4},(_,i)=>({
+  id:'test:cantrip:'+i,name:'Cantrip '+i,source:'PHB',level:0,classes:['Wizard']
+ }));
+ rules.spells=spellCatalog;
+ let record={kind:'character',id:'pact-book',rules_version:'2014',class:'Warlock',
+  class_source:'PHB',level:3,classes:[{name:'Warlock',source:'PHB',level:3}],
+  abilities:{str:10,dex:12,con:12,int:10,wis:10,cha:16},
+  power_selections:{[ruleId]:{learned:['optional:phb:pact-of-the-tome']}}};
+ for(let i=0;i<3;i++){
+  const calculated=calculateSheet(record,rules);
+  const choice=calculated.origin_choices.find(row=>row.origin_name==='Pact of the Tome');
+  assert(choice,'Pact Tome origin chooser must remain visible');
+  assert.equal(choice.remaining,3-i);
+  record={...record,...applyOriginSpellChoice(record,choice,spellCatalog[i])};
+ }
+ const calculated=calculateSheet(record,rules);
+ assert.equal(calculated.origin_spells.filter(row=>String(row.source_choice_id||'').startsWith('selection:'+ruleId)).length,3);
+ const choice=calculated.origin_choices.find(row=>row.origin_name==='Pact of the Tome');
+ assert.equal(choice.remaining,0);
+ assert.throws(()=>applyOriginSpellChoice(record,choice,spellCatalog[3]),/massimo|limite|numero|scelt|complet|disponib|insufficient/i);
+ const inactive={...record,power_selections:{[ruleId]:{learned:[]}}};
+ const removed=calculateSheet(inactive,rules);
+ assert.equal(removed.origin_choices.filter(row=>row.origin_name==='Pact of the Tome').length,0);
+ assert.equal(removed.origin_spells.filter(row=>String(row.source_choice_id||'').startsWith('selection:'+ruleId)).length,0,
+  'Saved spells are retained but cannot be cast after losing the parent invocation');
 });
