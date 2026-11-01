@@ -1,3 +1,4 @@
+import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from './scaling_dice.js';
@@ -1773,7 +1774,7 @@ export function loadRuleCatalogs(){
     // Numeric rules do not block on the entire spell compendium.
     // Already visible spell references are supplied by the PWA on demand.
     Promise.resolve([]),
-    fetch('/catalog/feature_timing_recovery_rules.json').then(r=>{if(!r.ok)throw Error('Regole privilegi non disponibili');return r.json();}).then(data=>data?.version===1&&Array.isArray(data.actions)&&Array.isArray(data.recoveries)?data:null),
+    loadClassFeatureTimingBenefits(),
     fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.states)?
        {states:data.states,exhaustion:data.exhaustion||{}}:{states:[],exhaustion:{}}),
@@ -1826,10 +1827,11 @@ export function loadRuleCatalogs(){
     fetch('/catalog/generic_item_variants.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.variants)?data:{variants:[]})
       .catch(()=>({variants:[]})),
-    loadClassActionBenefits().catch(()=>[])
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides])=>({
+    loadClassActionBenefits().catch(()=>[]),
+    loadClassResourceBenefits()
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
-    classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
+    classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,
     speciesRollModes:speciesRollModes.load_error?{races:[],load_error:true}:speciesRollModesFromBenefits(speciesRollModes,originDetails),
     senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureRules:featureRules||{},featureActionOverrides,

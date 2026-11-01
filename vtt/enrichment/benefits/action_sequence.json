@@ -1,0 +1,443 @@
+{
+  "schema_version": 2,
+  "benefit_type": "action_sequence",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "martial-arts-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "martial-arts-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "id": "unarmed"
+              },
+              "count": 1
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "bonus"
+      }
+    },
+    {
+      "id": "flurry-of-blows-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Flurry of Blows",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "flurry-of-blows-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "id": "unarmed"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "bonus",
+        "tracker_name": "Ki Points",
+        "tracker_cost": 1,
+        "class_feature_id": "flurry_of_blows"
+      }
+    },
+    {
+      "id": "cunning-action-phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "cunning-action-phb",
+        "sequence": {
+          "steps": [
+            {
+              "one_of": [
+                {
+                  "id": "dash",
+                  "label": "Scattare",
+                  "selector": {
+                    "kind": "action",
+                    "id": "dash"
+                  }
+                },
+                {
+                  "id": "disengage",
+                  "label": "Disimpegnarsi",
+                  "selector": {
+                    "kind": "action",
+                    "id": "disengage"
+                  }
+                },
+                {
+                  "id": "hide",
+                  "label": "Nascondersi",
+                  "selector": {
+                    "kind": "action",
+                    "id": "hide"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "bonus"
+      }
+    },
+    {
+      "id": "cunning-action-xphb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "cunning-action-xphb",
+        "sequence": {
+          "steps": [
+            {
+              "one_of": [
+                {
+                  "id": "dash",
+                  "label": "Scattare",
+                  "selector": {
+                    "kind": "action",
+                    "id": "dash"
+                  }
+                },
+                {
+                  "id": "disengage",
+                  "label": "Disimpegnarsi",
+                  "selector": {
+                    "kind": "action",
+                    "id": "disengage"
+                  }
+                },
+                {
+                  "id": "hide",
+                  "label": "Nascondersi",
+                  "selector": {
+                    "kind": "action",
+                    "id": "hide"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "rules_version": "2024",
+        "time": "bonus"
+      }
+    },
+    {
+      "id": "berserker-frenzy-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Frenzy",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Berserker",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "berserker-frenzy-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack",
+                "category": "melee_weapon"
+              },
+              "count": 1
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "bonus"
+      }
+    },
+    {
+      "id": "hunter-horde-breaker-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Horde Breaker",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Hunter",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "hunter-horde-breaker-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack",
+                "category": "weapon"
+              },
+              "count": 1
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "free"
+      }
+    },
+    {
+      "id": "hunter-volley-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Volley",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Hunter",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 11,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "hunter-volley-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack",
+                "category": "ranged_weapon"
+              },
+              "count": 1,
+              "repeat": "per_target"
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "action"
+      }
+    },
+    {
+      "id": "hunter-whirlwind-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Whirlwind Attack",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Hunter",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 11,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "hunter-whirlwind-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack",
+                "category": "melee"
+              },
+              "count": 1,
+              "repeat": "per_target"
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "action"
+      }
+    },
+    {
+      "id": "scout-sudden-strike-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Sudden Strike",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Scout",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 17,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "scout-sudden-strike-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack",
+                "category": "weapon"
+              },
+              "count": 1
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "bonus"
+      }
+    },
+    {
+      "id": "eldritch-knight-war-magic-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "War Magic",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Eldritch Knight",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 7,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "eldritch-knight-war-magic-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack",
+                "category": "weapon"
+              },
+              "count": 1
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "bonus"
+      }
+    },
+    {
+      "id": "eldritch-knight-improved-war-magic-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Improved War Magic",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Eldritch Knight",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 18,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "eldritch-knight-improved-war-magic-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack",
+                "category": "weapon"
+              },
+              "count": 1
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "bonus"
+      }
+    },
+    {
+      "id": "war-cleric-war-priest-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "War Priest",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "War Domain",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "war-cleric-war-priest-2014",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack",
+                "category": "weapon"
+              },
+              "count": 1
+            }
+          ]
+        },
+        "rules_version": "2014",
+        "time": "bonus",
+        "tracker_name": "War Priest",
+        "tracker_cost": 1
+      }
+    }
+  ],
+  "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."
+}

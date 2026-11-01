@@ -18,7 +18,7 @@ const owner=(entry,type)=>{
  return {ref,benefit};
 };
 export function classActionOverridesFromBenefits(payload){
- return catalog(payload,'action').map(entry=>{
+ return catalog(payload,'action').filter(entry=>entry.projection!=='timing_action').map(entry=>{
   const {ref,benefit}=owner(entry,'action');
   const {id,type,...mechanics}=benefit;
   return {class_name:ref.class_name,feature_name:ref.name,book:ref.class_source,

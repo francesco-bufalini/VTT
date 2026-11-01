@@ -1,0 +1,518 @@
+{
+  "schema_version": 2,
+  "benefit_type": "attack_count",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "count:phb:barbarian:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:barbarian:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:fighter:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:fighter:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:monk:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:monk:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:paladin:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:paladin:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:ranger:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:ranger:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:fighter:extra-attack-2:11",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack (2)",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 11,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:fighter:extra-attack-2:11",
+        "attack_count": 3
+      }
+    },
+    {
+      "id": "count:phb:fighter:extra-attack-3:20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack (3)",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 20,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:fighter:extra-attack-3:20",
+        "attack_count": 4
+      }
+    },
+    {
+      "id": "count:phb:bard:valor:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "Valor",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:bard:valor:extra-attack:6",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:bard:swords:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "Swords",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:bard:swords:extra-attack:6",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:wizard:bladesinging:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "TCE",
+          "class_name": "Wizard",
+          "class_source": "PHB",
+          "subclass": "Bladesinging",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:wizard:bladesinging:extra-attack:6",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:barbarian:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Barbarian",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:barbarian:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:fighter:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:fighter:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:monk:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:monk:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:paladin:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:paladin:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:ranger:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Ranger",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:ranger:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:fighter:extra-attack-2:11",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack (2)",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 11,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:fighter:extra-attack-2:11",
+        "attack_count": 3
+      }
+    },
+    {
+      "id": "count:xphb:fighter:extra-attack-3:20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack (3)",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 20,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:fighter:extra-attack-3:20",
+        "attack_count": 4
+      }
+    },
+    {
+      "id": "count:xphb:bard:valor:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB",
+          "subclass": "Valor",
+          "subclass_source": "XPHB"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:bard:valor:extra-attack:6",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:bard:swords:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "XPHB",
+          "subclass": "Swords",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:bard:swords:extra-attack:6",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:wizard:bladesinging:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "TCE",
+          "class_name": "Wizard",
+          "class_source": "XPHB",
+          "subclass": "Bladesinging",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:wizard:bladesinging:extra-attack:6",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:tce:artificer:armorer:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:tce:artificer:armorer:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:tce:artificer:battle-smith:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Battle Smith",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:tce:artificer:battle-smith:extra-attack:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:warlock:thirsting-blade:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Thirsting Blade",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:warlock:thirsting-blade:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:phb:warlock:devouring-blade:12",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Devouring Blade",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 12,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:phb:warlock:devouring-blade:12",
+        "attack_count": 3
+      }
+    },
+    {
+      "id": "count:xphb:warlock:thirsting-blade:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Thirsting Blade",
+          "source": "XPHB",
+          "class_name": "Warlock",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:warlock:thirsting-blade:5",
+        "attack_count": 2
+      }
+    },
+    {
+      "id": "count:xphb:warlock:devouring-blade:12",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Devouring Blade",
+          "source": "XPHB",
+          "class_name": "Warlock",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 12,
+      "benefit": {
+        "type": "attack_count",
+        "id": "count:xphb:warlock:devouring-blade:12",
+        "attack_count": 3
+      }
+    }
+  ],
+  "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."
+}

@@ -363,6 +363,13 @@
         },
         "notes": {
           "type": "string"
+        },
+        "projection": {
+          "enum": [
+            "timing_action",
+            "class_action_override"
+          ],
+          "description": "Temporary migration projection discriminator. Omit on other catalog types; remove once runtime consumes typed actions directly."
         }
       },
       "additionalProperties": false

@@ -395,6 +395,75 @@
     "optional_source": {
       "type": "string",
       "description": "5eTools source for the required optional feature."
+    },
+    "kind": {
+      "type": "string",
+      "description": "Kind of legacy activation; runtime uses the explicit action_id."
+    },
+    "tracker_name": {
+      "type": "string",
+      "description": "Reference to the exact tracker name."
+    },
+    "contextual_resource": {
+      "type": "object",
+      "required": [
+        "name",
+        "max",
+        "recharge"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "max": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "recharge": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attack_selector": {
+      "type": "string"
+    },
+    "target_mode": {
+      "type": "string"
+    },
+    "target_range_feet": {
+      "type": "number",
+      "minimum": 0
+    },
+    "exclude_self": {
+      "type": "boolean"
+    },
+    "dice_ref": {
+      "type": "string"
+    },
+    "origin_feature": {
+      "type": "string"
+    },
+    "class_feature_id": {
+      "type": "string"
+    },
+    "resource_source": {
+      "type": "string"
+    },
+    "column": {
+      "type": "string"
+    },
+    "source_counter": {
+      "type": "string"
+    },
+    "minimum": {
+      "type": "number"
     }
   },
   "allOf": [
@@ -1655,6 +1724,9 @@
             "filter": {
               "type": "object",
               "additionalProperties": true
+            },
+            "category": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -2207,6 +2279,61 @@
                 "items": {
                   "$ref": "#/$defs/option"
                 }
+              },
+              "repeat": {
+                "type": "string"
+              },
+              "one_of": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "selector"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "selector": {
+                      "$ref": "#/$defs/target"
+                    },
+                    "count": {
+                      "$ref": "#/$defs/expression"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "any_of": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "selector"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "selector": {
+                      "$ref": "#/$defs/target"
+                    },
+                    "count": {
+                      "$ref": "#/$defs/expression"
+                    }
+                  },
+                  "additionalProperties": false
+                }
               }
             },
             "anyOf": [
@@ -2233,6 +2360,16 @@
               {
                 "required": [
                   "options"
+                ]
+              },
+              {
+                "required": [
+                  "one_of"
+                ]
+              },
+              {
+                "required": [
+                  "any_of"
                 ]
               }
             ],
