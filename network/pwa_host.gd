@@ -86,6 +86,7 @@ const FILES := {
 	"/barbarian_2014.js": ["res://pwa/barbarian_2014.js", "text/javascript; charset=utf-8"],
 	"/dragonborn_ftd.js": ["res://pwa/dragonborn_ftd.js", "text/javascript; charset=utf-8"],
 	"/ability_areas.js": ["res://pwa/ability_areas.js", "text/javascript; charset=utf-8"],
+	"/species_benefit_catalogs.js": ["res://pwa/species_benefit_catalogs.js", "text/javascript; charset=utf-8"],
 	"/species_roll_modes.js": ["res://pwa/species_roll_modes.js", "text/javascript; charset=utf-8"],
 	"/species_origin_rules.js": ["res://pwa/species_origin_rules.js", "text/javascript; charset=utf-8"],
 	"/species_conditional_bonuses.js": ["res://pwa/species_conditional_bonuses.js", "text/javascript; charset=utf-8"],
