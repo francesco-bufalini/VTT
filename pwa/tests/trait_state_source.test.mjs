@@ -14,7 +14,7 @@ const feature={name:'Armor Model',class_name:'Artificer',class_source:'TCE',
  ]}]};
 const owner={classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer'}],
  inventory:[{id:'armor',quantity:1,type:'HA',equipped_slots:['body']}],
- power_applications:{arcane_armor:[{target_item_id:'armor'}]},
+ power_applications:{arcane_armor:[{id:'arcane_armor',target_item_id:'armor'}]},
  trait_state_selection:{armor_model:'armor_model:guardian'}};
 
 test('structured model options do not own replacement titles or summaries',()=>{
@@ -41,7 +41,8 @@ test('owned 5etools options supply the names and descriptions of state models',(
  assert.equal(actions[0]?.description,'Original Guardian text from 5etools.');
  const effects=traitStateEffects(owner,[feature],[guardian]);
  assert.equal(effects[0]?.summary,'Original Guardian text from 5etools.');
- const models=powerSelectionModels(owner,{features:[feature]},selections);
+ const arcane={...feature,name:'Arcane Armor',origin_id:'feature:arcane-armor'};
+ const models=powerSelectionModels(owner,{features:[feature,arcane]},selections);
  const choices=models.find(row=>row.id==='armor_model');
  assert(choices);
  assert.equal(choices.title,'Armor Model');
