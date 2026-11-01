@@ -73,10 +73,40 @@ def build(root):
 
 
 def main():
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: generate_structured_ability_grants.py /path/to/5etools-src")
-    data = build(Path(sys.argv[1]))
+    args = sys.argv[1:]
+    background_only = "--backgrounds-only" in args
+    args = [arg for arg in args if arg != "--backgrounds-only"]
+    if len(args) != 1:
+        raise SystemExit("Usage: generate_structured_ability_grants.py /path/to/5etools-src [--backgrounds-only]")
+    root = Path(args[0])
     destination = ROOT / "vtt/data/structured_ability_grants_5etools.json"
+    if background_only:
+        upstream = json.loads((root / "data/backgrounds.json").read_text(encoding="utf-8"))
+        # Reuse the same explicit 5eTools projection as the full generator,
+        # without changing the already-audited race/subrace/feat indexes.
+        entries = []
+        for raw in upstream.get("background", []):
+            if not raw.get("name") or not raw.get("source"):
+                continue
+            ability = raw.get("ability")
+            fixed = fixed_ability(ability)
+            variants = ability if isinstance(ability, list) else [ability]
+            has_choice = any(isinstance(option, dict) and isinstance(option.get("choose"), dict)
+                             for option in variants)
+            if not fixed and not has_choice:
+                continue
+            entry = {"name": raw["name"], "source": raw["source"]}
+            if fixed:
+                entry["ability"] = fixed
+            if has_choice:
+                entry["ability_choices"] = ability
+            entries.append(entry)
+        data = json.loads(destination.read_text(encoding="utf-8"))
+        data["background"] = sorted(entries,
+                                    key=lambda row: (row["name"].casefold(), row["source"].casefold()))
+        data.setdefault("meta", {})["backgroundSource"] = "data/backgrounds.json"
+    else:
+        data = build(root)
     destination.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"Wrote {destination}: " +
           ", ".join(f"{key}={len(data[key])}" for key in ("race", "subrace", "feat", "background")))

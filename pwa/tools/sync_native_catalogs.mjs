@@ -20,6 +20,19 @@ function projectSubraceMechanics(subraces,references){
     ...(source.creatureTypes!==undefined?{creatureTypes:source.creatureTypes}:{})}:row;
  });
 }
+// Targeted refresh after regenerating structured background indexes. Avoid
+// replacing independent class/species catalogs during a background migration.
+if(process.argv.includes('--backgrounds-only')){
+ const abilities=await read('../../vtt/data/structured_ability_grants_5etools.json');
+ const browser=await read('../catalog/ability_grants.json');
+ browser.background=abilities.background||[];
+ browser.meta={...browser.meta,backgroundSource:'vtt/data/structured_ability_grants_5etools.json'};
+ await writeFile(new URL('../catalog/ability_grants.json',import.meta.url),
+   JSON.stringify(browser,null,2)+'\n');
+ await syncProficiencyCatalog();
+ console.log('PWA: structured background ability choices and proficiencies refreshed.');
+ process.exit(0);
+}
 if(process.argv.includes('--species-movement-only')){
  const mechanics=await read('../catalog/class_mechanics.json');
  const references=await read('../../vtt/data/creature_references_5etools.json');

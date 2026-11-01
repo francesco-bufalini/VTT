@@ -6,6 +6,10 @@ const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'
 export async function syncProficiencyCatalog(){
  const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
  const browserProficiencies=await read('../catalog/proficiency_grants.json');
+ // The background section comes from typed 5eTools source fields too.
+ // Replacing the generated browser index does not touch character/homebrew
+ // overrides, which live outside these shared catalogs.
+ browserProficiencies.background=proficiencies.background||[];
  browserProficiencies.subrace=proficiencies.subrace;
  for(const group of ['classFeature','subclassFeature'])
   browserProficiencies[group]=proficiencies[group]||[];
