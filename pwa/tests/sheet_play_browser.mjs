@@ -734,8 +734,8 @@ try{
  await dismiss();
  assert.equal(await actionsPanel.locator('[data-action-source="rules"] [data-attack-id="two_weapon"]').count(),1,
   'The unavailable secondary attack stays inspectable among the rules');
- assert.equal(await actionsPanel.locator('[data-attack-id="spell_cast"] [data-act="action-open-spells"]').count(),1,
-  'Spellcasting opens Powers directly');
+ assert.equal(await actionsPanel.locator('[data-attack-id="spell_cast"] [data-act="sheet-context"][data-sheet-context="battle-action:spell_cast"]').count(),1,
+  'Spellcasting opens the shared action-detail popup');
  assert.equal(await resourcesPanel.locator('[data-resource-privilege],[data-ability-id]').count(),0,
   'Resources do not own abilities or privileges');
  assert.equal(await actionsPanel.locator('.play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
