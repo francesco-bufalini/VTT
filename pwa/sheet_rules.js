@@ -13,7 +13,7 @@ import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
 import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
-import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits,speciesAttacksFromBenefits} from './species_benefit_catalogs.js';
+import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits,speciesAttacksFromBenefits,speciesPowersFromBenefits} from './species_benefit_catalogs.js';
 import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,attackCategories} from './attack_count_benefits.js';
@@ -1795,8 +1795,13 @@ export function loadRuleCatalogs(){
       })),
     fetch('/catalog/effect_extensions.json').then(r=>{if(!r.ok)throw Error('Estensioni effetti non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.extensions)?data.extensions:[]),
-    fetch('/catalog/species_powers.json').then(r=>r.ok?r.json():{})
-      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[]}).catch(()=>({races:[]})),
+    fetch('/catalog/species_powers.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
+      .then(base=>Promise.all([
+        '/catalog/benefits/action.json','/benefits/resource.json','/benefits/roll_bonus.json'
+      ].map(path=>fetch(path).then(r=>{if(!r.ok)throw Error('HTTP '+r.status+': '+path);return r.json();})))
+        .then(([actions,resources,bonuses])=>speciesPowersFromBenefits(base,actions,resources,bonuses)))
+      .catch(error=>{console.warn('VTT: capacità razziali tipizzate non disponibili',error);
+        return {version:1,races:[],load_error:true};}),
     fetch('/benefits/roll_bonus.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
       .then(speciesRollBonusesFromBenefits)
       .catch(error=>{console.warn('VTT: catalogo bonus ai tiri non disponibile',error);return {races:[],load_error:true};}),

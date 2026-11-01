@@ -57,7 +57,7 @@ const SHELL = [
   "/catalog/species_types.json",
   "/benefits/attack.json", "/benefits/movement.json",
   "/catalog/species_defenses.json",
-  "/benefits/roll_mode.json", "/benefits/roll_bonus.json",
+  "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
   "/species_defenses.js",
   "/class_defenses.js",
   "/catalog/class_defense_rules.js",
@@ -186,7 +186,7 @@ const CORE_SHELL = SHELL.filter(path =>
 const REQUIRED_CATALOGS = [
   "/catalog/ability_grants.json", "/catalog/class_mechanics.json",
   "/catalog/spell_grant_rules.json", "/catalog/species_powers.json", "/catalog/proficiency_grants.json", "/catalog/classes.json",
-  "/catalog/player.json", "/catalog/sense_grants.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json",
+  "/catalog/player.json", "/catalog/sense_grants.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json", "/catalog/power_selections.json",
   "/catalog/optional_feature_progressions.json",
   "/catalog/feature_slot_spells.json", "/catalog/spellcasting_benefits.json",

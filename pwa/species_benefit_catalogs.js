@@ -39,7 +39,7 @@ export function speciesRollModesFromBenefits(catalog,originDetails={}){
  },originDetails);
 }
 export function speciesRollBonusesFromBenefits(catalog){
- const output=speciesGroups(catalog,'roll_bonus',(entry,ref,benefit)=>({
+ const output=speciesGroups({...catalog,entries:rows(catalog?.entries).filter(row=>row.benefit?.operation!=='racial_roll_bonus')},'roll_bonus',(entry,ref,benefit)=>({
   id:benefit.id||entry.id,trait:ref.name,name:ref.name,...benefit.bonus
  }));
  return {version:1,source:'vtt/data/creature_references_5etools.json',notes:catalog.notes||'',races:output.races.map(({id,...race})=>race)};

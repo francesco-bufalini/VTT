@@ -45,7 +45,8 @@ test('numeric sheet rules never request the full spell compendium',async()=>{
       path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
       path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
       path==='/catalog/trait_states.json'?{version:1,states:[]}:
-      /^\/benefits\/(roll_mode|roll_bonus|attack|movement)\.json$/.test(path)?
+      path==='/catalog/benefits/action.json'?{schema_version:2,benefit_type:'action',scope:'catalog',entries:[]}:
+      /^\/benefits\/(roll_mode|roll_bonus|attack|movement|resource)\.json$/.test(path)?
         {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
     return new Response(JSON.stringify(data),{status:200});
   };

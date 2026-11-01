@@ -77,7 +77,7 @@ test("Android offline installation includes required code, icon sprites and mini
     "/zero_hp_responses.js",
     "/mobile_metal_theme.css", "/catalog/class_mechanics.json",
     "/catalog/sense_grants.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json",
-    "/benefits/attack.json", "/benefits/movement.json",
+    "/benefits/attack.json", "/benefits/movement.json", "/benefits/resource.json",
     "/catalog/miniatures.json", "/icons/action_controls.svg",
     "/icons/gold_generated/gold_2.svg", "/icons/info/identity.svg",
     "/icon-192.png", "/icon-512.png", "/miniature-images/ore.webp", "/miniature-images/harmakis.webp"

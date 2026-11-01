@@ -165,6 +165,7 @@ const FILES := {
 	"/catalog/sense_grants.json": ["res://pwa/catalog/sense_grants.json", "application/json; charset=utf-8"],
 	"/benefits/roll_mode.json": ["res://vtt/enrichment/benefits/roll_mode.json", "application/json; charset=utf-8"],
 	"/benefits/roll_bonus.json": ["res://vtt/enrichment/benefits/roll_bonus.json", "application/json; charset=utf-8"],
+	"/benefits/resource.json": ["res://vtt/enrichment/benefits/resource.json", "application/json; charset=utf-8"],
 	"/catalog/proficiency_grants.json": ["res://pwa/catalog/proficiency_grants.json", "application/json; charset=utf-8"],
 	"/catalog/player.json": ["res://vtt/data/player_5etools_catalog.json", "application/json; charset=utf-8"],
 	"/catalog/backgrounds.json": ["res://vtt/data/compendium_backgrounds_5etools.json", "application/json; charset=utf-8"],
