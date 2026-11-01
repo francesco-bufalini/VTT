@@ -6,13 +6,11 @@
       "class_name": "Artificer",
       "class_source": "TCE",
       "feature_name": "Flash of Genius",
-      "label": "Lampo di genio",
       "time": "reaction",
       "mode": "context",
       "resource_name": "Flash of Genius",
       "cost": 1,
       "bonus": {
-        "name": "Lampo di genio",
         "targets": [
           "ability_check",
           "saving_throw"
@@ -28,7 +26,6 @@
       "feature_name": "Tool Expertise",
       "passive": true,
       "bonus": {
-        "name": "Tool Expertise",
         "targets": [
           "ability_check"
         ],
@@ -43,7 +40,6 @@
       "feature_name": "Jack of All Trades",
       "passive": true,
       "bonus": {
-        "name": "Jack of All Trades",
         "targets": [
           "ability_check",
           "initiative"
@@ -61,7 +57,6 @@
       "feature_name": "Remarkable Athlete",
       "passive": true,
       "bonus": {
-        "name": "Remarkable Athlete",
         "targets": [
           "ability_check",
           "initiative"
@@ -78,7 +73,6 @@
       "feature_name": "Natural Explorer",
       "passive": true,
       "bonus": {
-        "name": "Natural Explorer",
         "targets": [
           "ability_check"
         ],
@@ -96,7 +90,6 @@
       "optional_source": "TCE",
       "passive": true,
       "bonus": {
-        "name": "Fire Rune",
         "targets": [
           "ability_check"
         ],
@@ -110,12 +103,10 @@
       "class_source": "PHB",
       "subclass_name": "Zealot",
       "feature_name": "Divine Fury",
-      "label": "Divine Fury · 1d6 aggiuntivo",
       "time": "contextual",
       "mode": "context",
       "cost": 0,
       "bonus": {
-        "name": "Divine Fury",
         "targets": [
           "damage_roll"
         ],
@@ -128,12 +119,10 @@
       "class_name": "Ranger",
       "class_source": "PHB",
       "feature_name": "Favored Enemy",
-      "label": "Nemico prescelto · prove pertinenti",
       "time": "contextual",
       "mode": "context",
       "cost": 0,
       "bonus": {
-        "name": "Nemico prescelto",
         "targets": [
           "skill:survival",
           "ability_check:int",
@@ -153,12 +142,10 @@
       "class_name": "Ranger",
       "class_source": "PHB",
       "feature_name": "Land's Stride",
-      "label": "Passo della terra · vegetazione magica",
       "time": "contextual",
       "mode": "context",
       "cost": 0,
       "bonus": {
-        "name": "Land's Stride",
         "targets": [
           "saving_throw"
         ],
@@ -172,12 +159,10 @@
       "class_name": "Ranger",
       "class_source": "PHB",
       "feature_name": "Hide in Plain Sight",
-      "label": "Nascondersi in piena vista · camuffamento",
       "time": "contextual",
       "mode": "context",
       "cost": 0,
       "bonus": {
-        "name": "Hide in Plain Sight",
         "targets": [
           "skill:stealth"
         ],
@@ -191,12 +176,10 @@
       "class_name": "Ranger",
       "class_source": "PHB",
       "feature_name": "Foe Slayer",
-      "label": "Sterminatore di nemici · Saggezza",
       "time": "contextual",
       "mode": "context",
       "cost": 0,
       "bonus": {
-        "name": "Foe Slayer",
         "targets": [
           "attack_roll",
           "damage_roll"
@@ -214,7 +197,6 @@
       "feature_name": "Otherworldly Glamour",
       "passive": true,
       "bonus": {
-        "name": "Otherworldly Glamour",
         "targets": [
           "ability_check:cha"
         ],
@@ -228,12 +210,10 @@
       "class_source": "PHB",
       "subclass_name": "Samurai",
       "feature_name": "Elegant Courtier",
-      "label": "Elegant Courtier · Carisma (Persuasione)",
       "time": "contextual",
       "mode": "context",
       "cost": 0,
       "bonus": {
-        "name": "Elegant Courtier",
         "targets": [
           "skill:persuasion"
         ],
@@ -248,12 +228,10 @@
       "class_source": "PHB",
       "subclass_name": "Fey Wanderer",
       "feature_name": "Beguiling Twist",
-      "label": "Beguiling Twist · difesa mentale",
       "time": "contextual",
       "mode": "context",
       "cost": 0,
       "bonus": {
-        "name": "Beguiling Twist",
         "targets": [
           "saving_throw"
         ],
@@ -268,12 +246,10 @@
       "class_source": "PHB",
       "subclass_name": "Cavalier",
       "feature_name": "Born to the Saddle",
-      "label": "Born to the Saddle · restare in sella",
       "time": "contextual",
       "mode": "context",
       "cost": 0,
       "bonus": {
-        "name": "Born to the Saddle",
         "targets": [
           "saving_throw"
         ],
