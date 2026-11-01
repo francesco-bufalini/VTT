@@ -1,5 +1,6 @@
 // Source-qualified racial powers. No ability is inferred from free-form prose.
 import {dragonbornFtdProjection,dragonbornFtdProfile} from './dragonborn_ftd.js';
+import {speciesTraitDescription,speciesTraitOptionName} from './species_trait_text.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const currentLevel=record=>rows(record.classes).length?
@@ -8,21 +9,26 @@ const currentLevel=record=>rows(record.classes).length?
 const permitted=(record,id)=>record.origin_enabled?.[id]!==false&&
   !rows(record.proficiency_origins).some(row=>row?.id===id&&row.disabled);
 
-export function racialPowerSubraces(index={}) {
+export function racialPowerSubraces(index={},originDetails={}) {
  return rows(index.races).flatMap(race=>rows(race.revelation?.subraces).map(form=>({
    id:form.id,name:form.name,source:race.source,
    raceName:race.name,raceSource:race.source,level:race.revelation.min_level,
-   entries:[{name:form.name,level:race.revelation.min_level,entries:[form.description]}]
+   entries:[{name:form.name,level:race.revelation.min_level,entries:[
+    speciesTraitDescription(originDetails,race.name,race.source,race.revelation.trait,{includeOptions:false}),
+    speciesTraitDescription(originDetails,race.name,race.source,race.revelation.trait,{option:form.name})
+   ].filter(Boolean)}]
  })));
 }
-export function racialPowerProjection(record={},index={},features=[]) {
- const output=dragonbornFtdProjection(record,index,features);
+export function racialPowerProjection(record={},index={},features=[],originDetails={}) {
+ const output=dragonbornFtdProjection(record,index,features,originDetails);
  // Fizban's Dragonborn replaces the PHB Dragonborn, including Breath Weapon.
  // Never generate a second PHB breath tracker for the flattened subrace case.
  if(dragonbornFtdProfile(record,index))return output;
  const race=rows(index.races).find(row=>norm(row.name)===norm(record.species)&&
    norm(row.source)===norm(record.species_source));
  if(!race||record.rules_version==='2024')return output;
+ const descriptionFor=(trait,owner=null,option='')=>speciesTraitDescription(
+   originDetails,race.name,race.source,trait,{owner,option});
  const owner=features.find(feature=>norm(feature.name)===norm(race.healing?.trait)&&
    String(feature.origin_key||'').startsWith('species|')&&!feature.disabled&&!feature.inactive);
  const raceRoot='race|'+norm(race.source)+'|'+norm(race.name);
@@ -32,7 +38,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
      recharge:heal.recharge,origin_id:owner.origin_id,origin_name:heal.trait,automatic:true});
    output.abilities.push({id:heal.id,name:heal.trait,feature_id:owner.origin_id,
      origin_id:owner.origin_id,origin_name:heal.trait,source:race.source,
-     description:heal.description,action_type:heal.action_type,
+     description:descriptionFor(heal.trait,owner),action_type:heal.action_type,
      activation_mode:heal.action_type,action_kind:'ability',mode:'heal_dice',
      heal_dice:heal.roll,resource_cost:1,tracker_id:heal.tracker_id,
      target_mode:heal.target_mode,target_range_feet:heal.target_range_feet});
@@ -59,7 +65,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
      output.abilities.push({id:raw.id||trackerId,name:raw.trait||'Breath Weapon',
        feature_id:owner.origin_id,origin_id:owner.origin_id,
        origin_name:'Tratto · '+(raw.trait||'Breath Weapon'),source:race.source,
-       description:raw.description||'',action_type:raw.action_type||'action',
+       description:descriptionFor(raw.trait||'Breath Weapon',owner),action_type:raw.action_type||'action',
        activation_mode:raw.action_type||'action',mode:raw.mode||'tracked_action',
        resource_cost:1,tracker_id:trackerId});
    }
@@ -80,7 +86,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
    output.abilities.push({id:power.id,name:power.name||power.trait,
      feature_id:powerOwner.origin_id,origin_id:powerOwner.origin_id,
      origin_name:'Tratto · '+power.trait,source:race.source,
-     description:power.description||'',action_type:power.action_type||'bonus',
+     description:descriptionFor(power.trait,powerOwner),action_type:power.action_type||'bonus',
      activation_mode:power.action_type||'bonus',action_kind:'ability',
      mode:'temporary_condition',effect_condition:power.condition,
      persistent_key:power.persistent_key,duration_rounds:power.duration_rounds||1,
@@ -119,8 +125,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
    output.roll_bonuses.push({id:bonus.id||'racial-roll:'+norm(race.name)+':'+norm(bonus.trait),
      origin_id:bonusOwner.origin_id,origin_name:'Tratto · '+bonus.trait,
      origin_parent_id:raceRoot,granting_trait:bonus.trait,
-     name:bonus.name||bonus.trait,description:bonus.description||'',
-     condition_label:bonus.condition_label||'',
+     name:bonus.trait,description:descriptionFor(bonus.trait,bonusOwner),
      dice:bonus.dice,targets:bonus.targets,
      ...(trackerId?{tracker_id:trackerId,tracker_cost:Math.max(1,Number(bonus.tracker_cost)||1),
        strict_tracker:bonus.strict_tracker===true}:{}),
@@ -139,7 +144,7 @@ export function racialPowerProjection(record={},index={},features=[]) {
    output.abilities.push({id:action.id,name:action.name||action.trait,
      feature_id:owner.origin_id,origin_id:owner.origin_id,
      origin_name:'Tratto · '+action.trait,source:race.source,
-     description:action.description||'',action_type:action.action_type,
+     description:descriptionFor(action.trait,owner),action_type:action.action_type,
      activation_mode:action.action_type,action_kind:'ability',
      mode:'tracked_action',tracker_id:action.tracker_id,resource_cost:1,
      ...(action.action_ref?{action_ref:String(action.action_ref)}:{}),
@@ -153,7 +158,8 @@ export function racialPowerProjection(record={},index={},features=[]) {
  // presented as consumable powers in Battle or Resources.
  output.passive_notes=rows(race.passive_notes).flatMap(note=>{
    const owner=featureFor(note.trait);
-   return owner&&note.id?[{...note,origin_id:owner.origin_id,
+   return owner&&note.id?[{...note,name:note.trait,
+     description:descriptionFor(note.trait,owner),origin_id:owner.origin_id,
      origin_name:'Tratto · '+note.trait}]:[];
  });
  // Racial actions are trait-owned, source-qualified and do not need a
@@ -166,9 +172,11 @@ export function racialPowerProjection(record={},index={},features=[]) {
      (typeof roll.trait==='string'&&roll.trait.trim()||
       typeof roll.id==='string'&&roll.id.trim())))continue;
    output.abilities.push({
-     id:action.id,name:action.name||action.trait,feature_id:actionOwner.origin_id,
+     id:action.id,name:action.action_ref?
+      action.trait+' · '+action.action_ref.replace(/(^|_)\w/g,part=>part.replace('_',' ').toUpperCase()):
+      action.name||action.trait,feature_id:actionOwner.origin_id,
      origin_id:actionOwner.origin_id,origin_name:'Tratto · '+action.trait,
-     source:race.source,description:action.description||'',
+     source:race.source,description:descriptionFor(action.trait,actionOwner),
      action_type:action.action_type,activation_mode:action.action_type,
      action_kind:'ability',resource_cost:0,
      ...(action.action_ref?{action_ref:String(action.action_ref)}:{}),
@@ -199,14 +207,17 @@ export function racialPowerProjection(record={},index={},features=[]) {
    ];
    output.rest_choices.push({group:training.group,trait:training.trait,recovery:training.recovery,
      kind:'training',root_id:raceRoot,origin_id:trainingOwner.origin_id,
-     picks,description:training.description||''});
+     picks,description:descriptionFor(training.trait,trainingOwner)});
  }
  const season=race.season_choice,seasonOwner=season&&featureFor(season.trait);
  if(seasonOwner&&season.group&&rows(season.options).length)
    output.rest_choices.push({group:season.group,trait:season.trait,recovery:season.recovery,
      kind:'racial_option',root_id:raceRoot,origin_id:seasonOwner.origin_id,
-     label:season.label||'Scelta',options:season.options,option_labels:season.option_labels||{},
-     description:'Puoi scegliere o cambiare questa opzione al termine del riposo lungo.'});
+     label:season.label||'Scelta',options:season.options,
+     option_labels:Object.fromEntries(season.options.map(option=>[option,
+       speciesTraitOptionName(originDetails,race.name,race.source,season.trait,option)||
+       option[0].toUpperCase()+option.slice(1)])),
+     description:descriptionFor(season.trait,seasonOwner)});
  const revelation=race.revelation;
  const form=rows(revelation?.subraces).find(row=>norm(row.name)===norm(record.subrace)&&
    norm(record.subrace_source)===norm(race.source));
@@ -216,7 +227,10 @@ export function racialPowerProjection(record={},index={},features=[]) {
    const featureId='feature:'+originKey+'|'+revelation.min_level+'|'+norm(form.name);
    const feature={name:form.name,origin_id:featureId,origin_key:originKey,
      level:revelation.min_level,requirements:{scope:'character',min_level:revelation.min_level},
-     entries:[form.description],bonuses:[],action_type:'bonus',action_kind:'Capacità'};
+     entries:[
+      speciesTraitDescription(originDetails,race.name,race.source,revelation.trait,{includeOptions:false}),
+      speciesTraitDescription(originDetails,race.name,race.source,revelation.trait,{option:form.name})
+     ].filter(Boolean),bonuses:[],action_type:'bonus',action_kind:'Capacità'};
    output.features.push(feature);
    output.trackers.push({id:revelation.tracker_id,name:revelation.trait,
      max:revelation.uses,recharge:revelation.recharge,origin_id:featureId,
@@ -312,20 +326,16 @@ export function racialPowerSpellDefinitions(index={},record={},originDetails={})
     range:'Self',range_feet:race.teleport.range_feet,target_mode:race.teleport.target_mode||'teleport_self',
     teleport_range_feet:race.teleport.range_feet,
     targeting_template_spell_id:race.teleport.targeting_template_spell_id||'',
-    duration:'Instantaneous',description:race.teleport.description+
-      (race.season_choice&&currentLevel(record)>=3&&norm(record.species)===norm(race.name)&&
-       norm(record.species_source)===norm(race.source)?
-        (()=>{const key=record.trait_state_selection?.[race.season_choice.group]||'';
-          const source=originDetails?.races?.[norm(race.name)+'|'+norm(race.source)];
-          const feature=rows(source?.entries).find(row=>norm(row?.name)===norm(race.teleport.trait));
-          const seasonList=rows(feature?.entries).find(row=>row?.type==='list');
-          const sourceEntry=rows(seasonList?.items).find(row=>norm(row?.name)===key)?.entry;
-          // Prefer the original 5etools trait text when the offline source catalog
-          // is available; the short data-defined copy is only a fallback.
-          const description=String(sourceEntry||race.season_choice.descriptions?.[key]||'')
-            .replace(/\{@(?:condition|damage|dice)\s+([^}|]+)[^}]*\}/gi,'$1');
-          return description?'\nStagione: '+(race.season_choice.option_labels?.[key]||key)+'. '+description:
-            '\nScegli una stagione per conoscere l’effetto aggiuntivo dal livello 3.';})():'')
+    duration:'Instantaneous',description:[
+      speciesTraitDescription(originDetails,race.name,race.source,race.teleport.trait,{
+        includeOptions:!race.season_choice
+      }),
+      race.season_choice&&currentLevel(record)>=3&&norm(record.species)===norm(race.name)&&
+      norm(record.species_source)===norm(race.source)?
+        speciesTraitDescription(originDetails,race.name,race.source,race.teleport.trait,{
+          option:record.trait_state_selection?.[race.season_choice.group]||''
+        }):''
+    ].filter(Boolean).join('\n')
   }]:[]),
   ...rows(race.revelation?.subraces).map(form=>({
    id:form.spell_id,name:form.name,source:race.source,level:0,
@@ -335,11 +345,20 @@ export function racialPowerSpellDefinitions(index={},record={},originDetails={})
    aoe_shape:'sphere',aoe_radius_feet:form.radius_feet,
    persistent:true,follow_caster:true,duration:'1 minute',
    condition_inflict:[],saving_throw:form.spellcasting_ability?['charisma']:[],
-   description:form.description,damage_type:form.damage_type,
+   description:[
+     speciesTraitDescription(originDetails,race.name,race.source,race.revelation.trait,{
+       includeOptions:false
+     }),
+     speciesTraitDescription(originDetails,race.name,race.source,race.revelation.trait,{
+       option:form.name
+     })
+   ].filter(Boolean).join('\n'),
+   damage_type:form.damage_type,
    bonus_damage_once_per_turn:'proficiency',
    area_damage_end_of_caster_turn:form.name==='Radiant Consumption',
    area_damage_formula:form.name==='Radiant Consumption'?'proficiency':''
- }))]);
+  }))
+ ]);
 }
 
 // These generic computations are deliberately independent of hit resolution:

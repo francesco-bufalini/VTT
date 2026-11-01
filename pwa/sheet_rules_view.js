@@ -866,7 +866,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      '<div><dt>Attivazione</dt><dd>'+esc(caption)+'</dd></div>'+
      (power.die||action.dice?'<div><dt>Dado</dt><dd>'+esc(power.die||action.dice)+'</dd></div>':'')+
      (row.cost?'<div><dt>Costo</dt><dd>'+esc(row.cost+' utilizzi'+(tracker?' · '+tracker.name:''))+'</dd></div>':'')+'</dl>'+
-    (description?'<div class="power-privilege-description"><h3>Descrizione del tratto</h3><p class="trait-description">'+esc(description)+'</p></div>':'')+
+    (description?'<div class="power-privilege-description"><h3>Descrizione del tratto</h3><p class="trait-description">'+render5etoolsInline(description)+'</p></div>':'')+
     monsterActionOptionsMarkup({...action,id:'resource:'+String(action.id||row.id)})+
     (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'');
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));

@@ -1,3 +1,4 @@
+import {speciesTraitDescription} from './species_trait_text.js';
 // Rules for the 2021 Fizban dragonborn variants. The PHB dragonborn is replaced,
 // never inherited, even when an older character stores FTD as a subrace.
 const norm=v=>String(v??'').trim().toLowerCase();
@@ -75,13 +76,15 @@ export function dragonbornFtdResistances(record={},catalog={},features=[]){
    benefit_id:'defense:'+p.origin_id+':2:'+p.ancestry.damage_type,automatic:true});
  return output;
 }
-export function dragonbornFtdProjection(record={},catalog={},knownFeatures=[]){
+export function dragonbornFtdProjection(record={},catalog={},knownFeatures=[],originDetails={}){
  const output={features:[],trackers:[],abilities:[],origin_spells:[],active_forms:[],rest_choices:[],roll_bonuses:[]};
  const p=dragonbornFtdProfile(record,catalog);
  if(!p||record.origin_enabled?.[p.origin_id]===false||
    rows(record.proficiency_origins).some(x=>x.id===p.origin_id&&x.disabled))return output;
  const level=rows(record.classes).length?rows(record.classes).reduce((n,x)=>n+Math.max(0,Number(x.level)||0),0):Math.max(1,Number(record.level)||1);
  const proficiency=2+Math.floor((Math.max(1,level)-1)/4);
+ const descriptionFor=(trait,option='')=>speciesTraitDescription(
+   originDetails,p.definition.name,p.definition.source,trait,{option});
  const featureFor=(name,minLevel=1)=>{
   if(level<minLevel)return null;
   const original=rows(knownFeatures).find(f=>norm(f.name)===norm(name)&&f.origin_key===p.origin_key);
@@ -105,7 +108,7 @@ export function dragonbornFtdProjection(record={},catalog={},knownFeatures=[]){
    recharge:'long_rest',origin_id:breath,origin_name:'Breath Weapon',automatic:true});
   output.abilities.push({id:tracker_id,name:'Breath Weapon',source:'FTD',
    feature_id:breath,origin_id:breath,origin_name:'Tratto · Breath Weapon',
-   description:'Sostituisce uno degli attacchi dell’azione Attacco. TS Destrezza per dimezzare i danni.',
+   description:descriptionFor('Breath Weapon'),
    action_type:'action',activation_mode:'action',mode:'save_area',
    attack_replacement:true,resource_cost:1,tracker_id,
    area_shape:rule.shape,area_length_feet:rule.length_feet||0,
@@ -120,12 +123,13 @@ export function dragonbornFtdProjection(record={},catalog={},knownFeatures=[]){
    origin_id:owner,origin_name:special.trait,automatic:true});
   output.abilities.push({id:tracker_id,name:special.trait,source:'FTD',
    feature_id:owner,origin_id:owner,origin_name:'Tratto · '+special.trait,
-   description:special.description,action_type:special.action_type,
+   description:descriptionFor(special.trait),action_type:special.action_type,
    activation_mode:special.action_type,mode:special.mode,
    attack_replacement:special.mode==='choice_area',
    resource_cost:1,tracker_id,duration_rounds:special.duration_rounds||0,
    persistent_key:special.persistent_key||'',persistent_origin_id:p.origin_id,
-   damage_type:p.ancestry?.damage_type||'',options:rows(special.options),
+   damage_type:p.ancestry?.damage_type||'',options:rows(special.options).map(option=>({...option,
+     description:descriptionFor(special.trait,option.name)})),
    area_shape:special.shape||'',area_radius_feet:special.radius_feet||0,
    save_base:'constitution',half_on_save:false});
  }

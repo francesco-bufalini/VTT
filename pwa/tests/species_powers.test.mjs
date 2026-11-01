@@ -5,6 +5,8 @@ import {racialPowerProjection,racialPowerSubraces,racialPowerSpellDefinitions,he
 import {calculateSheet} from '../sheet_rules.js';
 import {structuredFeatureGrants} from '../structured_effects.js';
 const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const native=JSON.parse(readFileSync(new URL('../../vtt/data/compendium_features_5etools.json',import.meta.url),'utf8'));
+const original={races:native.races};
 const id='5etools:races:mpmm:aasimar';
 const base={kind:'character',rules_version:'2014',level:3,species:'Aasimar',
  species_source:'MPMM',species_id:id,
@@ -72,4 +74,34 @@ test('Radiant Soul flight follows walking speed only during its active subrace m
 test('traits without numeric bonuses do not abort sheet calculation',()=>{
  const feature={name:'Legacy trait',origin_id:'feature:legacy',origin_key:'race|phb|elf'};
  assert.deepEqual(structuredFeatureGrants({}, {}, [feature,{...feature,bonuses:null},null]),[]);
+});
+
+test('species actions and synthetic spells display canonical 5eTools text',()=>{
+ const aasimar=native.races['aasimar|mpmm'];
+ const sourceHands=aasimar.entries.find(x=>x.name==='Healing Hands').entries[0];
+ const projected=racialPowerProjection(base,index,[healing],original);
+ assert.equal(projected.abilities.find(x=>x.name==='Healing Hands').description,sourceHands);
+ const forms=aasimar.entries.find(x=>x.name==='Celestial Revelation').entries
+  .find(x=>x.type==='list').items;
+ for(const form of racialPowerSubraces(index,original)){
+  const text=form.entries[0].entries.join(' ');
+  assert(text.includes(forms.find(x=>x.name===form.name).entry.slice(0,45)));
+ }
+ const spells=racialPowerSpellDefinitions(index,base,original);
+ assert.match(spells.find(x=>x.id==='vtt_aasimar_radiant_soul').description,/Two luminous, spectral wings/);
+ assert.equal(racialPowerSpellDefinitions(index,base).find(x=>x.id==='vtt_aasimar_radiant_soul').description,'');
+});
+test('species mechanics data contain no duplicate descriptions or translated choices',()=>{
+ const walk=v=>{
+  if(Array.isArray(v)){v.forEach(walk);return;}
+  if(v&&typeof v==='object'){
+   assert(!Object.hasOwn(v,'description'));
+   assert(!Object.hasOwn(v,'descriptions'));
+   for(const child of Object.values(v))walk(child);
+  }
+ };
+ walk(index.races);
+ const eladrin=index.races.find(x=>x.name==='Eladrin');
+ assert.deepEqual(eladrin.season_choice.options,['autumn','winter','spring','summer']);
+ assert.equal(eladrin.season_choice.option_labels,undefined);
 });

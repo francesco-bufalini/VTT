@@ -58,14 +58,22 @@ test('season is a real racial picker, source qualified with descriptive rest gui
  assert.equal(summer.rest_selection_available.eladrin_training,true,'changing season does not consume training');
  assert.throws(()=>savePendingChoice({...r,species:'Shadar-Kai'},first,['winter']),/Stagione/);
 });
-test('Fey Step only describes the seasonal extension from level 3 onward',()=>{
+test('Fey Step displays the original selected seasonal effect only after level three',()=>{
+ const nativeRace=native.races.find(x=>x.name==='Eladrin'&&x.source==='MPMM');
+ const details={races:{'eladrin|mpmm':nativeRace}};
+ const options=nativeRace.entries.find(x=>x.name==='Fey Step').entries
+  .find(x=>x.type==='list').items;
  for(const season of ['autumn','winter','spring','summer']){
   const selected={...record('Eladrin'),trait_state_selection:{eladrin_season:season}};
-  const show=racialPowerSpellDefinitions(index,selected).find(x=>x.id==='vtt_eladrin_fey_step');
-  assert.match(show.description,/Stagione:/);
-  assert.match(show.description,new RegExp(rule('Eladrin','MPMM').season_choice.option_labels[season]));
-  const young=racialPowerSpellDefinitions(index,{...selected,level:2}).find(x=>x.id==='vtt_eladrin_fey_step');
-  assert.doesNotMatch(young.description,/Stagione:/);
+  const show=racialPowerSpellDefinitions(index,selected,details).find(x=>x.id==='vtt_eladrin_fey_step');
+  assert.match(show.description,/As a bonus action, you can magically teleport/);
+  const chosen=options.find(x=>x.name.toLowerCase()===season);
+  assert(show.description.includes(chosen.entry.slice(0,45)));
+  for(const other of options.filter(x=>x!==chosen))
+   assert(!show.description.includes(other.entry.slice(0,45)));
+  const young=racialPowerSpellDefinitions(index,{...selected,level:2},details)
+   .find(x=>x.id==='vtt_eladrin_fey_step');
+  assert(!young.description.includes(chosen.entry.slice(0,45)));
  }
 });
 test('all five latest pre-2024 racial rest proficiencies use their exact distinct slot types',()=>{

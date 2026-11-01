@@ -18,8 +18,7 @@
         "roll": {
           "count": "proficiency",
           "sides": 4
-        },
-        "description": "Come azione, tocchi una creatura e ripristini PF pari alla somma di tanti d4 quant'è il tuo bonus di competenza. Un utilizzo per riposo lungo."
+        }
       },
       "revelation": {
         "trait": "Celestial Revelation",
@@ -36,16 +35,14 @@
             "spell_id": "vtt_aasimar_necrotic_shroud",
             "spellcasting_ability": "cha",
             "radius_feet": 10,
-            "damage_type": "necrotic",
-            "description": "Emanazione entro 10 ft. La CD dell'eventuale tiro su Carisma dipende dalla caratteristica CAR del personaggio. Danno necrotico aggiuntivo pari al bonus competenza una volta per turno. La condizione Spaventato non viene applicata automaticamente."
+            "damage_type": "necrotic"
           },
           {
             "name": "Radiant Consumption",
             "id": "subrace:aasimar|mpmm|radiant consumption|mpmm",
             "spell_id": "vtt_aasimar_radiant_consumption",
             "radius_feet": 10,
-            "damage_type": "radiant",
-            "description": "Emetti luce intensa entro 10 ft e luce fioca per altri 10 ft. Alla fine del tuo turno, le creature entro 10 ft subiscono danni radianti pari al bonus competenza. Danno radiante aggiuntivo pari alla competenza una volta per turno."
+            "damage_type": "radiant"
           },
           {
             "name": "Radiant Soul",
@@ -53,7 +50,6 @@
             "spell_id": "vtt_aasimar_radiant_soul",
             "radius_feet": 10,
             "damage_type": "radiant",
-            "description": "Per un minuto ottieni volo pari alla velocità di camminata; una volta per turno puoi aggiungere danni radianti pari al bonus competenza. L'emanazione visualizza la forma e segue il token.",
             "fly_equals_walk": true
           }
         ]
@@ -71,8 +67,7 @@
         "recharge": "long_rest",
         "action_type": "bonus",
         "target_mode": "teleport_self",
-        "range_feet": 30,
-        "description": "Come azione bonus, ti teletrasporti di massimo 30 ft in uno spazio libero che puoi vedere. Utilizzi pari alla competenza; recupero al riposo lungo."
+        "range_feet": 30
       },
       "rest_training": {
         "trait": "Astral Trance",
@@ -80,7 +75,6 @@
         "recovery": "long_rest",
         "skill_count": 1,
         "weapon_tool_count": 1,
-        "description": "Dopo una trance scegli una competenza in un'abilità e una in un'arma o uno strumento. Mantieni le competenze fino al prossimo riposo lungo e puoi riselezionarle al termine di ogni riposo lungo.",
         "picks": [
           {
             "label": "Abilità",
@@ -115,8 +109,7 @@
         "uses": "proficiency",
         "recharge": "long_rest",
         "tracker_cost": 1,
-        "strict_tracker": true,
-        "description": "Dopo aver visto il d20, ma prima della risoluzione, aggiungi 1d4 a un tiro per colpire, una prova di caratteristica o un tiro salvezza. Utilizzi pari al bonus di competenza per riposo lungo."
+        "strict_tracker": true
       }
     },
     {
@@ -131,9 +124,7 @@
           "targets": [
             "attack_damage"
           ],
-          "optional": true,
-          "condition_label": "Solo se il bersaglio non ha ancora svolto alcun turno nel combattimento",
-          "description": "Se colpisci una creatura con un tiro per colpire, infliggi 2d6 danni aggiuntivi se la creatura non ha ancora svolto un turno nel combattimento attuale. Controlla il requisito sul bersaglio prima di usare il bonus. Nessun tracker o limite per combattimento: il bonus si applica a ogni attacco che soddisfa la condizione."
+          "optional": true
         }
       ]
     },
@@ -150,8 +141,7 @@
             "kind": "attack",
             "trait": "Hooves",
             "slot": "natural"
-          },
-          "description": "Come azione bonus, effettua un attacco con gli zoccoli tramite il normale popup del tiro per colpire. Non viene richiesta una verifica del movimento precedente."
+          }
         }
       ]
     },
@@ -165,8 +155,7 @@
         "uses": 1,
         "recharge": "short_rest",
         "action_type": "action",
-        "mode": "tracked_action",
-        "description": "Soffio draconico PHB 2014: un utilizzo per riposo breve o lungo. Area, tipo di danno e TS dipendono dall'ascendenza draconica. Dragon Fear può spendere lo stesso utilizzo invece di soffiare."
+        "mode": "tracked_action"
       }
     },
     {
@@ -205,8 +194,7 @@
         "mode": "temporary_defense",
         "action_type": "action",
         "duration_rounds": 10,
-        "persistent_key": "racial:dragonborn_ftd:warding",
-        "description": "Come azione ottieni immunità al danno della tua ascendenza draconica per 1 minuto. Un utilizzo per riposo lungo."
+        "persistent_key": "racial:dragonborn_ftd:warding"
       },
       "source": "FTD"
     },
@@ -245,8 +233,7 @@
         "mode": "temporary_flight",
         "action_type": "bonus",
         "duration_rounds": 10,
-        "persistent_key": "racial:dragonborn_ftd:flight",
-        "description": "Come azione bonus ottieni volo pari alla velocità di camminata e hovering per 1 minuto. Un utilizzo per riposo lungo."
+        "persistent_key": "racial:dragonborn_ftd:flight"
       },
       "source": "FTD"
     },
@@ -286,23 +273,20 @@
         "action_type": "action",
         "shape": "cone",
         "radius_feet": 15,
-        "description": "Sostituisce un attacco dell'azione Attacco. Scegli il soffio: la CD è 8 + bonus competenza + modificatore Costituzione.",
         "options": [
           {
             "id": "enervating",
             "name": "Enervating Breath",
             "save_ability": "con",
             "effect": "incapacitated",
-            "duration_rounds": 1,
-            "description": "TS Costituzione: incapacitato fino all'inizio del tuo prossimo turno."
+            "duration_rounds": 1
           },
           {
             "id": "repulsion",
             "name": "Repulsion Breath",
             "save_ability": "str",
             "effect": "push_prone",
-            "push_feet": 20,
-            "description": "TS Forza: spinto di 20 ft e prono in caso di fallimento."
+            "push_feet": 20
           }
         ]
       },
@@ -320,8 +304,7 @@
         "recharge": "long_rest",
         "action_type": "bonus",
         "target_mode": "teleport_self",
-        "range_feet": 30,
-        "description": "Come azione bonus, ti teletrasporti fino a 30 ft in uno spazio libero visibile. Utilizzi pari alla competenza, recuperati dopo un riposo lungo. Dal livello 3 il teletrasporto ha un effetto aggiuntivo, descritto dalla stagione scelta (senza automatismi)."
+        "range_feet": 30
       },
       "season_choice": {
         "trait": "Fey Step",
@@ -333,19 +316,7 @@
           "winter",
           "spring",
           "summer"
-        ],
-        "option_labels": {
-          "autumn": "Autunno",
-          "winter": "Inverno",
-          "spring": "Primavera",
-          "summer": "Estate"
-        },
-        "descriptions": {
-          "autumn": "Dal livello 3: dopo Fey Step, fino a due creature a scelta visibili entro 10 ft devono superare un TS Saggezza o restano Affascinate per 1 minuto, finché tu o i tuoi alleati non infliggete loro danni.",
-          "winter": "Dal livello 3: prima del teletrasporto, una creatura visibile entro 5 ft deve superare un TS Saggezza o diventa Spaventata da te fino alla fine del tuo prossimo turno.",
-          "spring": "Dal livello 3: puoi toccare una creatura consenziente entro 5 ft e teletrasportarla al tuo posto fino a 30 ft in uno spazio libero che puoi vedere. L'effetto resta da risolvere manualmente.",
-          "summer": "Dal livello 3: dopo Fey Step, ogni creatura a scelta visibile entro 5 ft subisce danni da fuoco pari al tuo bonus di competenza. L'effetto resta da risolvere manualmente."
-        }
+        ]
       },
       "rest_training": {
         "trait": "Trance",
@@ -366,8 +337,7 @@
               "tool"
             ]
           }
-        ],
-        "description": "Al termine della trance, scegli due nuove competenze differenti, ciascuna in un'arma o uno strumento del Manuale del Giocatore. Durano fino al prossimo riposo lungo; la stagione può essere cambiata separatamente."
+        ]
       }
     },
     {
@@ -391,8 +361,7 @@
           ],
           "tracker_id": "race:mpmm:firbolg:hidden_step:uses",
           "uses": "proficiency",
-          "recharge": "long_rest",
-          "description": "Come azione bonus diventi Invisibile fino all'inizio del tuo turno successivo, oppure finché effettui un attacco, tiri i danni o costringi una creatura a un tiro salvezza. Utilizzi pari alla competenza; recupero con riposo lungo."
+          "recharge": "long_rest"
         }
       ],
       "spell_usage": [
@@ -424,8 +393,7 @@
           "action_type": "bonus",
           "tracker_id": "race:mpmm:genasi:earth:blade_ward_bonus:uses",
           "uses": "proficiency",
-          "recharge": "long_rest",
-          "description": "Lancia Blade Ward come azione bonus (bonus competenza volte per riposo lungo). Puoi sempre lanciarlo anche con il suo normale tempo di lancio, senza utilizzare questo tracker."
+          "recharge": "long_rest"
         }
       ],
       "spell_usage": [
@@ -445,9 +413,7 @@
       "passive_notes": [
         {
           "id": "race:aag:giff:firearms_mastery",
-          "trait": "Firearms Mastery",
-          "name": "Armi da fuoco",
-          "description": "Competenza con tutte le armi da fuoco. Ignori la proprietà Ricarica (Loading) delle armi da fuoco; quando attacchi con un'arma da fuoco a gittata lunga non subisci svantaggio soltanto per la gittata. Ricorda queste eccezioni quando tiri l'attacco: non sono attivazioni e non consumano risorse."
+          "trait": "Firearms Mastery"
         }
       ]
     },
@@ -472,8 +438,7 @@
               "tool"
             ]
           }
-        ],
-        "description": "Dopo ogni riposo lungo scegli una competenza in un'abilità e una in un'arma o uno strumento del Manuale del Giocatore, valide fino al riposo lungo successivo."
+        ]
       }
     },
     {
@@ -489,8 +454,7 @@
             "kind": "attack",
             "trait": "Bite",
             "slot": "natural"
-          },
-          "description": "Come azione bonus, puoi muoverti fino a metà della velocità e sferrare un attacco con Bite. Secondo le regole, è disponibile dopo aver ridotto una creatura a 0 PF con un attacco in mischia durante il tuo turno; verifica il requisito manualmente, anche se il tiro è avvenuto fuori dall'app."
+          }
         }
       ]
     },
@@ -501,18 +465,14 @@
         {
           "id": "race:dmg:goblin:nimble_escape:disengage",
           "trait": "Nimble Escape",
-          "name": "Disimpegnarsi · Nimble Escape",
           "action_type": "bonus",
-          "action_ref": "disengage",
-          "description": "Nimble Escape: puoi effettuare Disimpegnarsi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+          "action_ref": "disengage"
         },
         {
           "id": "race:dmg:goblin:nimble_escape:hide",
           "trait": "Nimble Escape",
-          "name": "Nascondersi · Nimble Escape",
           "action_type": "bonus",
-          "action_ref": "hide",
-          "description": "Nimble Escape: puoi effettuare Nascondersi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+          "action_ref": "hide"
         }
       ]
     },
@@ -523,18 +483,14 @@
         {
           "id": "race:mpmm:goblin:nimble_escape:disengage",
           "trait": "Nimble Escape",
-          "name": "Disimpegnarsi · Nimble Escape",
           "action_type": "bonus",
-          "action_ref": "disengage",
-          "description": "Nimble Escape: puoi effettuare Disimpegnarsi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+          "action_ref": "disengage"
         },
         {
           "id": "race:mpmm:goblin:nimble_escape:hide",
           "trait": "Nimble Escape",
-          "name": "Nascondersi · Nimble Escape",
           "action_type": "bonus",
-          "action_ref": "hide",
-          "description": "Nimble Escape: puoi effettuare Nascondersi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+          "action_ref": "hide"
         }
       ]
     },
@@ -545,18 +501,14 @@
         {
           "id": "race:vgm:goblin:nimble_escape:disengage",
           "trait": "Nimble Escape",
-          "name": "Disimpegnarsi · Nimble Escape",
           "action_type": "bonus",
-          "action_ref": "disengage",
-          "description": "Nimble Escape: puoi effettuare Disimpegnarsi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+          "action_ref": "disengage"
         },
         {
           "id": "race:vgm:goblin:nimble_escape:hide",
           "trait": "Nimble Escape",
-          "name": "Nascondersi · Nimble Escape",
           "action_type": "bonus",
-          "action_ref": "hide",
-          "description": "Nimble Escape: puoi effettuare Nascondersi come azione bonus durante il tuo turno. L'azione normale rimane disponibile. Nessun utilizzo limitato."
+          "action_ref": "hide"
         }
       ]
     },
@@ -577,7 +529,6 @@
             "add": "con_mod",
             "label": "Riduzione danni"
           },
-          "description": "Reazione quando subisci danni: tira 1d12 + modificatore di Costituzione e riduci quei danni di tale quantità (minimo 0). Il pulsante Usa registra un utilizzo e tira la riduzione; puoi applicare la riduzione nel popup dei PF oppure usarla manualmente. Utilizzi pari alla competenza, riposo lungo.",
           "damage_response": {
             "trigger": "would_reach_zero",
             "effect": "reduce_damage"
@@ -602,7 +553,6 @@
             "add": "proficiency",
             "label": "Riduzione danni"
           },
-          "description": "Reazione quando subisci danni: tira 1d6 + bonus di competenza e riduci quei danni del totale (minimo 0). Usa registra l'utilizzo e tira la riduzione; puoi applicare la riduzione nel popup dei PF oppure usarla manualmente. Utilizzi pari alla competenza, riposo lungo.",
           "damage_response": {
             "trigger": "would_reach_zero",
             "effect": "reduce_damage"
@@ -625,7 +575,6 @@
             "effect": "retain_one_hp",
             "require_not_instant_death": true
           },
-          "description": "Quando i danni ti ridurrebbero a 0 PF senza ucciderti sul colpo, resti invece a 1 PF. Non richiede tiri o reazioni; un utilizzo per riposo lungo. Usa il popup PF per applicarlo automaticamente oppure registra manualmente l'utilizzo.",
           "id": "race:phb:half_orc:relentless_endurance",
           "tracker_id": "race:phb:half_orc:relentless_endurance:uses"
         }
@@ -642,8 +591,7 @@
           "action_type": "bonus",
           "tracker_id": "race:mpmm:harengon:rabbit_hop:uses",
           "uses": "proficiency",
-          "recharge": "long_rest",
-          "description": "Come azione bonus puoi saltare di 5 × il bonus di competenza piedi senza provocare attacchi di opportunità. Richiede una velocità maggiore di 0. Usa registra un utilizzo; sposta il token manualmente. Utilizzi pari alla competenza, riposo lungo."
+          "recharge": "long_rest"
         }
       ]
     },
@@ -658,8 +606,7 @@
           "action_type": "bonus",
           "tracker_id": "race:mpmm:lizardfolk:hungry_jaws:uses",
           "uses": "proficiency",
-          "recharge": "long_rest",
-          "description": "Come azione bonus effettui un attacco speciale con Bite (Morso), che infligge i danni normali del morso. Se colpisce, ottieni PF temporanei pari al bonus di competenza. Usa registra un utilizzo; tira l'attacco del morso dalla scheda Attacchi e assegna manualmente i PF temporanei solo se necessario. Utilizzi pari alla competenza, riposo lungo."
+          "recharge": "long_rest"
         }
       ]
     },
@@ -676,7 +623,6 @@
           "uses": "proficiency",
           "recharge": "long_rest",
           "temp_hp": "proficiency",
-          "description": "Come azione bonus puoi effettuare Scatto. Quando utilizzi questo privilegio ottieni PF temporanei pari al bonus di competenza (non si sommano a quelli già presenti: conserva il valore maggiore). Usa registra un utilizzo e applica i PF temporanei; il movimento è da effettuare manualmente. Utilizzi pari alla competenza, riposo lungo.",
           "action_ref": "dash"
         },
         {
@@ -690,7 +636,6 @@
             "effect": "retain_one_hp",
             "require_not_instant_death": true
           },
-          "description": "Quando i danni ti ridurrebbero a 0 PF senza ucciderti sul colpo, resti invece a 1 PF. Non richiede tiri o reazioni; un utilizzo per riposo lungo. Usa il popup PF per applicarlo automaticamente oppure registra manualmente l'utilizzo.",
           "id": "race:mpmm:orc:relentless_endurance",
           "tracker_id": "race:mpmm:orc:relentless_endurance:uses"
         }
@@ -708,8 +653,7 @@
           "roll_effect": {
             "dice": "1d8",
             "label": "Piedi aggiuntivi del salto"
-          },
-          "description": "Ogni volta che effettui un salto in lungo o in alto, anche da fermo, aggiungi 1d8 piedi alla distanza percorsa. Il movimento extra consuma normalmente la tua velocità; usa il pulsante per tirare il dado, senza tracker."
+          }
         }
       ]
     },
@@ -735,8 +679,7 @@
               "tool"
             ]
           }
-        ],
-        "description": "Al termine della trance scegli due competenze diverse in armi o strumenti del Manuale del Giocatore, valide fino al riposo lungo successivo."
+        ]
       }
     },
     {
@@ -761,8 +704,7 @@
               "tool"
             ]
           }
-        ],
-        "description": "Al termine della trance scegli due competenze diverse in armi o strumenti del Manuale del Giocatore, valide fino al riposo lungo successivo."
+        ]
       }
     },
     {
@@ -779,8 +721,7 @@
           "recharge": "long_rest",
           "persistent_key": "racial:shifter:shifting",
           "duration_rounds": 10,
-          "temp_hp": "double_proficiency",
-          "description": "Come azione bonus entri in mutazione per 1 minuto, finché muori o termini la forma come azione bonus. Ottieni PF temporanei pari a 2 × competenza (non cumulabili). Variante scelta alla creazione: Beasthide +1d6 PF temporanei e +1 CA; Longtooth morso 1d6 + FOR come azione bonus in mutazione; Swiftstride +10 ft velocità e reazione di spostamento 10 ft; Wildhunt vantaggio alle prove di SAG e protezione dal vantaggio dei nemici vicini. Usa attiva lo stato e il tracker; applica manualmente gli effetti della variante. Utilizzi pari alla competenza, riposo lungo."
+          "temp_hp": "double_proficiency"
         }
       ]
     }

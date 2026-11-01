@@ -7,6 +7,8 @@ import {battleAbilityEntries} from '../action_economy.js';
 import {rollBattleDamage} from '../sheet_rules_view.js';
 
 const catalog=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const source=JSON.parse(readFileSync(new URL('../../vtt/data/compendium_features_5etools.json',import.meta.url),'utf8'));
+const originDetails={races:source.races};
 const record=(name,source='MPMM')=>{
  const id='5etools:races:'+source.toLowerCase()+':'+name.toLowerCase().replaceAll(' ','%20');
  return {id:'test',kind:'character',rules_version:'2014',level:9,species:name,species_source:source,
@@ -23,7 +25,7 @@ const traits={
  Orc:['Adrenaline Rush'],Shifter:['Shifting'],
  Harengon:['Rabbit Hop'],Giff:['Firearms Mastery']
 };
-const projection=(name,source)=>{const c=record(name,source);return {c,p:racialPowerProjection(c,catalog,traits[name].map(t=>owner(c,t)))};};
+const projection=(name,source)=>{const c=record(name,source);return {c,p:racialPowerProjection(c,catalog,traits[name].map(t=>owner(c,t)),originDetails)};};
 
 test('all eight latest 2014 racial features project from their own trait and source',()=>{
  for(const [name,source] of [['Goliath','MPMM'],['Hadozee','AAG'],['Satyr','MPMM'],
@@ -90,8 +92,8 @@ test('Lizardfolk, Orc, Shifter and Harengon have PB limited reusable bonus actio
  assert.equal(shifter.duration_rounds,10);
  assert.deepEqual(racialAbilityTemporaryHpPatch({temporary_hp:0},shifter,computed),{temporary_hp:8});
  const hop=projection('Harengon','MPMM').p.abilities[0];
- assert.match(hop.description,/5 ×/);
- assert.match(lizard.description,/solo se necessario|solo se|Se colpisce/);
+ assert.match(hop.description,/five times your proficiency bonus/);
+ assert.match(lizard.description,/If the attack hits/);
 });
 
 test('Giff Firearms Mastery is passive and does not create an action or a tracker',()=>{
@@ -99,8 +101,8 @@ test('Giff Firearms Mastery is passive and does not create an action or a tracke
  assert.equal(p.abilities.length,0);
  assert.equal(p.trackers.length,0);
  assert.equal(p.passive_notes.length,1);
- assert.match(p.passive_notes[0].description,/gittata lunga/);
- assert.match(p.passive_notes[0].description,/Ricarica/);
+ assert.match(p.passive_notes[0].description,/long range/);
+ assert.match(p.passive_notes[0].description,/loading/);
  assert.equal(abilitiesForCreature(c,[],{...p,features:[owner(c,'Firearms Mastery')]}).length,0);
 });
 

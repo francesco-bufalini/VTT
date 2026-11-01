@@ -956,7 +956,7 @@ function calculateSheetValues(record={},catalogs={}){
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   features.push(...racialBonusFeatures(record,catalogs.speciesConditionalBonuses||{},features));
-  const racialPowers=racialPowerProjection(record,catalogs.speciesPowers||{},features);
+  const racialPowers=racialPowerProjection(record,catalogs.speciesPowers||{},features,catalogs.originDetails||{});
   features.push(...racialPowers.features);
   const dragonbornFlight=racialPowers.abilities.find(power=>power.mode==='temporary_flight'&&
     record.active_class_features?.[power.persistent_key]?.origin_id===power.persistent_origin_id);
