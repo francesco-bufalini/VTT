@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
+import {battleActionPanels} from '../action_economy.js';
+import {JSDOM} from 'jsdom';
 import {addBenefitPatch,removeBenefitPatch,restoreBenefitPatch} from '../trait_benefit_editor.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 
@@ -174,6 +176,51 @@ test('Unarmed Fighting style selects 1d8 only with neither weapons nor shields i
  assert.equal(sheet({...c,inventory:[shield]}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1d6');
  assert.equal(sheet({...c,optional_features_catalog:[]}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1');
  assert.equal(sheet({...c,origin_enabled:{'optional|tce|unarmed fighting':false}}).attacks.find(a=>a.id==='unarmed').damage_base_formula,'1');
+});
+
+test('an active damage-base replacement promotes Unarmed Strike but leaves Grapple basic',()=>{
+ const rules=[{id:'grapple',edition:'2014',name:'Afferrare',parent_action:'attack',timings:['action']}];
+ const monkFeatures={class_features:[
+  {name:'Martial Arts',class_name:'Monk',class_source:'PHB',level:1}
+ ],subclass_features:[]};
+ const monk=base({class:'Monk',class_source:'PHB',level:5,
+  classes:[{name:'Monk',source:'PHB',level:5}]});
+ const cases=[
+  {label:'plain strike',record:base(),enhanced:false},
+  {label:'feat replacement',record:base({feats_catalog:[{name:'Tavern Brawler',source:'PHB'}]}),enhanced:true},
+  {label:'disabled feat replacement',record:base({feats_catalog:[{name:'Tavern Brawler',source:'PHB'}],
+    origin_enabled:{'feat|phb|tavern brawler':false}}),enhanced:false},
+  {label:'Monk Martial Arts replacement',record:monk,enhanced:true,extra:{classFeatures:monkFeatures}},
+  {label:'Monk Martial Arts suppressed by shield',record:{...monk,inventory:[
+   {id:'shield',type:'S',name:'Shield',quantity:1,equipped_slots:['off'],ac:2}
+  ]},enhanced:false,extra:{classFeatures:monkFeatures}},
+  {label:'Unarmed Fighting style',record:base({optional_features_catalog:[
+   {name:'Unarmed Fighting',source:'TCE'}
+  ]}),enhanced:true},
+  {label:'disabled Unarmed Fighting style',record:base({optional_features_catalog:[
+   {name:'Unarmed Fighting',source:'TCE'}
+  ],origin_enabled:{'optional|tce|unarmed fighting':false}}),enhanced:false},
+  {label:'Strength bonus without explicit replacement',record:base({inventory:[gauntlets]}),enhanced:false}
+ ];
+ for(const {label,record,enhanced,extra={}} of cases){
+  const calculated=calculateSheet(record,{...catalogs,...extra});
+  const html=battleActionPanels(record,calculated,[],[],rules).attacks;
+  const doc=new JSDOM(html).window.document;
+  const strike=doc.querySelector('[data-attack-id="unarmed"]');
+  const grapple=doc.querySelector('[data-attack-id="grapple"]');
+  const divider=doc.querySelector('.play-action-origin-divider[aria-label="Attacchi di base"]');
+  assert(strike,label+': unarmed strike exists');
+  assert(grapple,label+': Grapple exists');
+  assert(divider,label+': the basic group still exists');
+  assert.equal(!!strike.closest('[data-battle-basic="attacks"]'),!enhanced,
+   label+': an explicit active damage replacement determines whether unarmed is basic');
+  assert(grapple.closest('[data-battle-basic="attacks"]'),label+': Grapple always remains basic');
+  if(enhanced){
+   assert(strike.compareDocumentPosition(divider)&4,
+    label+': promoted Unarmed Strike is before the divider');
+  }else assert.equal(strike.closest('[data-battle-basic="attacks"]')?.querySelector('[data-attack-id]'),strike,
+   label+': ordinary Unarmed Strike starts the base group');
+ }
 });
 
 test('manual replacement can be added, inspected, disabled, removed and restored by trait',()=>{

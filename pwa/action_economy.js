@@ -990,7 +990,10 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   return 2;
  };
  // Privilege, monster and equipped attacks precede general attacks.
- // Unarmed Strike is always first in the final group of basic attacks.
+ // Unarmed Strike begins the basic group unless a source has explicitly
+ // replaced its base damage. Use the applied structured rule, not a feature
+ // name or a guessed damage formula: conditions and disabled traits matter.
+ const enhancedUnarmed=Boolean(calculated.base_override_applied?.['attack_damage_base:unarmed']);
  // A monster:<section>:<index> is special only when it actually exists in
  // the stat block; never infer an origin from the displayed attack name.
  // Damage and equipment priority only apply within the same tier.
@@ -1000,7 +1003,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   return /\d+(?:d\d+)?/i.test(formula)||/\b(?:danni|damage)\s*:/i.test(String(row.description||''));
  };
  const attackTier=row=>{
-  if(row.id==='unarmed')return 2;
+  if(row.id==='unarmed')return enhancedUnarmed?1:2;
   if(row.id==='improvised'||row.origin==='general'||row.catalog_id&&row.parent_action==='attack')return 3;
   const attack=attacksById.get(String(row.attack_id||row.id||''));
   const source=/^monster:(action|bonus|reaction|legendary|mythic):(\d+)$/.exec(String(attack?.id||''));
@@ -1010,10 +1013,11 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  weapon.sort((a,b)=>attackTier(a)-attackTier(b)||
   Number(dealsDamage(b))-Number(dealsDamage(a))||
   weaponPriority(a)-weaponPriority(b));
- // Always place Grapple directly below Unarmed Strike in the flat list.
+ // Grapple remains basic even when an enhanced Unarmed Strike is promoted
+ // above the divider; only join the two rows for the ordinary base strike.
  const unarmedAt=weapon.findIndex(row=>row.id==='unarmed');
  const grappleAt=weapon.findIndex(row=>row.id==='grapple');
- if(unarmedAt>=0&&grappleAt>=0){
+ if(!enhancedUnarmed&&unarmedAt>=0&&grappleAt>=0){
   const [grapple]=weapon.splice(grappleAt,1);
   weapon.splice(weapon.findIndex(row=>row.id==='unarmed')+1,0,grapple);
  }
@@ -1108,11 +1112,10 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    action_change_feature:grant.origin_name||'',original_time:action.time,
    action_damage:[grant]}]:[];
  });
- // "Attacchi di base" starts at Unarmed Strike in the already sorted list.
- // Everything above it, including equipped weapons and feature-granted
- // attacks, remains visible when the shared base-attack toggle is off.
- // Do not reclassify attacks by their origin or reorder the original list.
- const basicStart=weapon.findIndex(row=>row.id==='unarmed');
+ // The ordered basic suffix normally starts at Unarmed Strike. If a trait
+ // actually replaces its damage base, that strike moves into the nonbasic
+ // prefix; Grapple and other ordinary attacks stay in the hideable suffix.
+ const basicStart=weapon.findIndex(row=>attackTier(row)>=2);
  const privilegeAttacks=weapon.slice(0,basicStart<0?weapon.length:basicStart);
  const basicAttacks=basicStart<0?[]:weapon.slice(basicStart);
  const attackHtml=rows=>rows.map(row=>
