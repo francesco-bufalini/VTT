@@ -3259,8 +3259,8 @@ function optionBenefitPanels(c,calculated){
    ['option_selection','option_grant'].includes(model.benefit_type)&&model.option_kind!=='spell').map(model=>{
   const primary=model.layers.learned||model.layers.prepared;
   const byId=new Map(model.options.map(option=>[option.id,option]));
-  const entries=primary?primary.selected:model.options.map(option=>option.id);
-  const active=model.layers.applied?.selected||[];
+  const entries=primary?primary.selected:model.fixed?.length?model.fixed:model.options.map(option=>option.id);
+  const active=[...(model.layers.applied?.selected||[]),...(model.fixed||[])];
   const summary=Object.entries(model.layers).filter(([,layer])=>layer.enabled).map(([stage,layer])=>
    '<span>'+esc(powerLayerNames[stage]||stage)+' '+layer.selected.length+(layer.limit===null?'':' / '+layer.limit)+
    (layer.change_label?' · '+esc(layer.change_label):'')+'</span>').join('');
@@ -3360,7 +3360,7 @@ async function openBenefitOptionDialog(selectionId,optionId){
  const prerequisite=model.layers.prepared||model.layers.learned;
  const known=!prerequisite||prerequisite.selected.some(row=>selectedPowerId(row)===optionId);
  const applications=(layer?.selected||[]).filter(row=>selectedPowerId(row)===optionId).map(row=>{const index=(record.inventory||[]).findIndex(item=>(item.instance_id||item.id)===row.target_item_id);return {...(typeof row==='string'?{id:row}:row),inventory_index:index,target_name:record.inventory?.[index]?.name};});
- const active=applications.length>0,description=await benefitOptionDescription(option);
+ const active=applications.length>0||model.fixed?.includes(optionId),description=await benefitOptionDescription(option);
  if(state.editor?.read()?.id!==record.id)return;
  app.querySelector('#benefit-option-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='benefit-option-dialog';

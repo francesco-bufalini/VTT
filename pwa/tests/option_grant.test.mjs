@@ -92,3 +92,21 @@ test('slot profiles are generic and multiclass pools are resolved in the engine'
  assert.equal(multi.pact_level,2);
  assert.deepEqual(multi.slots.slice(1,5),[4,3,3,1]);
 });
+
+test('a homebrew trait can grant fixed passive choices with no selection stages',()=>{
+ const catalog=customCatalog({});
+ const trait=catalog.optionGrants.entries[0].benefit.option_grant;
+ trait.owner={trait:'Homebrew Aura'};
+ trait.fixed=['test:passive'];
+ let record={kind:'character',id:'homebrew',rules_version:'2014',level:3,inventory:[]};
+ const feature={name:'Homebrew Aura',source:'HOMEBREW',origin_id:'feat:homebrew-aura'};
+ const calculated={features:[feature]};
+ const model=powerSelectionModels(record,calculated,catalog)[0];
+ assert.deepEqual(Object.keys(model.layers),[]);
+ assert.deepEqual(model.fixed,['test:passive']);
+ const projected=projectSelectionBenefits(record,{powerSelections:catalog},[feature]);
+ assert.equal(projected.selection_traits.length,1);
+ assert.equal(projected.formula_bonuses.length,1);
+ const without=projectSelectionBenefits(record,{powerSelections:catalog},[]);
+ assert.equal(without.selection_traits.length,0,'Lost source feature removes the derived trait');
+});

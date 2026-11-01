@@ -51,8 +51,16 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
  const record=normalizeSelectionRecord(raw,catalog),models=[];
  for(const rule of definitions(catalog)){
   if(rule.option_kind==='spell')continue; // Spells are cast, not applied as capabilities.
-  const owner=member(record,rule.owner);if(!owner||!isContentAvailableForRules({source:rule.owner?.class_source},record.rules_version||'2014'))continue;
-  const level=Number(owner.level)||0,feature=rows(calculated.features).find(f=>low(f.name)===low(rule.owner?.trait)&&low(f.class_name||f.requirements?.class_name||String(f.origin_key).split('|')[2])===low(rule.owner?.class_name)&&(!rule.owner?.class_source||low(f.class_source||f.requirements?.class_source||String(f.origin_key).split('|')[1])===low(rule.owner.class_source))&&!f.disabled&&!f.inactive&&record.trait_enabled?.[f.key]!==false);
+  // Source-owned grants can originate from any trait, not only a character class.
+  const classOwner=Boolean(rule.owner?.class_name);
+  const owner=classOwner?member(record,rule.owner):{level:record.level||1};
+  if(!owner||!isContentAvailableForRules({source:rule.owner?.class_source||rule.origin_ref?.source},record.rules_version||'2014'))continue;
+  const traitName=rule.owner?.trait||rule.origin_ref?.name;
+  const level=Number(owner.level)||0,feature=rows(calculated.features).find(f=>
+   low(f.name)===low(traitName)&&
+   (!classOwner||low(f.class_name||f.requirements?.class_name||String(f.origin_key).split('|')[2])===low(rule.owner.class_name))&&
+   (!rule.owner?.class_source||low(f.class_source||f.requirements?.class_source||String(f.origin_key).split('|')[1])===low(rule.owner.class_source))&&
+   !f.disabled&&!f.inactive&&record.trait_enabled?.[f.key]!==false);
   if(!feature)continue;
   const origin=feature?.origin_id||'';
   if([origin,feature.origin_key,String(feature.origin_key||'').split('|').slice(0,3).join('|')].some(id=>id&&(record.origin_enabled?.[id]===false||rows(record.proficiency_origins).some(row=>row.id===id&&row.disabled))))continue;
@@ -76,7 +84,11 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
    layers[stage]={enabled:true,selected,used:selected.length,limit,trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger),automatic:spec.mode==='automatic',target:stage==='applied'?rule.application?.target||spec.target:null};
   }
   if(layers.learned?.limit===0&&!layers.learned.selected.length)continue;
-  models.push({...rule,title:rule.title||feature.name,benefit_type:rule.benefit_type||'option_selection',source_type:'option_catalog',ui:'generic',options,layers,level,
+  // A rule with no stages, or with explicit fixed options, needs no selection UI.
+  const fixed=rows(rule.fixed).length?rows(rule.fixed).map(identity):
+    !Object.keys(layers).length?options.map(option=>option.id):[];
+  models.push({...rule,title:rule.title||feature.name,benefit_type:rule.benefit_type||'option_selection',
+   source_type:'option_catalog',ui:'generic',options,layers,level,fixed,
    origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required});
  }
  // Spell selection extends the same learned/prepared/applied layer contract.
@@ -239,7 +251,9 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
  const selectionTraits=[];
  // Model state choices are derived, not another persisted selection engine.
  for(const rule of definitions(catalog))for(const option of optionsFor(record,rule,catalog))for(const e of rows(option.effects))if(e.type==='state_selection')delete states[e.key];
- for(const model of models)for(const application of rows(model.layers.applied?.selected)){
+ for(const model of models)for(const application of [
+  ...new Map([...rows(model.layers.applied?.selected),...rows(model.fixed)].map(row=>[identity(row),row])).values()
+ ]){
   const option=model.options.find(o=>o.id===identity(application));if(!option)continue;
   const item=application.target_item_id?inventory.find(i=>(i.instance_id||i.id)===application.target_item_id):null;
   if(model.application?.destination==='item'){
