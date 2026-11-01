@@ -181,7 +181,8 @@ test('class feature activations list timing and cost even when disabled, without
   feature_action_overrides:[{class_name:'Barbarian',feature_name:'Rage',book:'PHB',
     activation:'bonus',resource_name:'Rages',operation:'toggle'}]};
  const trait={name:'Rage',key:'rage',rank:2,feature_origin:origin};
- const group=traitBenefitGroups(trait,{},calculated).find(row=>row.type==='abilities');
+ const record={classes:[{name:'Barbarian',source:'PHB',level:1}]};
+ const group=traitBenefitGroups(trait,record,calculated).find(row=>row.type==='abilities');
  assert.ok(group);
  const rage=group.items.find(row=>row.label==='Rage');
  assert.equal(rage.status,'Tratto disattivato');
