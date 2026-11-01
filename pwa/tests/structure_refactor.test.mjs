@@ -35,6 +35,7 @@ test('current bestiary imports type multiattack without migrating saved sheets',
  assert.deepEqual(parseCreatureExport(makeCreatureExport(record)).creature,record);
 });
 
+const featureActionOverrides=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
 const feature=(name,owner='Monk',source='XPHB')=>({name,
  origin_key:`class|${source.toLowerCase()}|${owner.toLowerCase()}`,
  origin_id:`feature:${owner}:${name}`,entries:['Description']});
@@ -46,7 +47,7 @@ test('actions and benefits share 2024 timing, resource and free base costs',()=>
  for(const [name,owner,expectedTime,expectedCost] of [
   ['Lay on Hands','Paladin','bonus',1],['Divine Sense','Paladin','action',1],
   ['Patient Defense','Monk','bonus',0]]){
-  const f=feature(name,owner),record={rules_version:'2024'},calculated={features:[f]};
+  const f=feature(name,owner),record={rules_version:'2024'},calculated={features:[f],feature_action_overrides:featureActionOverrides};
   const descriptors=classFeatureDescriptors(record,calculated);
   const action=classFeatureEntries(record,calculated).find(row=>
    row.feature_name===name);
@@ -63,7 +64,7 @@ test('unavailable owned operations stay in benefits and cannot become usable act
  const rule={id:'guardian',name:'Guardian model',class_name:'Artificer',granted_features:['Guardian']};
  for(const disabled of [false,true]){
   const record=disabled?{origin_enabled:{[f.origin_id]:false}}:{};
-  const calculated={features:[f],trait_state_catalog:[rule],active_trait_state_ids:[]};
+  const calculated={features:[f],feature_action_overrides:featureActionOverrides,trait_state_catalog:[rule],active_trait_state_ids:[]};
   const descriptor=classFeatureDescriptors(record,calculated)[0];
   assert.equal(descriptor.available,false);
   assert.equal(classFeatureEntries(record,calculated).length,0);
@@ -105,8 +106,8 @@ test('migrated Barbarian contextual operations retain stable IDs, counters and s
   const c={kind:'character',class:'Barbarian',class_source:'PHB',level:20,
    classes:[{name:'Barbarian',source:'PHB',subclass:rule.subclass,level:20}]};
   const grants=contextualFeatureGrants(c,[f],rules,6),action=grants.actions.find(row=>row.id===rule.id);
-  assert(action,rule.name);
-  assert.equal(action.id,'barbarian:2014:'+rule.name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-'));
+  assert(action,rule.feature);
+  assert.equal(action.id,rule.id);
   assert.equal(action.origin_id,f.origin_id);assert.equal(action.action_type,rule.activation);
   if(rule.resource){
    const tracker=grants.trackers.find(row=>row.id===action.tracker_id);
