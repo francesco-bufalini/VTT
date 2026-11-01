@@ -5,6 +5,7 @@ import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSe
 import {resolveSpellSlotProfile} from '../spell_slot_profiles.js';
 import {spellProgression} from '../sheet_rules.js';
 import {collectTraitRows} from '../trait_projection.js';
+import {traitBenefitGroups} from '../trait_benefits.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const rules=read('../../vtt/enrichment/benefits/option_grant.json');
@@ -56,7 +57,18 @@ test('reusable typed list produces a passive state trait and removes all derived
  assert.equal(calculated.formula_bonuses.filter(row=>row.selection_origin_id===id).length,1);
  const traits=await collectTraitRows(record,{selection_traits:calculated.selection_traits,features:[]},
   {entries:async()=>[]});
- assert(traits.some(trait=>trait.category==='stati'&&trait.name==='Aura di prova'));
+ const state=traits.find(trait=>trait.category==='stati'&&trait.name==='Aura di prova');
+ assert(state);
+ assert.equal(state.benefits.length,1);
+ assert.equal(state.grant_origin_id,'feature:choice');
+ const stateGroups=traitBenefitGroups(state,projected,
+  {bonuses:projected.formula_bonuses});
+ assert.equal(stateGroups.find(g=>g.type==='bonus')?.items.length,1,
+  'The applied capability owns its benefit in States');
+ const sourceGroups=traitBenefitGroups({name:'Favored Enemy',feature_origin:'feature:choice',rank:2},
+  projected,{bonuses:projected.formula_bonuses});
+ assert.equal(sourceGroups.some(g=>g.type==='bonus'),false,
+  'The grantor must not duplicate the selected capability benefits');
  record={...record,...powerApplicationPatch(record,context,catalog,id,option,false)};
  calculated=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
  assert.equal(calculated.selection_traits.length,0);

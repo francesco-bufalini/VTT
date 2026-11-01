@@ -331,6 +331,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    state_key:extra.state_key||'',condition_id:extra.condition_id||'',
    spell_id:extra.spell_id||'',infusion_id:extra.infusion_id||'',
    selection_id:extra.selection_id||'',option_id:extra.option_id||'',
+   benefits:arr(extra.benefits),grant_origin_id:extra.grant_origin_id||'',
    inactive:false,readonly:true});
  };
  // Applied capabilities are individual state traits, not their own actions.
@@ -340,7 +341,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const detail=reference?await lookup(reference.category,reference.name,reference.source):null;
   stateTrait(capability.id,capability.name,detail?.entries||detail?.description||capability.description||'',{
    source:capability.source,origin_id:capability.origin_id,
-   state_key:capability.id,selection_id:capability.selection_id,option_id:capability.option_id});
+   state_key:capability.id,selection_id:capability.selection_id,option_id:capability.option_id,
+   benefits:capability.benefits,grant_origin_id:capability.parent_origin});
  }
  const availableConditions=conditionOptions(conditionCatalog,record.rules_version,record.conditions||[]);
  const definitions=new Map(availableConditions.map(row=>[row.id,row]));

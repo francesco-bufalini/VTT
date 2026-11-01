@@ -310,7 +310,12 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
    benefits:rows(option.effects)
   });
   for(const [index,effect] of [...rows(model.application?.effects),...rows(option.effects)].entries()){
-   appendTypedBenefit(grants,effect,{id:'selection:'+model.id+':'+option.id+':'+index,selection_origin_id:model.id,origin_id:item?'item-instance:'+(item.instance_id||item.id):model.origin_id,parent_origin:model.source_origin_id,origin_name:option.name,automatic:false,disabled:false});
+   const capabilityOrigin='selection:'+model.id+':'+option.id;
+   const derived=!item&&model.option_kind==='capability'&&model.benefit_type==='option_grant';
+   appendTypedBenefit(grants,effect,{
+    id:capabilityOrigin+':'+index,selection_origin_id:model.id,
+    origin_id:item?'item-instance:'+(item.instance_id||item.id):derived?capabilityOrigin:model.origin_id,
+    parent_origin:model.source_origin_id,origin_name:option.name,automatic:false,disabled:false});
    if(effect.type==='catalog_feature')optional.push({name:option.name,source:option.source,origin_id:model.origin_id,selection_origin_id:model.id,entries:[option.description||'']});
    if(effect.type==='state_selection')states[effect.key]=effect.value;
   }
