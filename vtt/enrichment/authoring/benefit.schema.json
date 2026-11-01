@@ -1,0 +1,1683 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT universal origin benefit v2",
+  "description": "Mechanics only; display names and descriptions are optional homebrew overrides, not 5eTools copies.",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "action",
+        "action_sequence",
+        "attack",
+        "resource",
+        "resource_recovery",
+        "roll_bonus",
+        "roll_mode",
+        "numeric_modifier",
+        "ability_score",
+        "proficiency",
+        "language",
+        "sense",
+        "movement",
+        "defense",
+        "damage_bonus",
+        "damage_modifier",
+        "state",
+        "condition",
+        "effect",
+        "effect_extension",
+        "option_selection",
+        "spell_selection",
+        "spellcasting",
+        "spell_grant",
+        "spell_slot",
+        "item_grant",
+        "feat_grant",
+        "feature_grant",
+        "companion_grant",
+        "choice",
+        "progression",
+        "scaling_die",
+        "trait",
+        "targeting",
+        "area_geometry",
+        "activation",
+        "tracker",
+        "other"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "description": "Stable mechanics ID (not a translated display label)."
+    },
+    "name": {
+      "type": "string",
+      "description": "Optional local display name, primarily for homebrew."
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional local description, primarily for homebrew. Do not duplicate 5eTools prose."
+    },
+    "ref": {
+      "$ref": "#/$defs/ref"
+    },
+    "source_ref": {
+      "$ref": "#/$defs/ref"
+    },
+    "rules_version": {
+      "enum": [
+        "2014",
+        "2024",
+        "both"
+      ]
+    },
+    "min_level": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_level": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "requirements": {
+      "$ref": "#/$defs/requirements"
+    },
+    "activation": {
+      "type": "string",
+      "description": "Action cost or triggering economy: action, bonus, reaction, free, contextual, etc."
+    },
+    "trigger": {
+      "type": "string",
+      "description": "When this benefit operates, such as on_hit, passive, long_rest, on_equip, activation."
+    },
+    "priority": {
+      "type": "integer"
+    },
+    "target": {
+      "$ref": "#/$defs/target"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/target"
+      }
+    },
+    "resource": {
+      "type": "string",
+      "description": "Stable resource/tracker key."
+    },
+    "resource_name": {
+      "type": "string",
+      "description": "Legacy tracker lookup key."
+    },
+    "resource_id": {
+      "type": "string",
+      "description": "Stable resource/tracker ID."
+    },
+    "cost": {
+      "$ref": "#/$defs/expression"
+    },
+    "resource_cost": {
+      "$ref": "#/$defs/expression"
+    },
+    "tracker_cost": {
+      "$ref": "#/$defs/expression"
+    },
+    "maximum": {
+      "$ref": "#/$defs/expression"
+    },
+    "uses": {
+      "$ref": "#/$defs/expression"
+    },
+    "recharge": {
+      "type": "string",
+      "description": "short_rest, long_rest, dawn, turn, etc."
+    },
+    "recovery": {
+      "$ref": "#/$defs/recovery"
+    },
+    "steps": {
+      "$ref": "#/$defs/progression"
+    },
+    "operation": {
+      "type": "string",
+      "description": "Mechanics engine operation; not the name of a specific feature."
+    },
+    "mode": {
+      "type": "string",
+      "description": "Mechanical mode such as toggle, context, advantage, or replacement."
+    },
+    "value": {
+      "$ref": "#/$defs/expression"
+    },
+    "amount": {
+      "$ref": "#/$defs/expression"
+    },
+    "formula": {
+      "type": "string",
+      "description": "Engine expression, e.g. proficiency or cha_mod."
+    },
+    "dice": {
+      "type": "string",
+      "description": "Dice notation, e.g. 1d8."
+    },
+    "die": {
+      "$ref": "#/$defs/expression"
+    },
+    "bonus": {
+      "$ref": "#/$defs/bonus"
+    },
+    "bonuses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/bonus"
+      }
+    },
+    "damage": {
+      "$ref": "#/$defs/expression"
+    },
+    "damage_type": {
+      "type": "string",
+      "description": "Canonical damage type."
+    },
+    "damage_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ability": {
+      "type": "string",
+      "description": "Canonical ability code."
+    },
+    "saving_throw": {
+      "type": "string",
+      "description": "Canonical save ability code."
+    },
+    "count": {
+      "$ref": "#/$defs/expression"
+    },
+    "attack": {
+      "$ref": "#/$defs/attack"
+    },
+    "attacks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/attack"
+      }
+    },
+    "sequence": {
+      "$ref": "#/$defs/sequence"
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/effect"
+      }
+    },
+    "on_hit_effects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/effect"
+      }
+    },
+    "benefits": {
+      "type": "array",
+      "items": {
+        "$ref": "#"
+      }
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/option"
+      }
+    },
+    "choices": {
+      "$ref": "#/$defs/choice"
+    },
+    "selection": {
+      "$ref": "#/$defs/selection"
+    },
+    "spellcasting": {
+      "$ref": "#/$defs/spellcasting"
+    },
+    "spells": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ref"
+      }
+    },
+    "slots": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/expression"
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/grant"
+      }
+    },
+    "grants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/grant"
+      }
+    },
+    "numeric_grants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/bonus"
+      }
+    },
+    "roll_modes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rollMode"
+      }
+    },
+    "proficiencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/proficiency"
+      }
+    },
+    "defenses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/defense"
+      }
+    },
+    "movement": {
+      "$ref": "#/$defs/movement"
+    },
+    "sense": {
+      "$ref": "#/$defs/sense"
+    },
+    "duration": {
+      "$ref": "#/$defs/duration"
+    },
+    "geometry": {
+      "$ref": "spell_geometry.schema.json#/$defs/geometry"
+    },
+    "spell_geometry": {
+      "$ref": "spell_geometry.schema.json"
+    },
+    "condition": {
+      "type": "string",
+      "description": "Canonical condition ID."
+    },
+    "category": {
+      "type": "string",
+      "description": "Attack/effect category."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Explicit typed-mechanics payload for less common existing engines; schema validation does not imply runtime support.",
+      "additionalProperties": true
+    },
+    "note": {
+      "type": "string",
+      "description": "Editorial explanation of nonautomated mechanics (not a replacement for 5eTools description)."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "action_sequence"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "sequence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "area_geometry"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "spell_geometry"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "attack"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "attack"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "spellcasting"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "spellcasting"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "option_selection"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "selection"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "resource_recovery"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "recovery"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "roll_mode"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "roll_modes"
+            ]
+          },
+          {
+            "required": [
+              "mode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "roll_bonus"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "bonus"
+            ]
+          },
+          {
+            "required": [
+              "bonuses"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "item_grant"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "items"
+            ]
+          },
+          {
+            "required": [
+              "grants"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "effect"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "effects"
+        ]
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "expression": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "required": [
+            "formula"
+          ],
+          "properties": {
+            "formula": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minimum": {
+              "type": "number"
+            },
+            "maximum": {
+              "type": "number"
+            },
+            "round": {
+              "enum": [
+                "ceil",
+                "floor",
+                "round",
+                "none"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ref": {
+      "type": "object",
+      "description": "Canonical identity in 5eTools or a homebrew namespace.",
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "Origin category"
+        },
+        "id": {
+          "type": "string",
+          "description": "Stable catalog ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Canonical source name"
+        },
+        "source": {
+          "type": "string",
+          "description": "Book/source code, e.g. PHB or XPHB"
+        },
+        "class_name": {
+          "type": "string",
+          "description": "Class identity for class/subclass feature"
+        },
+        "class_source": {
+          "type": "string",
+          "description": "Source of base class"
+        },
+        "subclass": {
+          "type": "string",
+          "description": "Subclass identity"
+        },
+        "subclass_source": {
+          "type": "string",
+          "description": "Source of subclass"
+        },
+        "race": {
+          "type": "string",
+          "description": "Species name"
+        },
+        "race_source": {
+          "type": "string",
+          "description": "Species source"
+        },
+        "subrace": {
+          "type": "string",
+          "description": "Subrace name"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "homebrew_namespace": {
+          "type": "string",
+          "description": "Private source namespace"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "name",
+            "source"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "requirements": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/requirements"
+          }
+        },
+        "any": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/requirements"
+          }
+        },
+        "not": {
+          "$ref": "#/$defs/requirements"
+        },
+        "class_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "character_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "equipped": {
+          "type": "boolean"
+        },
+        "attuned": {
+          "type": "boolean"
+        },
+        "has_resource": {
+          "type": "string",
+          "description": "Resource key"
+        },
+        "has_feature": {
+          "$ref": "#/$defs/ref"
+        },
+        "has_condition": {
+          "type": "string",
+          "description": "Condition ID"
+        },
+        "not_condition": {
+          "type": "string",
+          "description": "Condition ID"
+        },
+        "requires_item": {
+          "$ref": "#/$defs/ref"
+        },
+        "target_kind": {
+          "type": "string",
+          "description": "Target type"
+        },
+        "expression": {
+          "type": "string",
+          "description": "Engine predicate"
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "description": "Target category"
+            },
+            "id": {
+              "type": "string",
+              "description": "Stable target ID"
+            },
+            "selector": {
+              "type": "string",
+              "description": "Engine selector e.g. unarmed, melee, spell"
+            },
+            "range_feet": {
+              "type": "number",
+              "description": "Short range in feet",
+              "minimum": 0
+            },
+            "long_range_feet": {
+              "type": "number",
+              "description": "Long range in feet",
+              "minimum": 0
+            },
+            "exclude_self": {
+              "type": "boolean"
+            },
+            "area": {
+              "$ref": "spell_geometry.schema.json#/$defs/geometry"
+            },
+            "filter": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "recovery": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "type": "string",
+          "description": "short_rest, long_rest, dawn, turn, etc."
+        },
+        "mode": {
+          "enum": [
+            "full",
+            "partial",
+            "optional_partial",
+            "set",
+            "add",
+            "formula"
+          ]
+        },
+        "amount": {
+          "$ref": "#/$defs/expression"
+        },
+        "formula": {
+          "type": "string",
+          "description": "Engine formula"
+        },
+        "limit_per_long_rest": {
+          "$ref": "#/$defs/expression"
+        }
+      },
+      "additionalProperties": false
+    },
+    "progression": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "$ref": "#/$defs/expression"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          {
+            "type": "object",
+            "required": [
+              "level",
+              "value"
+            ],
+            "properties": {
+              "level": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "value": {
+                "$ref": "#/$defs/expression"
+              },
+              "reset": {
+                "type": "string",
+                "description": "Reset event"
+              },
+              "source": {
+                "type": "string",
+                "description": "Rulebook"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "bonus": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Bonus ID"
+        },
+        "target": {
+          "type": "string",
+          "description": "Single numeric target"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "operation": {
+          "enum": [
+            "add",
+            "multiply",
+            "set",
+            "minimum",
+            "maximum",
+            "replace",
+            "reroll",
+            "grant_proficiency",
+            "expertise"
+          ]
+        },
+        "amount": {
+          "$ref": "#/$defs/expression"
+        },
+        "value": {
+          "$ref": "#/$defs/expression"
+        },
+        "expression": {
+          "$ref": "#/$defs/expression"
+        },
+        "dice": {
+          "type": "string",
+          "description": "Bonus dice"
+        },
+        "ability_modifier": {
+          "type": "string",
+          "description": "Ability used for scaling"
+        },
+        "damage_type": {
+          "type": "string",
+          "description": "Type of bonus damage"
+        },
+        "minimum": {
+          "type": "number",
+          "description": "Minimum value"
+        },
+        "maximum": {
+          "type": "number",
+          "description": "Maximum value"
+        },
+        "condition": {
+          "$ref": "#/$defs/requirements"
+        },
+        "condition_label": {
+          "type": "string",
+          "description": "Optional explanatory UI text; avoid duplicated rules prose"
+        },
+        "frequency": {
+          "type": "string",
+          "description": "Application frequency"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "Activation trigger"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rollMode": {
+      "type": "object",
+      "required": [
+        "target",
+        "mode"
+      ],
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Attack, save, skill, etc."
+        },
+        "mode": {
+          "enum": [
+            "advantage",
+            "disadvantage",
+            "normal",
+            "reroll",
+            "ignore",
+            "auto_success"
+          ]
+        },
+        "context": {
+          "type": "string",
+          "description": "Optional trigger context"
+        },
+        "condition": {
+          "$ref": "#/$defs/requirements"
+        },
+        "condition_label": {
+          "type": "string",
+          "description": "Optional homebrew label"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attack": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable action/attack ID"
+        },
+        "ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "selector": {
+          "type": "string",
+          "description": "Existing attack category or ID"
+        },
+        "category": {
+          "type": "string",
+          "description": "melee, ranged, unarmed, grapple, etc."
+        },
+        "damage": {
+          "$ref": "#/$defs/expression"
+        },
+        "damage_type": {
+          "type": "string",
+          "description": "Canonical damage type"
+        },
+        "damage_ability_modifier": {
+          "type": "boolean"
+        },
+        "ability": {
+          "type": "string",
+          "description": "Ability"
+        },
+        "range_feet": {
+          "type": "number",
+          "description": "Short range in feet",
+          "minimum": 0
+        },
+        "long_range_feet": {
+          "type": "number",
+          "description": "Long range in feet",
+          "minimum": 0
+        },
+        "reach_feet": {
+          "type": "number",
+          "description": "Reach in feet",
+          "minimum": 0
+        },
+        "grants_proficiency": {
+          "type": "boolean"
+        },
+        "weapon_category": {
+          "type": "string",
+          "description": "Weapon proficiency category"
+        },
+        "melee": {
+          "type": "boolean"
+        },
+        "bonus_damage": {
+          "$ref": "#/$defs/bonus"
+        },
+        "on_hit_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        },
+        "resource": {
+          "type": "string",
+          "description": "Tracker ID"
+        },
+        "resource_cost": {
+          "$ref": "#/$defs/expression"
+        },
+        "count": {
+          "$ref": "#/$defs/expression"
+        },
+        "geometry": {
+          "$ref": "spell_geometry.schema.json#/$defs/geometry"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "selector"
+          ]
+        },
+        {
+          "required": [
+            "ref"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "effect": {
+      "type": "object",
+      "required": [
+        "operation"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable ID"
+        },
+        "operation": {
+          "type": "string",
+          "description": "Generic operation"
+        },
+        "type": {
+          "type": "string",
+          "description": "Effect kind"
+        },
+        "target": {
+          "type": "string",
+          "description": "Target expression"
+        },
+        "target_kind": {
+          "type": "string",
+          "description": "Target category"
+        },
+        "target_name": {
+          "type": "string",
+          "description": "Target catalog name"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "Activation condition"
+        },
+        "frequency": {
+          "type": "string",
+          "description": "once, each, turn, etc."
+        },
+        "value": {
+          "$ref": "#/$defs/expression"
+        },
+        "dice": {
+          "type": "string",
+          "description": "Dice formula"
+        },
+        "amount": {
+          "$ref": "#/$defs/expression"
+        },
+        "damage_type": {
+          "type": "string",
+          "description": "Canonical damage type"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Condition ID"
+        },
+        "mode": {
+          "type": "string",
+          "description": "Effect mode"
+        },
+        "distance_feet": {
+          "type": "number",
+          "description": "Distance in feet",
+          "minimum": 0
+        },
+        "duration": {
+          "$ref": "#/$defs/duration"
+        },
+        "rules_version": {
+          "enum": [
+            "2014",
+            "2024",
+            "both"
+          ]
+        },
+        "requirements": {
+          "$ref": "#/$defs/requirements"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "sequence": {
+      "type": "object",
+      "required": [
+        "steps"
+      ],
+      "properties": {
+        "logic": {
+          "enum": [
+            "all",
+            "any"
+          ]
+        },
+        "activation": {
+          "type": "string",
+          "description": "Action economy cost"
+        },
+        "tracker_id": {
+          "type": "string",
+          "description": "Tracker key"
+        },
+        "tracker_cost": {
+          "$ref": "#/$defs/expression"
+        },
+        "resource": {
+          "type": "string",
+          "description": "Resource key"
+        },
+        "cost": {
+          "$ref": "#/$defs/expression"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Operation ID"
+              },
+              "selector": {
+                "$ref": "#/$defs/target"
+              },
+              "ref": {
+                "$ref": "#/$defs/ref"
+              },
+              "kind": {
+                "enum": [
+                  "attack",
+                  "action",
+                  "skill_check",
+                  "saving_throw",
+                  "ability_check",
+                  "effect",
+                  "sequence"
+                ]
+              },
+              "count": {
+                "$ref": "#/$defs/expression"
+              },
+              "cost": {
+                "$ref": "#/$defs/expression"
+              },
+              "action_id": {
+                "type": "string",
+                "description": "Existing action ID"
+              },
+              "skill": {
+                "type": "string",
+                "description": "Skill ID"
+              },
+              "ability": {
+                "type": "string",
+                "description": "Ability ID"
+              },
+              "bonus": {
+                "$ref": "#/$defs/bonus"
+              },
+              "effects": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/effect"
+                }
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/option"
+                }
+              }
+            },
+            "anyOf": [
+              {
+                "required": [
+                  "selector"
+                ]
+              },
+              {
+                "required": [
+                  "ref"
+                ]
+              },
+              {
+                "required": [
+                  "action_id"
+                ]
+              },
+              {
+                "required": [
+                  "kind"
+                ]
+              },
+              {
+                "required": [
+                  "options"
+                ]
+              }
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "option": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable choice ID"
+        },
+        "ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "name": {
+          "type": "string",
+          "description": "Only for homebrew/fallback"
+        },
+        "description": {
+          "type": "string",
+          "description": "Only for homebrew/fallback"
+        },
+        "requirements": {
+          "$ref": "#/$defs/requirements"
+        },
+        "benefits": {
+          "type": "array",
+          "items": {
+            "$ref": "#"
+          }
+        },
+        "action_id": {
+          "type": "string",
+          "description": "Existing action ID"
+        },
+        "selector": {
+          "$ref": "#/$defs/target"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Option kind"
+        },
+        "count": {
+          "$ref": "#/$defs/expression"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "choice": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "one",
+            "many",
+            "all",
+            "or",
+            "and"
+          ]
+        },
+        "count": {
+          "$ref": "#/$defs/expression"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/option"
+          }
+        },
+        "filter": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "learned": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "prepared": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "applied": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "selection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Selection identifier"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Selection kind"
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "spell_catalog, optional_features, inline, etc."
+            },
+            "options": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/option"
+              }
+            },
+            "feature_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": true
+        },
+        "layers": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "application": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "requirements": {
+          "$ref": "#/$defs/requirements"
+        },
+        "storage": {
+          "type": "string",
+          "description": "Save slot"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "When selection is changed"
+        }
+      },
+      "additionalProperties": false
+    },
+    "spellcasting": {
+      "type": "object",
+      "properties": {
+        "ability": {
+          "type": "string",
+          "description": "Casting ability"
+        },
+        "knowledge_mode": {
+          "type": "string",
+          "description": "known/prepared"
+        },
+        "spell_list_class_name": {
+          "type": "string",
+          "description": "Class list"
+        },
+        "level_class_name": {
+          "type": "string",
+          "description": "Class for scaling"
+        },
+        "slot_progression": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "layers": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "cantrips": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "spell_level_cap": {
+          "$ref": "#/$defs/expression"
+        },
+        "ritual": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "grant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable granted object ID"
+        },
+        "ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "type": {
+          "type": "string",
+          "description": "VTT item/feature kind"
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional generated homebrew label"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional generated homebrew prose"
+        },
+        "quantity": {
+          "$ref": "#/$defs/expression"
+        },
+        "max_owned": {
+          "$ref": "#/$defs/expression"
+        },
+        "required_equipped": {
+          "type": "boolean"
+        },
+        "attunement": {
+          "type": "boolean"
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "benefits": {
+          "type": "array",
+          "items": {
+            "$ref": "#"
+          }
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "ref"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "proficiency": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "skill",
+            "weapon",
+            "armor",
+            "tool",
+            "saving_throw",
+            "language",
+            "attack",
+            "expertise",
+            "other"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "description": "Stable proficiency key"
+        },
+        "choose": {
+          "$ref": "#/$defs/choice"
+        },
+        "count": {
+          "$ref": "#/$defs/expression"
+        },
+        "grant": {
+          "type": "boolean"
+        },
+        "expertise": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "defense": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "resistance",
+            "immunity",
+            "vulnerability",
+            "condition_immunity",
+            "damage_reduction"
+          ]
+        },
+        "damage_type": {
+          "type": "string",
+          "description": "Canonical damage type"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Canonical condition ID"
+        },
+        "value": {
+          "$ref": "#/$defs/expression"
+        },
+        "requirements": {
+          "$ref": "#/$defs/requirements"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "sense": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "darkvision, blindsight, tremorsense, truesight, etc."
+        },
+        "range_feet": {
+          "type": "number",
+          "description": "Feet",
+          "minimum": 0
+        },
+        "requirements": {
+          "$ref": "#/$defs/requirements"
+        }
+      },
+      "additionalProperties": false
+    },
+    "movement": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "walk, fly, swim, climb, burrow, jump, etc."
+        },
+        "operation": {
+          "enum": [
+            "set",
+            "add",
+            "multiply",
+            "equals"
+          ]
+        },
+        "value_feet": {
+          "$ref": "#/$defs/expression"
+        },
+        "equal_to": {
+          "type": "string",
+          "description": "Speed to match"
+        },
+        "requirements": {
+          "$ref": "#/$defs/requirements"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "duration": {
+      "oneOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "properties": {
+            "rounds": {
+              "$ref": "#/$defs/expression"
+            },
+            "minutes": {
+              "$ref": "#/$defs/expression"
+            },
+            "hours": {
+              "$ref": "#/$defs/expression"
+            },
+            "until": {
+              "type": "string",
+              "description": "End event"
+            },
+            "concentration": {
+              "type": "boolean"
+            }
+          },
+          "minProperties": 1,
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
