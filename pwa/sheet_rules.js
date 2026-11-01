@@ -22,7 +22,7 @@ import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,equippedItemFacts,effectiveEquipmentInventory,equipmentRequirementMatches,itemOptionNumericEffects,activeItemOptionEffects,itemOptionChargeTrackers,armorDexterityBonus,hydrateGenericVariants} from "./item_controls.js";
-import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
+import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins,withBackgroundGrantedFeats} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants,supplementalSpeciesSpellFeatures,expandedOriginClassSpellIds,expandedOriginSpellFeatures} from './spell_selection.js';
 import {racialPowerProjection,racialPowerSpellDefinitions} from './species_powers.js';
 import {dragonbornFtdResistances} from './dragonborn_ftd.js';
@@ -852,7 +852,9 @@ export function calculateSheet(record={},catalogs={}){
   const normalizedEquipmentInventory=effectiveEquipmentInventory(record.inventory,
     {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
   const hydrated=hydrateGenericVariants({...record,inventory:normalizedEquipmentInventory},catalogs.genericItemVariants);
-  let effective=projectSelectionBenefits(hydrated,catalogs,collectStructuredFeatures(hydrated,catalogs));
+  const backgroundFeats=withBackgroundGrantedFeats(hydrated,catalogs.originDetails?.backgrounds||{},
+    catalogs.originDetails?.feats||{},catalogs.classMechanics?.additional_spells||[]);
+  let effective=projectSelectionBenefits(backgroundFeats,catalogs,collectStructuredFeatures(backgroundFeats,catalogs));
   const selectionRecord=effective;
   const withScalingDice=calculated=>{
     const dice=scalingDiceFor(effective,catalogs.scalingDice?.dice||[],calculated.features);
