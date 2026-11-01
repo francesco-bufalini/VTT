@@ -179,6 +179,7 @@ jobs:
               run_browser powers_slots_concentration_browser.mjs
               ;;
             inventory)
+              run_browser inventory_sections_browser.mjs
               run_browser generic_item_variants_browser.mjs
               run_browser inventory_bulk_browser.mjs
               run_browser numeric_fields_browser.mjs

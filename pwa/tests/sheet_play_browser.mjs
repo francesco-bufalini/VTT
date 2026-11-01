@@ -1036,14 +1036,14 @@ try{
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view .inventory-play-coins .inventory-coin-total')?.textContent.includes('12 mo'));
  assert.match(await inlineCoins.locator('.inventory-coin-total').textContent(),/12 mo/);
  assert.equal(await page.locator('#sheet-context-dialog').count(),0,'Saving coins must stay on the page');
- // Sections now use independent multi-select toggles. From the default
- // "all sections" view, deselect both object and scroll sections so
- // Documents is the only visible section.
- await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="items"]').click();
- await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]').click();
- assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,
-  'Hiding the objects section removes its rows from Documents-only view');
- await page.locator('#sheet-play-view [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
+ // Every inventory section remains available while its heading collapses the body.
+ const itemsSection=page.locator('#sheet-play-view [data-inventory-section-key="items"]');
+ await itemsSection.locator('summary').click({position:{x:4,y:20}});
+ assert.equal(await itemsSection.evaluate(node=>node.open),false);
+ await itemsSection.locator('summary').click({position:{x:4,y:20}});
+ assert.equal(await itemsSection.evaluate(node=>node.open),true);
+ assert(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count()>0);
+ await page.locator('#sheet-play-view [data-inventory-section-key="documents"] .inventory-section-create').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
  assert(await page.locator('#sheet-play-view').textContent().then(t=>t.includes('Lettera della Luna')));
  await sheet('conditions');
  assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);
@@ -1332,7 +1332,7 @@ try{
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.active_class_features?.rage;});
  await ragePanel.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]').waitFor({state:'detached'});
  await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').waitFor({state:'visible'});
- await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');const documentsTab=page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]');if(await documentsTab.getAttribute('aria-pressed')!=='true')await documentsTab.click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
+ await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');assert.equal(await page.locator('#sheet-play-view [data-inventory-section-key="documents"]').count(),1);await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: 5 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
 }finally{await f.close();}

@@ -17,6 +17,23 @@ export function itemContainerId(item={},containers=[]){
   const id=String(item?.container_id||DEFAULT_INVENTORY_CONTAINER);
   return containers.some(row=>row.id===id)?id:DEFAULT_INVENTORY_CONTAINER;
 }
+// A section's weight exclusion is stored by stable section key, not by its name.
+export function inventoryExcludedWeightSections(record={}){
+  const valid=new Set(['items','scrolls','documents',...inventoryContainers(record).slice(1).map(row=>'container:'+row.id)]);
+  const saved=Array.isArray(record.inventory_excluded_weight_sections)?record.inventory_excluded_weight_sections:[];
+  return [...new Set(saved)].filter(key=>valid.has(key));
+}
+export function inventoryItemSection(item={},containers=[]){
+  if(isDocumentItem(item))return 'documents';
+  if(isSpellScroll(item))return 'scrolls';
+  const id=itemContainerId(item,containers);
+  return id===DEFAULT_INVENTORY_CONTAINER?'items':'container:'+id;
+}
+function isDocumentItem(item){return item?.category==='documents'||String(item?.id||'').includes(':documents:');}
+export function inventoryCountsTowardCarriedWeight(record={},item={}){
+  if(isDocumentItem(item))return false;
+  return !inventoryExcludedWeightSections(record).includes(inventoryItemSection(item,inventoryContainers(record)));
+}
 // The item editor and bulk selection share one atomic storage mutation.
 export function moveInventoryItems(record,indices,destination){
   const containers=inventoryContainers(record);
@@ -56,7 +73,8 @@ export function deleteInventoryContainer(record,id,destination){
     if(destination===DEFAULT_INVENTORY_CONTAINER)delete item.container_id;
     else item.container_id=destination;
   }
-  return {inventory,inventory_containers:containers.slice(1).filter(row=>row.id!==id)};
+  return {inventory,inventory_containers:containers.slice(1).filter(row=>row.id!==id),
+    inventory_excluded_weight_sections:inventoryExcludedWeightSections(record).filter(key=>key!=='container:'+id)};
 }
 export function isSpellScroll(item={}){
   if(item.category==="documents")return false;
