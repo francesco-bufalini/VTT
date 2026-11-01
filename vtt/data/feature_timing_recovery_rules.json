@@ -8,9 +8,7 @@
       "rules_version": "2014",
       "feature": "Instinctive Pounce",
       "subclass": "",
-      "name": "Instinctive Pounce",
-      "activation": "free",
-      "detail": "Quando entri in Ira, puoi muoverti fino a metà della tua velocità come parte dell’azione bonus; verifica manualmente posizione e movimento."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:relentless-rage",
@@ -19,9 +17,7 @@
       "rules_version": "2014",
       "feature": "Relentless Rage",
       "subclass": "",
-      "name": "Relentless Rage",
-      "activation": "free",
-      "detail": "Quando i PF scendono a 0 senza morte immediata: TS Costituzione CD 10; aumenta la CD di 5 per ogni uso successivo e azzerala al riposo breve o lungo."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:frenzy-entra-in-frenesia",
@@ -30,9 +26,7 @@
       "rules_version": "2014",
       "feature": "Frenzy",
       "subclass": "Berserker",
-      "name": "Frenzy · entra in frenesia",
-      "activation": "free",
-      "detail": "Scegli Frenzy quando entri in Ira (non è un’altra azione bonus): puoi poi fare un attacco in mischia come azione bonus nei turni successivi. Alla fine dell’Ira aggiungi un livello di indebolimento. Non attivare una seconda Ira."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:intimidating-presence",
@@ -41,9 +35,7 @@
       "rules_version": "2014",
       "feature": "Intimidating Presence",
       "subclass": "Berserker",
-      "name": "Intimidating Presence",
-      "activation": "action",
-      "detail": "Scegli una creatura entro 30 ft che ti vede o sente; TS Saggezza contro CD 8 + competenza + modificatore di Carisma. Se fallisce, spaventata. Le estensioni e l’immunità di 24 ore sono manuali."
+      "activation": "action"
     },
     {
       "id": "barbarian:2014:retaliation-attacco-in-mischia",
@@ -52,9 +44,7 @@
       "rules_version": "2014",
       "feature": "Retaliation",
       "subclass": "Berserker",
-      "name": "Retaliation · attacco in mischia",
       "activation": "reaction",
-      "detail": "Quando una creatura entro 5 ft ti infligge danni puoi effettuare un attacco in mischia contro di lei; scegli un attacco disponibile.",
       "attack_selector": "melee"
     },
     {
@@ -64,9 +54,7 @@
       "rules_version": "2014",
       "feature": "Spirit Seeker",
       "subclass": "Totem Warrior",
-      "name": "Spirit Seeker · Beast Sense (rituale)",
-      "activation": "free",
-      "detail": "Lancia Beast Sense esclusivamente come rituale, senza spendere slot. Tempo rituale da verificare manualmente."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:spirit-seeker-speak-with-animals-rituale-",
@@ -75,9 +63,7 @@
       "rules_version": "2014",
       "feature": "Spirit Seeker",
       "subclass": "Totem Warrior",
-      "name": "Spirit Seeker · Speak with Animals (rituale)",
-      "activation": "free",
-      "detail": "Lancia Speak with Animals esclusivamente come rituale, senza spendere slot. Tempo rituale da verificare manualmente."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:spirit-walker-commune-with-nature-rituale-",
@@ -86,9 +72,7 @@
       "rules_version": "2014",
       "feature": "Spirit Walker",
       "subclass": "Totem Warrior",
-      "name": "Spirit Walker · Commune with Nature (rituale)",
-      "activation": "free",
-      "detail": "Lancia Commune with Nature esclusivamente come rituale, senza spendere slot."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:battlerager-armor-punte",
@@ -97,9 +81,7 @@
       "rules_version": "2014",
       "feature": "Battlerager Armor",
       "subclass": "Battlerager",
-      "name": "Battlerager Armor · punte",
-      "activation": "bonus",
-      "detail": "In Ira con armatura chiodata: attacco con le punte come azione bonus. I 3 danni perforanti quando afferri una creatura si applicano manualmente."
+      "activation": "bonus"
     },
     {
       "id": "barbarian:2014:reckless-abandon-pf-temporanei",
@@ -108,9 +90,7 @@
       "rules_version": "2014",
       "feature": "Reckless Abandon",
       "subclass": "Battlerager",
-      "name": "Reckless Abandon · PF temporanei",
-      "activation": "free",
-      "detail": "Quando utilizzi Reckless Attack durante l’Ira, applica PF temporanei pari al modificatore di Costituzione (minimo 1)."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:battlerager-charge-scatto",
@@ -119,9 +99,7 @@
       "rules_version": "2014",
       "feature": "Battlerager Charge",
       "subclass": "Battlerager",
-      "name": "Battlerager Charge · Scatto",
-      "activation": "bonus",
-      "detail": "Durante l’Ira puoi eseguire Scatto come azione bonus. Verifica manualmente che l’Ira sia attiva."
+      "activation": "bonus"
     },
     {
       "id": "barbarian:2014:spiked-retribution",
@@ -130,9 +108,7 @@
       "rules_version": "2014",
       "feature": "Spiked Retribution",
       "subclass": "Battlerager",
-      "name": "Spiked Retribution",
-      "activation": "free",
-      "detail": "Quando un attacco in mischia ti colpisce mentre sei in Ira e indossi armatura chiodata, infliggi 3 danni perforanti all’attaccante."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:ancestral-protectors-protezione",
@@ -141,9 +117,7 @@
       "rules_version": "2014",
       "feature": "Ancestral Protectors",
       "subclass": "Ancestral Guardian",
-      "name": "Ancestral Protectors · protezione",
-      "activation": "free",
-      "detail": "Durante l’Ira applica al primo bersaglio colpito lo svantaggio agli attacchi contro altri, e la resistenza ai danni delle altre vittime. Da applicare manualmente al token se il colpo non ha un effetto strutturato."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:spirit-shield",
@@ -152,9 +126,7 @@
       "rules_version": "2014",
       "feature": "Spirit Shield",
       "subclass": "Ancestral Guardian",
-      "name": "Spirit Shield",
-      "activation": "reaction",
-      "detail": "Riduci i danni subiti da un’altra creatura entro 30 ft di 2d6 (3d6 al livello 10, 4d6 al 14). L’ammontare prevenuto si gestisce manualmente; dal 14° livello con Vengeful Ancestors infliggi all’attaccante danni da forza pari a quelli prevenuti."
+      "activation": "reaction"
     },
     {
       "id": "barbarian:2014:consult-the-spirits-augury-clairvoyance",
@@ -163,9 +135,7 @@
       "rules_version": "2014",
       "feature": "Consult the Spirits",
       "subclass": "Ancestral Guardian",
-      "name": "Consult the Spirits · Augury / Clairvoyance",
       "activation": "free",
-      "detail": "Usa Augury o Clairvoyance senza slot e senza componenti materiali, con un utilizzo condiviso che si recupera al riposo breve o lungo.",
       "resource": {
         "name": "Consult the Spirits",
         "max": 1,
@@ -179,9 +149,7 @@
       "rules_version": "2014",
       "feature": "Storm Aura",
       "subclass": "Storm Herald",
-      "name": "Storm Aura · attiva/riattiva",
-      "activation": "bonus",
-      "detail": "Quando entri in Ira e nei turni seguenti come azione bonus, applica l’effetto dell’ambiente scelto entro l’aura di 10 ft. L’aura segue il token; gestisci manualmente bersagli, danni e PF temporanei."
+      "activation": "bonus"
     },
     {
       "id": "barbarian:2014:raging-storm-reazione",
@@ -190,9 +158,7 @@
       "rules_version": "2014",
       "feature": "Raging Storm",
       "subclass": "Storm Herald",
-      "name": "Raging Storm · reazione",
-      "activation": "reaction",
-      "detail": "Durante l’Ira applica la reazione propria di Deserto, Mare o Tundra: danni, prono o velocità ridotta a zero secondo il tratto."
+      "activation": "reaction"
     },
     {
       "id": "barbarian:2014:fanatical-focus-ripeti-ts",
@@ -201,9 +167,7 @@
       "rules_version": "2014",
       "feature": "Fanatical Focus",
       "subclass": "Zealot",
-      "name": "Fanatical Focus · ripeti TS",
-      "activation": "free",
-      "detail": "Una volta per Ira puoi ripetere un tiro salvezza fallito, utilizzando il nuovo risultato. Reimposta manualmente il contatore a ogni nuova Ira."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:zealous-presence",
@@ -212,9 +176,7 @@
       "rules_version": "2014",
       "feature": "Zealous Presence",
       "subclass": "Zealot",
-      "name": "Zealous Presence",
       "activation": "bonus",
-      "detail": "Scegli fino a 10 creature entro 60 ft, che ottengono vantaggio ai tiri per colpire e ai tiri salvezza fino all’inizio del tuo turno successivo.",
       "resource": {
         "name": "Zealous Presence",
         "max": 1,
@@ -228,9 +190,7 @@
       "rules_version": "2014",
       "feature": "Form of the Beast",
       "subclass": "Beast",
-      "name": "Form of the Beast · scegli forma",
-      "activation": "free",
-      "detail": "Quando entri in Ira seleziona nello stato Form of the Beast morso, artigli o coda; disattivalo quando termina l’Ira. Cura del morso, artiglio aggiuntivo e difesa della coda restano da gestire manualmente."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:bestial-soul-adattamento",
@@ -239,9 +199,7 @@
       "rules_version": "2014",
       "feature": "Bestial Soul",
       "subclass": "Beast",
-      "name": "Bestial Soul · adattamento",
-      "activation": "free",
-      "detail": "Dopo riposo breve o lungo scegli nuoto con respirazione subacquea, scalata oppure salto potenziato. Le armi naturali di Form of the Beast sono magiche."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:infectious-fury",
@@ -250,9 +208,7 @@
       "rules_version": "2014",
       "feature": "Infectious Fury",
       "subclass": "Beast",
-      "name": "Infectious Fury",
       "activation": "free",
-      "detail": "Su un colpo delle armi naturali scegli un bersaglio per il TS Saggezza: 2d12 danni psichici o attacco provocato a un’altra creatura. Applica manualmente la scelta.",
       "resource": {
         "name": "Infectious Fury",
         "max": "proficiency",
@@ -266,9 +222,7 @@
       "rules_version": "2014",
       "feature": "Call the Hunt",
       "subclass": "Beast",
-      "name": "Call the Hunt",
       "activation": "bonus",
-      "detail": "Scegli gli alleati che ti accompagnano nell’Ira; applica i PF temporanei e il bonus 1d6 ai loro danni secondo il tratto.",
       "resource": {
         "name": "Call the Hunt",
         "max": "proficiency",
@@ -282,9 +236,7 @@
       "rules_version": "2014",
       "feature": "Magic Awareness",
       "subclass": "Wild Magic",
-      "name": "Magic Awareness",
       "activation": "action",
-      "detail": "Individua incantesimi e oggetti magici entro 60 ft che non siano dietro copertura totale; scuola e posizione si verificano manualmente.",
       "resource": {
         "name": "Magic Awareness",
         "max": "proficiency",
@@ -298,9 +250,7 @@
       "rules_version": "2014",
       "feature": "Wild Surge",
       "subclass": "Wild Magic",
-      "name": "Wild Surge · tira d8",
-      "activation": "free",
-      "detail": "Quando entri in Ira tira 1d8 sulla tabella del tratto; applica manualmente il risultato e la sua durata."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:bolstering-magic",
@@ -309,9 +259,7 @@
       "rules_version": "2014",
       "feature": "Bolstering Magic",
       "subclass": "Wild Magic",
-      "name": "Bolstering Magic",
       "activation": "action",
-      "detail": "Tocca una creatura e scegli: bonus d3 ai tiri appropriati oppure recupero di uno slot incantesimo secondo il tratto.",
       "resource": {
         "name": "Bolstering Magic",
         "max": "proficiency",
@@ -325,9 +273,7 @@
       "rules_version": "2014",
       "feature": "Unstable Backlash",
       "subclass": "Wild Magic",
-      "name": "Unstable Backlash",
-      "activation": "reaction",
-      "detail": "Durante l’Ira, dopo danni subiti o un tiro salvezza fallito, tira un nuovo effetto Wild Surge e sostituisci manualmente il precedente."
+      "activation": "reaction"
     },
     {
       "id": "barbarian:2014:controlled-surge-scelta",
@@ -336,9 +282,7 @@
       "rules_version": "2014",
       "feature": "Controlled Surge",
       "subclass": "Wild Magic",
-      "name": "Controlled Surge · scelta",
-      "activation": "free",
-      "detail": "Tira due volte sulla tabella Wild Surge, scegli l’effetto preferito; se sono uguali puoi sceglierne uno qualsiasi."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:elemental-cleaver-potenzia-arma",
@@ -347,9 +291,7 @@
       "rules_version": "2014",
       "feature": "Elemental Cleaver",
       "subclass": "Giant",
-      "name": "Elemental Cleaver · potenzia arma",
-      "activation": "free",
-      "detail": "Scegli l’arma e il tipo di danno, poi applica l’estensione oggetto: +1d6 danni, gittata da lancio 20/60 ft e ritorno in mano. L’estensione viene rimossa quando termina l’Ira."
+      "activation": "free"
     },
     {
       "id": "barbarian:2014:mighty-impel",
@@ -358,9 +300,7 @@
       "rules_version": "2014",
       "feature": "Mighty Impel",
       "subclass": "Giant",
-      "name": "Mighty Impel",
-      "activation": "bonus",
-      "detail": "Seleziona una creatura entro portata, TS Forza se non consenziente, poi spostala fino a 30 ft verso una casella valida. I danni da caduta sono manuali."
+      "activation": "bonus"
     },
     {
       "id": "ranger:2014:primeval-awareness",
@@ -369,10 +309,8 @@
       "rules_version": "2014",
       "feature": "Primeval Awareness",
       "subclass": "",
-      "name": "Primeval Awareness · individuare presenze",
       "activation": "action",
-      "descriptive_only": true,
-      "detail": "Spendi manualmente uno slot incantesimo per percepire se sono presenti aberrazioni, celestiali, draghi, elementali, folletti, immondi o non morti entro 1 miglio (6 miglia nel terreno favorito). Non rivela posizione o numero; durata un minuto per livello dello slot."
+      "descriptive_only": true
     }
   ],
   "sources": [
@@ -394,14 +332,12 @@
       "min_level": 1,
       "feature": "Bardic Inspiration",
       "action_id": "bardic_inspiration",
-      "name": "Bardic Inspiration",
       "activation": "bonus",
       "tracker_name": "Bardic Inspiration",
       "resource_cost": 1,
       "target_mode": "single_token",
       "target_range_feet": 60,
       "exclude_self": true,
-      "detail": "Bardic Inspiration (2024): scegli una creatura diversa da te entro 60 ft in grado di percepire la tua ispirazione. Consuma un utilizzo confermato; l'applicazione del dado rimane manuale.",
       "priority": 0,
       "dice_ref": "bardic_inspiration_die"
     },
@@ -413,14 +349,12 @@
       "min_level": 1,
       "feature": "Bardic Inspiration",
       "action_id": "bardic_inspiration",
-      "name": "Bardic Inspiration",
       "activation": "bonus",
       "tracker_name": "Bardic Inspiration",
       "resource_cost": 1,
       "target_mode": "single_token",
       "target_range_feet": 60,
       "exclude_self": true,
-      "detail": "Bardic Inspiration (2014): scegli una creatura diversa da te entro 60 ft in grado di percepire la tua ispirazione. Consuma un utilizzo confermato; l'applicazione del dado rimane manuale.",
       "priority": 0,
       "dice_ref": "bardic_inspiration_die"
     },
@@ -432,10 +366,8 @@
       "subclass": "College of Whispers",
       "feature": "Mantle of Whispers",
       "action_id": "mantle_of_whispers_capture",
-      "name": "Cattura l'ombra",
       "activation": "reaction",
       "tracker_name": "Mantle of Whispers",
-      "detail": "Reazione e un uso quando un umanoide muore entro 30 piedi: catturi la sua ombra. L'ombra conservata, il travestimento e la sua durata richiedono stato separato.",
       "kind": "activation",
       "priority": 0
     },
@@ -447,10 +379,8 @@
       "subclass": "College of Whispers",
       "feature": "Shadow Lore",
       "action_id": "shadow_lore",
-      "name": "Conoscenza dell'ombra",
       "activation": "action",
       "tracker_name": "Shadow Lore",
-      "detail": "Azione e un uso: sussurri a una creatura entro 30 piedi che possa sentirti. Lingua condivisa, TS SAG, Charm, durata e condizioni di fine richiedono il bersaglio effettivo.",
       "kind": "activation",
       "priority": 0
     },
@@ -461,10 +391,8 @@
       "min_level": 2,
       "feature": "Wild Shape",
       "action_id": "wild_shape",
-      "name": "Forma selvatica",
       "activation": "action",
       "tracker_name": "Wild Shape",
-      "detail": "Trasformati usando un utilizzo di Forma selvatica.",
       "kind": "activation",
       "priority": 0
     },
@@ -476,10 +404,8 @@
       "subclass": "Moon",
       "feature": "Combat Wild Shape",
       "action_id": "wild_shape",
-      "name": "Forma selvatica",
       "activation": "bonus",
       "tracker_name": "Wild Shape",
-      "detail": "Forma Selvatica da combattimento: trasformazione come azione bonus, usando lo stesso contatore.",
       "kind": "activation",
       "priority": 10
     },
@@ -490,10 +416,8 @@
       "min_level": 2,
       "feature": "Wild Shape",
       "action_id": "wild_shape",
-      "name": "Forma selvatica",
       "activation": "bonus",
       "tracker_name": "Wild Shape",
-      "detail": "Nel 2024 la trasformazione è un'azione bonus per tutti i druidi.",
       "kind": "activation",
       "priority": 0
     },
@@ -504,10 +428,8 @@
       "min_level": 14,
       "feature": "Vanish",
       "action_id": "hide",
-      "name": "Nascondersi (Svanire)",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Svanire: puoi nasconderti come azione bonus.",
       "kind": "activation",
       "priority": 0
     },
@@ -519,10 +441,8 @@
       "subclass": "Thief",
       "feature": "Fast Hands",
       "action_id": "use_object",
-      "name": "Usare un oggetto (Mani veloci)",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Mani veloci: usa un oggetto non magico tramite Azione scaltra, oppure usa gli strumenti da scasso.",
       "kind": "activation",
       "priority": 0
     },
@@ -534,10 +454,8 @@
       "subclass": "Thief",
       "feature": "Fast Hands",
       "action_id": "utilize",
-      "name": "Utilizzare (Mani veloci)",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Mani veloci: puoi utilizzare un oggetto come azione bonus; si applicano le opzioni specifiche del privilegio.",
       "kind": "activation",
       "priority": 0
     },
@@ -549,10 +467,8 @@
       "subclass": "Inquisitive",
       "feature": "Eye for Detail",
       "action_id": "eye_for_detail",
-      "name": "Occhio per i dettagli",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus: prova Percezione per individuare una creatura o un oggetto nascosto, oppure Indagare per scoprire o decifrare indizi.",
       "kind": "activation",
       "priority": 0
     },
@@ -564,10 +480,8 @@
       "subclass": "Inquisitive",
       "feature": "Insightful Fighting",
       "action_id": "insightful_fighting",
-      "name": "Combattimento perspicace",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus: prova Intuizione contrapposta a Inganno di una creatura visibile non incapacitata; il beneficio richiede successo e bersaglio valido.",
       "kind": "activation",
       "priority": 0
     },
@@ -579,10 +493,8 @@
       "subclass": "Inquisitive",
       "feature": "Unerring Eye",
       "action_id": "unerring_eye",
-      "name": "Occhio infallibile",
       "activation": "action",
       "tracker_name": "Unerring Eye",
-      "detail": "Azione e un uso del tratto; rileva inganni dei sensi entro 30 piedi solo se non sei accecato o assordato.",
       "kind": "activation",
       "priority": 0
     },
@@ -594,10 +506,8 @@
       "subclass": "Mastermind",
       "feature": "Master of Tactics",
       "action_id": "help",
-      "name": "Aiutare (Maestro di tattiche)",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Help come azione bonus; se aiuta un attacco, il bersaglio può trovarsi entro 30 piedi se può vederti o sentirti.",
       "kind": "activation",
       "priority": 0
     },
@@ -609,10 +519,8 @@
       "subclass": "Mastermind",
       "feature": "Misdirection",
       "action_id": "misdirection",
-      "name": "Depistaggio",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Reazione solo quando una creatura entro 5 piedi ti fornisce copertura contro l'attacco che ti prende di mira.",
       "kind": "activation",
       "priority": 0
     },
@@ -624,10 +532,8 @@
       "subclass": "Scout",
       "feature": "Skirmisher",
       "action_id": "skirmisher",
-      "name": "Schermagliatore",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Reazione quando un nemico termina il turno entro 5 piedi; movimento fino a metà velocità senza attacchi di opportunità.",
       "kind": "activation",
       "priority": 0
     },
@@ -639,10 +545,8 @@
       "subclass": "Scout",
       "feature": "Sudden Strike",
       "action_id": "sudden_strike",
-      "name": "Colpo improvviso",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Attacco aggiuntivo come azione bonus dopo l'azione Attack; Furtivo aggiuntivo solo contro un bersaglio diverso nello stesso turno.",
       "kind": "activation",
       "priority": 0
     },
@@ -654,10 +558,8 @@
       "subclass": "Swashbuckler",
       "feature": "Panache",
       "action_id": "panache",
-      "name": "Panache",
       "activation": "action",
       "tracker_name": "",
-      "detail": "Azione: prova Persuasione contrapposta a Intuizione; il bersaglio deve udirti e condividere una lingua.",
       "kind": "activation",
       "priority": 0
     },
@@ -669,10 +571,8 @@
       "subclass": "Swashbuckler",
       "feature": "Elegant Maneuver",
       "action_id": "elegant_maneuver",
-      "name": "Manovra elegante",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus: vantaggio alla prossima prova Acrobazia o Atletica dello stesso turno.",
       "kind": "activation",
       "priority": 0
     },
@@ -684,10 +584,8 @@
       "subclass": "Horizon Walker",
       "feature": "Detect Portal",
       "action_id": "detect_portal",
-      "name": "Individuare portale",
       "activation": "action",
       "tracker_name": "Detect Portal",
-      "detail": "Azione e un uso del tratto: distanza e direzione del portale planare più vicino entro un miglio.",
       "kind": "activation",
       "priority": 0
     },
@@ -699,10 +597,8 @@
       "subclass": "Horizon Walker",
       "feature": "Planar Warrior",
       "action_id": "planar_warrior",
-      "name": "Guerriero planare",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus: scegli una creatura visibile entro 30 piedi; il prossimo colpo con arma su di essa in questo turno applica il danno da forza del tratto.",
       "kind": "activation",
       "priority": 0
     },
@@ -714,10 +610,8 @@
       "subclass": "Horizon Walker",
       "feature": "Ethereal Step",
       "action_id": "ethereal_step",
-      "name": "Passo etereo",
       "activation": "bonus",
       "tracker_name": "Ethereal Step",
-      "detail": "Azione bonus e un uso del tratto; Etherealness gratuito termina alla fine del turno corrente.",
       "kind": "activation",
       "priority": 0
     },
@@ -729,10 +623,8 @@
       "subclass": "Horizon Walker",
       "feature": "Spectral Defense",
       "action_id": "spectral_defense",
-      "name": "Difesa spettrale",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Reazione quando subisci danni da un attacco: resistenza soltanto ai danni di quell'attacco nel turno.",
       "kind": "activation",
       "priority": 0
     },
@@ -744,10 +636,8 @@
       "subclass": "Monster Slayer",
       "feature": "Hunter's Sense",
       "action_id": "hunters_sense",
-      "name": "Senso del cacciatore",
       "activation": "action",
       "tracker_name": "Hunter's Sense",
-      "detail": "Azione e un uso del tratto: scegli una creatura visibile entro 60 piedi e consulta immunità, resistenze e vulnerabilità.",
       "kind": "activation",
       "priority": 0
     },
@@ -759,10 +649,8 @@
       "subclass": "Monster Slayer",
       "feature": "Slayer's Prey",
       "action_id": "slayers_prey",
-      "name": "Preda del cacciatore",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus: designa una creatura visibile entro 60 piedi; il danno extra si applica al primo colpo con arma contro di essa in ogni turno.",
       "kind": "activation",
       "priority": 0
     },
@@ -774,10 +662,8 @@
       "subclass": "Monster Slayer",
       "feature": "Magic-User's Nemesis",
       "action_id": "magic_users_nemesis",
-      "name": "Nemesi dell'incantatore",
       "activation": "reaction",
       "tracker_name": "Magic-User's Nemesis",
-      "detail": "Reazione e un uso del tratto quando vedi un lancio o teletrasporto entro 60 piedi; il bersaglio effettua il TS SAG previsto.",
       "kind": "activation",
       "priority": 0
     },
@@ -789,10 +675,8 @@
       "subclass": "Monster Slayer",
       "feature": "Slayer's Counter",
       "action_id": "slayers_counter",
-      "name": "Contrattacco del cacciatore",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Reazione quando la preda ti impone un TS: attaccala con arma prima del TS; il TS riesce automaticamente soltanto se colpisci.",
       "kind": "activation",
       "priority": 0
     },
@@ -804,10 +688,8 @@
       "subclass": "Divine Soul",
       "feature": "Otherworldly Wings",
       "action_id": "otherworldly_wings",
-      "name": "Ali ultraterrene",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus per manifestare o congedare le ali; il volo di 30 piedi vale solo mentre sono presenti.",
       "kind": "activation",
       "priority": 0
     },
@@ -819,10 +701,8 @@
       "subclass": "Divine Soul",
       "feature": "Unearthly Recovery",
       "action_id": "unearthly_recovery",
-      "name": "Recupero ultraterreno",
       "activation": "bonus",
       "tracker_name": "Unearthly Recovery",
-      "detail": "Azione bonus e un uso solo quando i PF attuali sono sotto metà del massimo; cura metà dei PF massimi.",
       "kind": "activation",
       "priority": 0
     },
@@ -834,10 +714,8 @@
       "subclass": "Storm Sorcery",
       "feature": "Tempestuous Magic",
       "action_id": "tempestuous_magic",
-      "name": "Magia tempestosa",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus immediatamente prima o dopo il lancio di un incantesimo di livello 1 o superiore; volo fino a 10 piedi senza attacchi di opportunità.",
       "kind": "activation",
       "priority": 0
     },
@@ -849,10 +727,8 @@
       "subclass": "Storm Sorcery",
       "feature": "Storm Guide",
       "action_id": "storm_guide_rain",
-      "name": "Guida della tempesta (pioggia)",
       "activation": "action",
       "tracker_name": "",
-      "detail": "Azione solo mentre piove: sospendi la pioggia nella sfera prevista; termina l'effetto con azione bonus.",
       "kind": "activation",
       "priority": 0
     },
@@ -864,10 +740,8 @@
       "subclass": "Storm Sorcery",
       "feature": "Storm Guide",
       "action_id": "storm_guide_rain_end",
-      "name": "Guida della tempesta (fine pioggia)",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus per terminare la sospensione della pioggia già attiva.",
       "kind": "activation",
       "priority": 0
     },
@@ -879,10 +753,8 @@
       "subclass": "Storm Sorcery",
       "feature": "Storm Guide",
       "action_id": "storm_guide_wind",
-      "name": "Guida della tempesta (vento)",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus solo mentre c'è vento: scegline la direzione nella sfera prevista fino alla fine del turno successivo.",
       "kind": "activation",
       "priority": 0
     },
@@ -894,10 +766,8 @@
       "subclass": "Storm Sorcery",
       "feature": "Storm's Fury",
       "action_id": "storms_fury",
-      "name": "Furia della tempesta",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Reazione al colpo in mischia subito: danno da fulmine pari al livello da Sorcerer e TS FOR per la spinta.",
       "kind": "activation",
       "priority": 0
     },
@@ -909,10 +779,8 @@
       "subclass": "Storm Sorcery",
       "feature": "Wind Soul",
       "action_id": "wind_soul_shared_flight",
-      "name": "Anima del vento (volo condiviso)",
       "activation": "action",
       "tracker_name": "Wind Soul (Shared Flight)",
-      "detail": "Azione e un uso per condividere volo 30 piedi per un'ora con le creature scelte; il volo personale e le immunità non consumano questo uso.",
       "kind": "activation",
       "priority": 0
     },
@@ -924,10 +792,8 @@
       "subclass": "Nature",
       "feature": "Channel Divinity: Charm Animals and Plants",
       "action_id": "nature_charm_animals_and_plants",
-      "name": "Incantare animali e piante",
       "activation": "action",
       "tracker_name": "Channel Divinity",
-      "detail": "Presenta il simbolo sacro e usa Incanalare Divinità; scegli i bersagli e risolvi i tiri salvezza.",
       "kind": "activation",
       "priority": 0
     },
@@ -939,10 +805,8 @@
       "subclass": "Nature",
       "feature": "Dampen Elements",
       "action_id": "nature_dampen_elements",
-      "name": "Smorzare gli elementi",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Quando una creatura entro 30 piedi subisce danno idoneo, usa la reazione per darle resistenza a quella istanza.",
       "kind": "activation",
       "priority": 0
     },
@@ -954,10 +818,8 @@
       "subclass": "Nature",
       "feature": "Master of Nature",
       "action_id": "nature_master_of_nature",
-      "name": "Maestria della natura",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Comanda le creature incantate dal tuo privilegio Incantare animali e piante.",
       "kind": "activation",
       "priority": 0
     },
@@ -969,10 +831,8 @@
       "subclass": "Tempest",
       "feature": "Wrath of the Storm",
       "action_id": "tempest_wrath_of_the_storm",
-      "name": "Ira della tempesta",
       "activation": "reaction",
       "tracker_name": "Wrath of the Storm",
-      "detail": "Quando una creatura visibile entro 5 piedi ti colpisce, usa la reazione e un uso del tratto; risolvi il tiro salvezza e il danno.",
       "kind": "activation",
       "priority": 0
     },
@@ -984,10 +844,8 @@
       "subclass": "Tempest",
       "feature": "Channel Divinity: Destructive Wrath",
       "action_id": "tempest_destructive_wrath",
-      "name": "Ira distruttiva",
       "activation": "free",
       "tracker_name": "Channel Divinity",
-      "detail": "Quando tiri danni da fulmine o tuono, usa Incanalare Divinità per massimizzare quei dadi.",
       "kind": "activation",
       "priority": 0
     },
@@ -999,10 +857,8 @@
       "subclass": "The Hexblade",
       "feature": "Hexblade's Curse",
       "action_id": "hexblades_curse",
-      "name": "Maledizione dell'Hexblade",
       "activation": "bonus",
       "tracker_name": "Hexblade's Curse",
-      "detail": "Azione bonus e un uso del tratto: maledici una creatura visibile entro 30 piedi per un minuto. Bersaglio, bonus ai danni, critico e cura alla morte restano da applicare nel contesto.",
       "kind": "activation",
       "priority": 0
     },
@@ -1014,10 +870,8 @@
       "subclass": "The Hexblade",
       "feature": "Armor of Hexes",
       "action_id": "armor_of_hexes",
-      "name": "Armatura dei malefici",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Reazione quando il bersaglio della tua Hexblade's Curse ti colpisce: con 4–6 su un d6 l'attacco manca. Il bersaglio e il tiro restano contestuali.",
       "kind": "activation",
       "priority": 0
     },
@@ -1029,10 +883,8 @@
       "subclass": "Undying",
       "feature": "Indestructible Life",
       "action_id": "undying_indestructible_life",
-      "name": "Vita indistruttibile",
       "activation": "bonus",
       "tracker_name": "Indestructible Life",
-      "detail": "Usa l'azione bonus e un uso del tratto per recuperare PF; l'eventuale riattacco di una parte del corpo richiede la condizione descritta.",
       "kind": "activation",
       "priority": 0
     },
@@ -1044,10 +896,8 @@
       "subclass": "Way of the Kensei",
       "feature": "Kensei's Shot",
       "action_id": "kenseis_shot",
-      "name": "Tiro del kensei",
       "activation": "bonus",
       "tracker_name": "",
-      "detail": "Azione bonus: fino alla fine del turno, i colpi a distanza con un'arma kensei infliggono 1d4 danni aggiuntivi del tipo dell'arma. La scelta dell'arma e i colpi effettivi restano contestuali.",
       "kind": "activation",
       "priority": 0
     },
@@ -1059,10 +909,8 @@
       "subclass": "Way of the Sun Soul",
       "feature": "Searing Sunburst",
       "action_id": "searing_sunburst",
-      "name": "Esplosione solare",
       "activation": "action",
       "tracker_name": "",
-      "detail": "Azione: scegli un punto entro 150 piedi; l'esplosione ha raggio 20 piedi e infligge 2d6 danni radiosi con TS COS. Fino a 3 Ki possono aumentarne il danno di 2d6 ciascuno. Area, copertura, bersagli, TS e spesa facoltativa restano da risolvere nel contesto.",
       "kind": "activation",
       "priority": 0
     },
@@ -1074,10 +922,8 @@
       "subclass": "Long Death",
       "feature": "Hour of Reaping",
       "action_id": "long_death_hour_of_reaping",
-      "name": "Ora della mietitura",
       "activation": "action",
       "tracker_name": "",
-      "detail": "Le creature idonee entro 30 piedi effettuano il tiro salvezza contro la paura; la condizione dura fino alla fine del tuo prossimo turno.",
       "kind": "activation",
       "priority": 0
     },
@@ -1089,10 +935,8 @@
       "subclass": "Crown",
       "feature": "Champion Challenge",
       "action_id": "crown_champion_challenge",
-      "name": "Sfida del campione",
       "activation": "bonus",
       "tracker_name": "Channel Divinity",
-      "detail": "Usa Incanalare Divinità e scegli le creature visibili entro 30 piedi; risolvi i tiri salvezza e il vincolo di movimento.",
       "kind": "activation",
       "priority": 0
     },
@@ -1104,10 +948,8 @@
       "subclass": "Crown",
       "feature": "Turn the Tide",
       "action_id": "crown_turn_the_tide",
-      "name": "Invertire la marea",
       "activation": "bonus",
       "tracker_name": "Channel Divinity",
-      "detail": "Usa Incanalare Divinità e scegli le creature idonee che ti sentono entro 30 piedi e hanno metà PF o meno.",
       "kind": "activation",
       "priority": 0
     },
@@ -1119,10 +961,8 @@
       "subclass": "Crown",
       "feature": "Divine Allegiance",
       "action_id": "crown_divine_allegiance",
-      "name": "Fedeltà divina",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Quando una creatura entro 5 piedi subisce danno, puoi prendere quel danno al suo posto senza ridurlo.",
       "kind": "activation",
       "priority": 0
     },
@@ -1134,10 +974,8 @@
       "subclass": "Crown",
       "feature": "Exalted Champion",
       "action_id": "crown_exalted_champion",
-      "name": "Campione esaltato",
       "activation": "action",
       "tracker_name": "Exalted Champion",
-      "detail": "Attiva il tratto per un'ora; resistenze e benefici degli alleati dipendono dallo stato e dalla distanza.",
       "kind": "activation",
       "priority": 0
     },
@@ -1149,10 +987,8 @@
       "subclass": "Samurai",
       "feature": "Fighting Spirit",
       "action_id": "samurai_fighting_spirit",
-      "name": "Spirito combattivo",
       "activation": "bonus",
       "tracker_name": "Fighting Spirit",
-      "detail": "Attiva un uso sul tuo turno; vantaggio agli attacchi con arma fino a fine turno e PF temporanei secondo il livello da Guerriero.",
       "kind": "activation",
       "priority": 0
     },
@@ -1164,10 +1000,8 @@
       "subclass": "Samurai",
       "feature": "Strength before Death",
       "action_id": "samurai_strength_before_death",
-      "name": "Forza prima della morte",
       "activation": "reaction",
       "tracker_name": "Strength before Death",
-      "detail": "Solo quando il danno ti riduce a 0 PF senza ucciderti subito; risolvi il turno extra e i TS morte.",
       "kind": "activation",
       "priority": 0
     },
@@ -1179,10 +1013,8 @@
       "subclass": "Cavalier",
       "feature": "Warding Maneuver",
       "action_id": "cavalier_warding_maneuver",
-      "name": "Manovra protettiva",
       "activation": "reaction",
       "tracker_name": "Warding Maneuver",
-      "detail": "Solo dopo un colpo su un bersaglio idoneo entro 5 piedi e con arma da mischia o scudo; risolvi il d8 sulla CA.",
       "kind": "activation",
       "priority": 0
     },
@@ -1194,10 +1026,8 @@
       "subclass": "Dreams",
       "feature": "Hidden Paths",
       "action_id": "dreams_hidden_paths_self",
-      "name": "Sentieri nascosti · sé",
       "activation": "bonus",
       "tracker_name": "Hidden Paths",
-      "detail": "Usa un uso per teletrasportarti fino a 60 piedi in uno spazio libero che puoi vedere.",
       "kind": "activation",
       "priority": 0
     },
@@ -1209,10 +1039,8 @@
       "subclass": "Dreams",
       "feature": "Hidden Paths",
       "action_id": "dreams_hidden_paths_ally",
-      "name": "Sentieri nascosti · alleato",
       "activation": "action",
       "tracker_name": "Hidden Paths",
-      "detail": "Usa un uso per teletrasportare una creatura consenziente toccata fino a 30 piedi in uno spazio libero visibile.",
       "kind": "activation",
       "priority": 0
     },
@@ -1224,10 +1052,8 @@
       "subclass": "Shepherd",
       "feature": "Spirit Totem",
       "action_id": "shepherd_spirit_totem",
-      "name": "Evocare totem spirituale",
       "activation": "bonus",
       "tracker_name": "Spirit Totem",
-      "detail": "Evoca il totem in un punto visibile entro 60 piedi; scegli il tipo di spirito e applica l'aura pertinente.",
       "kind": "activation",
       "priority": 0
     },
@@ -1240,10 +1066,8 @@
       "feature": "Arcane Deflection",
       "min_level": 2,
       "action_id": "war_arcane_deflection",
-      "name": "Deviazione arcana",
       "activation": "reaction",
       "tracker_name": "",
-      "detail": "Solo quando un attacco ti colpisce o fallisci un tiro salvezza; scegli +2 CA contro quell’attacco oppure +4 al tiro salvezza. Il limite agli incantesimi dura fino alla fine del tuo turno successivo.",
       "priority": 0
     },
     {
@@ -1254,11 +1078,9 @@
       "min_level": 1,
       "feature": "Martial Arts",
       "action_id": "martial_arts_bonus_unarmed",
-      "name": "Arti marziali · colpo senz'armi",
       "activation": "bonus",
       "tracker_name": "",
       "resource_cost": 0,
-      "detail": "Dopo aver usato l'azione Attacco nel tuo turno con un colpo senz'armi o un'arma da monaco, puoi effettuare un colpo senz'armi come azione bonus. Richiede di non indossare armatura né impugnare uno scudo, e di usare solo armi da monaco. Non consuma Ki.",
       "priority": 0
     },
     {
@@ -1269,11 +1091,9 @@
       "min_level": 4,
       "feature": "Slow Fall",
       "action_id": "slow_fall",
-      "name": "Caduta lenta",
       "activation": "reaction",
       "tracker_name": "",
       "resource_cost": 0,
-      "detail": "Quando cadi, puoi usare la reazione per ridurre i danni da caduta di cinque volte il livello da Monaco. Non consuma Ki.",
       "priority": 0
     },
     {
@@ -1284,11 +1104,9 @@
       "min_level": 7,
       "feature": "Stillness of Mind",
       "action_id": "stillness_of_mind",
-      "name": "Quiete mentale",
       "activation": "action",
       "tracker_name": "",
       "resource_cost": 0,
-      "detail": "Usi la tua azione per porre fine a un effetto su di te che ti rende affascinato o spaventato. Non consuma Ki.",
       "priority": 0
     },
     {
@@ -1299,11 +1117,9 @@
       "min_level": 14,
       "feature": "Diamond Soul",
       "action_id": "diamond_soul_retry",
-      "name": "Anima adamantina · ritira TS",
       "activation": "free",
       "tracker_name": "Ki Points",
       "resource_cost": 1,
-      "detail": "Quando fallisci un tiro salvezza puoi spendere 1 punto Ki per ritirarlo, usando il secondo risultato. La competenza a tutti i tiri salvezza è un beneficio permanente separato.",
       "priority": 0
     },
     {
@@ -1314,11 +1130,9 @@
       "min_level": 18,
       "feature": "Empty Body",
       "action_id": "empty_body_invisibility",
-      "name": "Corpo vuoto · invisibilità",
       "activation": "action",
       "tracker_name": "Ki Points",
       "resource_cost": 4,
-      "detail": "Spendi 4 punti Ki come azione: diventi invisibile per 1 minuto e ottieni resistenza a tutti i danni eccetto forza. La durata e la condizione vengono gestite dal giocatore.",
       "priority": 0
     },
     {
@@ -1330,11 +1144,9 @@
       "min_level": 6,
       "feature": "Wholeness of Body",
       "action_id": "wholeness_of_body",
-      "name": "Integrità del corpo",
       "activation": "action",
       "tracker_name": "Wholeness of Body",
       "resource_cost": 1,
-      "detail": "Usi un'azione e l'unico utilizzo prima del riposo lungo per recuperare un numero di PF pari a tre volte il tuo livello da Monaco. Il recupero dei PF va applicato nella scheda.",
       "priority": 0
     },
     {
@@ -1346,11 +1158,9 @@
       "min_level": 6,
       "feature": "Shadow Step",
       "action_id": "shadow_step",
-      "name": "Passo d'ombra",
       "activation": "bonus",
       "tracker_name": "",
       "resource_cost": 0,
-      "detail": "In luce fioca o nell'oscurità, puoi teletrasportarti come azione bonus di massimo 60 piedi in un altro spazio che vedi in luce fioca/oscurità; hai vantaggio al primo attacco in mischia che effettui prima della fine del turno. Non consuma Ki.",
       "priority": 0
     },
     {
@@ -1362,11 +1172,9 @@
       "min_level": 11,
       "feature": "Cloak of Shadows",
       "action_id": "cloak_of_shadows",
-      "name": "Manto d'ombra",
       "activation": "action",
       "tracker_name": "",
       "resource_cost": 0,
-      "detail": "Quando sei in luce fioca o nell'oscurità puoi usare un'azione per diventare invisibile finché non attacchi, lanci un incantesimo o entri in luce intensa. Non consuma Ki.",
       "priority": 0
     }
   ],
@@ -1756,7 +1564,6 @@
       "rules_version": "2014",
       "feature": "Martial Arts",
       "min_level": 1,
-      "name": "Arti marziali · colpo senz'armi",
       "time": "bonus",
       "steps": [
         {
@@ -1765,8 +1572,7 @@
           },
           "count": 1
         }
-      ],
-      "detail": "Dopo un'azione Attacco con colpo senz'armi o arma da monaco; richiede assenza di armatura e scudo."
+      ]
     },
     {
       "id": "flurry-of-blows-2014",
@@ -1775,7 +1581,6 @@
       "rules_version": "2014",
       "feature": "Flurry of Blows",
       "min_level": 2,
-      "name": "Raffica di colpi",
       "time": "bonus",
       "tracker_name": "Ki Points",
       "tracker_cost": 1,
@@ -1787,8 +1592,7 @@
           },
           "count": 2
         }
-      ],
-      "detail": "Subito dopo aver usato l'azione Attacco nel tuo turno, spendi 1 punto Ki per effettuare due colpi senz'armi come azione bonus."
+      ]
     },
     {
       "id": "cunning-action-phb",
@@ -1797,7 +1601,6 @@
       "rules_version": "2014",
       "feature": "Cunning Action",
       "min_level": 2,
-      "name": "Azione scaltra",
       "time": "bonus",
       "steps": [
         {
@@ -1828,8 +1631,7 @@
             }
           ]
         }
-      ],
-      "detail": "Come azione bonus scegli una sola opzione: Scattare, Disimpegnarsi o Nascondersi."
+      ]
     },
     {
       "id": "cunning-action-xphb",
@@ -1838,7 +1640,6 @@
       "rules_version": "2024",
       "feature": "Cunning Action",
       "min_level": 2,
-      "name": "Azione scaltra",
       "time": "bonus",
       "steps": [
         {
@@ -1869,8 +1670,7 @@
             }
           ]
         }
-      ],
-      "detail": "Come azione bonus scegli una sola opzione: Scattare, Disimpegnarsi o Nascondersi."
+      ]
     },
     {
       "id": "berserker-frenzy-2014",
@@ -1879,7 +1679,6 @@
       "rules_version": "2014",
       "feature": "Frenzy",
       "min_level": 3,
-      "name": "Frenesia · attacco in mischia",
       "time": "bonus",
       "steps": [
         {
@@ -1890,7 +1689,6 @@
           "count": 1
         }
       ],
-      "detail": "Durante una frenesia attiva: un attacco con arma da mischia come azione bonus nei turni successivi.",
       "subclass": "Berserker"
     },
     {
@@ -1900,7 +1698,6 @@
       "rules_version": "2014",
       "feature": "Horde Breaker",
       "min_level": 3,
-      "name": "Spezzare l’orda",
       "time": "free",
       "steps": [
         {
@@ -1911,7 +1708,6 @@
           "count": 1
         }
       ],
-      "detail": "Una volta per turno, attacco con la stessa arma contro un secondo bersaglio adiacente al primo.",
       "subclass": "Hunter"
     },
     {
@@ -1921,7 +1717,6 @@
       "rules_version": "2014",
       "feature": "Volley",
       "min_level": 11,
-      "name": "Raffica a distanza",
       "time": "action",
       "steps": [
         {
@@ -1933,7 +1728,6 @@
           "repeat": "per_target"
         }
       ],
-      "detail": "Tira un attacco a distanza per ogni bersaglio ammesso nell’area indicata dal tratto.",
       "subclass": "Hunter"
     },
     {
@@ -1943,7 +1737,6 @@
       "rules_version": "2014",
       "feature": "Whirlwind Attack",
       "min_level": 11,
-      "name": "Attacco turbinante",
       "time": "action",
       "steps": [
         {
@@ -1955,7 +1748,6 @@
           "repeat": "per_target"
         }
       ],
-      "detail": "Tira un attacco in mischia distinto per ciascuna creatura ammessa entro 5 ft.",
       "subclass": "Hunter"
     },
     {
@@ -1965,7 +1757,6 @@
       "rules_version": "2014",
       "feature": "Sudden Strike",
       "min_level": 17,
-      "name": "Colpo improvviso",
       "time": "bonus",
       "steps": [
         {
@@ -1976,7 +1767,6 @@
           "count": 1
         }
       ],
-      "detail": "Un attacco con arma aggiuntivo come azione bonus dopo Attacco; un altro Furtivo richiede un bersaglio diverso.",
       "subclass": "Scout"
     },
     {
@@ -1986,7 +1776,6 @@
       "rules_version": "2014",
       "feature": "War Magic",
       "min_level": 7,
-      "name": "Magia da guerra · attacco",
       "time": "bonus",
       "steps": [
         {
@@ -1997,7 +1786,6 @@
           "count": 1
         }
       ],
-      "detail": "Dopo aver usato l’azione per lanciare un trucchetto, attacca con un’arma come azione bonus.",
       "subclass": "Eldritch Knight"
     },
     {
@@ -2007,7 +1795,6 @@
       "rules_version": "2014",
       "feature": "Improved War Magic",
       "min_level": 18,
-      "name": "Magia da guerra migliorata · attacco",
       "time": "bonus",
       "steps": [
         {
@@ -2018,7 +1805,6 @@
           "count": 1
         }
       ],
-      "detail": "Dopo aver usato l’azione per lanciare un incantesimo, attacca con un’arma come azione bonus.",
       "subclass": "Eldritch Knight"
     },
     {
@@ -2028,7 +1814,6 @@
       "rules_version": "2014",
       "feature": "War Priest",
       "min_level": 1,
-      "name": "Sacerdote della guerra · attacco",
       "time": "bonus",
       "steps": [
         {
@@ -2039,7 +1824,6 @@
           "count": 1
         }
       ],
-      "detail": "Quando usi l’azione Attacco, un altro attacco con arma come azione bonus; consuma un utilizzo.",
       "subclass": "War Domain",
       "tracker_name": "War Priest",
       "tracker_cost": 1
