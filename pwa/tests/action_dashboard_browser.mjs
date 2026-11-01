@@ -83,6 +83,11 @@ try{
     assert.equal(await attacks.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is in Attacchi');
     assert.equal(await attacks.locator('[data-battle-basic="attacks"] [data-attack-id="unarmed"]').count(),1,
      'Unarmed belongs to the separate basic-attacks group');
+    const equippedAttack=attacks.locator('[data-attack-id^="item:"]').first();
+    assert(await equippedAttack.count()>0,'The fixture has a weapon attack from its equipped Shortsword');
+    assert.equal(await equippedAttack.locator('xpath=ancestor::*[@data-battle-basic]').count(),0,
+     'Equipped weapon attacks are above the base divider, not included in the basic section');
+    assert.equal(await equippedAttack.isVisible(),true);
     assert.equal(await attacks.locator('.play-action-origin-divider[aria-label="Attacchi di base"]').count(),1,
      'Basic attacks have the same visual separator as rule actions');
     const toolbar=page.locator('#sheet-play-view .play-battle-top-tools');
@@ -136,6 +141,8 @@ try{
      assert.equal(await ruleGroup.isVisible(),false,'The toggle hides all rule-defined actions');
      assert.equal(await attacks.locator('[data-battle-basic="attacks"]').isVisible(),false,
       'The same toggle also hides basic attacks');
+     assert.equal(await equippedAttack.isVisible(),true,
+      'A hidden base section must never hide attacks from equipped weapons');
      assert.equal(await privilegeGroup.isVisible(),true,'Privilege actions remain visible');
      await section('magic');await section('battle');
      assert.equal(await toggleBase.getAttribute('aria-pressed'),'false',
