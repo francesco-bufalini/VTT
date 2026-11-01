@@ -50,7 +50,7 @@ export function projectFeatureTimingRules(catalogs={}){
 }
 export function projectClassResourceOverrides(catalog){
  const groups=new Map();
- for(const {entry,ref,benefit} of grants(catalog,'resource')){
+ for(const {entry,ref,benefit} of grants(catalog,'resource').filter(row=>row.benefit.kind!=='spell_slots')){
   const groupKey=ref.class_source+'|'+ref.class_name;
   if(!groups.has(groupKey))groups.set(groupKey,{
    class:ref.class_name,source:ref.class_source,resources:[]

@@ -1,0 +1,6277 @@
+{
+  "schema_version": 2,
+  "benefit_type": "option_grant",
+  "scope": "catalog",
+  "notes": "Class and subclass selection grants, source-qualified; 5eTools option content remains in source catalogs.",
+  "entries": [
+    {
+      "id": "option_grant:arcane_armor",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Arcane Armor",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "arcane_armor",
+        "option_grant": {
+          "id": "arcane_armor",
+          "title": "Armatura Arcana",
+          "owner": {
+            "class_name": "Artificer",
+            "class_source": "TCE",
+            "subclass": "Armorer",
+            "trait": "Arcane Armor"
+          },
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "inline",
+            "options": [
+              {
+                "id": "arcane_armor",
+                "name": "Armatura Arcana",
+                "details": {
+                  "category": "class_features",
+                  "name": "Arcane Armor",
+                  "source": "TCE"
+                },
+                "description": "Armatura Arcana: l’oggetto riceve i benefici del privilegio e permette di scegliere un modello.",
+                "item_effects": {
+                  "id": "arcane_armor",
+                  "name": "Armatura Arcana",
+                  "effect_extensions": [
+                    {
+                      "id": "armorer-arcane-armor-ignore-strength-2014",
+                      "rules_version": "2014",
+                      "target_kind": "item",
+                      "target_name": "@equipped_armor",
+                      "operation": "ignore_armor_strength",
+                      "trigger": "passive",
+                      "frequency": "each",
+                      "value": "",
+                      "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza."
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "layers": {
+            "applied": {
+              "limit": 1,
+              "storage": "power_applications"
+            }
+          },
+          "application": {
+            "destination": "item",
+            "target": {
+              "kind": "item",
+              "label": "Oggetto da estendere",
+              "allow_catalog": true
+            }
+          },
+          "compatibility": {
+            "selected_group": "armor_model",
+            "target_slot": "body"
+          },
+          "option_kind": "capability"
+        }
+      }
+    },
+    {
+      "id": "option_grant:armor_model",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Armor Model",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "armor_model",
+        "option_grant": {
+          "id": "armor_model",
+          "owner": {
+            "class_name": "Artificer",
+            "class_source": "TCE",
+            "subclass": "Armorer",
+            "trait": "Armor Model"
+          },
+          "option_kind": "capability",
+          "source": {
+            "type": "inline",
+            "options": [
+              {
+                "id": "armor_model:guardian",
+                "group": "armor_model",
+                "category": "stato",
+                "trait": "Armor Model",
+                "class_name": "Artificer",
+                "class_source": "TCE",
+                "subclass": "Armorer",
+                "require_equipped": {
+                  "extension_selection": "arcane_armor"
+                },
+                "attacks": [
+                  {
+                    "id": "class_feature:thunder_gauntlets",
+                    "trait": "Thunder Gauntlets",
+                    "damage": "1d8",
+                    "damage_type": "T",
+                    "melee": true,
+                    "ability": "str",
+                    "intelligence_override": true,
+                    "range_feet": 5,
+                    "on_hit_effects": [
+                      {
+                        "operation": "roll_mode",
+                        "target": "attack_roll",
+                        "mode": "disadvantage",
+                        "trigger": "on_hit",
+                        "duration": "until_start_of_next_turn"
+                      }
+                    ]
+                  }
+                ],
+                "granted_features": [
+                  "Defensive Field"
+                ],
+                "selection_recovery": "short_rest",
+                "effects": [
+                  {
+                    "type": "state_selection",
+                    "field": "trait_state_selection",
+                    "key": "armor_model",
+                    "value": "armor_model:guardian"
+                  }
+                ]
+              },
+              {
+                "id": "armor_model:infiltrator",
+                "group": "armor_model",
+                "category": "stato",
+                "trait": "Armor Model",
+                "class_name": "Artificer",
+                "class_source": "TCE",
+                "subclass": "Armorer",
+                "require_equipped": {
+                  "extension_selection": "arcane_armor"
+                },
+                "attacks": [
+                  {
+                    "id": "class_feature:lightning_launcher",
+                    "trait": "Lightning Launcher",
+                    "damage": "1d6",
+                    "damage_type": "L",
+                    "melee": false,
+                    "ability": "dex",
+                    "intelligence_override": true,
+                    "range_feet": 90,
+                    "long_range_feet": 300,
+                    "bonus_die": {
+                      "id": "lightning-launcher:extra",
+                      "dice": "1d6",
+                      "damage_type": "lightning",
+                      "tracker_id": "feature:lightning_launcher:extra_damage",
+                      "recharge": "turn",
+                      "max": 1
+                    }
+                  }
+                ],
+                "numeric_grants": [
+                  {
+                    "id": "powered_steps",
+                    "trait": "Powered Steps",
+                    "target": "speed",
+                    "amount": 5
+                  }
+                ],
+                "selection_recovery": "short_rest",
+                "roll_modes": [
+                  {
+                    "trait": "Dampening Field",
+                    "target": "skill:stealth",
+                    "mode": "advantage"
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "state_selection",
+                    "field": "trait_state_selection",
+                    "key": "armor_model",
+                    "value": "armor_model:infiltrator"
+                  }
+                ]
+              }
+            ]
+          },
+          "layers": {
+            "applied": {
+              "limit": 1,
+              "trigger": "short_rest",
+              "storage": "power_applications",
+              "refund_on_remove": true
+            }
+          },
+          "ui": "generic",
+          "benefit_type": "option_grant",
+          "requires_application": {
+            "selection": "arcane_armor",
+            "bound": true
+          },
+          "application": {
+            "destination": "origin",
+            "exclusive": true
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:ranger_favored_enemy_phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Favored Enemy",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "ranger_favored_enemy_phb",
+        "option_grant": {
+          "id": "ranger_favored_enemy_phb",
+          "title": "Nemici prescelti",
+          "owner": {
+            "class_name": "Ranger",
+            "class_source": "PHB",
+            "trait": "Favored Enemy"
+          },
+          "option_kind": "capability",
+          "source": {
+            "type": "inline",
+            "packages": [
+              {
+                "id": "monster_types",
+                "name": "Tipi di mostro",
+                "count": 1,
+                "label": "Tipo di mostro",
+                "options": [
+                  {
+                    "id": "aberrations",
+                    "name": "Aberrazioni"
+                  },
+                  {
+                    "id": "beasts",
+                    "name": "Bestie"
+                  },
+                  {
+                    "id": "celestials",
+                    "name": "Celestiali"
+                  },
+                  {
+                    "id": "constructs",
+                    "name": "Costrutti"
+                  },
+                  {
+                    "id": "dragons",
+                    "name": "Draghi"
+                  },
+                  {
+                    "id": "elementals",
+                    "name": "Elementali"
+                  },
+                  {
+                    "id": "fey",
+                    "name": "Folletti"
+                  },
+                  {
+                    "id": "fiends",
+                    "name": "Immondi"
+                  },
+                  {
+                    "id": "giants",
+                    "name": "Giganti"
+                  },
+                  {
+                    "id": "monstrosities",
+                    "name": "Mostruosità"
+                  },
+                  {
+                    "id": "oozes",
+                    "name": "Melme"
+                  },
+                  {
+                    "id": "plants",
+                    "name": "Vegetali"
+                  },
+                  {
+                    "id": "undead",
+                    "name": "Non morti"
+                  }
+                ]
+              },
+              {
+                "id": "humanoid_races",
+                "name": "Razze umanoidi",
+                "count": 2,
+                "label": "Razza umanoide",
+                "options": [
+                  {
+                    "id": "aarakocra",
+                    "name": "Aarakocra"
+                  },
+                  {
+                    "id": "astral-elf",
+                    "name": "Astral Elf"
+                  },
+                  {
+                    "id": "bugbear",
+                    "name": "Bugbear"
+                  },
+                  {
+                    "id": "deep-gnome",
+                    "name": "Deep Gnome"
+                  },
+                  {
+                    "id": "dragonborn",
+                    "name": "Dragonborn"
+                  },
+                  {
+                    "id": "dwarf",
+                    "name": "Dwarf"
+                  },
+                  {
+                    "id": "elf",
+                    "name": "Elf"
+                  },
+                  {
+                    "id": "githyanki",
+                    "name": "Githyanki"
+                  },
+                  {
+                    "id": "githzerai",
+                    "name": "Githzerai"
+                  },
+                  {
+                    "id": "gnome",
+                    "name": "Gnome"
+                  },
+                  {
+                    "id": "goblin",
+                    "name": "Goblin"
+                  },
+                  {
+                    "id": "goliath",
+                    "name": "Goliath"
+                  },
+                  {
+                    "id": "half-elf",
+                    "name": "Half-Elf"
+                  },
+                  {
+                    "id": "half-orc",
+                    "name": "Half-Orc"
+                  },
+                  {
+                    "id": "halfling",
+                    "name": "Halfling"
+                  },
+                  {
+                    "id": "harengon",
+                    "name": "Harengon"
+                  },
+                  {
+                    "id": "hobgoblin",
+                    "name": "Hobgoblin"
+                  },
+                  {
+                    "id": "human",
+                    "name": "Human"
+                  },
+                  {
+                    "id": "kenku",
+                    "name": "Kenku"
+                  },
+                  {
+                    "id": "kobold",
+                    "name": "Kobold"
+                  },
+                  {
+                    "id": "lizardfolk",
+                    "name": "Lizardfolk"
+                  },
+                  {
+                    "id": "locathah",
+                    "name": "Locathah"
+                  },
+                  {
+                    "id": "loxodon",
+                    "name": "Loxodon"
+                  },
+                  {
+                    "id": "minotaur",
+                    "name": "Minotaur"
+                  },
+                  {
+                    "id": "orc",
+                    "name": "Orc"
+                  },
+                  {
+                    "id": "owlin",
+                    "name": "Owlin"
+                  },
+                  {
+                    "id": "sea-elf",
+                    "name": "Sea Elf"
+                  },
+                  {
+                    "id": "shadar-kai",
+                    "name": "Shadar-kai"
+                  },
+                  {
+                    "id": "shifter",
+                    "name": "Shifter"
+                  },
+                  {
+                    "id": "simic-hybrid",
+                    "name": "Simic Hybrid"
+                  },
+                  {
+                    "id": "tabaxi",
+                    "name": "Tabaxi"
+                  },
+                  {
+                    "id": "tiefling",
+                    "name": "Tiefling"
+                  },
+                  {
+                    "id": "tortle",
+                    "name": "Tortle"
+                  },
+                  {
+                    "id": "triton",
+                    "name": "Triton"
+                  },
+                  {
+                    "id": "vedalken",
+                    "name": "Vedalken"
+                  },
+                  {
+                    "id": "verdan",
+                    "name": "Verdan"
+                  },
+                  {
+                    "id": "warforged",
+                    "name": "Warforged"
+                  },
+                  {
+                    "id": "yuan-ti",
+                    "name": "Yuan-ti"
+                  }
+                ],
+                "legacy_ids": [
+                  "humanoids"
+                ]
+              }
+            ]
+          },
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    1
+                  ],
+                  [
+                    6,
+                    2
+                  ],
+                  [
+                    14,
+                    3
+                  ]
+                ]
+              },
+              "trigger": null,
+              "storage": "power_selections.ranger_favored_enemy_phb.learned"
+            }
+          },
+          "ui": "generic",
+          "description": "Per ogni scelta seleziona un tipo di mostro oppure due razze umanoidi. Ottieni una nuova scelta ai livelli 1, 6 e 14 da Ranger.",
+          "benefit_type": "option_grant",
+          "legacy_stage": "prepared"
+        }
+      }
+    },
+    {
+      "id": "option_grant:artificer_infusions",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Infuse Item",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "artificer_infusions",
+        "option_grant": {
+          "id": "artificer_infusions",
+          "title": "Infusioni",
+          "owner": {
+            "class_name": "Artificer",
+            "class_source": "TCE",
+            "trait": "Infuse Item"
+          },
+          "feature_types": [
+            "AI"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    4
+                  ],
+                  [
+                    3,
+                    4
+                  ],
+                  [
+                    4,
+                    4
+                  ],
+                  [
+                    5,
+                    4
+                  ],
+                  [
+                    6,
+                    6
+                  ],
+                  [
+                    7,
+                    6
+                  ],
+                  [
+                    8,
+                    6
+                  ],
+                  [
+                    9,
+                    6
+                  ],
+                  [
+                    10,
+                    8
+                  ],
+                  [
+                    11,
+                    8
+                  ],
+                  [
+                    12,
+                    8
+                  ],
+                  [
+                    13,
+                    8
+                  ],
+                  [
+                    14,
+                    10
+                  ],
+                  [
+                    15,
+                    10
+                  ],
+                  [
+                    16,
+                    10
+                  ],
+                  [
+                    17,
+                    10
+                  ],
+                  [
+                    18,
+                    12
+                  ],
+                  [
+                    19,
+                    12
+                  ],
+                  [
+                    20,
+                    12
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    2
+                  ],
+                  [
+                    3,
+                    2
+                  ],
+                  [
+                    4,
+                    2
+                  ],
+                  [
+                    5,
+                    2
+                  ],
+                  [
+                    6,
+                    3
+                  ],
+                  [
+                    7,
+                    3
+                  ],
+                  [
+                    8,
+                    3
+                  ],
+                  [
+                    9,
+                    3
+                  ],
+                  [
+                    10,
+                    4
+                  ],
+                  [
+                    11,
+                    4
+                  ],
+                  [
+                    12,
+                    4
+                  ],
+                  [
+                    13,
+                    4
+                  ],
+                  [
+                    14,
+                    5
+                  ],
+                  [
+                    15,
+                    5
+                  ],
+                  [
+                    16,
+                    5
+                  ],
+                  [
+                    17,
+                    5
+                  ],
+                  [
+                    18,
+                    6
+                  ],
+                  [
+                    19,
+                    6
+                  ],
+                  [
+                    20,
+                    6
+                  ]
+                ]
+              },
+              "trigger": "long_rest"
+            }
+          },
+          "application": {
+            "destination": "item",
+            "target": {
+              "kind": "item",
+              "label": "Oggetto da estendere",
+              "allow_catalog": true
+            },
+            "effects": [
+              {
+                "type": "item_effects"
+              }
+            ]
+          },
+          "legacy_ids": [
+            "optional:class:tce:artificer:ai"
+          ],
+          "capacity_bonus_field": "infusion_capacity_bonus",
+          "on_apply": "companion_grant",
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "AI"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:subclass:phb:bard:xge:college-of-swords:fs-b",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Fighting Style",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Swords",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:subclass:phb:bard:xge:college-of-swords:fs-b",
+        "option_grant": {
+          "id": "optional:subclass:phb:bard:xge:college-of-swords:fs-b",
+          "title": "Fighting Style",
+          "owner": {
+            "class_name": "Bard",
+            "class_source": "PHB",
+            "subclass": "College of Swords",
+            "subclass_source": "XGE",
+            "trait": "Fighting Style"
+          },
+          "feature_types": [
+            "FS:B"
+          ],
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    1
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "manual",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "FS:B"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:class:phb:fighter:fs-f",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Fighting Style",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:class:phb:fighter:fs-f",
+        "option_grant": {
+          "id": "optional:class:phb:fighter:fs-f",
+          "title": "Fighting Style",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "PHB",
+            "trait": "Fighting Style"
+          },
+          "feature_types": [
+            "FS:F"
+          ],
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    1
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "manual",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "FS:F"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:subclass:phb:fighter:phb:battle-master:mv-b",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Maneuvers",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Battle Master",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:subclass:phb:fighter:phb:battle-master:mv-b",
+        "option_grant": {
+          "id": "optional:subclass:phb:fighter:phb:battle-master:mv-b",
+          "title": "Maneuvers",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "PHB",
+            "subclass": "Battle Master",
+            "subclass_source": "PHB",
+            "trait": "Maneuvers"
+          },
+          "feature_types": [
+            "MV:B"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    3
+                  ],
+                  [
+                    7,
+                    5
+                  ],
+                  [
+                    10,
+                    7
+                  ],
+                  [
+                    15,
+                    9
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "MV:B"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:subclass:phb:fighter:phb:champion:fs-f",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Additional Fighting Style",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Champion",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:subclass:phb:fighter:phb:champion:fs-f",
+        "option_grant": {
+          "id": "optional:subclass:phb:fighter:phb:champion:fs-f",
+          "title": "Fighting Style",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "PHB",
+            "subclass": "Champion",
+            "subclass_source": "PHB",
+            "trait": "Additional Fighting Style"
+          },
+          "feature_types": [
+            "FS:F"
+          ],
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    10,
+                    1
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "manual",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "FS:F"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:subclass:phb:fighter:xge:arcane-archer:as",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Arcane Shot",
+          "source": "XGE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Arcane Archer",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:subclass:phb:fighter:xge:arcane-archer:as",
+        "option_grant": {
+          "id": "optional:subclass:phb:fighter:xge:arcane-archer:as",
+          "title": "Arcane Shots",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "PHB",
+            "subclass": "Arcane Archer",
+            "subclass_source": "XGE",
+            "trait": "Arcane Shot"
+          },
+          "feature_types": [
+            "AS"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    2
+                  ],
+                  [
+                    7,
+                    3
+                  ],
+                  [
+                    10,
+                    4
+                  ],
+                  [
+                    15,
+                    5
+                  ],
+                  [
+                    18,
+                    6
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "AS"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:subclass:phb:fighter:tce:rune-knight:rn",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Rune Carver",
+          "source": "TCE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Rune Knight",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:subclass:phb:fighter:tce:rune-knight:rn",
+        "option_grant": {
+          "id": "optional:subclass:phb:fighter:tce:rune-knight:rn",
+          "title": "Runes",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "PHB",
+            "subclass": "Rune Knight",
+            "subclass_source": "TCE",
+            "trait": "Rune Carver"
+          },
+          "feature_types": [
+            "RN"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    2
+                  ],
+                  [
+                    7,
+                    3
+                  ],
+                  [
+                    10,
+                    4
+                  ],
+                  [
+                    15,
+                    5
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "RN"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:subclass:xphb:fighter:xphb:battle-master:mv-b",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Maneuver Options",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB",
+          "subclass": "Battle Master",
+          "subclass_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:subclass:xphb:fighter:xphb:battle-master:mv-b",
+        "option_grant": {
+          "id": "optional:subclass:xphb:fighter:xphb:battle-master:mv-b",
+          "title": "Maneuvers",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "XPHB",
+            "subclass": "Battle Master",
+            "subclass_source": "XPHB",
+            "trait": "Maneuver Options"
+          },
+          "feature_types": [
+            "MV:B"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    3
+                  ],
+                  [
+                    7,
+                    5
+                  ],
+                  [
+                    10,
+                    7
+                  ],
+                  [
+                    15,
+                    9
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "MV:B"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:subclass:xphb:fighter:au:arcane-archer:as",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Arcane Shot",
+          "source": "AU",
+          "class_name": "Fighter",
+          "class_source": "XPHB",
+          "subclass": "Arcane Archer",
+          "subclass_source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:subclass:xphb:fighter:au:arcane-archer:as",
+        "option_grant": {
+          "id": "optional:subclass:xphb:fighter:au:arcane-archer:as",
+          "title": "Arcane Shots",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "XPHB",
+            "subclass": "Arcane Archer",
+            "subclass_source": "AU",
+            "trait": "Arcane Shot"
+          },
+          "feature_types": [
+            "AS"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    2
+                  ],
+                  [
+                    7,
+                    3
+                  ],
+                  [
+                    10,
+                    4
+                  ],
+                  [
+                    15,
+                    5
+                  ],
+                  [
+                    18,
+                    6
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "AS"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:subclass:phb:monk:phb:way-of-the-four-elements:ed",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Elemental Disciplines",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB",
+          "subclass": "Way of the Four Elements",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:subclass:phb:monk:phb:way-of-the-four-elements:ed",
+        "option_grant": {
+          "id": "optional:subclass:phb:monk:phb:way-of-the-four-elements:ed",
+          "title": "Elemental Disciplines",
+          "owner": {
+            "class_name": "Monk",
+            "class_source": "PHB",
+            "subclass": "Way of the Four Elements",
+            "subclass_source": "PHB",
+            "trait": "Elemental Disciplines"
+          },
+          "feature_types": [
+            "ED"
+          ],
+          "required": {
+            "3": [
+              "Elemental Attunement|PHB"
+            ]
+          },
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    2
+                  ],
+                  [
+                    6,
+                    3
+                  ],
+                  [
+                    11,
+                    4
+                  ],
+                  [
+                    17,
+                    5
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "ED"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:class:phb:paladin:fs-p",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Fighting Style",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:class:phb:paladin:fs-p",
+        "option_grant": {
+          "id": "optional:class:phb:paladin:fs-p",
+          "title": "Fighting Style",
+          "owner": {
+            "class_name": "Paladin",
+            "class_source": "PHB",
+            "trait": "Fighting Style"
+          },
+          "feature_types": [
+            "FS:P"
+          ],
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    2,
+                    1
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "manual",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "FS:P"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:class:phb:ranger:fs-r",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Fighting Style",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:class:phb:ranger:fs-r",
+        "option_grant": {
+          "id": "optional:class:phb:ranger:fs-r",
+          "title": "Fighting Style",
+          "owner": {
+            "class_name": "Ranger",
+            "class_source": "PHB",
+            "trait": "Fighting Style"
+          },
+          "feature_types": [
+            "FS:R"
+          ],
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    2,
+                    1
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "manual",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "FS:R"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:class:phb:sorcerer:mm",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Metamagic",
+          "source": "PHB",
+          "class_name": "Sorcerer",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:class:phb:sorcerer:mm",
+        "option_grant": {
+          "id": "optional:class:phb:sorcerer:mm",
+          "title": "Metamagic",
+          "owner": {
+            "class_name": "Sorcerer",
+            "class_source": "PHB",
+            "trait": "Metamagic"
+          },
+          "feature_types": [
+            "MM"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    2
+                  ],
+                  [
+                    10,
+                    3
+                  ],
+                  [
+                    17,
+                    4
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "MM"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:class:xphb:sorcerer:mm",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Metamagic",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:class:xphb:sorcerer:mm",
+        "option_grant": {
+          "id": "optional:class:xphb:sorcerer:mm",
+          "title": "Metamagic",
+          "owner": {
+            "class_name": "Sorcerer",
+            "class_source": "XPHB",
+            "trait": "Metamagic"
+          },
+          "feature_types": [
+            "MM"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    2,
+                    2
+                  ],
+                  [
+                    10,
+                    4
+                  ],
+                  [
+                    17,
+                    6
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "MM"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:class:phb:warlock:ei",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Eldritch Invocations",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:class:phb:warlock:ei",
+        "option_grant": {
+          "id": "optional:class:phb:warlock:ei",
+          "title": "Eldritch Invocations",
+          "owner": {
+            "class_name": "Warlock",
+            "class_source": "PHB",
+            "trait": "Eldritch Invocations"
+          },
+          "feature_types": [
+            "EI"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    2
+                  ],
+                  [
+                    3,
+                    2
+                  ],
+                  [
+                    4,
+                    2
+                  ],
+                  [
+                    5,
+                    3
+                  ],
+                  [
+                    6,
+                    3
+                  ],
+                  [
+                    7,
+                    4
+                  ],
+                  [
+                    8,
+                    4
+                  ],
+                  [
+                    9,
+                    5
+                  ],
+                  [
+                    10,
+                    5
+                  ],
+                  [
+                    11,
+                    5
+                  ],
+                  [
+                    12,
+                    6
+                  ],
+                  [
+                    13,
+                    6
+                  ],
+                  [
+                    14,
+                    6
+                  ],
+                  [
+                    15,
+                    7
+                  ],
+                  [
+                    16,
+                    7
+                  ],
+                  [
+                    17,
+                    7
+                  ],
+                  [
+                    18,
+                    8
+                  ],
+                  [
+                    19,
+                    8
+                  ],
+                  [
+                    20,
+                    8
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "EI"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:class:phb:warlock:pb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Pact Boon",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:class:phb:warlock:pb",
+        "option_grant": {
+          "id": "optional:class:phb:warlock:pb",
+          "title": "Pact Boon",
+          "owner": {
+            "class_name": "Warlock",
+            "class_source": "PHB",
+            "trait": "Pact Boon"
+          },
+          "feature_types": [
+            "PB"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    3,
+                    1
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "PB"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:optional:class:xphb:warlock:ei",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Eldritch Invocations",
+          "source": "XPHB",
+          "class_name": "Warlock",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "optional:class:xphb:warlock:ei",
+        "option_grant": {
+          "id": "optional:class:xphb:warlock:ei",
+          "title": "Eldritch Invocations",
+          "owner": {
+            "class_name": "Warlock",
+            "class_source": "XPHB",
+            "trait": "Eldritch Invocations"
+          },
+          "feature_types": [
+            "EI"
+          ],
+          "required": {},
+          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
+          "allow_custom": true,
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    1
+                  ],
+                  [
+                    2,
+                    3
+                  ],
+                  [
+                    3,
+                    3
+                  ],
+                  [
+                    4,
+                    3
+                  ],
+                  [
+                    5,
+                    5
+                  ],
+                  [
+                    6,
+                    5
+                  ],
+                  [
+                    7,
+                    6
+                  ],
+                  [
+                    8,
+                    6
+                  ],
+                  [
+                    9,
+                    7
+                  ],
+                  [
+                    10,
+                    7
+                  ],
+                  [
+                    11,
+                    7
+                  ],
+                  [
+                    12,
+                    8
+                  ],
+                  [
+                    13,
+                    8
+                  ],
+                  [
+                    14,
+                    8
+                  ],
+                  [
+                    15,
+                    9
+                  ],
+                  [
+                    16,
+                    9
+                  ],
+                  [
+                    17,
+                    9
+                  ],
+                  [
+                    18,
+                    10
+                  ],
+                  [
+                    19,
+                    10
+                  ],
+                  [
+                    20,
+                    10
+                  ]
+                ]
+              },
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned",
+              "limit": null
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "effects": [
+              {
+                "type": "catalog_feature"
+              }
+            ]
+          },
+          "option_kind": "capability",
+          "benefit_type": "option_grant",
+          "source": {
+            "type": "optional_features",
+            "feature_types": [
+              "EI"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|tce|artificer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|tce|artificer",
+        "option_grant": {
+          "id": "class_spellcasting:class|tce|artificer",
+          "title": "Artificer · Incantesimi",
+          "owner": {
+            "class_name": "Artificer",
+            "class_source": "TCE",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Artificer"
+          },
+          "level_class_name": "Artificer",
+          "spell_list_class_name": "Artificer",
+          "ability": "int",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "formula": "class_level_artificer / 2 + int_mod",
+                "minimum": 1
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  2
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  2
+                ],
+                [
+                  5,
+                  2
+                ],
+                [
+                  6,
+                  2
+                ],
+                [
+                  7,
+                  2
+                ],
+                [
+                  8,
+                  2
+                ],
+                [
+                  9,
+                  2
+                ],
+                [
+                  10,
+                  3
+                ],
+                [
+                  11,
+                  3
+                ],
+                [
+                  12,
+                  3
+                ],
+                [
+                  13,
+                  3
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|bard",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Bard",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|bard",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|bard",
+          "title": "Bard · Incantesimi",
+          "owner": {
+            "class_name": "Bard",
+            "class_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Bard"
+          },
+          "level_class_name": "Bard",
+          "spell_list_class_name": "Bard",
+          "ability": "cha",
+          "knowledge_mode": "known",
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    4
+                  ],
+                  [
+                    2,
+                    5
+                  ],
+                  [
+                    3,
+                    6
+                  ],
+                  [
+                    4,
+                    7
+                  ],
+                  [
+                    5,
+                    8
+                  ],
+                  [
+                    6,
+                    9
+                  ],
+                  [
+                    7,
+                    10
+                  ],
+                  [
+                    8,
+                    11
+                  ],
+                  [
+                    9,
+                    12
+                  ],
+                  [
+                    10,
+                    14
+                  ],
+                  [
+                    11,
+                    15
+                  ],
+                  [
+                    12,
+                    15
+                  ],
+                  [
+                    13,
+                    16
+                  ],
+                  [
+                    14,
+                    18
+                  ],
+                  [
+                    15,
+                    19
+                  ],
+                  [
+                    16,
+                    19
+                  ],
+                  [
+                    17,
+                    20
+                  ],
+                  [
+                    18,
+                    22
+                  ],
+                  [
+                    19,
+                    22
+                  ],
+                  [
+                    20,
+                    22
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  2
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  3
+                ],
+                [
+                  6,
+                  3
+                ],
+                [
+                  7,
+                  3
+                ],
+                [
+                  8,
+                  3
+                ],
+                [
+                  9,
+                  3
+                ],
+                [
+                  10,
+                  4
+                ],
+                [
+                  11,
+                  4
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  13,
+                  4
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|cleric",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|cleric",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|cleric",
+          "title": "Cleric · Incantesimi",
+          "owner": {
+            "class_name": "Cleric",
+            "class_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Cleric"
+          },
+          "level_class_name": "Cleric",
+          "spell_list_class_name": "Cleric",
+          "ability": "wis",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "formula": "class_level_cleric + wis_mod",
+                "minimum": 1
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  3
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  4
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  4
+                ],
+                [
+                  8,
+                  4
+                ],
+                [
+                  9,
+                  4
+                ],
+                [
+                  10,
+                  5
+                ],
+                [
+                  11,
+                  5
+                ],
+                [
+                  12,
+                  5
+                ],
+                [
+                  13,
+                  5
+                ],
+                [
+                  14,
+                  5
+                ],
+                [
+                  15,
+                  5
+                ],
+                [
+                  16,
+                  5
+                ],
+                [
+                  17,
+                  5
+                ],
+                [
+                  18,
+                  5
+                ],
+                [
+                  19,
+                  5
+                ],
+                [
+                  20,
+                  5
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|druid",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Druid",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|druid",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|druid",
+          "title": "Druid · Incantesimi",
+          "owner": {
+            "class_name": "Druid",
+            "class_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Druid"
+          },
+          "level_class_name": "Druid",
+          "spell_list_class_name": "Druid",
+          "ability": "wis",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "formula": "class_level_druid + wis_mod",
+                "minimum": 1
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  2
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  3
+                ],
+                [
+                  6,
+                  3
+                ],
+                [
+                  7,
+                  3
+                ],
+                [
+                  8,
+                  3
+                ],
+                [
+                  9,
+                  3
+                ],
+                [
+                  10,
+                  4
+                ],
+                [
+                  11,
+                  4
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  13,
+                  4
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|paladin",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|paladin",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|paladin",
+          "title": "Paladin · Incantesimi",
+          "owner": {
+            "class_name": "Paladin",
+            "class_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Paladin"
+          },
+          "level_class_name": "Paladin",
+          "spell_list_class_name": "Paladin",
+          "ability": "cha",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "formula": "class_level_paladin / 2 + cha_mod",
+                "minimum": 1
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  0
+                ],
+                [
+                  4,
+                  0
+                ],
+                [
+                  5,
+                  0
+                ],
+                [
+                  6,
+                  0
+                ],
+                [
+                  7,
+                  0
+                ],
+                [
+                  8,
+                  0
+                ],
+                [
+                  9,
+                  0
+                ],
+                [
+                  10,
+                  0
+                ],
+                [
+                  11,
+                  0
+                ],
+                [
+                  12,
+                  0
+                ],
+                [
+                  13,
+                  0
+                ],
+                [
+                  14,
+                  0
+                ],
+                [
+                  15,
+                  0
+                ],
+                [
+                  16,
+                  0
+                ],
+                [
+                  17,
+                  0
+                ],
+                [
+                  18,
+                  0
+                ],
+                [
+                  19,
+                  0
+                ],
+                [
+                  20,
+                  0
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|ranger",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|ranger",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|ranger",
+          "title": "Ranger · Incantesimi",
+          "owner": {
+            "class_name": "Ranger",
+            "class_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Ranger"
+          },
+          "level_class_name": "Ranger",
+          "spell_list_class_name": "Ranger",
+          "ability": "wis",
+          "knowledge_mode": "known",
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    2
+                  ],
+                  [
+                    3,
+                    3
+                  ],
+                  [
+                    4,
+                    3
+                  ],
+                  [
+                    5,
+                    4
+                  ],
+                  [
+                    6,
+                    4
+                  ],
+                  [
+                    7,
+                    5
+                  ],
+                  [
+                    8,
+                    5
+                  ],
+                  [
+                    9,
+                    6
+                  ],
+                  [
+                    10,
+                    6
+                  ],
+                  [
+                    11,
+                    7
+                  ],
+                  [
+                    12,
+                    7
+                  ],
+                  [
+                    13,
+                    8
+                  ],
+                  [
+                    14,
+                    8
+                  ],
+                  [
+                    15,
+                    9
+                  ],
+                  [
+                    16,
+                    9
+                  ],
+                  [
+                    17,
+                    10
+                  ],
+                  [
+                    18,
+                    10
+                  ],
+                  [
+                    19,
+                    11
+                  ],
+                  [
+                    20,
+                    11
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  0
+                ],
+                [
+                  4,
+                  0
+                ],
+                [
+                  5,
+                  0
+                ],
+                [
+                  6,
+                  0
+                ],
+                [
+                  7,
+                  0
+                ],
+                [
+                  8,
+                  0
+                ],
+                [
+                  9,
+                  0
+                ],
+                [
+                  10,
+                  0
+                ],
+                [
+                  11,
+                  0
+                ],
+                [
+                  12,
+                  0
+                ],
+                [
+                  13,
+                  0
+                ],
+                [
+                  14,
+                  0
+                ],
+                [
+                  15,
+                  0
+                ],
+                [
+                  16,
+                  0
+                ],
+                [
+                  17,
+                  0
+                ],
+                [
+                  18,
+                  0
+                ],
+                [
+                  19,
+                  0
+                ],
+                [
+                  20,
+                  0
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|sorcerer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Sorcerer",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|sorcerer",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|sorcerer",
+          "title": "Sorcerer · Incantesimi",
+          "owner": {
+            "class_name": "Sorcerer",
+            "class_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Sorcerer"
+          },
+          "level_class_name": "Sorcerer",
+          "spell_list_class_name": "Sorcerer",
+          "ability": "cha",
+          "knowledge_mode": "known",
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    2
+                  ],
+                  [
+                    2,
+                    3
+                  ],
+                  [
+                    3,
+                    4
+                  ],
+                  [
+                    4,
+                    5
+                  ],
+                  [
+                    5,
+                    6
+                  ],
+                  [
+                    6,
+                    7
+                  ],
+                  [
+                    7,
+                    8
+                  ],
+                  [
+                    8,
+                    9
+                  ],
+                  [
+                    9,
+                    10
+                  ],
+                  [
+                    10,
+                    11
+                  ],
+                  [
+                    11,
+                    12
+                  ],
+                  [
+                    12,
+                    12
+                  ],
+                  [
+                    13,
+                    13
+                  ],
+                  [
+                    14,
+                    13
+                  ],
+                  [
+                    15,
+                    14
+                  ],
+                  [
+                    16,
+                    14
+                  ],
+                  [
+                    17,
+                    15
+                  ],
+                  [
+                    18,
+                    15
+                  ],
+                  [
+                    19,
+                    15
+                  ],
+                  [
+                    20,
+                    15
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  4
+                ],
+                [
+                  2,
+                  4
+                ],
+                [
+                  3,
+                  4
+                ],
+                [
+                  4,
+                  5
+                ],
+                [
+                  5,
+                  5
+                ],
+                [
+                  6,
+                  5
+                ],
+                [
+                  7,
+                  5
+                ],
+                [
+                  8,
+                  5
+                ],
+                [
+                  9,
+                  5
+                ],
+                [
+                  10,
+                  6
+                ],
+                [
+                  11,
+                  6
+                ],
+                [
+                  12,
+                  6
+                ],
+                [
+                  13,
+                  6
+                ],
+                [
+                  14,
+                  6
+                ],
+                [
+                  15,
+                  6
+                ],
+                [
+                  16,
+                  6
+                ],
+                [
+                  17,
+                  6
+                ],
+                [
+                  18,
+                  6
+                ],
+                [
+                  19,
+                  6
+                ],
+                [
+                  20,
+                  6
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|warlock",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Pact Magic",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|warlock",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|warlock",
+          "title": "Warlock · Incantesimi",
+          "owner": {
+            "class_name": "Warlock",
+            "class_source": "PHB",
+            "trait": "Pact Magic"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Warlock"
+          },
+          "level_class_name": "Warlock",
+          "spell_list_class_name": "Warlock",
+          "ability": "cha",
+          "knowledge_mode": "known",
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    2
+                  ],
+                  [
+                    2,
+                    3
+                  ],
+                  [
+                    3,
+                    4
+                  ],
+                  [
+                    4,
+                    5
+                  ],
+                  [
+                    5,
+                    6
+                  ],
+                  [
+                    6,
+                    7
+                  ],
+                  [
+                    7,
+                    8
+                  ],
+                  [
+                    8,
+                    9
+                  ],
+                  [
+                    9,
+                    10
+                  ],
+                  [
+                    10,
+                    10
+                  ],
+                  [
+                    11,
+                    11
+                  ],
+                  [
+                    12,
+                    11
+                  ],
+                  [
+                    13,
+                    12
+                  ],
+                  [
+                    14,
+                    12
+                  ],
+                  [
+                    15,
+                    13
+                  ],
+                  [
+                    16,
+                    13
+                  ],
+                  [
+                    17,
+                    14
+                  ],
+                  [
+                    18,
+                    14
+                  ],
+                  [
+                    19,
+                    15
+                  ],
+                  [
+                    20,
+                    15
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  2
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  3
+                ],
+                [
+                  6,
+                  3
+                ],
+                [
+                  7,
+                  3
+                ],
+                [
+                  8,
+                  3
+                ],
+                [
+                  9,
+                  3
+                ],
+                [
+                  10,
+                  4
+                ],
+                [
+                  11,
+                  4
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  13,
+                  4
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|wizard",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|wizard",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|wizard",
+          "title": "Wizard · Incantesimi",
+          "owner": {
+            "class_name": "Wizard",
+            "class_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Wizard"
+          },
+          "level_class_name": "Wizard",
+          "spell_list_class_name": "Wizard",
+          "ability": "int",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "limit": {
+                "formula": "6 + 2 * (class_level_wizard - 1)"
+              },
+              "storage": "known_spell_overrides",
+              "trigger": null
+            },
+            "prepared": {
+              "limit": {
+                "formula": "class_level_wizard + int_mod",
+                "minimum": 1
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  3
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  4
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  4
+                ],
+                [
+                  8,
+                  4
+                ],
+                [
+                  9,
+                  4
+                ],
+                [
+                  10,
+                  5
+                ],
+                [
+                  11,
+                  5
+                ],
+                [
+                  12,
+                  5
+                ],
+                [
+                  13,
+                  5
+                ],
+                [
+                  14,
+                  5
+                ],
+                [
+                  15,
+                  5
+                ],
+                [
+                  16,
+                  5
+                ],
+                [
+                  17,
+                  5
+                ],
+                [
+                  18,
+                  5
+                ],
+                [
+                  19,
+                  5
+                ],
+                [
+                  20,
+                  5
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|fighter",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Eldritch Knight",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|fighter",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|fighter",
+          "title": "Fighter · Incantesimi",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "PHB",
+            "subclass": "Eldritch Knight",
+            "subclass_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Wizard"
+          },
+          "level_class_name": "Fighter",
+          "spell_list_class_name": "Wizard",
+          "ability": "int",
+          "knowledge_mode": "known",
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    0
+                  ],
+                  [
+                    3,
+                    3
+                  ],
+                  [
+                    4,
+                    4
+                  ],
+                  [
+                    5,
+                    4
+                  ],
+                  [
+                    6,
+                    4
+                  ],
+                  [
+                    7,
+                    5
+                  ],
+                  [
+                    8,
+                    6
+                  ],
+                  [
+                    9,
+                    6
+                  ],
+                  [
+                    10,
+                    7
+                  ],
+                  [
+                    11,
+                    8
+                  ],
+                  [
+                    12,
+                    8
+                  ],
+                  [
+                    13,
+                    9
+                  ],
+                  [
+                    14,
+                    10
+                  ],
+                  [
+                    15,
+                    10
+                  ],
+                  [
+                    16,
+                    11
+                  ],
+                  [
+                    17,
+                    11
+                  ],
+                  [
+                    18,
+                    11
+                  ],
+                  [
+                    19,
+                    12
+                  ],
+                  [
+                    20,
+                    13
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  2
+                ],
+                [
+                  5,
+                  2
+                ],
+                [
+                  6,
+                  2
+                ],
+                [
+                  7,
+                  2
+                ],
+                [
+                  8,
+                  2
+                ],
+                [
+                  9,
+                  2
+                ],
+                [
+                  10,
+                  3
+                ],
+                [
+                  11,
+                  3
+                ],
+                [
+                  12,
+                  3
+                ],
+                [
+                  13,
+                  3
+                ],
+                [
+                  14,
+                  3
+                ],
+                [
+                  15,
+                  3
+                ],
+                [
+                  16,
+                  3
+                ],
+                [
+                  17,
+                  3
+                ],
+                [
+                  18,
+                  3
+                ],
+                [
+                  19,
+                  3
+                ],
+                [
+                  20,
+                  3
+                ]
+              ]
+            },
+            "storage": "prepared_spells"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|phb|rogue",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Arcane Trickster",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|phb|rogue",
+        "option_grant": {
+          "id": "class_spellcasting:class|phb|rogue",
+          "title": "Rogue · Incantesimi",
+          "owner": {
+            "class_name": "Rogue",
+            "class_source": "PHB",
+            "subclass": "Arcane Trickster",
+            "subclass_source": "PHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Wizard"
+          },
+          "level_class_name": "Rogue",
+          "spell_list_class_name": "Wizard",
+          "ability": "int",
+          "knowledge_mode": "known",
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    0
+                  ],
+                  [
+                    3,
+                    3
+                  ],
+                  [
+                    4,
+                    4
+                  ],
+                  [
+                    5,
+                    4
+                  ],
+                  [
+                    6,
+                    4
+                  ],
+                  [
+                    7,
+                    5
+                  ],
+                  [
+                    8,
+                    6
+                  ],
+                  [
+                    9,
+                    6
+                  ],
+                  [
+                    10,
+                    7
+                  ],
+                  [
+                    11,
+                    8
+                  ],
+                  [
+                    12,
+                    8
+                  ],
+                  [
+                    13,
+                    9
+                  ],
+                  [
+                    14,
+                    10
+                  ],
+                  [
+                    15,
+                    10
+                  ],
+                  [
+                    16,
+                    11
+                  ],
+                  [
+                    17,
+                    11
+                  ],
+                  [
+                    18,
+                    11
+                  ],
+                  [
+                    19,
+                    12
+                  ],
+                  [
+                    20,
+                    13
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  3
+                ],
+                [
+                  6,
+                  3
+                ],
+                [
+                  7,
+                  3
+                ],
+                [
+                  8,
+                  3
+                ],
+                [
+                  9,
+                  3
+                ],
+                [
+                  10,
+                  4
+                ],
+                [
+                  11,
+                  4
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  13,
+                  4
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "prepared_spells"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|bard",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|bard",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|bard",
+          "title": "Bard · Incantesimi",
+          "owner": {
+            "class_name": "Bard",
+            "class_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Bard"
+          },
+          "level_class_name": "Bard",
+          "spell_list_class_name": "Bard",
+          "ability": "cha",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    4
+                  ],
+                  [
+                    2,
+                    5
+                  ],
+                  [
+                    3,
+                    6
+                  ],
+                  [
+                    4,
+                    7
+                  ],
+                  [
+                    5,
+                    9
+                  ],
+                  [
+                    6,
+                    10
+                  ],
+                  [
+                    7,
+                    11
+                  ],
+                  [
+                    8,
+                    12
+                  ],
+                  [
+                    9,
+                    14
+                  ],
+                  [
+                    10,
+                    15
+                  ],
+                  [
+                    11,
+                    16
+                  ],
+                  [
+                    12,
+                    16
+                  ],
+                  [
+                    13,
+                    17
+                  ],
+                  [
+                    14,
+                    17
+                  ],
+                  [
+                    15,
+                    18
+                  ],
+                  [
+                    16,
+                    18
+                  ],
+                  [
+                    17,
+                    19
+                  ],
+                  [
+                    18,
+                    20
+                  ],
+                  [
+                    19,
+                    21
+                  ],
+                  [
+                    20,
+                    22
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  2
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  3
+                ],
+                [
+                  6,
+                  3
+                ],
+                [
+                  7,
+                  3
+                ],
+                [
+                  8,
+                  3
+                ],
+                [
+                  9,
+                  3
+                ],
+                [
+                  10,
+                  4
+                ],
+                [
+                  11,
+                  4
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  13,
+                  4
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|cleric",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Cleric",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|cleric",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|cleric",
+          "title": "Cleric · Incantesimi",
+          "owner": {
+            "class_name": "Cleric",
+            "class_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Cleric"
+          },
+          "level_class_name": "Cleric",
+          "spell_list_class_name": "Cleric",
+          "ability": "wis",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    4
+                  ],
+                  [
+                    2,
+                    5
+                  ],
+                  [
+                    3,
+                    6
+                  ],
+                  [
+                    4,
+                    7
+                  ],
+                  [
+                    5,
+                    9
+                  ],
+                  [
+                    6,
+                    10
+                  ],
+                  [
+                    7,
+                    11
+                  ],
+                  [
+                    8,
+                    12
+                  ],
+                  [
+                    9,
+                    14
+                  ],
+                  [
+                    10,
+                    15
+                  ],
+                  [
+                    11,
+                    16
+                  ],
+                  [
+                    12,
+                    16
+                  ],
+                  [
+                    13,
+                    17
+                  ],
+                  [
+                    14,
+                    17
+                  ],
+                  [
+                    15,
+                    18
+                  ],
+                  [
+                    16,
+                    18
+                  ],
+                  [
+                    17,
+                    19
+                  ],
+                  [
+                    18,
+                    20
+                  ],
+                  [
+                    19,
+                    21
+                  ],
+                  [
+                    20,
+                    22
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  3
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  4
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  4
+                ],
+                [
+                  8,
+                  4
+                ],
+                [
+                  9,
+                  4
+                ],
+                [
+                  10,
+                  5
+                ],
+                [
+                  11,
+                  5
+                ],
+                [
+                  12,
+                  5
+                ],
+                [
+                  13,
+                  5
+                ],
+                [
+                  14,
+                  5
+                ],
+                [
+                  15,
+                  5
+                ],
+                [
+                  16,
+                  5
+                ],
+                [
+                  17,
+                  5
+                ],
+                [
+                  18,
+                  5
+                ],
+                [
+                  19,
+                  5
+                ],
+                [
+                  20,
+                  5
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|druid",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Druid",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|druid",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|druid",
+          "title": "Druid · Incantesimi",
+          "owner": {
+            "class_name": "Druid",
+            "class_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Druid"
+          },
+          "level_class_name": "Druid",
+          "spell_list_class_name": "Druid",
+          "ability": "wis",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    4
+                  ],
+                  [
+                    2,
+                    5
+                  ],
+                  [
+                    3,
+                    6
+                  ],
+                  [
+                    4,
+                    7
+                  ],
+                  [
+                    5,
+                    9
+                  ],
+                  [
+                    6,
+                    10
+                  ],
+                  [
+                    7,
+                    11
+                  ],
+                  [
+                    8,
+                    12
+                  ],
+                  [
+                    9,
+                    14
+                  ],
+                  [
+                    10,
+                    15
+                  ],
+                  [
+                    11,
+                    16
+                  ],
+                  [
+                    12,
+                    16
+                  ],
+                  [
+                    13,
+                    17
+                  ],
+                  [
+                    14,
+                    17
+                  ],
+                  [
+                    15,
+                    18
+                  ],
+                  [
+                    16,
+                    18
+                  ],
+                  [
+                    17,
+                    19
+                  ],
+                  [
+                    18,
+                    20
+                  ],
+                  [
+                    19,
+                    21
+                  ],
+                  [
+                    20,
+                    22
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  2
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  3
+                ],
+                [
+                  6,
+                  3
+                ],
+                [
+                  7,
+                  3
+                ],
+                [
+                  8,
+                  3
+                ],
+                [
+                  9,
+                  3
+                ],
+                [
+                  10,
+                  4
+                ],
+                [
+                  11,
+                  4
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  13,
+                  4
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|paladin",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|paladin",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|paladin",
+          "title": "Paladin · Incantesimi",
+          "owner": {
+            "class_name": "Paladin",
+            "class_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Paladin"
+          },
+          "level_class_name": "Paladin",
+          "spell_list_class_name": "Paladin",
+          "ability": "cha",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    2
+                  ],
+                  [
+                    2,
+                    3
+                  ],
+                  [
+                    3,
+                    4
+                  ],
+                  [
+                    4,
+                    5
+                  ],
+                  [
+                    5,
+                    6
+                  ],
+                  [
+                    6,
+                    6
+                  ],
+                  [
+                    7,
+                    7
+                  ],
+                  [
+                    8,
+                    7
+                  ],
+                  [
+                    9,
+                    9
+                  ],
+                  [
+                    10,
+                    9
+                  ],
+                  [
+                    11,
+                    10
+                  ],
+                  [
+                    12,
+                    10
+                  ],
+                  [
+                    13,
+                    11
+                  ],
+                  [
+                    14,
+                    11
+                  ],
+                  [
+                    15,
+                    12
+                  ],
+                  [
+                    16,
+                    12
+                  ],
+                  [
+                    17,
+                    14
+                  ],
+                  [
+                    18,
+                    14
+                  ],
+                  [
+                    19,
+                    15
+                  ],
+                  [
+                    20,
+                    15
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  0
+                ],
+                [
+                  4,
+                  0
+                ],
+                [
+                  5,
+                  0
+                ],
+                [
+                  6,
+                  0
+                ],
+                [
+                  7,
+                  0
+                ],
+                [
+                  8,
+                  0
+                ],
+                [
+                  9,
+                  0
+                ],
+                [
+                  10,
+                  0
+                ],
+                [
+                  11,
+                  0
+                ],
+                [
+                  12,
+                  0
+                ],
+                [
+                  13,
+                  0
+                ],
+                [
+                  14,
+                  0
+                ],
+                [
+                  15,
+                  0
+                ],
+                [
+                  16,
+                  0
+                ],
+                [
+                  17,
+                  0
+                ],
+                [
+                  18,
+                  0
+                ],
+                [
+                  19,
+                  0
+                ],
+                [
+                  20,
+                  0
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|ranger",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Ranger",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|ranger",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|ranger",
+          "title": "Ranger · Incantesimi",
+          "owner": {
+            "class_name": "Ranger",
+            "class_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Ranger"
+          },
+          "level_class_name": "Ranger",
+          "spell_list_class_name": "Ranger",
+          "ability": "wis",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    2
+                  ],
+                  [
+                    2,
+                    3
+                  ],
+                  [
+                    3,
+                    4
+                  ],
+                  [
+                    4,
+                    5
+                  ],
+                  [
+                    5,
+                    6
+                  ],
+                  [
+                    6,
+                    6
+                  ],
+                  [
+                    7,
+                    7
+                  ],
+                  [
+                    8,
+                    7
+                  ],
+                  [
+                    9,
+                    9
+                  ],
+                  [
+                    10,
+                    9
+                  ],
+                  [
+                    11,
+                    10
+                  ],
+                  [
+                    12,
+                    10
+                  ],
+                  [
+                    13,
+                    11
+                  ],
+                  [
+                    14,
+                    11
+                  ],
+                  [
+                    15,
+                    12
+                  ],
+                  [
+                    16,
+                    12
+                  ],
+                  [
+                    17,
+                    14
+                  ],
+                  [
+                    18,
+                    14
+                  ],
+                  [
+                    19,
+                    15
+                  ],
+                  [
+                    20,
+                    15
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  0
+                ],
+                [
+                  4,
+                  0
+                ],
+                [
+                  5,
+                  0
+                ],
+                [
+                  6,
+                  0
+                ],
+                [
+                  7,
+                  0
+                ],
+                [
+                  8,
+                  0
+                ],
+                [
+                  9,
+                  0
+                ],
+                [
+                  10,
+                  0
+                ],
+                [
+                  11,
+                  0
+                ],
+                [
+                  12,
+                  0
+                ],
+                [
+                  13,
+                  0
+                ],
+                [
+                  14,
+                  0
+                ],
+                [
+                  15,
+                  0
+                ],
+                [
+                  16,
+                  0
+                ],
+                [
+                  17,
+                  0
+                ],
+                [
+                  18,
+                  0
+                ],
+                [
+                  19,
+                  0
+                ],
+                [
+                  20,
+                  0
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|sorcerer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|sorcerer",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|sorcerer",
+          "title": "Sorcerer · Incantesimi",
+          "owner": {
+            "class_name": "Sorcerer",
+            "class_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Sorcerer"
+          },
+          "level_class_name": "Sorcerer",
+          "spell_list_class_name": "Sorcerer",
+          "ability": "cha",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    2
+                  ],
+                  [
+                    2,
+                    4
+                  ],
+                  [
+                    3,
+                    6
+                  ],
+                  [
+                    4,
+                    7
+                  ],
+                  [
+                    5,
+                    9
+                  ],
+                  [
+                    6,
+                    10
+                  ],
+                  [
+                    7,
+                    11
+                  ],
+                  [
+                    8,
+                    12
+                  ],
+                  [
+                    9,
+                    14
+                  ],
+                  [
+                    10,
+                    15
+                  ],
+                  [
+                    11,
+                    16
+                  ],
+                  [
+                    12,
+                    16
+                  ],
+                  [
+                    13,
+                    17
+                  ],
+                  [
+                    14,
+                    17
+                  ],
+                  [
+                    15,
+                    18
+                  ],
+                  [
+                    16,
+                    18
+                  ],
+                  [
+                    17,
+                    19
+                  ],
+                  [
+                    18,
+                    20
+                  ],
+                  [
+                    19,
+                    21
+                  ],
+                  [
+                    20,
+                    22
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  4
+                ],
+                [
+                  2,
+                  4
+                ],
+                [
+                  3,
+                  4
+                ],
+                [
+                  4,
+                  5
+                ],
+                [
+                  5,
+                  5
+                ],
+                [
+                  6,
+                  5
+                ],
+                [
+                  7,
+                  5
+                ],
+                [
+                  8,
+                  5
+                ],
+                [
+                  9,
+                  5
+                ],
+                [
+                  10,
+                  6
+                ],
+                [
+                  11,
+                  6
+                ],
+                [
+                  12,
+                  6
+                ],
+                [
+                  13,
+                  6
+                ],
+                [
+                  14,
+                  6
+                ],
+                [
+                  15,
+                  6
+                ],
+                [
+                  16,
+                  6
+                ],
+                [
+                  17,
+                  6
+                ],
+                [
+                  18,
+                  6
+                ],
+                [
+                  19,
+                  6
+                ],
+                [
+                  20,
+                  6
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|warlock",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Pact Magic",
+          "source": "XPHB",
+          "class_name": "Warlock",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|warlock",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|warlock",
+          "title": "Warlock · Incantesimi",
+          "owner": {
+            "class_name": "Warlock",
+            "class_source": "XPHB",
+            "trait": "Pact Magic"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Warlock"
+          },
+          "level_class_name": "Warlock",
+          "spell_list_class_name": "Warlock",
+          "ability": "cha",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "mode": "class_list",
+              "storage": "known_spell_overrides"
+            },
+            "prepared": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    2
+                  ],
+                  [
+                    2,
+                    3
+                  ],
+                  [
+                    3,
+                    4
+                  ],
+                  [
+                    4,
+                    5
+                  ],
+                  [
+                    5,
+                    6
+                  ],
+                  [
+                    6,
+                    7
+                  ],
+                  [
+                    7,
+                    8
+                  ],
+                  [
+                    8,
+                    9
+                  ],
+                  [
+                    9,
+                    10
+                  ],
+                  [
+                    10,
+                    10
+                  ],
+                  [
+                    11,
+                    11
+                  ],
+                  [
+                    12,
+                    11
+                  ],
+                  [
+                    13,
+                    12
+                  ],
+                  [
+                    14,
+                    12
+                  ],
+                  [
+                    15,
+                    13
+                  ],
+                  [
+                    16,
+                    13
+                  ],
+                  [
+                    17,
+                    14
+                  ],
+                  [
+                    18,
+                    14
+                  ],
+                  [
+                    19,
+                    15
+                  ],
+                  [
+                    20,
+                    15
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  2,
+                  2
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  3
+                ],
+                [
+                  6,
+                  3
+                ],
+                [
+                  7,
+                  3
+                ],
+                [
+                  8,
+                  3
+                ],
+                [
+                  9,
+                  3
+                ],
+                [
+                  10,
+                  4
+                ],
+                [
+                  11,
+                  4
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  13,
+                  4
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|wizard",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Wizard",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|wizard",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|wizard",
+          "title": "Wizard · Incantesimi",
+          "owner": {
+            "class_name": "Wizard",
+            "class_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Wizard"
+          },
+          "level_class_name": "Wizard",
+          "spell_list_class_name": "Wizard",
+          "ability": "int",
+          "knowledge_mode": "prepared",
+          "layers": {
+            "learned": {
+              "limit": {
+                "formula": "6 + 2 * (class_level_wizard - 1)"
+              },
+              "storage": "known_spell_overrides",
+              "trigger": null
+            },
+            "prepared": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    4
+                  ],
+                  [
+                    2,
+                    5
+                  ],
+                  [
+                    3,
+                    6
+                  ],
+                  [
+                    4,
+                    7
+                  ],
+                  [
+                    5,
+                    9
+                  ],
+                  [
+                    6,
+                    10
+                  ],
+                  [
+                    7,
+                    11
+                  ],
+                  [
+                    8,
+                    12
+                  ],
+                  [
+                    9,
+                    14
+                  ],
+                  [
+                    10,
+                    15
+                  ],
+                  [
+                    11,
+                    16
+                  ],
+                  [
+                    12,
+                    16
+                  ],
+                  [
+                    13,
+                    17
+                  ],
+                  [
+                    14,
+                    18
+                  ],
+                  [
+                    15,
+                    19
+                  ],
+                  [
+                    16,
+                    21
+                  ],
+                  [
+                    17,
+                    22
+                  ],
+                  [
+                    18,
+                    23
+                  ],
+                  [
+                    19,
+                    24
+                  ],
+                  [
+                    20,
+                    25
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "long_rest"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  3
+                ],
+                [
+                  2,
+                  3
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  4
+                ],
+                [
+                  5,
+                  4
+                ],
+                [
+                  6,
+                  4
+                ],
+                [
+                  7,
+                  4
+                ],
+                [
+                  8,
+                  4
+                ],
+                [
+                  9,
+                  4
+                ],
+                [
+                  10,
+                  5
+                ],
+                [
+                  11,
+                  5
+                ],
+                [
+                  12,
+                  5
+                ],
+                [
+                  13,
+                  5
+                ],
+                [
+                  14,
+                  5
+                ],
+                [
+                  15,
+                  5
+                ],
+                [
+                  16,
+                  5
+                ],
+                [
+                  17,
+                  5
+                ],
+                [
+                  18,
+                  5
+                ],
+                [
+                  19,
+                  5
+                ],
+                [
+                  20,
+                  5
+                ]
+              ]
+            },
+            "storage": "known_spell_overrides"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|fighter",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB",
+          "subclass": "Eldritch Knight",
+          "subclass_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|fighter",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|fighter",
+          "title": "Fighter · Incantesimi",
+          "owner": {
+            "class_name": "Fighter",
+            "class_source": "XPHB",
+            "subclass": "Eldritch Knight",
+            "subclass_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Wizard"
+          },
+          "level_class_name": "Fighter",
+          "spell_list_class_name": "Wizard",
+          "ability": "int",
+          "knowledge_mode": "known",
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    0
+                  ],
+                  [
+                    3,
+                    3
+                  ],
+                  [
+                    4,
+                    4
+                  ],
+                  [
+                    5,
+                    4
+                  ],
+                  [
+                    6,
+                    4
+                  ],
+                  [
+                    7,
+                    5
+                  ],
+                  [
+                    8,
+                    6
+                  ],
+                  [
+                    9,
+                    6
+                  ],
+                  [
+                    10,
+                    7
+                  ],
+                  [
+                    11,
+                    8
+                  ],
+                  [
+                    12,
+                    8
+                  ],
+                  [
+                    13,
+                    9
+                  ],
+                  [
+                    14,
+                    10
+                  ],
+                  [
+                    15,
+                    10
+                  ],
+                  [
+                    16,
+                    11
+                  ],
+                  [
+                    17,
+                    11
+                  ],
+                  [
+                    18,
+                    11
+                  ],
+                  [
+                    19,
+                    12
+                  ],
+                  [
+                    20,
+                    13
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  2
+                ],
+                [
+                  4,
+                  2
+                ],
+                [
+                  5,
+                  2
+                ],
+                [
+                  6,
+                  2
+                ],
+                [
+                  7,
+                  2
+                ],
+                [
+                  8,
+                  2
+                ],
+                [
+                  9,
+                  2
+                ],
+                [
+                  10,
+                  3
+                ],
+                [
+                  11,
+                  3
+                ],
+                [
+                  12,
+                  3
+                ],
+                [
+                  13,
+                  3
+                ],
+                [
+                  14,
+                  3
+                ],
+                [
+                  15,
+                  3
+                ],
+                [
+                  16,
+                  3
+                ],
+                [
+                  17,
+                  3
+                ],
+                [
+                  18,
+                  3
+                ],
+                [
+                  19,
+                  3
+                ],
+                [
+                  20,
+                  3
+                ]
+              ]
+            },
+            "storage": "prepared_spells"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:class_spellcasting:class|xphb|rogue",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB",
+          "subclass": "Arcane Trickster",
+          "subclass_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "class_spellcasting:class|xphb|rogue",
+        "option_grant": {
+          "id": "class_spellcasting:class|xphb|rogue",
+          "title": "Rogue · Incantesimi",
+          "owner": {
+            "class_name": "Rogue",
+            "class_source": "XPHB",
+            "subclass": "Arcane Trickster",
+            "subclass_source": "XPHB",
+            "trait": "Spellcasting"
+          },
+          "option_kind": "spell",
+          "source": {
+            "type": "spell_catalog",
+            "class_name": "Wizard"
+          },
+          "level_class_name": "Rogue",
+          "spell_list_class_name": "Wizard",
+          "ability": "int",
+          "knowledge_mode": "known",
+          "layers": {
+            "learned": {
+              "limit": {
+                "by_class_level": [
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    0
+                  ],
+                  [
+                    3,
+                    3
+                  ],
+                  [
+                    4,
+                    4
+                  ],
+                  [
+                    5,
+                    4
+                  ],
+                  [
+                    6,
+                    4
+                  ],
+                  [
+                    7,
+                    5
+                  ],
+                  [
+                    8,
+                    6
+                  ],
+                  [
+                    9,
+                    6
+                  ],
+                  [
+                    10,
+                    7
+                  ],
+                  [
+                    11,
+                    8
+                  ],
+                  [
+                    12,
+                    8
+                  ],
+                  [
+                    13,
+                    9
+                  ],
+                  [
+                    14,
+                    10
+                  ],
+                  [
+                    15,
+                    10
+                  ],
+                  [
+                    16,
+                    11
+                  ],
+                  [
+                    17,
+                    11
+                  ],
+                  [
+                    18,
+                    11
+                  ],
+                  [
+                    19,
+                    12
+                  ],
+                  [
+                    20,
+                    13
+                  ]
+                ]
+              },
+              "storage": "prepared_spells",
+              "trigger": "level_up"
+            },
+            "applied": {
+              "mode": "automatic",
+              "from": "learned"
+            }
+          },
+          "cantrips": {
+            "limit": {
+              "by_class_level": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  4,
+                  3
+                ],
+                [
+                  5,
+                  3
+                ],
+                [
+                  6,
+                  3
+                ],
+                [
+                  7,
+                  3
+                ],
+                [
+                  8,
+                  3
+                ],
+                [
+                  9,
+                  3
+                ],
+                [
+                  10,
+                  4
+                ],
+                [
+                  11,
+                  4
+                ],
+                [
+                  12,
+                  4
+                ],
+                [
+                  13,
+                  4
+                ],
+                [
+                  14,
+                  4
+                ],
+                [
+                  15,
+                  4
+                ],
+                [
+                  16,
+                  4
+                ],
+                [
+                  17,
+                  4
+                ],
+                [
+                  18,
+                  4
+                ],
+                [
+                  19,
+                  4
+                ],
+                [
+                  20,
+                  4
+                ]
+              ]
+            },
+            "storage": "prepared_spells"
+          },
+          "benefit_type": "option_grant"
+        }
+      }
+    }
+  ]
+}

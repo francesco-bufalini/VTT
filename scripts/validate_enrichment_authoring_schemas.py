@@ -122,7 +122,8 @@ def main():
     for benefit_type, expected in migrated_counts.items():
         data = load(live / f"{benefit_type}.json")
         owned = [entry for entry in data["entries"] if
-                 entry["granted_by"]["ref"]["category"] in ("class_feature", "subclass_feature")]
+                 entry["granted_by"]["ref"]["category"] in ("class_feature", "subclass_feature") and
+                 (benefit_type != "resource" or entry["benefit"].get("kind") != "spell_slots")]
         assert len(owned) == expected, f"{benefit_type}: missing migrated class/subclass entries"
         assert all(entry["granted_by"]["ref"].get("class_source") for entry in owned)
     action_rules = load(live / "action.json")["entries"]

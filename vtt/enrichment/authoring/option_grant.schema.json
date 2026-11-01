@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT option_grant benefit catalog v2",
+  "allOf": [
+    {
+      "$ref": "catalog.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "benefit_type": {
+          "const": "option_grant"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "benefit": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "option_grant"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "option_grant"
+                  },
+                  "option_grant": {
+                    "$ref": "benefit.schema.json#/$defs/optionGrant"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

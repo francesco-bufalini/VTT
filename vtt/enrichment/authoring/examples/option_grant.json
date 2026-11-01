@@ -1,0 +1,43 @@
+{
+  "schema_version": 2,
+  "benefit_type": "option_grant",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "demo:option_grant",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:option_grant"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "demo:option_grant",
+        "option_grant": {
+          "id": "demo:choices",
+          "owner": {
+            "trait": "Test"
+          },
+          "option_kind": "capability",
+          "source": {
+            "type": "list_refs",
+            "list_ids": [
+              "demo:list"
+            ]
+          },
+          "layers": {
+            "learned": {
+              "limit": 1
+            },
+            "applied": {
+              "limit": 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

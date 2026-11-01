@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "benefit_type": "option_list",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "demo:option_list",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:option_list"
+        }
+      },
+      "benefit": {
+        "type": "option_list",
+        "id": "demo:option_list",
+        "option_list": {
+          "id": "demo:list",
+          "name": "Example homebrew list",
+          "kind": "capability",
+          "options": [
+            {
+              "id": "demo:passive",
+              "name": "Example passive ability",
+              "effects": []
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

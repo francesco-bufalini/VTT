@@ -35,6 +35,8 @@
         "movement",
         "numeric_modifier",
         "option_selection",
+        "option_list",
+        "option_grant",
         "proficiency",
         "progression",
         "resource",
@@ -467,6 +469,12 @@
     },
     "action_runtime": {
       "$ref": "#/$defs/actionRuntime"
+    },
+    "option_grant": {
+      "$ref": "#/$defs/optionGrant"
+    },
+    "option_list": {
+      "$ref": "#/$defs/optionList"
     }
   },
   "allOf": [
@@ -3192,6 +3200,359 @@
           "$ref": "#/$defs/roll"
         }
       }
+    },
+    "optionGrant": {
+      "type": "object",
+      "required": [
+        "id",
+        "owner",
+        "option_kind",
+        "source",
+        "layers"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "object"
+        },
+        "title": {
+          "type": "string"
+        },
+        "option_kind": {
+          "enum": [
+            "spell",
+            "capability"
+          ]
+        },
+        "source": {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "spell_catalog",
+                "optional_features",
+                "inline",
+                "list_refs",
+                "5etools"
+              ]
+            },
+            "class_name": {
+              "type": "string"
+            },
+            "feature_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "list_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "options": {
+              "type": "array"
+            },
+            "packages": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": true
+        },
+        "lists": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "layers": {
+          "type": "object",
+          "properties": {
+            "learned": {
+              "type": "object",
+              "properties": {
+                "limit": {},
+                "limit_mode": {
+                  "enum": [
+                    "enforced",
+                    "advisory"
+                  ]
+                },
+                "mode": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "storage": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "short_rest",
+                        "long_rest",
+                        "level_up"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "short_rest",
+                          "long_rest",
+                          "level_up"
+                        ]
+                      },
+                      "minItems": 1,
+                      "uniqueItems": true
+                    }
+                  ]
+                },
+                "target": {
+                  "type": "object"
+                },
+                "refund_on_remove": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": true
+            },
+            "prepared": {
+              "type": "object",
+              "properties": {
+                "limit": {},
+                "limit_mode": {
+                  "enum": [
+                    "enforced",
+                    "advisory"
+                  ]
+                },
+                "mode": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "storage": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "short_rest",
+                        "long_rest",
+                        "level_up"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "short_rest",
+                          "long_rest",
+                          "level_up"
+                        ]
+                      },
+                      "minItems": 1,
+                      "uniqueItems": true
+                    }
+                  ]
+                },
+                "target": {
+                  "type": "object"
+                },
+                "refund_on_remove": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": true
+            },
+            "applied": {
+              "type": "object",
+              "properties": {
+                "limit": {},
+                "limit_mode": {
+                  "enum": [
+                    "enforced",
+                    "advisory"
+                  ]
+                },
+                "mode": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "storage": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "short_rest",
+                        "long_rest",
+                        "level_up"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "short_rest",
+                          "long_rest",
+                          "level_up"
+                        ]
+                      },
+                      "minItems": 1,
+                      "uniqueItems": true
+                    }
+                  ]
+                },
+                "target": {
+                  "type": "object"
+                },
+                "refund_on_remove": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "application": {
+          "type": "object"
+        },
+        "required": {
+          "type": "object"
+        },
+        "ability": {
+          "enum": [
+            "str",
+            "dex",
+            "con",
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "level_class_name": {
+          "type": "string"
+        },
+        "spell_list_class_name": {
+          "type": "string"
+        },
+        "knowledge_mode": {
+          "enum": [
+            "known",
+            "prepared"
+          ]
+        },
+        "cantrips": {
+          "type": "object"
+        },
+        "benefit_type": {
+          "const": "option_grant"
+        },
+        "ui": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "fixed": {
+          "type": "array"
+        },
+        "requires_application": {
+          "type": "object"
+        },
+        "legacy_ids": {
+          "type": "array"
+        },
+        "legacy_stage": {
+          "type": "string"
+        },
+        "capacity_bonus_field": {
+          "type": "string"
+        },
+        "on_apply": {
+          "type": "string"
+        },
+        "allow_custom": {
+          "type": "boolean"
+        },
+        "compatibility": {
+          "type": "object"
+        },
+        "feature_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "application_tracker_id": {
+          "type": "string"
+        },
+        "unique_across_selections": {
+          "type": "boolean"
+        },
+        "forget": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "optionList": {
+      "type": "object",
+      "required": [
+        "id",
+        "options"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "spell",
+            "capability"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

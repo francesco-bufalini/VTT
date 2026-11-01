@@ -3342,6 +3342,476 @@
         "uses": "proficiency",
         "recharge": "long_rest"
       }
+    },
+    {
+      "id": "spell_slots:class|tce|artificer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|tce|artificer",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "half_caster_up"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|bard",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Bard",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|bard",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|cleric",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|cleric",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|druid",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Druid",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|druid",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|paladin",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|paladin",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "half_caster_down"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|ranger",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|ranger",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "half_caster_down"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|sorcerer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Sorcerer",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|sorcerer",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|warlock",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Pact Magic",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|warlock",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "pact_magic"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|wizard",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|wizard",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|fighter:eldritch-knight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Eldritch Knight",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|fighter",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "third_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|phb|rogue:arcane-trickster",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spellcasting",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Arcane Trickster",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|phb|rogue",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "third_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|bard",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|bard",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|cleric",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Cleric",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|cleric",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|druid",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Druid",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|druid",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|paladin",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|paladin",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "half_caster_up"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|ranger",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Ranger",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|ranger",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "half_caster_up"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|sorcerer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|sorcerer",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|warlock",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Pact Magic",
+          "source": "XPHB",
+          "class_name": "Warlock",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|warlock",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "pact_magic"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|wizard",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Wizard",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|wizard",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "full_caster"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|fighter:eldritch-knight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB",
+          "subclass": "Eldritch Knight",
+          "subclass_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|fighter",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "third_caster_up"
+        }
+      }
+    },
+    {
+      "id": "spell_slots:class|xphb|rogue:arcane-trickster",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spellcasting",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB",
+          "subclass": "Arcane Trickster",
+          "subclass_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "spell_slots:class|xphb|rogue",
+        "kind": "spell_slots",
+        "resource": "Spell slots",
+        "slot_progression": {
+          "profile": "third_caster_up"
+        }
+      }
     }
   ],
   "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT option_list benefit catalog v2",
+  "allOf": [
+    {
+      "$ref": "catalog.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "benefit_type": {
+          "const": "option_list"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "benefit": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "option_list"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "option_list"
+                  },
+                  "option_list": {
+                    "$ref": "benefit.schema.json#/$defs/optionList"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

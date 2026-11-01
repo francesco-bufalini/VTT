@@ -40,6 +40,8 @@
         "movement",
         "numeric_modifier",
         "option_selection",
+        "option_list",
+        "option_grant",
         "proficiency",
         "progression",
         "resource",
