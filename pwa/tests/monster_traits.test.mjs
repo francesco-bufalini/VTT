@@ -48,7 +48,7 @@ test('legendary, resistance and lair traits grant their own counters and correct
  assert.equal(resistance.monster_actions?.length||0,0);
  assert.equal(data.trackers.filter(row=>row.origin_id==='feature:'+resistance.feature_key).length,1);
  assert.deepEqual(monsterBasicRules(fixture,data).map(row=>[row.name,row.time,row.cost]),[
-  ['Azione leggendaria','legendary',1],['Azioni di tana','lair',1],['Resistenza leggendaria','legendary_resistance',1]]);
+  ['Azione leggendaria','free',1],['Azioni di tana','lair',1],['Resistenza leggendaria','legendary_resistance',1]]);
  const panels=battleActionPanels(fixture,data);
  assert.match(panels.basicActions.find(row=>row.id==='attack').grant_description,/three attacks/);
  assert.match(panels.others,/Resistenza leggendaria/);
@@ -92,6 +92,8 @@ test('battle resources display monster costs and the granting attack description
   for(const id of ['monster:legendary:choices','legendary_resistance','lair_action'])
    assert.ok(app.querySelector('[data-battle-action="others"] [data-attack-id="'+id+'"]'));
   const wing=app.querySelector('[data-action-option-id="monster:legendary:1"]');
+  assert.match(app.querySelector('[data-attack-id="monster:legendary:choices"]').textContent,/Azione gratuita/);
+  assert.match(app.querySelector('[data-attack-id="monster:legendary:choices"]').textContent,/Prova di Percezione/);
   assert(wing,'Wing Attack is one of the exclusive legendary options');
   assert.match(wing.textContent,/Wing Attack/);
   const use=wing.querySelector('[data-act="attack-action-use"]');
