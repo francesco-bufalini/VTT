@@ -1064,8 +1064,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const multiCandidates=[...privilegeExtras.filter(isMultiattack),...multiRow];
  // A monster has one stat-block Multiattack; typed and legacy projections
  // may both expose it, but they must never create duplicate action rows.
- const preferredMulti=multiCandidates.find(row=>row.attack_action&&arr(row.steps).length)||
-  multiCandidates.find(row=>row.id==='monster:multiattack')||multiCandidates[0];
+ const preferredMulti=multiCandidates.find(row=>row.id==='monster:multiattack'&&arr(row.steps).length)||
+  multiCandidates.find(row=>row.id==='monster:multiattack')||
+  multiCandidates.find(row=>row.attack_action&&arr(row.steps).length)||multiCandidates[0];
  const multiActions=record.kind==='monster'?(preferredMulti?[preferredMulti]:[]):multiCandidates;
  const hasMultiattack=multiActions.length>0;
  const ruleRows=[...actionsBase.filter(row=>
