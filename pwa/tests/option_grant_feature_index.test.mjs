@@ -61,3 +61,20 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
  assert.deepEqual(ambiguous,[], 'Repeated features must explicitly declare per-feature instancing');
  assert.deepEqual(modelMissing,[], 'Every nondependent grant must produce a visible model');
 });
+
+test('audit: source-qualified 2024 Fighting Style features reveal non-option-grant paths',()=>{
+ const rows=index.class_features.filter(row=>row.class_source==='XPHB'&&
+  ['Fighter','Paladin','Ranger'].includes(row.class_name)&&
+  /fighting style/i.test(row.name||''));
+ const findings=rows.map(feature=>{
+  const record=makeRecord({class_name:feature.class_name,class_source:'XPHB'});
+  const installed=collectStructuredFeatures(record,{
+   classFeatures:index,optionGrants:grants,slotBenefits:resources});
+  const source=installed.find(row=>row.name===feature.name&&row.level===feature.level&&
+   row.requirements?.class_name===feature.class_name);
+  return {name:feature.class_name+' · '+feature.name,level:feature.level,
+   linked:source?.benefits?.some(row=>row.type==='option_grant')||false};
+ });
+ console.log('OPTION_GRANT_2024_FIGHTING_STYLE_AUDIT '+JSON.stringify(findings));
+ assert(findings.every(row=>row.level>=1));
+});
