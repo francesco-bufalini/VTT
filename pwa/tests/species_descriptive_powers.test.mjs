@@ -1,3 +1,4 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,7 +7,7 @@ import {abilitiesForCreature} from '../activated_abilities.js';
 import {battleAbilityEntries} from '../action_economy.js';
 import {rollBattleDamage} from '../sheet_rules_view.js';
 
-const catalog=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const catalog=speciesPowerTestIndex();
 const source=JSON.parse(readFileSync(new URL('../../vtt/data/compendium_features_5etools.json',import.meta.url),'utf8'));
 const originDetails={races:source.races};
 const record=(name,source='MPMM')=>{

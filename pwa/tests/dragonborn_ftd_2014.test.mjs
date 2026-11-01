@@ -1,3 +1,4 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -11,7 +12,7 @@ import {battleAbilityEntries} from '../action_economy.js';
 import {persistentBattleAbility} from '../sheet_rules_view.js';
 import {abilityAreaPolygon,pointInAbilityArea,abilityAreaPreview} from '../ability_areas.js';
 
-const powers=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const powers=speciesPowerTestIndex();
 const defenses=JSON.parse(readFileSync(new URL('../catalog/species_defenses.json',import.meta.url),'utf8'));
 const base={kind:'character',rules_version:'2014',level:5,
  abilities:{str:12,dex:12,con:16,int:10,wis:10,cha:10},

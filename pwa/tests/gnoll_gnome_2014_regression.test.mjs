@@ -1,3 +1,4 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -8,7 +9,7 @@ import {expandedOriginSpellFeatures,expandedOriginClassSpellIds,spellEligible,
  castingSources,structuredSpellGrants} from '../spell_selection.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
-const powers=read('../catalog/species_powers.json');
+const powers=speciesPowerTestIndex();
 const original={races:read('../../vtt/data/compendium_features_5etools.json').races};
 const items=read('../catalog/feature_item_grants.json').grants;
 const additional=read('../../vtt/data/additional_spells_5etools.json').entries;

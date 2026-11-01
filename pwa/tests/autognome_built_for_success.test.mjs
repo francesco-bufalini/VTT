@@ -1,3 +1,4 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -8,7 +9,7 @@ import {rollSheetDice,appendRollBonus,sheetRollChatFields} from '../sheet_rules_
 import {spendTrackerUses} from '../character_core.js';
 import {recoveryPatch} from '../native_sheet.js';
 
-const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const index=speciesPowerTestIndex();
 const source=JSON.parse(readFileSync(new URL('../../vtt/data/compendium_features_5etools.json',import.meta.url),'utf8'));
 const original={races:source.races};
 const root='species|5etools:races:aag:autognome|aag';

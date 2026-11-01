@@ -1,3 +1,4 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -7,7 +8,7 @@ import {battleAbilityEntries,battleActionPanels} from '../action_economy.js';
 import {applicableDiceBonuses} from '../sheet_rules.js';
 import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} from '../feature_rolls.js';
 import {normalizeEffectExtension,effectExtensionsFor} from '../effect_extensions.js';
-const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const index=speciesPowerTestIndex();
 const record=(name,source)=>({
  kind:'character',rules_version:'2014',level:8,
  species:name,species_source:source,

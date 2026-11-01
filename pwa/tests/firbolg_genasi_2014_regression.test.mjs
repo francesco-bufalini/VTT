@@ -1,3 +1,4 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -7,7 +8,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import {recoveryPatch} from '../native_sheet.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
-const powers=read('../catalog/species_powers.json');
+const powers=speciesPowerTestIndex();
 const spellRules=read('../catalog/spell_grant_rules.json').rules;
 const rawRaces=read('../../vtt/data/creature_references_5etools.json').races;
 const base={kind:'character',rules_version:'2014',level:5,

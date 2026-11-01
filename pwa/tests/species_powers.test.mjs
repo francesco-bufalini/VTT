@@ -1,10 +1,11 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {racialPowerProjection,racialPowerSubraces,racialPowerSpellDefinitions,healingHandsPatch} from '../species_powers.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {structuredFeatureGrants} from '../structured_effects.js';
-const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const index=speciesPowerTestIndex();
 const native=JSON.parse(readFileSync(new URL('../../vtt/data/compendium_features_5etools.json',import.meta.url),'utf8'));
 const original={races:native.races};
 const id='5etools:races:mpmm:aasimar';
