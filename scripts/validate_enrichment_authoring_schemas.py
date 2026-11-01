@@ -113,6 +113,14 @@ def main():
         assert len(set(grant_ids)) == len(grant_ids), f"Duplicate grant ID: {path}"
         check(benefit_type + ".schema.json", data, path.name)
 
+    # Class and subclass rules are added to the same type catalogs as species.
+    for benefit_type, expected in (("action", 52), ("roll_bonus", 15)):
+        data = load(live / f"{benefit_type}.json")
+        owned = [entry for entry in data["entries"] if
+                 entry["granted_by"]["ref"]["category"] in ("class_feature", "subclass_feature")]
+        assert len(owned) == expected, f"{benefit_type}: missing migrated class/subclass entries"
+        assert all(entry["granted_by"]["ref"].get("class_source") for entry in owned)
+
     legacy = load(SCHEMAS / "legacy_sources.json")
     for source in legacy["sources"]:
         original = ROOT / source["path"]
