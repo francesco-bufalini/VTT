@@ -214,9 +214,7 @@ test('all action-catalog privileges appear before activation, with exact trait p
  ]}};
  const cunning=traitBenefitGroups({rank:2,feature_origin:features[0].origin_id,key:'cunning'},{},calculated)
   .find(g=>g.type==='abilities');
- assert.deepEqual(cunning.items.map(i=>i.label),[
-  'Scattare (azione scaltra)','Disimpegnarsi (azione scaltra)','Nascondersi (azione scaltra)'
- ]);
+ assert.deepEqual(cunning.items.map(i=>i.label),['Cunning Action']);
  assert.ok(cunning.items.every(i=>i.timing==='Azione bonus'&&i.status==='Tratto disattivato'));
  assert.deepEqual(traitBenefitGroups({rank:2,feature_origin:features[1].origin_id,key:'fast'},{},calculated)
    .find(g=>g.type==='abilities').items.map(i=>i.label),['Fast Hands']);
