@@ -395,11 +395,15 @@ try{
  assert.equal(await weaponPanel.locator('.play-chevron').count(),0);
  assert.equal(await page.locator('.play-battle-heading-tools [data-sheet-context="equipment"]').count(),1);
  assert.equal(await page.locator('.play-battle-heading-tools [data-act="action-open-spells"]').count(),0);
- // Spellcasting must open the Powers tab in a single click.
+ // Spellcasting now opens a detail popup, which links to Powers.
  await otherPanel.locator('summary.play-battle-summary').click();
- const castFromActions=otherPanel.locator('[data-attack-id="spell_cast"] [data-act="action-open-spells"]');
+ const castFromActions=otherPanel.locator('[data-attack-id="spell_cast"] [data-act="sheet-context"]');
  assert.equal(await castFromActions.count(),1);
  await castFromActions.click();
+ const spellActionDialog=page.locator('#sheet-context-dialog[open]');
+ await spellActionDialog.waitFor();
+ assert.match(await spellActionDialog.textContent(),/Descrizione/);
+ await spellActionDialog.locator('[data-act="action-open-spells"]').click();
  await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
  await sheet('battle');
  const mainAttack=weaponPanel.locator('[data-attack-id="item:local_sword"]');
@@ -730,8 +734,8 @@ try{
  await dismiss();
  assert.equal(await actionsPanel.locator('[data-action-source="rules"] [data-attack-id="two_weapon"]').count(),1,
   'The unavailable secondary attack stays inspectable among the rules');
- assert.equal(await actionsPanel.locator('[data-attack-id="spell_cast"] [data-act="action-open-spells"]').count(),1,
-  'Spellcasting opens Powers directly');
+ assert.equal(await actionsPanel.locator('[data-attack-id="spell_cast"] [data-act="sheet-context"][data-sheet-context="battle-action:spell_cast"]').count(),1,
+  'Spellcasting opens the shared action-detail popup');
  assert.equal(await resourcesPanel.locator('[data-resource-privilege],[data-ability-id]').count(),0,
   'Resources do not own abilities or privileges');
  assert.equal(await actionsPanel.locator('.play-resource-power-row[data-ability-id="free_pulse"]').count(),1);

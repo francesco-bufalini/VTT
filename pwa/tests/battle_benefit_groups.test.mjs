@@ -93,13 +93,16 @@ test('attack-action row shows action type and tracker cost but no range, map too
  assert.match(use.getAttribute('aria-label'),/Usa Multiattacco/,
   'The control retains an accessible action name');
  assert.equal(action.querySelectorAll('.play-attack-sequence > li').length,4);
+ assert.equal(action.querySelector('.play-action-list-parent-arrow'),null);
+ assert.equal(action.querySelector('.play-battle-attack-expanded'),null);
+ assert.equal(action.querySelector('.play-battle-action-detail-open')?.dataset.act,'sheet-context');
  for(const selector of ['.play-battle-attack-range','.play-battle-attacks-per-action',
   '[data-act="battle-attack-map"]','[data-target^="attack_hit:"]'])
   assert.equal(action.querySelector(selector),null,selector+' must be absent');
 });
 
 
-test('action/check/attack lists preserve all steps with indexed arrows and the tutte label',()=>{
+test('action/check/attack lists preserve all steps with a quiet numbered rail and the tutte label',()=>{
  const action={id:'homebrew:sequence',name:'Sequenza',steps:[
   {selector:{kind:'attack',id:'unarmed'},count:2},
   {selector:{kind:'check',target:'skill:perception'}}
@@ -113,7 +116,7 @@ test('action/check/attack lists preserve all steps with indexed arrows and the t
  assert.equal(tree.querySelector('.play-action-index-mode').textContent,'tutte');
  assert.equal(tree.querySelectorAll('.play-action-index-steps > li').length,3);
  assert.equal(tree.querySelectorAll('.play-action-index-number').length,3);
- assert(tree.querySelector('.play-action-index-arrow'));
+ assert.equal(tree.querySelector('.play-action-index-arrow'),null);
 });
 
 test('a one_of list has 1 fra: and independent selectable actions, without losing action origin',()=>{
@@ -137,4 +140,8 @@ test('a one_of list has 1 fra: and independent selectable actions, without losin
  assert(html.querySelector('[data-action-source="rules"] [data-attack-id="attack"]'));
  assert(html.querySelector('[data-action-source="privileges"] [data-attack-id="attack_action:grant:manual"]'));
  assert.equal(html.querySelectorAll('[data-action-benefit]').length,0);
+ assert.equal(html.querySelector('.play-battle-action-detail-open[data-attack-id]'),null,
+  'The action itself owns the popup opener, not a nested copy of the action');
+ assert.equal(html.querySelector('[data-attack-id="attack_action:grant:manual"] .play-battle-action-detail-open')?.dataset.sheetContext,
+  'battle-action:attack_action:grant:manual');
 });

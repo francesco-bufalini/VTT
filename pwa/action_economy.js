@@ -580,6 +580,7 @@ export function battleActionUseBox({act='',attrs='',tracker=null,trackerName='',
   payment+'</button>';
 }
 
+export const battleActionContextKey=item=>'battle-action:'+String(item.id||item.name||'');
 export function battleActionTimeLabel(time='action'){
  return ({action:'Azione',bonus:'Azione bonus',reaction:'Reazione',
   free:'Azione gratuita',movement:'Movimento',legendary:'Azione leggendaria',
@@ -635,7 +636,7 @@ export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
   leaf(item,index)).join('');
  return '<div class="play-action-index" data-action-list-mode="'+mode+
   '" role="group" aria-label="Lista di azioni, attacchi e tiri">'+
-  '<div class="play-action-index-heading"><span class="play-action-index-arrow" aria-hidden="true">↳</span>'+
+  '<div class="play-action-index-heading">'+
   '<span class="play-action-index-mode">'+(mode==='or'?'1 fra:':'tutte')+'</span></div>'+
   '<ol class="play-attack-sequence play-action-index-steps">'+content+'</ol></div>';
 }
@@ -653,17 +654,13 @@ export function battleAttackActionRow(item={},calculated={}){
   attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':
    useAct==='battle-action-activate'?' data-action-id="'+esc(item.id||'')+'"':'',
   tracker,trackerName:item.tracker,cost,label:'Usa',disabled:item.available===false,name:item.name});
- const description=details(item.description||'');
  return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-list-action play-battle-attack-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
-  '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+
+  '<button type="button" class="play-resource-power-open play-battle-action-detail-open" data-act="sheet-context" data-sheet-context="'+esc(battleActionContextKey(item))+'" title="'+esc(item.name||'Azione')+'" aria-label="Dettagli '+esc(item.name||'Azione')+'">'+
   actionGlyph(actionGlyphKey(item))+'<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione')+'</strong>'+
   '<small>'+esc(battleActionTimeLabel(item.time))+'</small>'+
   (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
-  '</span>'+
-  (arr(sequence.items).length?'<span class="play-action-list-parent-arrow" aria-hidden="true">↓</span>':'')+
-  '</summary>'+
-  '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p></div></details>'+
+  '</span></button>'+
   control+battleAttackStepMarkup(sequence,calculated,item)+'</article>';
 }
 
@@ -745,7 +742,6 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
   // The underlying action may contain checks. Keep them independently
   // clickable, but remove condition/movement effect tiles from Altre azioni.
   const time=battleActionTimeLabel(item.time||'action');
-  const detailsContent=render5etoolsInline(description||'Dettagli non disponibili.');
   // A single roll already has a dice button. Descriptive/general actions
   // with no executable effect or resource do not get a second Use control.
   const act=item.monster_action&&tracker&&Number(item.cost)>0?'monster-action-use':
@@ -758,17 +754,13 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
    act==='combat-action'?' data-mode="'+esc(item.action_id)+'"':'';
   const control=battleActionUseBox({act,attrs,tracker,cost:Number(item.cost)||0,
    trackerName:item.tracker||'',disabled:item.available===false,name:actionName});
-  const isSpellLink=item.id==='spell_cast';
   return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-other-action'+
    (item.available===false?' play-battle-attack-unavailable':'')+
    '" data-attack-id="'+esc(item.id||'')+'">'+
-   (isSpellLink?'<button type="button" class="play-resource-power-open play-battle-direct-action" data-act="action-open-spells" aria-label="Apri Poteri">'+icon+
-    '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong><small>'+esc(time)+'</small></span></button>':
-   '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+icon+
+   '<button type="button" class="play-resource-power-open play-battle-action-detail-open" data-act="sheet-context" data-sheet-context="'+esc(battleActionContextKey(item))+'" title="'+esc(actionName)+'" aria-label="Dettagli '+esc(actionName)+'">'+icon+
    '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong><small>'+esc(time)+'</small>'+
    (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
-   '</span></summary><div class="play-battle-attack-expanded"><p>'+detailsContent+'</p>'+
-   source+optionMarkup+'</div></details>')+control+
+   '</span></button>'+control+
    (rolls.length?'<div class="play-battle-attack-rolls play-battle-other-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map(row=>
      '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
      esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
@@ -942,7 +934,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   {id:'ability_checks',name:'Prova abilità',time:'action',type:'Generale',
    description:'Effettuare una prova di caratteristica o di abilità.',available:true}
  ];
- const baseById=new Map(baseRules.map(row=>[row.id,row]));
+ const baseById=new Map(baseRules.map(row=>[row.id,{origin:'general',...row}]));
  for(const row of monsterBasicRules(record,calculated))baseById.set(row.id,row);
  const attackGrants=Array.isArray(calculated.attack_count_benefits)?
   calculated.attack_count_benefits:attackCountBenefits(record,calculated.features);
@@ -1065,19 +1057,28 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   origin_id:monsterMulti?'feature:'+monsterMulti.feature_key:grant?.origin_id||'',
   tracker_id:multiTrackerId,tracker:multiTracker?.name||'',cost:multiTrackerId?Math.max(1,Number(rawMulti.tracker_cost)||1):0}]:[];
  const isMultiattack=row=>row.attack_replacement===true||
-  row.id==='feature:multiattack'||String(row.id||'').startsWith('monster:multiattack');
+  row.id==='feature:multiattack'||String(row.id||'').startsWith('monster:multiattack')||
+  record.kind==='monster'&&monsterMultiattack(row);
  const ruleExtras=specials.filter(row=>row.origin==='general'&&!row.attack_action);
  const privilegeExtras=specials.filter(row=>row.origin!=='general'||row.attack_action);
- const multiActions=[...privilegeExtras.filter(isMultiattack),...multiRow];
+ const multiCandidates=[...privilegeExtras.filter(isMultiattack),...multiRow];
+ // A monster has one stat-block Multiattack; typed and legacy projections
+ // may both expose it, but they must never create duplicate action rows.
+ const preferredMulti=multiCandidates.find(row=>row.id==='monster:multiattack'&&arr(row.steps).length)||
+  multiCandidates.find(row=>row.id==='monster:multiattack')||
+  multiCandidates.find(row=>row.attack_action&&arr(row.steps).length)||multiCandidates[0];
+ const multiActions=record.kind==='monster'?(preferredMulti?[preferredMulti]:[]):multiCandidates;
  const hasMultiattack=multiActions.length>0;
  const ruleRows=[...actionsBase.filter(row=>
+  row.origin==='general'&&
   (row.id!=='attack'||!hasMultiattack)&&
-  !(coveredLegendary&&row.id==='legendary_action')&&
   (row.id!=='spell_cast'||row.available===true)),...ruleExtras];
  // Attack and Opportunity Attack lead the rule-defined group.
  const ruleRank=row=>row.id==='attack'?0:row.id==='opportunity'?1:2;
  ruleRows.sort((a,b)=>ruleRank(a)-ruleRank(b));
- const privilegeRows=[...privilegeExtras.filter(row=>!isMultiattack(row)),...multiActions];
+ const privilegeRows=[...actionsBase.filter(row=>row.origin!=='general'&&
+  !(coveredLegendary&&row.id==='legendary_action')),
+  ...privilegeExtras.filter(row=>!isMultiattack(row)),...multiActions];
  // Covered monster options are hidden as standalone actions, but remain
  // addressable by their stable native IDs in a declarative OR group.
  const actionContext={...calculated,
@@ -1095,9 +1096,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   rows.map(actionMarkup).join('')+'</div>':'';
  const rulesHtml=groupHtml(rules,'rules');
  const privilegesHtml=groupHtml(privileges,'privileges');
- const divider='<div class="play-action-origin-divider" role="separator" aria-label="Azioni concesse dai privilegi">'+
-  '<span>Privilegi</span></div>';
- const unifiedHtml=rulesHtml+(privilegesHtml?(rulesHtml?divider:'')+privilegesHtml:'')||
+ const divider='<div class="play-action-origin-divider" role="separator" aria-label="Azioni di base">'+
+  '<span>Azioni di base</span></div>';
+ const unifiedHtml=privilegesHtml+(rulesHtml?(privilegesHtml?divider:'')+rulesHtml:'')||
   '<p class="play-empty">Nessuna azione disponibile.</p>';
 
  const timingOverrides=entries.filter(row=>row.action_change_origin&&row.time!==row.original_time);

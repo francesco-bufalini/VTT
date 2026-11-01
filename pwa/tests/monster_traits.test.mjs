@@ -50,6 +50,16 @@ test('legendary, resistance and lair traits grant their own counters and correct
  assert.deepEqual(monsterBasicRules(fixture,data).map(row=>[row.name,row.time,row.cost]),[
   ['Azione leggendaria','free',1],['Azioni di tana','lair',1],['Resistenza leggendaria','legendary_resistance',1]]);
  const panels=battleActionPanels(fixture,data);
+ assert(monsterBasicRules(fixture,data).every(row=>row.origin==='personal'),
+  'Special monster actions belong to their granting privileges');
+ const actions=new JSDOM(panels.others).window.document;
+ for(const id of ['legendary_resistance','lair_action']){
+  assert(actions.querySelector('[data-action-source="privileges"] [data-attack-id="'+id+'"]'));
+  assert.equal(actions.querySelector('[data-action-source="rules"] [data-attack-id="'+id+'"]'),null);
+ }
+ assert.equal(actions.querySelectorAll('[data-attack-id="monster:multiattack"]').length,1);
+ assert.equal(actions.querySelector('[data-action-source="privileges"]')?.previousElementSibling,null,
+  'Privilege actions lead the consolidated action panel');
  assert.match(panels.basicActions.find(row=>row.id==='attack').grant_description,/three attacks/);
  assert.match(panels.others,/Resistenza leggendaria/);
  assert.match(panels.others,/Azioni di tana/);
@@ -84,9 +94,15 @@ test('battle resources display monster costs and the granting attack description
  try{
   globalThis.document=dom.window.document;
   const app=document.querySelector('#app');
-  mountPlaySheet(app,{creature:fixture,calculated:data,sheet:'battle',icon:actionGlyph,view:{battleActions,battleTraits:data.features}});
+  const sources=mountPlaySheet(app,{creature:fixture,calculated:data,sheet:'battle',icon:actionGlyph,view:{battleActions,battleTraits:data.features}});
   const multiattack=app.querySelector('[data-battle-action="others"] [data-attack-id="monster:multiattack"]');
   assert(multiattack,'Multiattack appears as its own action');
+  assert.equal(app.querySelectorAll('[data-battle-action="others"] [data-attack-id="monster:multiattack"]').length,1);
+  const opener=multiattack.querySelector('.play-battle-action-detail-open');
+  assert.equal(opener?.dataset.act,'sheet-context');
+  assert.equal(multiattack.querySelector('.play-battle-attack-expanded'),null,
+   'Actions with children keep their prose in a dialog, not below the heading');
+  assert.match(sources.get(opener.dataset.sheetContext)?.textContent||'',/Frightful Presence/);
   assert.equal(multiattack.querySelectorAll('.play-attack-sequence > li').length,4,
    'Multiattack has four independent descriptive sequence elements');
   for(const id of ['monster:legendary:choices','legendary_resistance','lair_action'])
@@ -103,6 +119,22 @@ test('battle resources display monster costs and the granting attack description
   assert.ok(![...app.querySelectorAll('[data-ability-id]')].some(node=>node.textContent.includes('Legendary Resistance')));
  }finally{globalThis.document=previous;dom.window.close();}
 });
+test('duplicate typed and legacy monster multiattacks collapse into one privilege action',()=>{
+ const data=calculated();
+ data.attack_actions=[
+  {id:'monster:multiattack',name:'Multiattack',origin_id:'feature:typed',attack_action:true,
+   time:'action',steps:[{selector:{category:'attack'},count:3}]},
+  {id:'monster:action:0',name:'Multiattack',origin_id:'feature:legacy',attack_action:true,
+   time:'action',steps:[{selector:{category:'attack'},count:3}]}
+ ];
+ const result=battleActionPanels(fixture,data);
+ const doc=new JSDOM(result.others).window.document;
+ const multi=[...doc.querySelectorAll('[data-action-source="privileges"] [data-attack-id]')]
+  .filter(node=>/^(?:multiattacco|multiattack)$/i.test(node.querySelector('.play-battle-attack-copy strong')?.textContent||''));
+ assert.equal(multi.length,1,'Typed and legacy views are the same action');
+ assert.equal(doc.querySelectorAll('[data-action-source="rules"] [data-attack-id="monster:multiattack"]').length,0);
+});
+
 test('detail enrichment preserves edits and source identity in existing sheets',()=>{
  const record=structuredClone(fixture);delete record.stat_block.fluff;
  record.stat_block.action[1].entries=['A user-edited bite.'];

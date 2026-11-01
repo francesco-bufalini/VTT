@@ -8,7 +8,7 @@ import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 import {inventoryRangeLabel} from './attack_range.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
-import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,battleActionList,battleActionUseBox,battleAttackStepMarkup,battleActionTimeLabel} from "./action_economy.js";
+import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,battleActionList,battleActionUseBox,battleAttackStepMarkup,battleActionTimeLabel,battleActionContextKey} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeItemOptionEffects,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
@@ -737,6 +737,30 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],view.battleSpells||spells)
     .filter(row=>!(row.kind==='ability'&&slotTraitGrants.some(grant=>
       String(grant.origin_name||'').toLowerCase()===String(row.name||'').toLowerCase())));
+  // The same sheet-context dialog used by capacities owns action prose.
+  // Index children remain in the Actions panel; no inline description is
+  // mounted under an action when its title is selected.
+  for(const action of view.battleActions?.actionRows||[]){
+   const key=battleActionContextKey(action);
+   if(sources.has(key))continue;
+   const feature=(d.features||[]).find(row=>action.origin_id&&row.origin_id===action.origin_id);
+   const origin=action.origin==='general'?'Regole di base':
+    feature?.name||action.origin_name||action.feature_name||'Privilegio';
+   const description=String(action.description||'').trim();
+   const detail=document.createElement('section');
+   detail.className='play-battle-action-popup';
+   detail.innerHTML='<dl class="power-privilege-facts">'+
+    '<div><dt>Attivazione</dt><dd>'+esc(battleActionTimeLabel(action.time))+'</dd></div>'+
+    '<div><dt>Origine</dt><dd>'+esc(origin)+'</dd></div>'+
+    (action.available===false&&action.unavailable_reason?
+     '<div><dt>Disponibilità</dt><dd>'+esc(action.unavailable_reason)+'</dd></div>':'')+
+    '</dl><div class="power-privilege-description"><h3>Descrizione</h3>'+
+    '<p class="trait-description">'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p></div>'+
+    (action.source_url?'<a href="'+esc(action.source_url)+'" target="_blank" rel="noopener">'+esc(action.source_label||'Fonte')+'</a>':'')+
+    monsterActionOptionsMarkup(action)+
+    (action.id==='spell_cast'?btn('Apri Poteri','spell_cast','data-act="action-open-spells"'):'');
+   bind(key,detail);
+  }
   const rollBonuses=trackerRollBonusRows(c,d);
   const bonusIsDamage=row=>(Array.isArray(row.targets)?row.targets:[row.target]).some(target=>
    /^(?:attack_damage:|action_damage:|damage_roll$|spell_damage$)/.test(String(target||'')));
@@ -886,7 +910,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span>'+
-    (steps.items.length?'<span class="play-action-list-parent-arrow" aria-hidden="true">↓</span>':'')+
     '</button>'+
     battleActionUseBox({act:!hasOperation||descriptive&&!monsterPayment?'':active?'condition-remove-ability':useAction,
      attrs:active?' data-ability-key="'+esc(statusKey)+'"':useIdentity+
@@ -916,9 +939,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
     '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button></div>';
   }).join('');
-  // A newly granted strike is a resource option, not an action that grants
-  // attacks. Keep it outside Azioni while leaving the canonical Attacchi
-  // table (including Unarmed Strike) unchanged.
+  // Trait-granted strikes belong only to Attacchi, never to Risorse or a
+  // second activated action row. The counter remains in Risorse.
   const grantedAttackRows=powerRows.filter(row=>{
    if(row.kind!=='ability')return false;
    const attackId=resourceAttackId(row,d.attacks||[]);
@@ -943,10 +965,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    (d.trackers||[]).filter(t=>!t.disabled).map(t=>
     bonusRows(t.id,'roll')+bonusRows(t.id,'damage')).join('')+
    (actionGroups.privileges||'');
-  const actionsMarkup='<div class="play-battle-actions-unified">'+ruleActions+
-   (privilegeActions?'<div class="play-action-origin-divider" role="separator" aria-label="Azioni concesse dai privilegi"><span>Privilegi</span></div>'+
-    '<div class="play-action-benefit-rows play-battle-privilege-rows" data-action-source="privileges">'+
-    privilegeActions+'</div>':'')+'</div>';
+  const actionsMarkup='<div class="play-battle-actions-unified">'+
+   (privilegeActions?'<div class="play-action-benefit-rows play-battle-privilege-rows" data-action-source="privileges">'+
+    privilegeActions+'</div>':'')+
+   (ruleActions?(privilegeActions?'<div class="play-action-origin-divider" role="separator" aria-label="Azioni di base"><span>Azioni di base</span></div>':'')+ruleActions:'')+'</div>';
 
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
@@ -954,9 +976,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2></summary>'+body+'</details>'+
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
 
-  const flatResources=resources+abilityButtons('all',grantedAttackRows);
+  const flatResources=resources;
   html+=disclosure('resources','Risorse','reset',
-   flatResources||'<p class="play-empty">Nessun tracker o nuovo attacco disponibile.</p>',true);
+   flatResources||'<p class="play-empty">Nessuna risorsa disponibile.</p>',true);
   // Restore the Attacchi table with its original structure and equipment
   // shortcut; never nest it under Resources or Azioni.
   if(view.battleActions?.attacks)html+=disclosure('attacks','Attacchi','weapon',
