@@ -1540,7 +1540,7 @@ function calculateSheetValues(record={},catalogs={}){
   };
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,
     featAttacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
-    features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
+    features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),feature_action_overrides:catalogs.featureActionOverrides||[],traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   featureContext.companionAttacks=arr(companionValues.attacks);
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],(target,attack)=>{
     if(attack)attackContexts.set(target,attack);
@@ -1716,7 +1716,7 @@ function calculateSheetValues(record={},catalogs={}){
       .map(row=>({damage_type:row.value,origin_id:row.origin_id,origin_name:row.origin_name,
         target_id:row.target_id,target_instance_id:row.target_instance_id,
         target_inventory_index:row.target_inventory_index})),
-    feature_rules:catalogs.featureRules||{},
+    feature_rules:catalogs.featureRules||{},feature_action_overrides:catalogs.featureActionOverrides||[],
     base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
     feat_roll_modes:[...featMechanics.roll_modes,...barbarian.conditional_modes].filter(row=>sourceEnabled(row)),
@@ -1820,11 +1820,14 @@ export function loadRuleCatalogs(){
       .catch(()=>({grants:[]})),
     fetch('/catalog/generic_item_variants.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.variants)?data:{variants:[]})
-      .catch(()=>({variants:[]}))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants])=>({
+      .catch(()=>({variants:[]})),
+    fetch('/catalog/action_feature_overrides.json').then(r=>r.ok?r.json():{})
+      .then(data=>data?.version===1&&Array.isArray(data.entries)?data.entries:[])
+      .catch(()=>[])
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
-    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureRules:featureRules||{},
+    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
     featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
