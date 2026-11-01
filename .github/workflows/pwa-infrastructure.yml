@@ -286,6 +286,15 @@ jobs:
           from shutil import copy2, copytree
           root = Path("pwa-prototype")
           (root / "catalog").mkdir(parents=True, exist_ok=True)
+          (root / "benefits").mkdir(parents=True, exist_ok=True)
+          (root / "catalog" / "benefits").mkdir(parents=True, exist_ok=True)
+          # A standalone prototype uses the same typed benefits as the Godot host.
+          for name in ("attack", "movement", "roll_mode", "roll_bonus"):
+              copy2(Path("vtt/enrichment/benefits") / (name + ".json"),
+                    root / "benefits" / (name + ".json"))
+          for name in ("action", "roll_bonus"):
+              copy2(Path("vtt/enrichment/benefits") / (name + ".json"),
+                    root / "catalog" / "benefits" / (name + ".json"))
           # All creature-action SVG sprite sheets must survive offline packaging.
           copytree(Path("pwa/icons"), root / "icons", dirs_exist_ok=True)
           for asset in Path("pwa").iterdir():
@@ -338,6 +347,10 @@ jobs:
           import json
           from pathlib import Path
           root = Path("pwa-prototype")
+          for name in ("attack", "movement", "roll_mode", "roll_bonus"):
+              catalog = json.loads((root / "benefits" / (name + ".json")).read_text())
+              assert catalog["schema_version"] == 2 and catalog["benefit_type"] == name
+              assert catalog["scope"] == "catalog" and catalog["entries"]
           for file in ["player", "backgrounds", "features", "items", "spells", "classes", "ability_grants", "activated_abilities", "class_resource_overrides", "class_mechanics", "proficiency_grants"]:
               assert (root / "catalog" / (file + ".json")).exists(), file
           choices = json.loads((root / "catalog/classes.json").read_text())
