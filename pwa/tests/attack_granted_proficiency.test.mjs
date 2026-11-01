@@ -42,9 +42,9 @@ test('all state-created weapons carry explicit proficiency with their source tra
    const row=state.attacks[0];assert.equal(row.grants_proficiency,true);
    const active=calculateSheet({...record,trait_state_selection:{armor_model:state.id}},catalogs);
    const attack=active.attacks.find(item=>item.id===row.id);
-   assert.equal(attack?.proficient,true,row.name);
-   const key='weapon:'+row.name.toLowerCase();
-   assert(active.proficiencies.includes(key),row.name);
+   assert.equal(attack?.proficient,true,row.trait);
+   const key='weapon:'+String(attack?.name||'').toLowerCase();
+   assert(active.proficiencies.includes(key),attack?.name);
    assert(active.proficiency_sources[key]?.some(source=>source.id===attack.origin_id));
  }
  for(const state of states.filter(row=>row.group==='barbarian_beast_form'))
