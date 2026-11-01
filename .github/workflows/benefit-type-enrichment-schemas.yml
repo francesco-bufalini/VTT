@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'scripts/refresh_background_feat_refs.py'
+      - 'scripts/test_background_feat_refs.py'
+      - 'vtt/data/compendium_backgrounds_5etools.json'
       - 'scripts/generate_proficiency_grants.py'
       - 'scripts/generate_structured_ability_grants.py'
       - 'scripts/test_background_5etools_generators.py'
@@ -18,6 +21,9 @@ on:
       - '.github/workflows/benefit-type-enrichment-schemas.yml'
   pull_request:
     paths:
+      - 'scripts/refresh_background_feat_refs.py'
+      - 'scripts/test_background_feat_refs.py'
+      - 'vtt/data/compendium_backgrounds_5etools.json'
       - 'scripts/generate_proficiency_grants.py'
       - 'scripts/generate_structured_ability_grants.py'
       - 'scripts/test_background_5etools_generators.py'
@@ -50,5 +56,7 @@ jobs:
         run: python -m unittest discover -s scripts -p test_background_benefit_migration.py
       - name: Check background generators
         run: python -m unittest discover -s scripts -p test_background_5etools_generators.py
+      - name: Test structured 5eTools background feat references
+        run: python -m unittest discover -s scripts -p test_background_feat_refs.py
       - name: Audit bundled background indexes
         run: python scripts/audit_background_benefits.py --output /tmp/vtt-background-index-audit.json
