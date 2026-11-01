@@ -95,7 +95,8 @@
           "source": "PHB",
           "class_name": "Fighter",
           "class_source": "PHB",
-          "subclass": "Champion"
+          "subclass": "Champion",
+          "subclass_source": "PHB"
         }
       },
       "benefit": {
@@ -145,10 +146,11 @@
         "ref": {
           "category": "subclass_feature",
           "name": "Rune Carver",
-          "source": "PHB",
+          "source": "TCE",
           "class_name": "Fighter",
           "class_source": "PHB",
-          "subclass": "Rune Knight"
+          "subclass": "Rune Knight",
+          "subclass_source": "TCE"
         }
       },
       "benefit": {
@@ -173,10 +175,11 @@
         "ref": {
           "category": "subclass_feature",
           "name": "Divine Fury",
-          "source": "PHB",
+          "source": "XGE",
           "class_name": "Barbarian",
           "class_source": "PHB",
-          "subclass": "Zealot"
+          "subclass": "Zealot",
+          "subclass_source": "XGE"
         }
       },
       "benefit": {
@@ -320,10 +323,11 @@
         "ref": {
           "category": "subclass_feature",
           "name": "Otherworldly Glamour",
-          "source": "PHB",
+          "source": "TCE",
           "class_name": "Ranger",
           "class_source": "PHB",
-          "subclass": "Fey Wanderer"
+          "subclass": "Fey Wanderer",
+          "subclass_source": "TCE"
         }
       },
       "benefit": {
@@ -346,10 +350,11 @@
         "ref": {
           "category": "subclass_feature",
           "name": "Elegant Courtier",
-          "source": "PHB",
+          "source": "XGE",
           "class_name": "Fighter",
           "class_source": "PHB",
-          "subclass": "Samurai"
+          "subclass": "Samurai",
+          "subclass_source": "XGE"
         }
       },
       "benefit": {
@@ -375,10 +380,11 @@
         "ref": {
           "category": "subclass_feature",
           "name": "Beguiling Twist",
-          "source": "PHB",
+          "source": "TCE",
           "class_name": "Ranger",
           "class_source": "PHB",
-          "subclass": "Fey Wanderer"
+          "subclass": "Fey Wanderer",
+          "subclass_source": "TCE"
         }
       },
       "benefit": {
@@ -404,10 +410,11 @@
         "ref": {
           "category": "subclass_feature",
           "name": "Born to the Saddle",
-          "source": "PHB",
+          "source": "XGE",
           "class_name": "Fighter",
           "class_source": "PHB",
-          "subclass": "Cavalier"
+          "subclass": "Cavalier",
+          "subclass_source": "XGE"
         }
       },
       "benefit": {
