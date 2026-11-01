@@ -9,6 +9,8 @@ import {spendTrackerUses} from '../character_core.js';
 import {recoveryPatch} from '../native_sheet.js';
 
 const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const source=JSON.parse(readFileSync(new URL('../../vtt/data/compendium_features_5etools.json',import.meta.url),'utf8'));
+const original={races:source.races};
 const root='species|5etools:races:aag:autognome|aag';
 const trait={name:'Built for Success',origin_key:root,
  origin_id:'feature:'+root+'|1|built for success',key:root+'|1|built for success'};
@@ -109,7 +111,7 @@ test('MPMM Bugbear Surprise Attack is an optional untracked 2d6 on attack damage
    origin_id:'feature:'+origin+'|1|surprise attack',key:origin+'|1|surprise attack'};
  const character={...hero(),species:'Bugbear',species_source:'MPMM',
    species_id:'5etools:races:mpmm:bugbear'};
- const options=racialPowerProjection(character,index,[feature]);
+ const options=racialPowerProjection(character,index,[feature],original);
  assert.equal(options.trackers.length,0,'MPMM version has no charge tracker');
  assert.equal(options.roll_bonuses.length,1);
  const bonus=options.roll_bonuses[0];
@@ -118,7 +120,8 @@ test('MPMM Bugbear Surprise Attack is an optional untracked 2d6 on attack damage
  assert.equal(bonus.granting_trait,'Surprise Attack');
  assert.deepEqual(bonus.targets,['attack_damage']);
  assert.equal(bonus.tracker_id,undefined);
- assert.match(bonus.condition_label,/bersaglio.+turno/i);
+ assert.match(bonus.description,/hasn't taken a turn yet in the current combat/i);
+ assert.equal(bonus.condition_label,undefined,'trigger explanation comes from 5eTools, not a second translated label');
  const calc={racial_roll_bonuses:options.roll_bonuses,trackers:[]};
  for(const target of ['attack_damage:item:sword','attack_damage:unarmed',
    'attack_damage:item:bow']){

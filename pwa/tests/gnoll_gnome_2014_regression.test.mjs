@@ -9,6 +9,7 @@ import {expandedOriginSpellFeatures,expandedOriginClassSpellIds,spellEligible,
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const powers=read('../catalog/species_powers.json');
+const original={races:read('../../vtt/data/compendium_features_5etools.json').races};
 const items=read('../catalog/feature_item_grants.json').grants;
 const additional=read('../../vtt/data/additional_spells_5etools.json').entries;
 const base={kind:'character',rules_version:'2014',level:5,
@@ -19,13 +20,13 @@ test('DMG Gnoll Rampage is an unconditional selectable bonus-action Bite roll',(
   species_id:'5etools:races:dmg:gnoll'};
  const trait={name:'Rampage',origin_key:'species|'+record.species_id+'|dmg',
   origin_id:'feature:species|'+record.species_id+'|dmg|1|rampage',key:'rampage'};
- const projected=racialPowerProjection(record,powers,[trait]);
+ const projected=racialPowerProjection(record,powers,[trait],original);
  const action=projected.abilities.find(row=>row.name==='Rampage');
  assert(action);
  assert.equal(action.action_type,'bonus');
  assert.equal(action.resource_cost,0);
  assert.deepEqual(action.roll_attack,{kind:'attack',trait:'Bite',slot:'natural'});
- assert.match(action.description,/0 PF/);
+ assert.match(action.description,/0 hit points/);
  const target='attack_hit:natural:gnoll:bite';
  const roll=abilityAttackRoll(action,{attacks:[{id:'natural:gnoll:bite',
   name:'Bite',slot:'natural'}],values:{[target]:5}});
