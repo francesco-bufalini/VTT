@@ -66,6 +66,29 @@ strutturati, la risoluzione completa dei background `_copy`/`fromFeature`
 e i benefici specifici non strutturati: non devono essere simulati
 leggendo o copiando la descrizione.
 
+## Fase 3 — talenti iniziali referenziati da 5eTools
+
+Gli 84 background del compendio locale che hanno riferimenti `feats`
+espliciti nello snapshot 5eTools ora li conservano come campi **sorgente**
+nello stesso compendio di 5eTools, non come voci ridondanti in
+`vtt/enrichment/benefits/feat_grant.json`.
+
+Durante il calcolo della scheda PWA, i talenti sono proiettati come
+possessi **virtuali** identificati dalla fonte
+`background|<source>|<name>`. Non si scrive `feats_catalog` nel salvataggio:
+cambiare background ricalcola i talenti e rimuove automaticamente quelli
+concessi dal vecchio, senza toccare i talenti manuali.
+
+Le varianti strutturate come `Magic Initiate; Cleric` usano il catalogo
+incantesimi 5eTools per scegliere la variante corretta (`Cleric Spells`).
+Le scelte `anyFromCategory` non vengono assegnate in automatico: senza una
+scelta esplicita del giocatore non si può determinare il talento.
+
+```sh
+python scripts/refresh_background_feat_refs.py /path/to/5etools-src
+node --test pwa/tests/background_starting_feats.test.mjs
+```
+
 ## Procedura riproducibile
 
 ```sh

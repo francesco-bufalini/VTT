@@ -205,6 +205,10 @@ export function pendingLineageChoices(record={},calculated={},catalogs={}){
  return result;
 }
 export function pendingCharacterChoices(record={},calculated={},catalogs={}){
+ // Read virtual starting feats in the effective projection without persisting
+ // them. Their own feat skill/ability choices still use the usual pickers.
+ record=calculated.selection_record?{...record,
+  feats_catalog:arr(calculated.selection_record.feats_catalog)}:record;
  const migration=migrateAdvancementBonuses(record,arr(calculated.features),catalogs.abilityGrants||{});
  record={...record,...migration};
  const result=pendingLineageChoices(record,calculated,catalogs),

@@ -187,13 +187,18 @@ func run() -> void:
 	assert(not module_diag.contains("\"token\"") and not module_diag.contains("\"authorization\""))
 	var condition_script := await http("GET", "/condition_catalog.js")
 	assert(condition_script.begins_with("HTTP/1.1 200") and condition_script.contains("conditionOptions"))
-	# 5eTools natural attacks are now in the shared attack benefit catalog.
-	# Check the actual host route, not the retired race-grouped JSON.
+	# Typed species benefits are served by the native host, including offline.
+	# The old race-grouped species_attacks.json endpoint has been retired.
 	var species_attacks := await http("GET", "/benefits/attack.json")
 	assert(species_attacks.begins_with("HTTP/1.1 200") and species_attacks.contains("application/json"),
-		"Godot must serve typed attack benefits as JSON")
-	assert(species_attacks.contains("Aarakocra") and species_attacks.contains("Talons"),
-		"5etools Aarakocra attacks must be available to mobile character sheets")
+		"Godot must serve typed species attacks as JSON")
+	assert(species_attacks.contains("Aarakocra") and species_attacks.contains("Talons") and species_attacks.contains("attack"),
+		"5etools Aarakocra natural attacks must be available to mobile character sheets")
+	var species_movement := await http("GET", "/benefits/movement.json")
+	assert(species_movement.begins_with("HTTP/1.1 200") and species_movement.contains("application/json"),
+		"Godot must serve typed species movement restrictions as JSON")
+	assert(species_movement.contains("blocked_by_armor") and species_movement.contains("Flight"),
+		"The armor limitation must remain source-qualified and available offline")
 	var bundled_effects := await http("GET", "/catalog/effects_5etools.json")
 	assert(bundled_effects.begins_with("HTTP/1.1 200") and bundled_effects.contains("Arcane Blight"),
 		"Offline 5etools diseases must be served with the shell")

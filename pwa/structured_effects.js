@@ -28,6 +28,61 @@ export function effectiveBackgrounds(record={}){
   seen.add(key);return true;
  });
 }
+// 5eTools starting feats are virtual, source-bound possessions. They are read
+// from the structured background definition, not inferred from the background
+// description, copied into VTT benefit files or permanently saved on a hero.
+// An unavailable background also removes its virtual feat on recalculation.
+export function withBackgroundGrantedFeats(record={},backgrounds={},feats={},spellRules=[]){
+ const stored=array(record.feats_catalog);
+ const additions=[],seen=new Set(stored.filter(row=>row?.name&&row?.source)
+  .map(row=>norm(row.name)+'|'+norm(row.source)+'|'+norm(row.spell_variant)));
+ for(const origin of effectiveBackgrounds(record)){
+  const source=norm(origin.source),name=norm(origin.name);
+  let background=source?backgrounds[name+'|'+source]:null;
+  if(!background&&!source){
+   const possible=Object.values(backgrounds).filter(row=>match(row?.name,origin.name));
+   if(possible.length===1)background=possible[0];
+  }
+  if(!background)continue;
+  const originId='background|'+norm(background.source||origin.source)+'|'+name;
+  if(record.origin_enabled?.[originId]===false||
+     array(record.proficiency_origins).some(row=>row?.id===originId&&row.disabled))continue;
+  for(const grant of array(background.feats)){
+   if(!grant||typeof grant!=='object')continue;
+   for(const [rawRef,allowed] of Object.entries(grant)){
+    // Category-selectable feats need an actual player selection, not a guess.
+    if(allowed!==true||rawRef==='anyFromCategory')continue;
+    const [featRef,book,...unexpected]=String(rawRef).split('|');
+    if(!book||unexpected.length)continue;
+    const [featSlug,variantSlug,...extra]=featRef.split(';').map(norm);
+    if(!featSlug||extra.length)continue;
+    const detail=feats[featSlug+'|'+norm(book)]||{};
+    const spell= array(spellRules).find(row=>row?.kind==='feat'&&
+      match(row.name,featSlug)&&match(row.source,book));
+    const featName=detail.name||spell?.name||featSlug.replace(/\b[a-z]/g,x=>x.toUpperCase());
+    const featSource=detail.source||spell?.source||String(book).toUpperCase();
+    let spellVariant='';
+    if(variantSlug){
+     const options=array(spell?.blocks);
+     const selected=options.find(row=>match(row?.name,variantSlug)||
+       norm(row?.name).replace(/ spells$/,'')===variantSlug);
+     // Never grant an unspecified variant of a structured spell feat.
+     if(!selected)continue;
+     spellVariant=selected.name;
+    }
+    const key=norm(featName)+'|'+norm(featSource)+'|'+norm(spellVariant);
+    if(seen.has(key))continue;
+    seen.add(key);
+    additions.push({id:'background:'+originId+':feat:'+rawRef,
+      name:featName,source:featSource,
+      ...(spellVariant?{spell_variant:spellVariant}:{}),
+      granted_by:originId,granting_origin_name:'Background · '+background.name,
+      automatic:true});
+   }
+  }
+ }
+ return additions.length?{...record,feats_catalog:[...stored,...additions]}:record;
+}
 // Feature grants use the existing trait IDs, not a second class-wide source.
 // A compact proficiency catalog can resolve these even without descriptions offline.
 function proficiencyFeatures(record,index,features){
