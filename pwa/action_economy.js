@@ -3,7 +3,7 @@
 import {SKILLS} from './sheet_rules.js';
 import {attackRangeLabel} from './attack_range.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
-import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,resolveAttackActionSteps} from './attack_count_benefits.js';
+import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,resolveAttackActionSteps,attackActionPayment} from './attack_count_benefits.js';
 import {offhandActionEligibility} from './offhand_rules.js';
 import {equipmentRequirementMatches} from './item_controls.js';
 import {render5etoolsInline} from './5etools_inline.js';
@@ -246,7 +246,6 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
    record.class?[{name:record.class,source:record.class_source,level:record.level||1}]:[];
  const selectedEdition=record.rules_version==='2024'?'XPHB':'PHB';
  for(const rule of arr(featureOverrides)){
-  if(rule.feature_name==='Cunning Action')continue; // Superseded by structured alternative activations.
   const classMember=members.find(m=>String(m?.name||'').toLowerCase()===String(rule.class_name||'').toLowerCase()&&
     String(m?.source||selectedEdition).toUpperCase()===String(rule.book||'').toUpperCase()&&
     Number(m?.level||0)>=Number(rule.min_level||1));
@@ -306,10 +305,11 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  const attackRoutines=arr(calculated.attack_actions).length?arr(calculated.attack_actions):
   attackActionGrants(record,calculated.features,calculated.trackers,calculated.feature_rules);
  const owners=new Set(attackRoutines.map(row=>row.origin_id).filter(Boolean));
+ const coveredIds=new Set(attackRoutines.flatMap(row=>arr(row.covered_action_ids)));
  const normalized=[];
  const routineRows=attackRoutines.map(row=>({...row,origin:'personal',type:'Azione di attacco',
   attack_action:true,description:details(row.description)}));
- for(const row of [...out.filter(row=>!owners.has(row.origin_id)||row.type==='Attacco'),...routineRows]){
+ for(const row of [...out.filter(row=>!coveredIds.has(row.id)&&(!owners.has(row.origin_id)||row.type==='Attacco')),...routineRows]){
   if(row.type==='Incantesimo')continue;
   const same=normalized.find(old=>(old.id||old.name)===(row.id||row.name)&&old.tracker_id===row.tracker_id&&
    (old.time===row.time||[old.time,row.time].every(t=>['action','bonus'].includes(t))));
@@ -430,10 +430,19 @@ export function attackActionSequence(action={},record={},calculated={}){
   const labels={attack:'Attacco a scelta',melee:'Attacco in mischia',
    ranged:'Attacco a distanza',unarmed:'Colpo senz’armi',
    crossbow:'Attacco con balestra',grapple:'Prova di lotta',shove:'Spingere'};
+  const nameFor=part=>{
+   const selector=part.selector||{};
+   return part.label||(part.options.length===1?part.options[0].name:
+    (selector.name||labels[selector.category]||selector.category||
+    (selector.kind==='check'?'Prova':selector.id||'Attacco a scelta')));
+  };
   return resolved.flatMap(step=>{
-   const selector=step.selector||{};
-   const label=step.options.length===1?step.options[0].name:
-    selector.name||labels[selector.category]||selector.category||'Attacco a scelta';
+   const oneOf=arr(step.one_of);
+   if(oneOf.length){
+    const label=oneOf.map(nameFor).join(' O ');
+    return Array.from({length:step.count},()=>label);
+   }
+   const label=nameFor(step)+(step.repeat==='per_target'?' · ogni bersaglio':'');
    return Array.from({length:step.count},()=>String(label));
   });
  }
@@ -473,6 +482,10 @@ export function attackActionSequence(action={},record={},calculated={}){
  return Array.from({length:count},()=> 'Attacco');
 }
 export function attackActionCategory(row={}){
+ if(row.attack_action&&arr(row.steps).some(step=>{
+  const choices=arr(step.one_of||step.any_of);
+  return choices.length&&choices.every(choice=>['action','check','ability'].includes(choice.selector?.kind));
+ }))return 'other';
  if(row.attack_action||arr(row.steps).length||arr(row.attack_sequence).length||['attack','two_weapon','opportunity','monster:multiattack'].includes(String(row.id))||
    Number(row.attack_count)>0||Number(row.attacks_per_action)>0||row.attack_replacement===true)return 'attacks';
  return row.type==='Capacità'||row.monster_action?'abilities':'other';
@@ -511,10 +524,61 @@ export function battleActionTimeLabel(time='action'){
 
 // A sequence is a list of *choices* leading to the existing Attacchi table,
 // not duplicate attack rolls or automatic tracker payments.
-export function battleAttackStepMarkup(sequence=[]){
+export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
+ const attacks=arr(calculated.attacks);
+ const steps=arr(action.steps).length?
+  resolveAttackActionSteps(action,attacks,arr(calculated.action_entries)):null;
+ // Every alternative has its own control and (possibly different) payment.
+ // No option changes the meaning or the existing roll handler of its target.
+ const targetButton=(part,choiceId='')=>{
+  const selector=part.selector||{},kind=selector.kind||'attack';
+  const option=part.options.length===1?part.options[0]:null;
+  const isChoice=!!choiceId;
+  const payment=isChoice?attackActionPayment(action,choiceId):null;
+  const cost=payment?.cost||0;
+  const tracker=arr(calculated.trackers).find(row=>row.id===(payment?.tracker_id||action.tracker_id));
+  if(isChoice&&cost>0)return battleActionUseBox({
+   act:'attack-action-use',
+   attrs:' data-attack-action-id="'+esc(action.id||'')+'" data-attack-action-option-id="'+esc(choiceId)+'"',
+   tracker,trackerName:action.tracker,cost,label:'Usa',name:part.label||option?.name||action.name,
+   disabled:action.available===false});
+  const isCheck=kind==='check'||!!option?.check_target;
+  const isAction=kind==='action'||kind==='ability';
+  const act=isCheck?'battle-action-roll':isAction?'battle-action-jump':'battle-attack-jump';
+  const reference=isCheck?selector.target||option?.check_target||'':
+   isAction?selector.id||option?.id||'':option?.id||selector.id||'';
+  const attrs=isCheck?' data-action-roll-target="'+esc(reference)+'" data-action-roll-label="'+esc(part.label||option?.name||'Prova')+'"':
+   isAction?' data-action-id="'+esc(reference)+'"':
+   ' data-attack-target-id="'+esc(reference)+'"';
+  // An unresolved ability cannot be activated by guessing its name; the
+  // description remains visible and the parent action can still be used.
+  if(kind==='ability'&&!option)return '';
+  return '<button type="button" class="play-battle-attack-step-use" data-act="'+act+'"'+attrs+
+   ' aria-label="Seleziona '+esc(part.label||option?.name||reference||'azione')+'">Seleziona</button>';
+ };
+ if(steps&&steps.some(step=>arr(step.one_of).length||['check','action'].includes(step.selector?.kind))){
+  const body=steps.flatMap(step=>Array.from({length:step.count},()=>{
+   if(arr(step.one_of).length){
+    return '<li class="play-battle-attack-step play-battle-attack-choice">'+
+     '<span class="play-battle-roll-formula">Scegli una delle seguenti azioni</span>'+
+     '<div class="play-battle-action-options">'+step.one_of.map(option=>
+      '<div class="play-battle-action-option" data-action-option-id="'+esc(option.id)+'">'+
+      '<span>'+esc(option.label||option.options[0]?.name||option.selector?.name||option.selector?.id||'Opzione')+'</span>'+
+      targetButton(option,option.id)+'</div>').join('')+'</div></li>';
+   }
+   const selector=step.selector||{};
+   const textLabel=step.label||(step.options.length===1?step.options[0].name:
+    selector.name||selector.category||selector.target||'Attacco a scelta');
+   return '<li class="play-battle-attack-step"><span class="play-battle-roll-formula">'+
+    esc(textLabel+(step.repeat==='per_target'?' · per bersaglio':''))+'</span>'+
+    targetButton(step)+'</li>';
+  })).join('');
+  return body?'<ol class="play-attack-sequence" aria-label="Azioni concesse">'+body+'</ol>':'';
+ }
+ // Ordinary attack sequences are descriptive; their real rolls remain in Attacchi.
  return arr(sequence).length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
-  sequence.map(label=>'<li class="play-battle-attack-step">'+
-   '<span class="play-battle-roll-formula">'+esc(label)+'</span></li>').join('')+'</ol>':'';
+  sequence.map(label=>'<li class="play-battle-attack-step"><span class="play-battle-roll-formula">'+
+   esc(label)+'</span></li>').join('')+'</ol>':'';
 }
 
 // Attack-granting routines and other actions use the same row as Capacità.
@@ -522,15 +586,14 @@ export function battleAttackStepMarkup(sequence=[]){
 export function battleAttackActionRow(item={},calculated={}){
  const tracker=arr(calculated.trackers).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
  const cost=Math.max(0,Number(item.cost)||0),sequence=arr(item.attack_sequence);
- const actionable=item.attack_action===true&&cost>0&&
+ const hasAlternatives=arr(item.steps).some(step=>arr(step.one_of||step.any_of).length);
+ const actionable=item.attack_action===true&&cost>0&&!hasAlternatives&&
   arr(calculated.attack_actions).some(row=>String(row.id)===String(item.id));
- // A routine without a spendable tracker is descriptive: the attacks
- // themselves remain in the Attacchi table, without a redundant Use button.
  const useAct=cost>0&&tracker?(actionable?'attack-action-use':'battle-action-activate'):'';
- const control=battleActionUseBox({act:useAct,
+ const control=hasAlternatives?'':battleActionUseBox({act:useAct,
   attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':
    useAct==='battle-action-activate'?' data-action-id="'+esc(item.id||'')+'"':'',
-  tracker,trackerName:item.tracker,cost,disabled:item.available===false,name:item.name});
+  tracker,trackerName:item.tracker,cost,label:'Usa',disabled:item.available===false,name:item.name});
  const description=details(item.description||'');
  return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-attack-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
@@ -922,8 +985,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // The generic Attack action is intentionally absent. Only a real
  // attack-granting privilege (e.g. Extra Attack or a monster's Multiattack)
  // occupies its place in the attack-action category.
- const basicInActions=actionsBase.filter(row=>row.id==='two_weapon'||
-  row.id==='opportunity'&&row.available||row.id==='spell_cast'&&row.available||row.monster_action);
+ const coveredLegendary=entries.some(row=>row.id==='monster:legendary:choices');
+ const basicInActions=actionsBase.filter(row=>!(coveredLegendary&&row.id==='legendary_action')&&(row.id==='two_weapon'||
+  row.id==='opportunity'&&row.available||row.id==='spell_cast'&&row.available||row.monster_action));
  const monsterMulti=record.kind==='monster'?
   monsterTraits(record).find(row=>row.monster_role==='multiattack'&&!row.disabled&&!row.inactive):null;
  const multiCount=monsterMulti?Math.max(Number(monsterMulti.attacks_per_action)||0,count):count;
@@ -952,7 +1016,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const categoryGroups={attacks:[],abilities:[],other:[]};
  for(const row of other)categoryGroups[attackActionCategory(row)].push(row);
  const groupHtml=(rows,kind='other')=>'<div class="play-battle-action-rows">'+
-  rows.map(row=>kind==='attacks'?battleAttackActionRow(row,calculated):
+  rows.map(row=>row.attack_action||kind==='attacks'?battleAttackActionRow(row,{...calculated,action_entries:entries}):
    battleAttackRow(row,calculated,attacksById,descriptions,record,false,true)).join('')+'</div>';
  const renderCategories=()=>[
   ['attacks','Azioni di attacco','weapon'],

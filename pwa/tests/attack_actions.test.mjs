@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {attackCategories,attackActionGrants,attackActionUsePatch,resolveAttackActionSteps} from '../attack_count_benefits.js';
+import {attackCategories,attackActionGrants,attackActionUsePatch,attackActionChoice,attackActionPayment,resolveAttackActionSteps} from '../attack_count_benefits.js';
 import {multiattackSteps,normalizeMonsterStatBlock} from '../character_core.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
-import {actionEntries,battleActionPanels} from '../action_economy.js';
+import {actionEntries,battleActionPanels,attackActionCategory,battleAttackStepMarkup} from '../action_economy.js';
+import {JSDOM} from 'jsdom';
 
 const file=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const rules=file('../../vtt/data/feature_timing_recovery_rules.json');
@@ -94,4 +95,115 @@ test('a typed attack action is a battle action rather than a synthetic attack in
  assert.match(panels.others,/Raffica di colpi/);
  assert.match(panels.others,/data-attack-action-id="attack_action:flurry-of-blows-2014"/);
  assert.doesNotMatch(panels.attacks,/Raffica di colpi/);
+});
+
+test('Cunning Action grants exactly one of Dash, Disengage or Hide as a bonus action',()=>{
+ const features=[{name:'Cunning Action',key:'cunning',origin_key:'class|phb|rogue',origin_id:'feature:cunning'}];
+ const rogue={class:'Rogue',class_source:'PHB',level:2,rules_version:'2014'};
+ const grant=attackActionGrants(rogue,features,[],rules).find(row=>row.id==='attack_action:cunning-action-phb');
+ assert(grant);
+ assert.equal(grant.time,'bonus');assert.equal(grant.cost,0);
+ assert.deepEqual(grant.steps[0].one_of.map(choice=>choice.selector.id),['dash','disengage','hide']);
+ assert.equal(attackActionCategory(grant),'other');
+ assert.equal(attackActionChoice(grant,'hide').label,'Nascondersi');
+ assert.throws(()=>attackActionUsePatch(rogue,{attack_actions:[grant]},grant.id),/Scegli/i);
+ assert.deepEqual(attackActionUsePatch(rogue,{attack_actions:[grant]},grant.id,'hide'),{});
+ const options=[{id:'dash',name:'Scattare',type:'Generale'},
+  {id:'disengage',name:'Disimpegnarsi',type:'Generale'},
+  {id:'hide',name:'Nascondersi',type:'Generale'}];
+ const steps=resolveAttackActionSteps(grant,[],options);
+ assert.equal(steps.length,1);assert.equal(steps[0].one_of.length,3);
+ assert.deepEqual(steps[0].one_of.map(row=>row.options[0].id),['dash','disengage','hide']);
+ const dom=new JSDOM(battleAttackStepMarkup([], {attacks:[],action_entries:options},grant));
+ const doc=dom.window.document;
+ assert.equal(doc.querySelectorAll('[data-action-option-id]').length,3);
+ assert.equal(doc.querySelectorAll('[data-act="battle-action-jump"]').length,3);
+ assert.deepEqual([...doc.querySelectorAll('[data-act="battle-action-jump"]')].map(node=>node.dataset.actionId),
+  ['dash','disengage','hide']);
+ dom.window.close();
+ assert.equal(rules.actions.filter(row=>row.feature==='Cunning Action').length,0);
+ assert.equal(attackActionGrants({...rogue,level:1},features,[],rules).length,0);
+ assert.equal(attackActionGrants({...rogue,trait_enabled:{cunning:false}},features,[],rules).length,0);
+});
+
+test('a check or an ability check is a first-class alternative alongside attacks',()=>{
+ const action={id:'homebrew:options',name:'Tattiche',steps:[{one_of:[
+  {id:'look',label:'Osservare',selector:{kind:'check',target:'skill:perception'}},
+  {id:'force',label:'Forza',selector:{kind:'check',target:'ability_check:str'}},
+  {id:'strike',label:'Colpire',selector:{kind:'attack',category:'melee'}}
+ ]}]};
+ const attacks=[{id:'unarmed',name:'Colpo senz’armi',melee:true}];
+ const steps=resolveAttackActionSteps(action,attacks,[]);
+ assert.deepEqual(steps[0].one_of.map(option=>option.options[0].id),
+  ['check:skill:perception','check:ability_check:str','unarmed']);
+ const dom=new JSDOM(battleAttackStepMarkup([],{attacks},action));
+ const document=dom.window.document;
+ assert.deepEqual([...document.querySelectorAll('[data-act="battle-action-roll"]')].map(node=>node.dataset.actionRollTarget),
+  ['skill:perception','ability_check:str']);
+ assert.equal(document.querySelectorAll('[data-act="battle-attack-jump"]').length,1);
+ assert.equal(document.querySelector('[data-act="battle-attack-jump"]').dataset.attackTargetId,'unarmed');
+ dom.window.close();
+ assert.deepEqual(attackActionUsePatch({}, {attack_actions:[action]},action.id,'look'),{});
+});
+
+test('a legendary action pool is one OR with independent costs and reusable checks',()=>{
+ const tracker={id:'legendary_actions',name:'Azioni leggendarie',max:3,spent:0};
+ const record={...fixture,resource_tracker_spent:{}};
+ const grants=attackActionGrants(record,[],[tracker],rules);
+ const action=grants.find(row=>row.id==='monster:legendary:choices');
+ assert(action,'monster legendary pool must be projected from data');
+ assert.equal(action.time,'legendary');assert.equal(action.tracker_id,tracker.id);
+ assert.equal(attackActionCategory(action),'other');
+ const alternatives=action.steps[0].one_of;
+ assert.deepEqual(alternatives.map(option=>[option.id,option.tracker_cost,option.selector.kind]),[
+  ['monster:legendary:0',1,'check'],
+  ['monster:legendary:1',2,'ability']
+ ]);
+ assert.equal(alternatives[0].selector.target,'skill:perception');
+ assert.equal(attackActionPayment(action,'monster:legendary:1').cost,2);
+ assert.throws(()=>attackActionUsePatch(record,{attack_actions:grants,trackers:[tracker]},action.id),/Scegli/i);
+ assert.deepEqual(attackActionUsePatch(record,{attack_actions:grants,trackers:[tracker]},action.id,'monster:legendary:1'),
+  {resource_tracker_spent:{legendary_actions:2}});
+ assert.deepEqual(attackActionUsePatch(record,{attack_actions:grants,trackers:[tracker]},action.id,'monster:legendary:0'),
+  {resource_tracker_spent:{legendary_actions:1}});
+ assert.throws(()=>attackActionUsePatch(record,{attack_actions:grants,trackers:[tracker]},
+  action.id,'fake'),/Scegli/i);
+ const exhausted={...record,resource_tracker_spent:{legendary_actions:2}};
+ assert.throws(()=>attackActionUsePatch(exhausted,{attack_actions:grants,trackers:[tracker]},
+  action.id,'monster:legendary:1'),/insufficiente/i);
+ const dom=new JSDOM(battleAttackStepMarkup([],{trackers:[tracker]},action));
+ const buttons=[...dom.window.document.querySelectorAll('[data-act="attack-action-use"]')];
+ assert.deepEqual(buttons.map(button=>button.dataset.attackActionOptionId),
+  ['monster:legendary:0','monster:legendary:1']);
+ assert.match(dom.window.document.body.textContent,/Detect/);
+ assert.match(dom.window.document.body.textContent,/Wing Attack/);
+ dom.window.close();
+});
+
+test('class feature and homebrew data share one typed OR projection',()=>{
+ const feature={name:'Interventi',key:'one',origin_key:'class|phb|fighter',origin_id:'feature:one',
+  action_sequence:{name:'Interventi',time:'reaction',steps:[{one_of:[
+   {id:'probe',selector:{kind:'check',target:'skill:insight'}},
+   {id:'move',selector:{kind:'action',id:'dash'}}
+  ]}]}};
+ const record={class:'Fighter',class_source:'PHB',level:2,rules_version:'2014',
+  action_grants:[{id:'manual',name:'Azione homebrew',time:'bonus',steps:[
+   {selector:{kind:'action',id:'disengage'}}]}]};
+ const grants=attackActionGrants(record,[feature],[],rules);
+ assert(grants.some(row=>row.id==='attack_action:feature:one'));
+ assert(grants.some(row=>row.id==='attack_action:grant:manual'));
+ assert.equal(grants.find(row=>row.id==='attack_action:feature:one').time,'reaction');
+});
+
+test('subclass and edition gates keep conditional attack sequences scoped to the right feature',()=>{
+ const ranger={class:'Ranger',class_source:'PHB',level:11,rules_version:'2014'};
+ const features=[
+  {key:'hunter',name:'Volley',origin_key:'class|phb|ranger|subclass|hunter|phb',origin_id:'feature:volley'},
+  {key:'other',name:'Whirlwind Attack',origin_key:'class|phb|ranger|subclass|gloom stalker|xge',origin_id:'feature:whirlwind'}
+ ];
+ const grants=attackActionGrants(ranger,features,[],rules);
+ assert(grants.some(row=>row.id==='attack_action:hunter-volley-2014'));
+ assert(!grants.some(row=>row.id==='attack_action:hunter-whirlwind-2014'));
+ assert.equal(grants.find(row=>row.id==='attack_action:hunter-volley-2014').steps[0].repeat,'per_target');
+ assert.equal(attackActionGrants({...ranger,rules_version:'2024'},features,[],rules).length,0);
 });

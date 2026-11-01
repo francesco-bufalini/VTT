@@ -498,90 +498,6 @@
       "priority": 0
     },
     {
-      "id": "rogue_phb_dash",
-      "class_name": "Rogue",
-      "class_source": "PHB",
-      "min_level": 2,
-      "feature": "Cunning Action",
-      "action_id": "dash",
-      "name": "Scattare (azione scaltra)",
-      "activation": "bonus",
-      "tracker_name": "",
-      "detail": "Azione scaltra: puoi effettuare questa azione usando la tua azione bonus.",
-      "kind": "activation",
-      "priority": 0
-    },
-    {
-      "id": "rogue_phb_disengage",
-      "class_name": "Rogue",
-      "class_source": "PHB",
-      "min_level": 2,
-      "feature": "Cunning Action",
-      "action_id": "disengage",
-      "name": "Disimpegnarsi (azione scaltra)",
-      "activation": "bonus",
-      "tracker_name": "",
-      "detail": "Azione scaltra: puoi effettuare questa azione usando la tua azione bonus.",
-      "kind": "activation",
-      "priority": 0
-    },
-    {
-      "id": "rogue_phb_hide",
-      "class_name": "Rogue",
-      "class_source": "PHB",
-      "min_level": 2,
-      "feature": "Cunning Action",
-      "action_id": "hide",
-      "name": "Nascondersi (azione scaltra)",
-      "activation": "bonus",
-      "tracker_name": "",
-      "detail": "Azione scaltra: puoi effettuare questa azione usando la tua azione bonus.",
-      "kind": "activation",
-      "priority": 0
-    },
-    {
-      "id": "rogue_xphb_dash",
-      "class_name": "Rogue",
-      "class_source": "XPHB",
-      "min_level": 2,
-      "feature": "Cunning Action",
-      "action_id": "dash",
-      "name": "Scattare (azione scaltra)",
-      "activation": "bonus",
-      "tracker_name": "",
-      "detail": "Azione scaltra: puoi effettuare questa azione usando la tua azione bonus.",
-      "kind": "activation",
-      "priority": 0
-    },
-    {
-      "id": "rogue_xphb_disengage",
-      "class_name": "Rogue",
-      "class_source": "XPHB",
-      "min_level": 2,
-      "feature": "Cunning Action",
-      "action_id": "disengage",
-      "name": "Disimpegnarsi (azione scaltra)",
-      "activation": "bonus",
-      "tracker_name": "",
-      "detail": "Azione scaltra: puoi effettuare questa azione usando la tua azione bonus.",
-      "kind": "activation",
-      "priority": 0
-    },
-    {
-      "id": "rogue_xphb_hide",
-      "class_name": "Rogue",
-      "class_source": "XPHB",
-      "min_level": 2,
-      "feature": "Cunning Action",
-      "action_id": "hide",
-      "name": "Nascondersi (azione scaltra)",
-      "activation": "bonus",
-      "tracker_name": "",
-      "detail": "Azione scaltra: puoi effettuare questa azione usando la tua azione bonus.",
-      "kind": "activation",
-      "priority": 0
-    },
-    {
       "id": "ranger_phb_hide",
       "class_name": "Ranger",
       "class_source": "PHB",
@@ -1873,6 +1789,260 @@
         }
       ],
       "detail": "Subito dopo aver usato l'azione Attacco nel tuo turno, spendi 1 punto Ki per effettuare due colpi senz'armi come azione bonus."
+    },
+    {
+      "id": "cunning-action-phb",
+      "class_name": "Rogue",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Cunning Action",
+      "min_level": 2,
+      "name": "Azione scaltra",
+      "time": "bonus",
+      "steps": [
+        {
+          "one_of": [
+            {
+              "id": "dash",
+              "label": "Scattare",
+              "selector": {
+                "kind": "action",
+                "id": "dash"
+              }
+            },
+            {
+              "id": "disengage",
+              "label": "Disimpegnarsi",
+              "selector": {
+                "kind": "action",
+                "id": "disengage"
+              }
+            },
+            {
+              "id": "hide",
+              "label": "Nascondersi",
+              "selector": {
+                "kind": "action",
+                "id": "hide"
+              }
+            }
+          ]
+        }
+      ],
+      "detail": "Come azione bonus scegli una sola opzione: Scattare, Disimpegnarsi o Nascondersi."
+    },
+    {
+      "id": "cunning-action-xphb",
+      "class_name": "Rogue",
+      "class_source": "XPHB",
+      "rules_version": "2024",
+      "feature": "Cunning Action",
+      "min_level": 2,
+      "name": "Azione scaltra",
+      "time": "bonus",
+      "steps": [
+        {
+          "one_of": [
+            {
+              "id": "dash",
+              "label": "Scattare",
+              "selector": {
+                "kind": "action",
+                "id": "dash"
+              }
+            },
+            {
+              "id": "disengage",
+              "label": "Disimpegnarsi",
+              "selector": {
+                "kind": "action",
+                "id": "disengage"
+              }
+            },
+            {
+              "id": "hide",
+              "label": "Nascondersi",
+              "selector": {
+                "kind": "action",
+                "id": "hide"
+              }
+            }
+          ]
+        }
+      ],
+      "detail": "Come azione bonus scegli una sola opzione: Scattare, Disimpegnarsi o Nascondersi."
+    },
+    {
+      "id": "berserker-frenzy-2014",
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Frenzy",
+      "min_level": 3,
+      "name": "Frenesia · attacco in mischia",
+      "time": "bonus",
+      "steps": [
+        {
+          "selector": {
+            "kind": "attack",
+            "category": "melee_weapon"
+          },
+          "count": 1
+        }
+      ],
+      "detail": "Durante una frenesia attiva: un attacco con arma da mischia come azione bonus nei turni successivi.",
+      "subclass": "Berserker"
+    },
+    {
+      "id": "hunter-horde-breaker-2014",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Horde Breaker",
+      "min_level": 3,
+      "name": "Spezzare l’orda",
+      "time": "free",
+      "steps": [
+        {
+          "selector": {
+            "kind": "attack",
+            "category": "weapon"
+          },
+          "count": 1
+        }
+      ],
+      "detail": "Una volta per turno, attacco con la stessa arma contro un secondo bersaglio adiacente al primo.",
+      "subclass": "Hunter"
+    },
+    {
+      "id": "hunter-volley-2014",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Volley",
+      "min_level": 11,
+      "name": "Raffica a distanza",
+      "time": "action",
+      "steps": [
+        {
+          "selector": {
+            "kind": "attack",
+            "category": "ranged_weapon"
+          },
+          "count": 1,
+          "repeat": "per_target"
+        }
+      ],
+      "detail": "Tira un attacco a distanza per ogni bersaglio ammesso nell’area indicata dal tratto.",
+      "subclass": "Hunter"
+    },
+    {
+      "id": "hunter-whirlwind-2014",
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Whirlwind Attack",
+      "min_level": 11,
+      "name": "Attacco turbinante",
+      "time": "action",
+      "steps": [
+        {
+          "selector": {
+            "kind": "attack",
+            "category": "melee"
+          },
+          "count": 1,
+          "repeat": "per_target"
+        }
+      ],
+      "detail": "Tira un attacco in mischia distinto per ciascuna creatura ammessa entro 5 ft.",
+      "subclass": "Hunter"
+    },
+    {
+      "id": "scout-sudden-strike-2014",
+      "class_name": "Rogue",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Sudden Strike",
+      "min_level": 17,
+      "name": "Colpo improvviso",
+      "time": "bonus",
+      "steps": [
+        {
+          "selector": {
+            "kind": "attack",
+            "category": "weapon"
+          },
+          "count": 1
+        }
+      ],
+      "detail": "Un attacco con arma aggiuntivo come azione bonus dopo Attacco; un altro Furtivo richiede un bersaglio diverso.",
+      "subclass": "Scout"
+    },
+    {
+      "id": "eldritch-knight-war-magic-2014",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "War Magic",
+      "min_level": 7,
+      "name": "Magia da guerra · attacco",
+      "time": "bonus",
+      "steps": [
+        {
+          "selector": {
+            "kind": "attack",
+            "category": "weapon"
+          },
+          "count": 1
+        }
+      ],
+      "detail": "Dopo aver usato l’azione per lanciare un trucchetto, attacca con un’arma come azione bonus.",
+      "subclass": "Eldritch Knight"
+    },
+    {
+      "id": "eldritch-knight-improved-war-magic-2014",
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "Improved War Magic",
+      "min_level": 18,
+      "name": "Magia da guerra migliorata · attacco",
+      "time": "bonus",
+      "steps": [
+        {
+          "selector": {
+            "kind": "attack",
+            "category": "weapon"
+          },
+          "count": 1
+        }
+      ],
+      "detail": "Dopo aver usato l’azione per lanciare un incantesimo, attacca con un’arma come azione bonus.",
+      "subclass": "Eldritch Knight"
+    },
+    {
+      "id": "war-cleric-war-priest-2014",
+      "class_name": "Cleric",
+      "class_source": "PHB",
+      "rules_version": "2014",
+      "feature": "War Priest",
+      "min_level": 1,
+      "name": "Sacerdote della guerra · attacco",
+      "time": "bonus",
+      "steps": [
+        {
+          "selector": {
+            "kind": "attack",
+            "category": "weapon"
+          },
+          "count": 1
+        }
+      ],
+      "detail": "Quando usi l’azione Attacco, un altro attacco con arma come azione bonus; consuma un utilizzo.",
+      "subclass": "War Domain",
+      "tracker_name": "War Priest",
+      "tracker_cost": 1
     }
   ]
 }

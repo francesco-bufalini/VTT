@@ -924,7 +924,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Actions backed by a typed attack routine are rendered once in
   // battleActions.actionGroups, not again as an activated power below.
   const routineOrigins=new Set((d.attack_actions||[]).map(row=>String(row.origin_id||'')).filter(Boolean));
+  const coveredOptions=new Set((d.attack_actions||[]).flatMap(row=>row.covered_action_ids||[]));
   const combatPowers=powerRows.filter(row=>!grantedAttackRows.includes(row)&&
+   !coveredOptions.has(String(row.classAction?.id||row.power?.id||row.id||''))&&
    // User-activated optional abilities remain individually operable even if
    // their granting feature also defines a typed attack routine.
    (row.source==='activated'||!routineOrigins.has(String(

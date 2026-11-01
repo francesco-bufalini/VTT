@@ -10,13 +10,14 @@ import {collectTraitRows,groupTraitRows} from '../trait_projection.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {resourceTrackers,attackCalculations} from '../sheet_rules.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-import {attackCountBenefits} from '../attack_count_benefits.js';
+import {attackCountBenefits,attackActionGrants} from '../attack_count_benefits.js';
 import {battleActionPanels} from '../action_economy.js';
 
 const fixture=JSON.parse(readFileSync(new URL('../../tests/fixtures/monster_traits.json',import.meta.url),'utf8'));
 function calculated(record=fixture){
  const features=collectStructuredFeatures(record);
- return {features,trackers:resourceTrackers(record,{}).map(row=>({...row,spent:record.resource_tracker_spent?.[row.id]||0})),
+ const trackers=resourceTrackers(record,{}).map(row=>({...row,spent:record.resource_tracker_spent?.[row.id]||0}));
+ return {features,trackers,attack_actions:attackActionGrants(record,features,trackers),
   attacks:attackCalculations(record,{},0),attack_count_benefits:attackCountBenefits(record,features)};
 }
 test('one creature section, overview first, exact attack and capacity ownership',async()=>{
@@ -88,12 +89,15 @@ test('battle resources display monster costs and the granting attack description
   assert(multiattack,'Multiattack appears as its own action');
   assert.equal(multiattack.querySelectorAll('.play-attack-sequence > li').length,4,
    'Multiattack has four independent descriptive sequence elements');
-  for(const id of ['legendary_action','legendary_resistance','lair_action'])
+  for(const id of ['monster:legendary:choices','legendary_resistance','lair_action'])
    assert.ok(app.querySelector('[data-battle-action="others"] [data-attack-id="'+id+'"]'));
-  const wing=app.querySelector('[data-ability-id="monster:legendary:1"]');
-  assert.match(wing.textContent,/Azione leggendaria.*−2.*·.*3\/3/,
-   'The action timing stays plain and the cost lives inside the tracker button');
-  assert.equal(wing.querySelector('[data-act="monster-action-use"]').dataset.monsterActionId,'monster:legendary:1');
+  const wing=app.querySelector('[data-action-option-id="monster:legendary:1"]');
+  assert(wing,'Wing Attack is one of the exclusive legendary options');
+  assert.match(wing.textContent,/Wing Attack/);
+  const use=wing.querySelector('[data-act="attack-action-use"]');
+  assert.equal(use.dataset.attackActionOptionId,'monster:legendary:1');
+  assert.match(use.textContent,/−2.*3\/3/,
+   'The option-specific cost is displayed inside the tracker control');
   assert.ok(![...app.querySelectorAll('[data-ability-id]')].some(node=>node.textContent.includes('Legendary Resistance')));
  }finally{globalThis.document=previous;dom.window.close();}
 });
