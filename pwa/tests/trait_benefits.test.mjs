@@ -219,7 +219,7 @@ test('all action-catalog privileges appear before activation, with exact trait p
  ]);
  assert.ok(cunning.items.every(i=>i.timing==='Azione bonus'&&i.status==='Tratto disattivato'));
  assert.deepEqual(traitBenefitGroups({rank:2,feature_origin:features[1].origin_id,key:'fast'},{},calculated)
-   .find(g=>g.type==='abilities').items.map(i=>i.label),['Usare un oggetto (Mani veloci)']);
+   .find(g=>g.type==='abilities').items.map(i=>i.label),['Fast Hands']);
  assert.equal(traitBenefitGroups({rank:2,feature_origin:features[2].origin_id,key:'sneak'},{},calculated)
   .some(g=>g.type==='abilities'),false,'passive features must not fabricate activations');
  assert.equal(traitBenefitGroups({rank:0,category:'classi',origin_key:'class|phb|rogue'}, {},calculated)
