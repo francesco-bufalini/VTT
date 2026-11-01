@@ -33,7 +33,7 @@ export function featureEnabled(record,feature){
 // One descriptor per owned operation, including disabled/state-gated ones for
 // trait previews. Battle actions consume only descriptors marked available.
 export function classFeatureDescriptors(record={},calculated={}){
- const revised=record.rules_version==='2024',output=[];
+ const output=[];
  for(const rule of rows(calculated.feature_action_overrides)){
    // Basic action alternatives use their referenced 5etools action ID instead.
    if(rule.action_id)continue;
@@ -43,8 +43,7 @@ export function classFeatureDescriptors(record={},calculated={}){
   const candidates=rows(calculated.features).filter(f=>
    low(f.name).replaceAll("'",'’')===low(sourceName)&&String(f.origin_key||'').startsWith('class|')&&
    low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(owner)&&
-   low(f.class_source||String(f.origin_key).split('|')[1])===low(rule.book)&&
-    classFeatureLevel(record,owner)>=Math.max(1,Number(rule.min_level)||1));
+   low(f.class_source||String(f.origin_key).split('|')[1])===low(rule.book));
   const feature=candidates.find(f=>featureEnabled(record,f))||candidates[0];
   if(!feature)continue;
   // State-dependent privileges are declared in the trait state catalog.
@@ -53,16 +52,15 @@ export function classFeatureDescriptors(record={},calculated={}){
   const gated=requiredStates.length>0&&!requiredStates.some(rule=>
     rows(calculated.active_trait_state_ids).includes(rule.id));
   const available=featureEnabled(record,feature)&&!gated;
-  let resource=revised&&baseResource==='Ki Points'?'Focus Points':baseResource;
-  if(revised&&key==='divine_sense')resource='Channel Divinity';
+  const resource=baseResource;
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)===low(resource)&&
    (!t.origin_class||low(t.origin_class)===low(owner)));
   output.push({id:'class_feature:'+key,class_feature_id:key,name:feature.name,
     descriptive_only:rule.descriptive_only===true,
-   time:revised&&key==='lay_on_hands'?'bonus':baseTime,type:'Capacità',
+   time:baseTime,type:'Capacità',
    mode:resolvedMode,description:feature.entries??feature.description??'',class_name:owner,
    resource_name:resource,tracker:tracker?.name||resource,tracker_id:tracker?.id||'',
-   cost:revised&&['patient_defense','step_of_the_wind'].includes(key)?0:resource?1:0,
+   cost:Math.max(0,Number(rule.resource_cost??(resource?1:0))||0),
    origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
    feature_name:feature.name,origin_name:'Tratto · '+feature.name,
    available,unavailable_reason:!featureEnabled(record,feature)?'disabled':gated?'state':'',
