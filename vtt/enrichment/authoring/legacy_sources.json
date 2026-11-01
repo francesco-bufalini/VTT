@@ -325,6 +325,54 @@
       "benefit_type": "movement",
       "catalog": "vtt/enrichment/benefits/movement.json",
       "runtime": "pwa/species_benefit_catalogs.js"
+    },
+    {
+      "source": "pwa/catalog/species_powers.json",
+      "sections": [
+        "healing",
+        "breath_weapon",
+        "active_conditions",
+        "actions",
+        "tracked_actions",
+        "roll_bonus",
+        "roll_bonuses"
+      ],
+      "partial": true,
+      "benefit_type": "action",
+      "catalog": "vtt/enrichment/benefits/action.json",
+      "runtime": "pwa/species_benefit_catalogs.js"
+    },
+    {
+      "source": "pwa/catalog/species_powers.json",
+      "sections": [
+        "healing",
+        "breath_weapon",
+        "active_conditions",
+        "actions",
+        "tracked_actions",
+        "roll_bonus",
+        "roll_bonuses"
+      ],
+      "partial": true,
+      "benefit_type": "resource",
+      "catalog": "vtt/enrichment/benefits/resource.json",
+      "runtime": "pwa/species_benefit_catalogs.js"
+    },
+    {
+      "source": "pwa/catalog/species_powers.json",
+      "sections": [
+        "healing",
+        "breath_weapon",
+        "active_conditions",
+        "actions",
+        "tracked_actions",
+        "roll_bonus",
+        "roll_bonuses"
+      ],
+      "partial": true,
+      "benefit_type": "roll_bonus",
+      "catalog": "vtt/enrichment/benefits/roll_bonus.json",
+      "runtime": "pwa/species_benefit_catalogs.js"
     }
   ]
 }

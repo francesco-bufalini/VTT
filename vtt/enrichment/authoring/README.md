@@ -150,3 +150,12 @@ o che i vecchi cataloghi possano essere cancellati.
 L'importazione/normalizzazione v2 e la migrazione dei cataloghi (senza
 duplicare concessioni esistenti di 5eTools né toccare benefici manuali)
 sono un passaggio successivo.
+
+### Capacità razziali: azioni e risorse
+
+Dal lotto `species_powers.json`, sono attivi nei file per tipo 20 azioni
+(`action.json`), 12 tracker (`resource.json`) e 2 bonus ai dadi
+(`roll_bonus.json`). Le nuove azioni usano `operation: racial_power` e
+il payload strettamente validato `action_runtime`; le risorse restano
+separate con un riferimento `benefit.resource` al tracker. Le parti
+non migrate restano nel file razziale e non sono duplicate.

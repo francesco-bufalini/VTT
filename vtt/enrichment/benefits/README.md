@@ -144,3 +144,25 @@ i riferimenti alle sottoclassi e il fallback degli host vecchi.
 **Ancora da migrare:** stati, concessioni di oggetti/incantesimi, meccaniche
 speciali e scelte dei privilegi. Le aggiunte manuali dei giocatori rimangono
 memorizzate nelle rispettive schede, non nel catalogo condiviso.
+
+---
+
+## Capacità delle specie: azioni, tracker e dadi
+
+Il primo lotto di `species_powers.json` è stato spostato nei cataloghi per tipo:
+`action.json` (20 azioni razziali), `resource.json` (12 risorse condivise da
+azioni e bonus ai dadi) e `roll_bonus.json` (2 bonus razziali aggiuntivi).
+Un singolo privilegio può concedere più benefici: l'azione fa riferimento
+alla risorsa mediante il suo ID, senza copiarne usi e recupero.
+
+Il campo `action_runtime`, validato con `$defs.actionRuntime` in
+`authoring/benefit.schema.json`, definisce le opzioni delle azioni
+(cura, condizione temporanea, risposta ai danni, riferimento ad attacco
+esistente, tiro descrittivo). `speciesPowersFromBenefits` ricostruisce
+la struttura usata dalla PWA senza duplicare descrizioni 5eTools.
+
+Rimangono in `species_powers.json` solo le meccaniche non ancora migrate:
+teletrasporti, forme e ascendenti draconici, scelte per il riposo,
+incantesimi concessi e annotazioni passive. La migrazione è parziale,
+e queste proprietà non vanno copiate in altri cataloghi finché il
+runtime non sarà aggiornato per consumarle.

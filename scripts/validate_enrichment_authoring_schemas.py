@@ -127,7 +127,8 @@ def main():
         assert all(entry["granted_by"]["ref"].get("class_source") for entry in owned)
     action_rules = load(live / "action.json")["entries"]
     assert len([entry for entry in action_rules if entry.get("projection") == "timing_action"]) == 65
-    assert len([entry for entry in action_rules if entry.get("projection") != "timing_action"]) == 52
+    assert len([entry for entry in action_rules if entry.get("projection") != "timing_action" and
+                entry["granted_by"]["ref"]["category"] in ("class_feature", "subclass_feature")]) == 52
 
     legacy = load(SCHEMAS / "legacy_sources.json")
     for source in legacy["sources"]:
