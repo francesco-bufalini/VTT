@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
+import {attackActionGrants} from '../attack_count_benefits.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {battleResourcePowers,persistentBattleAbility,spellCastingTimeLabel} from '../sheet_rules_view.js';
 import {actionEntries as project,battleActionPanels,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants,actionGlyph,attackRowGlyphKey} from '../action_economy.js';
@@ -317,12 +318,20 @@ test('source catalogue keeps editions distinct and optional rules opt-in',()=>{
  assert(!find(actionEntries({rules_version:'2024'}, {},[],[],catalog.actions,['disarm_dmg']),'disarm'));
 });
 
-test('Cunning Action moves only granted actions to bonus without duplicates',()=>{
- const entries=actionEntries({rules_version:'2014',class:'Rogue',class_source:'PHB',level:2});
+test('Cunning Action is one bonus action with three exclusive choices, not three timing overrides',()=>{
+ const record={rules_version:'2014',class:'Rogue',class_source:'PHB',level:2};
+ const features=projection(record).features;
+ const routine=attackActionGrants(record,features,[],featureRules)
+  .find(row=>row.id==='attack_action:cunning-action-phb');
+ assert(routine,'The routine must come from the owning feature');
+ const entries=actionEntries(record,{features,attack_actions:[routine],feature_rules:featureRules});
  for(const id of ['dash','disengage','hide']){
   assert.equal(entries.filter(row=>row.id===id).length,1);
-  assert.equal(find(entries,id).time,'bonus');assert(find(entries,id).alternate_action);
+  assert.equal(find(entries,id).time,'action');
  }
+ assert.equal(find(entries,routine.id).time,'bonus');
+ assert.deepEqual(find(entries,routine.id).steps[0].one_of.map(row=>row.selector.id),
+  ['dash','disengage','hide']);
  assert.equal(find(entries,'search').time,'action');
  const mixed=actionEntries({action_grants:[{id:'mixed',name:'Capacità',action_type:[{unit:'action'},{unit:'bonus'}]}]});
  assert.equal(find(mixed,'mixed').time,'bonus');assert(find(mixed,'mixed').alternate_action);
@@ -535,17 +544,19 @@ test('basic action availability derives from melee, spell slots and a real dual-
  assert.equal(offhandActionAvailable({...base,rules_version:'2024'},calc),true);
 });
 
-test('Cunning Action keeps its owning trait and changed timing for resource grouping',()=>{
+test('Cunning Action keeps its owning trait and appears once in the OR action group',()=>{
  const record={rules_version:'2014',class:'Rogue',class_source:'PHB',level:2,
   classes:[{name:'Rogue',source:'PHB',level:2}]};
  const feature={name:'Cunning Action',origin_key:'class|phb|rogue',
   origin_id:'feature:class|phb|rogue|cunning-action'};
- const projected={features:[feature],feature_rules:featureRules};
- const result=battleActionPanels(record,projected,[],[],catalog.actions,[],[],false);
- assert(result.overriddenActions.some(a=>a.id==='dash'&&a.time==='bonus'&&
-  a.action_change_origin===feature.origin_id&&a.original_time==='action'));
- const bonus=doc(result.others).querySelector('[data-action-benefit="other"]');
- assert(bonus.querySelector('[data-attack-id="dash"]'),'Cunning Action Dash belongs to bonus actions');
+ const grant=attackActionGrants(record,[feature],[],featureRules)[0];
+ const result=battleActionPanels(record,{features:[feature],feature_rules:featureRules,
+  attack_actions:[grant]},[],[],catalog.actions,[],[],false);
+ assert(!result.overriddenActions.some(a=>['dash','disengage','hide'].includes(a.id)));
+ const group=doc(result.others).querySelector('[data-action-benefit="other"]');
+ const routine=group.querySelector('[data-attack-id="attack_action:cunning-action-phb"]');
+ assert(routine);assert.equal(routine.querySelectorAll('[data-action-option-id]').length,3);
+ assert.match(routine.textContent,/Azione bonus/);
 });
 
 test('real Extra Attack grant replaces generic Attack without a count badge',()=>{

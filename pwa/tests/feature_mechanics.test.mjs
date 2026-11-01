@@ -45,7 +45,10 @@ test('typed supplement tracks feature, class source, level and subclass without 
  const out=calculateSheet(moon,catalogs),choices=actionEntries(moon,out);
  assert(choices.some(a=>a.name==='Forma selvatica'&&a.time==='bonus'&&a.tracker==='Wild Shape'));
  assert(!choices.some(a=>a.name==='Forma selvatica'&&a.time==='action'));
- assert(actionsFor(creature('Rogue','2014',2)).filter(a=>a.time==='bonus').length>=3);
+ const cunning=calculateSheet(creature('Rogue','2014',2),catalogs);
+ assert.equal(cunning.attack_actions.filter(row=>row.feature_name==='Cunning Action').length,1);
+ assert.deepEqual(cunning.attack_actions.find(row=>row.feature_name==='Cunning Action').steps[0].one_of
+  .map(choice=>choice.selector.id),['dash','disengage','hide']);
  assert.equal(actionsFor(creature('Rogue','2014',2)).some(a=>a.name.includes('Mani veloci')),false);
  assert(actionsFor(creature('Rogue','2024',3,'Thief')).some(a=>a.name.includes('Mani veloci')));
  assert(!actionsFor(creature('Ranger','2014',13)).some(a=>a.name.includes('Svanire')));

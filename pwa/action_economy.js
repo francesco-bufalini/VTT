@@ -246,7 +246,6 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
    record.class?[{name:record.class,source:record.class_source,level:record.level||1}]:[];
  const selectedEdition=record.rules_version==='2024'?'XPHB':'PHB';
  for(const rule of arr(featureOverrides)){
-  if(rule.feature_name==='Cunning Action')continue; // Superseded by structured alternative activations.
   const classMember=members.find(m=>String(m?.name||'').toLowerCase()===String(rule.class_name||'').toLowerCase()&&
     String(m?.source||selectedEdition).toUpperCase()===String(rule.book||'').toUpperCase()&&
     Number(m?.level||0)>=Number(rule.min_level||1));
