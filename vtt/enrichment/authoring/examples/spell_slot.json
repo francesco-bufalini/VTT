@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "benefit_type": "spell_slot",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:spell_slot:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:spell_slot"
+        }
+      },
+      "benefit": {
+        "type": "spell_slot",
+        "id": "demo:spell_slot",
+        "slots": {
+          "1": 2,
+          "2": 1
+        }
+      }
+    }
+  ]
+}

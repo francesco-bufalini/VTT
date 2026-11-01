@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "VTT universal origin benefit v2",
-  "description": "Mechanics only; display names and descriptions are optional homebrew overrides, not 5eTools copies.",
+  "title": "VTT shared mechanics benefit payload v2",
+  "description": "Shared payload: physical files are grouped per mechanical benefit type, NOT by class, species or item. Every entry has a source-qualified granted_by reference in catalog.schema.json.",
   "type": "object",
   "required": [
     "type"
@@ -9,44 +9,49 @@
   "properties": {
     "type": {
       "enum": [
+        "ability_score",
         "action",
         "action_sequence",
+        "activation",
+        "area_geometry",
         "attack",
+        "attack_count",
+        "base_override",
+        "bonus",
+        "choice",
+        "companion_grant",
+        "condition",
+        "d20_reroll",
+        "damage_bonus",
+        "damage_modifier",
+        "defense",
+        "effect",
+        "effect_extension",
+        "feat_grant",
+        "feature_grant",
+        "incoming_damage",
+        "item_grant",
+        "language",
+        "movement",
+        "numeric_modifier",
+        "option_selection",
+        "proficiency",
+        "progression",
         "resource",
         "resource_recovery",
         "roll_bonus",
         "roll_mode",
-        "numeric_modifier",
-        "ability_score",
-        "proficiency",
-        "language",
-        "sense",
-        "movement",
-        "defense",
-        "damage_bonus",
-        "damage_modifier",
-        "state",
-        "condition",
-        "effect",
-        "effect_extension",
-        "option_selection",
-        "spell_selection",
-        "spellcasting",
-        "spell_grant",
-        "spell_slot",
-        "item_grant",
-        "feat_grant",
-        "feature_grant",
-        "companion_grant",
-        "choice",
-        "progression",
         "scaling_die",
-        "trait",
+        "sense",
+        "spell_grant",
+        "spell_selection",
+        "spell_slot",
+        "spellcasting",
+        "state",
         "targeting",
-        "area_geometry",
-        "activation",
+        "temporary_hp",
         "tracker",
-        "other"
+        "trait"
       ]
     },
     "id": {
@@ -330,6 +335,34 @@
     "note": {
       "type": "string",
       "description": "Editorial explanation of nonautomated mechanics (not a replacement for 5eTools description)."
+    },
+    "spell_runtime": {
+      "$ref": "#/$defs/spellRuntime"
+    },
+    "roll": {
+      "$ref": "#/$defs/roll"
+    },
+    "healing": {
+      "$ref": "#/$defs/healing"
+    },
+    "incoming_damage": {
+      "$ref": "#/$defs/bonus"
+    },
+    "base_override": {
+      "$ref": "#/$defs/bonus"
+    },
+    "attack_count": {
+      "$ref": "#/$defs/expression"
+    },
+    "d20_reroll": {
+      "$ref": "#/$defs/reroll"
+    },
+    "progression": {
+      "$ref": "#/$defs/progression"
+    },
+    "slot_progression": {
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "allOf": [
@@ -529,6 +562,829 @@
           "effects"
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "bonus"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "bonus"
+            ]
+          },
+          {
+            "required": [
+              "bonuses"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "base_override"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "base_override"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "incoming_damage"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "incoming_damage"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "attack_count"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "attack_count"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "d20_reroll"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "d20_reroll"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "temporary_hp"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "healing"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "area_geometry"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "spell_geometry"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "resource"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "maximum"
+            ]
+          },
+          {
+            "required": [
+              "uses"
+            ]
+          },
+          {
+            "required": [
+              "steps"
+            ]
+          },
+          {
+            "required": [
+              "progression"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "tracker"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "maximum"
+            ]
+          },
+          {
+            "required": [
+              "uses"
+            ]
+          },
+          {
+            "required": [
+              "steps"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "proficiency"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "proficiencies"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "defense"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "defenses"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "sense"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "sense"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "movement"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "movement"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "scaling_die"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "progression"
+            ]
+          },
+          {
+            "required": [
+              "steps"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "roll_bonus"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "bonus"
+            ]
+          },
+          {
+            "required": [
+              "bonuses"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "effect_extension"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "effects"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "action"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "activation"
+            ]
+          },
+          {
+            "required": [
+              "operation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "item_grant"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "items"
+            ]
+          },
+          {
+            "required": [
+              "grants"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "feat_grant"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "grants"
+            ]
+          },
+          {
+            "required": [
+              "options"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "feature_grant"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "grants"
+            ]
+          },
+          {
+            "required": [
+              "options"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "companion_grant"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "grants"
+            ]
+          },
+          {
+            "required": [
+              "items"
+            ]
+          },
+          {
+            "required": [
+              "parameters"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "spell_grant"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "spells"
+            ]
+          },
+          {
+            "required": [
+              "grants"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "spell_selection"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "selection"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "spell_slot"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "slots"
+            ]
+          },
+          {
+            "required": [
+              "slot_progression"
+            ]
+          },
+          {
+            "required": [
+              "steps"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "language"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "proficiencies"
+            ]
+          },
+          {
+            "required": [
+              "selection"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "numeric_modifier"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "bonus"
+            ]
+          },
+          {
+            "required": [
+              "bonuses"
+            ]
+          },
+          {
+            "required": [
+              "numeric_grants"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "damage_bonus"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "bonus"
+            ]
+          },
+          {
+            "required": [
+              "bonuses"
+            ]
+          },
+          {
+            "required": [
+              "damage"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "damage_modifier"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "bonus"
+            ]
+          },
+          {
+            "required": [
+              "bonuses"
+            ]
+          },
+          {
+            "required": [
+              "effects"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "ability_score"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "bonus"
+            ]
+          },
+          {
+            "required": [
+              "bonuses"
+            ]
+          },
+          {
+            "required": [
+              "options"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "activation"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "activation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "choice"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "choices"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "progression"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "progression"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "targeting"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "target"
+            ]
+          }
+        ]
+      }
     }
   ],
   "additionalProperties": false,
@@ -604,8 +1460,7 @@
           "description": "Subclass identity"
         },
         "subclass_source": {
-          "type": "string",
-          "description": "Source of subclass"
+          "type": "string"
         },
         "race": {
           "type": "string",
@@ -626,6 +1481,31 @@
         "homebrew_namespace": {
           "type": "string",
           "description": "Private source namespace"
+        },
+        "edition": {
+          "enum": [
+            "2014",
+            "2024",
+            "other"
+          ]
+        },
+        "subrace_source": {
+          "type": "string"
+        },
+        "feature_type": {
+          "type": "string"
+        },
+        "background": {
+          "type": "string"
+        },
+        "item": {
+          "type": "string"
+        },
+        "spell": {
+          "type": "string"
+        },
+        "origin_id": {
+          "type": "string"
         }
       },
       "anyOf": [
@@ -1678,6 +2558,136 @@
           "additionalProperties": false
         }
       ]
+    },
+    "spellRuntime": {
+      "type": "object",
+      "description": "Typed spell execution metadata currently stored in vtt/enrichment/spells.json; distinct from target/effect geometry.",
+      "properties": {
+        "movable_aoe_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "movable_aoe_mode": {
+          "type": "string"
+        },
+        "target_mode": {
+          "type": "string"
+        },
+        "range_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "base_target_clicks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "aoe_shape": {
+          "type": "string"
+        },
+        "aoe_radius_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "visual_style": {
+          "type": "string"
+        },
+        "projectile_style": {
+          "type": "string"
+        },
+        "projectile_travel_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "meteor_drop_height_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "requires_ground": {
+          "type": "boolean"
+        },
+        "transient_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "forced_movement_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "forced_movement_mode": {
+          "type": "string"
+        },
+        "forced_movement_on_failed_save": {
+          "type": "boolean"
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "roll": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "$ref": "#/$defs/expression"
+        },
+        "sides": {
+          "$ref": "#/$defs/expression"
+        },
+        "modifier": {
+          "$ref": "#/$defs/expression"
+        },
+        "formula": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "healing": {
+      "type": "object",
+      "properties": {
+        "dice": {
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "temporary": {
+          "type": "boolean"
+        },
+        "pool": {
+          "$ref": "#/$defs/expression"
+        },
+        "count": {
+          "$ref": "#/$defs/expression"
+        }
+      },
+      "additionalProperties": false
+    },
+    "reroll": {
+      "type": "object",
+      "required": [
+        "target"
+      ],
+      "properties": {
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "$ref": "#/$defs/expression"
+        },
+        "mode": {
+          "enum": [
+            "reroll",
+            "replace",
+            "choose_higher",
+            "choose_lower"
+          ]
+        },
+        "resource": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

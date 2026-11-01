@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "benefit_type": "attack",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "armorer:tce:thunder-gauntlets",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Armor Model",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "level": 3
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "id": "thunder-gauntlets",
+        "attack": {
+          "id": "class_feature:thunder_gauntlets",
+          "damage": "1d8",
+          "damage_type": "thunder",
+          "melee": true,
+          "ability": "str",
+          "grants_proficiency": true,
+          "weapon_category": "simple",
+          "reach_feet": 5
+        }
+      }
+    }
+  ]
+}

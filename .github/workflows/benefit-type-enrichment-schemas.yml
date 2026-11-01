@@ -1,0 +1,32 @@
+name: VTT Benefit Type Enrichment Schemas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'vtt/enrichment/authoring/**'
+      - 'assets/spell_area_geometry.json'
+      - 'scripts/validate_enrichment_authoring_schemas.py'
+      - '.github/workflows/benefit-type-enrichment-schemas.yml'
+  pull_request:
+    paths:
+      - 'vtt/enrichment/authoring/**'
+      - 'assets/spell_area_geometry.json'
+      - 'scripts/validate_enrichment_authoring_schemas.py'
+      - '.github/workflows/benefit-type-enrichment-schemas.yml'
+  workflow_dispatch:
+
+jobs:
+  schema:
+    name: Validate per-type benefits and spell areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install JSON Schema validator
+        run: python -m pip install 'jsonschema==4.23.0'
+      - name: Validate benefit schemas, fixtures and legacy areas
+        run: python scripts/validate_enrichment_authoring_schemas.py

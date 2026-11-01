@@ -1,0 +1,130 @@
+{
+  "schema_version": 2,
+  "benefit_type": "area_geometry",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "phb:fireball:area",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "spell",
+          "name": "Fireball",
+          "source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "area_geometry",
+        "id": "phb:fireball:geometry",
+        "spell_geometry": {
+          "range": {
+            "type": "point",
+            "feet": 150
+          },
+          "targeting": {
+            "type": "point"
+          },
+          "effect": {
+            "geometry": {
+              "shape": "sphere",
+              "radius_feet": 20
+            },
+            "persistence": "instant",
+            "damage_types": [
+              "fire"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "phb:wall-of-fire:area",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "spell",
+          "name": "Wall of Fire",
+          "source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "area_geometry",
+        "id": "phb:wall-of-fire:geometry",
+        "spell_geometry": {
+          "range": {
+            "type": "point",
+            "feet": 120
+          },
+          "targeting": {
+            "type": "wall",
+            "requires_ground": true,
+            "choose_damage_side": true
+          },
+          "effect": {
+            "geometry": {
+              "shape": "wall",
+              "variants": [
+                {
+                  "type": "path",
+                  "max_length_feet": 60,
+                  "height_feet": 20,
+                  "thickness_feet": 1
+                },
+                {
+                  "type": "circle",
+                  "radius_feet": 10,
+                  "height_feet": 20,
+                  "thickness_feet": 1
+                }
+              ]
+            },
+            "persistence": "persistent",
+            "damage_types": [
+              "fire"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "phb:thunderwave:area",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "spell",
+          "name": "Thunderwave",
+          "source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "area_geometry",
+        "id": "phb:thunderwave:geometry",
+        "spell_geometry": {
+          "range": {
+            "type": "cube",
+            "feet": 15
+          },
+          "targeting": {
+            "type": "caster_direction",
+            "allow_pitch": true
+          },
+          "effect": {
+            "geometry": {
+              "shape": "cube",
+              "side_feet": 15
+            },
+            "persistence": "instant",
+            "damage_types": [
+              "thunder"
+            ]
+          }
+        },
+        "spell_runtime": {
+          "forced_movement_feet": 15,
+          "forced_movement_mode": "away_from_caster",
+          "forced_movement_on_failed_save": true
+        }
+      }
+    }
+  ]
+}

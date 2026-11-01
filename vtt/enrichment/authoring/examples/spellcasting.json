@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "benefit_type": "spellcasting",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:spellcasting:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:spellcasting"
+        }
+      },
+      "benefit": {
+        "type": "spellcasting",
+        "id": "demo:spellcasting",
+        "spellcasting": {
+          "ability": "int",
+          "knowledge_mode": "prepared",
+          "spell_list_class_name": "Artificer",
+          "slot_progression": {
+            "pool": "shared",
+            "divisor": 2,
+            "single_round": "ceil"
+          }
+        }
+      }
+    }
+  ]
+}

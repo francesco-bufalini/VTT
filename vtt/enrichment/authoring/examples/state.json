@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "benefit_type": "state",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:state:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:state"
+        }
+      },
+      "benefit": {
+        "type": "state",
+        "id": "example:stance",
+        "benefits": [
+          {
+            "type": "roll_mode",
+            "roll_modes": [
+              {
+                "target": "skill:stealth",
+                "mode": "advantage"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

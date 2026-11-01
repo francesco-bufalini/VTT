@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT per-benefit-type catalog v2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "benefit_type",
+    "scope",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "benefit_type": {
+      "enum": [
+        "ability_score",
+        "action",
+        "action_sequence",
+        "activation",
+        "area_geometry",
+        "attack",
+        "attack_count",
+        "base_override",
+        "bonus",
+        "choice",
+        "companion_grant",
+        "condition",
+        "d20_reroll",
+        "damage_bonus",
+        "damage_modifier",
+        "defense",
+        "effect",
+        "effect_extension",
+        "feat_grant",
+        "feature_grant",
+        "incoming_damage",
+        "item_grant",
+        "language",
+        "movement",
+        "numeric_modifier",
+        "option_selection",
+        "proficiency",
+        "progression",
+        "resource",
+        "resource_recovery",
+        "roll_bonus",
+        "roll_mode",
+        "scaling_die",
+        "sense",
+        "spell_grant",
+        "spell_selection",
+        "spell_slot",
+        "spellcasting",
+        "state",
+        "targeting",
+        "temporary_hp",
+        "tracker",
+        "trait"
+      ]
+    },
+    "scope": {
+      "enum": [
+        "catalog",
+        "character"
+      ]
+    },
+    "character_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "const": "catalog"
+          }
+        },
+        "required": [
+          "scope"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "character_id"
+          ]
+        },
+        "properties": {
+          "entries": {
+            "items": {
+              "properties": {
+                "granted_by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/five"
+                    },
+                    {
+                      "$ref": "#/$defs/home"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "const": "character"
+          }
+        },
+        "required": [
+          "scope"
+        ]
+      },
+      "then": {
+        "required": [
+          "character_id"
+        ],
+        "properties": {
+          "entries": {
+            "items": {
+              "properties": {
+                "granted_by": {
+                  "$ref": "#/$defs/player"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sourceRef": {
+      "type": "object",
+      "required": [
+        "category"
+      ],
+      "properties": {
+        "category": {
+          "enum": [
+            "class",
+            "subclass",
+            "class_feature",
+            "subclass_feature",
+            "species",
+            "subrace",
+            "species_trait",
+            "feat",
+            "item",
+            "background",
+            "spell",
+            "optional_feature",
+            "monster",
+            "monster_trait",
+            "condition"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "edition": {
+          "enum": [
+            "2014",
+            "2024",
+            "other"
+          ]
+        },
+        "class_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "class_source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subclass": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subclass_source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "race": {
+          "type": "string",
+          "minLength": 1
+        },
+        "race_source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subrace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subrace_source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "feature_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "name",
+            "source"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "five": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "const": "5etools"
+        },
+        "ref": {
+          "$ref": "#/$defs/sourceRef"
+        }
+      },
+      "additionalProperties": false
+    },
+    "home": {
+      "type": "object",
+      "required": [
+        "kind",
+        "namespace",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "const": "homebrew"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+        },
+        "ref": {
+          "$ref": "#/$defs/sourceRef"
+        }
+      },
+      "additionalProperties": false
+    },
+    "player": {
+      "type": "object",
+      "required": [
+        "kind",
+        "trait_key"
+      ],
+      "properties": {
+        "kind": {
+          "const": "character_trait"
+        },
+        "trait_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "origin_id": {
+          "type": "string"
+        },
+        "source_ref": {
+          "$ref": "#/$defs/sourceRef"
+        }
+      },
+      "additionalProperties": false
+    },
+    "entry": {
+      "type": "object",
+      "required": [
+        "id",
+        "granted_by",
+        "benefit"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "granted_by": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/five"
+            },
+            {
+              "$ref": "#/$defs/home"
+            },
+            {
+              "$ref": "#/$defs/player"
+            }
+          ]
+        },
+        "benefit": {
+          "$ref": "benefit.schema.json"
+        },
+        "merge": {
+          "enum": [
+            "augment",
+            "replace"
+          ]
+        },
+        "min_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

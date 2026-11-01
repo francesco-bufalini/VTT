@@ -1,0 +1,331 @@
+{
+  "schema_version": 2,
+  "description": "Legacy sources and their per-type destinations. Inventory for migration planning, NOT validation of legacy payloads against the new canonical schema.",
+  "sources": [
+    {
+      "path": "vtt/data/action_feature_overrides.json",
+      "sections": [
+        "entries"
+      ],
+      "types": [
+        "action",
+        "activation",
+        "resource"
+      ]
+    },
+    {
+      "path": "vtt/data/feature_timing_recovery_rules.json",
+      "sections": [
+        "contextual_actions",
+        "actions",
+        "recoveries",
+        "attack_count_grants",
+        "attack_actions"
+      ],
+      "types": [
+        "action",
+        "activation",
+        "action_sequence",
+        "resource_recovery",
+        "attack_count"
+      ]
+    },
+    {
+      "path": "vtt/data/class_resource_overrides.json",
+      "sections": [
+        "classes"
+      ],
+      "types": [
+        "resource",
+        "progression"
+      ]
+    },
+    {
+      "path": "pwa/catalog/roll_bonus_rules.json",
+      "sections": [
+        "features"
+      ],
+      "types": [
+        "roll_bonus",
+        "numeric_modifier",
+        "roll_mode"
+      ]
+    },
+    {
+      "path": "pwa/catalog/trait_states.json",
+      "sections": [
+        "states",
+        "exhaustion"
+      ],
+      "types": [
+        "state",
+        "attack",
+        "numeric_modifier",
+        "roll_mode"
+      ]
+    },
+    {
+      "path": "pwa/catalog/power_selections.json",
+      "sections": [
+        "templates",
+        "selections"
+      ],
+      "types": [
+        "option_selection",
+        "choice",
+        "effect_extension"
+      ]
+    },
+    {
+      "path": "pwa/catalog/feature_item_grants.json",
+      "sections": [
+        "grants"
+      ],
+      "types": [
+        "item_grant",
+        "companion_grant",
+        "attack"
+      ]
+    },
+    {
+      "path": "pwa/catalog/ability_grants.json",
+      "sections": [
+        "race",
+        "subrace",
+        "feat",
+        "background",
+        "artificer_infusions",
+        "advancement_rules",
+        "feat_numeric_bonuses",
+        "feat_mechanics"
+      ],
+      "types": [
+        "ability_score",
+        "numeric_modifier",
+        "roll_bonus",
+        "choice",
+        "spell_grant"
+      ]
+    },
+    {
+      "path": "pwa/catalog/proficiency_grants.json",
+      "sections": [
+        "class",
+        "race",
+        "subrace",
+        "background",
+        "feat",
+        "classFeature",
+        "subclassFeature",
+        "languages"
+      ],
+      "types": [
+        "proficiency",
+        "language",
+        "choice"
+      ]
+    },
+    {
+      "path": "pwa/catalog/species_powers.json",
+      "sections": [
+        "races"
+      ],
+      "types": [
+        "action",
+        "resource",
+        "option_selection",
+        "spell_grant",
+        "action"
+      ]
+    },
+    {
+      "path": "pwa/catalog/species_attacks.json",
+      "sections": [
+        "races"
+      ],
+      "types": [
+        "attack"
+      ]
+    },
+    {
+      "path": "pwa/catalog/species_defenses.json",
+      "sections": [
+        "races"
+      ],
+      "types": [
+        "defense"
+      ]
+    },
+    {
+      "path": "pwa/catalog/species_roll_modes.json",
+      "sections": [
+        "races"
+      ],
+      "types": [
+        "roll_mode"
+      ]
+    },
+    {
+      "path": "pwa/catalog/species_conditional_bonuses.json",
+      "sections": [
+        "races"
+      ],
+      "types": [
+        "roll_bonus"
+      ]
+    },
+    {
+      "path": "pwa/catalog/species_types.json",
+      "sections": [
+        "races"
+      ],
+      "types": [
+        "trait"
+      ]
+    },
+    {
+      "path": "pwa/catalog/sense_grants.json",
+      "sections": [
+        "species",
+        "subraces",
+        "features"
+      ],
+      "types": [
+        "sense"
+      ]
+    },
+    {
+      "path": "pwa/catalog/scaling_dice.json",
+      "sections": [
+        "dice"
+      ],
+      "types": [
+        "scaling_die"
+      ]
+    },
+    {
+      "path": "pwa/catalog/effect_extensions.json",
+      "sections": [
+        "extensions"
+      ],
+      "types": [
+        "effect_extension"
+      ]
+    },
+    {
+      "path": "pwa/catalog/spellcasting_benefits.json",
+      "sections": [
+        "grants"
+      ],
+      "types": [
+        "spellcasting",
+        "spell_selection",
+        "spell_slot"
+      ]
+    },
+    {
+      "path": "pwa/catalog/spell_grant_rules.json",
+      "sections": [
+        "rules"
+      ],
+      "types": [
+        "spell_grant"
+      ]
+    },
+    {
+      "path": "pwa/catalog/optional_feature_progressions.json",
+      "sections": [
+        "progressions",
+        "options"
+      ],
+      "types": [
+        "option_selection",
+        "progression",
+        "choice",
+        "item_grant"
+      ]
+    },
+    {
+      "path": "pwa/catalog/feature_slot_spells.json",
+      "sections": [
+        "spells",
+        "grants"
+      ],
+      "types": [
+        "spell_grant",
+        "spell_slot"
+      ]
+    },
+    {
+      "path": "pwa/catalog/companion_spells.json",
+      "sections": [
+        "spells",
+        "features",
+        "templates"
+      ],
+      "types": [
+        "companion_grant"
+      ]
+    },
+    {
+      "path": "pwa/catalog/generic_item_variants.json",
+      "sections": [
+        "variants"
+      ],
+      "types": [
+        "numeric_modifier",
+        "defense",
+        "spell_grant",
+        "item_grant"
+      ]
+    },
+    {
+      "path": "vtt/data/feat_mechanics_2014.json",
+      "sections": [
+        "feats"
+      ],
+      "types": [
+        "roll_bonus",
+        "roll_mode",
+        "action",
+        "effect_extension"
+      ]
+    },
+    {
+      "path": "vtt/data/feat_numeric_bonuses_2014.json",
+      "sections": [
+        "feats"
+      ],
+      "types": [
+        "numeric_modifier"
+      ]
+    },
+    {
+      "path": "vtt/data/feat_proficiency_bonuses_2014.json",
+      "sections": [
+        "feats"
+      ],
+      "types": [
+        "proficiency"
+      ]
+    },
+    {
+      "path": "vtt/enrichment/spells.json",
+      "sections": [
+        "entries"
+      ],
+      "types": [
+        "area_geometry",
+        "movement",
+        "effect"
+      ]
+    },
+    {
+      "path": "assets/spell_area_geometry.json",
+      "sections": [],
+      "types": [
+        "area_geometry"
+      ]
+    }
+  ]
+}

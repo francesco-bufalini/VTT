@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "benefit_type": "choice",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:choice:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:choice"
+        }
+      },
+      "benefit": {
+        "type": "choice",
+        "id": "demo:choice",
+        "choices": {
+          "mode": "one",
+          "count": 1,
+          "from": [
+            {
+              "id": "fire"
+            },
+            {
+              "id": "cold"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

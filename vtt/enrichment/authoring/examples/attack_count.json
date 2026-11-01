@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "benefit_type": "attack_count",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:attack_count:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:attack_count"
+        }
+      },
+      "benefit": {
+        "type": "attack_count",
+        "id": "demo:attack_count",
+        "attack_count": 2,
+        "target": "attacks_per_action",
+        "min_level": 5
+      }
+    }
+  ]
+}

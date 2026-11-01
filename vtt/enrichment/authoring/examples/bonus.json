@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "benefit_type": "bonus",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:bonus:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:bonus"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "demo:bonus",
+        "bonus": {
+          "target": "saving_throw",
+          "operation": "add",
+          "amount": 1
+        }
+      }
+    }
+  ]
+}

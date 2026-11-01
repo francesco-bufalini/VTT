@@ -1,0 +1,41 @@
+{
+  "schema_version": 2,
+  "benefit_type": "scaling_die",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:scaling_die:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:scaling_die"
+        }
+      },
+      "benefit": {
+        "type": "scaling_die",
+        "id": "demo:scaling_die",
+        "progression": [
+          [
+            1,
+            6
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            15,
+            12
+          ]
+        ]
+      }
+    }
+  ]
+}
