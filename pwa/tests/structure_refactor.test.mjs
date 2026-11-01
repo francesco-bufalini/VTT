@@ -127,6 +127,6 @@ test('migrated Barbarian contextual operations retain stable IDs, counters and s
   const disabled={...c,origin_enabled:{[f.origin_id]:false}};
   assert(contextualFeatureDescriptors(disabled,[f],rules).every(row=>!row.available));
   const preview=benefits(disabled,{features:[f],feature_rules:rules},f);
-  assert(preview.some(row=>row.label===rule.name&&row.status==='Tratto disattivato'));
+  assert(preview.some(row=>row.label===rule.feature&&row.status==='Tratto disattivato'));
  }
 });
