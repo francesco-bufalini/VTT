@@ -1,3 +1,4 @@
+import {loadClassActionBenefits} from './class_benefit_catalogs.js';
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
 import {SKILLS} from './sheet_rules.js';
@@ -38,11 +39,7 @@ export async function loadGeneralActionSupplements(){
 }
 export async function loadFeatureActionOverrides(){
  if(supplementsCache)return supplementsCache;
- const response=await fetch('/catalog/action_feature_overrides.json',{cache:'no-store'});
- if(!response.ok)throw Error('Catalogo azioni di classe non disponibile');
- const payload=await response.json();
- if(payload?.version!==1||!Array.isArray(payload.entries))throw Error('Catalogo azioni di classe non valido');
- supplementsCache=payload.entries;
+ supplementsCache=await loadClassActionBenefits();
  return supplementsCache;
 }
 

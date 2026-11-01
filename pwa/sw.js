@@ -128,6 +128,9 @@ const SHELL = [
   "/creatures.js",
   "/creature_format.js",
   "/catalog/action_feature_overrides.json",
+  "/catalog/benefits/action.json",
+  "/catalog/benefits/roll_bonus.json",
+  "/class_benefit_catalogs.js",
   "/catalog/combat_action_supplements_5etools.json",
   "/catalog/combat_actions_5etools.json",
   "/icons/action_controls.svg",
@@ -183,7 +186,7 @@ const REQUIRED_CATALOGS = [
   "/catalog/feature_slot_spells.json", "/catalog/spellcasting_benefits.json",
   "/catalog/roll_bonus_rules.json", "/catalog/scaling_dice.json", "/catalog/feature_item_grants.json", "/catalog/effect_extensions.json",
   "/catalog/activated_abilities.json", "/catalog/effects_5etools.json", "/catalog/species_types.json", "/catalog/species_attacks.json", "/catalog/species_defenses.json",
-  "/catalog/action_feature_overrides.json", "/catalog/combat_actions_5etools.json",
+  "/catalog/action_feature_overrides.json", "/catalog/benefits/action.json", "/catalog/benefits/roll_bonus.json", "/catalog/combat_actions_5etools.json",
   "/catalog/combat_action_supplements_5etools.json",
   "/catalog/class_resource_overrides.json",
   "/catalog/miniatures.json"

@@ -1,3 +1,4 @@
+import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from './scaling_dice.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
@@ -1773,8 +1774,7 @@ export function loadRuleCatalogs(){
     fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.states)?
        {states:data.states,exhaustion:data.exhaustion||{}}:{states:[],exhaustion:{}}),
-    fetch('/catalog/roll_bonus_rules.json').then(r=>{if(!r.ok)throw Error('Regole dei bonus ai tiri non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.features)?data.features:[]),
+    loadClassRollBonusBenefits(),
     fetch('/catalog/scaling_dice.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.dice)?data:{dice:[]}).catch(()=>({dice:[]})),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
@@ -1821,9 +1821,7 @@ export function loadRuleCatalogs(){
     fetch('/catalog/generic_item_variants.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.variants)?data:{variants:[]})
       .catch(()=>({variants:[]})),
-    fetch('/catalog/action_feature_overrides.json').then(r=>r.ok?r.json():{})
-      .then(data=>data?.version===1&&Array.isArray(data.entries)?data.entries:[])
-      .catch(()=>[])
+    loadClassActionBenefits().catch(()=>[])
   ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
