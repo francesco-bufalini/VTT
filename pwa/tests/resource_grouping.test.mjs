@@ -69,7 +69,7 @@ test('a tracker-backed dice bonus uses the dice pictogram, never a crosshair',()
  },'battle',bank);
 });
 
-test('Lightning Launcher attack and extra damage render in separate Resources groups, even when spent',()=>{
+test('Lightning Launcher stays in Attacchi, while Resources retains only the counter and the extra damage stays among bonuses',()=>{
  const record={...sheet('Artificer','Armorer','TCE'),
   inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],
   trait_state_selection:{armor_model:'armor_model:infiltrator'},
@@ -90,23 +90,18 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert.equal(attack.resource_cost,0);
   assert.equal(attack.tracker_id,'');
   assert.equal(abilityAttackRoll(attack,calculated).target,'attack_hit:class_feature:lightning_launcher');
-  const free=app.querySelector('[data-battle-action="resources"] [data-ability-id="activated:'+attack.id+'"]');
-  assert(free);
-  const attackIcon=free.querySelector('.vtt-action-glyph');
-  assert(attackIcon);
-  assert.equal(attackIcon.className,/class="([^"]+)"/.exec(actionGlyph('weapon'))[1],
-   'A trait-granted attack uses the weapon pictogram');
-  assert.equal(free.querySelector('[data-act="battle-attack-map"]'),null,
-   'Resource rows expose benefits but never duplicate the attack range button');
+  assert.equal(app.querySelector('[data-battle-action="resources"] [data-ability-id="activated:'+attack.id+'"]'),null,
+   'Attacks granted by privileges no longer appear under Resources');
+  const strike=app.querySelector('[data-battle-action="attacks"] [data-attack-id="class_feature:lightning_launcher"]');
+  assert(strike,'The granted attack remains available in the real attack table');
+  assert(strike.querySelector('.vtt-action-glyph'),'The attack table owns its attack icon');
   assert(app.querySelectorAll('[data-battle-action="resources"] [data-act="battle-attack-map"]').length===0,
    'Resources does not reproduce the map/range buttons from Attacchi');
   assert(app.querySelectorAll('[data-battle-action="attacks"] [data-act="battle-attack-map"]').length>0,
    'The restored Attacchi table owns map and range controls');
   assert.equal(app.querySelector('[data-battle-action="resources"] [data-attack-id="unarmed"]'),null,
    'Unarmed never appears in Resources');
-  const buttons=free.querySelectorAll('[data-act="battle-use-ability"]');
-  assert.equal(buttons.length,1);
-  assert.equal(buttons[0].disabled,false);
+  assert.equal(app.querySelectorAll('[data-battle-action="resources"] [data-ability-id^="activated:"]').length,0);
  });
  assert.equal(resourceLinkedSubclassTrait(tracker,calculated.features,[],calculated),null);
  assert.throws(()=>subclassTrackerUsePatch(record,calculated,tracker.id,tracker.origin_id),/non disponibile/);
