@@ -22,7 +22,7 @@ test('all 52 class actions survive the typed migration with exact operation, cos
 });
 
 test('all 15 class and subclass roll bonuses retain their numeric and conditional mechanics',()=>{
- assert.equal(typedRoll.entries.length,15);
+ assert.equal(typedRoll.entries.filter(entry=>['class_feature','subclass_feature'].includes(entry.granted_by.ref.category)).length,15);
  assert.deepEqual(classRollBonusRulesFromBenefits(typedRoll),oldRolls);
  const subclass=typedRoll.entries.find(row=>row.granted_by.ref.subclass==='Champion');
  assert.equal(subclass.granted_by.ref.name,'Remarkable Athlete');
