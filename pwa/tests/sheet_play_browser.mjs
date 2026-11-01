@@ -256,7 +256,7 @@ try{
    'Computed scores have no dice controls');
  await scoreFormula.locator('[data-act="close-score-formula"]').click();
  await sensesDialog.locator('[data-act="sheet-senses-close"]').click();
- await sheet('info');
+ await sheet('skills');
  assert.equal(await page.locator('#sheet-play-view .play-ability header [data-act="sheet-proxy"]').count(),0,
    'The six ability edit gears are removed from the info cards');
  await page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:str"]').click();
@@ -283,8 +283,8 @@ try{
  await scoreFormula.waitFor({state:'visible'});
  assert.equal((await record()).abilities.str,12);
  await scoreFormula.locator('[data-act="close-score-formula"]').click();
- const skills=page.locator('#sheet-play-view .play-skills-disclosure');
- await skills.locator(':scope > summary').click();
+ const skills=page.locator('#sheet-play-view .play-competences');
+ assert(await skills.locator('.play-skills-content').isVisible());
  await skills.locator('[data-target="skill:arcana"]').click();
  const training=page.locator('#sheet-roll-dialog .sheet-roll-origin-term')
    .filter({has:page.locator('.sheet-roll-origin-symbol:text-is("+Mod.Competenza")')});
@@ -297,7 +297,6 @@ try{
  assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Sage/,
    'Navigating the Arcana training term opens the granting background trait');
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
- if((await skills.getAttribute('open'))!==null)await skills.locator(':scope > summary').click();
  await sheet('battle');
  const hpCard=page.locator('#sheet-play-view .play-health');
  assert.equal(await hpCard.locator('.play-hp-edit').count(),0,'HP card has no extra edit icon');
@@ -967,21 +966,21 @@ try{
  assert.equal(afterLong.pact_slots_spent,0);
  assert.deepEqual(afterLong.spell_slots_spent,Array(10).fill(0));
  assert(afterLong.current_hp>=afterShort.current_hp,'Long rest restores maximum HP');
- await sheet('info');
+ await sheet('skills');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
- await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
- assert.equal(await page.locator('#sheet-play-view .play-skills-tools').count(),0,'No competence editor button in Info');
- assert.equal(await page.locator('#sheet-play-view [data-play-search]').count(),0,'No skills search in Info');
- assert.deepEqual(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').evaluateAll(rows=>
-  rows.map(row=>row.dataset.target)),['ability_check:str','ability_check:dex','ability_check:con','ability_check:int','ability_check:wis','ability_check:cha']);
+ assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').count(),0,'Abilità è sempre visibile');
+ assert.equal(await page.locator('#sheet-play-view .play-skills-tools').count(),0,'Nessun editor duplicato');
+ assert.equal(await page.locator('#sheet-play-view [data-play-search]').count(),0,'Nessuna ricerca Abilità');
+ assert.equal(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-abilities [data-target^="ability_check:"]').count(),6);
  const skillMarker=key=>page.locator('#sheet-play-view .play-skills [data-target="skill:'+key+'"] .play-skill-rank');
  assert.equal(await skillMarker('arcana').getAttribute('aria-label'),'Competenza');
  assert.equal(await skillMarker('arcana').locator('svg path').count(),1);
  assert.equal(await skillMarker('stealth').getAttribute('aria-label'),'Maestria');
  assert.equal(await skillMarker('stealth').locator('svg path').count(),2);
  assert.equal(await skillMarker('athletics').count(),0,'Untrained skills have no rank indicator');
- assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),24,'Six ability checks before eighteen skills');
+ assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),18,'Only eighteen skills, without six generic checks');
  await page.locator('#sheet-play-view [data-target="skill:stealth"]').click();await page.locator('[data-act="roll-sheet-confirm"]').click();assert(Number(await page.locator('.dice-result').textContent())>0);await page.locator('[data-act="close-sheet-roll"]').click();
  await sheet('inventory');
  await popup('equipment');
@@ -1290,33 +1289,22 @@ try{
  await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="movement"]').count(),0,
   'Movement choices are integrated in Azioni');
- assert(await page.locator('#sheet-play-view [data-battle-action="others"]').evaluate(node=>
-  Boolean(node.compareDocumentPosition(document.querySelector('#sheet-play-view [data-battle-action="checks"]'))&Node.DOCUMENT_POSITION_FOLLOWING)),
-  'Azioni is rendered before Prove abilità');
- const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
- await checks.locator('summary.play-battle-summary').click();
- assert.equal(await checks.locator('[data-action-ability]').count(),6);
- assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
- const strength=checks.locator('[data-action-ability="str"]');
- assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_check:str');
- assert.equal(await strength.locator('[data-target="skill:athletics"]').count(),1);
- assert.equal(await checks.locator('[data-action-ability="con"] .play-battle-attack-entry').count(),1);
- if((await strength.getAttribute('open'))!==null)
-  await strength.locator('summary.play-battle-action-heading').click();
- assert.equal(await strength.getAttribute('open'),null,'Ability groups can be closed before opening');
- await strength.locator('summary.play-battle-action-heading').click();
- const firstRoll=strength.locator('[data-target="ability_check:str"]');
- await firstRoll.click();
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="checks"]').count(),0,
+  'Le prove non occupano più una sezione di Azioni');
+ assert.equal(await page.locator('#sheet-play-view [data-attack-id="ability_checks"]').count(),0);
+ await sheet('skills');
+ assert.equal(await page.locator('#sheet-play-view .play-abilities [data-target="ability_check:str"]').count(),1);
+ assert.equal(await page.locator('#sheet-play-view .play-skills [data-target="skill:athletics"]').count(),1);
+ await page.locator('#sheet-play-view .play-abilities [data-target="ability_check:str"]').click();
  assert.equal((await page.locator('#sheet-roll-dialog .sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
-   'Prova di caratteristica');
+  'Prova di caratteristica');
  assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
- await strength.locator('summary.play-battle-action-heading').click();
- assert.equal(await strength.getAttribute('open'),null);
+ await sheet('battle');
  await page.locator('.page-head [data-act="action-variants"]').click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
  await page.locator('[data-close-variants]').click();
- await shot('action-ability-checks');
+ await sheet('skills');await shot('abilities');await sheet('battle');
  // A persistent class feature must expose a reversible action, not an inert "Attiva" badge.
  await page.evaluate(async()=>{
   const {listCreatures,saveCreature}=await import('/creatures.js');

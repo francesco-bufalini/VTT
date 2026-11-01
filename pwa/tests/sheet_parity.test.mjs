@@ -175,7 +175,7 @@ test('roll preview never rolls automatically; explicit roll returns full dice br
  const save=formulaReadout({values:{'save:dex':4}},'save:dex','TS Destrezza',{signed:true});
  assert.match(save,/data-act="sheet-roll"/);
 });
-test('Info displays the pure ability modifier while rolling the full ability check',()=>{
+test('Abilità displays the pure ability modifier while rolling the full ability check',()=>{
  const creature={id:'modifier-readout-test',kind:'character',name:'Prova',
   abilities:{str:10,dex:14,con:10,int:10,wis:10,cha:10},
   formula_bonuses:[{id:'check-boost',target:'ability_check',expression:'3',origin_name:'Bonus prova'}]};
@@ -188,7 +188,7 @@ test('Info displays the pure ability modifier while rolling the full ability che
  try{
   globalThis.document=dom.window.document;
   const app=dom.window.document.querySelector('#app');
-  mountPlaySheet(app,{creature,calculated,sheet:'info',icon:()=>''});
+  mountPlaySheet(app,{creature,calculated,sheet:'skills',icon:()=>''});
   const dex=app.querySelector('#sheet-play-view .play-ability:nth-child(2)');
   const check=dex.querySelector('[data-act="sheet-roll"][data-target="ability_check:dex"]');
   assert.ok(check,'Clicking the displayed modifier still opens an ability check');
