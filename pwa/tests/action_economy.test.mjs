@@ -716,7 +716,8 @@ test('Prova abilità is a basic capacity without a duplicate timed action',()=>{
  assert.equal(checks.name,'Prova abilità');
  assert.equal(checks.available,true);
  assert.equal(doc(panels.checks).querySelectorAll('[data-action-ability]').length,6);
- assert.equal(doc(panels.others).querySelector('[data-attack-id="ability_checks"]'),null);
+ assert.equal(doc(panels.others).querySelectorAll('[data-action-source="rules"] [data-attack-id="ability_checks"]').length,1,
+  'The rule action is visible once while the full ability-check table remains separate');
 });
 test('basic actions never show unarmed damage unless a benefit explicitly targets the action',()=>{
  const unarmed={id:'unarmed',name:'Colpo senz’armi',melee:true,range_feet:5,
