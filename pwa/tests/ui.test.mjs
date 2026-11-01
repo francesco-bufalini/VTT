@@ -1233,9 +1233,7 @@ test("scroll creation selects a spell and casting level without opening item cat
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   await renameFromIdentity("Scriba degli incantesimi");
   click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"]'));
-  if(document.querySelector('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]')?.getAttribute('aria-pressed')!=='true')
-    click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
+  await until(()=>document.querySelector('#sheet-play-view [data-inventory-section-key="scrolls"] .inventory-section-create'));
   await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="scroll-create"]'));
   click('#sheet-play-view [data-sheet-context="scroll-create"]');
   await until(()=>document.querySelector('#sheet-context-dialog #scroll-spell-query'));
@@ -1282,10 +1280,7 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   await renameFromIdentity("Scriba locale");
   click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="documents"]'));
-  if(document.querySelector('#sheet-play-view [data-subtab="documents"]')?.getAttribute('aria-pressed')!=='true')
-   click('[data-act="inventory-subtab"][data-subtab="documents"]');
-  await until(()=>document.querySelector('[data-act="document-add"]'));
+  await until(()=>document.querySelector('#sheet-play-view [data-inventory-section-key="documents"] .inventory-section-create'));
   assert.ok(document.querySelector('[data-act="new-homebrew-item"]'),
     "Zaino's item actions remain available when Documenti is selected too");
   click('[data-act="document-add"]');
@@ -1321,8 +1316,7 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
   assert.ok(open);open.click();
   await until(()=>document.querySelector('#sheet-play-view .play-identity [data-read-field="name"]')?.textContent==="Scriba locale");
   click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="documents"]'));
-  click('[data-act="inventory-subtab"][data-subtab="documents"]');
+  await until(()=>document.querySelector('#sheet-play-view [data-inventory-section-key="documents"]'));
   await until(()=>document.querySelector('[data-document-card]'));
   const card=document.querySelector('[data-document-card]');
   card.open=true;
