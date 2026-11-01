@@ -738,16 +738,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     .filter(row=>!(row.kind==='ability'&&slotTraitGrants.some(grant=>
       String(grant.origin_name||'').toLowerCase()===String(row.name||'').toLowerCase())));
   const rollBonuses=trackerRollBonusRows(c,d);
-  const trackerChip=(trackerId,cost=1)=>{
-   if(!(cost>0)||!trackerId)return '';
-   const tracker=(d.trackers||[]).find(t=>String(t.id)===String(trackerId));
-   if(!tracker)return '<span class="play-action-tracker play-action-tracker--missing">Tracker non disponibile</span>';
-   const left=Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0));
-   return '<span class="play-action-tracker" title="'+esc(tracker.name)+'" aria-label="'+
-    esc(tracker.name+' · '+left+' di '+tracker.max+' utilizzi')+'">'+
-    '<span class="play-action-tracker-name">'+esc(tracker.name)+'</span>'+
-    '<strong class="play-action-tracker-count">'+left+'/'+esc(tracker.max)+'</strong></span>';
-  };
   const bonusIsDamage=row=>(Array.isArray(row.targets)?row.targets:[row.target]).some(target=>
    /^(?:attack_damage:|action_damage:|damage_roll$|spell_damage$)/.test(String(target||'')));
   const bonusRows=(trackerId,group='roll')=>rollBonuses.filter(row=>
@@ -844,9 +834,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const caption=row.kind==='spell'?row.casting_time_label:
      ((row.power?.roll_attack||row.classAction?.roll_attack)&&row.timing==='action'?'Azione di attacco':
        timeLabels[row.timing]||row.timing||'Secondo il privilegio');
-   const note=(row.classAction?.available===false?' · Requisiti non soddisfatti':
-     row.kind==='spell'?(row.cost>1?' · Costo '+row.cost:''):
-     (row.cost?' · Costo '+row.cost:''))+
+   const note=(row.classAction?.available===false?' · Requisiti non soddisfatti':'')+
      (row.power?.die||row.classAction?.dice?' · Dado '+(row.power?.die||row.classAction?.dice):'');
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+
@@ -882,13 +870,22 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const descriptive=action.descriptive_only===true||power.descriptive_only===true;
    const useId=persistent&&action.class_feature_id&&action.id?action.id:id;
    const monsterPayment=action.monster_action&&row.cost>0;
+   // Purely descriptive free entries do not have an operation to perform.
+   // Keep real free activations (rolls, targeting, state changes) available.
+   const modeledEffect=Boolean(persistent||power.roll_attack||action.roll_attack||
+    power.target_mode||action.target_mode||power.area_shape||action.area_shape||
+    power.rule_action_id||action.rule_action_id||power.class_feature_id||action.class_feature_id||
+    power.action_ref||action.action_ref||power.persistent_key||action.persistent_key||
+    power.effect||action.effect||power.effects?.length||action.effects?.length||
+    power.mode||action.mode||power.companion_rule_id||action.companion_rule_id);
+   const hasOperation=active||row.cost>0&&!!tracker||modeledEffect;
    const useAction=monsterPayment?'monster-action-use':'battle-use-ability';
    const useIdentity=monsterPayment?' data-monster-action-id="'+esc(action.id)+'"':' data-ability-id="'+esc(useId)+'"';
    return '<div class="play-resource-power-row'+(row.classAction?.available===false?' play-resource-power--unavailable':'')+'" data-ability-id="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
-    battleActionUseBox({act:descriptive&&!monsterPayment?'':active?'condition-remove-ability':useAction,
+    battleActionUseBox({act:!hasOperation||descriptive&&!monsterPayment?'':active?'condition-remove-ability':useAction,
      attrs:active?' data-ability-key="'+esc(statusKey)+'"':useIdentity+
       (persistent?' data-persistent-key="'+esc(statusKey)+'"':''),
      tracker,cost:active?0:row.cost,label:active?'Disattiva':use,disabled:active?false:disabled,

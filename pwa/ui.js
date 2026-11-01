@@ -7254,20 +7254,6 @@ async function handleAction(target){
     if(followUp)await openCharacterChoice(followUp);
     return;
   }
-  // A sequence step never rolls here: it reveals the original computed attack
-  // in the dedicated Attacchi table, including its native hit/damage controls.
-  if(act==='battle-attack-jump'){
-    const panel=app.querySelector('#sheet-play-view [data-battle-action="attacks"]');
-    if(!panel)return;
-    panel.open=true;state.disclosureState.set('battle-disclosure:attacks',true);
-    const id=String(target.dataset.attackTargetId||'');
-    const attack=id?[...panel.querySelectorAll('[data-attack-id]')]
-      .find(node=>node.dataset.attackId===id):null;
-    const focus=attack?.querySelector('.play-battle-attack-details>summary')||
-      panel.querySelector(':scope > summary');
-    (attack||panel).scrollIntoView({behavior:'smooth',block:'center'});
-    focus?.focus({preventScroll:true});return;
-  }
   // A tracker-backed roll bonus must be selected in a real roll popup; a
   // click on the benefit card navigates to that roll without spending uses.
   if(act==='battle-roll-bonus-jump'){
@@ -7433,13 +7419,6 @@ async function handleAction(target){
   }
   // Manual action grants share the same tracker counter as native powers.
   // Recompute the projected action before spending; never trust DOM costs.
-  if(act==='battle-action-roll'){
-    const rollTarget=String(target.dataset.actionRollTarget||'');
-    const rollLabel=String(target.dataset.actionRollLabel||'Prova');
-    if(!rollTarget)throw Error('Tiro non disponibile.');
-    await handleAction({dataset:{act:'sheet-roll',target:rollTarget,label:rollLabel}});
-    return;
-  }
   if(act==='battle-action-activate'){
     const creature=state.editor?.read();if(!creature)throw Error('Creatura non disponibile.');
     const calculated=await computeLocalData(creature);

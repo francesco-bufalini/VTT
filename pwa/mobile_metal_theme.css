@@ -1222,7 +1222,6 @@ input:disabled{opacity:.75;cursor:default}
 .play-battle-monster-option-body>p{margin:5px 0 0;white-space:pre-line}
 .play-battle-attack-rolls{display:flex;flex-direction:column;align-self:flex-start;align-items:stretch;gap:5px}
 .play-battle-attack-roll{display:flex;align-items:center;justify-content:flex-end;gap:5px;width:100%;min-height:41px;min-width:0;padding:5px 7px;border:1px solid #a77c493f;border-radius:9px;background:#8a644c24;color:#f2d39a;cursor:pointer}
-.play-battle-attack-roll>b{flex:0 0 auto;font:600 14px/1.2 system-ui;font-variant-numeric:tabular-nums}
 .play-battle-attack-roll>.action-dice{flex:0 0 18px;width:18px;height:18px}
 .play-battle-equipment{border-top:1px solid #aa845139}
 @media(max-width:360px){
@@ -1273,8 +1272,8 @@ input:disabled{opacity:.75;cursor:default}
  min-height:39px;width:100%;min-width:0}
 .play-battle-roll-formula{flex:1 1 auto;min-width:0;font:400 12px/1.4 system-ui;
  color:#cbb591;overflow-wrap:break-word}
-.play-battle-attack-roll{flex:0 0 auto;width:auto;min-width:58px;min-height:34px;
- padding:5px 8px;gap:7px;border-radius:7px}
+.play-battle-attack-roll{flex:0 0 auto;width:40px;min-width:40px;min-height:34px;
+ padding:5px 8px;gap:0;justify-content:center;border-radius:7px}
 .play-battle-attack-roll>.action-dice{width:18px;height:18px;flex:0 0 18px}
 .play-battle-effect{display:flex;align-items:center;gap:9px;min-width:0;
  min-height:42px;margin:0 10px;padding:7px 0 8px 32px;border-top:1px solid #9d78482b;
@@ -6813,18 +6812,10 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 #sheet-play-view .play-action-benefit-rows>.play-attack-sequence{margin:0 8px 8px 40px}
 #sheet-play-view .play-battle-attack-details>summary>.play-action-tracker{max-width:min(36%,145px);margin-left:auto}
 
-/* Attack-granting actions show action economy and tracker costs, never range. */
-#sheet-play-view .play-battle-attack-action .play-attack-action-cost{
- display:inline-flex;max-width:100%;width:fit-content;align-items:center;
- margin-top:5px;padding:3px 7px;border:1px solid #b28a5259;border-radius:7px;
- background:#74512b21;color:#dfbb81;font:600 10px/1.3 system-ui;
-}
+/* An attack routine uses the identical plain action-type subtitle as Capacità. */
 #sheet-play-view .play-battle-attack-action .play-battle-attack-copy{min-width:0}
-#sheet-play-view .play-battle-attack-action .play-action-tracker{
- max-width:min(42%,155px);flex-shrink:1;align-self:center
-}
 #sheet-play-view .play-battle-attack-action .play-attack-sequence{
- margin-top:0;margin-bottom:9px;list-style:decimal
+ margin-top:0;margin-bottom:9px;list-style:none
 }
 
 
@@ -6877,7 +6868,12 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  min-width:0;white-space:nowrap
 }
 #sheet-play-view .play-action-use-box .play-action-use-bottom:has(.play-action-tracker-count){
- justify-content:space-between
+ justify-content:center;gap:5px
+}
+#sheet-play-view .play-action-use-box .play-action-use-cost,
+#sheet-play-view .play-action-use-box .play-action-use-separator{
+ flex:0 0 auto;color:#f5d8a9;font:700 11px/1.25 system-ui;
+ font-variant-numeric:tabular-nums
 }
 #sheet-play-view .play-action-use-box .play-action-tracker-count{
  color:#f5d8a9;font:700 11px/1.25 system-ui;font-variant-numeric:tabular-nums
@@ -6889,9 +6885,6 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  border-color:#e5bd7d;background:#865c354d
 }
 #sheet-play-view .play-action-use-box:disabled{opacity:.45;cursor:default}
-#sheet-play-view .play-action-use-space{
- flex:0 0 auto;width:clamp(88px,28vw,145px);max-width:100%;margin:5px 7px 5px 3px
-}
 #sheet-play-view .play-battle-other-rolls{
  grid-column:1/-1;display:grid;gap:0;width:auto;min-width:0;
  margin:0;padding:0 12px 8px 42px
@@ -6916,15 +6909,6 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  flex:1 1 auto;min-width:0;overflow-wrap:anywhere;color:#cbb591;
  font:400 12px/1.4 system-ui
 }
-#sheet-play-view .play-battle-attack-step>.play-battle-attack-step-use{
- display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
- min-width:58px;min-height:32px;padding:5px 9px;
- border:1px solid #a77c493f;border-radius:7px;background:#8a644c24;
- color:#f2d39a;font:600 11px/1.2 system-ui;cursor:pointer
-}
-#sheet-play-view .play-battle-attack-step>.play-battle-attack-step-use:focus-visible{
- outline:2px solid var(--accent);outline-offset:2px
-}
 #sheet-play-view .play-action-benefit-rows>.play-attack-sequence{
  margin:0 8px 8px 40px;padding:0 8px;list-style:none
 }
@@ -6936,7 +6920,6 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  #sheet-play-view .play-battle-benefit-row>.play-action-use-box{
   min-width:76px;width:clamp(78px,27vw,110px);margin-inline:2px 4px;padding:4px 5px
  }
- #sheet-play-view .play-action-use-space{width:clamp(78px,27vw,110px);margin-inline:2px 4px}
  #sheet-play-view .play-battle-other-rolls{padding-left:34px;padding-right:6px}
  #sheet-play-view .play-battle-benefit-row>.play-attack-sequence{margin-left:31px;margin-right:5px}
  #sheet-play-view .play-battle-benefit-details>summary.play-resource-power-open{gap:6px;padding-inline:6px}
@@ -6950,3 +6933,16 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 #sheet-play-view .play-action-benefit-rows>.play-resource-power-row>.play-resource-power-open{
  min-width:0;width:100%;min-height:53px
 }
+
+/* A navigation-only action has no fake Use control, but retains its title style. */
+#sheet-play-view .play-battle-direct-action{
+ display:flex;align-items:center;gap:9px;min-width:0;min-height:53px;
+ width:100%;padding:8px 10px;border:0;background:transparent;text-align:left;
+ color:#edd5af;cursor:pointer
+}
+#sheet-play-view .play-battle-direct-action:hover{background:#ac77411c}
+#sheet-play-view .play-battle-direct-action .play-battle-attack-copy{
+ display:flex;flex-direction:column;gap:3px;min-width:0
+}
+#sheet-play-view .play-battle-direct-action strong{font:550 13px/1.4 system-ui;color:#f4dbb6}
+#sheet-play-view .play-battle-direct-action small{font:400 11px/1.4 system-ui;color:#c5a982}

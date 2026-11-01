@@ -91,7 +91,8 @@ test('battle resources display monster costs and the granting attack description
   for(const id of ['legendary_action','legendary_resistance','lair_action'])
    assert.ok(app.querySelector('[data-battle-action="others"] [data-attack-id="'+id+'"]'));
   const wing=app.querySelector('[data-ability-id="monster:legendary:1"]');
-  assert.match(wing.textContent,/Azione leggendaria.*Costo 2/);
+  assert.match(wing.textContent,/Azione leggendaria.*−2.*·.*3\/3/,
+   'The action timing stays plain and the cost lives inside the tracker button');
   assert.equal(wing.querySelector('[data-act="monster-action-use"]').dataset.monsterActionId,'monster:legendary:1');
   assert.ok(![...app.querySelectorAll('[data-ability-id]')].some(node=>node.textContent.includes('Legendary Resistance')));
  }finally{globalThis.document=previous;dom.window.close();}

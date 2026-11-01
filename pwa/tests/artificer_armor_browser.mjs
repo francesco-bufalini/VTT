@@ -73,8 +73,14 @@ try{
 
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  await page.getByRole('button',{name:'Usa Campo difensivo',exact:true}).click();
+ const fieldPayment=page.locator('#class-feature-dialog [data-ability-payment]');
+ await fieldPayment.selectOption('class:artificer:tce:defensive_field');
  await page.locator('[data-feature-confirm]').click();
- await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.temporary_hp===8;});
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  const creature=(await listCreatures())[0].creature;
+  return creature.temporary_hp===8&&creature.resource_tracker_spent?.['class:artificer:tce:defensive_field']===1;
+ });
  assert.equal((await record()).resource_tracker_spent['class:artificer:tce:defensive_field'],1);
  // Flash of Genius appears only as an optional bonus on the eligible roll.
  await sheet('info');

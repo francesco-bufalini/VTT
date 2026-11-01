@@ -94,15 +94,24 @@ try{
       'The default Attack action is not listed as an attack-granting capability');
     assert.equal(await attackGroup.locator('[data-act="battle-attack-map"],.play-battle-attack-range').count(),0,
       'Attack actions cannot show weapon range or map controls');
-    assert.equal(await attackGroup.locator('.play-attack-action-cost').count()>0,true,
-      'Each attack-granting action shows its action-economy cost');
+    assert.equal(await attackGroup.locator('.play-battle-attack-copy small').count()>0,true,
+      'Attack-granting actions share the capacity action-type subtitle');
+    assert.equal(await attackGroup.locator('.play-attack-action-cost').count(),0,
+      'No special cost badge distinguishes attack actions');
     assert.equal(await attackGroup.locator('[data-attack-id="opportunity"]').count(),1);
     assert.equal(await attackGroup.locator('[data-attack-id="two_weapon"]').count(),1);
+    assert.equal(await attackGroup.locator('[data-attack-id="opportunity"] .play-action-use-box, [data-attack-id="two_weapon"] .play-action-use-box').count(),0,
+      'Unpaid attack actions never show a Use button');
+    assert.equal(await attackGroup.locator('.play-attack-sequence button').count(),0,
+      'Descriptive subentries have no action button');
     assert(await otherGroup.getByText('Scattare').count()>0);
     assert.equal(await abilityGroup.locator('[data-ability-id],[data-attack-id]').count()>0,true);
     const paid=abilityGroup.locator('.play-resource-power-row,.play-battle-attack-entry').filter({hasText:'Capacità di prova'}).first();
     assert.equal(await paid.locator('button.play-action-use-box').count(),1);
-    assert.match(await paid.locator('button.play-action-use-box').textContent(),/Cariche.*2\/3.*Usa/);
+    assert.match(await paid.locator('button.play-action-use-box').textContent(),/Cariche.*−1.*·.*2\/3/);
+    assert.doesNotMatch(await paid.locator('button.play-action-use-box').textContent(),/Usa/,
+      'The remaining uses and their cost replace the visible Use verb');
+    assert.match(await paid.locator('button.play-action-use-box').getAttribute('aria-label'),/Usa Capacità di prova/);
     assert.equal(await paid.locator('button.play-action-use-box .play-action-tracker-name').count(),1,
      'Tracker name, remaining charges and Use belong to a single button');
     const chipStyle=await paid.locator('.play-action-tracker-name').evaluate(node=>
@@ -120,6 +129,9 @@ try{
      await first.locator(':scope > summary').click();
      assert.notEqual(await first.getAttribute('open'),null);
     }
+    assert.equal(await attacks.locator('.play-battle-attack-roll b').count(),0,
+      'Roll buttons only contain the die; their modifiers remain in the adjacent formula');
+    assert((await attacks.locator('.play-battle-attack-roll .action-dice').count())>0);
     const rangedAttack=page.locator('[data-battle-action="attacks"] [data-act="battle-attack-map"]').first();
     assert(await rangedAttack.count(),'Each computed weapon has a map range action');
     assert(await rangedAttack.getAttribute('aria-label'),'Map range action has an accessible label');

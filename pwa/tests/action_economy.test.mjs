@@ -28,7 +28,9 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  const sword=attacks.querySelector('[data-attack-id="item:sword"]');
  assert(sword);assert.equal(sword.querySelector('details').open,false);
  assert.match(sword.querySelector('.play-battle-roll-formula').textContent,/1d20 \+ 5 · Mischia/);
- assert.equal(sword.querySelector('.play-battle-attack-roll b').textContent,'+5');
+ assert.equal(sword.querySelector('.play-battle-attack-roll b'),null,
+  'The modifier appears only beside the die, not inside the roll button');
+ assert(sword.querySelector('.play-battle-attack-roll .action-dice'));
  assert.equal(sword.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
  assert(sword.querySelector('[data-act="battle-damage-roll"]'));
  assert.equal(sword.querySelector('.play-battle-attack-range').textContent,'Portata 5 ft');
@@ -45,7 +47,9 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
   'Azione secondaria is a generic action, not a weapon attack');
  assert.equal(dagger.querySelector('.play-battle-attack-range'),null,'An attack action has no reach');
  assert.equal(dagger.querySelector('[data-act="battle-attack-map"]'),null,'An attack action has no map control');
- assert.match(dagger.querySelector('.play-attack-action-cost').textContent,/Azione bonus/);
+ assert.match(dagger.querySelector('.play-battle-attack-copy small').textContent,/Azione bonus/);
+ assert.equal(dagger.querySelector('.play-action-use-box'),null,
+  'An attack routine without a tracker has no Use control');
  assert.equal(dagger.closest('[data-action-benefit]').dataset.actionBenefit,'attacks',
   'The secondary-hand strike is in bonus actions');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
@@ -556,7 +560,9 @@ test('real Extra Attack grant replaces generic Attack without a count badge',()=
  assert.equal(attack.querySelector('.play-battle-attacks-per-action'),null);
  assert.equal(attack.querySelector('.play-battle-attack-range'),null);
  assert.equal(attack.querySelector('[data-act="battle-attack-map"]'),null);
- assert.match(attack.querySelector('.play-attack-action-cost').textContent,/Azione/);
+ assert.match(attack.querySelector('.play-battle-attack-copy small').textContent,/Azione/);
+ assert.equal(attack.querySelector('.play-action-use-box'),null,
+  'Free Extra Attack is descriptive and has no tracker payment button');
  assert.equal(result.basicActions.find(row=>row.id==='attack').attack_count,3);
  assert(!result.attacks.includes('play-battle-attacks-per-action'));
  assert(doc(result.attacks).querySelector('[data-attack-id="unarmed"]'));

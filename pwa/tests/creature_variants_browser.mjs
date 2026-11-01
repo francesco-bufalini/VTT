@@ -90,13 +90,18 @@ try{
  });
  await page.reload();await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).click();await sheet('battle');
  const resources=page.locator('[data-battle-action="resources"]');if(!await resources.evaluate(n=>n.open))await resources.locator(':scope > summary.play-battle-summary').click();
- await page.locator('[data-act="battle-use-ability"]').filter({hasText:/Attiva/}).first().click();
+ await page.locator('[data-act="battle-use-ability"][aria-label^="Attiva "]').first().click();
  await page.locator('[data-miniature-search]').fill('wolf');await page.locator('[data-miniature-id="wolf"]').click();
  assert.deepEqual((await record()).resource_tracker_spent,{});
  await page.locator('[data-form-hp]').fill('11');await page.locator('[data-form-confirm]').click();await page.locator('.miniature-dialog').waitFor({state:'detached'});
  c=await record();assert.equal(c.current_hp,22);assert.equal(c.variants.find(v=>v.id===c.current_form_id).values.current_hp,11);assert.equal(Object.values(c.resource_tracker_spent)[0],1);
  await damage(15);await page.locator('#form-depleted-dialog[open]').waitFor();
- assert.equal((await record()).current_hp,22);await page.locator('[data-form-restore]').click();await waitForm('');assert.equal((await record()).current_hp,18);assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
+ assert.equal((await record()).current_hp,22);await page.locator('[data-form-restore]').click();await waitForm('');
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures()).find(r=>r.creature.kind==='character')?.creature.current_hp===18;
+ });
+ assert.equal((await record()).current_hp,18);assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
  assert.deepEqual(f.errors,[]);assert.equal(f.writes.length,0);
  console.log('PASS: Chrome variants, normal alias editing, shared damage, bestiary section import, independent HP, both overflow decisions, reload and responsive 360/390/768/1440 layouts.');
 }finally{await f.close();}
