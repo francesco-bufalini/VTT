@@ -36,14 +36,16 @@ test('multiattack is distinct from a normal attack and uses named monster strike
  const sequence=actions.querySelector('[data-attack-id="monster:multiattack"] .play-attack-sequence');
  assert(sequence,'Multiattack has a descriptive sequence');
  assert.deepEqual([...sequence.children].map(node=>node.querySelector('.play-battle-roll-formula').textContent),['Bite','Claw','Claw','Tail']);
- assert.equal(sequence.querySelectorAll('[data-act="battle-attack-jump"]').length,4,
-  'Each descriptive step exposes a Use button navigating to Attacchi');
+ assert.equal(sequence.querySelectorAll('button').length,0,
+  'Attack subentries describe attacks but never have Use controls');
  assert.equal(sequence.querySelectorAll('[data-target],[data-damage-formula]').length,0);
  assert.equal(actions.querySelector('[data-attack-id="attack"]'),null,'Generic Attack is absent from Azioni');
  assert.equal(sequence.closest('.play-battle-attack-action').querySelector('.play-battle-attack-range'),null);
  assert.equal(sequence.closest('.play-battle-attack-action').querySelector('[data-act="battle-attack-map"]'),null);
  assert.equal(sequence.closest('.play-battle-attack-action').querySelector('.play-battle-attacks-per-action'),null);
- assert.match(sequence.closest('.play-battle-attack-action').querySelector('.play-attack-action-cost').textContent,/Azione/);
+ assert.match(sequence.closest('.play-battle-attack-action').querySelector('.play-battle-attack-copy small').textContent,/Azione/);
+ assert.equal(sequence.closest('.play-battle-attack-action').querySelector('.play-action-use-box'),null,
+  'Multiattack with no tracker has no Use control');
  assert.equal(resources.querySelectorAll('[data-attack-id="monster:multiattack"]').length,0);
  assert(resources.querySelector('[data-attack-id="monster:action:1"]'));
 });
@@ -73,11 +75,17 @@ test('attack-action row shows action type and tracker cost but no range, map too
   tracker_id:'charges',cost:2,description:'Quattro attacchi.'
  },{trackers:[{id:'charges',name:'Cariche del drago',max:5,spent:2}]}));
  const action=document.querySelector('[data-attack-id="monster:multiattack"]');
- assert.match(action.querySelector('.play-attack-action-cost').textContent,/Azione/);
+ assert.match(action.querySelector('.play-battle-attack-copy small').textContent,/Azione/);
+ assert.equal(action.querySelector('.play-attack-action-cost'),null,
+  'Attack-action timing reuses the regular capacity subtitle style');
  const use=action.querySelector('.play-action-use-box');
- assert(use,'The cost and Use control share a single button');
+ assert(use,'The tracker cost and remaining charges share one actionable button');
  assert.match(use.querySelector('.play-action-tracker-name').textContent,/Cariche del drago/);
- assert.match(use.querySelector('.play-action-use-bottom').textContent,/3\/5.*Usa/);
+ assert.match(use.querySelector('.play-action-use-bottom').textContent,/−2.*·.*3\/5/);
+ assert.doesNotMatch(use.textContent,/Usa/i,
+  'The operative control does not visually repeat the word Usa');
+ assert.match(use.getAttribute('aria-label'),/Usa Multiattacco/,
+  'The control retains an accessible action name');
  assert.equal(action.querySelectorAll('.play-attack-sequence > li').length,4);
  for(const selector of ['.play-battle-attack-range','.play-battle-attacks-per-action',
   '[data-act="battle-attack-map"]','[data-target^="attack_hit:"]'])
