@@ -6,8 +6,8 @@ import {traitStateSource} from './trait_state_rules.js';
 const rows=v=>Array.isArray(v)?v:[];
 const low=v=>String(v??'').trim().toLowerCase();
 const identity=v=>typeof v==='string'?v:v?.id;
-export const POWER_SELECTION_TRIGGERS={level_up:'Passaggio di livello',short_rest:'Riposo breve',long_rest:'Riposo lungo',daily:'Giornaliero',turn:'Turno'};
-export const powerSelectionTriggerLabel=v=>POWER_SELECTION_TRIGGERS[v]||v||'';
+export const POWER_SELECTION_TRIGGERS={level_up:'Passaggio di livello',short_rest:'Riposo breve',long_rest:'Riposo lungo'};
+export const powerSelectionTriggerLabel=v=>Array.isArray(v)?v.map(powerSelectionTriggerLabel).join(' / '):POWER_SELECTION_TRIGGERS[v]||v||'';
 export function powerSelectionLimit(spec,level){
  if(spec==null)return null;if(typeof spec==='number')return spec;
  const entries=spec.by_class_level||Object.entries(spec);
@@ -15,15 +15,19 @@ export function powerSelectionLimit(spec,level){
 }
 function definitions(catalog){
  const optional=catalog.optionalFeatureProgressions||{};
- return [...rows(catalog.selections),...rows(optional.progressions).map(rule=>({...rule,
-  forget:'unapply',unique_across_selections:true,source:{type:'inline',options:rows(optional.options).filter(option=>rows(option.types).some(type=>rows(rule.feature_types).includes(type)))}}))];
+ const typed=rows(catalog.optionGrants?.entries).filter(entry=>entry?.benefit?.type==='option_grant')
+  .map(entry=>({...entry.benefit.option_grant,origin_ref:entry.granted_by?.ref}));
+ const legacy=[...rows(catalog.selections),...rows(optional.progressions).map(rule=>({...rule,
+  forget:'unapply',unique_across_selections:true,source:{type:'optional_features',feature_types:rule.feature_types}}))];
+ const used=new Set(typed.map(rule=>rule.id));
+ return [...typed,...legacy.filter(rule=>!used.has(rule.id))];
 }
 function member(record,owner={}){
  return rows(record.classes?.length?record.classes:[{name:record.class,source:record.class_source,level:record.level,subclass:record.subclass}]).find(row=>
  low(row.name)===low(owner.class_name)&&(!owner.class_source||low(row.source||record.class_source)===low(owner.class_source))&&
  (!owner.subclass||low(row.subclass)===low(owner.subclass)));
 }
-function optionsFor(record,rule){
+function optionsFor(record,rule,catalog={}){
  const limit=rule.layers?.learned?.limit??rule.layers?.prepared?.limit;
  const steps=rows(limit?.by_class_level),slots=[];
  if(steps.length)for(const [at,count] of steps)while(slots.length<Number(count))slots.push(Number(at));
@@ -32,14 +36,21 @@ function optionsFor(record,rule){
   id:pack.id+':'+(i+1),name:pack.name+' · scelta '+(i+1),choice_slot:i+1,min_level:at,
   subchoices:{count:pack.count,label:pack.label||pack.name,options:pack.options}
  })));
- return [...rows(rule.source?.options),...packages,...rows(record.power_selection_custom_options?.[rule.id])].filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014'))).map(row=>({...row,
- min_level:row.min_level||(rows(row.prerequisite).length?Math.min(...rows(row.prerequisite).map(p=>Number(p.level?.level||p.level)||0)):0),
+ const source=rule.source||{};
+ const optional=source.type==='optional_features'?
+   rows(catalog.optionalFeatureProgressions?.options).filter(option=>rows(option.types).some(t=>rows(source.feature_types).includes(t))):[];
+ const listed=source.type==='list_refs'?rows(source.list_ids).flatMap(id=>
+   rows(catalog.optionLists?.entries).find(entry=>entry.benefit?.option_list?.id===id)?.benefit?.option_list?.options||[]):[];
+ return [...rows(source.options),...packages,...optional,...listed,...rows(record.power_selection_custom_options?.[rule.id])]
+  .filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014'))).map(row=>({...row,
+ min_level:row.min_level||(rule.benefit_type==='option_grant'?0:rows(row.prerequisite).length?Math.min(...rows(row.prerequisite).map(p=>Number(p.level?.level||p.level)||0)):0),
  details:row.details||(!row._homebrew&&row.source?{category:'optional_features',name:row.name,source:row.source}:undefined)}));}
 // Selections and applications are already stored in canonical form.
 export function normalizeSelectionRecord(record={}){return record;}
 export function powerSelectionModels(raw={},calculated={},catalog={}){
  const record=normalizeSelectionRecord(raw,catalog),models=[];
  for(const rule of definitions(catalog)){
+  if(rule.option_kind==='spell')continue; // Spells are cast, not applied as capabilities.
   const owner=member(record,rule.owner);if(!owner||!isContentAvailableForRules({source:rule.owner?.class_source},record.rules_version||'2014'))continue;
   const level=Number(owner.level)||0,feature=rows(calculated.features).find(f=>low(f.name)===low(rule.owner?.trait)&&low(f.class_name||f.requirements?.class_name||String(f.origin_key).split('|')[2])===low(rule.owner?.class_name)&&(!rule.owner?.class_source||low(f.class_source||f.requirements?.class_source||String(f.origin_key).split('|')[1])===low(rule.owner.class_source))&&!f.disabled&&!f.inactive&&record.trait_enabled?.[f.key]!==false);
   if(!feature)continue;
@@ -47,7 +58,7 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   if([origin,feature.origin_key,String(feature.origin_key||'').split('|').slice(0,3).join('|')].some(id=>id&&(record.origin_enabled?.[id]===false||rows(record.proficiency_origins).some(row=>row.id===id&&row.disabled))))continue;
   const parent=rule.requires_application,binding=parent?rows(record.power_applications?.[parent.selection]).find(row=>!parent.bound||rows(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id)):null;
   if(parent&&!binding)continue;
-  const options=optionsFor(record,rule).map(option=>{
+  const options=optionsFor(record,rule,catalog).map(option=>{
    if(rule.option_kind!=='trait_state')return option;
    const original=traitStateSource(option,feature,calculated.features);
    return {...option,name:original.name,description:original.description};
@@ -65,13 +76,14 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
    layers[stage]={enabled:true,selected,used:selected.length,limit,trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger),automatic:spec.mode==='automatic',target:stage==='applied'?rule.application?.target||spec.target:null};
   }
   if(layers.learned?.limit===0&&!layers.learned.selected.length)continue;
-  models.push({...rule,title:rule.option_kind==='trait_state'?feature.name:rule.title,benefit_type:rule.benefit_type||'option_selection',source_type:'option_catalog',ui:'generic',options,layers,level,
+  models.push({...rule,title:rule.title||feature.name,benefit_type:rule.benefit_type||'option_selection',source_type:'option_catalog',ui:'generic',options,layers,level,
    origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required});
  }
  // Spell selection extends the same learned/prepared/applied layer contract.
  // A benefit declares both the spell catalogue and the owning class level;
  // this read-only projection deliberately preserves existing spell storage/UI.
- for(const template of rows(catalog.templates))
+ for(const template of rows(catalog.templates).length?rows(catalog.templates):
+   [{id:'class_spellcasting',source:'spell_selection'}])
    if(['casting_classes','spell_selection'].includes(template.source))
    for(const member of rows(calculated.casting_classes)){
      const declared=member.selection_layers||{};
@@ -90,7 +102,8 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
            trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger)};
      }
      models.push({id:template.id+':'+member.id,title:member.name+' · Incantesimi',
-       benefit_type:'spell_selection',source_type:'spell_catalog',
+       benefit_type:rows(catalog.optionGrants?.entries).length?'option_grant':'spell_selection',
+       option_kind:'spell',source_type:'spell_catalog',
        source:member.spell_list_source||{type:'spell_catalog',class_name:member.spell_list_class_name||member.name},
        spell_list_class_name:member.spell_list_class_name||member.name,
        level_class_name:member.level_class_name||member.name,
@@ -169,7 +182,7 @@ export function powerStateActivationPatch(record,calculated,catalog,stateId){
   const active=rows(model.layers.applied?.selected).some(row=>identity(row)===option.id);
   return powerApplicationPatch(record,calculated,catalog,model.id,option.id,!active);
  }
- if(definitions(catalog).some(rule=>optionsFor(record,rule).some(option=>rows(option.effects).some(effect=>effect.type==='state_selection'&&effect.value===stateId))))throw Error('Selezione non disponibile.');
+ if(definitions(catalog).some(rule=>optionsFor(record,rule,catalog).some(option=>rows(option.effects).some(effect=>effect.type==='state_selection'&&effect.value===stateId))))throw Error('Selezione non disponibile.');
  return undefined;
 }
 export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,optionId,name,description='',settings={}){
@@ -220,6 +233,7 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
  const record=normalizeSelectionRecord(raw,catalog),models=powerSelectionModels(record,{features},catalog),inventory=structuredClone(rows(record.inventory)).map(item=>({...item,option_extensions:rows(item.option_extensions).filter(e=>!e.selection_id)}));
  const optional=rows(record.optional_features_catalog).filter(row=>!row.selection_origin_id);const states={...record.trait_state_selection};
  const grants=Object.fromEntries(Object.values(EFFECT_FIELDS).map(field=>[field,rows(record[field]).filter(row=>!row.selection_origin_id)]));
+ const selectionTraits=[];
  // Model state choices are derived, not another persisted selection engine.
  for(const rule of definitions(catalog))for(const option of optionsFor(record,rule))for(const e of rows(option.effects))if(e.type==='state_selection')delete states[e.key];
  for(const model of models)for(const application of rows(model.layers.applied?.selected)){
@@ -230,11 +244,19 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
    const nativeDefinition=rows(catalogs.abilityGrants?.artificer_infusions).find(row=>row.id===option.item_effects?.id);
    item.option_extensions=[...rows(item.option_extensions),{selection_id:model.id,id:option.id,name:option.name,description:option.description,details:option.details,origin_id:model.source_origin_id,level:model.level,requires_attunement:option.requires_attunement,effect_choice:application.effect_choice||{},definition:nativeDefinition?{...option.item_effects,...nativeDefinition}:option.item_effects||{id:option.id,name:option.name}}];
   }
+  if(!item&&model.option_kind==='capability')selectionTraits.push({
+   id:'selection:'+model.id+':'+option.id,name:option.name||option.id,
+   description:option.description||'',details:option.details||null,
+   source:option.source||'',selection_id:model.id,option_id:option.id,
+   origin_id:'selection:'+model.id+':'+option.id,parent_origin:model.source_origin_id,
+   benefits:rows(option.effects)
+  });
   for(const [index,effect] of [...rows(model.application?.effects),...rows(option.effects)].entries()){
    appendTypedBenefit(grants,effect,{id:'selection:'+model.id+':'+option.id+':'+index,selection_origin_id:model.id,origin_id:item?'item-instance:'+(item.instance_id||item.id):model.origin_id,parent_origin:model.source_origin_id,origin_name:option.name,automatic:false,disabled:false});
    if(effect.type==='catalog_feature')optional.push({name:option.name,source:option.source,origin_id:model.origin_id,selection_origin_id:model.id,entries:[option.description||'']});
    if(effect.type==='state_selection')states[effect.key]=effect.value;
   }
  }
- return {...record,...grants,inventory,optional_features_catalog:optional,trait_state_selection:states,selection_models:models,selection_definition_ids:definitions(catalog).map(rule=>rule.id)};
+ return {...record,...grants,inventory,optional_features_catalog:optional,trait_state_selection:states,
+  selection_traits:selectionTraits,selection_models:models,selection_definition_ids:definitions(catalog).map(rule=>rule.id)};
 }

@@ -1419,7 +1419,8 @@ async function computeLocalData(record){
   }
   const infusion_catalog=catalogs.abilityGrants?.artificer_infusions||[];
   const infusion_mechanics={...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]};
-  const powerSelectionCatalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{},capacity_grants:featureItemGrants(record,calculated.features||[],catalogs.featureItemGrants||[])};
+  const powerSelectionCatalog={...(catalogs.powerSelections||{}),optionGrants:catalogs.optionGrants||{},
+    optionLists:catalogs.optionLists||{},optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{},capacity_grants:featureItemGrants(record,calculated.features||[],catalogs.featureItemGrants||[])};
   const power_selections=powerSelectionModels(record,calculated,powerSelectionCatalog);
   // Spell-like class privileges are ordinary levelled spell definitions. Keep
   // their catalog details available offline and after an asynchronous refresh.
@@ -2628,7 +2629,7 @@ async function editorView() {
             (member.mode==='Preparati'?'<span class="magic-source-resource magic-selection-rest" title="Puoi riselezionare gli incantesimi dopo un riposo lungo"><span class="magic-source-resource-label">Riposo lungo</span></span>':'')+
             (member.mode==='Conosciuti'?(()=>{const trigger=calculated.power_selections?.find(row=>row.id==='class_spellcasting:'+member.id)?.layers.learned?.change_label;return trigger?'<span class="magic-source-resource magic-selection-rest" title="Quando cambiare gli incantesimi conosciuti"><span class="magic-source-resource-label">'+esc(trigger)+'</span></span>':'';})():'')+
             '</div></header>'+
-            castingStatistics(c,member.id,member.ability)+
+            (member.ability?castingStatistics(c,member.id,member.ability):'')+
             '<div class="magic-source-controls">'+
             (member.mode==='Preparati'?
               '<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="prepared_spells">Prepara incantesimi</button>':'')+
@@ -3254,7 +3255,8 @@ function learningPickerOptionGroups(options,renderRow,levelOf,minLevel=0) {
    .map(renderRow).join('')+'</div></section>').join('')+'</div>';
 }
 function optionBenefitPanels(c,calculated){
- return (calculated.power_selections||[]).filter(model=>model.benefit_type==='option_selection').map(model=>{
+ return (calculated.power_selections||[]).filter(model=>
+   ['option_selection','option_grant'].includes(model.benefit_type)&&model.option_kind!=='spell').map(model=>{
   const primary=model.layers.learned||model.layers.prepared;
   const byId=new Map(model.options.map(option=>[option.id,option]));
   const entries=primary?primary.selected:model.options.map(option=>option.id);
@@ -3267,20 +3269,19 @@ function optionBenefitPanels(c,calculated){
    (stage==='learned'?'Impara':'Prepara')+'</button>').join('');
   const castingId='selection:'+model.id;
   return panel(model.title,'<div class="benefit-option-list" data-selection-id="'+esc(model.id)+'">'+
-   castingStatisticsToggle(c,castingId,false)+
-   (castingStatisticsVisible(c,castingId,false)?castingStatistics(c,castingId,
-     c.spellcasting_ability||calculated.casting_classes?.[0]?.ability||'int'):'')+
+   (model.ability?castingStatisticsToggle(c,castingId,false):'')+
+   (model.ability&&castingStatisticsVisible(c,castingId,false)?castingStatistics(c,castingId,model.ability):'')+
    '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(selection=>{
     const id=selectedPowerId(selection),option=byId.get(id);if(!option)return '';
     return '<div class="magic-spell-row" data-power-option-id="'+esc(id)+'" data-option-active="'+
-     active.some(row=>selectedPowerId(row)===id)+'"><span class="magic-spell-open">'+esc(selectedPowerLabel(option,selection))+'</span></div>';
+     active.some(row=>selectedPowerId(row)===id)+'"><button type="button" class="magic-spell-open" data-act="benefit-option-open" data-power-selection-id="'+esc(model.id)+'" data-power-option-id="'+esc(id)+'">'+esc(selectedPowerLabel(option,selection))+'</button></div>';
    }).join('')+'</div>');
  }).join('');
 }
 async function openBenefitSelectionDialog(id,stage){
  const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(record);
- const model=calculated.power_selections?.find(row=>row.id===id&&row.benefit_type==='option_selection');
+ const model=calculated.power_selections?.find(row=>row.id===id&&['option_selection','option_grant'].includes(row.benefit_type));
  const layer=model?.layers?.[stage];
  if(!layer||layer.automatic||!['learned','prepared','applied'].includes(stage))
   throw Error('Selezione del privilegio non disponibile.');
@@ -3356,7 +3357,8 @@ async function openBenefitOptionDialog(selectionId,optionId){
  const option=model?.options.find(row=>row.id===optionId);
  if(!option)throw Error('Opzione non disponibile.');
  const layer=model.layers.applied,target=layer?.target;
- const known=!model.layers.learned||model.layers.learned.selected.some(row=>selectedPowerId(row)===optionId);
+ const prerequisite=model.layers.prepared||model.layers.learned;
+ const known=!prerequisite||prerequisite.selected.some(row=>selectedPowerId(row)===optionId);
  const applications=(layer?.selected||[]).filter(row=>selectedPowerId(row)===optionId).map(row=>{const index=(record.inventory||[]).findIndex(item=>(item.instance_id||item.id)===row.target_item_id);return {...(typeof row==='string'?{id:row}:row),inventory_index:index,target_name:record.inventory?.[index]?.name};});
  const active=applications.length>0,description=await benefitOptionDescription(option);
  if(state.editor?.read()?.id!==record.id)return;
@@ -8943,6 +8945,12 @@ async function handleAction(target){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     if(!trait?.readonly||!trait.state_key)throw Error('Stato non disponibile');
     const c=state.editor.read();
+    if(trait.selection_id&&trait.option_id){
+      const calculated=await computeLocalData(c);
+      await patch(powerApplicationPatch(c,calculated,calculated.power_selection_catalog,
+        trait.selection_id,trait.option_id,false));
+      dismissTraitBenefitDialog();await render();return;
+    }
     if(trait.condition_id){
       const changes=exhaustionRemovablePatch(c,trait.condition_id);
       if(!changes)throw Error('Condizione non più attiva.');

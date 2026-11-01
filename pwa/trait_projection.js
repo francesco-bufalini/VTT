@@ -311,7 +311,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    action_type:item.action_type||info.action_type||info.activation||''}, {...options,rank:0});
  }
  for(const model of arr(calculated.selection_models||calculated.power_selections)){
-  if(model.application?.destination==='item')continue;
+  if(model.application?.destination==='item'||model.benefit_type==='option_grant')continue;
   const owner=rows.find(trait=>trait.feature_origin===model.origin_id);if(!owner)continue;
   for(const chosen of arr(model.layers.applied?.selected)){
    const option=model.options.find(o=>o.id===(typeof chosen==='string'?chosen:chosen.id));if(!option)continue;
@@ -330,8 +330,18 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    feature_origin:String(extra.origin_id||''),state_id:extra.state_id||'',
    state_key:extra.state_key||'',condition_id:extra.condition_id||'',
    spell_id:extra.spell_id||'',infusion_id:extra.infusion_id||'',
+   selection_id:extra.selection_id||'',option_id:extra.option_id||'',
    inactive:false,readonly:true});
  };
+ // Applied capabilities are individual state traits, not their own actions.
+ // Benefits on each derived trait can still grant actions via the normal engine.
+ for(const capability of arr(calculated.selection_traits)){
+  const reference=capability.details;
+  const detail=reference?await lookup(reference.category,reference.name,reference.source):null;
+  stateTrait(capability.id,capability.name,detail?.entries||detail?.description||capability.description||'',{
+   source:capability.source,origin_id:capability.origin_id,
+   state_key:capability.id,selection_id:capability.selection_id,option_id:capability.option_id});
+ }
  const availableConditions=conditionOptions(conditionCatalog,record.rules_version,record.conditions||[]);
  const definitions=new Map(availableConditions.map(row=>[row.id,row]));
  for(const condition of arr(record.conditions)){
