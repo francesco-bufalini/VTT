@@ -216,7 +216,7 @@ test('an active damage-base replacement promotes Unarmed Strike but leaves Grapp
    label+': an explicit active damage replacement determines whether unarmed is basic');
   assert(grapple.closest('[data-battle-basic="attacks"]'),label+': Grapple always remains basic');
   if(enhanced){
-   assert(strike.compareDocumentPosition(divider)&2,
+   assert(strike.compareDocumentPosition(divider)&4,
     label+': promoted Unarmed Strike is before the divider');
   }else assert.equal(strike.closest('[data-battle-basic="attacks"]')?.querySelector('[data-attack-id]'),strike,
    label+': ordinary Unarmed Strike starts the base group');
