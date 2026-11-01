@@ -690,7 +690,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  // same structured timing catalog as the native action economy; these entries
  // remain tied to an exact class feature rather than the whole class.
  for(const rule of rows(calculated.feature_rules?.actions)){
-  if(!rule.feature||!rule.name)continue;
+  if(!rule.feature)continue;
   const memberKey='class|'+norm(rule.class_source)+'|'+norm(rule.class_name);
   const feature=ownerFeatures.find(f=>norm(f.name)===norm(rule.feature)&&
    (norm(f.origin_key)===memberKey||norm(f.origin_key).startsWith(memberKey+'|'))&&
@@ -700,10 +700,10 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(!feature)continue;
   const tracker=actionResource(rule.tracker_name);
   const resource=tracker?.name||rule.tracker_name||'';
-  addAbility(rule.name,{
+  addAbility(feature.name,{
    origin_id:feature.origin_id,status:statusFor(feature,resource),
    timing:actionTime(rule.activation),cost:resourceCost(resource,resource?1:0),
-   description:describe(rule.detail||feature.entries||feature.description),
+   description:describe(feature.entries||feature.description),
    requirements:rule.subclass?'Sottoclasse · '+rule.subclass:'',
    effects:[]
   });
