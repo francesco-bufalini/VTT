@@ -81,7 +81,7 @@ try{
  assert.equal(await grantedCard.locator(':scope > summary').evaluate(n=>n.childNodes[0].textContent.trim()),'Wild Shape');
  assert.equal(JSON.stringify(await record()),druidBeforeDetails,'Reading resource and trait details cannot modify the creature');
  await sheet('battle');await resources();
- const wild=page.locator('[data-act="battle-use-ability"]').filter({hasText:/Attiva/});
+ const wild=page.locator('[data-act="battle-use-ability"][aria-label^="Attiva "]');
  await wild.first().click();await page.locator('.miniature-dialog').waitFor();
  assert.deepEqual((await record()).resource_tracker_spent,{});
  await page.locator('[data-miniature-close]').click();assert.deepEqual((await record()).resource_tracker_spent,{});
