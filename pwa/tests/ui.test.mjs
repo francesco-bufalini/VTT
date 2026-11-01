@@ -1058,14 +1058,16 @@ test("PWA coins persist across inventory subtabs and reopening a creature",async
   });
   change('[data-coin-code="sp"]',"6");
   await until(()=>document.querySelector('.inventory-coin-total')?.textContent.includes("47,6"));
-  click('[data-act="inventory-subtab"][data-subtab="documents"]');
-  await until(()=>document.querySelector('[data-act="document-add"]'));
+  await until(()=>document.querySelector('#sheet-play-view [data-inventory-section-key="documents"] .inventory-section-create'));
+  const documents=document.querySelector('#sheet-play-view [data-inventory-section-key="documents"]');
+  const original=documents.open;
+  documents.querySelector('summary').click();
+  await until(()=>documents.open!==original);
   assert.ok(document.querySelector('[data-coin-code="gp"]'),
-    "Zaino stays visible while Documenti is additionally selected");
-  assert.ok(document.querySelectorAll('#sheet-play-view .play-inventory-section').length>=2);
-  click('[data-act="inventory-subtab"][data-subtab="documents"]');
-  await until(()=>document.querySelector('[data-subtab="documents"][aria-pressed="false"]'));
-  await until(()=>document.querySelector('[data-coin-code="gp"]'));
+    "Zaino remains visible while Documenti is collapsed");
+  assert.ok(document.querySelectorAll('#sheet-play-view .play-inventory-section').length>=3);
+  documents.querySelector('summary').click();
+  await until(()=>documents.open===original);
   assert.equal(document.querySelector('[data-coin-code="gp"]').value,"47");
   assert.equal(document.querySelector('[data-coin-code="sp"]').value,"6");
   click('[data-nav="library"]');
@@ -1080,76 +1082,46 @@ test("PWA coins persist across inventory subtabs and reopening a creature",async
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("inventory section switches keep their order and can all be disabled",async()=>{
-  if(!document.querySelector('[data-act="library-add"]')){
-    click('[data-nav="library"]');
-    await until(()=>document.querySelector('[data-act="library-add"]'));
-  }
+test("inventory sections remain visible and support independent collapsing and title settings",async()=>{
   await clickLibraryAdd();
   await until(()=>document.querySelector('#library-create-dialog[open]'));
   click('[data-act="create"]');
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('#sheet-play-view [data-subtab="items"]'));
-  const allToggle=()=>document.querySelector('.page-head.play-inventory-page-title [data-act="inventory-toggle-all"]');
-  const sectionNav=()=>document.querySelector('#sheet-play-view .inventory-container-tabs');
-  assert.ok(allToggle(),'Show-all shortcut must sit beside Inventario');
-  assert.equal(sectionNav().querySelector('[data-act="inventory-toggle-all"]'),null,
-    'The shortcut cannot appear inside the section selector');
-  if(allToggle().getAttribute('aria-pressed')==='true')allToggle().click();
-  await until(()=>allToggle()?.getAttribute('aria-pressed')==='false');
-  assert.match(allToggle().textContent,/Mostra tutti gli oggetti/);
-  assert.deepEqual([...sectionNav().children].map(n=>n.textContent),['＋','Zaino','Pergamene','Documenti']);
-  assert.equal(allToggle().getAttribute('aria-pressed'),'false');
-  assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,1);
-  assert.equal(document.querySelector('#sheet-play-view [data-subtab="items"]').getAttribute('aria-pressed'),'true');
-  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
-  assert.match(css,/\.inventory-subtabs\.inventory-container-tabs\{[\s\S]*?flex-wrap:wrap/);
-  assert.doesNotMatch(css,/\.inventory-subtabs\.inventory-container-tabs\{[^}]*overflow-x:auto/);
+  await until(()=>document.querySelector('#sheet-play-view .inventory-section-add'));
+  const sections=()=>[...document.querySelectorAll('#sheet-play-view .play-inventory-section')];
+  assert.deepEqual(sections().map(row=>row.dataset.inventorySectionKey),['items','scrolls','documents']);
+  assert.equal(document.querySelector('#sheet-play-view .inventory-container-tabs'),null);
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-section-add').length,1);
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-section-create').length,2);
+  const backpack=sections()[0],scrolls=sections()[1];
+  backpack.querySelector('summary').click();
+  await until(()=>backpack.open===false);
+  assert.equal(scrolls.open,true,'Collapsing Zaino does not collapse Pergamene');
+  assert.equal(sections().length,3,'Collapsed sections are never removed from the DOM');
+  backpack.querySelector('summary').click();
+  await until(()=>backpack.open===true);
   const originalPrompt=window.prompt;
   window.prompt=()=> 'Borsa da campo';
   try{
-    click('#sheet-play-view [data-act="inventory-container-add"]');
-    await until(()=>document.querySelector('#sheet-play-view [data-subtab^="container:"][aria-pressed="true"]'));
+    click('#sheet-play-view .inventory-section-add');
+    await until(()=>document.querySelector('#sheet-play-view [data-inventory-section-key^="container:"]'));
   }finally{window.prompt=originalPrompt;}
-  assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,2);
-  assert.deepEqual([...document.querySelectorAll('#sheet-play-view .play-inventory-section h2')].map(n=>n.textContent),['Zaino','Borsa da campo']);
-  assert.deepEqual([...sectionNav().querySelectorAll('[data-subtab]')].map(n=>n.dataset.subtab),
-    ['items','scrolls','documents',document.querySelector('#sheet-play-view [data-subtab^="container:"]').dataset.subtab]);
-  const bagTab=document.querySelector('#sheet-play-view [data-subtab^="container:"]');
-  const bagId=bagTab.dataset.subtab.slice('container:'.length);
-  const bagPanel=[...document.querySelectorAll('#sheet-play-view .play-inventory-section')]
-    .find(panel=>panel.querySelector('h2')?.textContent==='Borsa da campo');
-  assert.ok(bagPanel.querySelector('[data-act="inventory-container-rename"][data-container-id="'+bagId+'"]'));
-  assert.ok(sectionNav().querySelector('.inventory-section-remove[data-container-id="'+bagId+'"]'));
-  assert.equal(sectionNav().querySelectorAll('.inventory-section-remove').length,1);
-  assert.equal(bagPanel.querySelector('[data-act="sheet-context"][data-sheet-context^="inventory-add:"]'),null,
-    'Custom containers no longer repeat the add-item button');
-  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-quick-homebrew-add').length,1,
-    'The global homebrew creator is shared by all containers');
-  click('#sheet-play-view [data-subtab="documents"]');
-  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===3);
-  click('#sheet-play-view [data-subtab="scrolls"]');
-  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===4);
-  assert.equal(allToggle().getAttribute('aria-pressed'),'true');
-  assert.match(allToggle().textContent,/Mostra solo zaino/);
-  const custom=document.querySelector('#sheet-play-view [data-subtab^="container:"]');
-  custom.click();
-  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===3);
-  assert.equal(allToggle().getAttribute('aria-pressed'),'false');
-  assert.match(allToggle().textContent,/Mostra tutti gli oggetti/);
-  allToggle().click();
-  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===4);
-  assert.equal(allToggle().getAttribute('aria-pressed'),'true');
-  assert.match(allToggle().textContent,/Mostra solo zaino/);
-  allToggle().click();
-  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===1);
-  assert.match(allToggle().textContent,/Mostra tutti gli oggetti/);
-  assert.equal(document.querySelector('#sheet-play-view [data-subtab="items"]').getAttribute('aria-pressed'),'true');
-  assert.equal(document.querySelector('#sheet-play-view [data-subtab="scrolls"]').getAttribute('aria-pressed'),'false');
-  assert.deepEqual([...document.querySelectorAll('#sheet-play-view .play-inventory-section h2')].map(n=>n.textContent),['Zaino']);
-  click('#sheet-play-view [data-subtab="items"]');
-  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===0);
+  assert.equal(sections().length,4);
+  const bag=sections()[3],key=bag.dataset.inventorySectionKey;
+  assert.match(bag.querySelector('.inventory-section-title').textContent,/Borsa da campo/);
+  assert.equal(document.querySelector('[data-act="inventory-container-rename"]'),null);
+  const wasOpen=bag.open;
+  bag.querySelector('.inventory-section-title').click();
+  await until(()=>document.querySelector('#inventory-section-settings-dialog[open]'));
+  assert.equal(bag.open,wasOpen,'Opening settings does not collapse the section');
+  change('[data-inventory-section-name]','Borsa aggiornata');
+  document.querySelector('[data-inventory-section-exclude-weight]').checked=true;
+  click('[data-inventory-section-save]');
+  await until(()=>!document.querySelector('#inventory-section-settings-dialog'));
+  await until(()=>document.querySelector('#sheet-play-view [data-inventory-section-key="'+key+'"] .inventory-section-title')?.textContent==='Borsa aggiornata');
+  assert.equal(sections().length,4);
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-quick-homebrew-add').length,1);
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
