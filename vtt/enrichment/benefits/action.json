@@ -1,0 +1,1161 @@
+{
+  "schema_version": 2,
+  "benefit_type": "action",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "phb:barbarian:rage:toggle",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Rage",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:barbarian:rage:toggle",
+        "activation": "bonus",
+        "resource_name": "Rages",
+        "operation": "toggle",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:fighter:second-wind:heal-roll",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Second Wind",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:fighter:second-wind:heal-roll",
+        "activation": "bonus",
+        "resource_name": "Second Wind",
+        "operation": "heal_roll",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:fighter:action-surge:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Action Surge",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "phb:fighter:action-surge:context",
+        "activation": "free",
+        "resource_name": "Action Surge",
+        "operation": "context",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:rogue:cunning-action:dash",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "phb:rogue:cunning-action:dash",
+        "activation": "bonus",
+        "resource_name": "",
+        "action_id": "dash"
+      }
+    },
+    {
+      "id": "phb:rogue:cunning-action:disengage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "phb:rogue:cunning-action:disengage",
+        "activation": "bonus",
+        "resource_name": "",
+        "action_id": "disengage"
+      }
+    },
+    {
+      "id": "phb:rogue:cunning-action:hide",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "phb:rogue:cunning-action:hide",
+        "activation": "bonus",
+        "resource_name": "",
+        "action_id": "hide"
+      }
+    },
+    {
+      "id": "phb:monk:flurry-of-blows:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Flurry of Blows",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "phb:monk:flurry-of-blows:context",
+        "activation": "bonus",
+        "resource_name": "Ki Points",
+        "operation": "context",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:monk:patient-defense:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Patient Defense",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "phb:monk:patient-defense:context",
+        "activation": "bonus",
+        "resource_name": "Ki Points",
+        "operation": "context",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:monk:step-of-the-wind:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Step of the Wind",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "phb:monk:step-of-the-wind:context",
+        "activation": "bonus",
+        "resource_name": "Ki Points",
+        "operation": "context",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:paladin:lay-on-hands:heal-pool",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Lay on Hands",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:paladin:lay-on-hands:heal-pool",
+        "activation": "action",
+        "resource_name": "Lay on Hands",
+        "operation": "heal_pool",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:rogue:uncanny-dodge:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Uncanny Dodge",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action",
+        "id": "phb:rogue:uncanny-dodge:context",
+        "activation": "reaction",
+        "resource_name": "",
+        "descriptive_only": true,
+        "operation": "context",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "phb:sorcerer:font-of-magic:conversion",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Font of Magic",
+          "source": "PHB",
+          "class_name": "Sorcerer",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "phb:sorcerer:font-of-magic:conversion",
+        "activation": "bonus",
+        "resource_name": "Sorcery Points",
+        "operation": "conversion",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:barbarian:rage:toggle",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Rage",
+          "source": "XPHB",
+          "class_name": "Barbarian",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:barbarian:rage:toggle",
+        "activation": "bonus",
+        "resource_name": "Rages",
+        "operation": "toggle",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:fighter:second-wind:heal-roll",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Second Wind",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:fighter:second-wind:heal-roll",
+        "activation": "bonus",
+        "resource_name": "Second Wind",
+        "operation": "heal_roll",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:fighter:action-surge:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Action Surge",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:fighter:action-surge:context",
+        "activation": "free",
+        "resource_name": "Action Surge",
+        "operation": "context",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:rogue:cunning-action:dash",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:rogue:cunning-action:dash",
+        "activation": "bonus",
+        "resource_name": "",
+        "action_id": "dash"
+      }
+    },
+    {
+      "id": "xphb:rogue:cunning-action:disengage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:rogue:cunning-action:disengage",
+        "activation": "bonus",
+        "resource_name": "",
+        "action_id": "disengage"
+      }
+    },
+    {
+      "id": "xphb:rogue:cunning-action:hide",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:rogue:cunning-action:hide",
+        "activation": "bonus",
+        "resource_name": "",
+        "action_id": "hide"
+      }
+    },
+    {
+      "id": "xphb:monk:flurry-of-blows:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Flurry of Blows",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:monk:flurry-of-blows:context",
+        "activation": "bonus",
+        "resource_name": "Focus Points",
+        "operation": "context",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:monk:patient-defense:toggle",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Patient Defense",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:monk:patient-defense:toggle",
+        "activation": "bonus",
+        "resource_name": "Focus Points",
+        "operation": "toggle",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "xphb:monk:step-of-the-wind:toggle",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Step of the Wind",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:monk:step-of-the-wind:toggle",
+        "activation": "bonus",
+        "resource_name": "Focus Points",
+        "operation": "toggle",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "xphb:paladin:lay-on-hands:heal-pool",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Lay on Hands",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:paladin:lay-on-hands:heal-pool",
+        "activation": "bonus",
+        "resource_name": "Lay on Hands",
+        "operation": "heal_pool",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:rogue:uncanny-dodge:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Uncanny Dodge",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:rogue:uncanny-dodge:context",
+        "activation": "reaction",
+        "resource_name": "",
+        "descriptive_only": true,
+        "operation": "context",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "xphb:sorcerer:font-of-magic:conversion",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Font of Magic",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:sorcerer:font-of-magic:conversion",
+        "activation": "bonus",
+        "resource_name": "Sorcery Points",
+        "operation": "conversion",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:monk:deflect-missiles:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Deflect Missiles",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "action",
+        "id": "phb:monk:deflect-missiles:context",
+        "activation": "reaction",
+        "resource_name": "",
+        "descriptive_only": true,
+        "operation": "context",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "xphb:monk:deflect-attacks:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Deflect Attacks",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:monk:deflect-attacks:context",
+        "activation": "reaction",
+        "resource_name": "",
+        "descriptive_only": true,
+        "operation": "context",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "xphb:cleric:turn-undead:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Turn Undead",
+          "source": "XPHB",
+          "class_name": "Cleric",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:cleric:turn-undead:context",
+        "activation": "action",
+        "resource_name": "Channel Divinity",
+        "operation": "context",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "tce:artificer:magical-tinkering:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Magical Tinkering",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:magical-tinkering:context",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "",
+        "resource_cost": 0,
+        "descriptive_only": true
+      }
+    },
+    {
+      "id": "tce:artificer:defensive-field:temporary-hp",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Defensive Field",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:defensive-field:temporary-hp",
+        "operation": "temporary_hp",
+        "activation": "bonus",
+        "resource_name": "Defensive Field",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "tce:artificer:experimental-elixir:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Experimental Elixir",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:experimental-elixir:context",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Experimental Elixir",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "tce:artificer:eldritch-cannon:eldritch-cannon",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Eldritch Cannon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:eldritch-cannon:eldritch-cannon",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Eldritch Cannon",
+        "resource_cost": 1,
+        "operation_id": "eldritch_cannon"
+      }
+    },
+    {
+      "id": "tce:artificer:eldritch-cannon:command-cannon",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Eldritch Cannon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:eldritch-cannon:command-cannon",
+        "operation": "context",
+        "activation": "bonus",
+        "resource_name": "",
+        "resource_cost": 0,
+        "operation_id": "command_cannon",
+        "descriptive_only": true
+      }
+    },
+    {
+      "id": "tce:artificer:steel-defender:command-defender",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Steel Defender",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:steel-defender:command-defender",
+        "operation": "context",
+        "activation": "bonus",
+        "resource_name": "",
+        "resource_cost": 0,
+        "operation_id": "command_defender",
+        "descriptive_only": true
+      }
+    },
+    {
+      "id": "tce:artificer:arcane-jolt:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Arcane Jolt",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:arcane-jolt:context",
+        "operation": "context",
+        "activation": "free",
+        "resource_name": "Arcane Jolt",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "tce:artificer:restorative-reagents:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Restorative Reagents",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:restorative-reagents:context",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Restorative Reagents",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "tce:artificer:chemical-mastery:chemical-mastery-heal",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Chemical Mastery",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:chemical-mastery:chemical-mastery-heal",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Chemical Mastery (Heal)",
+        "resource_cost": 1,
+        "operation_id": "chemical_mastery_heal"
+      }
+    },
+    {
+      "id": "tce:artificer:chemical-mastery:chemical-mastery-restore",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Chemical Mastery",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:chemical-mastery:chemical-mastery-restore",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Chemical Mastery (Greater Restoration)",
+        "resource_cost": 1,
+        "operation_id": "chemical_mastery_restore"
+      }
+    },
+    {
+      "id": "tce:artificer:guardian:perfected-guardian",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Guardian",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:guardian:perfected-guardian",
+        "operation": "context",
+        "activation": "reaction",
+        "resource_name": "Perfected Armor",
+        "resource_cost": 1,
+        "operation_id": "perfected_guardian"
+      }
+    },
+    {
+      "id": "tce:artificer:spell-storing-item:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Spell-Storing Item",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:spell-storing-item:context",
+        "operation": "context",
+        "activation": "contextual",
+        "resource_name": "",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "tce:artificer:soul-of-artifice:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Soul of Artifice",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "tce:artificer:soul-of-artifice:context",
+        "operation": "context",
+        "activation": "reaction",
+        "resource_name": "",
+        "resource_cost": 0,
+        "descriptive_only": true
+      }
+    },
+    {
+      "id": "phb:barbarian:reckless-attack:toggle",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Reckless Attack",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:barbarian:reckless-attack:toggle",
+        "operation": "toggle",
+        "activation": "free",
+        "resource_name": "",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "xphb:barbarian:reckless-attack:toggle",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Reckless Attack",
+          "source": "XPHB",
+          "class_name": "Barbarian",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:barbarian:reckless-attack:toggle",
+        "operation": "toggle",
+        "activation": "free",
+        "resource_name": "",
+        "resource_cost": 0
+      }
+    },
+    {
+      "id": "phb:paladin:divine-sense:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Divine Sense",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:paladin:divine-sense:context",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Divine Sense",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:paladin:divine-sense:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Divine Sense",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:paladin:divine-sense:context",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Channel Divinity",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:cleric:turn-undead:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Turn Undead",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:cleric:turn-undead:context",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Channel Divinity",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:paladin:channel-divinity:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Channel Divinity",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:paladin:channel-divinity:context",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Channel Divinity",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:paladin:channel-divinity:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Channel Divinity",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:paladin:channel-divinity:context",
+        "operation": "context",
+        "activation": "action",
+        "resource_name": "Channel Divinity",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:sorcerer:innate-sorcery:toggle",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Innate Sorcery",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:sorcerer:innate-sorcery:toggle",
+        "operation": "toggle",
+        "activation": "bonus",
+        "resource_name": "Innate Sorcery",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:wizard:arcane-recovery:recovery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Arcane Recovery",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:wizard:arcane-recovery:recovery",
+        "operation": "recovery",
+        "activation": "free",
+        "resource_name": "Arcane Recovery",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:wizard:arcane-recovery:recovery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Arcane Recovery",
+          "source": "XPHB",
+          "class_name": "Wizard",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:wizard:arcane-recovery:recovery",
+        "operation": "recovery",
+        "activation": "free",
+        "resource_name": "Arcane Recovery",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "phb:monk:stunning-strike:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Stunning Strike",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "phb:monk:stunning-strike:context",
+        "operation": "context",
+        "activation": "free",
+        "resource_name": "Ki Points",
+        "resource_cost": 1
+      }
+    },
+    {
+      "id": "xphb:monk:stunning-strike:context",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Stunning Strike",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "action",
+        "id": "xphb:monk:stunning-strike:context",
+        "operation": "context",
+        "activation": "free",
+        "resource_name": "Focus Points",
+        "resource_cost": 1
+      }
+    }
+  ],
+  "notes": "Class and subclass mechanics projected from legacy catalogs. Source identities/labels come from 5eTools; native compatibility fixtures remain until runtime migration completes."
+}

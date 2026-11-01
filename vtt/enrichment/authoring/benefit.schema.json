@@ -363,6 +363,38 @@
     "slot_progression": {
       "type": "object",
       "additionalProperties": true
+    },
+    "action_id": {
+      "type": "string",
+      "description": "Existing action identifier (e.g. dash/disengage) to which the feature grants access."
+    },
+    "operation_id": {
+      "type": "string",
+      "description": "Stable operation variant identifier (distinct from source feature name)."
+    },
+    "descriptive_only": {
+      "type": "boolean",
+      "description": "Show source prose without an unusable action button."
+    },
+    "passive": {
+      "type": "boolean",
+      "description": "Automatically applies while source feature is owned and active."
+    },
+    "time": {
+      "type": "string",
+      "description": "Existing action timing used for roll bonuses, e.g. reaction or contextual."
+    },
+    "roll_only": {
+      "type": "boolean",
+      "description": "Offers a conditional roll modifier without a standalone action button."
+    },
+    "required_optional_feature": {
+      "type": "string",
+      "description": "A chosen optional feature required for application (source-qualified by optional_source)."
+    },
+    "optional_source": {
+      "type": "string",
+      "description": "5eTools source for the required optional feature."
     }
   },
   "allOf": [
@@ -1782,6 +1814,25 @@
         "trigger": {
           "type": "string",
           "description": "Activation trigger"
+        },
+        "proficiency_mode": {
+          "type": "string",
+          "description": "How proficiency contributes, such as untrained_half, tool_expertise."
+        },
+        "stack_group": {
+          "type": "string",
+          "description": "Prevent stacking of mutually exclusive half-proficiency grants."
+        },
+        "flat_bonus": {
+          "type": "number",
+          "description": "Flat bonus applied to the selected rolls."
+        },
+        "roll_mode": {
+          "enum": [
+            "advantage",
+            "disadvantage"
+          ],
+          "description": "Alternative mode instead of numeric roll bonus."
         }
       },
       "additionalProperties": false
