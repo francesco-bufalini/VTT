@@ -1,10 +1,47 @@
-# Migrazione progressiva classi e sottoclassi: primo lotto
+# Supplementi meccanici per tipo di beneficio
+
+Questa cartella raccoglie **solo i benefici non già disponibili come campi
+strutturati di 5eTools**, in un singolo catalogo `<tipo>.json` per meccanica.
+
+Un background non possiede un file separato: ogni integrazione sarà una voce
+nel catalogo pertinente (per esempio `proficiency.json`, `roll_bonus.json`,
+`resource.json`), con `granted_by.kind = "5etools"` e
+`ref = { "category": "background", "name": "...", "source": "..." }`.
+
+## Prima di aggiungere una voce
+
+1. Verificare `data/backgrounds.json` nel mirror 5eTools usato per il
+   compendio. Competenze, talenti iniziali, caratteristiche, incantesimi
+   aggiuntivi ed equipaggiamento spesso sono già espressi strutturalmente.
+2. Se il campo c'è in 5eTools ma manca negli indici VTT/PWA, **correggere
+   importatore o generatore**. Non duplicarlo in un supplemento.
+3. Solo se la meccanica manca realmente in 5eTools, aggiungerla sotto il
+   suo tipo con origine canonica `name + source`, senza copiare la prosa.
+4. Le aggiunte manuali appartengono esclusivamente alla scheda del
+   personaggio, `scope: character`, mai ai file condivisi.
+
+Per classificare le differenze tra i dati upstream e gli indici locali:
+
+```sh
+python scripts/audit_background_benefits.py \
+  --upstream /path/to/5etools-src/data/backgrounds.json \
+  --output /tmp/vtt-background-audit.json
+```
+
+L'assenza di un file `<tipo>.json` significa che non è ancora stato
+individuato un supplemento verificato per quel tipo; non significa che il
+background non conceda quel beneficio. Le concessioni 5eTools restano la
+fonte primaria. La migrazione del runtime non è ancora completata.
+
+---
+
+## Classi e sottoclassi: primo lotto
 
 **Cataloghi per tipo**, non per origine. I benefici sono concessi da un
 `granted_by.ref` 5eTools con nome/fonte canonica e classe/sottoclasse;
 il motore non associa privilegi tramite descrizioni localizzate.
 
-## Migrato in questa fase
+### Benefici migrati
 
 | Nuovo catalogo | Origine temporanea legacy | Regole |
 | --- | --- | ---: |
@@ -30,7 +67,7 @@ di confronto per le regressioni e per i lettori non ancora migrati.
 nuovi; una fase successiva rimuoverà le copie dopo aver verificato
 tutti gli altri lettori e i generatori.
 
-## Ancora da migrare
+### Ancora da migrare nelle classi
 
 - `feature_timing_recovery_rules.json`: attivazioni contestuali,
   recuperi, progressioni di attacchi e sequenze OR.
