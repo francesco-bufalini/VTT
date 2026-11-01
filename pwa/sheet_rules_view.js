@@ -968,7 +968,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const actionsMarkup='<div class="play-battle-actions-unified">'+
    (privilegeActions?'<div class="play-action-benefit-rows play-battle-privilege-rows" data-action-source="privileges">'+
     privilegeActions+'</div>':'')+
-   (ruleActions?(privilegeActions?'<div class="play-action-origin-divider" role="separator" aria-label="Azioni di base"><span>Azioni di base</span></div>':'')+ruleActions:'')+'</div>';
+   (ruleActions?'<div class="play-battle-basic-items play-battle-basic-actions" data-battle-basic="actions">'+
+    '<div class="play-action-origin-divider" role="separator" aria-label="Azioni di base"><span>Azioni di base</span></div>'+
+    ruleActions+'</div>':'')+'</div>';
 
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
@@ -979,11 +981,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const flatResources=resources;
   html+=disclosure('resources','Risorse','reset',
    flatResources||'<p class="play-empty">Nessuna risorsa disponibile.</p>',true);
-  // Restore the Attacchi table with its original structure and equipment
-  // shortcut; never nest it under Resources or Azioni.
-  if(view.battleActions?.attacks)html+=disclosure('attacks','Attacchi','weapon',
-   view.battleActions.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
-   btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
+  // Both controls sit before Attacchi, outside its attack table. The base
+  // toggle affects the rule-defined Azioni below and the ordinary strikes in
+  // Attacchi, but never the entries granted by privileges.
+  if(view.battleActions?.attacks){
+   html+='<div class="play-battle-top-tools" role="group" aria-label="Comandi della battaglia">'+
+    '<button type="button" class="play-button play-battle-basics-toggle" data-act="battle-basics-toggle" aria-pressed="true" aria-label="Nascondi azioni e attacchi di base" title="Nascondi azioni e attacchi di base">'+
+     icon('eye')+'<span class="play-battle-basic-toggle-label">Nascondi base</span></button>'+
+    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>')+
+    '</div>';
+   html+=disclosure('attacks','Attacchi','weapon',
+    view.battleActions.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true);
+  }
   if(actionsMarkup)html+=disclosure('others','Azioni','hand',actionsMarkup,true);
   if(view.battleActions?.checks)html+=disclosure('checks','Prove abilità','skill',
    view.battleActions.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
