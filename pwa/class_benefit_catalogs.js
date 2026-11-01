@@ -3,6 +3,11 @@
 const catalog=(payload,type)=>{
  if(payload?.schema_version!==2||payload.benefit_type!==type||payload.scope!=='catalog'||!Array.isArray(payload.entries))
   throw Error('Catalogo benefici '+type+' non valido');
+ for(const entry of payload.entries){
+  if(!entry?.id||!entry?.granted_by?.ref?.category||!entry?.benefit||
+     entry.benefit.type!==type)
+   throw Error('Voce del catalogo benefici '+type+' non valida');
+ }
  return payload.entries;
 };
 const owner=(entry,type)=>{
@@ -33,7 +38,12 @@ async function load(fetcher,typedUrl,legacyUrl,project,legacy){
  try{response=await fetcher(typedUrl)}catch{response=null}
  // A malformed v2 catalog is an error; older hosts that lack the new URL
  // may still serve the legacy catalog without changing saved characters.
- if(response?.ok)return project(await response.json());
+ if(response?.ok){
+  const payload=await response.json();
+  if(payload?.schema_version===2)return project(payload);
+  // Older mocks and non-v2 static hosts can respond 200 with the old
+  // catalog at an unrecognized URL. Do not swallow malformed v2 data.
+ }
  const old=await fetcher(legacyUrl);
  if(!old.ok)throw Error('Catalogo benefici non disponibile: '+typedUrl);
  return legacy(await old.json());
