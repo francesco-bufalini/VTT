@@ -3078,6 +3078,270 @@
         ],
         "resource_source": "XPHB"
       }
+    },
+    {
+      "id": "race:mpmm:aasimar:healing_hands:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Healing Hands",
+          "source": "MPMM",
+          "race": "Aasimar",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:aasimar"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:mpmm:aasimar:healing_hands:uses",
+        "operation": "racial_power",
+        "resource": "race:mpmm:aasimar:healing_hands:uses",
+        "uses": 1,
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:aag:autognome:built_for_success:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Built for Success",
+          "source": "AAG",
+          "race": "Autognome",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:autognome"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:aag:autognome:built_for_success:uses",
+        "operation": "racial_power",
+        "resource": "race:aag:autognome:built_for_success:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:phb:dragonborn:breath",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Breath Weapon",
+          "source": "PHB",
+          "race": "Dragonborn",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:dragonborn"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:phb:dragonborn:breath",
+        "operation": "racial_power",
+        "resource": "race:phb:dragonborn:breath",
+        "uses": 1,
+        "recharge": "short_rest"
+      }
+    },
+    {
+      "id": "race:mpmm:firbolg:hidden_step:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hidden Step",
+          "source": "MPMM",
+          "race": "Firbolg",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:firbolg"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:mpmm:firbolg:hidden_step:uses",
+        "operation": "racial_power",
+        "resource": "race:mpmm:firbolg:hidden_step:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:mpmm:goliath:stones_endurance:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stone's Endurance",
+          "source": "MPMM",
+          "race": "Goliath",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:goliath"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:mpmm:goliath:stones_endurance:uses",
+        "operation": "racial_power",
+        "resource": "race:mpmm:goliath:stones_endurance:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:aag:hadozee:hadozee_dodge:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hadozee Dodge",
+          "source": "AAG",
+          "race": "Hadozee",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:hadozee"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:aag:hadozee:hadozee_dodge:uses",
+        "operation": "racial_power",
+        "resource": "race:aag:hadozee:hadozee_dodge:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:phb:half_orc:relentless_endurance:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Relentless Endurance",
+          "source": "PHB",
+          "race": "Half-Orc",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:half-orc"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:phb:half_orc:relentless_endurance:uses",
+        "operation": "racial_power",
+        "resource": "race:phb:half_orc:relentless_endurance:uses",
+        "uses": 1,
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:mpmm:harengon:rabbit_hop:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Rabbit Hop",
+          "source": "MPMM",
+          "race": "Harengon",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:harengon"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:mpmm:harengon:rabbit_hop:uses",
+        "operation": "racial_power",
+        "resource": "race:mpmm:harengon:rabbit_hop:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:mpmm:lizardfolk:hungry_jaws:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hungry Jaws",
+          "source": "MPMM",
+          "race": "Lizardfolk",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:lizardfolk"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:mpmm:lizardfolk:hungry_jaws:uses",
+        "operation": "racial_power",
+        "resource": "race:mpmm:lizardfolk:hungry_jaws:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:mpmm:orc:adrenaline_rush:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Adrenaline Rush",
+          "source": "MPMM",
+          "race": "Orc",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:orc"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:mpmm:orc:adrenaline_rush:uses",
+        "operation": "racial_power",
+        "resource": "race:mpmm:orc:adrenaline_rush:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:mpmm:orc:relentless_endurance:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Relentless Endurance",
+          "source": "MPMM",
+          "race": "Orc",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:orc"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:mpmm:orc:relentless_endurance:uses",
+        "operation": "racial_power",
+        "resource": "race:mpmm:orc:relentless_endurance:uses",
+        "uses": 1,
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "race:mpmm:shifter:shifting:uses",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shifting",
+          "source": "MPMM",
+          "race": "Shifter",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:shifter"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "race:mpmm:shifter:shifting:uses",
+        "operation": "racial_power",
+        "resource": "race:mpmm:shifter:shifting:uses",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
     }
   ],
   "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."

@@ -2843,6 +2843,559 @@
         "resource_cost": 0,
         "priority": 0
       }
+    },
+    {
+      "id": "race:mpmm:aasimar:healing_hands",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Healing Hands",
+          "source": "MPMM",
+          "race": "Aasimar",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:aasimar"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:aasimar:healing_hands",
+        "operation": "racial_power",
+        "activation": "action",
+        "resource": "race:mpmm:aasimar:healing_hands:uses",
+        "action_runtime": {
+          "kind": "healing",
+          "target_mode": "single_token",
+          "target_range_feet": 5,
+          "roll": {
+            "count": "proficiency",
+            "sides": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:centaur:charge",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Charge",
+          "source": "MPMM",
+          "race": "Centaur",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:centaur"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:centaur:charge",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "name": "Charge",
+        "action_runtime": {
+          "kind": "actions",
+          "roll_attack": {
+            "kind": "attack",
+            "trait": "Hooves",
+            "slot": "natural"
+          }
+        }
+      }
+    },
+    {
+      "id": "race:phb:dragonborn:breath",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Breath Weapon",
+          "source": "PHB",
+          "race": "Dragonborn",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:dragonborn"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:phb:dragonborn:breath",
+        "operation": "racial_power",
+        "activation": "action",
+        "resource": "race:phb:dragonborn:breath",
+        "action_runtime": {
+          "kind": "breath_weapon",
+          "mode": "tracked_action"
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:firbolg:hidden_step",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hidden Step",
+          "source": "MPMM",
+          "race": "Firbolg",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:firbolg"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:firbolg:hidden_step",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "name": "Hidden Step",
+        "resource": "race:mpmm:firbolg:hidden_step:uses",
+        "action_runtime": {
+          "kind": "active_conditions",
+          "mode": "temporary_condition",
+          "condition": "invisible",
+          "persistent_key": "racial:firbolg:hidden_step",
+          "duration_rounds": 1,
+          "ends_on": [
+            "start_of_next_turn",
+            "attack",
+            "damage_roll",
+            "saving_throw_forced"
+          ]
+        }
+      }
+    },
+    {
+      "id": "race:dmg:gnoll:rampage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Rampage",
+          "source": "DMG",
+          "race": "Gnoll",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:gnoll"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:dmg:gnoll:rampage",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "name": "Rampage",
+        "action_runtime": {
+          "kind": "actions",
+          "roll_attack": {
+            "kind": "attack",
+            "trait": "Bite",
+            "slot": "natural"
+          }
+        }
+      }
+    },
+    {
+      "id": "race:dmg:goblin:nimble_escape:disengage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Nimble Escape",
+          "source": "DMG",
+          "race": "Goblin",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:goblin"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:dmg:goblin:nimble_escape:disengage",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "action_runtime": {
+          "kind": "actions",
+          "action_ref": "disengage"
+        }
+      }
+    },
+    {
+      "id": "race:dmg:goblin:nimble_escape:hide",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Nimble Escape",
+          "source": "DMG",
+          "race": "Goblin",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:goblin"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:dmg:goblin:nimble_escape:hide",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "action_runtime": {
+          "kind": "actions",
+          "action_ref": "hide"
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:goblin:nimble_escape:disengage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Nimble Escape",
+          "source": "MPMM",
+          "race": "Goblin",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:goblin"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:goblin:nimble_escape:disengage",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "action_runtime": {
+          "kind": "actions",
+          "action_ref": "disengage"
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:goblin:nimble_escape:hide",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Nimble Escape",
+          "source": "MPMM",
+          "race": "Goblin",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:goblin"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:goblin:nimble_escape:hide",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "action_runtime": {
+          "kind": "actions",
+          "action_ref": "hide"
+        }
+      }
+    },
+    {
+      "id": "race:vgm:goblin:nimble_escape:disengage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Nimble Escape",
+          "source": "VGM",
+          "race": "Goblin",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:goblin"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:vgm:goblin:nimble_escape:disengage",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "action_runtime": {
+          "kind": "actions",
+          "action_ref": "disengage"
+        }
+      }
+    },
+    {
+      "id": "race:vgm:goblin:nimble_escape:hide",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Nimble Escape",
+          "source": "VGM",
+          "race": "Goblin",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:goblin"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:vgm:goblin:nimble_escape:hide",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "action_runtime": {
+          "kind": "actions",
+          "action_ref": "hide"
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:goliath:stones_endurance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stone's Endurance",
+          "source": "MPMM",
+          "race": "Goliath",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:goliath"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:goliath:stones_endurance",
+        "operation": "racial_power",
+        "activation": "reaction",
+        "name": "Stone's Endurance",
+        "resource": "race:mpmm:goliath:stones_endurance:uses",
+        "action_runtime": {
+          "kind": "tracked_actions",
+          "roll_effect": {
+            "dice": "1d12",
+            "add": "con_mod",
+            "label": "Riduzione danni"
+          },
+          "damage_response": {
+            "trigger": "would_reach_zero",
+            "effect": "reduce_damage"
+          }
+        }
+      }
+    },
+    {
+      "id": "race:aag:hadozee:hadozee_dodge",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hadozee Dodge",
+          "source": "AAG",
+          "race": "Hadozee",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:hadozee"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:aag:hadozee:hadozee_dodge",
+        "operation": "racial_power",
+        "activation": "reaction",
+        "name": "Hadozee Dodge",
+        "resource": "race:aag:hadozee:hadozee_dodge:uses",
+        "action_runtime": {
+          "kind": "tracked_actions",
+          "roll_effect": {
+            "dice": "1d6",
+            "add": "proficiency",
+            "label": "Riduzione danni"
+          },
+          "damage_response": {
+            "trigger": "would_reach_zero",
+            "effect": "reduce_damage"
+          }
+        }
+      }
+    },
+    {
+      "id": "race:phb:half_orc:relentless_endurance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Relentless Endurance",
+          "source": "PHB",
+          "race": "Half-Orc",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:half-orc"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:phb:half_orc:relentless_endurance",
+        "operation": "racial_power",
+        "activation": "free",
+        "name": "Relentless Endurance",
+        "resource": "race:phb:half_orc:relentless_endurance:uses",
+        "action_runtime": {
+          "kind": "tracked_actions",
+          "damage_response": {
+            "trigger": "would_reach_zero",
+            "effect": "retain_one_hp",
+            "require_not_instant_death": true
+          }
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:harengon:rabbit_hop",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Rabbit Hop",
+          "source": "MPMM",
+          "race": "Harengon",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:harengon"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:harengon:rabbit_hop",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "name": "Rabbit Hop",
+        "resource": "race:mpmm:harengon:rabbit_hop:uses",
+        "action_runtime": {
+          "kind": "tracked_actions"
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:lizardfolk:hungry_jaws",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hungry Jaws",
+          "source": "MPMM",
+          "race": "Lizardfolk",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:lizardfolk"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:lizardfolk:hungry_jaws",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "name": "Hungry Jaws",
+        "resource": "race:mpmm:lizardfolk:hungry_jaws:uses",
+        "action_runtime": {
+          "kind": "tracked_actions"
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:orc:adrenaline_rush",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Adrenaline Rush",
+          "source": "MPMM",
+          "race": "Orc",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:orc"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:orc:adrenaline_rush",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "name": "Adrenaline Rush",
+        "resource": "race:mpmm:orc:adrenaline_rush:uses",
+        "action_runtime": {
+          "kind": "tracked_actions",
+          "temp_hp": "proficiency",
+          "action_ref": "dash"
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:orc:relentless_endurance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Relentless Endurance",
+          "source": "MPMM",
+          "race": "Orc",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:orc"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:orc:relentless_endurance",
+        "operation": "racial_power",
+        "activation": "free",
+        "name": "Relentless Endurance",
+        "resource": "race:mpmm:orc:relentless_endurance:uses",
+        "action_runtime": {
+          "kind": "tracked_actions",
+          "damage_response": {
+            "trigger": "would_reach_zero",
+            "effect": "retain_one_hp",
+            "require_not_instant_death": true
+          }
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:satyr:mirthful_leaps",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mirthful Leaps",
+          "source": "MPMM",
+          "race": "Satyr",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:satyr"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:satyr:mirthful_leaps",
+        "operation": "racial_power",
+        "activation": "movement",
+        "name": "Mirthful Leaps",
+        "action_runtime": {
+          "kind": "actions",
+          "roll_effect": {
+            "dice": "1d8",
+            "label": "Piedi aggiuntivi del salto"
+          }
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:shifter:shifting",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shifting",
+          "source": "MPMM",
+          "race": "Shifter",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:shifter"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "race:mpmm:shifter:shifting",
+        "operation": "racial_power",
+        "activation": "bonus",
+        "name": "Shifting",
+        "resource": "race:mpmm:shifter:shifting:uses",
+        "action_runtime": {
+          "kind": "tracked_actions",
+          "persistent_key": "racial:shifter:shifting",
+          "duration_rounds": 10,
+          "temp_hp": "double_proficiency"
+        }
+      }
     }
   ],
   "notes": "Class and subclass mechanics projected from legacy catalogs. Source identities/labels come from 5eTools; native compatibility fixtures remain until runtime migration completes."

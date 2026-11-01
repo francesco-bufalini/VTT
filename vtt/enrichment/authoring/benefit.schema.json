@@ -464,6 +464,9 @@
     },
     "minimum": {
       "type": "number"
+    },
+    "action_runtime": {
+      "$ref": "#/$defs/actionRuntime"
     }
   },
   "allOf": [
@@ -1484,6 +1487,115 @@
               "target"
             ]
           }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "action"
+          },
+          "operation": {
+            "const": "racial_power"
+          }
+        },
+        "required": [
+          "type",
+          "operation"
+        ]
+      },
+      "then": {
+        "required": [
+          "id",
+          "activation",
+          "action_runtime"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "action_runtime": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "healing",
+                        "breath_weapon",
+                        "active_conditions",
+                        "tracked_actions"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                }
+              },
+              "required": [
+                "action_runtime"
+              ]
+            },
+            "then": {
+              "required": [
+                "resource"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "roll_bonus"
+          },
+          "operation": {
+            "const": "racial_roll_bonus"
+          }
+        },
+        "required": [
+          "type",
+          "operation"
+        ]
+      },
+      "then": {
+        "required": [
+          "id",
+          "bonus",
+          "mode"
+        ],
+        "properties": {
+          "mode": {
+            "enum": [
+              "single",
+              "list"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "resource"
+          },
+          "operation": {
+            "const": "racial_power"
+          }
+        },
+        "required": [
+          "type",
+          "operation"
+        ]
+      },
+      "then": {
+        "required": [
+          "id",
+          "resource",
+          "uses",
+          "recharge"
         ]
       }
     }
@@ -2945,6 +3057,141 @@
         }
       },
       "additionalProperties": false
+    },
+    "actionRuntime": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "healing",
+            "breath_weapon",
+            "active_conditions",
+            "actions",
+            "tracked_actions"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "tracked_action",
+            "temporary_condition",
+            "heal_dice"
+          ]
+        },
+        "action_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "roll_attack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "attack"
+            },
+            "trait": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "slot": {
+              "type": "string"
+            }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "trait"
+              ]
+            },
+            {
+              "required": [
+                "id"
+              ]
+            }
+          ]
+        },
+        "roll_effect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "dice",
+            "label"
+          ],
+          "properties": {
+            "dice": {
+              "type": "string"
+            },
+            "add": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            }
+          }
+        },
+        "damage_response": {
+          "type": "object",
+          "required": [
+            "trigger",
+            "effect"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "trigger": {
+              "enum": [
+                "would_reach_zero"
+              ]
+            },
+            "effect": {
+              "enum": [
+                "reduce_damage",
+                "retain_one_hp"
+              ]
+            },
+            "require_not_instant_death": {
+              "type": "boolean"
+            }
+          }
+        },
+        "temp_hp": {
+          "$ref": "#/$defs/expression"
+        },
+        "persistent_key": {
+          "type": "string"
+        },
+        "duration_rounds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "condition": {
+          "type": "string"
+        },
+        "ends_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "target_mode": {
+          "type": "string"
+        },
+        "target_range_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "roll": {
+          "$ref": "#/$defs/roll"
+        }
+      }
     }
   }
 }

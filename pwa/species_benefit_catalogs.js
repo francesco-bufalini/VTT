@@ -87,3 +87,76 @@ export function speciesAttacksFromBenefits(attackCatalog,movementCatalog){
  return {version:1,source:'vtt/data/creature_references_5etools.json',
   races:[...groups.values()]};
 }
+
+const RACIAL_POWER_ACTION_FIELDS=new Set(['healing','breath_weapon','active_conditions','actions','tracked_actions']);
+const RACIAL_POWER_LIST_FIELDS=new Set(['active_conditions','actions','tracked_actions']);
+export function speciesPowersFromBenefits(baseIndex,actionCatalog,resourceCatalog,rollBonusCatalog){
+ for(const [catalog,type] of [[actionCatalog,'action'],[resourceCatalog,'resource'],[rollBonusCatalog,'roll_bonus']])
+  assertTypedCatalog(catalog,type);
+ if(baseIndex?.version!==1||!Array.isArray(baseIndex.races))
+  throw Error('Catalogo base delle capacità razziali non valido');
+ const cloned={...baseIndex,races:baseIndex.races.map(row=>({...row}))};
+ const byRace=new Map(cloned.races.map(row=>[norm(row.name)+'|'+norm(row.source),row]));
+ const resourceRows=new Map(rows(resourceCatalog.entries).filter(entry=>
+  entry.benefit?.operation==='racial_power').map(entry=>[entry.id,entry]));
+ const seen=new Set();
+ const owner=(entry,type)=>{
+  if(entry.benefit?.operation!==(type==='roll_bonus'?'racial_roll_bonus':'racial_power'))
+   return null;
+  const ref=entry.granted_by?.ref||{};
+  if(entry.granted_by?.kind!=='5etools'||ref.category!=='species_trait'||
+     !ref.race||!ref.race_source||!ref.name||!ref.source)
+   throw Error('Origine razziale incompleta: '+entry.id);
+  if(entry.benefit.type!==type||!entry.id||seen.has(entry.id))
+   throw Error('Beneficio razziale duplicato o invalido: '+entry.id);
+  seen.add(entry.id);
+  const race=byRace.get(norm(ref.race)+'|'+norm(ref.race_source));
+  if(!race)throw Error('Razza di origine non trovata: '+entry.id);
+  return {race,ref};
+ };
+ const attachResource=(record,entry,ref)=>{
+  const id=entry.benefit.resource||entry.benefit.bonus?.tracker_id;
+  if(!id)return;
+  const res=resourceRows.get(id);
+  if(!res||res.benefit?.type!=='resource'||res.benefit.resource!==id||
+      norm(res.granted_by?.ref?.name)!==norm(ref.name)||
+      norm(res.granted_by?.ref?.race)!==norm(ref.race)||
+      norm(res.granted_by?.ref?.race_source)!==norm(ref.race_source))
+   throw Error('Tracker del beneficio razziale assente: '+id);
+  record.tracker_id=id;
+  record.uses=res.benefit.uses;
+  record.recharge=res.benefit.recharge;
+ };
+ for(const entry of rows(actionCatalog.entries)){
+  const found=owner(entry,'action');if(!found)continue;
+  const {race,ref}=found,b=entry.benefit,detail=b.action_runtime;
+  if(!detail||!RACIAL_POWER_ACTION_FIELDS.has(detail.kind)||!b.activation)
+   throw Error('Azione razziale invalida: '+entry.id);
+  const {kind,...mechanics}=detail;
+  const value={id:entry.id,trait:ref.name,...(b.name?{name:b.name}:{}),
+    action_type:b.activation,...mechanics};
+  attachResource(value,entry,ref);
+  if(RACIAL_POWER_LIST_FIELDS.has(kind)){
+   if(!race[kind])race[kind]=[];
+   race[kind].push(value);
+  }else{
+   if(race[kind])throw Error('Duplicazione capacità razziale: '+kind);
+   race[kind]=value;
+  }
+ }
+ for(const entry of rows(rollBonusCatalog.entries)){
+  const found=owner(entry,'roll_bonus');if(!found)continue;
+  const {race,ref}=found,b=entry.benefit;
+  if(!b.bonus||!['single','list'].includes(b.mode))throw Error('Bonus razziale invalido: '+entry.id);
+  const value={id:entry.id,trait:ref.name,name:ref.name,...b.bonus};
+  attachResource(value,entry,ref);
+  if(b.mode==='single'){
+   if(race.roll_bonus)throw Error('Bonus razziale duplicato: '+entry.id);
+   race.roll_bonus=value;
+  }else{
+   if(!race.roll_bonuses)race.roll_bonuses=[];
+   race.roll_bonuses.push(value);
+  }
+ }
+ return cloned;
+}

@@ -1099,6 +1099,64 @@
           "condition_label": "Solo ai tiri salvezza per evitare di cadere dalla cavalcatura."
         }
       }
+    },
+    {
+      "id": "race:aag:autognome:built_for_success",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Built for Success",
+          "source": "AAG",
+          "race": "Autognome",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:autognome"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "race:aag:autognome:built_for_success",
+        "operation": "racial_roll_bonus",
+        "mode": "single",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "attack_roll",
+            "ability_check",
+            "saving_throw"
+          ],
+          "tracker_id": "race:aag:autognome:built_for_success:uses",
+          "tracker_cost": 1,
+          "strict_tracker": true
+        }
+      }
+    },
+    {
+      "id": "race:mpmm:bugbear:surprise_attack",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Surprise Attack",
+          "source": "MPMM",
+          "race": "Bugbear",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:bugbear"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "race:mpmm:bugbear:surprise_attack",
+        "operation": "racial_roll_bonus",
+        "mode": "list",
+        "bonus": {
+          "dice": "2d6",
+          "targets": [
+            "attack_damage"
+          ],
+          "optional": true
+        }
+      }
     }
   ],
   "notes": "Regole esplicite; mai dedurre i bonus dalla descrizione. tool_check = tiri generici di caratteristica per strumenti; skill_check = prove con abilità, non tutte le prove. Condizioni applicate manualmente. | Class/subclass bonus rules share this type-owned catalog with species, source-qualified by granted_by.ref.category."

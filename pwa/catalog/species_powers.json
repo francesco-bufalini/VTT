@@ -6,20 +6,6 @@
     {
       "name": "Aasimar",
       "source": "MPMM",
-      "healing": {
-        "trait": "Healing Hands",
-        "id": "race:mpmm:aasimar:healing_hands",
-        "tracker_id": "race:mpmm:aasimar:healing_hands:uses",
-        "uses": 1,
-        "recharge": "long_rest",
-        "action_type": "action",
-        "target_mode": "single_token",
-        "target_range_feet": 5,
-        "roll": {
-          "count": "proficiency",
-          "sides": 4
-        }
-      },
       "revelation": {
         "trait": "Celestial Revelation",
         "min_level": 3,
@@ -94,69 +80,19 @@
     },
     {
       "name": "Autognome",
-      "source": "AAG",
-      "roll_bonus": {
-        "id": "race:aag:autognome:built_for_success",
-        "trait": "Built for Success",
-        "name": "Built for Success",
-        "dice": "1d4",
-        "targets": [
-          "attack_roll",
-          "ability_check",
-          "saving_throw"
-        ],
-        "tracker_id": "race:aag:autognome:built_for_success:uses",
-        "uses": "proficiency",
-        "recharge": "long_rest",
-        "tracker_cost": 1,
-        "strict_tracker": true
-      }
+      "source": "AAG"
     },
     {
       "name": "Bugbear",
-      "source": "MPMM",
-      "roll_bonuses": [
-        {
-          "id": "race:mpmm:bugbear:surprise_attack",
-          "trait": "Surprise Attack",
-          "name": "Surprise Attack",
-          "dice": "2d6",
-          "targets": [
-            "attack_damage"
-          ],
-          "optional": true
-        }
-      ]
+      "source": "MPMM"
     },
     {
       "name": "Centaur",
-      "source": "MPMM",
-      "actions": [
-        {
-          "id": "race:mpmm:centaur:charge",
-          "trait": "Charge",
-          "name": "Charge",
-          "action_type": "bonus",
-          "roll_attack": {
-            "kind": "attack",
-            "trait": "Hooves",
-            "slot": "natural"
-          }
-        }
-      ]
+      "source": "MPMM"
     },
     {
       "name": "Dragonborn",
-      "source": "PHB",
-      "breath_weapon": {
-        "trait": "Breath Weapon",
-        "id": "race:phb:dragonborn:breath",
-        "tracker_id": "race:phb:dragonborn:breath",
-        "uses": 1,
-        "recharge": "short_rest",
-        "action_type": "action",
-        "mode": "tracked_action"
-      }
+      "source": "PHB"
     },
     {
       "name": "Dragonborn (Chromatic)",
@@ -343,27 +279,6 @@
     {
       "name": "Firbolg",
       "source": "MPMM",
-      "active_conditions": [
-        {
-          "id": "race:mpmm:firbolg:hidden_step",
-          "trait": "Hidden Step",
-          "name": "Hidden Step",
-          "action_type": "bonus",
-          "mode": "temporary_condition",
-          "condition": "invisible",
-          "persistent_key": "racial:firbolg:hidden_step",
-          "duration_rounds": 1,
-          "ends_on": [
-            "start_of_next_turn",
-            "attack",
-            "damage_roll",
-            "saving_throw_forced"
-          ],
-          "tracker_id": "race:mpmm:firbolg:hidden_step:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest"
-        }
-      ],
       "spell_usage": [
         {
           "spell": "detect magic",
@@ -443,219 +358,47 @@
     },
     {
       "name": "Gnoll",
-      "source": "DMG",
-      "actions": [
-        {
-          "id": "race:dmg:gnoll:rampage",
-          "trait": "Rampage",
-          "name": "Rampage",
-          "action_type": "bonus",
-          "roll_attack": {
-            "kind": "attack",
-            "trait": "Bite",
-            "slot": "natural"
-          }
-        }
-      ]
+      "source": "DMG"
     },
     {
       "name": "Goblin",
-      "source": "DMG",
-      "actions": [
-        {
-          "id": "race:dmg:goblin:nimble_escape:disengage",
-          "trait": "Nimble Escape",
-          "action_type": "bonus",
-          "action_ref": "disengage"
-        },
-        {
-          "id": "race:dmg:goblin:nimble_escape:hide",
-          "trait": "Nimble Escape",
-          "action_type": "bonus",
-          "action_ref": "hide"
-        }
-      ]
+      "source": "DMG"
     },
     {
       "name": "Goblin",
-      "source": "MPMM",
-      "actions": [
-        {
-          "id": "race:mpmm:goblin:nimble_escape:disengage",
-          "trait": "Nimble Escape",
-          "action_type": "bonus",
-          "action_ref": "disengage"
-        },
-        {
-          "id": "race:mpmm:goblin:nimble_escape:hide",
-          "trait": "Nimble Escape",
-          "action_type": "bonus",
-          "action_ref": "hide"
-        }
-      ]
+      "source": "MPMM"
     },
     {
       "name": "Goblin",
-      "source": "VGM",
-      "actions": [
-        {
-          "id": "race:vgm:goblin:nimble_escape:disengage",
-          "trait": "Nimble Escape",
-          "action_type": "bonus",
-          "action_ref": "disengage"
-        },
-        {
-          "id": "race:vgm:goblin:nimble_escape:hide",
-          "trait": "Nimble Escape",
-          "action_type": "bonus",
-          "action_ref": "hide"
-        }
-      ]
+      "source": "VGM"
     },
     {
       "name": "Goliath",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:goliath:stones_endurance",
-          "trait": "Stone's Endurance",
-          "name": "Stone's Endurance",
-          "action_type": "reaction",
-          "tracker_id": "race:mpmm:goliath:stones_endurance:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "roll_effect": {
-            "dice": "1d12",
-            "add": "con_mod",
-            "label": "Riduzione danni"
-          },
-          "damage_response": {
-            "trigger": "would_reach_zero",
-            "effect": "reduce_damage"
-          }
-        }
-      ]
+      "source": "MPMM"
     },
     {
       "name": "Hadozee",
-      "source": "AAG",
-      "tracked_actions": [
-        {
-          "id": "race:aag:hadozee:hadozee_dodge",
-          "trait": "Hadozee Dodge",
-          "name": "Hadozee Dodge",
-          "action_type": "reaction",
-          "tracker_id": "race:aag:hadozee:hadozee_dodge:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "roll_effect": {
-            "dice": "1d6",
-            "add": "proficiency",
-            "label": "Riduzione danni"
-          },
-          "damage_response": {
-            "trigger": "would_reach_zero",
-            "effect": "reduce_damage"
-          }
-        }
-      ]
+      "source": "AAG"
     },
     {
       "name": "Half-Orc",
-      "source": "PHB",
-      "tracked_actions": [
-        {
-          "trait": "Relentless Endurance",
-          "name": "Relentless Endurance",
-          "action_type": "free",
-          "uses": 1,
-          "recharge": "long_rest",
-          "damage_response": {
-            "trigger": "would_reach_zero",
-            "effect": "retain_one_hp",
-            "require_not_instant_death": true
-          },
-          "id": "race:phb:half_orc:relentless_endurance",
-          "tracker_id": "race:phb:half_orc:relentless_endurance:uses"
-        }
-      ]
+      "source": "PHB"
     },
     {
       "name": "Harengon",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:harengon:rabbit_hop",
-          "trait": "Rabbit Hop",
-          "name": "Rabbit Hop",
-          "action_type": "bonus",
-          "tracker_id": "race:mpmm:harengon:rabbit_hop:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest"
-        }
-      ]
+      "source": "MPMM"
     },
     {
       "name": "Lizardfolk",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:lizardfolk:hungry_jaws",
-          "trait": "Hungry Jaws",
-          "name": "Hungry Jaws",
-          "action_type": "bonus",
-          "tracker_id": "race:mpmm:lizardfolk:hungry_jaws:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest"
-        }
-      ]
+      "source": "MPMM"
     },
     {
       "name": "Orc",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:orc:adrenaline_rush",
-          "trait": "Adrenaline Rush",
-          "name": "Adrenaline Rush",
-          "action_type": "bonus",
-          "tracker_id": "race:mpmm:orc:adrenaline_rush:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "temp_hp": "proficiency",
-          "action_ref": "dash"
-        },
-        {
-          "trait": "Relentless Endurance",
-          "name": "Relentless Endurance",
-          "action_type": "free",
-          "uses": 1,
-          "recharge": "long_rest",
-          "damage_response": {
-            "trigger": "would_reach_zero",
-            "effect": "retain_one_hp",
-            "require_not_instant_death": true
-          },
-          "id": "race:mpmm:orc:relentless_endurance",
-          "tracker_id": "race:mpmm:orc:relentless_endurance:uses"
-        }
-      ]
+      "source": "MPMM"
     },
     {
       "name": "Satyr",
-      "source": "MPMM",
-      "actions": [
-        {
-          "id": "race:mpmm:satyr:mirthful_leaps",
-          "trait": "Mirthful Leaps",
-          "name": "Mirthful Leaps",
-          "action_type": "movement",
-          "roll_effect": {
-            "dice": "1d8",
-            "label": "Piedi aggiuntivi del salto"
-          }
-        }
-      ]
+      "source": "MPMM"
     },
     {
       "name": "Sea Elf",
@@ -709,21 +452,7 @@
     },
     {
       "name": "Shifter",
-      "source": "MPMM",
-      "tracked_actions": [
-        {
-          "id": "race:mpmm:shifter:shifting",
-          "trait": "Shifting",
-          "name": "Shifting",
-          "action_type": "bonus",
-          "tracker_id": "race:mpmm:shifter:shifting:uses",
-          "uses": "proficiency",
-          "recharge": "long_rest",
-          "persistent_key": "racial:shifter:shifting",
-          "duration_rounds": 10,
-          "temp_hp": "double_proficiency"
-        }
-      ]
+      "source": "MPMM"
     }
   ]
 }
