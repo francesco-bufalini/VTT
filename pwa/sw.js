@@ -61,7 +61,6 @@ const SHELL = [
   "/species_defenses.js",
   "/class_defenses.js",
   "/catalog/class_defense_rules.js",
-  "/catalog/class_feature_operations.js",
   "/catalog/class_numeric_feature_grants.js",
   "/catalog/feature_feat_grants.js",
   "/species_variant_families.js",
