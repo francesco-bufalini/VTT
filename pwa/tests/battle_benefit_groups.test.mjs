@@ -59,6 +59,29 @@ test('multiattack is distinct from a normal attack and uses named monster strike
   'Monster-granted attacks remain outside the hideable basic section');
 });
 
+test('basic attacks begin exactly at Unarmed Strike without hiding equipped weapons',()=>{
+ const panels=battleActionPanels({rules_version:'2014'},{
+  attacks:[
+   {id:'item:shortsword',name:'Shortsword',slot:'main',melee:true,hit:5,damage:'1d6'},
+   {id:'unarmed',name:'Colpo senz’armi',melee:true,hit:3,damage:'1'}
+  ]
+ },[],[],[
+  {id:'grapple',edition:'2014',name:'Afferrare',parent_action:'attack',timings:['action']}
+ ]);
+ const attacks=doc(panels.attacks);
+ const grouped=attacks.querySelector('[data-battle-basic="attacks"]');
+ const order=[...attacks.querySelectorAll('[data-attack-id]')].map(node=>node.dataset.attackId);
+ const boundary=order.indexOf('unarmed');
+ assert(boundary>0,'Equipped attacks must precede Unarmed Strike');
+ assert.equal(order[boundary-1],'item:shortsword');
+ assert.deepEqual([...grouped.querySelectorAll('[data-attack-id]')].map(node=>node.dataset.attackId),
+  order.slice(boundary),'The basic group is the exact suffix starting at Unarmed Strike');
+ assert(!attacks.querySelector('[data-attack-id="item:shortsword"]').closest('[data-battle-basic]'),
+  'Equipped attacks stay visible outside the hideable basic group');
+ assert(grouped.querySelector('[data-attack-id="grapple"]'),
+  'Grapple and the following attacks are included in the basic group');
+});
+
 test('Attacchi keeps all original attack rows and maneuvers without duplicates in Azioni',()=>{
  const rules=[
   {id:'grapple',edition:'2014',name:'Afferrare',parent_action:'attack',timings:['action'],description:'Afferrare una creatura.'},

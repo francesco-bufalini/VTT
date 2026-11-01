@@ -1108,11 +1108,13 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    action_change_feature:grant.origin_name||'',original_time:action.time,
    action_damage:[grant]}]:[];
  });
- // Every non-privilege strike (including equipped weapons and Unarmed
- // Strike) is a basic attack. Preserve the existing tier ordering while
- // making the group independently hideable from the Battle toolbar.
- const privilegeAttacks=weapon.filter(row=>attackTier(row)===0);
- const basicAttacks=weapon.filter(row=>attackTier(row)>0);
+ // "Attacchi di base" starts at Unarmed Strike in the already sorted list.
+ // Everything above it, including equipped weapons and feature-granted
+ // attacks, remains visible when the shared base-attack toggle is off.
+ // Do not reclassify attacks by their origin or reorder the original list.
+ const basicStart=weapon.findIndex(row=>row.id==='unarmed');
+ const privilegeAttacks=weapon.slice(0,basicStart<0?weapon.length:basicStart);
+ const basicAttacks=basicStart<0?[]:weapon.slice(basicStart);
  const attackHtml=rows=>rows.map(row=>
   battleAttackRow(row,calculated,attacksById,descriptions,record,true)).join('');
  const basicAttacksHtml=basicAttacks.length?
