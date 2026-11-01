@@ -1,3 +1,4 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,7 +6,7 @@ import {racialPowerProjection} from '../species_powers.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
 import {abilityAttackRoll,battleAbilityEntries} from '../action_economy.js';
 
-const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const index=speciesPowerTestIndex();
 const root='species|5etools:races:mpmm:centaur|mpmm';
 const feature={name:'Charge',origin_key:root,
  origin_id:'feature:'+root+'|1|charge',key:root+'|1|charge'};

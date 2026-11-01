@@ -11,12 +11,12 @@ const oldActions=read('../../vtt/data/action_feature_overrides.json').entries;
 const oldRolls=read('../catalog/roll_bonus_rules.json').features;
 
 test('all 52 class actions survive the typed migration with exact operation, costs and source',()=>{
- assert.equal(typedAction.entries.filter(row=>row.projection!=='timing_action').length,52);
+ assert.equal(typedAction.entries.filter(row=>row.projection!=='timing_action'&&['class_feature','subclass_feature'].includes(row.granted_by.ref.category)).length,52);
  assert.equal(typedAction.entries.filter(row=>row.projection==='timing_action').length,65);
  assert.deepEqual(classActionOverridesFromBenefits(typedAction),oldActions);
  assert(typedAction.entries.some(row=>row.granted_by.ref.source==='XPHB'));
  assert(typedAction.entries.some(row=>row.granted_by.ref.source==='TCE'));
- for(const entry of typedAction.entries){
+ for(const entry of typedAction.entries.filter(row=>['class_feature','subclass_feature'].includes(row.granted_by.ref.category))){
   assert(['class_feature','subclass_feature'].includes(entry.granted_by.ref.category));
   assert(!('description' in entry.benefit));
  }

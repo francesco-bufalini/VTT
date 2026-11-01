@@ -1,10 +1,11 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {racialPowerProjection,racialAbilityEffectFormula} from '../species_powers.js';
 import {featureRollTarget} from '../feature_rolls.js';
 import {availableZeroHpResponses,resolveZeroHpDamage} from '../zero_hp_responses.js';
-const index=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+const index=speciesPowerTestIndex();
 function setup(species,source,traitName){
  const id='5etools:races:'+source.toLowerCase()+':'+species.toLowerCase();
  const record={kind:'character',rules_version:'2014',level:8,species,species_source:source,species_id:id,

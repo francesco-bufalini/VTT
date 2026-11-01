@@ -1,3 +1,4 @@
+import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -9,7 +10,7 @@ import {recoveryPatch} from '../native_sheet.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const ability=read('../catalog/ability_grants.json');
-const species=read('../catalog/species_powers.json');
+const species=speciesPowerTestIndex();
 const native=read('../../vtt/data/feat_mechanics_2014.json');
 const originDetails={races:{'dragonborn|phb':{
  name:'Dragonborn',source:'PHB',entries:[{name:'Breath Weapon',entries:['Draconic breath.']}]}
