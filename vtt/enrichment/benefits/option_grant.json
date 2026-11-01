@@ -751,7 +751,8 @@
             "feature_types": [
               "AI"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -821,7 +822,8 @@
             "feature_types": [
               "FS:B"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -887,7 +889,8 @@
             "feature_types": [
               "FS:F"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -969,7 +972,8 @@
             "feature_types": [
               "MV:B"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1039,7 +1043,8 @@
             "feature_types": [
               "FS:F"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1125,7 +1130,8 @@
             "feature_types": [
               "AS"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1207,7 +1213,8 @@
             "feature_types": [
               "RN"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1289,7 +1296,8 @@
             "feature_types": [
               "MV:B"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1375,7 +1383,8 @@
             "feature_types": [
               "AS"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1461,7 +1470,8 @@
             "feature_types": [
               "ED"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1527,7 +1537,8 @@
             "feature_types": [
               "FS:P"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1593,7 +1604,8 @@
             "feature_types": [
               "FS:R"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1672,7 +1684,8 @@
             "mode": "per_feature",
             "stage": "learned",
             "key": "level"
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1751,7 +1764,8 @@
             "mode": "per_feature",
             "stage": "learned",
             "key": "level"
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1893,7 +1907,8 @@
             "feature_types": [
               "EI"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -1959,7 +1974,8 @@
             "feature_types": [
               "PB"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },
@@ -2101,7 +2117,8 @@
             "feature_types": [
               "EI"
             ]
-          }
+          },
+          "unique_across_selections": true
         }
       }
     },

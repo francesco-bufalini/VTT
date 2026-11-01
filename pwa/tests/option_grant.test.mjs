@@ -192,7 +192,15 @@ test('multiple Metamagic feature instances have their own selection boxes and re
   assert.equal(projected.selection_traits.length,ids.length);
   const allIds=projected.selection_traits.map(t=>t.selection_id);
   assert.deepEqual(allIds.sort(),models.flatMap((m,i)=>Array.from({length:limits[i]},()=>m.id)).sort());
-  const narrowed=powerSelectionModels(stored,{features:[features[1],features[2]]},catalog);
-  assert(narrowed.length>=1);
+  const narrowed=powerSelectionModels(stored,{features:[features[1],features[2]]},catalog)
+   .filter(m=>m.id.startsWith(ruleId));
+  assert.deepEqual(narrowed.map(m=>m.id),[ruleId+':level:10',ruleId+':level:17']);
+  assert.deepEqual(narrowed.map(m=>m.layers.learned.limit),limits.slice(1));
+  const firstChoice=ids[0];
+  let selected=record;
+  selected={...selected,...powerSelectionPatch(selected,{features},catalog,ruleId,'learned',firstChoice)};
+  assert.throws(()=>powerSelectionPatch(selected,{features},catalog,
+    ruleId+':level:10','learned',firstChoice),/già scelta/);
+
  }
 });
