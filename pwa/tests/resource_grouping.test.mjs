@@ -230,9 +230,11 @@ test('trait operation identity deduplicates translated descriptive actions and a
   const group=[...app.querySelectorAll('[data-battle-action="others"] [data-ability-id]')].find(node=>node.textContent.includes('Magical Tinkering'));
   assert(group);
   assert(!group.textContent.includes('Congegni magici'));
-  const attack=app.querySelector('[data-ability-id="activated:trait-attack:class_feature:lightning_launcher"]');
-  assert.match(attack.textContent,/Lightning Launcher.*Azione/);
-  assert(!attack.textContent.includes('Azione di attacco'));
+  const attack=app.querySelector('[data-battle-action="attacks"] [data-attack-id="class_feature:lightning_launcher"]');
+  assert(attack,'The actual Lightning Launcher strike remains in Attacchi');
+  assert.match(attack.textContent,/Lightning Launcher/);
+  assert.equal(app.querySelector('[data-battle-action="resources"] [data-ability-id="activated:trait-attack:class_feature:lightning_launcher"]'),null,
+   'The same attack is never repeated as a resource power');
  });
 });
 test('health presents temporary HP alongside current HP and active defenses below the bar',()=>{
