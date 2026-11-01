@@ -59,7 +59,7 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   const parent=rule.requires_application,binding=parent?rows(record.power_applications?.[parent.selection]).find(row=>!parent.bound||rows(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id)):null;
   if(parent&&!binding)continue;
   const options=optionsFor(record,rule,catalog).map(option=>{
-   if(rule.option_kind!=='trait_state')return option;
+   if(rule.option_kind!=='trait_state'&&rule.option_origin_kind!=='trait_state')return option;
    const original=traitStateSource(option,feature,calculated.features);
    return {...option,name:original.name,description:original.description};
   }),layers={};

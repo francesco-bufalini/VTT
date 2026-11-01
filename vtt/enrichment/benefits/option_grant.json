@@ -235,7 +235,8 @@
           "application": {
             "destination": "origin",
             "exclusive": true
-          }
+          },
+          "option_origin_kind": "trait_state"
         }
       }
     },

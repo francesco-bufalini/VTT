@@ -859,6 +859,11 @@
             "required": [
               "progression"
             ]
+          },
+          {
+            "required": [
+              "slot_progression"
+            ]
           }
         ]
       }
@@ -3517,6 +3522,9 @@
           "type": "boolean"
         },
         "forget": {
+          "type": "string"
+        },
+        "option_origin_kind": {
           "type": "string"
         }
       },
