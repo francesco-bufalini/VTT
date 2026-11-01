@@ -120,7 +120,7 @@ test('special attacks remain overview benefits while their capabilities retain t
  assert.ok(overview.monster_attack_ids.includes('monster:legendary:2'));
  const action=monsterActions(record).find(row=>row.id==='monster:legendary:2');
  assert.equal(action.cost,2);
- assert.equal(action.time,'legendary');
+ assert.equal(action.time,'free');
  assert.equal(action.origin_id,'feature:'+traits.find(row=>row.monster_role==='legendary').feature_key);
 });
 test('saved benefits of removed action cards remain visible on their new granting trait',async()=>{
