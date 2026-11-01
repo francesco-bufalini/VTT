@@ -18,10 +18,8 @@ try{
     inventory:[sword,...creature.inventory.slice(1),copy]},'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');
- const toggleAll=page.locator('[data-act="inventory-toggle-all"]');
- if((await toggleAll.textContent()).includes('Mostra tutti gli oggetti'))await toggleAll.click();
- // The all-items view may already be active because the inventory remembers
- // previously selected sections; never toggle it off while asserting subtotals.
+ assert.equal(await page.locator('[data-act="inventory-toggle-all"]').count(),0,
+  'All inventory sections remain visible without a show-all toggle');
  const sections=page.locator('#sheet-play-view .play-inventory-section');
  assert(await sections.count()>=2,'Backpack and custom section must be visible');
  const totals=page.locator('#sheet-play-view .inventory-overview');
@@ -87,8 +85,7 @@ try{
  await owned.click();
  assert.equal(await page.locator('#sheet-play-view .inventory-search-highlight').count(),2,
   'The matching copies in two different sections are highlighted');
- assert.match(await page.locator('.play-inventory-page-title [data-act="inventory-toggle-all"]').textContent(),
-  /Mostra solo zaino/);
+ assert.equal(await sections.count(),4,'Searching never hides inventory sections');
  const wanted=await page.evaluate(async()=>{
   const {catalogEntries}=await import('/catalog_data.js');
   const entries=await catalogEntries('items');
