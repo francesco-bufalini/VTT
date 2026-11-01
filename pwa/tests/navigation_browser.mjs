@@ -142,10 +142,8 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="spells"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
   'Class-only filtering no longer exists');
- const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
- assert.equal(await checks.count(),1,'Generic ability checks belong in the unified Actions tab');
- await checks.locator('summary.play-battle-summary').click();
- assert.equal(await checks.locator('[data-action-ability]').count(),6);
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="checks"]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view [data-attack-id="ability_checks"]').count(),0);
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
   for(const key of ['skills','battle','magic','inventory','conditions','info']){

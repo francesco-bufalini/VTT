@@ -117,7 +117,7 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
    '<section class="'+className+'"><h2>'+title+'</h2>'+body+'</section>',
   catalogs:{},calculated,
  };
- const markup=nativeSection(creature,'info',opts);
+ const markup=nativeSection(creature,'skills',opts);
  assert.equal(nativeSection(creature,'stats',opts),null,'The former standalone skills screen was retired');
  assert.equal((markup.match(/class="native-ability-row"/g)||[]).length,6);
  assert.match(markup,/class="native-abilities-header" role="row"/);

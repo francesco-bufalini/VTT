@@ -872,7 +872,7 @@ try{
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  // A class saving-throw proficiency must navigate to the exact granted
  // proficiency trait, never a random feature or the generic bonus editor.
- await sheet('info');
+ await sheet('skills');
  await page.locator('#sheet-play-view [data-target="save:int"]').click();
  const proficiencyLink=page.locator('#sheet-roll-dialog .sheet-roll-origin-term[data-origin-id="class|phb|wizard"]');
  assert.equal(await proficiencyLink.count(),1,'Class save training retains its source');

@@ -449,7 +449,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
   click('#creature-back');
   await until(()=>document.querySelector("#chat-screen").hidden);
-  click('[data-sheet="info"]');
+  click('[data-sheet="skills"]');
   await until(()=>document.querySelector('[data-act="sheet-roll"][data-target="save:dex"]'));
   const rollMessages=()=>calls.filter(c=>c.url==='/api/action'&&
     JSON.parse(c.options.body).action==='chat_send'&&
@@ -1387,7 +1387,7 @@ test("sheet derived values update locally and never call a desktop calculation A
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-local-sheet-calculations]')?.textContent.includes('Calcolato localmente sul dispositivo'));
   assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/Calcolato localmente sul dispositivo/);
-  click('[data-sheet="info"]');
+  click('[data-sheet="skills"]');
   await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
   await until(()=>document.querySelector('[data-act="sheet-score-formula"][data-target="ability:dex"]'));
   await changeScore('dex',16);
