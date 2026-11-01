@@ -1667,6 +1667,11 @@
             "feature_types": [
               "MM"
             ]
+          },
+          "instances": {
+            "mode": "per_feature",
+            "stage": "learned",
+            "key": "level"
           }
         }
       }
@@ -1741,6 +1746,11 @@
             "feature_types": [
               "MM"
             ]
+          },
+          "instances": {
+            "mode": "per_feature",
+            "stage": "learned",
+            "key": "level"
           }
         }
       }

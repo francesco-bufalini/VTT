@@ -45,8 +45,35 @@ function optionsFor(record,rule,catalog={}){
   .filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014'))).map(row=>({...row,
  min_level:row.min_level||(rule.benefit_type==='option_grant'?0:rows(row.prerequisite).length?Math.min(...rows(row.prerequisite).map(p=>Number(p.level?.level||p.level)||0)):0),
  details:row.details||(!row._homebrew&&row.source?{category:'optional_features',name:row.name,source:row.source}:undefined)}));}
-// Selections and applications are already stored in canonical form.
-export function normalizeSelectionRecord(record={}){return record;}
+// Saved characters originally stored every copy of a repeated feature under
+// one rule ID. Partition only the excess choices when its feature-level
+// instances become available; preserve order, subchoices and extra choices.
+export function normalizeSelectionRecord(record={},catalog={}){
+ let result=record;
+ for(const rule of definitions(catalog).filter(row=>row.instances?.mode==='per_feature')){
+  const stage=rule.instances.stage;
+  const levels=rows(rule.layers?.[stage]?.limit?.by_class_level);
+  if(levels.length<2)continue;
+  const classLevel=Number(member(result,rule.owner)?.level)||0;
+  const available=levels.filter(([at])=>Number(at)<=classLevel);
+  if(available.length<2)continue;
+  const current=rows(result.power_selections?.[rule.id]?.[stage]);
+  if(current.length<=Number(available[0][1])||available.slice(1).some(([at])=>
+   Object.hasOwn(result.power_selections||{},rule.id+':level:'+at)))continue;
+  const next={...result.power_selections};
+  let start=0;
+  for(let i=0;i<available.length;i++){
+   const [at,count]=available[i],prior=i?Number(available[i-1][1]):0;
+   const quota=Math.max(0,Number(count)-prior),last=i===available.length-1;
+   const part=last?current.slice(start):current.slice(start,start+quota);
+   start+=part.length;
+   const id=i?rule.id+':level:'+at:rule.id;
+   next[id]={...next[id],[stage]:part};
+  }
+  result={...result,power_selections:next};
+ }
+ return result;
+}
 export function powerSelectionModels(raw={},calculated={},catalog={}){
  const record=normalizeSelectionRecord(raw,catalog),models=[];
  for(const rule of definitions(catalog)){
@@ -58,12 +85,16 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   const owner=classOwner?member(record,rule.owner):{level:record.level||1};
   if(!owner||!isContentAvailableForRules({source:rule.owner?.class_source||rule.origin_ref?.source},record.rules_version||'2014'))continue;
   const traitName=rule.owner?.trait||rule.origin_ref?.name;
-  const level=Number(owner.level)||0,feature=rows(calculated.features).find(f=>
+  const level=Number(owner.level)||0;
+  const candidates=rows(calculated.features).filter(f=>
    low(f.name)===low(traitName)&&
    (!classOwner||low(f.class_name||f.requirements?.class_name||String(f.origin_key).split('|')[2])===low(rule.owner.class_name))&&
    (!rule.owner?.class_source||low(f.class_source||f.requirements?.class_source||String(f.origin_key).split('|')[1])===low(rule.owner.class_source))&&
-   !f.disabled&&!f.inactive&&record.trait_enabled?.[f.key]!==false);
-  if(!feature)continue;
+   !f.disabled&&!f.inactive&&record.trait_enabled?.[f.key]!==false)
+   .sort((a,b)=>(Number(a.level)||0)-(Number(b.level)||0));
+  const instances=rule.instances?.mode==='per_feature'?candidates:candidates.slice(0,1);
+  for(const [index,feature] of instances.entries()){
+  const instanceId=index===0?rule.id:rule.id+':level:'+(Number(feature.level)||0);
   const origin=feature?.origin_id||'';
   if([origin,feature.origin_key,String(feature.origin_key||'').split('|').slice(0,3).join('|')].some(id=>id&&(record.origin_enabled?.[id]===false||rows(record.proficiency_origins).some(row=>row.id===id&&row.disabled))))continue;
   const parent=rule.requires_application,binding=parent?rows(record.power_applications?.[parent.selection]).find(row=>!parent.bound||rows(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id)):null;
@@ -75,12 +106,17 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   }),layers={};
   const required=Object.entries(rule.required||{}).filter(([at])=>Number(at)<=level).flatMap(([,values])=>rows(values).map(key=>{const [name,source]=key.split('|');return options.find(o=>low(o.name)===low(name)&&(!source||low(o.source)===low(source)))?.id;})).filter(Boolean);
   for(const [stage,spec] of Object.entries(rule.layers||{})){
-   let selected=stage==='applied'?rows(record.power_applications?.[rule.id]):rows(record.power_selections?.[rule.id]?.[stage]);
+   let selected=stage==='applied'?rows(record.power_applications?.[instanceId]):rows(record.power_selections?.[instanceId]?.[stage]);
    if(stage==='learned')selected=[...required,...selected.filter(row=>!required.includes(identity(row)))];
    if(spec.mode==='automatic')selected=rows(layers[spec.from||'learned']?.selected??record.power_selections?.[rule.id]?.[spec.from||'learned']).map(id=>({id:identity(id)}));
    selected=selected.filter(row=>options.some(o=>o.id===identity(row)&&(stage!=='applied'||o.min_level<=level)));
    if(stage==='applied'&&rule.application?.destination==='item')selected=selected.filter(row=>rows(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id&&Number(item.quantity??1)>0));
    let limit=powerSelectionLimit(spec.limit,level);
+   if(rule.instances?.mode==='per_feature'&&stage===rule.instances.stage&&spec.limit?.by_class_level){
+    const current=powerSelectionLimit(spec.limit,Number(feature.level)||0);
+    const previous=index?powerSelectionLimit(spec.limit,Number(instances[index-1].level)||0):0;
+    limit=Math.max(0,current-previous);
+   }
    if(stage==='applied'&&rule.capacity_bonus_field)limit+=rows(catalog.capacity_grants||calculated.selection_capacity_grants).reduce((n,r)=>n+Number(r[rule.capacity_bonus_field]||0),0);
    if(stage==='applied'&&!rule.application?.target&&!spec.target)selected=selected.map(identity);
    layers[stage]={enabled:true,selected,used:selected.length,limit,trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger),automatic:spec.mode==='automatic',target:stage==='applied'?rule.application?.target||spec.target:null};
@@ -89,9 +125,12 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   // A rule with no stages, or with explicit fixed options, needs no selection UI.
   const fixed=rows(rule.fixed).length?rows(rule.fixed).map(identity):
     !Object.keys(layers).length?options.map(option=>option.id):[];
-  models.push({...rule,title:rule.title||feature.name,benefit_type:rule.benefit_type||'option_selection',
+  models.push({...rule,id:instanceId,title:(rule.title||feature.name)+
+   (rule.instances?.mode==='per_feature'?' · livello '+(Number(feature.level)||1):''),
+   benefit_type:rule.benefit_type||'option_selection',
    source_type:'option_catalog',ui:'generic',options,layers,level,fixed,
    origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required});
+  }
  }
  // Spell selection extends the same learned/prepared/applied layer contract.
  // A benefit declares both the spell catalogue and the owning class level;

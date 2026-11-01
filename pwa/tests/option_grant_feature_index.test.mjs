@@ -42,7 +42,8 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
    benefit.type==='option_grant'&&benefit.id===entry.benefit.id));
   if(!matching.length)missing.push(entry.benefit.id);
   else present.push(entry.benefit.id);
-  if(matching.length>1)ambiguous.push([entry.benefit.id,matching.map(f=>f.origin_id)]);
+  if(matching.length>1&&!entry.benefit.option_grant.instances)
+   ambiguous.push([entry.benefit.id,matching.map(f=>f.origin_id)]);
   if(matching.length&&entry.benefit.option_grant.option_kind!=='spell'){
    const catalog={...powerCatalog,optionGrants:grants,optionalFeatureProgressions:optionCatalog};
    const selection=powerSelectionModels(record,{features},catalog);
@@ -56,4 +57,7 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
  // The catalog source report is intentionally preserved even if upstream
  // 5eTools does not currently contain a source, so that omissions are visible.
  assert.equal(grants.entries.length,41);
+ assert.deepEqual(missing,[], 'Each typed grant must have a real 5eTools feature');
+ assert.deepEqual(ambiguous,[], 'Repeated features must explicitly declare per-feature instancing');
+ assert.deepEqual(modelMissing,[], 'Every nondependent grant must produce a visible model');
 });

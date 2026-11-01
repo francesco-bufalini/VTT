@@ -3595,6 +3595,29 @@
             }
           },
           "additionalProperties": false
+        },
+        "instances": {
+          "type": "object",
+          "required": [
+            "mode",
+            "stage",
+            "key"
+          ],
+          "properties": {
+            "mode": {
+              "const": "per_feature"
+            },
+            "stage": {
+              "enum": [
+                "learned",
+                "prepared"
+              ]
+            },
+            "key": {
+              "const": "level"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

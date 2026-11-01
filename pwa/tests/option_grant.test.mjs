@@ -165,3 +165,34 @@ test('spell grants with applied stage cannot be cast until activated',()=>{
  projection=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
  assert.equal(projection.origin_spell_grants.length,0);
 });
+
+test('multiple Metamagic feature instances have their own selection boxes and retain legacy choices',()=>{
+ for(const [sourceCode,version,levels,limits] of [
+  ['PHB','2014',[3,10,17],[2,1,1]],['XPHB','2024',[2,10,17],[2,2,2]]
+ ]){
+  const ruleId='optional:class:'+sourceCode.toLowerCase()+':sorcerer:mm';
+  const record={kind:'character',rules_version:version,level:17,
+   classes:[{name:'Sorcerer',source:sourceCode,level:17}],inventory:[]};
+  const features=levels.map(level=>({name:'Metamagic',level,
+   class_name:'Sorcerer',class_source:sourceCode,
+   origin_key:'class|'+sourceCode.toLowerCase()+'|sorcerer',
+   origin_id:'feature:metamagic:'+level,key:'metamagic:'+level}));
+  const catalog={...source,optionalFeatureProgressions:optional};
+  const models=powerSelectionModels(record,{features},catalog).filter(row=>row.id.startsWith(ruleId));
+  assert.deepEqual(models.map(m=>m.id),[ruleId,ruleId+':level:10',ruleId+':level:17']);
+  assert.deepEqual(models.map(m=>m.layers.learned.limit),limits);
+  assert.deepEqual(models.map(m=>m.origin_id),features.map(f=>f.origin_id));
+  const ids=models[0].options.slice(0,limits.reduce((a,b)=>a+b,0)).map(o=>o.id);
+  assert.equal(ids.length,limits.reduce((a,b)=>a+b,0));
+  const stored={...record,power_selections:{[ruleId]:{learned:ids}}};
+  const migrated=powerSelectionModels(stored,{features},catalog).filter(m=>m.id.startsWith(ruleId));
+  assert.deepEqual(migrated.map(m=>m.layers.learned.used),limits);
+  assert.deepEqual(migrated.flatMap(m=>m.layers.learned.selected),ids);
+  const projected=projectSelectionBenefits(stored,{powerSelections:catalog},features);
+  assert.equal(projected.selection_traits.length,ids.length);
+  const allIds=projected.selection_traits.map(t=>t.selection_id);
+  assert.deepEqual(allIds.sort(),models.flatMap((m,i)=>Array.from({length:limits[i]},()=>m.id)).sort());
+  const narrowed=powerSelectionModels(stored,{features:[features[1],features[2]]},catalog);
+  assert(narrowed.length>=1);
+ }
+});
