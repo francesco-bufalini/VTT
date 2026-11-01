@@ -255,10 +255,12 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
  // selection phase determines which spells are castable through this grant.
  // Each grant keeps an independent origin even for the same canonical spell.
  for(const model of models.filter(row=>row.option_kind==='spell')){
-  const phase=model.layers.prepared||model.layers.learned;
+  // The final declared stage is the castable set. All three stages are
+  // optional; a learned-only grant and a fixed list are immediately usable.
+  const phase=model.layers.applied||model.layers.prepared||model.layers.learned;
   const picked=rows(phase?.selected||model.fixed);
   const visible=new Set(picked.map(identity));
-  if(model.layers.prepared&&model.layers.learned){
+  if(model.layers.learned&&(model.layers.prepared||model.layers.applied)){
    for(const id of rows(model.layers.learned.selected)){
     const option=model.options.find(row=>row.id===identity(id));
     if(Number(option?.level)===0)visible.add(identity(id));

@@ -149,3 +149,19 @@ test('spell option grant selects and casts through a separate canonical grant or
  projection=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
  assert.equal(projection.origin_spell_grants.length,0,'Removing preparation removes spell grant');
 });
+
+test('spell grants with applied stage cannot be cast until activated',()=>{
+ const catalog=customCatalog({learned:{limit:1},applied:{limit:1}});
+ const rule=catalog.optionGrants.entries[0].benefit.option_grant;
+ rule.option_kind='spell';rule.source={type:'inline',options:[{id:'spell:shield|phb',level:1,name:'Shield'}]};
+ let record=basis();const id=rule.id,option='spell:shield|phb';
+ record={...record,...powerSelectionPatch(record,context,catalog,id,'learned',option)};
+ let projection=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
+ assert.equal(projection.origin_spell_grants.length,0,'Known but unapplied spells are not castable');
+ record={...record,...powerApplicationPatch(record,context,catalog,id,option,true)};
+ projection=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
+ assert.equal(projection.origin_spell_grants.length,1);
+ record={...record,...powerApplicationPatch(record,context,catalog,id,option,false)};
+ projection=projectSelectionBenefits(record,{powerSelections:catalog},context.features);
+ assert.equal(projection.origin_spell_grants.length,0);
+});

@@ -3274,7 +3274,9 @@ function optionBenefitPanels(c,calculated){
    (model.ability&&castingStatisticsVisible(c,castingId,false)?castingStatistics(c,castingId,model.ability):'')+
    '<div class="infusion-overview">'+summary+'</div><div class="benefit-option-controls">'+controls+'</div>'+entries.map(selection=>{
     const id=selectedPowerId(selection),option=byId.get(id);if(!option)return '';
-    const cast=model.option_kind==='spell';
+    const spell=model.option_kind==='spell';
+    const cast=spell&&(calculated.origin_spells||[]).some(grant=>
+      grant.option_grant_id===model.id&&grant.source_option_id===id);
     const casting=cast?'data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc('option_grant:'+model.id+':'+(option.spell_id||option.id))+'"':
       'data-act="benefit-option-open" data-power-selection-id="'+esc(model.id)+'" data-power-option-id="'+esc(id)+'"';
     return '<div class="magic-spell-row" data-power-option-id="'+esc(id)+'" data-option-active="'+
