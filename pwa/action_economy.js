@@ -479,24 +479,27 @@ export function attackActionCategory(row={}){
  return row.type==='Capacità'||row.monster_action?'abilities':'other';
 }
 
-// Shared presentation for a single actionable side control. A paid action
-// shows the resource name above remaining charges and the Use verb, all
-// inside ONE button; selecting it uses the existing validated action handler.
+// The compact resource button is an operation, not a decorative counter.
+// Its visible lines are the tracker name and the payment/current uses;
+// accessibility retains the verb that explains what clicking it does.
 export function battleActionUseBox({act='',attrs='',tracker=null,trackerName='',cost=0,label='Usa',disabled=false,allowDepleted=false,name=''}={}){
- if(!act)return '<span class="play-action-use-space" aria-hidden="true"></span>';
+ if(!act)return '';
  const amount=Math.max(0,Number(cost)||0);
  const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
  const resource=amount>0?String(tracker?.name||trackerName||'Tracker non disponibile'):'';
  const off=disabled||!allowDepleted&&amount>0&&(!tracker||tracker.disabled||available<amount);
  const labelText=String(label||'Usa');
+ const payment=resource?'<span class="play-action-use-bottom">'+
+  '<strong class="play-action-use-cost">−'+esc(amount)+'</strong>'+
+  '<span class="play-action-use-separator" aria-hidden="true">·</span>'+
+  '<strong class="play-action-tracker-count">'+available+'/'+esc(tracker?.max||0)+'</strong></span>':
+  '<span class="play-action-use-bottom"><strong class="play-action-use-verb">'+esc(labelText)+'</strong></span>';
  return '<button type="button" class="play-resource-use play-action-use-box" data-act="'+esc(act)+'"'+
   attrs+(off?' disabled':'')+
   ' aria-label="'+esc(labelText+' '+(name||'azione'))+'"'+
-  (resource?' title="'+esc(resource+': '+available+'/'+(tracker?.max||0)+', costo '+amount)+'"':'')+'>'+
+  (resource?' title="'+esc(resource+': costo '+amount+', '+available+'/'+(tracker?.max||0)+' utilizzi')+'"':'')+'>'+
   (resource?'<span class="play-action-tracker-name" title="'+esc(resource)+'">'+esc(resource)+'</span>':'')+
-  '<span class="play-action-use-bottom">'+
-  (resource?'<strong class="play-action-tracker-count">'+available+'/'+esc(tracker?.max||0)+'</strong>':'')+
-  '<strong class="play-action-use-verb">'+esc(labelText)+'</strong></span></button>';
+  payment+'</button>';
 }
 
 export function battleActionTimeLabel(time='action'){
@@ -508,23 +511,10 @@ export function battleActionTimeLabel(time='action'){
 
 // A sequence is a list of *choices* leading to the existing Attacchi table,
 // not duplicate attack rolls or automatic tracker payments.
-export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
- const attacks=arr(calculated.attacks);
- const steps=arr(action.steps).length?
-  resolveAttackActionSteps(action,attacks,arr(calculated.action_entries)):null;
- const explicit=steps?steps.flatMap(step=>Array.from({length:step.count},()=>
-  step.options.length===1?String(step.options[0].id||''):'')):[];
+export function battleAttackStepMarkup(sequence=[]){
  return arr(sequence).length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
-  sequence.map((label,index)=>{
-   const match=attacks.filter(row=>String(row.name||'').trim().toLocaleLowerCase('it')===
-    String(label).trim().toLocaleLowerCase('it'));
-   const targetId=explicit[index]|| (match.length===1?String(match[0].id):'');
-   return '<li class="play-battle-attack-step">'+
-    '<span class="play-battle-roll-formula">'+esc(label)+'</span>'+
-    '<button type="button" class="play-battle-attack-step-use"'+
-    ' data-act="battle-attack-jump" data-attack-target-id="'+esc(targetId)+'"'+
-    ' aria-label="Usa '+esc(label)+' dalla tabella Attacchi">Usa</button></li>';
-  }).join('')+'</ol>':'';
+  sequence.map(label=>'<li class="play-battle-attack-step">'+
+   '<span class="play-battle-roll-formula">'+esc(label)+'</span></li>').join('')+'</ol>':'';
 }
 
 // Attack-granting routines and other actions use the same row as Capacità.
@@ -534,17 +524,19 @@ export function battleAttackActionRow(item={},calculated={}){
  const cost=Math.max(0,Number(item.cost)||0),sequence=arr(item.attack_sequence);
  const actionable=item.attack_action===true&&cost>0&&
   arr(calculated.attack_actions).some(row=>String(row.id)===String(item.id));
- const useAct=actionable?'attack-action-use':cost>0&&tracker?'battle-action-activate':'battle-attack-jump';
+ // A routine without a spendable tracker is descriptive: the attacks
+ // themselves remain in the Attacchi table, without a redundant Use button.
+ const useAct=cost>0&&tracker?(actionable?'attack-action-use':'battle-action-activate'):'';
  const control=battleActionUseBox({act:useAct,
   attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':
    useAct==='battle-action-activate'?' data-action-id="'+esc(item.id||'')+'"':'',
-  tracker,trackerName:item.tracker,cost,label:'Usa',disabled:item.available===false,name:item.name});
+  tracker,trackerName:item.tracker,cost,disabled:item.available===false,name:item.name});
  const description=details(item.description||'');
  return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-attack-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
   '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+
   actionGlyph(actionGlyphKey(item))+'<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione di attacco')+'</strong>'+
-  '<small class="play-attack-action-cost">'+esc(battleActionTimeLabel(item.time)+(cost>1?' · Costo '+cost:''))+'</small>'+
+  '<small>'+esc(battleActionTimeLabel(item.time))+'</small>'+
   (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
   '</span></summary>'+
   '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p></div></details>'+
@@ -630,33 +622,35 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
   // clickable, but remove condition/movement effect tiles from Altre azioni.
   const time=battleActionTimeLabel(item.time||'action');
   const detailsContent=render5etoolsInline(description||'Dettagli non disponibili.');
-  const act=item.id==='spell_cast'?'action-open-spells':
-   item.monster_action&&tracker?'monster-action-use':
+  // A single roll already has a dice button. Descriptive/general actions
+  // with no executable effect or resource do not get a second Use control.
+  const act=item.monster_action&&tracker&&Number(item.cost)>0?'monster-action-use':
    item.class_feature_id||String(item.id||'').startsWith('activated:')?'battle-use-ability':
-   item.tracker_id&&Number(item.cost)>0?'battle-action-activate':
-   item.action_id?'combat-action':
-   rolls.length===1?'sheet-roll':null;
+   item.tracker_id&&tracker&&Number(item.cost)>0?'battle-action-activate':
+   item.action_id?'combat-action':null;
   const attrs=act==='monster-action-use'?' data-monster-action-id="'+esc(item.id)+'"':
    act==='battle-use-ability'?' data-ability-id="'+esc(item.id)+'"':
    act==='battle-action-activate'?' data-action-id="'+esc(item.id)+'"':
-   act==='combat-action'?' data-mode="'+esc(item.action_id)+'"':
-   act==='sheet-roll'?' data-action-roll-target="'+esc(rolls[0].target)+'" data-action-roll-label="'+esc(rolls[0].label)+'"':'';
-  const control=battleActionUseBox({act:act==='sheet-roll'?'battle-action-roll':act,attrs,tracker,cost:Number(item.cost)||0,
+   act==='combat-action'?' data-mode="'+esc(item.action_id)+'"':'';
+  const control=battleActionUseBox({act,attrs,tracker,cost:Number(item.cost)||0,
    trackerName:item.tracker||'',disabled:item.available===false,name:actionName});
+  const isSpellLink=item.id==='spell_cast';
   return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-other-action'+
    (item.available===false?' play-battle-attack-unavailable':'')+
    '" data-attack-id="'+esc(item.id||'')+'">'+
+   (isSpellLink?'<button type="button" class="play-resource-power-open play-battle-direct-action" data-act="action-open-spells" aria-label="Apri Poteri">'+icon+
+    '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong><small>'+esc(time)+'</small></span></button>':
    '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+icon+
    '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong><small>'+esc(time)+'</small>'+
    (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
    '</span></summary><div class="play-battle-attack-expanded"><p>'+detailsContent+'</p>'+
-   source+optionMarkup+'</div></details>'+control+
+   source+optionMarkup+'</div></details>')+control+
    (rolls.length?'<div class="play-battle-attack-rolls play-battle-other-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map(row=>
      '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
      esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
      '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
      '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
-     '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+'</div>':'')+
+     diceGlyph()+'</button></div>').join('')+'</div>':'')+
    '</article>';
  }
  if(item.id==='spell_cast')return '<article class="play-battle-attack-entry play-battle-action-direct" data-attack-id="spell_cast">'+
@@ -686,7 +680,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
    (index===0?mapButton:'')+
    '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
-   '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+
+   diceGlyph()+'</button></div>').join('')+
    (!rolls.length&&mapButton?'<div class="play-battle-attack-roll-line">'+mapButton+'</div>':'')+
    '</div>':'')+
   '</div>'+battleEffectMarkup({...item,name:actionName,
