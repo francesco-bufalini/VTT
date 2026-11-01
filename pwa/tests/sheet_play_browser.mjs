@@ -395,11 +395,15 @@ try{
  assert.equal(await weaponPanel.locator('.play-chevron').count(),0);
  assert.equal(await page.locator('.play-battle-heading-tools [data-sheet-context="equipment"]').count(),1);
  assert.equal(await page.locator('.play-battle-heading-tools [data-act="action-open-spells"]').count(),0);
- // Spellcasting must open the Powers tab in a single click.
+ // Spellcasting now opens a detail popup, which links to Powers.
  await otherPanel.locator('summary.play-battle-summary').click();
- const castFromActions=otherPanel.locator('[data-attack-id="spell_cast"] [data-act="action-open-spells"]');
+ const castFromActions=otherPanel.locator('[data-attack-id="spell_cast"] [data-act="sheet-context"]');
  assert.equal(await castFromActions.count(),1);
  await castFromActions.click();
+ const spellActionDialog=page.locator('#sheet-context-dialog[open]');
+ await spellActionDialog.waitFor();
+ assert.match(await spellActionDialog.textContent(),/Descrizione/);
+ await spellActionDialog.locator('[data-act="action-open-spells"]').click();
  await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
  await sheet('battle');
  const mainAttack=weaponPanel.locator('[data-attack-id="item:local_sword"]');
