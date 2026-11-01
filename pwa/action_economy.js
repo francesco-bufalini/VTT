@@ -610,13 +610,13 @@ export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
    act:'attack-action-use',
    attrs:' data-attack-action-id="'+esc(action.id||'')+'" data-attack-action-option-id="'+esc(choiceId)+'"',
    tracker,trackerName:action.tracker,cost,label:'Usa',name:part.label||option?.name||action.name,
-   disabled:action.available===false});
+   disabled:action.available===false||part.resolved===false});
   const isCheck=kind==='check'||!!option?.check_target;
   const isAction=kind==='action'||kind==='ability';
   const act=isCheck?'battle-action-roll':isAction?'battle-action-jump':'battle-attack-jump';
   const reference=isCheck?selector.target||option?.check_target||'':
    isAction?selector.id||option?.id||'':option?.id||selector.id||'';
-  if(!reference||kind==='ability'&&!option)return '';
+  if(!reference||part.resolved===false||kind==='ability'&&!option)return '';
   const attrs=isCheck?' data-action-roll-target="'+esc(reference)+'" data-action-roll-label="'+esc(part.label||option?.name||'Prova')+'"':
    isAction?' data-action-id="'+esc(reference)+'"':' data-attack-target-id="'+esc(reference)+'"';
   return '<button type="button" class="play-battle-attack-step-use" data-act="'+act+'"'+attrs+
@@ -1078,7 +1078,10 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const ruleRank=row=>row.id==='attack'?0:row.id==='opportunity'?1:2;
  ruleRows.sort((a,b)=>ruleRank(a)-ruleRank(b));
  const privilegeRows=[...privilegeExtras.filter(row=>!isMultiattack(row)),...multiActions];
- const actionContext={...calculated,action_entries:entries};
+ // Covered monster options are hidden as standalone actions, but remain
+ // addressable by their stable native IDs in a declarative OR group.
+ const actionContext={...calculated,
+  action_entries:[...entries,...monsterActions(record,calculated.trackers)]};
  const enrich=row=>({...row,
   attack_sequence:attackActionSequence(row,record,actionContext),
   action_list:battleActionList(row,record,actionContext)});
