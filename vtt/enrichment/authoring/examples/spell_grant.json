@@ -1,0 +1,29 @@
+{
+  "schema_version": 2,
+  "benefit_type": "spell_grant",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:spell_grant:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:spell_grant"
+        }
+      },
+      "benefit": {
+        "type": "spell_grant",
+        "id": "demo:spell_grant",
+        "spells": [
+          {
+            "name": "Light",
+            "source": "PHB"
+          }
+        ]
+      }
+    }
+  ]
+}

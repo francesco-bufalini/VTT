@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "benefit_type": "resource_recovery",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:resource_recovery:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:resource_recovery"
+        }
+      },
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "demo:resource_recovery",
+        "recovery": {
+          "event": "long_rest",
+          "mode": "full"
+        }
+      }
+    }
+  ]
+}

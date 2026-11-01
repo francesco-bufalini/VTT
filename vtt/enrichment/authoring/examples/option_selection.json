@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "benefit_type": "option_selection",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:option_selection:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:option_selection"
+        }
+      },
+      "benefit": {
+        "type": "option_selection",
+        "id": "demo:option_selection",
+        "selection": {
+          "id": "example:armor_model",
+          "kind": "trait_state",
+          "source": {
+            "type": "inline",
+            "options": [
+              {
+                "id": "guardian",
+                "ref": {
+                  "name": "Guardian",
+                  "source": "TCE"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

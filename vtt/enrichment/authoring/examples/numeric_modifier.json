@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "benefit_type": "numeric_modifier",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:numeric_modifier:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:numeric_modifier"
+        }
+      },
+      "benefit": {
+        "type": "numeric_modifier",
+        "id": "demo:numeric_modifier",
+        "bonus": {
+          "target": "ac",
+          "operation": "add",
+          "amount": 1
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "benefit_type": "roll_bonus",
+  "scope": "character",
+  "character_id": "sample-character-id",
+  "entries": [
+    {
+      "id": "manual:sample-character-id:feature:trait:custom-training:+2",
+      "granted_by": {
+        "kind": "character_trait",
+        "trait_key": "custom-training",
+        "origin_id": "feature:trait:custom-training",
+        "source_ref": {
+          "category": "class_feature",
+          "name": "Flash of Genius",
+          "source": "TCE",
+          "class_name": "Artificer"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "manual:custom-training:ability-bonus",
+        "bonus": {
+          "targets": [
+            "ability_check"
+          ],
+          "operation": "add",
+          "amount": 2
+        }
+      }
+    }
+  ]
+}

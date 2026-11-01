@@ -1,0 +1,53 @@
+{
+  "schema_version": 2,
+  "benefit_type": "resource",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "barbarian:phb:rages",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Rage",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "level": 1
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "rages",
+        "resource": "Rages",
+        "steps": [
+          {
+            "level": 1,
+            "value": 2,
+            "reset": "long_rest"
+          },
+          {
+            "level": 3,
+            "value": 3,
+            "reset": "long_rest"
+          },
+          {
+            "level": 6,
+            "value": 4,
+            "reset": "long_rest"
+          },
+          {
+            "level": 12,
+            "value": 5,
+            "reset": "long_rest"
+          },
+          {
+            "level": 17,
+            "value": 6,
+            "reset": "long_rest"
+          }
+        ]
+      }
+    }
+  ]
+}

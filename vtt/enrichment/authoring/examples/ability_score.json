@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "benefit_type": "ability_score",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:ability_score:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:ability_score"
+        }
+      },
+      "benefit": {
+        "type": "ability_score",
+        "id": "demo:ability_score",
+        "bonus": {
+          "target": "ability:str",
+          "operation": "add",
+          "amount": 1
+        }
+      }
+    }
+  ]
+}

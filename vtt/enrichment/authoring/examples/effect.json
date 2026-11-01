@@ -1,0 +1,31 @@
+{
+  "schema_version": 2,
+  "benefit_type": "effect",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:effect:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:effect"
+        }
+      },
+      "benefit": {
+        "type": "effect",
+        "id": "demo:effect",
+        "effects": [
+          {
+            "operation": "push",
+            "target": "enemy",
+            "distance_feet": 5,
+            "trigger": "on_hit"
+          }
+        ]
+      }
+    }
+  ]
+}

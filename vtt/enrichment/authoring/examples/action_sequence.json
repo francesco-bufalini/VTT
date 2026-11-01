@@ -1,0 +1,43 @@
+{
+  "schema_version": 2,
+  "benefit_type": "action_sequence",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "rogue:cunning-action:phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cunning Action",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "level": 2
+        }
+      },
+      "benefit": {
+        "type": "action_sequence",
+        "id": "cunning_action",
+        "sequence": {
+          "logic": "any",
+          "activation": "bonus",
+          "steps": [
+            {
+              "kind": "action",
+              "action_id": "dash"
+            },
+            {
+              "kind": "action",
+              "action_id": "disengage"
+            },
+            {
+              "kind": "action",
+              "action_id": "hide"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

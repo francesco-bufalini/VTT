@@ -1,0 +1,29 @@
+{
+  "schema_version": 2,
+  "benefit_type": "damage_bonus",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:damage_bonus:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:damage_bonus"
+        }
+      },
+      "benefit": {
+        "type": "damage_bonus",
+        "id": "demo:damage_bonus",
+        "bonus": {
+          "target": "weapon_damage",
+          "operation": "add",
+          "amount": 2,
+          "damage_type": "slashing"
+        }
+      }
+    }
+  ]
+}

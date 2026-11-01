@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "benefit_type": "spell_selection",
+  "scope": "catalog",
+  "notes": "Schema fixture, not executable rules; homebrew IDs are illustrative.",
+  "entries": [
+    {
+      "id": "demo:spell_selection:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:spell_selection"
+        }
+      },
+      "benefit": {
+        "type": "spell_selection",
+        "id": "demo:spell_selection",
+        "selection": {
+          "id": "example:known_spells",
+          "kind": "spell_catalog",
+          "source": {
+            "type": "spell_catalog"
+          }
+        }
+      }
+    }
+  ]
+}
