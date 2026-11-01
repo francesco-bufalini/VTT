@@ -676,6 +676,12 @@ try{
   const {loadCreature}=await import('/creatures.js');
   return (await loadCreature(creatureId)).data.current_hp===40;
  },seededCreatureId);
+ // The IndexedDB read may complete before the in-memory creature listing is
+ // refreshed. Observe both paths before asserting the rendered maximum.
+ await page.waitForFunction(async creatureId=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures()).some(row=>row.creature?.id===creatureId&&row.creature.current_hp===40);
+ },seededCreatureId);
  const healedHp=(await record()).current_hp;
  const maximumHp=Number((await page.locator('#sheet-play-view [data-calculated="hp"]').first().textContent()).trim());
  assert.equal(healedHp,Math.min(maximumHp,40),'Healing cannot exceed maximum HP');
