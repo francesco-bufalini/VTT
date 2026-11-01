@@ -32,6 +32,40 @@ ma non nel compendio locale:
 `Vizier (Dissenter)|PSA`. L'audit riporta le differenze senza
 inventare contenuti o forzare importazioni incompatibili.
 
+## Fase 2 — importazione strutturata dei background
+
+Gli indici sono stati rigenerati dallo snapshot 5eTools contenente 175
+background. Il catalogo delle competenze contiene ora **150** origini
+background strutturate, incluso materiale 2024 di fonti diverse da XPHB.
+Gli indici di caratteristica nativo e PWA contengono **74** background
+con scelte `choose.weighted`.
+
+La PWA ora interpreta entrambe le modalità senza hard-code di classe,
+edizione o nome del background: +2/+1 su due caratteristiche distinte
+oppure +1/+1/+1 su tre caratteristiche distinte. Le scelte rimangono
+nell'identificatore `background|<source>|<name>`, per evitare collisioni
+tra Acolyte PHB e Acolyte XPHB. Niente bonus automatico finché il player
+non completa la selezione.
+
+Le nuove opzioni non vengono scritte come override in
+`vtt/enrichment/benefits/<tipo>.json`: provengono direttamente da campi
+strutturati di 5eTools. I vecchi salvataggi e i benefici manuali del
+personaggio non vengono modificati.
+
+Rigenerazione mirata, senza toccare classi e specie:
+
+```sh
+python scripts/generate_proficiency_grants.py /path/to/5etools-src --backgrounds-only
+python scripts/generate_structured_ability_grants.py /path/to/5etools-src --backgrounds-only
+node pwa/tools/sync_native_catalogs.mjs --backgrounds-only
+node --test pwa/tests/background_5etools_migration.test.mjs
+```
+
+Restano separati l'assegnazione automatica dei talenti iniziali
+strutturati, la risoluzione completa dei background `_copy`/`fromFeature`
+e i benefici specifici non strutturati: non devono essere simulati
+leggendo o copiando la descrizione.
+
 ## Procedura riproducibile
 
 ```sh

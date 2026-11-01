@@ -111,7 +111,13 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
     for record in records:
         if not record.get("name") or not record.get("source"):
             continue
-        if (record.get("edition") == "one" and record["source"] != "XPHB") or record["source"] in IGNORED_SOURCES:
+        # Other origin catalogs still use their established release filter.
+        # Background 2024 supplements (EFA and later books) already expose
+        # structured proficiencies and must not be discarded by that filter.
+        if kind == "background":
+            if record["source"] == "XDMG":
+                continue
+        elif (record.get("edition") == "one" and record["source"] != "XPHB") or record["source"] in IGNORED_SOURCES:
             continue
         row = {"name": record["name"], "source": record["source"]}
         if kind == "subrace":
@@ -232,8 +238,31 @@ def main() -> None:
     parser.add_argument("root", type=Path)
     parser.add_argument("--features-only", action="store_true",
                         help="Refresh feature sections without changing existing origin catalogs or languages")
+    parser.add_argument("--backgrounds-only", action="store_true",
+                        help="Refresh only structured background proficiencies from data/backgrounds.json")
     args = parser.parse_args()
     root = args.root
+    if args.features_only and args.backgrounds_only:
+        parser.error("Choose one restricted refresh mode")
+    if args.backgrounds_only:
+        destination = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_grants_5etools.json"
+        output = read_json(destination)
+        upstream = read_json(root / "data/backgrounds.json").get("background", [])
+        # Preserve other origin indexes and prior reviewed background metadata.
+        # Only explicit upstream fields are projected; _copy/fromFeature records
+        # without resolved source fields must not invent grants from prose.
+        by_key = {(row["name"].casefold(), row["source"].casefold()): row
+                  for row in output.get("background", [])}
+        for row in convert("background", upstream):
+            key = (row["name"].casefold(), row["source"].casefold())
+            by_key[key] = {**by_key.get(key, {}), **row}
+        output["background"] = sorted(by_key.values(),
+                                      key=lambda row: (row["name"].casefold(), row["source"].casefold()))
+        output.setdefault("meta", {})["backgroundSource"] = "data/backgrounds.json"
+        destination.write_text(json.dumps(output, ensure_ascii=False,
+                                          separators=(",", ":")) + "\n", encoding="utf-8")
+        print(f"Updated {destination}: {len(output['background'])} source-qualified background grants")
+        return
     package = read_json(root / "package.json")
     release = "v" + str(package.get("version", "unknown")).lstrip("v")
     index = read_json(root / "data/class/index.json")

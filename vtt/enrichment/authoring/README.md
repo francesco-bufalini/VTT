@@ -10,10 +10,14 @@ di uno stesso tipo in **un solo punto**.
 
 I file vivono sotto `vtt/enrichment/benefits/<tipo>.json` e sono convalidati
 con `vtt/enrichment/authoring/<tipo>.schema.json`.
-**Migrazione iniziale delle razze:** `roll_mode.json` (164 regole) e
-`roll_bonus.json` (23 bonus) sono le fonti attive del runtime PWA.
+**Migrazione delle razze:** `roll_mode.json` (164 regole), `roll_bonus.json`
+(23 bonus), `attack.json` (20 attacchi naturali) e `movement.json`
+(10 limitazioni di volo con armatura) sono fonti attive della PWA.
+Le velocità, le difese e le competenze già strutturate in 5eTools non
+vengono duplicate nei supplementi.
 I vecchi `pwa/catalog/species_roll_modes.json` e
-`pwa/catalog/species_conditional_bonuses.json` sono stati eliminati: il
+`pwa/catalog/species_conditional_bonuses.json` e
+`pwa/catalog/species_attacks.json` sono stati eliminati: il
 modulo `pwa/species_benefit_catalogs.js` ricostruisce soltanto in memoria
 l'interfaccia che i calcoli della scheda usano attualmente.
 Gli altri cataloghi eterogenei rimangono da migrare; salvataggi e geometria

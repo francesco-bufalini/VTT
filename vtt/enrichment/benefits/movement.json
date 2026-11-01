@@ -1,0 +1,248 @@
+{
+  "schema_version": 2,
+  "benefit_type": "movement",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "5etools:races:eepc:aarakocra:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "EEPC",
+          "race": "Aarakocra",
+          "race_source": "EEPC",
+          "race_id": "5etools:races:eepc:aarakocra"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:aarakocra:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "MPMM",
+          "race": "Aarakocra",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:aarakocra"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psa:aven:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSA",
+          "race": "Aven",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:aven"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psd:aven:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSD",
+          "race": "Aven",
+          "race_source": "PSD",
+          "race_id": "5etools:races:psd:aven"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:fairy:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "MPMM",
+          "race": "Fairy",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:fairy"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:wbtw:fairy:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "WBtW",
+          "race": "Fairy",
+          "race_source": "WBtW",
+          "race_id": "5etools:races:wbtw:fairy"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:scc:owlin:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "SCC",
+          "race": "Owlin",
+          "race_source": "SCC",
+          "race_id": "5etools:races:scc:owlin"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psx:siren:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSX",
+          "race": "Siren",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:siren"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psa:aven%20%28hawk-headed%29:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSA",
+          "race": "Aven (Hawk-Headed)",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:aven%20%28hawk-headed%29"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psa:aven%20%28ibis-headed%29:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSA",
+          "race": "Aven (Ibis-Headed)",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:aven%20%28ibis-headed%29"
+        }
+      },
+      "benefit": {
+        "type": "movement",
+        "movement": {
+          "type": "fly",
+          "blocked_by_armor": [
+            "medium",
+            "heavy"
+          ]
+        }
+      }
+    }
+  ],
+  "notes": "Only armor restrictions on existing 5eTools flight speeds; speed values and traits themselves remain in 5eTools."
+}

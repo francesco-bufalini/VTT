@@ -8,7 +8,8 @@
       "data/backgrounds.json"
     ],
     "artificer_infusions": "TCE typed infusion mechanics projected from vtt/data/artificer_infusions_5etools.json; selectors follow structured item-enhancement contract",
-    "feat_numeric_bonuses": "PHB 2014 unconditional numeric feat effects from vtt/data/feat_numeric_bonuses_2014.json"
+    "feat_numeric_bonuses": "PHB 2014 unconditional numeric feat effects from vtt/data/feat_numeric_bonuses_2014.json",
+    "backgroundSource": "vtt/data/structured_ability_grants_5etools.json"
   },
   "race": [
     {
@@ -4246,7 +4247,2746 @@
       ]
     }
   ],
-  "background": [],
+  "background": [
+    {
+      "name": "Aberrant Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Acolyte",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agent of the Ninth Quill",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Archaeologist",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Artisan",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bejeweled Conclave Spy",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Carouser",
+      "source": "ABH",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Charlatan",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chondathan Freebooter",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cosmic Dawn Experiment",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "con"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "con"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Covenant of the Grave Recruit",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Criminal",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crucible Storm Chaser",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dead Magic Dweller",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Discredited Neural Tuner",
+      "source": "PL",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dragon Cultist",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Emerald Enclave Caretaker",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entertainer",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fabricated Mind",
+      "source": "PL",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Familiar Trainer",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Farmer",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flaming Fist Mercenary",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Genie Touched",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guard",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guide",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Harper",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Haunted One",
+      "source": "RHW",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hermit",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Horizon Weaver Initiate",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Agent",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Cannith Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Deneith Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Ghallanda Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Jorasco Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Kundarak Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Lyrandar Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Medani Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Orien Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Phiarlan Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Sivis Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Tharashk Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Thuranni Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "House Vadalis Heir",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ice Fisher",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "con"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "con"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inquisitive",
+      "source": "EFA",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Investigator",
+      "source": "RHW",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Knight of the Gauntlet",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lords' Alliance Vassal",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lorwyn Expert",
+      "source": "LFL",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Merchant",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mist Wanderer",
+      "source": "RHW",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moonwell Pilgrim",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mulhorandi Tomb Raider",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "int"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "int"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mutated Commuter",
+      "source": "PL",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mythalkeeper",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Noble",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phantasmic Circus Trouper",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Purple Dragon Squire",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rashemi Wanderer",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reconstructed Runaway",
+      "source": "PL",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sage",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sailor",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scribe",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seer Apprentice",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "int",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shadowmasters Exile",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shadowmoor Expert",
+      "source": "LFL",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Soldier",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "con"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "con"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Spellfire Initiate",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Spirit Medium",
+      "source": "RHW",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "int",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vampire Devotee",
+      "source": "ABH",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "con",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vampire Survivor",
+      "source": "ABH",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "con",
+                "wis"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ward of the Sheltering Hands",
+      "source": "AU",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "con",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wayfarer",
+      "source": "XPHB",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "dex",
+                "wis",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zhentarim Mercenary",
+      "source": "FRHoF",
+      "ability_choices": [
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "cha"
+              ],
+              "weights": [
+                2,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "choose": {
+            "weighted": {
+              "from": [
+                "str",
+                "dex",
+                "cha"
+              ],
+              "weights": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
   "artificer_infusions": [
     {
       "id": "infusion|tce|arcane propulsion armor",

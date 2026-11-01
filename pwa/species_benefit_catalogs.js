@@ -44,3 +44,46 @@ export function speciesRollBonusesFromBenefits(catalog){
  }));
  return {version:1,source:'vtt/data/creature_references_5etools.json',notes:catalog.notes||'',races:output.races.map(({id,...race})=>race)};
 }
+
+function assertTypedCatalog(catalog,kind){
+ if(catalog?.schema_version!==2||catalog.benefit_type!==kind||
+    catalog.scope!=='catalog'||!Array.isArray(catalog.entries))
+  throw Error('Catalogo tipizzato non valido: '+kind);
+}
+export function speciesAttacksFromBenefits(attackCatalog,movementCatalog){
+ assertTypedCatalog(attackCatalog,'attack');
+ assertTypedCatalog(movementCatalog,'movement');
+ const groups=new Map(),seen=new Set();
+ const speciesRef=(entry,kind)=>{
+  const ref=entry?.granted_by?.ref||{};
+  if(entry?.granted_by?.kind!=='5etools'||ref.category!=='species_trait')return null;
+  if(!ref.race||!ref.race_source||!ref.name)
+   throw Error('Origine razziale incompleta: '+entry.id);
+  if(entry.benefit?.type!==kind)throw Error('Tipo di beneficio non coerente: '+entry.id);
+  if(seen.has(entry.id))throw Error('ID razziale duplicato: '+entry.id);
+  seen.add(entry.id);
+  const key=ref.race_id||norm(ref.race)+'|'+norm(ref.race_source);
+  if(!groups.has(key))groups.set(key,{
+   id:ref.race_id||'5etools:races:'+norm(ref.race_source)+':'+encodeURIComponent(norm(ref.race)),
+   name:ref.race,source:ref.race_source,attacks:[]
+  });
+  return {ref,row:groups.get(key)};
+ };
+ for(const entry of rows(attackCatalog.entries)){
+  const found=speciesRef(entry,'attack');if(!found)continue;
+  const {ref,row}=found,attack=entry.benefit.attack;
+  if(!attack||!attack.damage||!attack.damage_type||attack.grants_proficiency!==true)
+   throw Error('Attacco naturale incompleto: '+entry.id);
+  const {id:_,...fields}=attack;
+  row.attacks.push({trait:ref.name,...fields});
+ }
+ for(const entry of rows(movementCatalog.entries)){
+  const found=speciesRef(entry,'movement');if(!found)continue;
+  const movement=entry.benefit.movement;
+  if(movement?.type!=='fly'||JSON.stringify(movement.blocked_by_armor)!=='["medium","heavy"]')
+   throw Error('Vincolo al volo non riconosciuto: '+entry.id);
+  found.row.flight_no_medium_heavy_armor=true;
+ }
+ return {version:1,source:'vtt/data/creature_references_5etools.json',
+  races:[...groups.values()]};
+}

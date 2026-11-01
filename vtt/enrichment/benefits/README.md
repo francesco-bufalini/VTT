@@ -83,6 +83,27 @@ evitando di concedere nuove competenze, spell o altri benefici già
 strutturati in 5eTools. Le modifiche manuali degli utenti rimangono
 nella scheda e non vengono riscritte da questa migrazione.
 
+---
+
+## Razze: attacchi naturali e vincoli al volo
+
+[attack.json](attack.json) contiene 20 attacchi naturali supplementari
+ricavati esclusivamente in fase di build dai tratti 5eTools con meccanica
+univoca. [movement.json](movement.json) aggiunge 10 vincoli all'uso della
+velocità di volo quando si indossano armature medie o pesanti. Non si
+duplicano le velocità o le competenze già strutturate in 5eTools.
+
+Le voci identificano il privilegio `species_trait` e la fonte esatta.
+`pwa/tools/species_mechanics.mjs` può rigenerare i file e la suite
+verifica la parità con la precedente proiezione dei benefici.
+La PWA utilizza `pwa/species_benefit_catalogs.js` come adattatore,
+senza interpretare le descrizioni originali durante la partita.
+
+Le capacità di `species_powers.json` restano da migrare; le
+difese già strutturate in 5eTools non vanno semplicemente copiate
+in un catalogo `defense.json`.
+
+---
 
 ## Classi e sottoclassi: secondo lotto — risorse e azioni composte
 
