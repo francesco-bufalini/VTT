@@ -515,6 +515,7 @@ try{
  assert.equal(await monsterXpField.inputValue(),'300','The Classi editor displays the new XP floor');
  assert.equal(await monsterXpField.getAttribute('min'),'300','The Classi editor enforces the XP floor');
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
+ await sheet('skills');
  // The score editor proposes HP changes only when the effective modifier changes.
  const conCard=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:con"]');
  const scoreFormula=page.locator('#sheet-score-formula-dialog');
