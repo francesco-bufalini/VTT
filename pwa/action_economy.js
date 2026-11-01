@@ -262,11 +262,13 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   // Prefer the native activation (including persistent conditions) when present.
   // Otherwise keep a typed, class-owned grant with its actual resource.
   if(nativeClassFeatureActions(record,calculated).some(row=>
-      row.origin_id===grantingFeature.origin_id||
-      String(row.name).toLowerCase()===String(rule.display_name||rule.feature_name).toLowerCase()))continue;
-  add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
+      row.origin_id===grantingFeature.origin_id&&!rule.action_id))continue;
+  const sourceAction=arr(generalActions).find(action=>action.id===rule.action_id&&action.edition===edition);
+  const name=sourceAction?grantingFeature.name+' · '+sourceAction.name:grantingFeature.name;
+  add(name,rule.activation,'Capacità',
+      grantingFeature.entries??grantingFeature.description??sourceAction?.description??'',
       resource?.name||rule.resource_name||'',Number(rule.resource_cost??(resource?1:0))||0,
-      {id:'class_override:'+rule.class_name+':'+(rule.display_name||rule.feature_name)+':'+rule.book,
+      {id:'class_override:'+rule.class_name+':'+rule.feature_name+':'+(rule.action_id||'activation')+':'+rule.book,
        tracker_id:String(resource?.id||''),origin_id:grantingFeature.origin_id,
        feature_id:grantingFeature.origin_id,feature_name:grantingFeature.name});
  }
