@@ -80,7 +80,9 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert(bonus);
   assert.equal(bonus.querySelector('.play-resource-info .vtt-action-glyph'),null,
    'The tracker heading is a counter, not an ability');
-  assert.match(app.querySelector('[data-action-benefit="damage-bonuses"]').textContent,/1d6/);
+  assert([...app.querySelectorAll('[data-battle-action="others"] .play-resource-bonus-row')]
+   .some(row=>/1d6/.test(row.textContent)),
+   'A damage bonus remains visible among privilege-granted actions');
   assert.equal(bonus.querySelector('[data-act="tracker-trait-use"]'),null);
   assert.equal(bonus.querySelector('[data-act="battle-use-ability"]'),null);
   const attack=abilities.find(row=>row.roll_attack?.id==='class_feature:lightning_launcher');
