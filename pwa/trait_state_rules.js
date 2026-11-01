@@ -10,6 +10,57 @@ const enabled = (record, feature) => {
   return !ids.some(id => id && (record.origin_enabled?.[id]===false ||
     arr(record.proficiency_origins).some(row => row.id===id && row.disabled)));
 };
+// Resolve a model/form option against the already-owned 5etools feature.
+ // Only the typed state ID and its mechanical effects belong to this catalog;
+ // the option's label and prose belong to the source feature (or its nested option).
+export function traitStateSource(rule={},owner={},features=[]){
+ const optionKey=String(rule.id||'').split(':').pop().replace(/[_-]+/g,' ').trim();
+ const text=value=>typeof value==='string'?value:Array.isArray(value)?
+   value.map(text).filter(Boolean).join('\n'):value&&typeof value==='object'?
+   text(value.entry??value.entries??value.items??value.text??value.description??''):'';
+ const search=(value)=>{
+  if(!value||typeof value!=='object')return null;
+  if(Array.isArray(value)){for(const child of value){const found=search(child);if(found)return found}return null}
+  if(norm(value.name)===norm(optionKey)&&(value.entry!==undefined||value.entries!==undefined))return value;
+  for(const field of ['entries','entry','items','options','list']){
+   const found=search(value[field]);if(found)return found;
+  }
+  return null;
+ };
+ const embedded=search(owner.entries??owner.entry);
+ const parentKey=String(owner.origin_key||'');
+ const standalone=arr(features).find(feature=>norm(feature.name)===norm(optionKey)&&
+   (String(feature.origin_key||'')===parentKey||
+    norm(feature.requirements?.class_name||feature.class_name)===norm(rule.class_name)&&
+    norm(feature.requirements?.class_source||feature.class_source)===norm(rule.class_source)));
+ const selection=embedded||standalone;
+ const optionName=selection?.name||optionKey.replace(/\b[a-z]/g,char=>char.toUpperCase());
+ // A source option can refer to other 5etools traits (weapons, powers,
+ // passives) instead of embedding their full text. Follow those structured
+ // references, not a locally authored paraphrase of their effects.
+ const relatedNames=new Set([
+  ...arr(rule.attacks).map(row=>row.trait),
+  ...arr(rule.numeric_grants).map(row=>row.trait),
+  ...arr(rule.roll_modes).map(row=>row.trait),
+  ...arr(rule.granted_features)
+ ].map(norm).filter(name=>name&&name!==norm(rule.trait)));
+ const qualified=feature=>{
+  const origin=String(feature.origin_key||'').split('|');
+  const className=feature.requirements?.class_name||feature.class_name||origin[2];
+  const sourceName=feature.requirements?.class_source||feature.class_source||origin[1];
+  return norm(className)===norm(rule.class_name)&&norm(sourceName)===norm(rule.class_source);
+ };
+ const main=text(selection?.entry??selection?.entries??selection?.description??
+   owner.entries??owner.description??'');
+ const extra=arr(features).filter(feature=>relatedNames.has(norm(feature.name))&&qualified(feature))
+   .map(feature=>text(feature.entries??feature.description??''));
+ return {
+  name:[owner.name||rule.trait,optionName].filter(Boolean).join(' · '),
+  option_name:optionName,
+  description:[...new Set([main,...extra].filter(Boolean))].join('\n\n')
+ };
+}
+
 const owningTrait = (record, features, rule) => arr(features).find(feature =>
   norm(feature.name)===norm(rule.trait) && enabled(record,feature) &&
   norm(feature.class_name||feature.requirements?.class_name||String(feature.origin_key||'').split('|')[2])===norm(rule.class_name) &&
@@ -95,12 +146,12 @@ export function traitStateActions(record={},features=[],catalog=[]) {
     const trait=eligible(record,features,rule);
     if(!trait)return [];
     return [{id:'trait_state:'+rule.id,class_feature_id:'trait_state:'+rule.id,
-      name:rule.name,origin:'personal',origin_id:trait.origin_id,feature_id:trait.origin_id,
+      name:traitStateSource(rule,trait,features).name,origin:'personal',origin_id:trait.origin_id,feature_id:trait.origin_id,
       mode:'trait_state',state_id:rule.id,active:selection(record,rule)===rule.id,
       time:'free',type:'Capacità',
        tracker_id:rule.activation_tracker?.id||'',tracker:rule.activation_tracker?.name||'',
        cost:selection(record,rule)===rule.id?0:Math.max(0,Number(rule.activation_tracker?.cost||0)),
-       description:rule.summary||'',category:rule.category||'stato'}];
+       description:traitStateSource(rule,trait,features).description,category:rule.category||'stato'}];
   });
 }
 export function activeTraitStates(record={},features=[],catalog=[]) {
@@ -118,7 +169,7 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   for(const sibling of arr(catalog).filter(row=>row.group===rule.group))delete active['trait_state:'+sibling.id];
   const selected={...(record.trait_state_selection||{}),[rule.group]:current?'':rule.id};
   if(!current)active['trait_state:'+rule.id]={
-    name:rule.name,origin_id:owningTrait(record,features,rule)?.origin_id||'',category:rule.category||'stato'};
+    name:traitStateSource(rule,owningTrait(record,features,rule)||{},features).name,origin_id:owningTrait(record,features,rule)?.origin_id||'',category:rule.category||'stato'};
   const changes={trait_state_selection:selected,active_class_features:active};
   // This cost is bound to the originating trait and only paid on activation.
   // Deselecting an active state is free, and payment is atomic with selection.
@@ -148,14 +199,14 @@ export function traitStateAttacks(record={},features=[],catalog=[]) {
  return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>{
    const feature=source(record,features,rule,attack.trait);
    return feature?[{
-     id:attack.id,name:attack.name,origin_id:feature.origin_id,
+     id:attack.id,name:attack.trait===rule.trait?traitStateSource(rule,feature,features).option_name:feature.name,origin_id:feature.origin_id,
      source:'trait_state',melee:!!attack.melee,weapon_category:attack.weapon_category||'',
      grants_proficiency:attack.grants_proficiency===true,origin_name:'Tratto · '+feature.name,
      damage:attack.damage,damage_type:attack.damage_type,
      ability:attack.intelligence_override&&record.attack_ability==='int'?'int':attack.ability,
      range_feet:attack.range_feet,long_range_feet:attack.long_range_feet||0,
-     on_hit_effects:arr(attack.on_hit_effects).map(effect=>({...effect})),
-     description:arr(attack.on_hit_effects).map(effect=>effect.description).filter(Boolean).join(' · ')
+     on_hit_effects:arr(attack.on_hit_effects).map(effect=>({...effect,condition_label:effect.condition_label||feature.name})),
+     description:traitStateSource(rule,feature,features).description
    }]:[];
  }));
 }
@@ -192,7 +243,7 @@ export function traitStateTrackers(record={},features=[],catalog=[]) {
   return [...available,...activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>{
    const feature=source(record,features,rule,attack.trait),bonus=attack.bonus_die;
    return feature&&bonus?[{
-     id:bonus.tracker_id,name:bonus.name,max:bonus.max||1,recharge:bonus.recharge||'turn',
+     id:bonus.tracker_id,name:feature.name,max:bonus.max||1,recharge:bonus.recharge||'turn',
      automatic:true,origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name
    }]:[];
   }))];
@@ -208,7 +259,7 @@ export function traitStateOptionalDice(record={},features=[],catalog=[]) {
 }
 export function traitStateEffects(record={},features=[],catalog=[]) {
   return activeTraitStates(record,features,catalog).map(rule=>({
-    key:'trait_state:'+rule.id,name:rule.name,origin_id:rule.source_trait.origin_id,
-    category:rule.category||'stato',effective:true,summary:rule.summary||''
+    key:'trait_state:'+rule.id,name:traitStateSource(rule,rule.source_trait,features).name,origin_id:rule.source_trait.origin_id,
+    category:rule.category||'stato',effective:true,summary:traitStateSource(rule,rule.source_trait,features).description
   }));
 }

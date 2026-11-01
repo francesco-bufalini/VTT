@@ -76,7 +76,6 @@
     },
     {
       "id": "armor_model",
-      "title": "Modelli di armatura",
       "owner": {
         "class_name": "Artificer",
         "class_source": "TCE",
@@ -91,7 +90,6 @@
             "id": "armor_model:guardian",
             "group": "armor_model",
             "category": "stato",
-            "name": "Modello armatura · Guardiano",
             "trait": "Armor Model",
             "class_name": "Artificer",
             "class_source": "TCE",
@@ -99,12 +97,10 @@
             "require_equipped": {
               "extension_selection": "arcane_armor"
             },
-            "summary": "Armatura Arcana · Guardiano; guanti del tuono (svantaggio condizionale sul bersaglio colpito) e Campo difensivo.",
             "attacks": [
               {
                 "id": "class_feature:thunder_gauntlets",
                 "trait": "Thunder Gauntlets",
-                "name": "Thunder Gauntlets",
                 "damage": "1d8",
                 "damage_type": "T",
                 "melee": true,
@@ -117,9 +113,7 @@
                     "target": "attack_roll",
                     "mode": "disadvantage",
                     "trigger": "on_hit",
-                    "condition_label": "Attacchi contro creature diverse dall'Artefice che ha colpito",
-                    "duration": "until_start_of_next_turn",
-                    "description": "Il bersaglio colpito ha svantaggio ai tiri per colpire contro creature diverse dall'Artefice fino all'inizio del prossimo turno dell'Artefice."
+                    "duration": "until_start_of_next_turn"
                   }
                 ]
               }
@@ -128,7 +122,6 @@
               "Defensive Field"
             ],
             "selection_recovery": "short_rest",
-            "description": "Armatura Arcana · Guardiano; guanti del tuono (svantaggio condizionale sul bersaglio colpito) e Campo difensivo.",
             "effects": [
               {
                 "type": "state_selection",
@@ -142,7 +135,6 @@
             "id": "armor_model:infiltrator",
             "group": "armor_model",
             "category": "stato",
-            "name": "Modello armatura · Infiltratore",
             "trait": "Armor Model",
             "class_name": "Artificer",
             "class_source": "TCE",
@@ -150,12 +142,10 @@
             "require_equipped": {
               "extension_selection": "arcane_armor"
             },
-            "summary": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini, Passi Potenziati e vantaggio alle prove di Furtività.",
             "attacks": [
               {
                 "id": "class_feature:lightning_launcher",
                 "trait": "Lightning Launcher",
-                "name": "Lightning Launcher",
                 "damage": "1d6",
                 "damage_type": "L",
                 "melee": false,
@@ -167,7 +157,6 @@
                   "id": "lightning-launcher:extra",
                   "dice": "1d6",
                   "damage_type": "lightning",
-                  "name": "Lightning Launcher · danno aggiuntivo",
                   "tracker_id": "feature:lightning_launcher:extra_damage",
                   "recharge": "turn",
                   "max": 1
@@ -190,7 +179,6 @@
                 "mode": "advantage"
               }
             ],
-            "description": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini, Passi Potenziati e vantaggio alle prove di Furtività.",
             "effects": [
               {
                 "type": "state_selection",

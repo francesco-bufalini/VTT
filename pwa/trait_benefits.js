@@ -7,6 +7,7 @@ import {resolveOwnedItem} from './item_controls.js';
 import {attackCountBenefits} from './attack_count_benefits.js';
 import {effectExtensionLabel,effectExtensionsFor} from './effect_extensions.js';
 import {monsterActions} from './monster_traits.js';
+import {traitStateSource} from './trait_state_rules.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const ABILITIES={str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
@@ -35,11 +36,15 @@ const describe=value=>typeof value==='string'?value:Array.isArray(value)?value.m
 const classOf=feature=>norm(feature?.requirements?.class_name||feature?.class_name||String(feature?.origin_key||'').split('|')[2]);
 const sourceOf=feature=>norm(feature?.requirements?.class_source||feature?.class_source||String(feature?.origin_key||'').split('|')[1]);
 const damageLabel=type=>DAMAGE[norm(type)]||({T:'Tuono',L:'Fulmine'}[type]||String(type||''));
-const abilityDetails=rule=>{
+const abilityDetails=(rule,features=[],owner={})=>{
  const items=[];
  for(const attack of rows(rule.attacks)){
   const distance=attackRangeLabel(attack);
-  items.push('Attacco · '+attack.name+' · '+attack.damage+' '+damageLabel(attack.damage_type)+
+  const source=rows(features).find(row=>norm(row.name)===norm(attack.trait)&&
+   classOf(row)===norm(rule.class_name)&&sourceOf(row)===norm(rule.class_source))||owner;
+  const name=norm(attack.trait)===norm(rule.trait)?
+    traitStateSource(rule,owner,features).option_name:source!==owner?source.name:attack.trait||attack.name||attack.id;
+  items.push('Attacco · '+name+' · '+attack.damage+' '+damageLabel(attack.damage_type)+
    (distance?' · '+distance:''));
   if(attack.bonus_die)items.push('Dado aggiuntivo · '+attack.bonus_die.dice+' '+
    damageLabel(attack.bonus_die.damage_type)+
@@ -667,12 +672,13 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    (kinds.join(' / ')||'Equipaggiamento')+' equipaggiata'+
      (rule.require_equipped.slot==='body'?' sul corpo':' nello slot '+rule.require_equipped.slot):'';
   const exclusive=rule.group?'Un solo modello attivo per gruppo':'';
-  addAbility(rule.name,{
+  const source=traitStateSource(rule,owner,calculated.features);
+  addAbility(source.name,{
    status:action?.active?'Attiva':blocked?'Tratto disattivato':action?'Attivabile':'Requisiti mancanti',
    timing:actionTime(action?.time||rule.time||'free'),cost:'Nessun costo',
-   description:rule.summary||'',
+   description:source.description,
    requirements:[condition,exclusive].filter(Boolean).join(' · '),
-   effects:abilityDetails(rule)
+   effects:abilityDetails(rule,calculated.features,owner)
   });
  }
  for(const ability of contextualFeatureDescriptors(record,calculated.features,
