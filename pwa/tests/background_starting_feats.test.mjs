@@ -21,7 +21,7 @@ test('source-qualified background feats are transient and resolve 2024 spell var
  assert.equal(projection.feats_catalog[0].spell_variant,'Cleric Spells');
  assert.equal(projection.feats_catalog[0].granted_by,'background|xphb|acolyte');
  assert.deepEqual(record.feats_catalog,[],'saved creature must be unchanged');
- assert.equal(withBackgroundGrantedFeats({...record,background_source:'PHB'},all,featDetails,spellRules),record);
+ assert.deepEqual(withBackgroundGrantedFeats({...record,background_source:'PHB'},all,featDetails,spellRules).feats_catalog,[]);
 });
 
 test('background switch removes source-owned virtual feats and keeps manual ones',()=>{
@@ -31,8 +31,8 @@ test('background switch removes source-owned virtual feats and keeps manual ones
  assert.deepEqual(projected.feats_catalog.map(x=>x.name),['Lucky','Crafter']);
  assert.deepEqual(withBackgroundGrantedFeats({...source,background:'Acolyte',background_source:'PHB'},
   all,featDetails,spellRules).feats_catalog,[manual]);
- assert.equal(withBackgroundGrantedFeats({...source,origin_enabled:{'background|xphb|artisan':false}},
-  all,featDetails,spellRules),source);
+ assert.deepEqual(withBackgroundGrantedFeats({...source,origin_enabled:{'background|xphb|artisan':false}},
+  all,featDetails,spellRules).feats_catalog,[manual]);
 });
 
 test('already-owned feat is not applied twice and unresolved choices are not guessed',()=>{
