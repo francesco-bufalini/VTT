@@ -139,15 +139,6 @@
       ]
     },
     {
-      "path": "pwa/catalog/species_attacks.json",
-      "sections": [
-        "races"
-      ],
-      "types": [
-        "attack"
-      ]
-    },
-    {
       "path": "pwa/catalog/species_defenses.json",
       "sections": [
         "races"
@@ -321,6 +312,18 @@
       "source": "pwa/catalog/species_conditional_bonuses.json",
       "benefit_type": "roll_bonus",
       "catalog": "vtt/enrichment/benefits/roll_bonus.json",
+      "runtime": "pwa/species_benefit_catalogs.js"
+    },
+    {
+      "source": "pwa/catalog/species_attacks.json",
+      "benefit_type": "attack",
+      "catalog": "vtt/enrichment/benefits/attack.json",
+      "runtime": "pwa/species_benefit_catalogs.js"
+    },
+    {
+      "source": "pwa/catalog/species_attacks.json",
+      "benefit_type": "movement",
+      "catalog": "vtt/enrichment/benefits/movement.json",
       "runtime": "pwa/species_benefit_catalogs.js"
     }
   ]
