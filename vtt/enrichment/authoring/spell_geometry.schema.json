@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "VTT spell area geometry v2",
-  "description": "Lossless schema for assets/spell_area_geometry.json entries. Use on each spell enrichment entry; source identity is supplied by the containing entry, not by source::name map keys.",
+  "description": "Lossless geometry spec, embedded in per-benefit-type area_geometry.json entries. No separate files per spell.",
   "type": "object",
   "properties": {
     "range": {
