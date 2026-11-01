@@ -4,7 +4,7 @@ import {featureEnabled} from './feature_mechanics.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {normalizeMonsterStatBlock} from './character_core.js';
 import {SKILLS} from './skill_definitions.js';
-import {monsterActions,monsterTraits,monsterActionCost} from './monster_traits.js';
+import {monsterActions,monsterTraits,monsterActionCost,monsterActionUsePatch} from './monster_traits.js';
 
 const rows=value=>Array.isArray(value)?value:[];
 const count=value=>{
@@ -209,7 +209,7 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
   // The whole legendary-action pool is one OR group. The options and their
   // distinct costs come from the monster's own structured legendary entries.
   const owner=monsterTraits(record).find(row=>row.monster_role==='legendary');
-  const actions=monsterActions(record,trackers).filter(row=>row.time==='legendary');
+  const actions=monsterActions(record,trackers).filter(row=>row.id.startsWith('monster:legendary:'));
   if(owner&&actions.length){
    const tracker=rows(trackers).find(t=>t.id===owner.monster_pool?.id||
      t.origin_id==='feature:'+owner.feature_key);
@@ -217,16 +217,24 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
     const index=Number(String(action.id).split(':')[2]);
     const raw=rows(record.stat_block?.legendary)[index]||{};
     const prose=String(action.description||'');
+    // Explicit homebrew selectors take precedence. Otherwise translate a
+    // check directly to the canonical d20 target: no synthetic Detect action.
+    const explicit=raw.action_selector||raw.vtt_action_selector;
     const check=SKILLS.find(([key])=>prose.toLowerCase().includes(key)&&/\bcheck\b/i.test(prose));
     const stem=normal(action.name).replace(/\s*\(costs?.*$/i,'').replace(/\s+attack$/,'');
-    const referenced=rows(record.stat_block?.action).find(row=>normal(row?.name)===stem);
-    const selector=action.roll_attack?.id?{kind:'attack',id:action.roll_attack.id}:
+    const referencedIndex=rows(record.stat_block?.action).findIndex(row=>normal(row?.name)===stem);
+    const selector=explicit||(
+     action.roll_attack?.id?{kind:'attack',id:action.roll_attack.id}:
      check?{kind:'check',target:'skill:'+check[0]}:
-     referenced?{kind:'attack',name:referenced.name}:{kind:'ability',id:action.id};
-    return {id:action.id,label:action.name,selector,
-     tracker_cost:monsterActionCost(raw),description:prose};
+     referencedIndex>=0?{kind:'attack',id:'monster:action:'+referencedIndex}:
+     {kind:'ability',id:action.id});
+    const targetCheck=selector.kind==='check'?skillCheck(selector.target||selector.id):null;
+    return {id:action.id,
+     // A check is the actual option; Detect is only the source's legacy name.
+     label:targetCheck?.name||action.name,
+     selector,tracker_cost:monsterActionCost(raw),description:prose};
    });
-   result.push({id:'monster:legendary:choices',name:owner.name,time:'legendary',
+   result.push({id:'monster:legendary:choices',name:owner.name,time:'free',
     description:owner.entries||'',origin_id:'feature:'+owner.feature_key,
     feature_id:'feature:'+owner.feature_key,attack_action:true,monster_action:true,
     steps:[{one_of:options}],covered_action_ids:actions.map(row=>row.id),
@@ -240,7 +248,24 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
 export function attackActionUsePatch(record={},calculated={},actionId='',choiceId=''){
  const action=rows(calculated.attack_actions).find(row=>row.id===actionId);
  if(!action||action.available===false)throw Error('Azione non disponibile.');
- const {cost,tracker_id}=attackActionPayment(action,choiceId);
+ const {choice,cost,tracker_id}=attackActionPayment(action,choiceId);
+ if(!choice&&cost<=0)return {};
+ if(choice){
+  // Only actual, live options can be spent. Reuse the native action identity
+  // for abilities rather than creating a second, synthetic action.
+  const candidates=[...rows(calculated.action_entries),...monsterActions(record,calculated.trackers)];
+  const resolved=resolveAttackActionSteps({steps:[{selector:choice.selector}]},
+   rows(calculated.attacks),candidates)[0];
+  if(!resolved?.resolved)throw Error('Azione o tiro collegato non disponibile.');
+  const native=candidates.find(row=>row.monster_action===true&&
+   row.id===choice.selector?.id);
+  if(native&&['ability','attack'].includes(choice.selector?.kind)){
+   if(native.tracker_id!==tracker_id||Number(native.cost)!==cost)
+    throw Error('Costo dell’azione non coerente con la capacità originale.');
+   // Its original handler validates origin and consumes the same shared tracker.
+   return monsterActionUsePatch(record,calculated,native.id);
+  }
+ }
  if(cost<=0)return {};
  const tracker=rows(calculated.trackers).find(row=>row.id===tracker_id&&!row.disabled);
  if(!tracker)throw Error('Tracker non collegato all’azione.');
