@@ -1098,7 +1098,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const privilegesHtml=groupHtml(privileges,'privileges');
  const divider='<div class="play-action-origin-divider" role="separator" aria-label="Azioni di base">'+
   '<span>Azioni di base</span></div>';
- const unifiedHtml=privilegesHtml+(rulesHtml?(privilegesHtml?divider:'')+rulesHtml:'')||
+ const unifiedHtml=privilegesHtml+(rulesHtml?divider+rulesHtml:'')||
   '<p class="play-empty">Nessuna azione disponibile.</p>';
 
  const timingOverrides=entries.filter(row=>row.action_change_origin&&row.time!==row.original_time);
@@ -1108,9 +1108,20 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    action_change_feature:grant.origin_name||'',original_time:action.time,
    action_damage:[grant]}]:[];
  });
+ // Every non-privilege strike (including equipped weapons and Unarmed
+ // Strike) is a basic attack. Preserve the existing tier ordering while
+ // making the group independently hideable from the Battle toolbar.
+ const privilegeAttacks=weapon.filter(row=>attackTier(row)===0);
+ const basicAttacks=weapon.filter(row=>attackTier(row)>0);
+ const attackHtml=rows=>rows.map(row=>
+  battleAttackRow(row,calculated,attacksById,descriptions,record,true)).join('');
+ const basicAttacksHtml=basicAttacks.length?
+  '<div class="play-battle-basic-items play-battle-basic-attacks" data-battle-basic="attacks">'+
+   '<div class="play-action-origin-divider" role="separator" aria-label="Attacchi di base">'+
+    '<span>Attacchi di base</span></div>'+attackHtml(basicAttacks)+'</div>':'';
  return {
   attacks:'<div class="play-battle-action-rows play-battle-attack-flat">'+
-   weapon.map(row=>battleAttackRow(row,calculated,attacksById,descriptions,record,true)).join('')+'</div>',
+   attackHtml(privilegeAttacks)+basicAttacksHtml+'</div>',
   others:unifiedHtml,actionRows:other,actionGroups:{rules:rulesHtml,privileges:privilegesHtml},movement:'',
   checks:battleSkillChecksPanel(calculated),
   spells:'',
