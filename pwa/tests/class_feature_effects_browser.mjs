@@ -38,10 +38,8 @@ try{
  assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
  const calculated=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');const {calculateSheet,loadRuleCatalogs}=await import('/sheet_rules.js');return calculateSheet((await listCreatures())[0].creature,await loadRuleCatalogs());});
  assert.equal(calculated.attacks[0].damage,'1d6 + 6');
- for(const selector of ['[data-battle-action="checks"]','[data-action-ability="str"]']){
-  const group=page.locator(selector);if(!await group.evaluate(n=>n.open))await group.locator(':scope > summary').click();
- }
- const strength=page.locator('#sheet-play-view [data-target="ability_check:str"]').first();
+ await sheet('skills');
+ const strength=page.locator('#sheet-play-view .play-abilities [data-target="ability_check:str"]').first();
  await strength.click();
  assert.match(await page.locator('[data-roll-formula]').textContent(),/ADV/);
  assert.match(await page.locator('[data-roll-formula]').textContent(),/Ira/,

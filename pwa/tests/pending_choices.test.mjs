@@ -173,7 +173,7 @@ test('custom language and tool choices persist as structured grants, can be edit
 });
 
 test('Other Proficiencies summarizes trained skills and expertise as well as tools and languages',()=>{
- const html=nativeSection({...artificer(),name:'Tester'},'info',{
+ const html=nativeSection({...artificer(),name:'Tester'},'skills',{
   field:()=>'',area:()=>'',panel:(title,body)=>'<section data-summary="'+title+'">'+body+'</section>',
   calculated:{proficiencies:['skill:history','expertise:arcana',
     'tool:smith\'s tools','language:elvish'],values:{}}

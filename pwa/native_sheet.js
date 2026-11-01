@@ -14,7 +14,7 @@ import {powerRestSelections,powerRestChoicePatch} from './trait_state_rules.js';
 import {endTemporaryConditionPatch} from './species_powers.js';
 import {clearStoredSpellPatch,storedSpellExtension,storedSpellTrackerId} from './spell_storing_item.js';
 import {clearSpellImprintsPatch} from './spell_imprints.js';
-export const SHEET_SECTIONS = [["info","Info"],
+export const SHEET_SECTIONS = [["info","Info"],["skills","Abilità"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["conditions","Condizioni"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
@@ -722,9 +722,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
        '</div>'+reference('Sottoclasse','subclass','subclasses')+
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
        nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
-   panel('Talenti',feats+'<div class="actions"><button type="button" class="btn small" data-act="feat-catalog">＋ Aggiungi talento</button></div>')+
-   statsIntro()+
-   skillPanels();
+   panel('Talenti',feats+'<div class="actions"><button type="button" class="btn small" data-act="feat-catalog">＋ Aggiungi talento</button></div>');
+ if(section==='skills')return statsIntro()+skillPanels();
  if(section==='battle'){
   // Preserve legacy standalone native-section callers; PWA uses the shared
   // equipment view whenever one was passed.

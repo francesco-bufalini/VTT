@@ -449,7 +449,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
   click('#creature-back');
   await until(()=>document.querySelector("#chat-screen").hidden);
-  click('[data-sheet="info"]');
+  click('[data-sheet="skills"]');
   await until(()=>document.querySelector('[data-act="sheet-roll"][data-target="save:dex"]'));
   const rollMessages=()=>calls.filter(c=>c.url==='/api/action'&&
     JSON.parse(c.options.body).action==='chat_send'&&
@@ -581,7 +581,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   await clickLibraryAdd();await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('#sheet-play-view .play-character-portrait'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
-  assert.deepEqual(sections,["Info","Azioni","Poteri","Zaino"]);
+  assert.deepEqual(sections,["Info","Abilità","Azioni","Poteri","Zaino"]);
   assert.equal(document.querySelector('#more-navigation'),null);
   assert.equal(document.querySelector('#dock-catalog'),null);
   assert.ok(document.querySelector('#dock-session'));
@@ -597,7 +597,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
   assert.equal(document.querySelector('[data-field="current_miniature_id"]'),null);
   assert.equal(document.querySelector('[data-field="type"]'),null);
-  click('[data-sheet="info"]');
+  click('[data-sheet="skills"]');
   await until(()=>document.querySelector('[data-act="sheet-score-formula"][data-target="ability:str"]'));
   await changeScore('str',14);
   openLegacyPanel('conditions');
@@ -1387,7 +1387,7 @@ test("sheet derived values update locally and never call a desktop calculation A
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-local-sheet-calculations]')?.textContent.includes('Calcolato localmente sul dispositivo'));
   assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/Calcolato localmente sul dispositivo/);
-  click('[data-sheet="info"]');
+  click('[data-sheet="skills"]');
   await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
   await until(()=>document.querySelector('[data-act="sheet-score-formula"][data-target="ability:dex"]'));
   await changeScore('dex',16);
@@ -1497,33 +1497,28 @@ test('ASI opens its sole next picker automatically until ability allocation is c
  await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("Info contains scores, skills, tools, languages, weapons and armor without separate Abilità tab",async()=>{
+test("Abilità contains scores, skills, tools, languages, weapons and armor outside Info",async()=>{
  const {nativeSection}=await import("../native_sheet.js");
  const sample={kind:"character",name:"Test",species:"Elf",background:"Sage",feats_catalog:[{name:"Alert",source:"PHB",level:4}],abilities:{}};
  const opts={field:()=>"",area:()=>"",panel:(title,body)=>'<section data-panel="'+title+'">'+body+'</section>',resources:"",calculated:{values:{},proficiencies:['tool:Thieves Tools','language:Elvish','weapon:simple','armor:light']},
   catalogs:{featDetails:[{description:"Il talento permette di agire rapidamente."}]}};
- const info=nativeSection(sample,"info",opts),stats=nativeSection(sample,"stats",opts);
- const order=[...info.matchAll(/data-panel="([^"]+)"/g)].map(m=>m[1]);
- assert.deepEqual(order,["Identità","Aspetto","Background","Classi","Talenti","Caratteristiche","Riepilogo","Abilità","Altre competenze"]);
+ const info=nativeSection(sample,"info",opts),skills=nativeSection(sample,"skills",opts);
+ const infoOrder=[...info.matchAll(/data-panel="([^"]+)"/g)].map(m=>m[1]);
+ const skillOrder=[...skills.matchAll(/data-panel="([^"]+)"/g)].map(m=>m[1]);
+ assert.deepEqual(infoOrder,["Identità","Aspetto","Background","Classi","Talenti"]);
+ assert.deepEqual(skillOrder,["Caratteristiche","Riepilogo","Abilità","Altre competenze"]);
  assert.match(info,/Livello del privilegio: 4/);
- // The Talenti panel is a navigable index; description and benefits are
- // shown by the unique owned feat trait in Tratti, not duplicated in Info.
  assert.match(info,/data-act="feat-open-trait"/);
  assert.match(info,/data-feat-origin="feat\\|alert\\|phb"/);
  assert.match(info,/Origine · Non specificata/);
  assert.doesNotMatch(info,/Il talento permette di agire rapidamente/);
- assert.doesNotMatch(info,/<details class="trait-card info-feat-entry">/);
  assert.doesNotMatch(info,/ft di camminata/);
- assert.equal(stats,null,'The former Abilità page must be removed');
- assert.match(info,/data-panel="Abilità"/);
- assert.match(info,/data-calculated="skill:stealth"/);
- assert.match(info,/Thieves Tools/);
- assert.match(info,/Elvish/);
- assert.match(info,/simple/);
- assert.match(info,/light/);
- assert.ok(info.indexOf('Strumenti</dt>')<info.indexOf('Armi</dt>'));
- assert.ok(info.indexOf('Armi</dt>')<info.indexOf('Armature</dt>'));
- assert.doesNotMatch(info,/data-detail="proficiency_choices"/,'Obsolete origin editor is removed');
+ assert.doesNotMatch(info,/data-panel="Caratteristiche"|data-panel="Abilità"/);
+ assert.match(skills,/data-calculated="skill:stealth"/);
+ for(const term of ['Thieves Tools','Elvish','simple','light'])assert.match(skills,new RegExp(term));
+ assert.ok(skills.indexOf('Strumenti</dt>')<skills.indexOf('Armi</dt>'));
+ assert.ok(skills.indexOf('Armi</dt>')<skills.indexOf('Armature</dt>'));
+ assert.doesNotMatch(skills,/data-detail="proficiency_choices"/);
 });
 
 test('rapid changes to distinct resource counters preserve both commands',async()=>{
