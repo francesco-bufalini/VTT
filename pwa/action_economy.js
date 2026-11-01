@@ -1070,9 +1070,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const multiActions=record.kind==='monster'?(preferredMulti?[preferredMulti]:[]):multiCandidates;
  const hasMultiattack=multiActions.length>0;
  const ruleRows=[...actionsBase.filter(row=>
-  row.origin==='general'&&
+  row.origin==='general'&&row.id!=='ability_checks'&&
   (row.id!=='attack'||!hasMultiattack)&&
-  (row.id!=='spell_cast'||row.available===true)),...ruleExtras];
+  (row.id!=='spell_cast'||row.available===true)),...ruleExtras.filter(row=>row.id!=='ability_checks')];
  // Attack and Opportunity Attack lead the rule-defined group.
  const ruleRank=row=>row.id==='attack'?0:row.id==='opportunity'?1:2;
  ruleRows.sort((a,b)=>ruleRank(a)-ruleRank(b));

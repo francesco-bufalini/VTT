@@ -612,12 +612,12 @@ function sheetLoadingView(){
     '</section>';
 }
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
-const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
+const SHEET_TAB_GLYPHS={info:'information',skills:'skill',battle:'weapon',
  magic:'spark',inventory:'inventory',conditions:'condition'};
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi':'progression','Talenti':'talents'};
-const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Poteri'],['inventory','Zaino']];
-const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],json:['Editor avanzato','Documento completo della scheda.']};
+const PLAY_SECTIONS=[['info','Info'],['skills','Abilità'],['battle','Azioni'],['magic','Poteri'],['inventory','Zaino']];
+const SECTION_COPY={skills:['Abilità','Caratteristiche e prove di abilità.'],battle:['Azioni','Risorse e azioni disponibili.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title){
   const current=state.page==='library'&&!state.libraryMode&&
     (state.sheet===key||(key==='info'&&['conditions','json'].includes(state.sheet)));
@@ -759,8 +759,8 @@ function syncBrowserHistory(){
   }
 }
 async function restoreBrowserScreen(screen){
-  // Older installed builds stored the retired Abilità tab in browser history.
-  if(screen?.sheet==='stats')screen={...screen,sheet:'info'};
+  // Restore legacy stats URLs to the dedicated Abilità panel.
+  if(screen?.sheet==='stats')screen={...screen,sheet:'skills'};
   if(screen?.sheet==='actions')screen={...screen,sheet:'battle'};
   if(screen?.sheet==='traits')screen={...screen,sheet:'info'};
   if(!screen||!sections.has(screen.page)||!SHEET_SECTIONS.some(([key])=>key===screen.sheet))return;
@@ -5811,8 +5811,8 @@ async function closeSheetContext(){
   [...app.querySelectorAll('#sheet-play-view [data-sheet-context]')].find(node=>node.dataset.sheetContext===key)?.focus({preventScroll:true});
 }
 function rememberUtilityDisclosures(){
-  for(const details of app.querySelectorAll('.archive-tools, .catalog-create, .play-skills-disclosure, .play-traits-disclosure')){
-    const key=state.page+'|'+(state.libraryMode?'archive':state.sheet)+'|'+((details.classList.contains('play-skills-disclosure')||details.classList.contains('play-traits-disclosure'))?(state.creatureId+'|'):'')+details.querySelector(':scope > summary')?.textContent;
+  for(const details of app.querySelectorAll('.archive-tools, .catalog-create, .play-traits-disclosure')){
+    const key=state.page+'|'+(state.libraryMode?'archive':state.sheet)+'|'+(details.classList.contains('play-traits-disclosure')?(state.creatureId+'|'):'')+details.querySelector(':scope > summary')?.textContent;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
     details.addEventListener('toggle',()=>{if(details.isConnected)state.disclosureState.set(key,details.open);});
   }
@@ -5972,8 +5972,9 @@ async function openRollTraitOrigin(originId,{traitName='',originKey=''}={}){
    if(isProficiency){
      // Unattributed proficiency or unavailable source metadata is not a trait.
      // Keep the real proficiency readout reachable without an add-bonus picker.
-     app.querySelector('#sheet-play-view .play-skills-disclosure')?.scrollIntoView?.({block:'center'});
-     message('Questa competenza è riepilogata in Info > Abilità.');
+     state.sheet='skills';await render();
+     app.querySelector('#sheet-play-view .play-competences')?.scrollIntoView?.({block:'center'});
+     message('Questa competenza è riepilogata in Abilità.');
      return;
    }
    message('Origine non riconducibile a un tratto della creatura. Seleziona il tratto corretto.',true);
@@ -7284,10 +7285,15 @@ async function handleAction(target){
       return;
     }
     const isAttack=targets.some(value=>/^(?:attack_roll|attack_hit:|attack_damage:|damage_roll|spell_attack|spell_damage)/.test(String(value)));
-    const panel=app.querySelector('#sheet-play-view [data-battle-action="'+(isAttack?'attacks':'checks')+'"]');
+    if(!isAttack){
+      state.sheet='skills';await render();
+      app.querySelector('#sheet-play-view .play-competences')?.scrollIntoView({behavior:'smooth',block:'start'});
+      message('Seleziona un tiro e applica '+(bonus.name||'il bonus')+' nel relativo popup.');
+      return;
+    }
+    const panel=app.querySelector('#sheet-play-view [data-battle-action="attacks"]');
     if(!panel)return;
-    panel.open=true;state.disclosureState.set('battle-disclosure:'+(isAttack?'attacks':'checks'),true);
-    if(!isAttack)for(const group of panel.querySelectorAll('[data-action-ability]'))group.open=true;
+    panel.open=true;state.disclosureState.set('battle-disclosure:attacks',true);
     panel.scrollIntoView({behavior:'smooth',block:'start'});
     panel.querySelector(':scope > summary')?.focus({preventScroll:true});
     message('Seleziona un tiro e applica '+(bonus.name||'il bonus')+' nel relativo popup.');
@@ -7296,16 +7302,8 @@ async function handleAction(target){
   if(act==='battle-action-jump'){
     const actionId=String(target.dataset.actionId||'');
     if(actionId==='ability_checks'){
-      const checks=app.querySelector('#sheet-play-view [data-battle-action="checks"]');
-      if(!checks)return;
-      checks.open=true;
-      state.disclosureState.set('battle-disclosure:checks',true);
-      for(const group of checks.querySelectorAll('.play-battle-action-group[data-action-ability]')){
-        group.open=true;
-        state.disclosureState.set('battle-ability:'+group.dataset.actionAbility,true);
-      }
-      checks.scrollIntoView({behavior:'smooth',block:'start'});
-      checks.querySelector(':scope > summary')?.focus({preventScroll:true});
+      state.sheet='skills';await render();
+      app.querySelector('#sheet-play-view .play-competences')?.scrollIntoView({behavior:'smooth',block:'start'});
       return;
     }
     const panel=app.querySelector('#sheet-play-view [data-battle-action="others"]');
@@ -7326,7 +7324,7 @@ async function handleAction(target){
   if(act==='battle-competences-open'){
     if(!state.editor)throw Error('Apri prima una creatura');
     returnToBattleFromCompetences=true;
-    state.sheet='info';state.sheetPopup='tools';state.sheetPopupTitle='Competenze';
+    state.sheet='skills';state.sheetPopup='tools';state.sheetPopupTitle='Competenze';
     await render();return;
   }
   if(act==='sheet-inspiration-toggle'){
@@ -8357,7 +8355,7 @@ async function handleAction(target){
     if(section==='conditions'){state.sheet='conditions';await render();return;}
     // Never translate a provenance click into a blank add-bonus form.
     if(section==='proficiency_choices'){
-      state.sheet='info';await render();
+      state.sheet='skills';await render();
       state.sheetPopup='tools';state.sheetPopupTitle='Competenze';await render();return;
     }
     await openRollTraitPicker('bonus',fallbackTarget);return;

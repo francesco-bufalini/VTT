@@ -1730,8 +1730,8 @@ input:disabled{opacity:.75;cursor:default}
 .condition-description th{background:#61432c66;color:#f0d4ad}
 .sheet-context-dialog[data-context^="condition:"] .sheet-context-body{padding:16px 18px calc(24px + env(safe-area-inset-bottom))}
 
-/* Five creature destinations plus More remain directly reachable even at 320px. */
-.play-dock.has-creature .play-destinations{flex:4 1 0}
+/* Five creature panels and Partita remain directly reachable even at 320px. */
+.play-dock.has-creature .play-destinations{flex:5 1 0}
 .play-dock.has-creature .dock-session{flex:1 1 0}
 .play-dock.has-creature .dock-more{flex:0 0 48px}
 .play-dock .dock-session .destination-label{display:block}
@@ -1746,20 +1746,15 @@ input:disabled{opacity:.75;cursor:default}
 .play-section-divider{display:flex;align-items:center;gap:12px;margin:7px 0 6px;color:#edc891;font:700 13px/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase}
 .play-section-divider::before,.play-section-divider::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,#a98151a8)}
 .play-section-divider::after{background:linear-gradient(90deg,#a98151a8,transparent)}
-.play-skills-disclosure{border:0;background:transparent;min-width:0}
-.play-competence-heading{display:flex;align-items:center;gap:10px;min-height:54px;padding:8px 8px;cursor:pointer;list-style:none;color:#ecd4a9}
-.play-competence-heading::-webkit-details-marker{display:none}
+.play-competence-heading{display:flex;align-items:center;gap:10px;min-height:54px;padding:8px 8px;cursor:default;list-style:none;color:#ecd4a9}
 .play-competence-heading .vtt-action-glyph{width:22px;height:22px;flex:none}
 .play-competence-heading strong{flex:1;font-size:14px;font-weight:600}
-.play-competence-heading::after{content:"＋";font:20px/1 system-ui;color:#d7b078}
-.play-skills-disclosure[open]>.play-competence-heading::after{content:"−"}
-.play-competence-heading:focus-visible{outline:2px solid #f5d498;outline-offset:-2px}
 .play-skills-content{min-width:0;padding:0 0 8px}
 .play-skills-tools{display:flex;justify-content:flex-end;padding:2px 8px}
 .play-skills-tools>.play-button{min-width:44px;min-height:44px}
 .play-competence-tools{border-bottom:1px solid #a37b4766}
 .play-competence-tools .play-list-row{border:0;border-radius:0;background:transparent;box-shadow:none;width:100%;min-height:54px;padding:8px}
-.play-competence-tools .play-list-row:hover,.play-competence-heading:hover{background:#a981511a}
+.play-competence-tools .play-list-row:hover{background:#a981511a}
 
 /* Leave room for the characteristic label on narrow equipment dialogs. */
 .equipment-unified-panel .equipment-attack-options{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:9px}
@@ -2017,7 +2012,7 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 .header-back:active{transform:translateY(1px)}
 .header-back:focus-visible{outline:2px solid #ffd99e;outline-offset:2px}
 .play-dock{gap:0;border-top:1px solid #bb95608c;border-radius:14px 14px 0 0;overflow:hidden;box-shadow:0 -7px 24px #0009,inset 0 1px #f9d4a021;background:linear-gradient(175deg,#392c28f8,#211b1afd)}
-.play-dock .play-destinations{flex:4 1 0;grid-template-columns:repeat(4,minmax(0,1fr))}
+.play-dock .play-destinations{flex:5 1 0;grid-template-columns:repeat(5,minmax(0,1fr))}
 .play-dock.has-creature .dock-session{flex:1 1 0}
 .play-dock .btn{background:transparent;border-right:1px solid #a17d5044;box-shadow:none;min-height:64px;gap:5px;padding:8px 2px 8px;color:#cbbca9;transition:color .16s,background .16s}
 .play-dock .btn:last-child{border-right:0}
