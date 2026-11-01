@@ -177,11 +177,13 @@ test('class feature activations list timing and cost even when disabled, without
  const feature={origin_id:origin,origin_key:'class|phb|barbarian',
   name:'Rage',requirements:{class_name:'Barbarian',class_source:'PHB'},disabled:true,
   entries:['Concede resistenza ai danni.']};
- const calculated={features:[feature],state_actions:[]};
+ const calculated={features:[feature],state_actions:[],
+  feature_action_overrides:[{class_name:'Barbarian',feature_name:'Rage',book:'PHB',
+    activation:'bonus',resource_name:'Rages',operation:'toggle'}]};
  const trait={name:'Rage',key:'rage',rank:2,feature_origin:origin};
  const group=traitBenefitGroups(trait,{},calculated).find(row=>row.type==='abilities');
  assert.ok(group);
- const rage=group.items.find(row=>row.label==='Ira');
+ const rage=group.items.find(row=>row.label==='Rage');
  assert.equal(rage.status,'Tratto disattivato');
  assert.equal(rage.timing,'Azione bonus');
  assert.match(rage.cost,/Rages/);
