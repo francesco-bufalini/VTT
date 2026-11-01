@@ -410,7 +410,7 @@ try{
  assert.match(await page.locator('#creature-classes').textContent(),/Guerriero 3 · Mago 2/);
  assert.match(await page.locator('.play-identity-classes').textContent(),/Guerriero 3 · Mago 2 · Liv\. totale 5/);
  assert(await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).count());
- assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),4);
+ assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),5);
  // Archive cards preserve species and class details without creature portraits.
  await globalPage('library');
  await page.evaluate(async()=>{

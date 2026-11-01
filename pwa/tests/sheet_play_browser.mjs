@@ -891,6 +891,7 @@ try{
  assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Descrizione · Wizard|Competenze/,
   'Class proficiency may be displayed on the owning class overview');
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ await sheet('skills');
  // Formula + and applicable + both choose a concrete trait and initialize
  // the correct benefit type and target, without saving a draft.
  await page.locator('#sheet-play-view [data-target="save:int"]').click();
@@ -901,6 +902,7 @@ try{
  assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-kind]').inputValue(),'bonus');
  assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="bonus"] [name="target"]').inputValue(),'save:int');
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ await sheet('skills');
  await page.locator('#sheet-play-view [data-target="save:int"]').click();
  await page.locator('#sheet-roll-dialog [data-act="sheet-roll-add-applicable"]').click();
  await page.locator('#roll-trait-picker [data-act="roll-trait-pick"]').click();
