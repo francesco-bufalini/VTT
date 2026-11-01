@@ -269,7 +269,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", localMessages:[], rollHistory:[], roll:null, diceSides:20, chatAuthor:"", chatOpen:false, chatUnread:false, stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, serverDeviceName:"", disclosureState:new Map(),
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, libraryCreateKind:'character', libraryBestiaryEntries:[], libraryBestiaryKey:'', libraryBestiaryLimit:36, libraryBestiaryError:'', libraryMiniatureManuallySelected:false, serverDeviceName:"", disclosureState:new Map(), battleBasicsVisible:true,
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogEmbedMode:"5etools", catalogReturnPage:"library", catalogAssignCreatureId:'', catalogRows:[], catalogSelected:-1, catalogResultLimit:90, catalogCreateOpen:false, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1, sessionCreatureErrors:[],
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -5712,12 +5712,28 @@ async function hydrateExpandedAttackDescription(summary){
   }catch{ /* An offline catalog miss leaves the original attack details usable. */ }
 }
 
+function syncBattleBasicsVisibility(){
+  const root=app.querySelector('#sheet-play-view');
+  if(!root)return;
+  const visible=state.battleBasicsVisible!==false;
+  root.dataset.battleBasics=visible?'visible':'hidden';
+  const toggle=root.querySelector('[data-act="battle-basics-toggle"]');
+  if(!toggle)return;
+  const title=visible?'Nascondi azioni e attacchi di base':'Mostra azioni e attacchi di base';
+  toggle.setAttribute('aria-pressed',String(visible));
+  toggle.setAttribute('aria-label',title);
+  toggle.title=title;
+  const label=toggle.querySelector('.play-battle-basic-toggle-label');
+  if(label)label.textContent=visible?'Nascondi base':'Mostra base';
+}
+
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
   state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventoryHighlightedIndices:state.inventoryHighlightedIndices,inventorySubtab:state.inventorySubtab,inventorySelectedTabs:inventoryVisibleSections(state.editor.read()),search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.calculated?.companion_view||state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  if(state.sheet==='battle')syncBattleBasicsVisibility();
   if(state.sheet==='inventory'){paintInventorySearchResults();syncInventorySelectionUI();}
   if(state.sheet==='info'){
     const root=app.querySelector('#sheet-play-view');
@@ -7254,6 +7270,11 @@ async function handleAction(target){
     if(followUp)await openCharacterChoice(followUp);
     return;
   }
+  if(act==='battle-basics-toggle'){
+    state.battleBasicsVisible=state.battleBasicsVisible===false;
+    syncBattleBasicsVisibility();
+    return;
+  }
   // A sequence step never rolls here: it reveals the original computed attack
   // in the dedicated Attacchi table, including its native hit/damage controls.
   if(act==='battle-attack-jump'){
@@ -7263,6 +7284,10 @@ async function handleAction(target){
     const id=String(target.dataset.attackTargetId||'');
     const attack=id?[...panel.querySelectorAll('[data-attack-id]')]
       .find(node=>node.dataset.attackId===id):null;
+    if(attack?.closest('[data-battle-basic]')&&state.battleBasicsVisible===false){
+      state.battleBasicsVisible=true;
+      syncBattleBasicsVisibility();
+    }
     const focus=attack?.querySelector('.play-battle-attack-details>summary')||
       panel.querySelector(':scope > summary');
     (attack||panel).scrollIntoView({behavior:'smooth',block:'center'});
@@ -7287,6 +7312,10 @@ async function handleAction(target){
     const panel=app.querySelector('#sheet-play-view [data-battle-action="'+(isAttack?'attacks':'checks')+'"]');
     if(!panel)return;
     panel.open=true;state.disclosureState.set('battle-disclosure:'+(isAttack?'attacks':'checks'),true);
+    if(isAttack&&state.battleBasicsVisible===false){
+      state.battleBasicsVisible=true;
+      syncBattleBasicsVisibility();
+    }
     if(!isAttack)for(const group of panel.querySelectorAll('[data-action-ability]'))group.open=true;
     panel.scrollIntoView({behavior:'smooth',block:'start'});
     panel.querySelector(':scope > summary')?.focus({preventScroll:true});
@@ -7312,6 +7341,10 @@ async function handleAction(target){
     const action=[...panel?.querySelectorAll('[data-attack-id]')||[]]
       .find(node=>node.dataset.attackId===actionId);
     if(!panel||!action)return;
+    if(action.closest('[data-battle-basic]')&&state.battleBasicsVisible===false){
+      state.battleBasicsVisible=true;
+      syncBattleBasicsVisibility();
+    }
     panel.open=true;
     const timing=action.closest('.play-battle-action-group');
     if(timing)timing.open=true;

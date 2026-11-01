@@ -6988,14 +6988,56 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 #sheet-play-view .play-battle-privilege-rows>.play-battle-action-source{
  padding:0
 }
+/* Matching centered bronze dividers for the ordinary rule actions
+   and attacks, distinct from the entries granted by privileges. */
 #sheet-play-view .play-action-origin-divider{
- position:relative;display:flex;align-items:center;gap:10px;
- margin:5px 10px 3px;padding:0;color:#c7ac85;
- font:550 10px/1.4 system-ui;letter-spacing:.03em
+ display:flex;align-items:center;justify-content:center;gap:10px;min-width:0;
+ margin:10px 10px 8px;padding:0;color:#efcf9b;
+ font:700 10px/1.25 system-ui;letter-spacing:.075em;text-transform:uppercase
 }
-#sheet-play-view .play-action-origin-divider:before{
- content:"";display:block;flex:1 1 auto;min-width:0;height:1px;
- background:#b991555a
+#sheet-play-view .play-action-origin-divider::before,
+#sheet-play-view .play-action-origin-divider::after{
+ content:"";display:block;flex:1 1 0;min-width:0;height:1px;
+ background:linear-gradient(90deg,transparent,#c39a61ad)
+}
+#sheet-play-view .play-action-origin-divider::after{
+ background:linear-gradient(90deg,#c39a61ad,transparent)
+}
+#sheet-play-view .play-action-origin-divider>span{
+ display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;
+ min-height:22px;padding:4px 11px;border:1px solid #ac834e80;border-radius:999px;
+ background:linear-gradient(135deg,#66492b66,#33271fd9);
+ box-shadow:inset 0 1px 0 #e8c18b2e,0 1px 4px #0806064d
+}
+#sheet-play-view .play-battle-basic-actions>.play-battle-action-source{
+ padding:0 9px 7px
+}
+#sheet-play-view .play-battle-basic-attacks{
+ display:block;min-width:0
+}
+#sheet-play-view[data-battle-basics="hidden"] [data-battle-basic]{
+ display:none!important
+}
+#sheet-play-view .play-battle-top-tools{
+ display:flex;align-items:stretch;justify-content:flex-end;flex-wrap:wrap;
+ gap:8px;margin:7px 3px 6px;padding:0 6px
+}
+#sheet-play-view .play-battle-top-tools>.play-button{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-height:40px;min-width:0;padding:8px 11px;
+ border:1px solid #a983526e;border-radius:9px;
+ background:linear-gradient(160deg,#59402d80,#342924c2);
+ color:#ead0a7;font:600 11px/1.25 system-ui;
+ box-shadow:inset 0 1px 0 #e8c18b1f
+}
+#sheet-play-view .play-battle-top-tools .vtt-action-glyph{
+ width:17px;height:17px;flex:0 0 17px
+}
+#sheet-play-view .play-battle-basics-toggle[aria-pressed="false"]{
+ color:#bba98e;border-color:#8e75556c;background:#2c2521ae
+}
+#sheet-play-view .play-battle-top-tools>.play-button:focus-visible{
+ outline:2px solid var(--accent);outline-offset:2px
 }
 
 /* Quiet indexed hierarchy: a continuous bronze rail and numbered nodes.
@@ -7065,6 +7107,7 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 }
 @media(max-width:380px){
  #sheet-play-view .play-battle-actions-unified>.play-battle-action-source,
+ #sheet-play-view .play-battle-basic-actions>.play-battle-action-source,
  #sheet-play-view .play-battle-privilege-rows{padding-inline:5px}
  #sheet-play-view .play-action-origin-divider{margin-inline:6px}
  #sheet-play-view .play-action-index{margin-left:20px;margin-right:5px;padding-left:11px;padding-right:6px}

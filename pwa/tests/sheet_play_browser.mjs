@@ -393,7 +393,10 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="spells"]').count(),0,
   'There is no second spell list below skill checks');
  assert.equal(await weaponPanel.locator('.play-chevron').count(),0);
- assert.equal(await page.locator('.play-battle-heading-tools [data-sheet-context="equipment"]').count(),1);
+ assert.equal(await page.locator('.play-battle-top-tools [data-sheet-context="equipment"]').count(),1,
+  'The equipment shortcut is beside the shared base toggle above Attacchi');
+ assert.equal(await weaponPanel.locator('[data-sheet-context="equipment"]').count(),0,
+  'Equipment is no longer a control inside the attack table');
  assert.equal(await page.locator('.play-battle-heading-tools [data-act="action-open-spells"]').count(),0);
  // Spellcasting now opens a detail popup, which links to Powers.
  await otherPanel.locator('summary.play-battle-summary').click();
