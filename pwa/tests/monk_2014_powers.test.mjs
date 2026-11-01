@@ -6,6 +6,7 @@ import {persistentBattleAbility} from '../sheet_rules_view.js';
 
 const catalog=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
 const rules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
+const featureActionOverrides=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
 const feature=(name,source='PHB',subclass='')=>{
  const owner='class|'+source.toLowerCase()+'|monk'+(subclass?'|subclass|'+subclass.toLowerCase()+'|phb':'');
  return {name,origin_key:owner,origin_id:'feature:'+owner+'|'+name.toLowerCase(),
@@ -17,7 +18,7 @@ const creature=(level,edition='2014',subclass='')=>{
   level,subclass,classes:[{name:'Monk',source,level,subclass}],resource_tracker_spent:{}};
 };
 const withKi=features=>({features,trackers:[{id:'class:monk:phb:ki',name:'Ki Points',
- origin_class:'Monk',max:20,spent:0}],feature_rules:{}});
+ origin_class:'Monk',max:20,spent:0}],feature_rules:{},feature_action_overrides:featureActionOverrides});
 
 test('2014 Monk Ki techniques retain their own 5etools trait texts and source identities',()=>{
  const entries=catalog.class_features.filter(row=>row.class_name==='Monk'&&row.class_source==='PHB');
@@ -57,7 +58,8 @@ test('2014 Patient Defense and Step of the Wind pay once, never store an indefin
  }
  const revised=creature(5,'2024'),revProjection={
   features:[feature('Patient Defense','XPHB'),feature('Step of the Wind','XPHB')],
-  trackers:[{id:'class:monk:xphb:focus',name:'Focus Points',origin_class:'Monk',max:5,spent:0}]
+  trackers:[{id:'class:monk:xphb:focus',name:'Focus Points',origin_class:'Monk',max:5,spent:0}],
+  feature_action_overrides:featureActionOverrides
  };
  for(const id of ['patient_defense','step_of_the_wind']){
   const row=classFeatureDescriptors(revised,revProjection).find(item=>item.class_feature_id===id);
