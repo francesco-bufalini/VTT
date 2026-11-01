@@ -187,11 +187,11 @@ func run() -> void:
 	assert(not module_diag.contains("\"token\"") and not module_diag.contains("\"authorization\""))
 	var condition_script := await http("GET", "/condition_catalog.js")
 	assert(condition_script.begins_with("HTTP/1.1 200") and condition_script.contains("conditionOptions"))
-	# The 5etools natural-attack catalog must reach the PWA over the Godot host;
-	# otherwise the atomic offline shell fails to install and numeric rules vanish.
-	var species_attacks := await http("GET", "/catalog/species_attacks.json")
+	# 5eTools natural attacks are now in the shared attack benefit catalog.
+	# Check the actual host route, not the retired race-grouped JSON.
+	var species_attacks := await http("GET", "/benefits/attack.json")
 	assert(species_attacks.begins_with("HTTP/1.1 200") and species_attacks.contains("application/json"),
-		"Godot must serve species attack data as JSON")
+		"Godot must serve typed attack benefits as JSON")
 	assert(species_attacks.contains("Aarakocra") and species_attacks.contains("Talons"),
 		"5etools Aarakocra attacks must be available to mobile character sheets")
 	var bundled_effects := await http("GET", "/catalog/effects_5etools.json")
