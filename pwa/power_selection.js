@@ -229,13 +229,15 @@ export function projectItemOptionBenefits(record={},catalogs={}){
 }
 // Project effects of every applied option to its declared recipient, never a new trait.
 export function projectSelectionBenefits(raw,catalogs,features=[]){
- const catalog={...(catalogs.powerSelections||{}),optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{}};
+ const catalog={...(catalogs.powerSelections||{}),optionGrants:catalogs.optionGrants||catalogs.powerSelections?.optionGrants||{},
+  optionLists:catalogs.optionLists||catalogs.powerSelections?.optionLists||{},
+  optionalFeatureProgressions:catalogs.optionalFeatureProgressions||catalogs.powerSelections?.optionalFeatureProgressions||{}};
  const record=normalizeSelectionRecord(raw,catalog),models=powerSelectionModels(record,{features},catalog),inventory=structuredClone(rows(record.inventory)).map(item=>({...item,option_extensions:rows(item.option_extensions).filter(e=>!e.selection_id)}));
  const optional=rows(record.optional_features_catalog).filter(row=>!row.selection_origin_id);const states={...record.trait_state_selection};
  const grants=Object.fromEntries(Object.values(EFFECT_FIELDS).map(field=>[field,rows(record[field]).filter(row=>!row.selection_origin_id)]));
  const selectionTraits=[];
  // Model state choices are derived, not another persisted selection engine.
- for(const rule of definitions(catalog))for(const option of optionsFor(record,rule))for(const e of rows(option.effects))if(e.type==='state_selection')delete states[e.key];
+ for(const rule of definitions(catalog))for(const option of optionsFor(record,rule,catalog))for(const e of rows(option.effects))if(e.type==='state_selection')delete states[e.key];
  for(const model of models)for(const application of rows(model.layers.applied?.selected)){
   const option=model.options.find(o=>o.id===identity(application));if(!option)continue;
   const item=application.target_item_id?inventory.find(i=>(i.instance_id||i.id)===application.target_item_id):null;
