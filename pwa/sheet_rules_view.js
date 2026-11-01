@@ -979,8 +979,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     view.battleActions.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true);
   }
   if(actionsMarkup)html+=disclosure('others','Azioni','hand',actionsMarkup,true);
-  if(view.battleActions?.checks)html+=disclosure('checks','Prove abilità','skill',
-   view.battleActions.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
  }
  if(sheet==='info'){
   const identity=panelNamed('Identità');bind('identity',identity);
@@ -1008,30 +1006,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    identityMarkup+
    (portrait?'':identityMetadata)+
    '</section>';
-  // Show the actual ability modifier, never the ability-check total, while keeping the click target as the check.
-  html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
-
-  // Competences are one flat, line-divided section rather than another card.
-  // Skills expand inline without search/edit controls. Altre competenze remains
-  // editable from its dedicated context elsewhere in the character sheet.
-  const tools=panelNamed('Altre competenze');bind('tools',tools);
-  html+='<section class="play-competences" aria-label="Abilità e prove">'+
-   '<details class="play-skills-disclosure">'+
-    '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
-    '<div class="play-skills-content">'+
-     '<div class="play-skills">'+ABILITIES.map(key=>{
-       const label=({str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'})[key];
-       return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('ability_check:'+key,'Prova di '+label,
-        '<span class="play-skill-name">'+label+'<small>Prova di caratteristica</small></span><b>'+output('ability_check:'+key,true)+'</b>')+'</div>';
-      }).join('')+SKILLS.map(([key,label,ability])=>{
-       const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;
-       return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,
-        '<span class="play-skill-name">'+esc(label)+skillTrainingIcon(rank)+'<small>'+ability.toUpperCase()+
-        (rank===2?' · Maestria':rank===1?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>';
-      }).join('')+'</div>'+
-    '</div></details>'+
-
-   '</section>';
   html+='<h2 class="play-section-divider play-build-divider"><span>Build</span></h2>';
   for(const node of panels.filter(n=>n!==identity)){
    const title=heading(node),i=panels.indexOf(node);
@@ -1057,6 +1031,19 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<h2 id="play-info-traits-heading" class="play-section-divider"><span>Tratti</span></h2>'+
     '<div class="play-info-traits-content">'+content+'</div></section>';
   }
+ }
+ if(sheet==='skills'){
+  // The six characteristic tiles stay rollable; the list below contains skills only.
+  html='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
+  const tools=panelNamed('Altre competenze');bind('tools',tools);
+  html+='<section class="play-competences" aria-label="Abilità">'+
+   '<h2 class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></h2>'+
+   '<div class="play-skills-content"><div class="play-skills">'+SKILLS.map(([key,label,ability])=>{
+    const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;
+    return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,
+     '<span class="play-skill-name">'+esc(label)+skillTrainingIcon(rank)+'<small>'+ability.toUpperCase()+
+     (rank===2?' · Maestria':rank===1?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>';
+   }).join('')+'</div></div></section>';
  }
  if(sheet==='magic'){
   const overview=bank.querySelector('.magic-overview');
@@ -1439,7 +1426,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
   const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);
- const filter=['inventory','info'].includes(sheet)?'':String(view.search||'').trim().toLocaleLowerCase('it');
+ const filter=['inventory','info','skills'].includes(sheet)?'':String(view.search||'').trim().toLocaleLowerCase('it');
  for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!matchesSearch(filter,row.dataset.playFilter);
  for(const warning of [...bank.querySelectorAll(':scope > [role=alert],:scope > .action-catalog-warning')])main.prepend(warning);
  // Native dialogs must never inherit hidden from the editor bank.

@@ -83,7 +83,7 @@ try{
  });
  assert.equal((await record()).resource_tracker_spent['class:artificer:tce:defensive_field'],1);
  // Flash of Genius appears only as an optional bonus on the eligible roll.
- await sheet('info');
+ await sheet('skills');
  const saveButton=page.locator('#sheet-play-view [data-act="sheet-roll"][data-target="save:dex"]').first();
  await saveButton.click();
  const rollDialog=page.locator('#sheet-roll-dialog');

@@ -57,16 +57,19 @@ try{
  };
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
-  for(const key of ['info','battle','magic','inventory','conditions']){
+  for(const key of ['info','skills','battle','magic','inventory','conditions']){
    await section(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
+   if(key==='skills'){
+    assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
+    assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
+    assert(await page.locator('#sheet-play-view .play-skills-content').isVisible());
+   }
    if(key==='battle'){
     assert.equal(await page.locator('[data-act="battle-toggle-class-only"]').count(),0,
       'Class-only filtering was removed');
-    const checks=page.locator('[data-battle-action="checks"]');
-    assert.equal(await checks.count(),1);
-    assert.equal(await checks.locator('[data-action-ability]').count(),6);
-    assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
+    assert.equal(await page.locator('[data-battle-action="checks"]').count(),0);
+    assert.equal(await page.locator('[data-attack-id="ability_checks"]').count(),0);
     assert.equal(await page.locator('.page-head [data-act="action-variants"]').count(),1);
     assert.equal(await page.locator('#sheet-navigation [data-sheet="actions"]').count(),0);
     // The old global expand/collapse buttons were removed: independently
@@ -182,14 +185,13 @@ try{
  const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
  if(await resourcesPanel.getAttribute('open')===null)
   await resourcesPanel.locator(':scope > summary.play-battle-summary').click();
- const checksSection=page.locator('#sheet-play-view [data-battle-action="checks"]');
- if(await checksSection.getAttribute('open')===null)await checksSection.locator(':scope > summary').click();
- assert.equal(await checksSection.getAttribute('open'),'','Checks disclosure remains available independently');
- for(const group of await checksSection.locator('[data-action-ability]').all())
-  if(await group.getAttribute('open')===null)await group.locator(':scope > summary').click();
- assert.equal(await checksSection.locator('[data-action-ability][open]').count(),6);
- await section('magic');await section('battle');
- assert.equal(await checksSection.getAttribute('open'),'','Expanded checks survive sheet rerender');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="checks"]').count(),0);
+ await section('skills');
+ assert(await page.locator('#sheet-play-view .play-skills-content').isVisible());
+ await section('magic');await section('skills');
+ assert(await page.locator('#sheet-play-view .play-skills-content').isVisible(),
+  'La lista Abilità resta sempre espansa');
+ await section('battle');
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
  await page.getByRole('button',{name:'Varianti alle regole',exact:true}).click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);

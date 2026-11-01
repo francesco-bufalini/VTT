@@ -113,10 +113,10 @@ try{
  // Changing destination immediately must flush the focused name field.
  await sheet('battle');
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
- assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','battle','magic','inventory']);
+ assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','skills','battle','magic','inventory']);
  assert(await page.locator('#dock-session').isVisible(),'Partita stays in the creature dock');
  assert.equal(await page.locator('#dock-catalog').count(),0,'Catalogo belongs to the archive');
- assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),6);
  assert.equal(await page.locator('#dock-session .destination-label').textContent(),'Partita');
  assert(await page.locator('#sheet-navigation [data-sheet="inventory"]').evaluate(node=>
    parseFloat(getComputedStyle(node).borderRightWidth)>0),'Zaino and Partita remain visually separated');
@@ -142,17 +142,15 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="spells"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
   'Class-only filtering no longer exists');
- const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
- assert.equal(await checks.count(),1,'Generic ability checks belong in the unified Actions tab');
- await checks.locator('summary.play-battle-summary').click();
- assert.equal(await checks.locator('[data-action-ability]').count(),6);
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="checks"]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view [data-attack-id="ability_checks"]').count(),0);
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['battle','magic','inventory','conditions','info']){
+  for(const key of ['skills','battle','magic','inventory','conditions','info']){
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
-   assert.equal(dock.length,5);
+   assert.equal(dock.length,6);
    assert(dock.every(n=>n.h>=48&&n.w>=48&&n.label&&n.bottom<=viewport.height),'Labeled touch targets remain reachable at '+viewport.width);
    assert.equal(await page.locator('#app h1').count(),1);
   }
@@ -163,25 +161,21 @@ try{
  await shot('tools');
  await sheet('conditions');
  await sheet('info');
- assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
+ assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-abilities,.play-competences').count(),0,'Caratteristiche e abilità non sono più in Info');
+ assert.equal(await page.locator('#sheet-play-view .play-info-traits > h2.play-section-divider').textContent(),'Tratti');
+ assert(await page.locator('#sheet-play-view .play-info-traits-content').isVisible());
+ await sheet('skills');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
- assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),24);
- assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').count(),0,'No duplicate Competenze heading');
- assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0,'Info contains no creature icon');
- assert.equal(await page.locator('#sheet-play-view .play-info-traits > h2.play-section-divider').textContent(),'Tratti',
-  'Tratti uses the same permanent heading as Competenze');
- assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').count(),0,
-  'Tratti must not be an expandable section');
- assert(await page.locator('#sheet-play-view .play-info-traits-content').isVisible(),
-  'The Tratti section is immediately visible even if this creature has no traits');
- assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),null);
- await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
- assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
- assert.equal(await page.locator('#sheet-play-view [data-play-search]').count(),0,'Info has no skill search');
- assert.equal(await page.locator('#sheet-play-view .play-skills-tools').count(),0,'Info has no competence edit button');
- assert.deepEqual(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').evaluateAll(rows=>
-  rows.map(row=>row.dataset.target)),['ability_check:str','ability_check:dex','ability_check:con','ability_check:int','ability_check:wis','ability_check:cha']);
+ assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
+ assert.equal(await page.locator('#sheet-play-view .play-skills [data-target^="ability_check:"]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-abilities [data-target^="ability_check:"]').count(),6);
+ assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').count(),0,'Abilità non è espandibile');
+ assert(await page.locator('#sheet-play-view .play-skills-content').isVisible());
+ assert.equal(await page.locator('#sheet-play-view .play-competence-heading .vtt-action-glyph').count(),1);
+ await sheet('battle');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="checks"]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view [data-attack-id="ability_checks"]').count(),0);
  await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-act="battle-competences-open"]').innerText().then(s=>s.includes('Competenze')),true);
  await page.locator('#sheet-play-view [data-act="battle-competences-open"]').click();
@@ -190,8 +184,10 @@ try{
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armature/);
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
- await sheet('battle');await sheet('info');
- assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'','Expanded skills survive a return to Info');
+ await sheet('battle');await sheet('skills');
+ assert(await page.locator('#sheet-play-view .play-skills-content').isVisible(),
+  'Abilità resta aperta al rientro nel pannello');
+ await sheet('info');
  assert(await page.locator('#sheet-play-view .play-info-traits-content').isVisible(),
   'Tratti stays visible on return to Info');
  await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
@@ -397,7 +393,7 @@ try{
  await page.locator('[data-act="open"]').click();await sheet('battle');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
- assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),6);
  assert(await page.locator('#creature-back').isVisible());
  // Opening a multiclass character shows every class both in the persistent
  // header and directly below the name on the Info tab.
@@ -414,7 +410,7 @@ try{
  assert.match(await page.locator('#creature-classes').textContent(),/Guerriero 3 · Mago 2/);
  assert.match(await page.locator('.play-identity-classes').textContent(),/Guerriero 3 · Mago 2 · Liv\. totale 5/);
  assert(await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).count());
- assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),4);
+ assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),5);
  // Archive cards preserve species and class details without creature portraits.
  await globalPage('library');
  await page.evaluate(async()=>{
@@ -519,6 +515,7 @@ try{
  assert.equal(await monsterXpField.inputValue(),'300','The Classi editor displays the new XP floor');
  assert.equal(await monsterXpField.getAttribute('min'),'300','The Classi editor enforces the XP floor');
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
+ await sheet('skills');
  // The score editor proposes HP changes only when the effective modifier changes.
  const conCard=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:con"]');
  const scoreFormula=page.locator('#sheet-score-formula-dialog');
