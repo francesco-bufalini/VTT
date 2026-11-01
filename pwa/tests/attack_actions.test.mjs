@@ -78,7 +78,7 @@ test('a dragon multiattack preserves named steps and one special use, without tr
   attacks:[{id:'monster:action:1',name:'Bite',hit:10,melee:true},{id:'claws',name:'Claws',hit:10,melee:true}]};
  const panel=battleActionPanels(monster,calculated);
  assert.match(panel.others,/Multiattack/);
- assert.match(panel.others,/Attacchi concessi/);
+ assert.match(panel.others,/Lista di azioni, attacchi e tiri/);
  assert.match(panel.others,/Frightful Presence/);
  assert.match(panel.others,/claw/);
  assert.doesNotMatch(panel.others,/data-attack-id="attack"/);
