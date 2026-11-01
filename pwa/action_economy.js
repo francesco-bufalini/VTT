@@ -331,7 +331,6 @@ const BATTLE_TIMINGS=[['action','Azione'],['bonus','Azione bonus'],['reaction','
 const MOVEMENT_ACTION_IDS=new Set(['movement','stealth_movement','dash','disengage','drop_prone','climb_large','overrun','tumble','escape_grapple','stand_up','crawl','jump','mount','dismount','difficult_terrain']);
 const WEAPON_ROLL_ACTION_IDS=new Set(['disarm','opportunity']);
 const rollModifier=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?Number(value):null;
-const rollSign=value=>value<0?'−'+Math.abs(value):'+'+value;
 const rollFormula=value=>'1d20 '+(value<0?'− '+Math.abs(value):'+ '+value);
 const BATTLE_EFFECTS={
  grapple:['condition','Afferrato','condition'],
@@ -485,6 +484,7 @@ export function attackActionCategory(row={}){
 export function battleActionUseBox({act='',attrs='',tracker=null,trackerName='',cost=0,label='Usa',disabled=false,allowDepleted=false,name=''}={}){
  if(!act)return '';
  const amount=Math.max(0,Number(cost)||0);
+ if(amount>0&&!tracker)return '';
  const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
  const resource=amount>0?String(tracker?.name||trackerName||'Tracker non disponibile'):'';
  const off=disabled||!allowDepleted&&amount>0&&(!tracker||tracker.disabled||available<amount);
