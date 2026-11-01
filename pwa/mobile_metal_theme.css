@@ -4011,57 +4011,6 @@ dialog.sheet-context-dialog{border-bottom:0}
 }
 .trait-choice-row button:hover{background:#b88b5337;border-color:#e0b57b}
 .trait-choice-row button:focus-visible{outline:2px solid #e0b57b;outline-offset:2px}
-/* Multi-select section controls wrap rather than hiding sections beyond a
-   horizontal swipe. Pressed buttons share the warm metallic tab treatment. */
-.inventory-subtabs.inventory-container-tabs{
-  display:flex;flex-wrap:wrap;align-items:stretch;gap:7px;
-  width:100%;max-width:100%;overflow:visible;padding:2px 0 10px;
-  scrollbar-width:auto;scroll-snap-type:none;
-}
-.inventory-subtabs.inventory-container-tabs>button,
-.inventory-subtabs.inventory-container-tabs>.inventory-custom-section>button[data-subtab]{
-  flex:1 1 112px;min-width:min(112px,100%);max-width:none;min-height:56px;
-  padding:8px 11px;scroll-snap-align:none;white-space:normal;
-  overflow-wrap:anywhere;border:1px solid rgba(191,151,99,.35);
-  border-radius:11px;background:rgba(106,82,53,.13);color:inherit;
-  font-family:inherit;font-size:12px;font-weight:600;line-height:1.35;cursor:pointer;
-  display:inline-flex;align-items:center;justify-content:center;gap:7px;
-}
-.inventory-subtabs.inventory-container-tabs>button[aria-pressed="true"],
-.inventory-subtabs.inventory-container-tabs>.inventory-custom-section>button[aria-pressed="true"]{
-  background:linear-gradient(155deg,rgba(178,134,78,.35),rgba(112,76,42,.24));
-  border-color:rgba(224,181,119,.72);color:#f3d5a7;
-  box-shadow:inset 0 1px 0 rgba(255,234,194,.13);
-}
-.inventory-subtabs.inventory-container-tabs button:hover{
-  border-color:rgba(224,181,119,.78);
-}
-.inventory-subtabs.inventory-container-tabs button:focus-visible{
-  outline:2px solid #e8c28e;outline-offset:2px;
-}
-.inventory-subtabs.inventory-container-tabs>.inventory-add-container-tab{
-  flex:0 0 49px;min-width:49px;font-size:23px;font-weight:500;padding:4px;
-}
-.inventory-subtabs.inventory-container-tabs>.inventory-custom-section{
-  position:relative;display:flex;flex:1 1 156px;min-width:min(156px,100%);max-width:100%;
-}
-.inventory-subtabs.inventory-container-tabs>.inventory-custom-section>button[data-subtab]{
-  width:100%;padding-right:50px;
-}
-.inventory-subtabs.inventory-container-tabs .inventory-section-remove{
-  position:absolute;top:0;right:0;width:48px;min-width:48px;height:48px;min-height:48px;
-  padding:0;border:0;border-radius:0 11px 0 11px;background:transparent;
-  box-shadow:none;font-size:21px;line-height:1;color:#d8b38c;
-}
-@media(max-width:380px){
-  .inventory-subtabs.inventory-container-tabs>button{
-    flex-basis:98px;padding:7px 8px;font-size:11px;
-  }
-}
-
-.inventory-container-management{
-  display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:0 0 12px;
-}
 .trait-item-quantity{
   display:inline-flex;align-items:center;justify-content:center;margin-inline-start:8px;
   padding:2px 7px;border-radius:7px;border:1px solid rgba(208,166,103,.5);
@@ -4358,39 +4307,6 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
   width:28px!important;min-width:28px!important
  }
 }
-
-/* Inventario: the global selection action sits beside the page heading.
-   Only actual container/scroll/document toggles are inside the wrapped nav. */
-.content:has(.sheet-play-view)>.page-head.play-inventory-page-title{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:10px;flex-wrap:nowrap;
-}
-.play-inventory-page-title>h1{
-  min-width:0;flex:1 1 auto;margin:0;
-}
-.play-inventory-page-title>.play-button[data-act="inventory-toggle-all"]{
-  display:inline-flex;align-items:center;justify-content:center;
-  flex:0 1 178px;min-width:0;min-height:42px;gap:6px;
-  padding:7px 10px;white-space:normal;text-align:center;
-  font:550 11px/1.3 system-ui,sans-serif;
-  color:#f4d4a0;border:1px solid #aa845170;
-  border-radius:9px;background:#3a2a2480;
-}
-.play-inventory-page-title>.play-button[data-act="inventory-toggle-all"][aria-pressed="true"]{
-  border-color:#d0a771b5;background:#71543260;
-}
-.play-inventory-page-title>.play-button[data-act="inventory-toggle-all"]>.vtt-action-glyph{
-  width:16px;height:16px;flex:0 0 16px;
-}
-.play-inventory-page-title>.play-button[data-act="inventory-toggle-all"]:focus-visible{
-  outline:2px solid #e8bd7f;outline-offset:2px;
-}
-@media(max-width:360px){
-  .play-inventory-page-title>.play-button[data-act="inventory-toggle-all"]{
-    flex-basis:148px;gap:4px;padding:7px 6px;font-size:10px;
-  }
-}
-
 
 /* Item popup: actions represent a real slot choice, not a checkbox. */
 #sheet-context-dialog[data-context^="item:"] .play-item-equip-field{
@@ -7113,3 +7029,50 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  #sheet-play-view .play-action-index{margin-left:20px;margin-right:5px;padding-left:11px;padding-right:6px}
  #sheet-play-view .play-action-index-steps .play-battle-attack-step-use{min-width:53px}
 }
+
+/* Inventory sections: click the row to collapse; click its name to manage. */
+#sheet-play-view .play-inventory-section>summary.play-card-head{
+  display:flex;align-items:center;list-style:none;cursor:pointer;gap:8px;
+  border-bottom:1px solid #a27b4a35;
+}
+#sheet-play-view .play-inventory-section>summary::-webkit-details-marker{display:none}
+#sheet-play-view .play-inventory-section:not([open])>summary{border-bottom:0}
+#sheet-play-view .play-inventory-section>summary:focus-visible{outline:2px solid #e8c28e;outline-offset:-3px}
+.play-inventory-section .inventory-section-title{
+  appearance:none;border:0;background:transparent;box-shadow:none;
+  color:inherit;font:inherit;text-align:left;padding:6px 2px;min-height:38px;
+  cursor:pointer;overflow-wrap:anywhere;
+}
+.play-inventory-section .inventory-section-title:hover{color:#ffebc5;text-decoration:underline;text-underline-offset:3px}
+.play-inventory-section .inventory-section-title:focus-visible{outline:2px solid #e8c28e;border-radius:5px}
+.play-inventory-section .inventory-section-head-tools{margin-left:auto}
+.play-inventory-section .inventory-section-caret{
+  display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px;
+  color:#d9b37e;font-size:18px;transition:transform .16s ease;
+}
+.play-inventory-section:not([open]) .inventory-section-caret{transform:rotate(-90deg)}
+.play-inventory-section .inventory-section-create{
+  display:inline-flex;align-items:center;justify-content:center;flex:none;
+  min-width:36px;min-height:36px;padding:3px 7px;border:1px solid #ba9564a1;
+  border-radius:8px;background:#77553646;color:#f3c887;
+  font-size:23px;line-height:1;cursor:pointer;
+}
+.play-inventory-section .inventory-section-create:hover{background:#9b724950;border-color:#dfb87e}
+.play-inventory-section .inventory-section-create:focus-visible{outline:2px solid #e8c28e;outline-offset:2px}
+.play-inventory-section .inventory-section-body{min-width:0}
+#sheet-play-view .inventory-section-add{
+  display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  min-height:48px;margin:0;padding:10px 14px;border:1px dashed #bc966c99;
+  border-radius:13px;background:#6b4b3230;color:#efcb96;cursor:pointer;
+  font:600 13px/1.3 system-ui,sans-serif;
+}
+#sheet-play-view .inventory-section-add>span:first-child{font-size:22px;line-height:1}
+#sheet-play-view .inventory-section-add:hover{background:#87603e40;border-color:#e5b981}
+#sheet-play-view .inventory-section-add:focus-visible{outline:2px solid #e8c28e;outline-offset:2px}
+.inventory-section-settings-dialog .inventory-section-weight{
+  display:flex;align-items:center;gap:10px;min-height:44px;margin-top:14px;
+}
+.inventory-section-settings-dialog .sheet-context-body>label:not(.check){display:grid;gap:6px}
+.inventory-section-settings-dialog .sheet-context-body>label:not(.check)>input{width:100%;min-height:42px}
+.inventory-section-settings-dialog .pending-choice-actions{display:flex;flex-wrap:wrap;gap:8px}
+@media(prefers-reduced-motion:reduce){.play-inventory-section .inventory-section-caret{transition:none}}
