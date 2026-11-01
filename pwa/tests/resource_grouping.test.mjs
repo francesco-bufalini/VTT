@@ -213,7 +213,10 @@ test('Defensive Field retains its counter but exposes its action only with activ
    const actions=[...app.querySelectorAll('[data-battle-action="others"] .play-resource-power-row')]
     .filter(node=>node.textContent.includes('Defensive Field')&&node.querySelector('[data-act="battle-use-ability"]'));
    assert.equal(actions.length,available?1:0);
-   if(available)assert.match(actions[0].textContent,/Azione bonus · Costo 1/);
+   if(available){
+    assert.match(actions[0].textContent,/Azione bonus.*−1.*·.*3\/3/);
+    assert.equal(actions[0].querySelector('.play-action-use-box .play-action-use-verb'),null);
+   }
   });
   if(!available){
    assert.equal(resourceLinkedSubclassTrait(tracker,calculated.features,[],calculated),null);
