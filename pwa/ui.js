@@ -57,7 +57,7 @@ import {claimFeatureItemPatch,featureItemPowers,featureItemGrants} from './featu
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
 import {onHitEffects,targetTokenHitEffects,hitEffectExpired} from './attack_hit_effects.js';
-import {attackActionUsePatch} from './attack_count_benefits.js';
+import {attackActionUsePatch,attackActionChoice} from './attack_count_benefits.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment,minimumXpForLevel} from "./character_core.js";
 import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
@@ -7254,6 +7254,20 @@ async function handleAction(target){
     if(followUp)await openCharacterChoice(followUp);
     return;
   }
+  // A sequence step never rolls here: it reveals the original computed attack
+  // in the dedicated Attacchi table, including its native hit/damage controls.
+  if(act==='battle-attack-jump'){
+    const panel=app.querySelector('#sheet-play-view [data-battle-action="attacks"]');
+    if(!panel)return;
+    panel.open=true;state.disclosureState.set('battle-disclosure:attacks',true);
+    const id=String(target.dataset.attackTargetId||'');
+    const attack=id?[...panel.querySelectorAll('[data-attack-id]')]
+      .find(node=>node.dataset.attackId===id):null;
+    const focus=attack?.querySelector('.play-battle-attack-details>summary')||
+      panel.querySelector(':scope > summary');
+    (attack||panel).scrollIntoView({behavior:'smooth',block:'center'});
+    focus?.focus({preventScroll:true});return;
+  }
   // A tracker-backed roll bonus must be selected in a real roll popup; a
   // click on the benefit card navigates to that roll without spending uses.
   if(act==='battle-roll-bonus-jump'){
@@ -7419,6 +7433,13 @@ async function handleAction(target){
   }
   // Manual action grants share the same tracker counter as native powers.
   // Recompute the projected action before spending; never trust DOM costs.
+  if(act==='battle-action-roll'){
+    const rollTarget=String(target.dataset.actionRollTarget||'');
+    const rollLabel=String(target.dataset.actionRollLabel||'Prova');
+    if(!rollTarget)throw Error('Tiro non disponibile.');
+    await handleAction({dataset:{act:'sheet-roll',target:rollTarget,label:rollLabel}});
+    return;
+  }
   if(act==='battle-action-activate'){
     const creature=state.editor?.read();if(!creature)throw Error('Creatura non disponibile.');
     const calculated=await computeLocalData(creature);
@@ -7438,9 +7459,29 @@ async function handleAction(target){
     const creature=state.editor?.read();
     if(!creature)throw Error('Creatura non disponibile.');
     const calculated=await computeLocalData(creature);
-    await patch(current=>attackActionUsePatch(current,calculated,
-      String(target.dataset.attackActionId||'')));
-    await render();return;
+    const id=String(target.dataset.attackActionId||'');
+    const row=(calculated.attack_actions||[]).find(action=>action.id===id);
+    if(!row)throw Error('Azione non disponibile.');
+    const choiceId=String(target.dataset.attackActionOptionId||'');
+    const choice=attackActionChoice(row,choiceId);
+    const change=attackActionUsePatch(creature,calculated,id,choiceId);
+    if(Object.keys(change).length){await patch(change);await render();}
+    // Changing the action economy never replaces its existing roll, check or
+    // map behavior. Delegate to the same handler the player already uses.
+    const selector=choice?.selector;
+    if(!selector)return;
+    if(selector.kind==='check'&&selector.target){
+      await handleAction({dataset:{act:'sheet-roll',target:selector.target,
+        label:choice.label||'Prova'}});return;
+    }
+    if(selector.kind==='attack'){
+      await handleAction({dataset:{act:'battle-attack-jump',attackTargetId:selector.id||''}});return;
+    }
+    if(selector.kind==='action'){
+      await handleAction({dataset:{act:'battle-action-jump',actionId:selector.id||''}});return;
+    }
+    if(selector.kind==='ability')message(choice.description||'Usa '+(choice.label||'la capacità')+'.');
+    return;
   }
   if(act==='monster-action-use'){
     const creature=state.editor?.read();

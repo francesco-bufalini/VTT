@@ -92,3 +92,97 @@ per colpire autonomi: mostrano costo, tracker e sequenza. Sono raggruppate nella
 sezione **Azioni di attacco** di Battaglia, mentre i singoli tiri rimangono
 nella tabella **Attacchi**. L'uso della capacità detrae il tracker, ma
 non presume che i singoli attacchi abbiano automaticamente colpito.
+
+
+## Operazioni generiche e alternative OR
+
+Il campo `steps` non è limitato agli attacchi. Ogni `selector` può essere di tipo `attack` (id/nome/categoria), `action` (id del catalogo, ad esempio `dash` e `disengage`), `check` (target `skill:perception` o `ability_check:str`) oppure `ability` (id di una capacità esistente).
+
+Un passo `{ "one_of": [...] }` concede **esattamente una** delle alternative. Ogni alternativa ha un `id` stabile, un `selector`, un'etichetta `label` opzionale e un `tracker_cost` o `tracker_id` opzionale che **sostituisce**, senza sommare, il costo del privilegio.
+
+### Azione Scaltra 2014
+
+```json
+{
+  "id": "cunning-action-phb",
+  "class_name": "Rogue",
+  "class_source": "PHB",
+  "rules_version": "2014",
+  "feature": "Cunning Action",
+  "min_level": 2,
+  "time": "bonus",
+  "steps": [
+    {
+      "one_of": [
+        {
+          "id": "dash",
+          "label": "Scattare",
+          "selector": {
+            "kind": "action",
+            "id": "dash"
+          }
+        },
+        {
+          "id": "disengage",
+          "label": "Disimpegnarsi",
+          "selector": {
+            "kind": "action",
+            "id": "disengage"
+          }
+        },
+        {
+          "id": "hide",
+          "label": "Nascondersi",
+          "selector": {
+            "kind": "action",
+            "id": "hide"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Azioni leggendarie
+
+Il gruppo viene proiettato dalle voci `stat_block.legendary` senza elencare i nomi dei mostri nel motore. Il costo effettivo dipende dalla scelta, ad esempio:
+
+```json
+{
+  "time": "legendary",
+  "tracker_id": "legendary_actions",
+  "steps": [
+    {
+      "one_of": [
+        {
+          "id": "detect",
+          "selector": {
+            "kind": "check",
+            "target": "skill:perception"
+          },
+          "tracker_cost": 1
+        },
+        {
+          "id": "tail",
+          "selector": {
+            "kind": "attack",
+            "name": "Tail"
+          },
+          "tracker_cost": 1
+        },
+        {
+          "id": "wing",
+          "selector": {
+            "kind": "ability",
+            "name": "Wing Attack"
+          },
+          "tracker_cost": 2
+        }
+      ]
+    }
+  ]
+}
+```
+
+Il motore valida la scelta prima di consumare la risorsa. Le prove usano il popup d20, i singoli attacchi la tabella Attacchi e le azioni generali i rispettivi handler. `repeat: "per_target"` indica che i tiri si ripetono per ogni bersaglio lecito, senza fissare il numero o tirare automaticamente. I requisiti situazionali rimangono documentati nel tratto fino alla disponibilità di predicati verificabili.

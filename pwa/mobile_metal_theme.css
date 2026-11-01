@@ -6946,3 +6946,31 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 }
 #sheet-play-view .play-battle-direct-action strong{font:550 13px/1.4 system-ui;color:#f4dbb6}
 #sheet-play-view .play-battle-direct-action small{font:400 11px/1.4 system-ui;color:#c5a982}
+
+/* Exclusive action choices reuse the bronze benefit-row visual hierarchy. */
+#sheet-play-view .play-battle-attack-choice{display:block;padding-block:7px}
+#sheet-play-view .play-battle-action-options{
+ display:grid;grid-template-columns:1fr;gap:4px;margin:7px 0 0 6px
+}
+#sheet-play-view .play-battle-action-option{
+ display:flex;align-items:center;justify-content:space-between;
+ min-width:0;gap:9px;padding:4px 7px;border:1px solid #a77c492d;
+ border-radius:7px;background:#8a644c14;color:#d9c39f;font:400 12px/1.35 system-ui
+}
+#sheet-play-view .play-battle-action-option>span{min-width:0;overflow-wrap:anywhere}
+#sheet-play-view .play-battle-action-option>.play-battle-attack-step-use{
+ display:inline-flex;align-items:center;justify-content:center;
+ min-width:64px;min-height:30px;padding:5px 8px;
+ border:1px solid #a77c493f;border-radius:7px;background:#8a644c24;
+ color:#f2d39a;font:600 11px/1.2 system-ui;cursor:pointer
+}
+#sheet-play-view .play-battle-action-option>.play-action-use-box{
+ min-width:76px;width:auto;margin:0;padding:3px 7px
+}
+#sheet-play-view .play-battle-action-option button:focus-visible{
+ outline:2px solid var(--accent);outline-offset:2px
+}
+@media(max-width:380px){
+ #sheet-play-view .play-battle-action-options{margin-left:0}
+ #sheet-play-view .play-battle-action-option{gap:5px;padding-inline:5px}
+}

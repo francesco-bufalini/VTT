@@ -3,6 +3,8 @@
 import {featureEnabled} from './feature_mechanics.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {normalizeMonsterStatBlock} from './character_core.js';
+import {SKILLS} from './skill_definitions.js';
+import {monsterActions,monsterTraits,monsterActionCost} from './monster_traits.js';
 
 const rows=value=>Array.isArray(value)?value:[];
 const count=value=>{
@@ -64,33 +66,73 @@ export function attackCategories(attack={}){
   if(attack.melee===false)categories.add('ranged');
   if(id.startsWith('unarmed'))categories.add('unarmed');
   if(attack.weapon_type||attack.weapon_category||id.startsWith('item:'))categories.add('weapon');
-  if(attack.weapon_type==='ranged')categories.add('ranged_weapon');
-  if(attack.weapon_type==='melee')categories.add('melee_weapon');
+  if(attack.weapon_type==='ranged'||attack.melee===false&&categories.has('weapon'))categories.add('ranged_weapon');
+  if(attack.weapon_type==='melee'||attack.melee===true&&categories.has('weapon'))categories.add('melee_weapon');
   if(rows(attack.weapon_properties).includes('T')||id.startsWith('item:throw:'))categories.add('thrown');
   if(/(?:crossbow|balestr)/i.test(name+' '+String(attack.weapon_category||'')))categories.add('crossbow');
   if(attack.spell_attack===true)categories.add('spell_attack');
  }
  return [...categories];
 }
+// Resolve a sequence from existing attacks, general actions, capabilities and
+// the canonical skill list. "one_of" means choose exactly one branch.
+const stepCount=value=>Math.min(99,Math.max(1,Math.trunc(Number(value)||1)));
+const skillCheck=target=>{
+ const id=normal(target),skill=id.startsWith('skill:')?
+  SKILLS.find(([key])=>key===id.slice(6)):null;
+ if(skill)return {id:'check:'+id,name:'Prova di '+skill[1],check_target:id};
+ const ability=/^ability_check:(str|dex|con|int|wis|cha)$/.exec(id);
+ if(!ability)return null;
+ const name=({str:'Forza',dex:'Destrezza',con:'Costituzione',
+  int:'Intelligenza',wis:'Saggezza',cha:'Carisma'})[ability[1]];
+ return {id:'check:'+id,name:'Prova di '+name,check_target:id};
+};
 export function resolveAttackActionSteps(action={},attacks=[],otherActions=[]){
- const options=[...rows(attacks),...rows(otherActions).filter(row=>row?.check_target||row?.action_id||row?.monster_action)];
- const result=[];
- for(const step of rows(action.steps)){
-  const selector=step.selector||{};
-  const candidates=options.filter(row=>{
-   const categories=attackCategories(row);
-   if(selector.kind==='ability')return !!row.monster_action&&
-     singular(row.name)===singular(selector.name);
+ const attackRows=rows(attacks),otherRows=rows(otherActions);
+ const candidates=[...attackRows,...otherRows];
+ const resolve=part=>{
+  const selector=part.selector||{},kind=normal(selector.kind);
+  const check=kind==='check'?skillCheck(selector.target||selector.id):null;
+  const options=check?[check]:candidates.filter(row=>{
+   const isAttack=attackRows.includes(row),isCheck=!!row.check_target;
+   const isAbility=!!row.monster_action||row.type==='Capacità';
+   const isAction=!isAttack&&!isCheck&&!isAbility;
+   if(kind==='attack'&&!isAttack||kind==='check'&&!isCheck||
+      kind==='action'&&!isAction||kind==='ability'&&!isAbility)return false;
+   if(!kind&&!isAttack&&!isCheck)return false;
    if(selector.id&&normal(row.id)!==normal(selector.id))return false;
    if(selector.name&&singular(row.name)!==singular(selector.name))return false;
-   if(selector.category&&!categories.includes(normal(selector.category)))return false;
-   if(selector.kind==='attack'&&!categories.includes('attack'))return false;
-   return selector.kind==='ability'||categories.includes('attack')||categories.includes('check');
+   if(selector.category&&!attackCategories(row).includes(normal(selector.category)))return false;
+   return true;
   });
-  result.push({...step,count:Math.min(99,Math.max(1,Math.trunc(Number(step.count)||1))),options:candidates,
-   resolved:candidates.length>0});
+  return {...part,count:stepCount(part.count),options,resolved:options.length>0};
+ };
+ return rows(action.steps).map(step=>{
+  const alternatives=rows(step.one_of||step.any_of);
+  if(!alternatives.length)return resolve(step);
+  const one_of=alternatives.map((choice,index)=>resolve({...choice,
+   id:String(choice.id||'choice:'+index)}));
+  return {...step,count:stepCount(step.count),one_of,options:[],
+   resolved:one_of.some(choice=>choice.resolved)};
+ });
+}
+// Keep branch IDs stable in saved data; a missing or unknown OR selection must
+// never silently spend the default resource amount.
+export function attackActionChoice(action={},choiceId=''){
+ const options=rows(action.steps).flatMap(step=>rows(step.one_of||step.any_of));
+ if(!options.length){
+  if(choiceId)throw Error('Opzione non prevista per questa azione.');
+  return null;
  }
- return result;
+ const chosen=options.find((choice,index)=>String(choice.id||'choice:'+index)===String(choiceId||''));
+ if(!chosen)throw Error('Scegli una delle alternative disponibili.');
+ return chosen;
+}
+export function attackActionPayment(action={},choiceId=''){
+ const choice=attackActionChoice(action,choiceId);
+ const cost=Number(choice?.tracker_cost??action.cost??0);
+ if(!Number.isSafeInteger(cost)||cost<0||cost>99)throw Error('Costo dell’azione non valido.');
+ return {choice,cost,tracker_id:String(choice?.tracker_id??action.tracker_id??'')};
 }
 // An attack action is a sequence with its own action economy and payment.
 // Named class/monster rules live in data; the engine does not test feature IDs.
@@ -106,7 +148,8 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
   if(!member)continue;
   const source='class|'+normal(rule.class_source||member.source)+'|'+normal(rule.class_name);
   const feature=rows(features).find(f=>normal(f.name)===normal(rule.feature)&&
-   (String(f.origin_key||'')===source||String(f.origin_key||'').startsWith(source+'|'))&&active(f));
+   (String(f.origin_key||'')===source||String(f.origin_key||'').startsWith(source+'|'))&&
+   (!rule.subclass||String(f.origin_key||'').toLowerCase().includes('|subclass|'+normal(rule.subclass)+'|'))&&active(f));
   if(!feature)continue;
   const tracker=rule.tracker_name?rows(trackers).find(t=>!t.disabled&&normal(t.name)===normal(rule.tracker_name)&&
    (!t.origin_class||normal(t.origin_class)===normal(rule.class_name))):null;
@@ -117,6 +160,33 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
    tracker_id:tracker?.id||'',tracker:tracker?.name||rule.tracker_name||'',cost,
    available:cost===0||!!tracker,unavailable_reason:cost&&!tracker?'Risorsa non disponibile':'',
    class_feature_id:rule.class_feature_id||'',automatic:true});
+ }
+ // Features and homebrew grants can declare the same sequence without
+ // requiring a new catalog entry or per-trait runtime handler.
+ for(const feature of rows(features)){
+  const spec=feature.action_sequence||feature.attack_action;
+  if(!active(feature)||!rows(spec?.steps).length)continue;
+  if(result.some(row=>row.origin_id===feature.origin_id&&
+    JSON.stringify(row.steps)===JSON.stringify(spec.steps)))continue;
+  const tracker=rows(trackers).find(t=>t.id===spec.tracker_id||t.name===spec.tracker_name);
+  const cost=Number(spec.tracker_cost||0);
+  result.push({id:'attack_action:feature:'+String(feature.key||feature.origin_id),
+   name:spec.name||feature.name,time:spec.time||'action',description:spec.detail||feature.entries||'',
+   origin_id:feature.origin_id,feature_id:feature.origin_id,feature_name:feature.name,
+   attack_action:true,steps:spec.steps,tracker_id:tracker?.id||'',
+   tracker:tracker?.name||spec.tracker_name||'',cost,
+   available:cost===0||!!tracker,automatic:true});
+ }
+ for(const grant of rows(record.action_grants)){
+  if(!rows(grant?.steps).length||grant.disabled||!sourceEnabled(record,grant.origin_id))continue;
+  const id='attack_action:grant:'+String(grant.id||grant.name||'');
+  if(result.some(row=>row.id===id))continue;
+  const tracker=rows(trackers).find(t=>t.id===grant.tracker_id||t.name===grant.tracker_name);
+  const cost=Number(grant.tracker_cost||0);
+  result.push({...grant,id,name:grant.name||'Azione concessa',time:grant.time||grant.action_type||'action',
+   origin_id:grant.origin_id||'',attack_action:true,tracker_id:tracker?.id||'',
+   tracker:tracker?.name||grant.tracker_name||'',cost,
+   available:cost===0||!!tracker,automatic:false});
  }
  if(record.kind==='monster'){
   // Import normalization adds attack_action to 5eTools stat-block entries.
@@ -136,15 +206,43 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
     tracker_id:tracker?.id||'',tracker:tracker?.name||'',
     cost,available:cost===0||!!tracker,automatic:true});
   }
+  // The whole legendary-action pool is one OR group. The options and their
+  // distinct costs come from the monster's own structured legendary entries.
+  const owner=monsterTraits(record).find(row=>row.monster_role==='legendary');
+  const actions=monsterActions(record,trackers).filter(row=>row.time==='legendary');
+  if(owner&&actions.length){
+   const tracker=rows(trackers).find(t=>t.id===owner.monster_pool?.id||
+     t.origin_id==='feature:'+owner.feature_key);
+   const options=actions.map(action=>{
+    const index=Number(String(action.id).split(':')[2]);
+    const raw=rows(record.stat_block?.legendary)[index]||{};
+    const prose=String(action.description||'');
+    const check=SKILLS.find(([key])=>prose.toLowerCase().includes(key)&&/\bcheck\b/i.test(prose));
+    const stem=normal(action.name).replace(/\s*\(costs?.*$/i,'').replace(/\s+attack$/,'');
+    const referenced=rows(record.stat_block?.action).find(row=>normal(row?.name)===stem);
+    const selector=action.roll_attack?.id?{kind:'attack',id:action.roll_attack.id}:
+     check?{kind:'check',target:'skill:'+check[0]}:
+     referenced?{kind:'attack',name:referenced.name}:{kind:'ability',id:action.id};
+    return {id:action.id,label:action.name,selector,
+     tracker_cost:monsterActionCost(raw),description:prose};
+   });
+   result.push({id:'monster:legendary:choices',name:owner.name,time:'legendary',
+    description:owner.entries||'',origin_id:'feature:'+owner.feature_key,
+    feature_id:'feature:'+owner.feature_key,attack_action:true,monster_action:true,
+    steps:[{one_of:options}],covered_action_ids:actions.map(row=>row.id),
+    tracker_id:tracker?.id||owner.monster_pool?.id||'',
+    tracker:tracker?.name||owner.monster_pool?.name||'',cost:1,
+    available:!!tracker&&!tracker.disabled,automatic:true});
+  }
  }
  return result;
 }
-export function attackActionUsePatch(record={},calculated={},actionId=''){
+export function attackActionUsePatch(record={},calculated={},actionId='',choiceId=''){
  const action=rows(calculated.attack_actions).find(row=>row.id===actionId);
- if(!action||action.available===false)throw Error('Azione di attacco non disponibile.');
- const cost=Number(action.cost)||0;
+ if(!action||action.available===false)throw Error('Azione non disponibile.');
+ const {cost,tracker_id}=attackActionPayment(action,choiceId);
  if(cost<=0)return {};
- const tracker=rows(calculated.trackers).find(row=>row.id===action.tracker_id&&!row.disabled);
+ const tracker=rows(calculated.trackers).find(row=>row.id===tracker_id&&!row.disabled);
  if(!tracker)throw Error('Tracker non collegato all’azione.');
  const spent={...(record.resource_tracker_spent||{})};
  if(Number(tracker.max)-Number(spent[tracker.id]||0)<cost)throw Error('Risorsa insufficiente.');
