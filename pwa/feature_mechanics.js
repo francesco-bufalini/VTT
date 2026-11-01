@@ -640,8 +640,8 @@ export function contextualFeatureDescriptors(record={},features=[],catalog={},pr
   const feature=matches.find(available)||matches[0];
   if(!feature||feature.action_type||feature.activation_type||feature.activation)return [];
   const resource=rule.resource,trackerId=resource?rule.id:'';
-  return [{id:rule.id,name:rule.name,action_type:rule.activation,type:'Capacità',
-   description:rule.detail||'',origin_id:feature.origin_id,feature_id:feature.origin_id,
+  return [{id:rule.id,name:feature.name,action_type:rule.activation,type:'Capacità',
+   description:feature.entries??feature.description??'',origin_id:feature.origin_id,feature_id:feature.origin_id,
    feature_name:feature.name,tracker_id:trackerId,tracker_cost:resource?1:0,
    descriptive_only:rule.descriptive_only===true,
    ...(rule.attack_selector?{attack_selector:rule.attack_selector}:{}),automatic:true,
@@ -692,7 +692,7 @@ export function featureActionEntries(record,trackers,catalog={},features=[]){
   const feature=rows(features).find(f=>low(f.name)===low(rule.feature)&&
     (String(f.origin_key||'')===source||String(f.origin_key||'').startsWith(source+'|'))&&featureEnabled(record,f));
   if(!feature?.origin_id)return null;
-  return {name:rule.name,time:rule.activation,type:'Capacità',description:rule.detail||'',
+  return {name:feature.name,time:rule.activation,type:'Capacità',description:feature.entries??feature.description??'',
    tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',
    cost:tracker?Math.max(0,Number(rule.resource_cost??1)):0,origin:'personal',origin_id:feature.origin_id,
    action_id:'',rule_action_id:rule.action_id,rule_id:rule.id,feature:rule.feature,
