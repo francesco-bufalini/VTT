@@ -185,7 +185,9 @@
           "enum": [
             "path",
             "circle",
-            "panels"
+            "globe",
+            "panels",
+            "dome"
           ]
         },
         "max_length_feet": {
