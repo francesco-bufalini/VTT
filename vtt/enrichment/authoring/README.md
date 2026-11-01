@@ -1,117 +1,143 @@
-# Arricchimenti strutturati per origine (schema v2)
+# Cataloghi dei benefici per tipo (schema v2)
 
-Questo è il **contratto di authoring** dei futuri JSON per singola classe, sottoclasse, specie,
-sottorazza, talento, oggetto, background, incantesimo, optional feature, mostro o condizione.
-La suddivisione fisica dei file segue l'**origine**; i tipi dei benefici rimangono universali.
+## Scelta architetturale
 
-> **Stato:** schemi, esempi e controlli di compatibilità **introdotti, non ancora collegati
-> al runtime**. I dati attuali e la geometria in `assets/spell_area_geometry.json`
-> continuano a essere usati dall'app e da Godot. Questo commit non migra né elimina i
-> cataloghi correnti, non cambia i salvataggi e non rende automaticamente eseguibile un
-> beneficio soltanto perché passa la validazione.
+**Un file JSON per tipo di beneficio**, con tutte le voci che lo concedono,
+indipendentemente dalla classe, specie, talento, sottoclasse, oggetto,
+background, incantesimo o mostro di provenienza. È una scelta intenzionale:
+durante lo sviluppo bisogna poter scorrere e modificare tutti i benefici
+di uno stesso tipo in **un solo punto**.
 
-## Struttura dei file
+I nuovi file sono previsti sotto `vtt/enrichment/benefits/<tipo>.json` e
+convalidati con `vtt/enrichment/authoring/<tipo>.schema.json`.
+Gli schemi descrivono il **formato proposto**, non sostituiscono ancora i
+cataloghi eterogenei attualmente in `pwa/catalog/` e `vtt/data/`.
+Il runtime, i salvataggi e la geometria di Godot restano **immutati** da questa PR.
 
-Ogni documento contiene `schema_version: 2`, `category` ed `entries`. L'unità
-di authoring consigliata è un **file per origine canonica** (non necessariamente un file
-per ogni oggetto generato): `classes/barbarian.phb.json`,
-`species/aasimar.mpmm.json`, `feats/sharpshooter.phb.json`,
-`spells/fireball.phb.json`, ecc. Le sottoclassi/sottorazze possono stare in file
-separati o nelle sezioni annidate `subclasses`/`subraces` dell'origine.
+### Un esempio: bonus ai tiri
 
-- [`origin.schema.json`](origin.schema.json): struttura comune `entries → features/options → benefits`.
-  Schemi per categoria: `classes`, `subclasses`, `species`, `subraces`, `feats`,
-  `items`, `backgrounds`, `spells`, `optional_features`, `monsters`, `conditions`.
-- [`benefit.schema.json`](benefit.schema.json): **38 tipi di beneficio** con primitive
-  riutilizzabili, composizione e requisiti condizionali. Un privilegio può avere
-  tanti benefici indipendenti quanti ne servono.
-- [`spell_geometry.schema.json`](spell_geometry.schema.json): `range`, `targeting`,
-  `effect.geometry`, `effect.persistence` e tag dei danni/TS/condizioni; copre tutte le
-  forme presenti nel catalogo esistente, comprese le varianti `wall` `path/circle/globe/panels/dome`.
-- [`examples/`](examples/): casi rappresentativi di risorse, stati, OR di azioni,
-  attacchi con competenza, modificatori indipendenti, scelte, homebrew, geometrie.
-- [validatore](../../../scripts/validate_enrichment_authoring_schemas.py): verifica
-  gli schemi Draft 2020-12, gli esempi e **ogni geometria attualmente nel catalogo**
-  con `jsonschema`; in CI si esegue automaticamente quando cambiano questi file.
+```json
+{
+  "schema_version": 2,
+  "benefit_type": "roll_bonus",
+  "scope": "catalog",
+  "entries": [{
+    "id": "artificer:flash-of-genius:roll-bonus",
+    "granted_by": {
+      "kind": "5etools",
+      "ref": {
+        "category": "class_feature",
+        "name": "Flash of Genius",
+        "source": "TCE",
+        "class_name": "Artificer",
+        "class_source": "TCE"
+      }
+    },
+    "benefit": {
+      "type": "roll_bonus",
+      "bonus": {
+        "targets": ["ability_check", "saving_throw"],
+        "ability_modifier": "int",
+        "minimum": 1
+      }
+    }
+  }]
+}
+```
 
-### Identità e testi
+Ogni `entries[]` indica **chi concede il beneficio** (`granted_by`) e
+**cosa concede** (`benefit`), con ID stabili. L'identità canonica
+può usare un ID 5eTools oppure `name + source` con il contesto appropriato,
+come classe/sottoclasse e libro. Non usare traduzioni come chiavi. `PHB` e
+`XPHB` sono origini diverse.
 
-Il campo `ref` associa il record alla fonte: preferire un **ID 5eTools stabile**
-oppure `name + source` più il contesto necessario (classe, sottoclasse, specie,
-edizione/livello). `PHB` e `XPHB` sono identità distinte. **Non individuare
-il privilegio con la sua traduzione visualizzata.**
+### Nessuna duplicazione dei dati già strutturati in 5eTools
 
-`name` e `description` sono ammessi a livello di origine, tratto, opzione,
-beneficio e oggetto generato, ma sono pensati **principalmente per l'homebrew**.
-Per materiale ufficiale, la PWA deve ricavare nomi e descrizioni dai dati 5eTools;
-i file di arricchimento forniscono soltanto le proprietà meccaniche non presenti
-nel compendio. Il solo inserimento di `name` o `description` non implica che
-il runtime li debba preferire rispetto a 5eTools.
+La regola è **integrare, non ricopiare**:
 
-`namespace` e `homebrew: true` permettono origini senza alcuna controparte 5eTools.
-Questo formato non sostituisce il `homebrew/package.schema.json` v1 esistente:
-l'adattatore/compilatore tra i due formati è lavoro successivo.
+- Se 5eTools **già specifica** una competenza, un linguaggio o altra
+  informazione strutturata utilizzabile, non inserirla nuovamente nel catalogo.
+- Se 5eTools **non la specifica**, si aggiunge nel file del tipo corrispondente
+  (`proficiency.json`, `language.json`, `sense.json`, ecc.) con
+  `granted_by.kind = "5etools"` e il riferimento al tratto che la concede.
+- Un'origine homebrew usa `kind = "homebrew"`, un `namespace` e un
+  identificatore stabile. `name` e `description` sono opzionali e
+  pensati soprattutto per homebrew, non come copie della prosa dei manuali.
+- In generale `merge = "augment"` (predefinito): integra i dati 5eTools
+  anziché sovrascriverli. `merge = "replace"` è deliberato e richiede
+  un'applicazione esplicita nel futuro normalizzatore.
 
-### Benefici e meccanismi
+### Benefici aggiunti manualmente dal giocatore
 
-I `benefits[]` descrivono il *cosa* tramite `type`, senza codificare il nome
-di una classe nel motore. Ogni beneficio può essere limitato da `requirements`,
-`rules_version`, `min_level`, costi e sorgenti. `benefits[]` annidati,
-`options[]` e `sequence.logic = "any" | "all"` consentono composizioni e
-liste OR/AND di azioni, attacchi, tiri ed effetti. Il tipo di azione (`activation`)
-e il consumo di una risorsa (`resource`/`cost`) restano proprietà distinte.
+**La modifica manuale appartiene alla scheda del personaggio**, non a
+un catalogo condiviso: il giocatore può aggiungere un bonus a un *singolo tratto*
+di uno specifico personaggio. Viene usata la stessa forma dei benefici,
+ma `scope = "character"`, `character_id` e
+`granted_by.kind = "character_trait"`, con `trait_key` stabile.
+È coerente con l'identità già utilizzata dall'editor PWA
+(`feature:trait:<trait_key>`).
 
-| Famiglie di benefici v2 | Dati attuali da ricondurre a queste famiglie |
-| --- | --- |
-| `action`, `activation`, `action_sequence`, `targeting` | `action_feature_overrides`, `feature_timing_recovery_rules.actions/contextual_actions/attack_actions` |
-| `resource`, `tracker`, `resource_recovery`, `progression`, `scaling_die` | `class_resource_overrides`, `feature_timing_recovery_rules.recoveries`, `scaling_dice` |
-| `attack`, `damage_bonus`, `damage_modifier`, `roll_bonus`, `roll_mode` | `roll_bonus_rules`, `species_attacks`, `species_conditional_bonuses`, `species_roll_modes`, feat mechanics |
-| `numeric_modifier`, `ability_score`, `proficiency`, `language`, `sense`, `movement` | `class_numeric_feature_grants`, `ability_grants`, `proficiency_grants`, `sense_grants`, speed/skills |
-| `defense`, `condition`, `state`, `effect`, `effect_extension` | `species_defenses`, `trait_states`, `effect_extensions`, `generic_item_variants` |
-| `choice`, `option_selection`, `spell_selection`, `spellcasting`, `spell_slot` | `power_selections`, `optional_feature_progressions`, `spellcasting_benefits`, `class_spell_slot_profiles` |
-| `spell_grant`, `item_grant`, `feat_grant`, `feature_grant`, `companion_grant` | `spell_grant_rules`, `feature_slot_spells`, `feature_item_grants`, `feature_feat_grants`, companion data |
-| `area_geometry` e `entry.spell_geometry` | `assets/spell_area_geometry.json` |
-| `entry.spell_runtime` | `vtt/enrichment/spells.json`: movimento AoE, punti di selezione, effetti visivi e spostamenti forzati |
+L'esempio [roll_bonus.character.json](examples/roll_bonus.character.json)
+illustra come dichiarare **+2 a tutte le prove di caratteristica**
+solo per quel tratto e quella scheda. L'esempio è un fixture, non una
+regola ufficiale e **non viene inserito nei dati del compendio**.
 
-Le primitive `bonus`, `attack`, `effect`, `proficiency`, `defense`,
-`sequence`, `selection`, `spellcasting`, `grant` hanno definizioni ricorsive
-all'interno di `benefit.schema.json`. Per i meccanismi già presenti ma poco
-comuni è disponibile un payload `parameters` esplicito: **non** implica
-supporto runtime generico o un interprete di regole arbitrario. Durante una
-migrazione, un caso non ancora interpretabile deve rimanere segnalato, non essere
-silenziosamente dichiarato automatizzato.
+Il formato v2 non implica cambiare ora la serializzazione o le funzioni
+di salvataggio esistenti: una futura conversione userà le identità dei
+record già salvati, senza duplicare né resettare i benefici manuali.
 
-### Geometria degli incantesimi
+## Schemi e organizzazione
 
-L'entry di un incantesimo può avere `spell_geometry` direttamente, senza crearne
-una falsa "capacità" aggiuntiva; `spell_runtime` conserva le informazioni operative
-che oggi vivono in `vtt/enrichment/spells.json`. Esempi:
-[`Fireball`](examples/spells/fireball.phb.json),
-[`Wall of Fire`](examples/spells/wall-of-fire.phb.json),
-[`Thunderwave`](examples/spells/thunderwave.phb.json).
+- [catalog.schema.json](catalog.schema.json): struttura dei file, riferimenti
+  5eTools/homebrew/character, unicità dei grant e ambito dei dati.
+- [benefit.schema.json](benefit.schema.json): campi condivisi dei benefici,
+  tipi e primitive meccaniche riutilizzabili (azioni, sequenze OR/AND,
+  modificatori, attacchi, stati, risorse, scelte e altro).
+- **43 schemi di tipo** (`roll_bonus.schema.json`,
+  `action_sequence.schema.json`, `proficiency.schema.json`, ecc.).
+  Il nome del file deve coincidere con `benefit_type`, e ogni voce
+  deve contenere `benefit.type` dello stesso tipo.
+- [spell_geometry.schema.json](spell_geometry.schema.json): geometria
+  di un incantesimo; memorizzabile come beneficio nel file comune
+  `area_geometry.json`, **non in un file per incantesimo**.
+- [legacy_sources.json](legacy_sources.json): inventario dei cataloghi
+  correnti e relativi tipi di beneficio per guidare la migrazione;
+  non è un duplicato dei loro contenuti.
+- [examples](examples/): un esempio per ciascun tipo, oltre a quello
+  `scope = "character"`; i fixture non sono regole attivate dall'app.
 
-`spell_geometry` usa **le stesse unità in feet e la stessa struttura**
-(`range`, `targeting`, `effect`) del file utilizzato da Godot. Il test verifica
-la compatibilità dello schema con ogni voce di quel file; *non* ha ancora
-spostato i dati né modificato `vtt/spells/spell_area_catalog.gd`.
+Le regole di sistema non attribuibili a un tratto, per esempio
+`Exhaustion`, economia globale delle azioni e comportamento base dei
+tracker, restano separate dai cataloghi dei benefici.
 
-## Regole generali separate
+## Geometria e metadati degli incantesimi
 
-Indebolimento (`Exhaustion`), economia generale delle azioni, calcolo dei TS,
-regole base di progresso, funzioni di risoluzione bersagli/aree e logica dei
-tracker **non sono proprietà di una classe** e non devono essere travasate
-come privilegi inventati. Il vantaggio strutturale si ottiene separando:
-origine → benefici dichiarati → motori generici → regole di sistema.
+Le voci `area_geometry.json` possono essere collegate al corrispondente
+incantesimo 5eTools (`ref.category = "spell"` con nome e fonte canonici).
+Il payload `benefit.spell_geometry` usa la struttura **già esistente**
+`range`, `targeting`, `effect.geometry`. `benefit.spell_runtime`
+può contenere i parametri di spostamento area, movimento forzato, scelta
+del bersaglio ed effetti grafici attualmente in `vtt/enrichment/spells.json`.
+Nel nuovo file si possono raccogliere, consultare e modificare insieme le
+geometrie di tutti gli incantesimi. Non è stato spostato alcun dato,
+né modificato `vtt/spells/spell_area_catalog.gd`.
 
-## Validazione
+## Validazione e limiti
 
 ```sh
 python -m pip install 'jsonschema==4.23.0'
 python scripts/validate_enrichment_authoring_schemas.py
 ```
 
-Il controllo verifica la sintassi e i vincoli dichiarati, non il contenuto
-semantico dei manuali né l'equivalenza delle formule con il motore. L'integrazione
-runtime richiederà un compilatore/normalizzatore che generi indici consultabili
-per tipo di beneficio e le rispettive proiezioni; solo a quel punto sarà sicuro
-eliminare i cataloghi precedenti.
+La CI verifica i **43 schemi**, gli esempi per tipo, riferimenti e
+differenziazione tra catalogo e modifica manuale, e la compatibilità dello
+schema geometrico con tutte le **619 geometrie** correnti.
+`legacy_sources.json` registra i cataloghi da migrare, ma **non è ancora
+una migrazione**; le regole esistenti potrebbero contenere dettagli che
+richiederanno una versione successiva dello schema. Perciò la validazione
+dello schema non significa che ogni meccanica sia già automatizzata
+o che i vecchi cataloghi possano essere cancellati.
+
+L'importazione/normalizzazione v2 e la migrazione dei cataloghi (senza
+duplicare concessioni esistenti di 5eTools né toccare benefici manuali)
+sono un passaggio successivo.
