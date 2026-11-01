@@ -42,22 +42,26 @@ test('legendary, resistance and lair traits grant their own counters and correct
  const traits=monsterTraits(fixture),data=calculated();
  const legendary=traits.find(row=>row.monster_role==='legendary');
  assert.equal(legendary.monster_actions.find(row=>row.name.startsWith('Wing Attack')).cost,2);
- assert.deepEqual(traits.find(row=>row.monster_role==='lair').monster_actions.map(row=>row.name),['Azioni di tana']);
- assert.match(traits.find(row=>row.monster_role==='lair').monster_actions[0].description,/Lava[\s\S]*Smoke/);
+ assert.deepEqual(traits.find(row=>row.monster_role==='lair').monster_actions.map(row=>row.name),
+  ['Lava','Smoke','Frozen Floor']);
+ assert.deepEqual(traits.find(row=>row.monster_role==='lair').monster_actions.map(row=>[row.time,row.cost]),
+  [['free',1],['free',1],['free',1]]);
  const resistance=traits.find(row=>row.monster_role==='resistance');
  assert.equal(resistance.monster_actions?.length||0,0);
  assert.equal(data.trackers.filter(row=>row.origin_id==='feature:'+resistance.feature_key).length,1);
- assert.deepEqual(monsterBasicRules(fixture,data).map(row=>[row.name,row.time,row.cost]),[
-  ['Azione leggendaria','free',1],['Azioni di tana','lair',1],['Resistenza leggendaria','legendary_resistance',1]]);
+ assert.deepEqual(monsterBasicRules(fixture,data).map(row=>[row.name,row.time,row.cost]),
+  [['Resistenza leggendaria','free',1]]);
  const panels=battleActionPanels(fixture,data);
  assert(monsterBasicRules(fixture,data).every(row=>row.origin==='personal'),
   'Special monster actions belong to their granting privileges');
  const actions=new JSDOM(panels.others).window.document;
- for(const id of ['legendary_resistance','lair_action']){
+ for(const id of ['legendary_resistance','monster:legendary:choices','monster:lairActions:choices']){
   assert(actions.querySelector('[data-action-source="privileges"] [data-attack-id="'+id+'"]'));
   assert.equal(actions.querySelector('[data-action-source="rules"] [data-attack-id="'+id+'"]'),null);
  }
  assert.equal(actions.querySelectorAll('[data-attack-id="monster:multiattack"]').length,1);
+ assert.equal(actions.querySelector('[data-attack-id="legendary_action"]'),null);
+ assert.equal(actions.querySelector('[data-attack-id="lair_action"]'),null);
  assert.equal(actions.querySelector('[data-action-source="privileges"]')?.previousElementSibling,null,
   'Privilege actions lead the consolidated action panel');
  assert.match(panels.basicActions.find(row=>row.id==='attack').grant_description,/three attacks/);
@@ -105,7 +109,7 @@ test('battle resources display monster costs and the granting attack description
   assert.match(sources.get(opener.dataset.sheetContext)?.textContent||'',/Frightful Presence/);
   assert.equal(multiattack.querySelectorAll('.play-attack-sequence > li').length,4,
    'Multiattack has four independent descriptive sequence elements');
-  for(const id of ['monster:legendary:choices','legendary_resistance','lair_action'])
+  for(const id of ['monster:legendary:choices','legendary_resistance','monster:lairActions:choices'])
    assert.ok(app.querySelector('[data-battle-action="others"] [data-attack-id="'+id+'"]'));
   const wing=app.querySelector('[data-action-option-id="monster:legendary:1"]');
   assert.match(app.querySelector('[data-attack-id="monster:legendary:choices"]').textContent,/Azione gratuita/);

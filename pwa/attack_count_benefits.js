@@ -4,7 +4,7 @@ import {featureEnabled} from './feature_mechanics.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {normalizeMonsterStatBlock} from './character_core.js';
 import {SKILLS} from './skill_definitions.js';
-import {monsterActions,monsterTraits,monsterActionCost,monsterActionUsePatch} from './monster_traits.js';
+import {monsterActions,monsterTraits,monsterActionCost,monsterActionName,monsterAttack,monsterActionUsePatch,lairOptions} from './monster_traits.js';
 
 const rows=value=>Array.isArray(value)?value:[];
 const count=value=>{
@@ -206,6 +206,17 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
     tracker_id:tracker?.id||'',tracker:tracker?.name||'',
     cost,available:cost===0||!!tracker,automatic:true});
   }
+  // Resolve an action already in the stat block, ignoring a cost suffix.
+  const matchingAction=name=>{
+   const label=normal(monsterActionName(name)),short=label.replace(/\s+attack$/,'');
+   const actions=rows(record.stat_block?.action);
+   const index=actions.findIndex(row=>{
+    const candidate=normal(monsterActionName(row?.name));
+    return candidate&&(candidate===label||candidate===short);
+   });
+   if(index<0)return null;
+   return {kind:monsterAttack(actions[index])?'attack':'ability',id:'monster:action:'+index};
+  };
   // The whole legendary-action pool is one OR group. The options and their
   // distinct costs come from the monster's own structured legendary entries.
   const owner=monsterTraits(record).find(row=>row.monster_role==='legendary');
@@ -221,17 +232,14 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
     // check directly to the canonical d20 target: no synthetic Detect action.
     const explicit=raw.action_selector||raw.vtt_action_selector;
     const check=SKILLS.find(([key])=>prose.toLowerCase().includes(key)&&/\bcheck\b/i.test(prose));
-    const stem=normal(action.name).replace(/\s*\(costs?.*$/i,'').replace(/\s+attack$/,'');
-    const referencedIndex=rows(record.stat_block?.action).findIndex(row=>normal(row?.name)===stem);
     const selector=explicit||(
      action.roll_attack?.id?{kind:'attack',id:action.roll_attack.id}:
      check?{kind:'check',target:'skill:'+check[0]}:
-     referencedIndex>=0?{kind:'attack',id:'monster:action:'+referencedIndex}:
-     {kind:'ability',id:action.id});
+     matchingAction(action.name)||{kind:'ability',id:action.id});
     const targetCheck=selector.kind==='check'?skillCheck(selector.target||selector.id):null;
     return {id:action.id,
      // A check is the actual option; Detect is only the source's legacy name.
-     label:targetCheck?.name||action.name,
+     label:targetCheck?.name||monsterActionName(action.name),
      selector,tracker_cost:monsterActionCost(raw),description:prose};
    });
    result.push({id:'monster:legendary:choices',name:owner.name,time:'free',
@@ -240,6 +248,28 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
     steps:[{one_of:options}],covered_action_ids:actions.map(row=>row.id),
     tracker_id:tracker?.id||owner.monster_pool?.id||'',
     tracker:tracker?.name||owner.monster_pool?.name||'',cost:1,
+    available:!!tracker&&!tracker.disabled,automatic:true});
+  }
+  // A lair pool is also a free-action OR list, never a synthetic action.
+  const lairOwner=monsterTraits(record).find(row=>row.monster_role==='lair');
+  const lairActions=monsterActions(record,trackers).filter(row=>/^monster:lairActions:\d+$/.test(row.id));
+  if(lairOwner&&lairActions.length){
+   const tracker=rows(trackers).find(t=>t.id===lairOwner.monster_pool?.id||
+    t.origin_id==='feature:'+lairOwner.feature_key);
+   const rawOptions=lairOptions(record.stat_block?.lairActions);
+   const options=lairActions.map(action=>{
+    const index=Number(action.id.split(':')[2]),raw=rawOptions[index]||{};
+    return {id:action.id,label:monsterActionName(action.name),
+     selector:raw.action_selector||raw.vtt_action_selector||matchingAction(action.name)||
+      {kind:'ability',id:action.id},
+     tracker_cost:1,description:action.description};
+   });
+   result.push({id:'monster:lairActions:choices',name:lairOwner.name,time:'free',
+    description:lairOwner.entries||'',origin_id:'feature:'+lairOwner.feature_key,
+    feature_id:'feature:'+lairOwner.feature_key,attack_action:true,monster_action:true,
+    steps:[{one_of:options}],covered_action_ids:lairActions.map(row=>row.id),
+    tracker_id:tracker?.id||lairOwner.monster_pool?.id||'',
+    tracker:tracker?.name||lairOwner.monster_pool?.name||'',cost:1,
     available:!!tracker&&!tracker.disabled,automatic:true});
   }
  }
@@ -259,10 +289,12 @@ export function attackActionUsePatch(record={},calculated={},actionId='',choiceI
   if(!resolved?.resolved)throw Error('Azione o tiro collegato non disponibile.');
   const native=candidates.find(row=>row.monster_action===true&&
    row.id===choice.selector?.id);
-  if(native&&['ability','attack'].includes(choice.selector?.kind)){
-   if(native.tracker_id!==tracker_id||Number(native.cost)!==cost)
+  if(native&&['ability','attack'].includes(choice.selector?.kind)&&
+   native.tracker_id===tracker_id){
+   if(Number(native.cost)!==cost)
     throw Error('Costo dell’azione non coerente con la capacità originale.');
-   // Its original handler validates origin and consumes the same shared tracker.
+   // A borrowed action with a different native tracker charges only this
+   // list's pool, rather than spending an unrelated resource twice.
    return monsterActionUsePatch(record,calculated,native.id);
   }
  }

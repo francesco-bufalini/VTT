@@ -1043,7 +1043,6 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // granted by traits/monsters/abilities. A multiattack is a replacement for
  // normal Attack and is always the last privilege entry, independently of
  // whether its list contains attacks, checks or special abilities.
- const coveredLegendary=entries.some(row=>row.id==='monster:legendary:choices');
  const monsterMulti=record.kind==='monster'?
   monsterTraits(record).find(row=>row.monster_role==='multiattack'&&!row.disabled&&!row.inactive):null;
  const multiCount=monsterMulti?Math.max(Number(monsterMulti.attacks_per_action)||0,count):count;
@@ -1080,8 +1079,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // Attack and Opportunity Attack lead the rule-defined group.
  const ruleRank=row=>row.id==='attack'?0:row.id==='opportunity'?1:2;
  ruleRows.sort((a,b)=>ruleRank(a)-ruleRank(b));
- const privilegeRows=[...actionsBase.filter(row=>row.origin!=='general'&&
-  !(coveredLegendary&&row.id==='legendary_action')),
+ const privilegeRows=[...actionsBase.filter(row=>row.origin!=='general'),
   ...privilegeExtras.filter(row=>!isMultiattack(row)),...multiActions];
  // Covered monster options are hidden as standalone actions, but remain
  // addressable by their stable native IDs in a declarative OR group.

@@ -1,7 +1,7 @@
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
 import {scalingDiceFor,resolveScalingDieBenefit} from './scaling_dice.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
-import {monsterTraits,bindMonsterTrackers,monsterAttackOwner} from './monster_traits.js';
+import {monsterTraits,bindMonsterTrackers,monsterAttackOwner,monsterActionName} from './monster_traits.js';
 import {SKILLS} from './skill_definitions.js';
 import {variantFamilyAbilityGrants} from './species_variant_families.js';
 import {offhandAttackAllowed} from './offhand_rules.js';
@@ -719,7 +719,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const owner=monsterAttackOwner(record,id);
   // Monster bestiary attacks use their published hit total (PB already included).
   // Training is an independent source-bound benefit, not an extra hit modifier.
-  const ownedAttack=spec=>({...spec,id,name:action.name,
+  const ownedAttack=spec=>({...spec,id,name:monsterActionName(action.name),
     origin_id:'feature:'+(owner?.feature_key||''),
     origin_name:owner?.origin||'Mostro · '+(record.stat_block?.name||record.name||''),
     proficiency_kind:'attack',grants_proficiency:spec.grants_proficiency!==false});

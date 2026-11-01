@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {attackCategories,attackActionGrants,attackActionUsePatch,attackActionChoice,attackActionPayment,resolveAttackActionSteps} from '../attack_count_benefits.js';
 import {multiattackSteps,normalizeMonsterStatBlock} from '../character_core.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
-import {monsterActions} from '../monster_traits.js';
+import {monsterActions,monsterActionCost,monsterActionName,lairOptions} from '../monster_traits.js';
 import {actionEntries,battleActionPanels,attackActionCategory,battleAttackStepMarkup} from '../action_economy.js';
 import {JSDOM} from 'jsdom';
 
@@ -181,6 +181,33 @@ test('a legendary action pool is one OR with independent costs and reusable chec
  assert.doesNotMatch(dom.window.document.body.textContent,/Detect/);
  assert.match(dom.window.document.body.textContent,/Wing Attack/);
  dom.window.close();
+});
+
+test('lair choices are a free OR list and costly legendary names resolve to existing attacks',()=>{
+ const legendaryTracker={id:'legendary_actions',name:'Azioni leggendarie',max:3,spent:0};
+ const lairTracker={id:'lair_actions',name:'Azioni di tana',max:1,spent:0};
+ const record={...fixture,resource_tracker_spent:{}};
+ const grants=attackActionGrants(record,[],[legendaryTracker,lairTracker],rules);
+ const lair=grants.find(row=>row.id==='monster:lairActions:choices');
+ assert(lair);
+ assert.equal(lair.time,'free');
+ assert.deepEqual(lair.steps[0].one_of.map(row=>row.label),['Lava','Smoke','Frozen Floor']);
+ assert.deepEqual(lair.steps[0].one_of.map(row=>row.tracker_cost),[1,1,1]);
+ assert.equal(lairOptions(record.stat_block.lairActions).length,3);
+ assert.deepEqual(attackActionUsePatch(record,{attack_actions:grants,trackers:[lairTracker]},
+  lair.id,'monster:lairActions:2'),{resource_tracker_spent:{lair_actions:1}});
+ assert.equal(monsterActionName('Tail Attack (Costs 2 Actions)'),'Tail Attack');
+ assert.equal(monsterActionName('Tail Attack (Cost 2)'),'Tail Attack');
+ assert.equal(monsterActionCost({name:'Tail Attack (Cost 2)'}),2);
+ const named=structuredClone(record);
+ named.stat_block.action.push({name:'Tail',entries:['{@atk mw} {@hit 10} to hit. {@damage 2d6} damage.']});
+ named.stat_block.legendary.push({name:'Tail Attack (Cost 2)',entries:['The monster attacks with its tail.']});
+ const enhanced=attackActionGrants(named,[],[legendaryTracker,lairTracker],rules)
+  .find(row=>row.id==='monster:legendary:choices');
+ const tail=enhanced.steps[0].one_of.at(-1);
+ assert.equal(tail.label,'Tail Attack');
+ assert.deepEqual(tail.selector,{kind:'attack',id:'monster:action:'+(named.stat_block.action.length-1)});
+ assert.equal(tail.tracker_cost,2);
 });
 
 test('class feature and homebrew data share one typed OR projection',()=>{
