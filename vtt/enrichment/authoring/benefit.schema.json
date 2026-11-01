@@ -3618,6 +3618,25 @@
             }
           },
           "additionalProperties": false
+        },
+        "option_effects": {
+          "type": "object",
+          "description": "Optional mechanics layered onto 5eTools options by their source-qualified ID, without copying option descriptions or duplicating source content.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          }
         }
       },
       "additionalProperties": false

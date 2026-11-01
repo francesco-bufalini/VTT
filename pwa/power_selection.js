@@ -43,6 +43,9 @@ function optionsFor(record,rule,catalog={}){
    rows(catalog.optionLists?.entries).find(entry=>entry.benefit?.option_list?.id===id)?.benefit?.option_list?.options||[]):[];
  return [...rows(source.options),...packages,...optional,...listed,...rows(record.power_selection_custom_options?.[rule.id])]
   .filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014'))).map(row=>({...row,
+ // Source-qualified overlay: keep 5eTools texts in their catalog and layer
+ // only the missing mechanics in the typed grant definition.
+ effects:[...rows(row.effects),...rows(rule.option_effects?.[row.id])],
  min_level:row.min_level||(rule.benefit_type==='option_grant'?0:rows(row.prerequisite).length?Math.min(...rows(row.prerequisite).map(p=>Number(p.level?.level||p.level)||0)):0),
  details:row.details||(!row._homebrew&&row.source?{category:'optional_features',name:row.name,source:row.source}:undefined)}));}
 // Saved characters originally stored every copy of a repeated feature under

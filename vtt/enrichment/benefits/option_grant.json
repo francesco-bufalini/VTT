@@ -1975,7 +1975,21 @@
               "PB"
             ]
           },
-          "unique_across_selections": true
+          "unique_across_selections": true,
+          "option_effects": {
+            "optional:phb:pact-of-the-tome": [
+              {
+                "type": "spells",
+                "mode": "known",
+                "stage": "0",
+                "filter": "level=0",
+                "count": 3,
+                "usage": "at_will",
+                "spellcasting_ability": "cha",
+                "description": "Il Patto del Tomo (PHB 2014) permette di scegliere tre trucchetti da qualsiasi lista. I trucchetti vengono trattati come incantesimi da Warlock e usano Carisma."
+              }
+            ]
+          }
         }
       }
     },

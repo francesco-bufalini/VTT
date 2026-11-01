@@ -112,4 +112,9 @@ test('audit: optional spell-choice privileges create source-scoped spell pickers
  }
  console.log('OPTION_GRANT_SPELL_CHOICE_AUDIT '+JSON.stringify(findings));
  assert.equal(findings.length,3);
+ assert.deepEqual(findings.map(row=>row.choices.map(c=>c.count)),[[2],[2],[3]],
+  'Druidic Warrior, Blessed Warrior and Pact of the Tome must expose their real spell choices');
+ assert.deepEqual(findings.map(row=>row.choices.map(c=>c.filter)),[
+  ['level=0|class=druid'],['level=0|class=cleric'],['level=0']
+ ]);
 });
