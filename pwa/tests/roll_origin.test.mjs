@@ -141,7 +141,7 @@ test('two advantages never stack, and one disadvantage cancels both; the preview
  const calculated={...calc,features:fixtures};
  const sources=classFeatureRollSources(c,calculated,'skill:athletics');
  assert.deepEqual(sources.filter(r=>r.mode==='advantage').map(r=>r.origin_name),
-   ['Ira','Tratto · Vigore arcano']);
+   ['Tratto · Rage','Tratto · Vigore arcano']);
  assert.equal(sources.filter(r=>r.mode==='disadvantage').length,1);
  const state=resolveClassRollMode(sources);
  assert.equal(state.mode,'normal');
@@ -152,7 +152,7 @@ test('two advantages never stack, and one disadvantage cancels both; the preview
  assert.deepEqual(segments.slice(0,3).map(row=>row.formula),['ADV','ADV','DIS']);
  assert(segments.slice(0,3).every(row=>row.expanded==='Annullato'));
  assert.deepEqual(segments.slice(0,3).map(row=>row.originName),
-   ['Ira','Tratto · Vigore arcano','Condizione · Avvelenato']);
+   ['Tratto · Rage','Tratto · Vigore arcano','Condizione · Avvelenato']);
  assert.doesNotMatch(sheetRollOriginHtml(segments,x=>x),/2d20kh1|2d20kl1/);
  let dice=[7,19];
  const neutral=rollSheetDice(calc.values['skill:athletics'],[],()=>dice.shift(),state.mode);
