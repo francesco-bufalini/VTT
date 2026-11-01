@@ -24,7 +24,7 @@ try{
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  const extra=page.locator('#sheet-play-view [data-resource-tracker="feature:lightning_launcher:extra_damage"]');
  assert.equal(await extra.locator('[data-act="battle-use-ability"],[data-act="tracker-trait-use"]').count(),0);
- assert.match(await page.locator('[data-battle-action="others"] [data-action-benefit="damage-bonuses"]').innerText(),/1d6/);
+ assert.match(await page.locator('[data-battle-action="others"] .play-resource-bonus-row').allInnerTexts().then(rows=>rows.join(' ')),/1d6/);
  const launcher=page.locator('#sheet-play-view [data-battle-action="others"] .play-resource-power-row').filter({hasText:'Lightning Launcher'});
  assert.equal(await launcher.count(),1);
  const attack=launcher.locator('[data-act="battle-use-ability"]');

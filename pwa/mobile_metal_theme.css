@@ -6974,3 +6974,99 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  #sheet-play-view .play-battle-action-options{margin-left:0}
  #sheet-play-view .play-battle-action-option{gap:5px;padding-inline:5px}
 }
+
+
+/* Unified combat action list: the only visual split is rules / privileges. */
+#sheet-play-view .play-battle-actions-unified{
+ display:grid;gap:0;min-width:0
+}
+#sheet-play-view .play-battle-actions-unified>.play-battle-action-source{
+ padding:0 9px 7px
+}
+#sheet-play-view .play-battle-privilege-rows{
+ padding:0 9px 9px;min-width:0
+}
+#sheet-play-view .play-battle-privilege-rows>.play-battle-action-source{
+ padding:0
+}
+#sheet-play-view .play-action-origin-divider{
+ position:relative;display:flex;align-items:center;gap:10px;
+ margin:5px 10px 3px;padding:0;color:#c7ac85;
+ font:550 10px/1.4 system-ui;letter-spacing:.03em
+}
+#sheet-play-view .play-action-origin-divider:before{
+ content:"";display:block;flex:1 1 auto;min-width:0;height:1px;
+ background:#b991555a
+}
+
+/* Indexed parent -> child hierarchy. Each OR stays on the same rail and
+   retains its actual roll/navigation/payment button, when available. */
+#sheet-play-view .play-action-index{
+ grid-column:1/-1;position:relative;display:block;min-width:0;
+ margin:0 10px 9px 43px;padding:0 0 0 15px;
+ border-left:1px solid #b9935869;color:#d9c39f
+}
+#sheet-play-view .play-action-index-heading{
+ position:relative;display:flex;align-items:center;
+ min-height:27px;padding:2px 2px 5px 0
+}
+#sheet-play-view .play-action-index-arrow{
+ position:absolute;left:-31px;top:-10px;min-width:22px;
+ color:#d9b679;font:600 17px/1.2 system-ui;text-align:center
+}
+#sheet-play-view .play-action-index-mode,
+#sheet-play-view .play-action-index-branch>strong{
+ color:#e6c392;font:650 11px/1.35 system-ui
+}
+#sheet-play-view .play-action-index .play-attack-sequence{
+ display:grid;gap:0;list-style:none;margin:0;padding:0;
+ border:0;border-radius:0;background:transparent;color:#d9c39f;
+ font:400 12px/1.4 system-ui
+}
+#sheet-play-view .play-action-index-steps>.play-battle-attack-step,
+#sheet-play-view .play-action-index-options>.play-battle-attack-step{
+ position:relative;display:flex;align-items:center;justify-content:space-between;gap:9px;
+ min-height:34px;width:100%;padding:6px 2px;border-top:1px solid #a27b4a24
+}
+#sheet-play-view .play-action-index-steps>.play-battle-attack-step:before,
+#sheet-play-view .play-action-index-options>.play-battle-attack-step:before{
+ content:"";position:absolute;left:-15px;top:50%;width:13px;
+ border-top:1px solid #b9935875
+}
+#sheet-play-view .play-action-index-number{
+ flex:0 0 19px;color:#c0a177;font:550 10px/1.2 system-ui;
+ font-variant-numeric:tabular-nums;text-align:center
+}
+#sheet-play-view .play-action-index .play-battle-roll-formula{
+ flex:1 1 auto;min-width:0;color:#d2b896;overflow-wrap:anywhere;
+ font:400 12px/1.4 system-ui
+}
+#sheet-play-view .play-action-list-parent-arrow{
+ flex:0 0 auto;margin-left:auto;color:#d7ad72;
+ font:650 16px/1.1 system-ui
+}
+#sheet-play-view .play-action-index-branch{
+ display:grid;gap:4px;flex:1 1 auto;min-width:0
+}
+#sheet-play-view .play-action-index-options{
+ display:grid;gap:0;list-style:none;
+ margin:0 0 0 8px;padding:0 0 0 13px;
+ border-left:1px solid #a77c494b
+}
+#sheet-play-view .play-action-index-steps .play-battle-attack-step-use{
+ flex:0 0 auto;min-width:65px;min-height:31px;
+ padding:5px 8px;border:1px solid #a77c493f;border-radius:7px;
+ background:#8a644c24;color:#f2d39a;font:600 11px/1.2 system-ui;
+ cursor:pointer
+}
+#sheet-play-view .play-action-index .play-action-use-box{
+ flex:0 0 auto;min-width:78px;width:auto;margin:0;padding:4px 7px
+}
+@media(max-width:380px){
+ #sheet-play-view .play-battle-actions-unified>.play-battle-action-source,
+ #sheet-play-view .play-battle-privilege-rows{padding-inline:5px}
+ #sheet-play-view .play-action-origin-divider{margin-inline:6px}
+ #sheet-play-view .play-action-index{margin-left:34px;margin-right:6px;padding-left:11px}
+ #sheet-play-view .play-action-index-arrow{left:-25px}
+ #sheet-play-view .play-action-index-steps .play-battle-attack-step-use{min-width:53px}
+}

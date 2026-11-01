@@ -50,7 +50,7 @@ test('battle action presentation remains unchanged: no inline spell list',()=>{
  const panels=battleActionPanels({rules_version:'2014'}, {attacks:[],spell_slots:[]},[],[],[]);
  assert.equal(panels.spells,'');
  assert(!panels.others.includes('play-battle-spell-entry'));
- assert(panels.others.includes('play-battle-action-group'));
+ assert(panels.others.includes('play-battle-action-source'));
 });
 
 test('the offline shell and Godot host serve every shared module',()=>{

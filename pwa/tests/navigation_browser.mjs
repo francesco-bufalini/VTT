@@ -132,7 +132,7 @@ try{
  if(await resources.getAttribute('open')===null)
    await resources.locator(':scope > summary.play-battle-summary').click();
  assert.equal(await resources.locator('[data-rule-action]').count(),0,'Resources contain only counters and actual attacks');
- const secondary=page.locator('#sheet-play-view [data-battle-action="others"] [data-action-benefit="attacks"] [data-attack-id="two_weapon"]');
+ const secondary=page.locator('#sheet-play-view [data-battle-action="others"] [data-action-source="rules"] [data-attack-id="two_weapon"]');
  assert.equal(await secondary.count(),1);
  assert.equal(await page.locator('[data-battle-action="others"]').getAttribute('open'),'',
   'Selecting offhand base rule reveals its matching action');

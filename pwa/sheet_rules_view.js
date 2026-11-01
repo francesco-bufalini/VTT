@@ -8,7 +8,7 @@ import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 import {inventoryRangeLabel} from './attack_range.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
-import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,attackActionSequence,battleActionUseBox,battleAttackStepMarkup,battleActionTimeLabel} from "./action_economy.js";
+import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,battleActionList,battleActionUseBox,battleAttackStepMarkup,battleActionTimeLabel} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeItemOptionEffects,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
@@ -799,16 +799,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const powerAttackSteps=row=>{
    const sources=[row.classAction,row.power].filter(Boolean);
    const typed=sources.find(source=>Number(source.attack_count||source.attacks_per_action)>0||
+    Array.isArray(source.steps)&&source.steps.length||
+    Array.isArray(source.options)&&source.options.length||
     Array.isArray(source.attack_sequence)&&source.attack_sequence.length||
     Array.isArray(source.attacks_granted)&&source.attacks_granted.length);
-   if(typed)return attackActionSequence(typed,c,d);
+   if(typed)return battleActionList(typed,c,{...d,action_entries:view.battleActions?.actionRows||[]});
    const description=String(sources.map(source=>source.description||'').join(' '));
    const hit=description.match(/\b(?:make|makes|effettua|effettuare|sferra|sferrare)\s+(one|two|three|four|five|six|uno|una|due|tre|quattro|cinque|sei|\d+)\s+((?:[\w'-]+\s+){0,3}?)(?:attacks?|strikes?|attacchi|colpi)\b/i);
-   if(!hit)return [];
+   if(!hit)return {mode:'all',items:[]};
    const quantity=({one:1,two:2,three:3,four:4,five:5,six:6,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6})[hit[1].toLowerCase()]||Number(hit[1])||0;
-   if(!(quantity>0&&quantity<=20))return [];
+   if(!(quantity>0&&quantity<=20))return {mode:'all',items:[]};
    const name=/unarmed|senz.?armi/i.test(hit[2])?'Colpo senz’armi':'Attacco';
-   return Array.from({length:quantity},()=>name);
+   return {mode:'all',items:Array.from({length:quantity},()=>({label:name}))};
   };
   const sequenceMarkup=steps=>battleAttackStepMarkup(steps,d);
   // A native ability may carry a roll bonus as an *effect* without being
@@ -832,8 +834,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const glyphKey=resourceAbilityGlyphKey(row,d);
    const glyph=glyphKey==='dice'?diceGlyph():icon(glyphKey);
    const caption=row.kind==='spell'?row.casting_time_label:
-     ((row.power?.roll_attack||row.classAction?.roll_attack)&&row.timing==='action'?'Azione di attacco':
-       timeLabels[row.timing]||row.timing||'Secondo il privilegio');
+     timeLabels[row.timing]||row.timing||'Secondo il privilegio';
    const note=(row.classAction?.available===false?' · Requisiti non soddisfatti':'')+
      (row.power?.die||row.classAction?.dice?' · Dado '+(row.power?.die||row.classAction?.dice):'');
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
@@ -884,13 +885,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    return '<div class="play-resource-power-row'+(row.classAction?.available===false?' play-resource-power--unavailable':'')+'" data-ability-id="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
-    '<small>'+esc(caption+note)+'</small></span></button>'+
+    '<small>'+esc(caption+note)+'</small></span>'+
+    (steps.items.length?'<span class="play-action-list-parent-arrow" aria-hidden="true">↓</span>':'')+
+    '</button>'+
     battleActionUseBox({act:!hasOperation||descriptive&&!monsterPayment?'':active?'condition-remove-ability':useAction,
      attrs:active?' data-ability-key="'+esc(statusKey)+'"':useIdentity+
       (persistent?' data-persistent-key="'+esc(statusKey)+'"':''),
      tracker,cost:active?0:row.cost,label:active?'Disattiva':use,disabled:active?false:disabled,
      allowDepleted:!monsterPayment&&!row.power?.infusion_action,name:row.name})+
-    '</div>'+sequenceMarkup(steps);
+    sequenceMarkup(steps)+'</div>';
   }).join('');
   // Resources are a flat catalogue of counters and *actual* attack options.
   // An action which spends a counter is rendered separately under Actions.
@@ -931,19 +934,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    // their granting feature also defines a typed attack routine.
    (row.source==='activated'||!routineOrigins.has(String(
     row.classAction?.origin_id||row.power?.feature_id||row.power?.origin_id||''))));
+  // Azioni are now one unified list by origin, not by benefit category.
+  // Keep every native payment and roll bonus, and put the typed multiattack
+  // from actionGroups last among privilege-owned entries.
   const actionGroups=view.battleActions?.actionGroups||{};
-  const powerAttacks=combatPowers.filter(row=>powerAttackSteps(row).length>0);
-  const powerAbilities=combatPowers.filter(row=>!powerAttacks.includes(row));
-  const actionGroup=(key,title,glyph,body)=>!body?'':'<details class="play-battle-action-group" data-action-benefit="'+key+'" open>'+
-   '<summary class="play-battle-action-heading">'+icon(glyph)+'<span>'+esc(title)+'</span></summary>'+
-   '<div class="play-action-benefit-rows">'+body+'</div></details>';
-  const actionsMarkup=[
-   actionGroup('abilities','Capacità','spark',abilityButtons('all',powerAbilities)+linkedAbilities.join('')+(actionGroups.abilities||'')),
-   actionGroup('attacks','Azioni di attacco','weapon',(actionGroups.attacks||'')+abilityButtons('all',powerAttacks)),
-   actionGroup('roll-bonuses','Bonus ai tiri','dice',(d.trackers||[]).filter(t=>!t.disabled).map(t=>bonusRows(t.id,'roll')).join('')),
-   actionGroup('damage-bonuses','Bonus ai danni','dice',(d.trackers||[]).filter(t=>!t.disabled).map(t=>bonusRows(t.id,'damage')).join('')),
-   actionGroup('other','Altre azioni','hand',actionGroups.other||'')
-  ].join('');
+  const ruleActions=actionGroups.rules||'';
+  const privilegeActions=abilityButtons('all',combatPowers)+linkedAbilities.join('')+
+   (d.trackers||[]).filter(t=>!t.disabled).map(t=>
+    bonusRows(t.id,'roll')+bonusRows(t.id,'damage')).join('')+
+   (actionGroups.privileges||'');
+  const actionsMarkup='<div class="play-battle-actions-unified">'+ruleActions+
+   (privilegeActions?'<div class="play-action-origin-divider" role="separator" aria-label="Azioni concesse dai privilegi"><span>Privilegi</span></div>'+
+    '<div class="play-action-benefit-rows play-battle-privilege-rows" data-action-source="privileges">'+
+    privilegeActions+'</div>':'')+'</div>';
+
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
    '<details class="play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+

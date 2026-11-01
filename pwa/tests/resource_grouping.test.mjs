@@ -80,7 +80,9 @@ test('Lightning Launcher attack and extra damage render in separate Resources gr
   assert(bonus);
   assert.equal(bonus.querySelector('.play-resource-info .vtt-action-glyph'),null,
    'The tracker heading is a counter, not an ability');
-  assert.match(app.querySelector('[data-action-benefit="damage-bonuses"]').textContent,/1d6/);
+  assert([...app.querySelectorAll('[data-battle-action="others"] .play-resource-bonus-row')]
+   .some(row=>/1d6/.test(row.textContent)),
+   'A damage bonus remains visible among privilege-granted actions');
   assert.equal(bonus.querySelector('[data-act="tracker-trait-use"]'),null);
   assert.equal(bonus.querySelector('[data-act="battle-use-ability"]'),null);
   const attack=abilities.find(row=>row.roll_attack?.id==='class_feature:lightning_launcher');
@@ -234,7 +236,8 @@ test('trait operation identity deduplicates translated descriptive actions and a
   assert(group);
   assert(!group.textContent.includes('Congegni magici'));
   const attack=app.querySelector('[data-ability-id="activated:trait-attack:class_feature:lightning_launcher"]');
-  assert.match(attack.textContent,/Azione di attacco/);
+  assert.match(attack.textContent,/Lightning Launcher.*Azione/);
+  assert(!attack.textContent.includes('Azione di attacco'));
  });
 });
 test('health presents temporary HP alongside current HP and active defenses below the bar',()=>{
@@ -266,8 +269,8 @@ test('an explicit action-damage trait bonus moves its basic action into the owni
  calculated.action_damage_bonuses[0].parent_origin=owner?.origin_id||'class|phb|bard';
  calculated.action_damage_bonuses[0].origin_name=owner?.name||'Bard';
  render(record,calculated,(app,_abilities,actions)=>{
-  assert.equal(app.querySelector('[data-battle-action="others"] [data-attack-id="attack"]'),null,
-   'Generic Attack is not an attack-action grant');
+  assert.equal(app.querySelectorAll('[data-battle-action="others"] [data-action-source="rules"] [data-attack-id="attack"]').length,1,
+   'Generic Attack is a core rules entry, not a privilege grant');
   assert(actions.modifiedActions.some(row=>row.id==='attack'&&row.action_damage?.some(x=>x.formula==='1d6')),
    'The saved damage modifier remains modeled even when Attack is not listed in Actions');
  });

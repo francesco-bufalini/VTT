@@ -100,7 +100,7 @@ test('battle always shows standard actions and available physical attacks withou
  const projected={attacks:[{id:'item:sword',name:'Spada',slot:'main',hit:4,damage:'1d8',melee:true,range_feet:5}],skills:{}};
  const all=battleActionPanels(c,projected,[],[],general);
  assert.match(all.others,/Scattare/);
- assert.doesNotMatch(all.others,/data-attack-id="attack"/,'The generic Attack action is intentionally omitted');
+ assert.match(all.others,/data-attack-id="attack"/,'Attack is first among core rules without a multiattack');
  assert.match(all.attacks,/Spada/);
  assert.equal(all.movement,'');
  assert.match(all.checks,/Forza/);

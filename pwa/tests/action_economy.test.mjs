@@ -51,8 +51,8 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.match(dagger.querySelector('.play-battle-attack-copy small').textContent,/Azione bonus/);
  assert.equal(dagger.querySelector('.play-action-use-box'),null,
   'An attack routine without a tracker has no Use control');
- assert.equal(dagger.closest('[data-action-benefit]').dataset.actionBenefit,'attacks',
-  'The secondary-hand strike is in bonus actions');
+ assert.equal(dagger.closest('[data-action-source]').dataset.actionSource,'rules',
+  'The secondary-hand strike is a core rule action');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
  assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
  assert(!attacks.querySelector('[data-attack-id="item:off:dagger"]'),
@@ -69,9 +69,10 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.equal(movement.querySelector('[data-attack-id="movement"] .play-battle-effect'),null);
 
  assert(attacks.querySelector('[data-attack-id="disarm"] .play-battle-attack-roll'));
- assert.equal(movement.querySelector('[data-action-benefit="attacks"] summary>.vtt-action-glyph')?.tagName,'SPAN');
- assert.equal(movement.querySelector('[data-action-benefit="other"] summary>.vtt-action-glyph')?.tagName,'SPAN');
- assert(movement.querySelector('[data-action-benefit="attacks"]').textContent.includes('Attacco di opportunità'));
+ assert.equal(movement.querySelectorAll('[data-action-benefit]').length,0,
+  'The Actions UI contains no attack/ability/other subcategories');
+ assert(movement.querySelector('[data-action-source="rules"]').textContent.includes('Attacco di opportunità'));
+ assert.equal(movement.querySelector('[data-attack-id="attack"]').closest('[data-action-source]').dataset.actionSource,'rules');
  const opportunity=movement.querySelector('[data-attack-id="opportunity"]');
  assert(opportunity,'The opportunity reaction is available');
  assert.equal(opportunity.querySelector('[data-act="battle-attack-map"]'),null);
@@ -82,19 +83,18 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  const shove=attacks.querySelector('[data-attack-id="shove"]');
  assert.match(shove.querySelector('.play-battle-effect').textContent,/Spinto di 5 ft/);
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
- const actionGroup=movement.querySelector('[data-action-benefit="attacks"]');
- assert.equal(actionGroup.tagName,'DETAILS');
- assert.equal(actionGroup.open,true,'Benefit groups start expanded');
- assert.equal(actionGroup.querySelector('.play-battle-action-heading').tagName,'SUMMARY');
- assert(!actionGroup.querySelector('.play-battle-action-heading .play-chevron'));
+ const actionGroup=movement.querySelector('[data-action-source="rules"]');
+ assert.equal(actionGroup.tagName,'DIV');
+ assert.equal(actionGroup.querySelector('.play-battle-action-heading'),null,
+  'Rule actions form one uninterrupted list');
  const rollLine=sword.querySelector('.play-battle-attack-roll-line');
  assert.match(rollLine.querySelector('.play-battle-roll-formula').textContent,/1d20 \+ 5 · Mischia/);
  assert(rollLine.querySelector('button.play-battle-attack-roll'));
  assert(attacks.body.textContent.includes('Disarmare'));
  assert(!attacks.body.textContent.includes('Scattare'));
- assert(movement.querySelector('[data-action-benefit="other"]').textContent.includes('Scattare'));
- assert(movement.querySelector('[data-action-benefit="other"]').textContent.includes('Travolgere'));
- assert(movement.querySelector('[data-action-benefit="other"]').textContent.includes('Muoversi'));
+ assert(movement.querySelector('[data-action-source="rules"]').textContent.includes('Scattare'));
+ assert(movement.querySelector('[data-action-source="rules"]').textContent.includes('Travolgere'));
+ assert(movement.querySelector('[data-action-source="rules"]').textContent.includes('Muoversi'));
  assert(attacks.body.textContent.includes('Afferrare una creatura'));
  assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
 });
@@ -130,11 +130,11 @@ test('flat Attacks retain unarmed and equipped weapons; the basic actions are ti
  assert(!attacks.querySelector('[data-action-timing]'));
  assert(!attacks.querySelector('[data-attack-id="opportunity"]'));
  assert(!attacks.querySelector('[data-attack-id="unarmed:off"]'));
- assert.equal(others.querySelector('[data-action-benefit="attacks"] [data-attack-id="attack"]'),null,
-  'The default Attack action is omitted from granted attack actions');
+ assert.equal(others.querySelector('[data-action-source="rules"] [data-attack-id="attack"]'),null,
+  'Extra Attack replaces the normal Attack entry among rules');
  assert.equal(others.querySelector('[data-attack-id="two_weapon"] [data-act="battle-attack-map"]'),null);
  assert(!attacks.querySelector('[data-act="battle-attack-hit"]'));
- assert(others.querySelector('[data-action-benefit="attacks"] [data-attack-id="opportunity"]'));
+ assert(others.querySelector('[data-action-source="rules"] [data-attack-id="opportunity"]'));
  assert.equal(others.querySelector('[data-attack-id="feature:multiattack"] .play-attack-sequence').children.length,2,
   'A real Extra Attack grant contributes two descriptive attack slots');
  assert.equal(projected.basicActions.find(row=>row.id==='attack').name,'Azione di attacco');
@@ -240,10 +240,10 @@ test('original Attacchi retains concrete attacks and maneuvers; Actions contains
  assert(!ids.includes('item:off:dagger'),'Offhand weapon attacks live in the bonus-action entry');
  assert(ids.includes('unarmed'),'Unarmed is always available');
  assert(!flat.querySelector('[data-action-timing]'));
- assert.equal(others.querySelector('[data-action-benefit="attacks"] [data-attack-id="attack"]'),null);
- assert.equal(others.querySelector('[data-action-benefit="attacks"] [data-attack-id="two_weapon"]').dataset.attackId,'two_weapon');
- assert.equal(others.querySelector('[data-action-benefit="attacks"] [data-attack-id="opportunity"]').dataset.attackId,'opportunity');
- assert.equal(others.querySelector('[data-action-benefit="other"] [data-attack-id="movement"]')!==null,true);
+ assert.equal(others.querySelector('[data-action-source="rules"] [data-attack-id="attack"]').dataset.attackId,'attack');
+ assert.equal(others.querySelector('[data-action-source="rules"] [data-attack-id="two_weapon"]').dataset.attackId,'two_weapon');
+ assert.equal(others.querySelector('[data-action-source="rules"] [data-attack-id="opportunity"]').dataset.attackId,'opportunity');
+ assert.equal(others.querySelector('[data-action-source="rules"] [data-attack-id="movement"]')!==null,true);
  assert.equal(result.movement,'');
 });
 
@@ -420,7 +420,7 @@ test('battle projects all unported actions without duplicating weapons, movement
  assert(others.body.textContent.includes('Cercare'));
  assert(others.body.textContent.includes('Schivare'));
  assert(others.body.textContent.includes('Talento personalizzato'));
- assert(!others.querySelector('[data-action-benefit="attacks"] [data-attack-id="attack"]'));
+ assert(others.querySelector('[data-action-source="rules"] [data-attack-id="attack"]'));
  assert(others.body.textContent.includes('Scattare'));
  assert(!others.body.textContent.includes('Impeto di battaglia'));
  const search=others.querySelector('[data-attack-id="search"]');
@@ -483,9 +483,9 @@ test('Battle nests general free actions under Other Actions, without duplicate r
   skills:{athletics:2,perception:3},trackers:[]},[],[],catalog.actions);
  assert.equal(data.freeActions,undefined,'No separate free action block belongs beneath Resources');
  const others=doc(data.others);
- const free=others.querySelector('[data-action-benefit="other"]');
- assert(free,'Free and generic actions belong to Altre azioni');
- assert(free.hasAttribute('open'),'Benefit groups start expanded');
+ const free=others.querySelector('[data-action-source="rules"]');
+ assert(free,'Free and general actions belong to the uninterrupted rules list');
+ assert.equal(free.querySelectorAll('[data-action-benefit]').length,0);
  const ids=[...free.querySelectorAll('[data-attack-id]')].map(node=>node.dataset.attackId);
  assert(ids.length>0,'At least one free general action is offered');
  assert.equal(new Set(ids).size,ids.length,'Free general actions cannot be duplicated');
@@ -527,9 +527,9 @@ test('basic action availability derives from melee, spell slots and a real dual-
  assert.equal(result.basicActions.find(a=>a.id==='two_weapon').available,true);
  assert.equal(result.basicActions.find(a=>a.id==='spell_cast').available,true);
  const actions=doc(result.others);
- assert.equal(actions.querySelector('[data-action-benefit="attacks"] [data-attack-id="attack"]'),null);
- assert.equal(actions.querySelector('[data-action-benefit="attacks"] [data-attack-id="two_weapon"]').dataset.attackId,'two_weapon');
- assert.equal(actions.querySelector('[data-action-benefit="attacks"] [data-attack-id="opportunity"]').dataset.attackId,'opportunity');
+ assert.equal(actions.querySelector('[data-action-source="rules"] [data-attack-id="attack"]').dataset.attackId,'attack');
+ assert.equal(actions.querySelector('[data-action-source="rules"] [data-attack-id="two_weapon"]').dataset.attackId,'two_weapon');
+ assert.equal(actions.querySelector('[data-action-source="rules"] [data-attack-id="opportunity"]').dataset.attackId,'opportunity');
  const naked=battleActionPanels(base,{attacks:[unarmed],spell_slots:[]},[],[],catalog.actions);
  assert.equal(naked.basicActions.find(a=>a.id==='two_weapon').available,false);
  assert(doc(naked.others).querySelector('[data-attack-id="two_weapon"]'));
@@ -553,7 +553,7 @@ test('Cunning Action keeps its owning trait and appears once in the OR action gr
  const result=battleActionPanels(record,{features:[feature],feature_rules:featureRules,
   attack_actions:[grant]},[],[],catalog.actions,[],[],false);
  assert(!result.overriddenActions.some(a=>['dash','disengage','hide'].includes(a.id)));
- const group=doc(result.others).querySelector('[data-action-benefit="other"]');
+ const group=doc(result.others).querySelector('[data-action-source="privileges"]');
  const routine=group.querySelector('[data-attack-id="attack_action:cunning-action-phb"]');
  assert(routine);assert.equal(routine.querySelectorAll('[data-action-option-id]').length,3);
  assert.match(routine.textContent,/Azione bonus/);
@@ -716,7 +716,8 @@ test('Prova abilità is a basic capacity without a duplicate timed action',()=>{
  assert.equal(checks.name,'Prova abilità');
  assert.equal(checks.available,true);
  assert.equal(doc(panels.checks).querySelectorAll('[data-action-ability]').length,6);
- assert.equal(doc(panels.others).querySelector('[data-attack-id="ability_checks"]'),null);
+ assert.equal(doc(panels.others).querySelectorAll('[data-action-source="rules"] [data-attack-id="ability_checks"]').length,1,
+  'The rule action is visible once while the full ability-check table remains separate');
 });
 test('basic actions never show unarmed damage unless a benefit explicitly targets the action',()=>{
  const unarmed={id:'unarmed',name:'Colpo senz’armi',melee:true,range_feet:5,

@@ -84,36 +84,30 @@ try{
     assert.equal(await resources.locator('[data-resource-tracker="charge"]').count(),1);
     assert.equal(await resources.locator('[data-resource-privilege]').count(),0);
     assert.match(await actionSection.locator('summary.play-battle-summary').textContent(),/^Azioni$/);
-    const attackGroup=actionSection.locator('[data-action-benefit="attacks"]');
-    const abilityGroup=actionSection.locator('[data-action-benefit="abilities"]');
-    const otherGroup=actionSection.locator('[data-action-benefit="other"]');
-    assert.equal(await attackGroup.count(),1);
-    assert.equal(await abilityGroup.count(),1);
-    assert.equal(await otherGroup.count(),1);
-    assert.equal(await attackGroup.locator('[data-attack-id="attack"]').count(),0,
-      'The default Attack action is not listed as an attack-granting capability');
-    assert.equal(await attackGroup.locator('[data-act="battle-attack-map"],.play-battle-attack-range').count(),0,
-      'Attack actions cannot show weapon range or map controls');
-    assert.equal(await attackGroup.locator('.play-battle-attack-copy small').count()>0,true,
-      'Attack-granting actions share the capacity action-type subtitle');
-    assert.equal(await attackGroup.locator('.play-attack-action-cost').count(),0,
-      'No special cost badge distinguishes attack actions');
-    assert.equal(await attackGroup.locator('[data-attack-id="opportunity"]').count(),1);
-    assert.equal(await attackGroup.locator('[data-attack-id="two_weapon"]').count(),1);
-    assert.equal(await attackGroup.locator('[data-attack-id="opportunity"] .play-action-use-box, [data-attack-id="two_weapon"] .play-action-use-box').count(),0,
-      'Unpaid attack actions never show a Use button');
-    assert.equal(await attackGroup.locator('.play-attack-sequence button').count(),0,
-      'Descriptive subentries have no action button');
-    assert(await otherGroup.getByText('Scattare').count()>0);
-    assert.equal(await abilityGroup.locator('[data-ability-id],[data-attack-id]').count()>0,true);
-    const paid=abilityGroup.locator('.play-resource-power-row,.play-battle-attack-entry').filter({hasText:'Capacità di prova'}).first();
+    const ruleGroup=actionSection.locator('[data-action-source="rules"]');
+    const privilegeGroup=actionSection.locator('.play-battle-privilege-rows[data-action-source="privileges"]');
+    assert.equal(await ruleGroup.count(),1);
+    assert.equal(await privilegeGroup.count(),1);
+    assert.equal(await actionSection.locator('[data-action-benefit]').count(),0,
+      'The Actions UI has no separate abilities/attack/other benefit categories');
+    assert.equal(await ruleGroup.locator('[data-attack-id="attack"]').count(),1,
+      'Ordinary Attack leads rule-defined actions unless a multiattack replaces it');
+    assert.equal(await ruleGroup.locator('[data-attack-id="opportunity"]').count(),1);
+    assert.equal(await ruleGroup.locator('[data-attack-id="two_weapon"]').count(),1);
+    assert.equal(await ruleGroup.locator('[data-attack-id="opportunity"] .play-action-use-box, [data-attack-id="two_weapon"] .play-action-use-box').count(),0);
+    assert.equal(await ruleGroup.locator('[data-act="battle-attack-map"],.play-battle-attack-range').count(),0,
+      'Abstract actions show no weapon range or map controls');
+    assert(await ruleGroup.getByText('Scattare').count()>0);
+    assert.equal(await actionSection.locator('.play-action-origin-divider').count(),1,
+      'A single origin line separates rule actions and granted actions');
+    assert.equal(await privilegeGroup.locator('[data-ability-id],[data-attack-id]').count()>0,true);
+    assert.equal(await ruleGroup.locator('[data-attack-id="attack"] .play-action-index-mode').textContent(),'tutte');
+    const paid=privilegeGroup.locator('.play-resource-power-row,.play-battle-attack-entry').filter({hasText:'Capacità di prova'}).first();
     assert.equal(await paid.locator('button.play-action-use-box').count(),1);
     assert.match(await paid.locator('button.play-action-use-box').textContent(),/Cariche.*−1.*·.*2\/3/);
-    assert.doesNotMatch(await paid.locator('button.play-action-use-box').textContent(),/Usa/,
-      'The remaining uses and their cost replace the visible Use verb');
+    assert.doesNotMatch(await paid.locator('button.play-action-use-box').textContent(),/Usa/);
     assert.match(await paid.locator('button.play-action-use-box').getAttribute('aria-label'),/Usa Capacità di prova/);
-    assert.equal(await paid.locator('button.play-action-use-box .play-action-tracker-name').count(),1,
-     'Tracker name, remaining charges and Use belong to a single button');
+    assert.equal(await paid.locator('button.play-action-use-box .play-action-tracker-name').count(),1);
     const chipStyle=await paid.locator('.play-action-tracker-name').evaluate(node=>
      ({overflow:getComputedStyle(node).overflow,ellipsis:getComputedStyle(node).textOverflow}));
     assert.equal(chipStyle.overflow,'hidden');
@@ -121,13 +115,8 @@ try{
     assert.equal(await actionSection.locator('[data-action-timing]').count(),0,
       'Actions group by benefit, never by action timing');
     if(width===360){
-     const groups=actionSection.locator('.play-battle-action-group[data-action-benefit]');
-     assert.equal(await groups.count(),await actionSection.locator('.play-battle-action-group[open]').count(),
-       'Benefit groups start expanded');
-     const first=groups.first();await first.locator(':scope > summary').click();
-     assert.equal(await first.getAttribute('open'),null);
-     await first.locator(':scope > summary').click();
-     assert.notEqual(await first.getAttribute('open'),null);
+     assert.equal(await actionSection.locator('.play-battle-action-group[data-action-benefit]').count(),0,
+       'The unified list never reintroduces benefit-category disclosures');
     }
     assert.equal(await attacks.locator('.play-battle-attack-roll b').count(),0,
       'Roll buttons only contain the die; their modifiers remain in the adjacent formula');
@@ -170,8 +159,8 @@ try{
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
  const actionsDisclosure=page.locator('.play-battle-disclosure[data-battle-action="others"]');
  if(await actionsDisclosure.getAttribute('open')===null)await actionsDisclosure.locator(':scope > summary').click();
- assert.equal(await page.locator('[data-battle-action="others"] .play-battle-action-group:has([data-attack-id="stealth_movement"])').getAttribute('open'),'',
-  'Stealth movement is visible automatically when its parent opens');
+ assert.equal(await page.locator('[data-battle-action="others"] [data-action-source="rules"] [data-attack-id="stealth_movement"]').count(),1,
+  'Stealth movement is visible within the rule-defined actions');
  await page.locator('[data-attack-id="stealth_movement"] [data-target="skill:stealth"]').click();
  await page.locator('#sheet-roll-dialog').waitFor();assert((await page.locator('#sheet-roll-dialog h2').textContent()).includes('Furtività'));
  await page.locator('[data-act="close-sheet-roll"]').click();

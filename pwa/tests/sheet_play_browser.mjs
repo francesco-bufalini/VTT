@@ -376,11 +376,11 @@ try{
  const otherPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
 
  assert.equal(await otherPanel.count(),1);
- assert.equal(await page.locator('#sheet-play-view [data-battle-action="abilities"]').count(),0,'Abilities are grouped by benefit in Azioni');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="abilities"]').count(),0,'Abilities are part of the unified Azioni panel');
  assert.match(await otherPanel.locator('summary.play-battle-summary').textContent(),/Azioni/);
  if((await otherPanel.getAttribute('open'))===null)await otherPanel.locator('summary.play-battle-summary').click();
- assert.equal(await otherPanel.locator('.play-battle-action-group:has([data-attack-id="search"])').getAttribute('open'),'',
-  'Action benefit sections start expanded');
+ assert.equal(await otherPanel.locator('[data-action-source="rules"] [data-attack-id="search"]').count(),1,
+  'Search is immediately visible in the single rules list');
  const searchAction=otherPanel.locator('[data-attack-id="search"]');
  assert.equal(await searchAction.locator('[data-target="skill:perception"]').count(),1);
  assert.equal(await searchAction.locator('[data-target="skill:investigation"]').count(),1);
@@ -406,15 +406,13 @@ try{
  assert.equal(await mainAttack.count(),1);
  assert.equal(await weaponPanel.locator('[data-action-timing]').count(),0,
   'Weapon attacks have no timing subsections');
- const mainTiming=otherPanel.locator('[data-action-benefit="other"]');
- assert.equal(await mainTiming.locator('summary.play-battle-action-heading').count(),1);
+ const mainTiming=otherPanel.locator('[data-action-source="rules"]');
  if((await otherPanel.getAttribute('open'))===null)
   await otherPanel.locator('summary.play-battle-summary').click();
- assert.equal(await mainTiming.getAttribute('open'),'',
-  'Opening Azioni reveals the benefit categories');
- await mainTiming.locator('summary.play-battle-action-heading').click();
- assert.equal(await mainTiming.getAttribute('open'),null,'Individual benefit groups can close');
- await mainTiming.locator('summary.play-battle-action-heading').click();
+ assert.equal(await mainTiming.count(),1,'Opening Azioni reveals the rule-defined list');
+ assert.equal(await mainTiming.locator('[data-attack-id="attack"]').count(),1);
+ assert.equal(await otherPanel.locator('.play-battle-action-group[data-action-benefit]').count(),0,
+  'There are no longer collapsible benefit categories');
  const opportunity=otherPanel.locator('[data-attack-id="opportunity"]');
  assert.match(await opportunity.locator('.play-battle-attack-copy strong').textContent(),/Attacco di opportunità/);
  assert.equal(await opportunity.locator('[data-act="battle-damage-roll"]').count(),0,
@@ -619,8 +617,8 @@ try{
   await movementPanel.locator('summary.play-battle-summary').click();
  assert.equal(await movementPanel.getAttribute('open'),null);
  await movementPanel.locator('summary.play-battle-summary').click();
- assert.equal(await movementPanel.locator('.play-battle-action-group:has([data-attack-id="escape_grapple"])').getAttribute('open'),'',
-  'Movement action-type subsections expand alongside their parent');
+ assert.equal(await movementPanel.locator('[data-action-source="rules"] [data-attack-id="escape_grapple"]').count(),1,
+  'Movement is visible inside the unified rule-defined actions');
  const escapeAction=movementPanel.locator('[data-attack-id="escape_grapple"]');
  assert.equal(await escapeAction.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await escapeAction.locator('[data-target="skill:acrobatics"]').count(),1);
@@ -633,8 +631,8 @@ try{
    nodes.map(node=>{const {x,y}=node.getBoundingClientRect();return {x,y}}));
  assert(escapeRolls[1].y>escapeRolls[0].y+10);
  assert(Math.abs(escapeRolls[0].x-escapeRolls[1].x)<2,'Alternative rolls align on the right');
- assert(await movementPanel.locator('[data-action-benefit="other"]').textContent().then(t=>t.includes('Scattare')));
- assert(await movementPanel.locator('[data-action-benefit="other"]').textContent().then(t=>t.includes('Muoversi')));
+ assert(await movementPanel.locator('[data-action-source="rules"]').textContent().then(t=>t.includes('Scattare')));
+ assert(await movementPanel.locator('[data-action-source="rules"]').textContent().then(t=>t.includes('Muoversi')));
  await sheet('info');await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="others"]').getAttribute('open'),'');
  await hpCard.click({position:{x:22,y:80}});
@@ -730,8 +728,8 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Origine[\s\S]*Attivazione[\s\S]*Costo/);
  assert.equal(await page.locator('#sheet-context-dialog [data-act="power-trait"]').count(),1);
  await dismiss();
- assert.equal(await actionsPanel.locator('[data-action-benefit="attacks"] [data-attack-id="two_weapon"]').count(),1,
-  'The unavailable secondary attack stays inspectable under Azioni di attacco');
+ assert.equal(await actionsPanel.locator('[data-action-source="rules"] [data-attack-id="two_weapon"]').count(),1,
+  'The unavailable secondary attack stays inspectable among the rules');
  assert.equal(await actionsPanel.locator('[data-attack-id="spell_cast"] [data-act="action-open-spells"]').count(),1,
   'Spellcasting opens Powers directly');
  assert.equal(await resourcesPanel.locator('[data-resource-privilege],[data-ability-id]').count(),0,
@@ -742,8 +740,8 @@ try{
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"]').count(),0,
   'No generic free tracker remains');
  assert.equal(await resourcesPanel.locator('.play-resource-free-actions').count(),0);
- const freeActions=actionsPanel.locator('[data-action-benefit="other"]');
- assert.equal(await freeActions.count(),1,'Free general actions belong beneath Other Actions');
+ const freeActions=actionsPanel.locator('[data-action-source="rules"]');
+ assert.equal(await freeActions.count(),1,'Free general actions stay in the rules list');
  assert(await freeActions.locator('[data-attack-id]').count()>0);
  const linkedSpell=actionsPanel.locator('[data-power-spell-id="arcane_light"]');
  assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
