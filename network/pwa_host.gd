@@ -65,7 +65,6 @@ const FILES := {
 	"/species_defenses.js": ["res://pwa/species_defenses.js", "text/javascript; charset=utf-8"],
 	"/class_defenses.js": ["res://pwa/class_defenses.js", "text/javascript; charset=utf-8"],
 "/catalog/class_defense_rules.js": ["res://pwa/catalog/class_defense_rules.js", "text/javascript; charset=utf-8"],
-"/catalog/class_feature_operations.js": ["res://pwa/catalog/class_feature_operations.js", "text/javascript; charset=utf-8"],
 "/catalog/class_numeric_feature_grants.js": ["res://pwa/catalog/class_numeric_feature_grants.js", "text/javascript; charset=utf-8"],
 "/catalog/feature_feat_grants.js": ["res://pwa/catalog/feature_feat_grants.js", "text/javascript; charset=utf-8"],
 "/species_variant_families.js": ["res://pwa/species_variant_families.js", "text/javascript; charset=utf-8"],

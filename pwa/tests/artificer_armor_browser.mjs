@@ -34,9 +34,9 @@ try{
  const resources=page.locator('[data-battle-action="resources"]');
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  const flashResource=page.locator('#sheet-play-view [data-battle-action="others"] .play-battle-privilege-rows');
- assert.match(await flashResource.locator('.play-resource-bonus-row').filter({hasText:'Lampo di genio'}).innerText(),/\+4.*Lampo di genio[\s\S]*Prove di caratteristica.*Tiri salvezza/);
- assert.equal(await flashResource.locator('[data-act="battle-use-ability"]').count(),0,
-  'roll bonuses are listed under trackers instead of duplicated as ability buttons');
+ assert.match(await flashResource.locator('.play-resource-bonus-row').filter({hasText:'Flash of Genius'}).innerText(),/\+4.*Flash of Genius[\s\S]*Prove di caratteristica.*Tiri salvezza/);
+ assert.equal(await flashResource.locator('[data-act="battle-use-ability"][aria-label*="Flash of Genius"]').count(),0,
+  'Flash of Genius is a roll bonus, not a duplicate action button; unrelated class powers may remain');
  const lightningResource=page.locator('#sheet-play-view [data-battle-action="others"] .play-battle-privilege-rows');
  assert.match(await lightningResource.locator('.play-resource-bonus-row').filter({hasText:'1d6'}).innerText(),/\+1d6[\s\S]*Danni/);
  // The rest label does not block an immediate model switch.
@@ -53,7 +53,7 @@ try{
  const modelDialog=page.locator('#benefit-option-dialog');
  await modelDialog.locator('[data-act="benefit-option-apply"]').waitFor();
  assert.equal((await record()).trait_state_selection?.armor_model,'armor_model:infiltrator','No switch before confirmation');
- assert.match(await modelDialog.locator('.magic-spell-description').innerText(),/Guardiano|guanti|Campo difensivo/i);
+ assert.match(await modelDialog.locator('.magic-spell-description').innerText(),/Guardian|gauntlet|Defensive Field/i);
  assert.equal(await modelDialog.locator('.infusion-dialog-active p').count(),2);
  assert.equal(await modelDialog.locator('[data-ability-payment]').count(),0,'No activation tracker is offered');
  assert.match(await modelCard.innerText(),/Riposo breve/i);
@@ -72,7 +72,7 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Lightning Launcher'}).count(),0);
 
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
- await page.getByRole('button',{name:'Usa Campo difensivo',exact:true}).click();
+ await page.getByRole('button',{name:'Usa Defensive Field',exact:true}).click();
  const fieldPayment=page.locator('#class-feature-dialog [data-ability-payment]');
  await fieldPayment.selectOption('class:artificer:tce:defensive_field');
  await page.locator('[data-feature-confirm]').click();

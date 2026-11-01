@@ -10,7 +10,8 @@ import {companionOwnerActions} from '../companion_rules.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const companions=read('companion_spells');
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),traitStates:read('trait_states').states};
+ abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),traitStates:read('trait_states').states,
+ featureActionOverrides:JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries};
 const selectionCatalogs={...catalogs,powerSelections:read('power_selections'),
  optionalFeatureProgressions:read('optional_feature_progressions')};
 const sheet=(name,subclass,source='PHB',subclassSource='TCE')=>({

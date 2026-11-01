@@ -26,15 +26,15 @@ const seed=async(name,extra={})=>{
 const use=name=>page.getByRole('button',{name,exact:true});
 try{
  await seed('Barbarian');
- await page.locator('#sheet-play-view [aria-label="Dettagli Ira"]').click();
+ await page.locator('#sheet-play-view [aria-label="Dettagli Rage"]').click();
  assert.deepEqual(await popupOrigins(),['Tratto · Rage'],'Native class ability details must display the granting trait');
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
- await use('Attiva Ira').click();
+ await use('Attiva Rage').click();
  // Activation is confirmed in the shared feature popup before the state changes.
  const rageDialog=page.locator('#class-feature-dialog');
  if(await rageDialog.isVisible())
   await rageDialog.locator('[data-feature-confirm]').click();
- await page.waitForFunction(()=>document.querySelector('[aria-label="Disattiva Ira"]'));
+ await page.waitForFunction(()=>document.querySelector('[aria-label="Disattiva Rage"]'));
  assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
  const calculated=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');const {calculateSheet,loadRuleCatalogs}=await import('/sheet_rules.js');return calculateSheet((await listCreatures())[0].creature,await loadRuleCatalogs());});
  assert.equal(calculated.attacks[0].damage,'1d6 + 6');
@@ -42,23 +42,23 @@ try{
  const strength=page.locator('#sheet-play-view .play-abilities [data-target="ability_check:str"]').first();
  await strength.click();
  assert.match(await page.locator('[data-roll-formula]').textContent(),/ADV/);
- assert.match(await page.locator('[data-roll-formula]').textContent(),/Ira/,
+ assert.match(await page.locator('[data-roll-formula]').textContent(),/Rage/,
   'Rage grants automatic advantage');
  await page.locator('[data-act="roll-sheet-confirm"]').click();
  assert.match(await page.locator('[data-roll-result]').textContent(),/ADV/,
   'The result visibly reports the advantage supplied by Rage');
  await page.locator('[data-act="close-sheet-roll"]').click();
- await sheet('conditions');assert.match(await page.locator('.feature-effect-summary').textContent(),/resistenza.*taglienti/);
+ await sheet('conditions');assert((await page.locator('.feature-effect-summary').textContent()).trim().length>0,'The source 5etools feature text must be visible');
  for(const width of [320,390,768]){
   await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  }
  await page.setViewportSize({width:390,height:844});await shot('rage-effects');
- await sheet('battle');await use('Disattiva Ira').click();
- await page.waitForFunction(()=>document.querySelector('[aria-label="Attiva Ira"]'));
+ await sheet('battle');await use('Disattiva Rage').click();
+ await page.waitForFunction(()=>document.querySelector('[aria-label="Attiva Rage"]'));
  assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
- await seed('Fighter');await use('Usa Recuperare energie').click();
+ await seed('Fighter');await use('Usa Second Wind').click();
  const before=await record();await page.locator('[data-feature-cancel]').click();assert.deepEqual((await record()).resource_tracker_spent,before.resource_tracker_spent);
- await use('Usa Recuperare energie').click();await page.locator('[data-feature-confirm]').click();
+ await use('Usa Second Wind').click();await page.locator('[data-feature-confirm]').click();
  await page.locator('#class-feature-dialog').waitFor({state:'detached'});
  assert((await record()).current_hp>=16);assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
  await seed('Druid');

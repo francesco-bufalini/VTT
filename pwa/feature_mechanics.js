@@ -9,10 +9,10 @@ import {attackHitRollSources} from './attack_hit_effects.js';
 const rows=value=>Array.isArray(value)?value:[];
 const low=value=>String(value||'').trim().toLowerCase();
 const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school of )/,'').replace(/^the /,'');
-// Same explicit operations as vtt/class_feature_activation.gd. Descriptions
-// never determine effects, payments or eligibility.
-import {CLASS_FEATURE_RULES,DESCRIPTIVE_CLASS_FEATURE_IDS} from './catalog/class_feature_operations.js';
-export {CLASS_FEATURE_RULES} from './catalog/class_feature_operations.js';
+// Feature identity and prose are sourced from 5etools; supplemental data only describes activations.
+const descriptionText=value=>typeof value==='string'?value:Array.isArray(value)?
+ value.map(descriptionText).filter(Boolean).join('\n'):value&&typeof value==='object'?
+ descriptionText(value.entries??value.entry??value.items??value.description??''):'';
 
 const METAMAGIC_COSTS={'Careful Spell':1,'Distant Spell':1,'Empowered Spell':1,'Extended Spell':1,
  'Heightened Spell':3,'Quickened Spell':2,'Subtle Spell':1,'Twinned Spell':1,'Seeking Spell':2,'Transmuted Spell':1};
@@ -33,13 +33,17 @@ export function featureEnabled(record,feature){
 // One descriptor per owned operation, including disabled/state-gated ones for
 // trait previews. Battle actions consume only descriptors marked available.
 export function classFeatureDescriptors(record={},calculated={}){
- const revised=record.rules_version==='2024',output=[];
- for(const [key,owner,sourceName,label,baseResource,baseTime,mode,options={}] of CLASS_FEATURE_RULES){
-  const resolvedMode=options.mode_by_edition?.[revised?'2024':'2014']||mode;
+ const output=[];
+ for(const rule of rows(calculated.feature_action_overrides)){
+   // Basic action alternatives use their referenced 5etools action ID instead.
+   if(rule.action_id)continue;
+   const key=String(rule.operation_id||rule.feature_name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+   const owner=rule.class_name,sourceName=rule.feature_name,baseResource=rule.resource_name||'';
+   const baseTime=rule.activation,mode=rule.operation||'context',resolvedMode=mode;
   const candidates=rows(calculated.features).filter(f=>
    low(f.name).replaceAll("'",'’')===low(sourceName)&&String(f.origin_key||'').startsWith('class|')&&
    low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(owner)&&
-   (owner!=='Artificer'||low(f.class_source||String(f.origin_key).split('|')[1])==='tce'));
+   low(f.class_source||String(f.origin_key).split('|')[1])===low(rule.book));
   const feature=candidates.find(f=>featureEnabled(record,f))||candidates[0];
   if(!feature)continue;
   // State-dependent privileges are declared in the trait state catalog.
@@ -48,16 +52,15 @@ export function classFeatureDescriptors(record={},calculated={}){
   const gated=requiredStates.length>0&&!requiredStates.some(rule=>
     rows(calculated.active_trait_state_ids).includes(rule.id));
   const available=featureEnabled(record,feature)&&!gated;
-  let resource=revised&&baseResource==='Ki Points'?'Focus Points':baseResource;
-  if(revised&&key==='divine_sense')resource='Channel Divinity';
+  const resource=baseResource;
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)===low(resource)&&
    (!t.origin_class||low(t.origin_class)===low(owner)));
-  output.push({id:'class_feature:'+key,class_feature_id:key,name:label,
-   descriptive_only:DESCRIPTIVE_CLASS_FEATURE_IDS.has(key),
-   time:revised&&key==='lay_on_hands'?'bonus':baseTime,type:'Capacità',
+  output.push({id:'class_feature:'+key,class_feature_id:key,name:feature.name,
+    descriptive_only:rule.descriptive_only===true,
+   time:baseTime,type:'Capacità',
    mode:resolvedMode,description:feature.entries??feature.description??'',class_name:owner,
    resource_name:resource,tracker:tracker?.name||resource,tracker_id:tracker?.id||'',
-   cost:revised&&['patient_defense','step_of_the_wind'].includes(key)?0:resource?1:0,
+   cost:Math.max(0,Number(rule.resource_cost??(resource?1:0))||0),
    origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
    feature_name:feature.name,origin_name:'Tratto · '+feature.name,
    available,unavailable_reason:!featureEnabled(record,feature)?'disabled':gated?'state':'',
@@ -82,7 +85,7 @@ export function classFeatureEntries(record={},calculated={}){
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&
    low(t.name)===low(rule.resource_name)&&
    (!t.origin_class||low(t.origin_class)===low(rule.class_name)));
-  output.push({id:'class_feature:'+rule.id,class_feature_id:rule.id,name:rule.label||feature.name,
+  output.push({id:'class_feature:'+rule.id,class_feature_id:rule.id,name:feature.name,
    time:rule.time||'contextual',type:'Capacità',mode:rule.mode||'context',
    roll_only:rule.roll_only===true,
    description:feature.entries??feature.description??'',class_name:rule.class_name,
@@ -236,9 +239,7 @@ export function classFeatureDamage(record,calculated,attack,ability){
 // Retain each applicable source separately so the roll dialog can explain and
 // open every contributing trait instead of guessing one from the roll type.
 export function classFeatureRollSources(record,calculated,target,context=''){
- const result=[],features=rows(calculated?.features),nameToLabel={
-   rage:'Ira',reckless_attack:'Attacco irruento',
-   patient_defense:'Difesa paziente',innate_sorcery:'Stregoneria innata'};
+ const result=[],features=rows(calculated?.features);
  const actions=classFeatureEntries(record,calculated);
  const add=(mode,id,name,kind='feature',condition_id='')=>{
    if(!['advantage','disadvantage'].includes(mode))return;
@@ -251,7 +252,7 @@ export function classFeatureRollSources(record,calculated,target,context=''){
  const activeFeature=key=>{
    if(!classFeatureActive(record,calculated,key))return;
    const row=actions.find(a=>a.class_feature_id===key);
-   if(row)add('advantage',row.origin_id||'',nameToLabel[key]||row.name);
+   if(row)add('advantage',row.origin_id||'',row.name);
  };
  if(target==='skill:stealth'&&calculated?.armor_effects?.stealth_disadvantage){
    const worn=calculated.armor_effects;
@@ -422,14 +423,8 @@ export function classFeatureEffects(record,calculated){
   !key.startsWith('trait_state:')&&classFeatureEntries(record,calculated).some(a=>a.class_feature_id===key&&a.mode==='toggle')).map(([key,state])=>{
   const action=classFeatureEntries(record,calculated).find(a=>a.class_feature_id===key);
   const effective=classFeatureActive(record,calculated,key);
-  const summaries={rage:'Danni con attacchi di Forza validi +'+classFeatureDamage(record,calculated,{},'str')+
-   '; vantaggio a prove e TS di Forza; resistenza a contundenti, perforanti e taglienti; lancio incantesimi bloccato.',
-   reckless_attack:'Vantaggio agli attacchi di Forza previsti dal privilegio.',
-   patient_defense:record.rules_version==='2024'&&!state.enhanced?'Disimpegno gratuito.':'Schivata e vantaggio ai TS di Destrezza quando previsto.',
-   step_of_the_wind:'Passo del vento'+(state.enhanced?' potenziato':'')+'; usa il movimento e le condizioni descritti dal tratto.',
-   innate_sorcery:'Incantesimi da Stregone: CD +1 e vantaggio agli attacchi magici.'};
   return {key,name:action?.name||state?.name||key,origin_id:action?.origin_id||state?.origin_id||'',
-   effective,summary:summaries[key]||'',enhanced:!!state?.enhanced};
+   effective,summary:descriptionText(action?.description),enhanced:!!state?.enhanced};
  });
 }
 // Produce one atomic patch. Invalid/stale actions never spend a use.
@@ -643,8 +638,8 @@ export function contextualFeatureDescriptors(record={},features=[],catalog={},pr
   const feature=matches.find(available)||matches[0];
   if(!feature||feature.action_type||feature.activation_type||feature.activation)return [];
   const resource=rule.resource,trackerId=resource?rule.id:'';
-  return [{id:rule.id,name:rule.name,action_type:rule.activation,type:'Capacità',
-   description:rule.detail||'',origin_id:feature.origin_id,feature_id:feature.origin_id,
+  return [{id:rule.id,name:feature.name,action_type:rule.activation,type:'Capacità',
+   description:feature.entries??feature.description??'',origin_id:feature.origin_id,feature_id:feature.origin_id,
    feature_name:feature.name,tracker_id:trackerId,tracker_cost:resource?1:0,
    descriptive_only:rule.descriptive_only===true,
    ...(rule.attack_selector?{attack_selector:rule.attack_selector}:{}),automatic:true,
@@ -695,7 +690,7 @@ export function featureActionEntries(record,trackers,catalog={},features=[]){
   const feature=rows(features).find(f=>low(f.name)===low(rule.feature)&&
     (String(f.origin_key||'')===source||String(f.origin_key||'').startsWith(source+'|'))&&featureEnabled(record,f));
   if(!feature?.origin_id)return null;
-  return {name:rule.name,time:rule.activation,type:'Capacità',description:rule.detail||'',
+  return {name:feature.name,time:rule.activation,type:'Capacità',description:feature.entries??feature.description??'',
    tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',
    cost:tracker?Math.max(0,Number(rule.resource_cost??1)):0,origin:'personal',origin_id:feature.origin_id,
    action_id:'',rule_action_id:rule.action_id,rule_id:rule.id,feature:rule.feature,

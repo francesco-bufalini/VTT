@@ -1,7 +1,7 @@
 {
   "version": 1,
   "source": "5etools class features / SRD 5.1 and 5.2",
-  "note": "Curated structured activation supplements for 5etools entries lacking explicit action metadata. Match exact class, feature, edition and level. Descriptions are short summaries, not automatic execution rules.",
+  "note": "Mechanic-only feature activation metadata (operation, time, resource, costs). Source names and descriptions are read from 5etools; no replacement prose is stored.",
   "entries": [
     {
       "class_name": "Barbarian",
@@ -9,9 +9,9 @@
       "book": "PHB",
       "min_level": 1,
       "activation": "bonus",
-      "display_name": "Ira",
       "resource_name": "Rages",
-      "description": "Entra in Ira usando un utilizzo della risorsa Ira."
+      "operation": "toggle",
+      "resource_cost": 1
     },
     {
       "class_name": "Fighter",
@@ -19,9 +19,9 @@
       "book": "PHB",
       "min_level": 1,
       "activation": "bonus",
-      "display_name": "Recuperare energie",
       "resource_name": "Second Wind",
-      "description": "Recupera punti ferita usando Recuperare energie."
+      "operation": "heal_roll",
+      "resource_cost": 1
     },
     {
       "class_name": "Fighter",
@@ -29,9 +29,9 @@
       "book": "PHB",
       "min_level": 2,
       "activation": "free",
-      "display_name": "Impeto d'azione",
       "resource_name": "Action Surge",
-      "description": "Ottieni un'azione aggiuntiva nel tuo turno, rispettando le limitazioni dell'edizione."
+      "operation": "context",
+      "resource_cost": 1
     },
     {
       "class_name": "Rogue",
@@ -39,9 +39,8 @@
       "book": "PHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Azione scaltra · Scattare",
       "resource_name": "",
-      "description": "Scatta usando la tua azione bonus."
+      "action_id": "dash"
     },
     {
       "class_name": "Rogue",
@@ -49,9 +48,8 @@
       "book": "PHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Azione scaltra · Disimpegnarsi",
       "resource_name": "",
-      "description": "Disimpegnati usando la tua azione bonus."
+      "action_id": "disengage"
     },
     {
       "class_name": "Rogue",
@@ -59,9 +57,8 @@
       "book": "PHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Azione scaltra · Nascondersi",
       "resource_name": "",
-      "description": "Nasconditi usando la tua azione bonus."
+      "action_id": "hide"
     },
     {
       "class_name": "Monk",
@@ -69,9 +66,9 @@
       "book": "PHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Raffica di colpi",
       "resource_name": "Ki Points",
-      "description": "Dopo l'azione Attacco nel tuo turno, spendi 1 punto Ki per effettuare due colpi senz'armi come azione bonus."
+      "operation": "context",
+      "resource_cost": 1
     },
     {
       "class_name": "Monk",
@@ -79,9 +76,9 @@
       "book": "PHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Difesa paziente",
       "resource_name": "Ki Points",
-      "description": "Spendi 1 punto Ki per eseguire Schivare come azione bonus nel tuo turno; non è un effetto attivabile permanente."
+      "operation": "context",
+      "resource_cost": 1
     },
     {
       "class_name": "Monk",
@@ -89,9 +86,9 @@
       "book": "PHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Passo del vento",
       "resource_name": "Ki Points",
-      "description": "Spendi 1 punto Ki per Scattare o Disimpegnarti come azione bonus, raddoppiando la distanza dei salti per il turno."
+      "operation": "context",
+      "resource_cost": 1
     },
     {
       "class_name": "Paladin",
@@ -99,9 +96,9 @@
       "book": "PHB",
       "min_level": 1,
       "activation": "action",
-      "display_name": "Imposizione delle mani",
       "resource_name": "Lay on Hands",
-      "description": "Cura una creatura spendendo punti dalla riserva di Imposizione delle mani."
+      "operation": "heal_pool",
+      "resource_cost": 1
     },
     {
       "class_name": "Rogue",
@@ -109,9 +106,10 @@
       "book": "PHB",
       "min_level": 5,
       "activation": "reaction",
-      "display_name": "Schivata prodigiosa",
       "resource_name": "",
-      "description": "Riduci il danno di un attacco che ti ha colpito e che puoi vedere."
+      "descriptive_only": true,
+      "operation": "context",
+      "resource_cost": 0
     },
     {
       "class_name": "Sorcerer",
@@ -119,9 +117,9 @@
       "book": "PHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Conversione slot e punti stregoneria",
       "resource_name": "Sorcery Points",
-      "description": "Converti slot e punti stregoneria secondo le regole dell'edizione."
+      "operation": "conversion",
+      "resource_cost": 1
     },
     {
       "class_name": "Barbarian",
@@ -129,9 +127,9 @@
       "book": "XPHB",
       "min_level": 1,
       "activation": "bonus",
-      "display_name": "Ira",
       "resource_name": "Rages",
-      "description": "Entra in Ira usando un utilizzo della risorsa Ira."
+      "operation": "toggle",
+      "resource_cost": 1
     },
     {
       "class_name": "Fighter",
@@ -139,9 +137,9 @@
       "book": "XPHB",
       "min_level": 1,
       "activation": "bonus",
-      "display_name": "Recuperare energie",
       "resource_name": "Second Wind",
-      "description": "Recupera punti ferita usando Recuperare energie."
+      "operation": "heal_roll",
+      "resource_cost": 1
     },
     {
       "class_name": "Fighter",
@@ -149,9 +147,9 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "free",
-      "display_name": "Impeto d'azione",
       "resource_name": "Action Surge",
-      "description": "Ottieni un'azione aggiuntiva nel tuo turno, rispettando le limitazioni dell'edizione."
+      "operation": "context",
+      "resource_cost": 1
     },
     {
       "class_name": "Rogue",
@@ -159,9 +157,8 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Azione scaltra · Scattare",
       "resource_name": "",
-      "description": "Scatta usando la tua azione bonus."
+      "action_id": "dash"
     },
     {
       "class_name": "Rogue",
@@ -169,9 +166,8 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Azione scaltra · Disimpegnarsi",
       "resource_name": "",
-      "description": "Disimpegnati usando la tua azione bonus."
+      "action_id": "disengage"
     },
     {
       "class_name": "Rogue",
@@ -179,9 +175,8 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Azione scaltra · Nascondersi",
       "resource_name": "",
-      "description": "Nasconditi usando la tua azione bonus."
+      "action_id": "hide"
     },
     {
       "class_name": "Monk",
@@ -189,9 +184,9 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Raffica di colpi",
       "resource_name": "Focus Points",
-      "description": "Spendi 1 punto Focus per effettuare due colpi senz'armi come azione bonus."
+      "operation": "context",
+      "resource_cost": 1
     },
     {
       "class_name": "Monk",
@@ -199,9 +194,9 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Difesa paziente",
       "resource_name": "Focus Points",
-      "description": "Come azione bonus puoi Disimpegnarti gratuitamente oppure spendere 1 punto Focus per Disimpegnarti e Schivare insieme."
+      "operation": "toggle",
+      "resource_cost": 0
     },
     {
       "class_name": "Monk",
@@ -209,9 +204,9 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Passo del vento",
       "resource_name": "Focus Points",
-      "description": "Come azione bonus puoi Scattare gratuitamente oppure spendere 1 punto Focus per Scattare e Disimpegnarti insieme, raddoppiando la distanza dei salti per il turno."
+      "operation": "toggle",
+      "resource_cost": 0
     },
     {
       "class_name": "Paladin",
@@ -219,9 +214,9 @@
       "book": "XPHB",
       "min_level": 1,
       "activation": "bonus",
-      "display_name": "Imposizione delle mani",
       "resource_name": "Lay on Hands",
-      "description": "Cura una creatura spendendo punti dalla riserva di Imposizione delle mani."
+      "operation": "heal_pool",
+      "resource_cost": 1
     },
     {
       "class_name": "Rogue",
@@ -229,9 +224,10 @@
       "book": "XPHB",
       "min_level": 5,
       "activation": "reaction",
-      "display_name": "Schivata prodigiosa",
       "resource_name": "",
-      "description": "Riduci il danno di un attacco che ti ha colpito e che puoi vedere."
+      "descriptive_only": true,
+      "operation": "context",
+      "resource_cost": 0
     },
     {
       "class_name": "Sorcerer",
@@ -239,9 +235,9 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "bonus",
-      "display_name": "Conversione slot e punti stregoneria",
       "resource_name": "Sorcery Points",
-      "description": "Converti slot e punti stregoneria secondo le regole dell'edizione."
+      "operation": "conversion",
+      "resource_cost": 1
     },
     {
       "class_name": "Monk",
@@ -249,9 +245,10 @@
       "book": "PHB",
       "min_level": 3,
       "activation": "reaction",
-      "display_name": "Deviare proiettili",
       "resource_name": "",
-      "description": "Riduci i danni di un attacco a distanza usando la tua reazione."
+      "descriptive_only": true,
+      "operation": "context",
+      "resource_cost": 0
     },
     {
       "class_name": "Monk",
@@ -259,9 +256,10 @@
       "book": "XPHB",
       "min_level": 3,
       "activation": "reaction",
-      "display_name": "Deviare attacchi",
       "resource_name": "",
-      "description": "Riduci i danni di un attacco utilizzando la reazione."
+      "descriptive_only": true,
+      "operation": "context",
+      "resource_cost": 0
     },
     {
       "class_name": "Cleric",
@@ -269,9 +267,269 @@
       "book": "XPHB",
       "min_level": 2,
       "activation": "action",
-      "display_name": "Scacciare non morti",
       "resource_name": "Channel Divinity",
-      "description": "Utilizza Incanalare Divinità per scacciare i non morti."
+      "operation": "context",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Magical Tinkering",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "",
+      "resource_cost": 0,
+      "descriptive_only": true
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Defensive Field",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "temporary_hp",
+      "activation": "bonus",
+      "resource_name": "Defensive Field",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Experimental Elixir",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Experimental Elixir",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Eldritch Cannon",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Eldritch Cannon",
+      "resource_cost": 1,
+      "operation_id": "eldritch_cannon"
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Eldritch Cannon",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "bonus",
+      "resource_name": "",
+      "resource_cost": 0,
+      "operation_id": "command_cannon",
+      "descriptive_only": true
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Steel Defender",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "bonus",
+      "resource_name": "",
+      "resource_cost": 0,
+      "operation_id": "command_defender",
+      "descriptive_only": true
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Arcane Jolt",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "free",
+      "resource_name": "Arcane Jolt",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Restorative Reagents",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Restorative Reagents",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Chemical Mastery",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Chemical Mastery (Heal)",
+      "resource_cost": 1,
+      "operation_id": "chemical_mastery_heal"
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Chemical Mastery",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Chemical Mastery (Greater Restoration)",
+      "resource_cost": 1,
+      "operation_id": "chemical_mastery_restore"
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Guardian",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "reaction",
+      "resource_name": "Perfected Armor",
+      "resource_cost": 1,
+      "operation_id": "perfected_guardian"
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Spell-Storing Item",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "contextual",
+      "resource_name": "",
+      "resource_cost": 0
+    },
+    {
+      "class_name": "Artificer",
+      "feature_name": "Soul of Artifice",
+      "book": "TCE",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "reaction",
+      "resource_name": "",
+      "resource_cost": 0,
+      "descriptive_only": true
+    },
+    {
+      "class_name": "Barbarian",
+      "feature_name": "Reckless Attack",
+      "book": "PHB",
+      "min_level": 1,
+      "operation": "toggle",
+      "activation": "free",
+      "resource_name": "",
+      "resource_cost": 0
+    },
+    {
+      "class_name": "Barbarian",
+      "feature_name": "Reckless Attack",
+      "book": "XPHB",
+      "min_level": 1,
+      "operation": "toggle",
+      "activation": "free",
+      "resource_name": "",
+      "resource_cost": 0
+    },
+    {
+      "class_name": "Paladin",
+      "feature_name": "Divine Sense",
+      "book": "PHB",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Divine Sense",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Paladin",
+      "feature_name": "Divine Sense",
+      "book": "XPHB",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Channel Divinity",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Cleric",
+      "feature_name": "Turn Undead",
+      "book": "PHB",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Channel Divinity",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Paladin",
+      "feature_name": "Channel Divinity",
+      "book": "PHB",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Channel Divinity",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Paladin",
+      "feature_name": "Channel Divinity",
+      "book": "XPHB",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "action",
+      "resource_name": "Channel Divinity",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Sorcerer",
+      "feature_name": "Innate Sorcery",
+      "book": "XPHB",
+      "min_level": 1,
+      "operation": "toggle",
+      "activation": "bonus",
+      "resource_name": "Innate Sorcery",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Wizard",
+      "feature_name": "Arcane Recovery",
+      "book": "PHB",
+      "min_level": 1,
+      "operation": "recovery",
+      "activation": "free",
+      "resource_name": "Arcane Recovery",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Wizard",
+      "feature_name": "Arcane Recovery",
+      "book": "XPHB",
+      "min_level": 1,
+      "operation": "recovery",
+      "activation": "free",
+      "resource_name": "Arcane Recovery",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Stunning Strike",
+      "book": "PHB",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "free",
+      "resource_name": "Ki Points",
+      "resource_cost": 1
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Stunning Strike",
+      "book": "XPHB",
+      "min_level": 1,
+      "operation": "context",
+      "activation": "free",
+      "resource_name": "Focus Points",
+      "resource_cost": 1
     }
   ]
 }

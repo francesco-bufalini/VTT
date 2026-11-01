@@ -101,7 +101,7 @@ static func action_entries(record: Dictionary, trackers: Array[Dictionary]) -> A
 		var feature := enabled_feature(record, rule, features)
 		result.append({
 			"origin_id": "feature:" + String(feature.get("key", "")),
-			"name": String(rule.get("name", key)),
+			"name": String(rule.get("feature", key)),
 			"activation": String(rule.get("activation", "action")),
 			"action_id": key,
 			"tracker": String(tracker.get("name", rule.get("tracker_name", ""))),

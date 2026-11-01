@@ -177,11 +177,14 @@ test('class feature activations list timing and cost even when disabled, without
  const feature={origin_id:origin,origin_key:'class|phb|barbarian',
   name:'Rage',requirements:{class_name:'Barbarian',class_source:'PHB'},disabled:true,
   entries:['Concede resistenza ai danni.']};
- const calculated={features:[feature],state_actions:[]};
+ const calculated={features:[feature],state_actions:[],
+  feature_action_overrides:[{class_name:'Barbarian',feature_name:'Rage',book:'PHB',
+    activation:'bonus',resource_name:'Rages',operation:'toggle'}]};
  const trait={name:'Rage',key:'rage',rank:2,feature_origin:origin};
- const group=traitBenefitGroups(trait,{},calculated).find(row=>row.type==='abilities');
+ const record={classes:[{name:'Barbarian',source:'PHB',level:1}]};
+ const group=traitBenefitGroups(trait,record,calculated).find(row=>row.type==='abilities');
  assert.ok(group);
- const rage=group.items.find(row=>row.label==='Ira');
+ const rage=group.items.find(row=>row.label==='Rage');
  assert.equal(rage.status,'Tratto disattivato');
  assert.equal(rage.timing,'Azione bonus');
  assert.match(rage.cost,/Rages/);
@@ -211,12 +214,10 @@ test('all action-catalog privileges appear before activation, with exact trait p
  ]}};
  const cunning=traitBenefitGroups({rank:2,feature_origin:features[0].origin_id,key:'cunning'},{},calculated)
   .find(g=>g.type==='abilities');
- assert.deepEqual(cunning.items.map(i=>i.label),[
-  'Scattare (azione scaltra)','Disimpegnarsi (azione scaltra)','Nascondersi (azione scaltra)'
- ]);
+ assert.deepEqual(cunning.items.map(i=>i.label),['Cunning Action']);
  assert.ok(cunning.items.every(i=>i.timing==='Azione bonus'&&i.status==='Tratto disattivato'));
  assert.deepEqual(traitBenefitGroups({rank:2,feature_origin:features[1].origin_id,key:'fast'},{},calculated)
-   .find(g=>g.type==='abilities').items.map(i=>i.label),['Usare un oggetto (Mani veloci)']);
+   .find(g=>g.type==='abilities').items.map(i=>i.label),['Fast Hands']);
  assert.equal(traitBenefitGroups({rank:2,feature_origin:features[2].origin_id,key:'sneak'},{},calculated)
   .some(g=>g.type==='abilities'),false,'passive features must not fabricate activations');
  assert.equal(traitBenefitGroups({rank:0,category:'classi',origin_key:'class|phb|rogue'}, {},calculated)

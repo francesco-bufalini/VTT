@@ -89,7 +89,7 @@ test('roll supplements keep contextual choices opt-in and bonus formulas typed',
   const rules=read('roll_bonus_rules').features;
   const extra=id=>rules.find(x=>x.id===id);
   assert.deepEqual(extra('fey_wanderer_otherworldly_glamour')?.bonus,{
-    name:'Otherworldly Glamour',targets:['ability_check:cha'],ability_modifier:'wis',minimum:1
+    targets:['ability_check:cha'],ability_modifier:'wis',minimum:1
   });
   assert.equal(extra('samurai_elegant_courtier')?.roll_only,true);
   assert.equal(extra('fey_wanderer_beguiling_twist')?.roll_only,true);
