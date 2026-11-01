@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
-import {attackActionSequence,attackActionCategory,battleAttackActionRow,battleActionPanels} from '../action_economy.js';
+import {attackActionSequence,attackActionCategory,battleActionList,battleAttackStepMarkup,battleAttackActionRow,battleActionPanels} from '../action_economy.js';
 
 const doc=html=>new JSDOM(html).window.document;
 
@@ -96,4 +96,45 @@ test('attack-action row shows action type and tracker cost but no range, map too
  for(const selector of ['.play-battle-attack-range','.play-battle-attacks-per-action',
   '[data-act="battle-attack-map"]','[data-target^="attack_hit:"]'])
   assert.equal(action.querySelector(selector),null,selector+' must be absent');
+});
+
+
+test('action/check/attack lists preserve all steps with indexed arrows and the tutte label',()=>{
+ const action={id:'homebrew:sequence',name:'Sequenza',steps:[
+  {selector:{kind:'attack',id:'unarmed'},count:2},
+  {selector:{kind:'check',target:'skill:perception'}}
+ ]};
+ const calculated={attacks:[{id:'unarmed',name:'Colpo senz’armi',melee:true}]};
+ const model=battleActionList(action,{},calculated);
+ assert.equal(model.mode,'all');
+ assert.deepEqual(model.items.map(x=>x.label),['Colpo senz’armi','Colpo senz’armi','Prova di Percezione']);
+ const tree=doc(battleAttackStepMarkup(model,calculated,action));
+ assert.equal(tree.querySelector('[data-action-list-mode]').dataset.actionListMode,'all');
+ assert.equal(tree.querySelector('.play-action-index-mode').textContent,'tutte');
+ assert.equal(tree.querySelectorAll('.play-action-index-steps > li').length,3);
+ assert.equal(tree.querySelectorAll('.play-action-index-number').length,3);
+ assert(tree.querySelector('.play-action-index-arrow'));
+});
+
+test('a one_of list has 1 fra: and independent selectable actions, without losing action origin',()=>{
+ const action={id:'homebrew:choices',name:'Scelta',steps:[{one_of:[
+  {id:'dash',label:'Scattare',selector:{kind:'action',id:'dash'}},
+  {id:'disengage',label:'Disimpegnarsi',selector:{kind:'action',id:'disengage'}}
+ ]}]};
+ const calculated={action_entries:[{id:'dash',name:'Scattare',type:'Generale'},
+  {id:'disengage',name:'Disimpegnarsi',type:'Generale'}]};
+ const model=battleActionList(action,{},calculated);
+ assert.equal(model.mode,'or');
+ const tree=doc(battleAttackStepMarkup(model,calculated,action));
+ assert.equal(tree.querySelector('.play-action-index-mode').textContent,'1 fra:');
+ assert.deepEqual([...tree.querySelectorAll('[data-action-option-id]')].map(node=>node.dataset.actionOptionId),
+  ['dash','disengage']);
+ assert.deepEqual([...tree.querySelectorAll('[data-act="battle-action-jump"]')].map(node=>node.dataset.actionId),
+  ['dash','disengage']);
+ const panels=battleActionPanels({rules_version:'2014',action_grants:[{id:'manual',name:'Scelta',steps:action.steps}]},
+  {attack_actions:[{...action,id:'attack_action:grant:manual',attack_action:true,origin_id:'feature:manual'}]});
+ const html=doc(panels.others);
+ assert(html.querySelector('[data-action-source="rules"] [data-attack-id="attack"]'));
+ assert(html.querySelector('[data-action-source="privileges"] [data-attack-id="attack_action:grant:manual"]'));
+ assert.equal(html.querySelectorAll('[data-action-benefit]').length,0);
 });
