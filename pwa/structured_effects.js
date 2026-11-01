@@ -59,7 +59,7 @@ export function withBackgroundGrantedFeats(record={},backgrounds={},feats={},spe
     const detail=feats[featSlug+'|'+norm(book)]||{};
     const spell= array(spellRules).find(row=>row?.kind==='feat'&&
       match(row.name,featSlug)&&match(row.source,book));
-    const featName=detail.name||spell?.name||featSlug.replace(/\\b[a-z]/g,x=>x.toUpperCase());
+    const featName=detail.name||spell?.name||featSlug.replace(/\b[a-z]/g,x=>x.toUpperCase());
     const featSource=detail.source||spell?.source||String(book).toUpperCase();
     let spellVariant='';
     if(variantSlug){
