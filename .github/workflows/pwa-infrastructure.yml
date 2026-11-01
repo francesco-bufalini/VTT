@@ -289,7 +289,7 @@ jobs:
           (root / "benefits").mkdir(parents=True, exist_ok=True)
           (root / "catalog" / "benefits").mkdir(parents=True, exist_ok=True)
           # A standalone prototype uses the same typed benefits as the Godot host.
-          for name in ("attack", "movement", "roll_mode", "roll_bonus"):
+          for name in ("attack", "movement", "roll_mode", "roll_bonus", "resource"):
               copy2(Path("vtt/enrichment/benefits") / (name + ".json"),
                     root / "benefits" / (name + ".json"))
           for name in ("action", "roll_bonus"):
@@ -347,7 +347,7 @@ jobs:
           import json
           from pathlib import Path
           root = Path("pwa-prototype")
-          for name in ("attack", "movement", "roll_mode", "roll_bonus"):
+          for name in ("attack", "movement", "roll_mode", "roll_bonus", "resource"):
               catalog = json.loads((root / "benefits" / (name + ".json")).read_text())
               assert catalog["schema_version"] == 2 and catalog["benefit_type"] == name
               assert catalog["scope"] == "catalog" and catalog["entries"]

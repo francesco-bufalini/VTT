@@ -199,6 +199,11 @@ func run() -> void:
 		"Godot must serve typed species movement restrictions as JSON")
 	assert(species_movement.contains("blocked_by_armor") and species_movement.contains("Flight"),
 		"The armor limitation must remain source-qualified and available offline")
+	var racial_resources := await http("GET", "/benefits/resource.json")
+	assert(racial_resources.begins_with("HTTP/1.1 200") and racial_resources.contains("application/json"),
+		"Godot must serve typed racial tracker resources as JSON")
+	assert(racial_resources.contains("Built for Success") and racial_resources.contains("racial_power"),
+		"Racial tracker resources must be available in the mobile shell")
 	var bundled_effects := await http("GET", "/catalog/effects_5etools.json")
 	assert(bundled_effects.begins_with("HTTP/1.1 200") and bundled_effects.contains("Arcane Blight"),
 		"Offline 5etools diseases must be served with the shell")

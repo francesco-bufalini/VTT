@@ -65,6 +65,16 @@ test('species powers are sourced by benefit type and retain original trait mecha
  assert.equal(orc.tracked_actions.length,2);
  assert(orc.tracked_actions.some(a=>a.damage_response?.effect==='retain_one_hp'));
  assert.equal(all.races.find(r=>r.name==='Dragonborn (Gem)').breath_weapon.shape,'cone');
+ // Regression signature from the complete reviewed pre-migration species_powers.json
+ // (main e7ec0f93). Canonicalized keys ignore JSON formatting and field ordering.
+ const canonical=v=>Array.isArray(v)?v.map(canonical):
+   v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
+ const json=JSON.stringify(canonical(all));
+ let hash=2166136261;
+ for(let i=0;i<json.length;i++)hash=Math.imul(hash^json.charCodeAt(i),16777619)>>>0;
+ assert.equal(hash.toString(16).padStart(8,'0'),'87ace5d7',
+   'The runtime projection must preserve every pre-migration species power field');
+
 });
 test('missing or mismatched tracker fails rather than silently granting uses',()=>{
  const base=read('../catalog/species_powers.json');
