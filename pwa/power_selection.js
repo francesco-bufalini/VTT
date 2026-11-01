@@ -2,6 +2,7 @@
 import {targetableInventoryItems,itemAttunementCount,activeItemOptionEffects} from './item_controls.js';
 import {originSpellId} from './spell_selection.js';
 import {isContentAvailableForRules} from './source_edition.js';
+import {traitStateSource} from './trait_state_rules.js';
 const rows=v=>Array.isArray(v)?v:[];
 const low=v=>String(v??'').trim().toLowerCase();
 const identity=v=>typeof v==='string'?v:v?.id;
@@ -46,7 +47,11 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   if([origin,feature.origin_key,String(feature.origin_key||'').split('|').slice(0,3).join('|')].some(id=>id&&(record.origin_enabled?.[id]===false||rows(record.proficiency_origins).some(row=>row.id===id&&row.disabled))))continue;
   const parent=rule.requires_application,binding=parent?rows(record.power_applications?.[parent.selection]).find(row=>!parent.bound||rows(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id)):null;
   if(parent&&!binding)continue;
-  const options=optionsFor(record,rule),layers={};
+  const options=optionsFor(record,rule).map(option=>{
+   if(rule.option_kind!=='trait_state')return option;
+   const original=traitStateSource(option,feature,calculated.features);
+   return {...option,name:original.name,description:original.description};
+  }),layers={};
   const required=Object.entries(rule.required||{}).filter(([at])=>Number(at)<=level).flatMap(([,values])=>rows(values).map(key=>{const [name,source]=key.split('|');return options.find(o=>low(o.name)===low(name)&&(!source||low(o.source)===low(source)))?.id;})).filter(Boolean);
   for(const [stage,spec] of Object.entries(rule.layers||{})){
    let selected=stage==='applied'?rows(record.power_applications?.[rule.id]):rows(record.power_selections?.[rule.id]?.[stage]);
@@ -60,7 +65,7 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
    layers[stage]={enabled:true,selected,used:selected.length,limit,trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger),automatic:spec.mode==='automatic',target:stage==='applied'?rule.application?.target||spec.target:null};
   }
   if(layers.learned?.limit===0&&!layers.learned.selected.length)continue;
-  models.push({...rule,benefit_type:rule.benefit_type||'option_selection',source_type:'option_catalog',ui:'generic',options,layers,level,
+  models.push({...rule,title:rule.option_kind==='trait_state'?feature.name:rule.title,benefit_type:rule.benefit_type||'option_selection',source_type:'option_catalog',ui:'generic',options,layers,level,
    origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required});
  }
  // Spell selection extends the same learned/prepared/applied layer contract.
