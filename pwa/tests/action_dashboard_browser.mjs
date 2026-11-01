@@ -100,6 +100,22 @@ try{
     assert(await ruleGroup.getByText('Scattare').count()>0);
     assert.equal(await actionSection.locator('.play-action-origin-divider').count(),1,
       'A single origin line separates rule actions and granted actions');
+    assert.deepEqual(await actionSection.locator('.play-battle-privilege-rows,[data-action-source="rules"]').evaluateAll(nodes=>
+     nodes.map(node=>node.dataset.actionSource)),['privileges','rules'],
+     'Privilege actions are above base actions');
+    assert.equal(await actionSection.locator('.play-action-index-arrow,.play-action-list-parent-arrow').count(),0,
+     'Indexed child actions no longer use direction arrows');
+    if(width===390){
+     const attackAction=ruleGroup.locator('[data-attack-id="attack"]');
+     assert.equal(await attackAction.locator('.play-battle-attack-expanded').count(),0,
+      'Actions with index children have no inline descriptions');
+     await attackAction.locator('[data-act="sheet-context"]').click();
+     const popup=page.locator('#sheet-context-dialog[open]');
+     await popup.waitFor();
+     assert.match(await popup.textContent(),/Descrizione.*Attaccare/s,
+      'Clicking the action opens the same detail dialog as capacities');
+     await popup.locator('[data-act="sheet-context-close"]').click();
+    }
     assert.equal(await privilegeGroup.locator('[data-ability-id],[data-attack-id]').count()>0,true);
     assert.equal(await ruleGroup.locator('[data-attack-id="attack"] .play-action-index-mode').textContent(),'tutte');
     const paid=privilegeGroup.locator('.play-resource-power-row,.play-battle-attack-entry').filter({hasText:'Capacità di prova'}).first();
