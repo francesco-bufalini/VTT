@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT spell area geometry v2",
+  "description": "Lossless schema for assets/spell_area_geometry.json entries. Use on each spell enrichment entry; source identity is supplied by the containing entry, not by source::name map keys.",
+  "type": "object",
+  "properties": {
+    "range": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "emanation",
+            "point",
+            "line",
+            "cone",
+            "radius",
+            "hemisphere",
+            "cube",
+            "special"
+          ]
+        },
+        "feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "distance_type": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "targeting": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "caster",
+            "token",
+            "point",
+            "caster_direction",
+            "wall",
+            "multi_token"
+          ]
+        },
+        "requires_ground": {
+          "type": "boolean"
+        },
+        "allow_pitch": {
+          "type": "boolean"
+        },
+        "base_target_clicks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target_clicks_per_slot_above_base": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "choose_damage_side": {
+          "type": "boolean"
+        },
+        "projectile": {
+          "type": "boolean"
+        },
+        "allow_point_target": {
+          "type": "boolean"
+        },
+        "allow_repeat_targets": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "effect": {
+      "type": "object",
+      "properties": {
+        "geometry": {
+          "$ref": "#/$defs/geometry"
+        },
+        "persistence": {
+          "enum": [
+            "persistent",
+            "instant"
+          ]
+        },
+        "saving_throw": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "damage_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "condition_inflict": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "misc_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "minProperties": 1,
+  "additionalProperties": false,
+  "$defs": {
+    "geometry": {
+      "type": "object",
+      "required": [
+        "shape"
+      ],
+      "properties": {
+        "shape": {
+          "enum": [
+            "emanation",
+            "sphere",
+            "line",
+            "square",
+            "cone",
+            "cylinder",
+            "cube",
+            "wall",
+            "circle",
+            "hemisphere"
+          ]
+        },
+        "radius_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "length_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "width_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "height_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "side_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/wallVariant"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "wallVariant": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "path",
+            "circle",
+            "globe",
+            "panels",
+            "dome"
+          ]
+        },
+        "max_length_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "height_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "thickness_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "radius_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_panels": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "panel_width_feet": {
+          "type": "number",
+          "minimum": 0
+        },
+        "panel_height_feet": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 2,
+  "category": "classes",
+  "source": "PHB",
+  "entries": [
+    {
+      "ref": {
+        "name": "Rogue",
+        "source": "PHB"
+      },
+      "features": [
+        {
+          "ref": {
+            "name": "Cunning Action",
+            "source": "PHB",
+            "level": 2
+          },
+          "min_level": 2,
+          "benefits": [
+            {
+              "type": "action_sequence",
+              "id": "rogue:cunning-action",
+              "sequence": {
+                "logic": "any",
+                "activation": "bonus",
+                "steps": [
+                  {
+                    "kind": "action",
+                    "action_id": "dash"
+                  },
+                  {
+                    "kind": "action",
+                    "action_id": "disengage"
+                  },
+                  {
+                    "kind": "action",
+                    "action_id": "hide"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

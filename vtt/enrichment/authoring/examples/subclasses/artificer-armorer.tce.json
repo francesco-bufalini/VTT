@@ -1,0 +1,94 @@
+{
+  "schema_version": 2,
+  "category": "subclasses",
+  "source": "TCE",
+  "entries": [
+    {
+      "ref": {
+        "name": "Armorer",
+        "source": "TCE",
+        "class_name": "Artificer",
+        "class_source": "TCE"
+      },
+      "features": [
+        {
+          "ref": {
+            "name": "Armor Model",
+            "source": "TCE",
+            "class_name": "Artificer",
+            "class_source": "TCE",
+            "subclass": "Armorer"
+          },
+          "benefits": [
+            {
+              "type": "option_selection",
+              "id": "armorer:armor-model",
+              "selection": {
+                "id": "armor_model",
+                "kind": "trait_state",
+                "source": {
+                  "type": "inline",
+                  "options": [
+                    {
+                      "id": "guardian",
+                      "ref": {
+                        "name": "Guardian",
+                        "source": "TCE"
+                      },
+                      "benefits": [
+                        {
+                          "type": "attack",
+                          "attack": {
+                            "id": "thunder-gauntlets",
+                            "damage": "1d8",
+                            "damage_type": "thunder",
+                            "melee": true,
+                            "ability": "str",
+                            "grants_proficiency": true,
+                            "weapon_category": "simple"
+                          }
+                        },
+                        {
+                          "type": "feature_grant",
+                          "grants": [
+                            {
+                              "ref": {
+                                "name": "Defensive Field",
+                                "source": "TCE"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "infiltrator",
+                      "ref": {
+                        "name": "Infiltrator",
+                        "source": "TCE"
+                      },
+                      "benefits": [
+                        {
+                          "type": "attack",
+                          "attack": {
+                            "id": "lightning-launcher",
+                            "damage": "1d6",
+                            "damage_type": "lightning",
+                            "range_feet": 90,
+                            "long_range_feet": 300,
+                            "grants_proficiency": true,
+                            "weapon_category": "simple"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
