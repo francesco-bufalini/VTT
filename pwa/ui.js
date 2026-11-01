@@ -47,7 +47,7 @@ import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} fr
 import {availableZeroHpResponses,resolveZeroHpDamage} from './zero_hp_responses.js';
 import {incomingDamageOptions,resolveIncomingDamage} from './defense_summary.js';
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan,describeSheetActivity} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch,trackerRollBonusRows } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, appendRollBonus, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch,trackerRollBonusRows } from "./sheet_rules_view.js";
 import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
@@ -711,27 +711,15 @@ function syncNav(){
   syncChatScreen();
 }
 
-// Each section is independent, including an empty selection. Migrate the
-// former single "all" tab when restoring older navigation history.
+// All inventory sections are present; collapse is remembered per creature.
 function inventorySectionKeys(record){
   return ['items','scrolls','documents',...inventoryContainers(record).slice(1).map(row=>'container:'+row.id)];
 }
-function inventoryVisibleSections(record,selection=state.inventorySelectedTabs){
-  const valid=inventorySectionKeys(record),chosen=Array.isArray(selection)?selection:[selection];
-  if(chosen.includes('all'))return valid;
-  const selected=valid.filter(key=>chosen.includes(key));
-  return selected;
-}
-function setInventoryVisibleSections(record,selection){
-  const selected=inventoryVisibleSections(record,selection);
-  state.inventorySelectedTabs=selected;
-  if(!selected.includes(state.inventorySubtab))state.inventorySubtab=selected[0]||'items';
-  return selected;
-}
+function inventoryVisibleSections(record){return inventorySectionKeys(record);}
+function setInventoryVisibleSections(record){return inventorySectionKeys(record);}
 function focusInventorySection(record,key){
   if(!inventorySectionKeys(record).includes(key))key='items';
-  setInventoryVisibleSections(record,[...inventoryVisibleSections(record),key]);
-  state.inventorySubtab=key;
+  state.disclosureState.set('inventory:'+record.id+':'+key,true);
 }
 
 /* A phone's system Back button traverses browser history. Keep each visible
@@ -2538,7 +2526,7 @@ async function editorView() {
     ensureInventorySearchCatalog();
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
     const containers=inventoryContainers(c),selectedTabs=setInventoryVisibleSections(c,state.inventorySelectedTabs);
-    const nav=inventorySectionControls(c,selectedTabs);
+    
     const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
     const ordinary=owned.filter(({item})=>!isSpellScroll(item));
     const scrolls=owned.filter(({item})=>isSpellScroll(item));
@@ -2593,7 +2581,7 @@ async function editorView() {
     const description=selected?panel("Descrizione · "+ownedItemDisplayName(selected.item),
       inventoryItemDescription(resolvedDetail,selected.index,optionDescriptions),"inventory-native-panel inventory-description-panel"):"";
     const showingItems=selectedTabs.some(key=>key==='items'||key.startsWith('container:'));
-    body=nav+
+    body=
       (showingItems?inventoryEquipmentView(c,calculated)+
         inventoryAttunementView(c,attunements)+
         inventoryCoinsView(c)+
@@ -3781,11 +3769,9 @@ function inventoryContainerSections(record,entries,containers,selectedIndex,menu
   const active=key.startsWith('container:')?containers.find(row=>row.id===key.slice(10)):null;
   const destination=active?.id||DEFAULT_INVENTORY_CONTAINER;
   const rows=entries.filter(({item})=>itemContainerId(item,containers)===destination);
-  const controls=active?'<div class="inventory-container-management">'+
-    '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(active.id)+'">Rinomina sezione</button></div>':'';
   return '<div data-inventory-section="'+esc(key)+'">'+
     panel(active?.name||'Zaino',
-      controls+inventoryTable(rows,false,selectedIndex,menuIndex,containers),
+      inventoryTable(rows,false,selectedIndex,menuIndex,containers),
       "inventory-native-panel inventory-items-panel")+'</div>';
 }
 async function openGenericVariantDialog(index){
@@ -5734,7 +5720,14 @@ function organizeSheetPanels(){
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   if(state.sheet==='battle')syncBattleBasicsVisibility();
-  if(state.sheet==='inventory'){paintInventorySearchResults();syncInventorySelectionUI();}
+  if(state.sheet==='inventory'){
+    for(const details of app.querySelectorAll('#sheet-play-view .play-inventory-section[data-inventory-section-key]')){
+      const key='inventory:'+state.creatureId+':'+details.dataset.inventorySectionKey;
+      if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
+      details.addEventListener('toggle',()=>{if(details.isConnected)state.disclosureState.set(key,details.open);});
+    }
+    paintInventorySearchResults();syncInventorySelectionUI();
+  }
   if(state.sheet==='info'){
     const root=app.querySelector('#sheet-play-view');
     const choices=state.calculated.pending_choices||[];
@@ -7120,8 +7113,7 @@ async function handleAction(target){
     if(item.kind==='catalog'){openInventorySearchAddDialog(item.catalogIndex);return;}
     const record=state.editor?.read();
     if(!record||!item.indices.length)throw Error('Oggetto posseduto non disponibile.');
-    setInventoryVisibleSections(record,inventorySectionKeys(record));
-    state.inventorySubtab='items';
+    focusInventorySection(record,inventoryModule.inventoryItemSection?.(record.inventory[item.indices[0]],inventoryContainers(record))||'items');
     state.inventoryHighlightedIndices=item.indices.filter(index=>record.inventory?.[index]);
     state.inventorySelectedIndex=state.inventoryHighlightedIndices[0]??-1;
     state.sheetPopup='';
@@ -9768,22 +9760,6 @@ async function handleAction(target){
     }else{openInventoryContainerDelete(id);return;}
     state.inventoryMenuIndex=-1;await render();return;
   }
-  if(act==="inventory-subtab"||act==="inventory-toggle-all"){
-    const record=state.editor?.read();if(!record)throw Error("Apri prima una creatura.");
-    const keys=inventorySectionKeys(record),selected=inventoryVisibleSections(record);
-    if(act==="inventory-toggle-all"){
-      setInventoryVisibleSections(record,selected.length===keys.length?['items']:keys);
-      state.inventorySubtab='items';
-    }else{
-      const key=target.dataset.subtab;
-      if(!keys.includes(key))throw Error("Sezione inventario non valida.");
-      const next=selected.includes(key)?selected.filter(x=>x!==key):[...selected,key];
-      setInventoryVisibleSections(record,next);
-      state.inventorySubtab=next.includes(key)?key:next[0]||'items';
-    }
-    state.sheetPopup="";state.inventoryMenuIndex=-1;
-    await render();return;
-  }
   if(act==="inventory-open-trait"){
     const index=Number(target.dataset.index),item=state.editor?.read()?.inventory?.[index];
     if(!item?.id||isDocument(item))throw Error('Tratto dell’oggetto non disponibile.');
@@ -10511,6 +10487,8 @@ function listen(){
       }
       return;
     }
+    // A button in a section summary must not also collapse the section.
+    if(button.closest('#sheet-play-view .play-inventory-section > summary'))e.preventDefault();
     // Modal dismissal is UI-only. Do it before any asynchronous field flush:
     // a dirty input, slow IndexedDB transaction or rerender cannot block X.
     const closeAction=button.dataset.act;
