@@ -35,11 +35,29 @@ export function traitStateSource(rule={},owner={},features=[]){
     norm(feature.requirements?.class_source||feature.class_source)===norm(rule.class_source)));
  const selection=embedded||standalone;
  const optionName=selection?.name||optionKey.replace(/\b[a-z]/g,char=>char.toUpperCase());
+ // A source option can refer to other 5etools traits (weapons, powers,
+ // passives) instead of embedding their full text. Follow those structured
+ // references, not a locally authored paraphrase of their effects.
+ const relatedNames=new Set([
+  ...arr(rule.attacks).map(row=>row.trait),
+  ...arr(rule.numeric_grants).map(row=>row.trait),
+  ...arr(rule.roll_modes).map(row=>row.trait),
+  ...arr(rule.granted_features)
+ ].map(norm).filter(name=>name&&name!==norm(rule.trait)));
+ const qualified=feature=>{
+  const origin=String(feature.origin_key||'').split('|');
+  const className=feature.requirements?.class_name||feature.class_name||origin[2];
+  const sourceName=feature.requirements?.class_source||feature.class_source||origin[1];
+  return norm(className)===norm(rule.class_name)&&norm(sourceName)===norm(rule.class_source);
+ };
+ const main=text(selection?.entry??selection?.entries??selection?.description??
+   owner.entries??owner.description??'');
+ const extra=arr(features).filter(feature=>relatedNames.has(norm(feature.name))&&qualified(feature))
+   .map(feature=>text(feature.entries??feature.description??''));
  return {
   name:[owner.name||rule.trait,optionName].filter(Boolean).join(' · '),
   option_name:optionName,
-  description:text(selection?.entry??selection?.entries??selection?.description??
-   owner.entries??owner.description??'')
+  description:[...new Set([main,...extra].filter(Boolean))].join('\n\n')
  };
 }
 
