@@ -44,7 +44,9 @@ test('numeric sheet rules never request the full spell compendium',async()=>{
     const data=path==='/catalog/class_mechanics.json'?{legacy_spells:[]}:
       path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
       path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
-      path==='/catalog/trait_states.json'?{version:1,states:[]}:{};
+      path==='/catalog/trait_states.json'?{version:1,states:[]}:
+      path==='/benefits/roll_mode.json'||path==='/benefits/roll_bonus.json'?
+        {schema_version:2,benefit_type:path.endsWith('/roll_mode.json')?'roll_mode':'roll_bonus',scope:'catalog',entries:[]}:{};
     return new Response(JSON.stringify(data),{status:200});
   };
   try{

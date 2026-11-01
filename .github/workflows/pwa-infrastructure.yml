@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - "pwa/**"
+      - "vtt/enrichment/benefits/**"
       - "vtt/data/combat_actions_5etools.json"
       - "vtt/icons/action_controls.svg"
       - "network/pwa_host.gd"
@@ -18,6 +19,7 @@ on:
   pull_request:
     paths:
       - "pwa/**"
+      - "vtt/enrichment/benefits/**"
       - "vtt/data/combat_actions_5etools.json"
       - "vtt/icons/action_controls.svg"
       - "network/pwa_host.gd"
@@ -52,6 +54,7 @@ jobs:
             /network/board_sync.gd
             /vtt/content_catalog.gd
             /vtt/data/
+            /vtt/enrichment/benefits/
             /scripts/data/feat_spell_grants_2014.json
             /scripts/check_pwa_assets.mjs
             /vtt/icons/
@@ -125,6 +128,7 @@ jobs:
             /network/board_sync.gd
             /vtt/content_catalog.gd
             /vtt/data/
+            /vtt/enrichment/benefits/
             /vtt/icons/
             /assets/creature_info/
       - name: Restore Chromium headless-shell cache
@@ -218,6 +222,7 @@ jobs:
             /network/board_sync.gd
             /vtt/content_catalog.gd
             /vtt/data/
+            /vtt/enrichment/benefits/
             /vtt/icons/
             /assets/creature_info/
       - name: Install WebKit test dependencies

@@ -37,6 +37,11 @@ globalThis.fetch=async (url,options={})=>{
   // The runtime fetches its local structured-rule catalogs independently of
   // the desktop. Test those real files rather than returning a fake 503,
   // which otherwise prevents every character sheet from finishing startup.
+  if(typeof url==='string'&&/^\/benefits\/(roll_mode|roll_bonus)\.json$/.test(url)){
+    const filename=url.slice('/benefits/'.length);
+    return new Response(readFileSync(new URL('../../vtt/enrichment/benefits/'+filename,import.meta.url),'utf8'),
+      {status:200,headers:{'Content-Type':'application/json'}});
+  }
   if(typeof url==='string'&&/^\/catalog\/[a-z0-9_-]+\.json$/i.test(url)){
     const filename=url.slice('/catalog/'.length);
     for(const folder of ['../catalog/','../../vtt/data/']){
