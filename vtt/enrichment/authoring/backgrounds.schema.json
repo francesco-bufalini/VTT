@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT backgrounds enrichment source v2",
+  "allOf": [
+    {
+      "$ref": "origin.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "category": {
+          "const": "backgrounds"
+        }
+      },
+      "required": [
+        "category"
+      ]
+    }
+  ]
+}
