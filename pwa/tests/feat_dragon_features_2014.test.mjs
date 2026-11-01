@@ -35,7 +35,7 @@ test('Defensive Duelist is a descriptive reaction, without a Use button',()=>{
  assert.match(row.description,/competenza alla CA/);
  const panels=battleActionPanels(record,sheet,[],[],[],[]);
  assert.match(panels.others,/Defensive Duelist/);
- assert.match(panels.others,/data-action-benefit="other"/);
+ assert.match(panels.others,/data-action-source="privileges"/);
  assert(!panels.abilityEntries.some(x=>x.name==='Defensive Duelist'));
 });
 
