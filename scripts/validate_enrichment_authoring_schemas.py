@@ -94,6 +94,19 @@ def main():
             assert section in data, f"{original}: missing {section}"
         assert set(source["types"]) <= set(types), source
 
+    # Migration stage 1: validate production type-owned class/subclass catalogs too.
+    migrated = ROOT / "vtt" / "enrichment" / "benefits"
+    for benefit_type, expected in (("action", 52), ("roll_bonus", 15)):
+        document = load(migrated / f"{benefit_type}.json")
+        check(f"{benefit_type}.schema.json", document, f"production {benefit_type}")
+        assert len(document["entries"]) == expected
+        ids = [row["id"] for row in document["entries"]]
+        assert len(ids) == len(set(ids)), f"Duplicate {benefit_type} grant IDs"
+        for entry in document["entries"]:
+            assert entry["granted_by"]["kind"] == "5etools"
+            assert entry["granted_by"]["ref"]["source"]
+            assert entry["granted_by"]["ref"]["class_source"]
+
     geometries = load(ROOT / "assets" / "spell_area_geometry.json")
     assert len(geometries) >= 600, "Existing geometry catalog truncated"
     for ref, geometry in geometries.items():

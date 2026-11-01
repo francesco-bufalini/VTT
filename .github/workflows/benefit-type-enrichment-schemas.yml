@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'vtt/enrichment/authoring/**'
+      - 'vtt/enrichment/benefits/**'
       - 'assets/spell_area_geometry.json'
       - 'scripts/validate_enrichment_authoring_schemas.py'
       - '.github/workflows/benefit-type-enrichment-schemas.yml'
   pull_request:
     paths:
       - 'vtt/enrichment/authoring/**'
+      - 'vtt/enrichment/benefits/**'
       - 'assets/spell_area_geometry.json'
       - 'scripts/validate_enrichment_authoring_schemas.py'
       - '.github/workflows/benefit-type-enrichment-schemas.yml'
