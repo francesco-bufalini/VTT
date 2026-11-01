@@ -36,10 +36,14 @@ test('multiattack is distinct from a normal attack and uses named monster strike
  const sequence=actions.querySelector('[data-attack-id="monster:multiattack"] .play-attack-sequence');
  assert(sequence,'Multiattack has a descriptive sequence');
  assert.deepEqual([...sequence.children].map(node=>node.querySelector('.play-battle-roll-formula').textContent),['Bite','Claw','Claw','Tail']);
- assert.equal(sequence.querySelectorAll('button').length,0,
-  'Attack subentries describe attacks but never have Use controls');
+ assert.equal(sequence.querySelectorAll('.play-battle-roll-formula').length,4,
+  'Each step appears under the same indexed parent');
+ assert.match(sequence.closest('.play-action-index').textContent,/tutte/);
  assert.equal(sequence.querySelectorAll('[data-target],[data-damage-formula]').length,0);
- assert.equal(actions.querySelector('[data-attack-id="attack"]'),null,'Generic Attack is absent from Azioni');
+ assert.equal(actions.querySelector('[data-action-source="rules"] [data-attack-id="attack"]'),null,
+  'Multiattack replaces the generic Attack entry among rules');
+ assert.equal(actions.querySelector('[data-action-source="privileges"] [data-attack-id="monster:multiattack"]')!==null,true);
+ assert.equal(actions.querySelector('[data-action-source="privileges"] .play-battle-attack-entry:last-child')?.dataset.attackId,'monster:multiattack');
  assert.equal(sequence.closest('.play-battle-attack-action').querySelector('.play-battle-attack-range'),null);
  assert.equal(sequence.closest('.play-battle-attack-action').querySelector('[data-act="battle-attack-map"]'),null);
  assert.equal(sequence.closest('.play-battle-attack-action').querySelector('.play-battle-attacks-per-action'),null);
@@ -62,8 +66,10 @@ test('Attacchi keeps all original attack rows and maneuvers without duplicates i
  assert(resources.querySelector('[data-attack-id="grapple"]'));
  assert(!actions.querySelector('[data-attack-id="grapple"]'));
  assert(actions.querySelector('[data-attack-id="dash"]'));
- assert.equal(actions.querySelector('[data-attack-id="attack"]'),null);
- assert(actions.querySelector('[data-action-benefit="other"]'));
+ assert(actions.querySelector('[data-action-source="rules"] [data-attack-id="attack"]'),
+  'Ordinary Attack leads the rule-defined actions');
+ assert(actions.querySelector('[data-action-source="rules"] [data-attack-id="opportunity"]'));
+ assert.equal(actions.querySelectorAll('[data-action-benefit]').length,0);
  assert(!actions.querySelector('[data-action-timing]'),'Timing is metadata, never the grouping key');
 });
 
