@@ -11,6 +11,7 @@ import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey,actionGlyph,diceGlyph,monsterActionOptionsMarkup,battleActionList,battleActionUseBox,battleAttackStepMarkup,battleActionTimeLabel,battleActionContextKey} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,ownedItemDisplayName,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeItemOptionEffects,hasProperty,validSlot,armorDexterityLabel} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
+import {inventoryExcludedWeightSections,inventoryCountsTowardCarriedWeight} from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
 const inventoryContainers=inventoryModule.inventoryContainers||((record={})=>{
  const rows=Array.isArray(record.inventory_containers)?record.inventory_containers:[];
@@ -37,22 +38,6 @@ export function classIdentitySummary(members=[]){
    ' '+Math.max(1,Number(member.level)||1)).join(' · ');
  const total=owned.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
  return classes+(owned.length>1?' · Liv. totale '+total:'');
-}
-export function inventorySectionControls(record,selected=[]){
- const containers=inventoryContainers(record);
- const tabs=[['items','Zaino','inventory'],['scrolls','Pergamene','scroll'],['documents','Documenti','book'],
-  ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory'])];
- return '<nav class="inventory-subtabs inventory-container-tabs" role="group" aria-label="Sezioni inventario · selezione multipla">'+
-  '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button>'+
-
-  tabs.map(([key,label,glyph])=>{
-   const custom=key.startsWith('container:');
-   const toggle='<button type="button" data-act="inventory-subtab" data-subtab="'+esc(key)+
-    '" aria-pressed="'+selected.includes(key)+'" aria-label="'+esc(label)+'">'+actionGlyph(glyph)+'<span>'+esc(label)+'</span></button>';
-   return custom?'<span class="inventory-custom-section">'+toggle+
-    '<button type="button" class="inventory-section-remove" data-act="inventory-container-delete" data-container-id="'+esc(key.slice(10))+
-    '" aria-label="Elimina sezione '+esc(label)+'" title="Elimina sezione '+esc(label)+'">×</button></span>':toggle;
-  }).join('')+'</nav>';
 }
 export function inventoryAttunementControl(record,index,calculated={},showName=true){
  const item=record.inventory?.[index]||{},quantity=Math.max(0,Math.floor(Number(item.quantity??1)||0));
@@ -1216,10 +1201,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='inventory'){
   const containers=inventoryContainers(c);
   const keys=['items','scrolls','documents',...containers.slice(1).map(row=>'container:'+row.id)];
-  const requested=Array.isArray(view.inventorySelectedTabs)?view.inventorySelectedTabs:[view.inventorySubtab||'items'];
-  const selected=keys.filter(key=>requested.includes(key)||requested.includes('all'));
-  const showingItems=selected.some(key=>key==='items'||key.startsWith('container:'));
-  html+=inventorySectionControls(c,selected);
+  // All inventory sections are always present; the row disclosures control height.
+  const selected=keys;
+  const showingItems=true;
   html+='<div class="inventory-bulk-bar vtt-selection-toolbar" data-inventory-bulk hidden>'+
     '<label class="inventory-bulk-master"><input type="checkbox" data-inventory-select-all aria-label="Seleziona tutti gli oggetti visibili"><span class="inventory-check-graphic" aria-hidden="true">✓</span><span>Seleziona tutti</span></label>'+
     '<span class="vtt-selection-summary"><strong data-inventory-selection-count data-selection-count>0 selezionati</strong>'+
@@ -1252,9 +1236,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     {...item,attuned_count:attunements[i]||0}:item,inventoryProperties(item),isSpellScroll(item)));
   if(showingItems){
     const owned=readouts.filter(info=>info.kind!=='document');
-    const totals=key=>{const known=owned.filter(item=>item[key]!==null);return {count:known.length,value:known.reduce((sum,item)=>sum+item[key],0)};};
-    const weight=totals('weight'),value=totals('value'),format=value=>Number(value.toFixed(2)).toLocaleString('it-IT');
-    if(weight.count||value.count)html+='<div class="inventory-overview" aria-label="Riepilogo inventario"><div><span>Peso registrato</span><strong>'+(weight.count?format(weight.value)+' <small>lb</small>':'—')+'</strong>'+(weight.count&&weight.count<owned.length?'<small>Dati parziali</small>':'')+'</div><div><span>Valore degli oggetti</span><strong>'+(value.count?format(value.value)+' <small>mo</small>':'—')+'</strong>'+(value.count&&value.count<owned.length?'<small>Dati parziali</small>':'')+'</div></div>';
+    const carried=readouts.filter((info,i)=>info.kind!=='document'&&inventoryCountsTowardCarriedWeight(c,c.inventory[i]));
+    const totals=(rows,key)=>{const known=rows.filter(item=>item[key]!==null);return {count:known.length,value:known.reduce((sum,item)=>sum+item[key],0)};};
+    const weight=totals(carried,'weight'),value=totals(owned,'value'),format=value=>Number(value.toFixed(2)).toLocaleString('it-IT');
+    if(weight.count||!carried.length||value.count)html+='<div class="inventory-overview" aria-label="Riepilogo inventario"><div><span>Peso trasportato</span><strong>'+(weight.count||!carried.length?format(weight.value)+' <small>lb</small>':'—')+'</strong>'+(weight.count&&weight.count<carried.length?'<small>Dati parziali</small>':'')+'</div><div><span>Valore degli oggetti</span><strong>'+(value.count?format(value.value)+' <small>mo</small>':'—')+'</strong>'+(value.count&&value.count<owned.length?'<small>Dati parziali</small>':'')+'</div></div>';
   }
   // The search selects all the owner's containers; it does not hide rows.
   const highlighted=new Set(view.inventoryHighlightedIndices||[]);
@@ -1363,13 +1348,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         itemContainerId(c.inventory[i],containers)===destination);
     const name=isDocuments?'Documenti':isScrolls?'Pergamene magiche':activeContainer?.name||'Zaino';
     if(isScrolls)target('scroll-create','.inventory-scroll-create');
-    const specialAction=isDocuments?
-      '<div class="inventory-special-create"><button type="button" class="btn small" data-act="document-add">Nuovo documento</button></div>':
-      isScrolls?'<div class="inventory-special-create"><button type="button" class="btn small" data-act="sheet-context" data-sheet-context="scroll-create">Crea pergamena</button></div>':'';
-    const controls=activeContainer?
-      '<div class="inventory-container-management">'+
-        btn('Rinomina '+name,'settings','data-act="inventory-container-rename" data-container-id="'+esc(activeContainer.id)+'"','<span>Rinomina</span>')+
-      '</div>':'';
+    const excluded=inventoryExcludedWeightSections(c).includes(section);
     const sectionMetrics=(!isDocuments&&!isScrolls)?(()=>{
       const metric=(field,unit,label)=>{
         const known=visible.filter(({info})=>info[field]!==null);
@@ -1380,18 +1359,25 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
           '<small>Dati parziali</small>':'')+'</span>';
       };
       return '<span class="inventory-section-metrics" role="group" aria-label="Peso e valore sezione">'+
-        metric('weight','lb','Peso')+metric('value','mo','Valore')+'</span>';
+        metric('weight','lb',excluded?'Peso escluso':'Peso')+metric('value','mo','Valore')+'</span>';
     })():'';
-    html+=card(name,
+    const specialAction=isDocuments?
+      '<button type="button" class="inventory-section-create" data-act="document-add" aria-label="Crea documento" title="Crea documento">＋</button>':
+      isScrolls?'<button type="button" class="inventory-section-create" data-act="sheet-context" data-sheet-context="scroll-create" aria-label="Crea pergamena" title="Crea pergamena">＋</button>':'';
+    html+='<details class="play-card play-inventory-section'+(sectionMetrics?' has-section-metrics':'')+'" data-inventory-section-key="'+esc(section)+'" open>'+
+      '<summary class="play-card-head"><h2><button type="button" class="inventory-section-title" data-act="inventory-section-settings" data-section-key="'+esc(section)+'" aria-label="Impostazioni sezione '+esc(name)+'" title="Impostazioni sezione">'+esc(name)+'</button></h2>'+
+      '<span class="inventory-section-head-tools">'+sectionMetrics+specialAction+'</span>'+
+      '<span class="inventory-section-caret" aria-hidden="true">⌄</span></summary>'+
+      '<div class="inventory-section-body">'+
       visible.map(row=>'<div class="inventory-selectable-item" data-inventory-item-index="'+row.i+'">'+
         '<label class="inventory-item-batch-check" aria-label="Seleziona '+esc(c.inventory[row.i]?.name||'oggetto')+'">'+
         '<input type="checkbox" data-inventory-select="'+row.i+'"><span class="inventory-check-graphic" aria-hidden="true">✓</span></label>'+
         renderItem(row,section)+'</div>').join('')+
-        (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+
-        specialAction+controls,
-      sectionMetrics?'<span class="inventory-section-head-tools">'+sectionMetrics+'</span>':'',
-      'play-inventory-section'+(sectionMetrics?' has-section-metrics':''));
+        (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+'</div></details>';
   }
+  html+='<button type="button" class="inventory-section-add" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario"><span aria-hidden="true">＋</span><span>Aggiungi sezione</span></button>';
+ }
+ if(sheet==='traits'){  }
  }
  if(sheet==='traits'){
   const groups=[...bank.querySelectorAll('.trait-card')];
@@ -1453,23 +1439,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     'data-act="action-variants"','<span>Varianti alle regole</span>'));
   }
  }
- // Keep the "show all" control alongside the inventory title, rather
- // than treating it as another section in the multi-select wrap.
- if(sheet==='inventory'){
-  const title=app.querySelector(':scope > .page-head');
-  if(title){
-   const containers=inventoryContainers(c);
-   const keys=['items','scrolls','documents',...containers.slice(1).map(row=>'container:'+row.id)];
-   const selected=Array.isArray(view.inventorySelectedTabs)?view.inventorySelectedTabs:[view.inventorySubtab||'items'];
-   const allVisible=keys.every(key=>selected.includes(key)||selected.includes('all'));
-   const label=allVisible?'Mostra solo zaino':'Mostra tutti gli oggetti';
-   title.classList.add('play-inventory-page-title');
-   title.insertAdjacentHTML('beforeend',btn(label,'inventory',
-    'data-act="inventory-toggle-all" aria-pressed="'+allVisible+'"',
-    '<span>'+label+'</span>'));
-  }
- }
- const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
+  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);
  const filter=['inventory','info'].includes(sheet)?'':String(view.search||'').trim().toLocaleLowerCase('it');
  for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!matchesSearch(filter,row.dataset.playFilter);
