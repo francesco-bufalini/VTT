@@ -1,0 +1,508 @@
+{
+  "schema_version": 2,
+  "benefit_type": "attack",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "5etools:races:dmg:aarakocra:natural_attack:talons",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Talons",
+          "source": "DMG",
+          "race": "Aarakocra",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:aarakocra"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:dmg:aarakocra:natural_attack:talons",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": false,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:eepc:aarakocra:natural_attack:talons",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Talons",
+          "source": "EEPC",
+          "race": "Aarakocra",
+          "race_source": "EEPC",
+          "race_id": "5etools:races:eepc:aarakocra"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:eepc:aarakocra:natural_attack:talons",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:aarakocra:natural_attack:talons",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Talons",
+          "source": "MPMM",
+          "race": "Aarakocra",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:aarakocra"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mpmm:aarakocra:natural_attack:talons",
+          "damage": "1d6",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:ggr:centaur:natural_attack:hooves",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hooves",
+          "source": "GGR",
+          "race": "Centaur",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:centaur"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:ggr:centaur:natural_attack:hooves",
+          "damage": "1d4",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:centaur:natural_attack:hooves",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hooves",
+          "source": "MPMM",
+          "race": "Centaur",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:centaur"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mpmm:centaur:natural_attack:hooves",
+          "damage": "1d6",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:rhw:dhampir:natural_attack:vampiric-bite",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vampiric Bite",
+          "source": "RHW",
+          "race": "Dhampir",
+          "race_source": "RHW",
+          "race_id": "5etools:races:rhw:dhampir"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:rhw:dhampir:natural_attack:vampiric-bite",
+          "damage": "1d4",
+          "damage_type": "piercing",
+          "ability": "con",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:vrgr:dhampir:natural_attack:vampiric-bite",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vampiric Bite",
+          "source": "VRGR",
+          "race": "Dhampir",
+          "race_source": "VRGR",
+          "race_id": "5etools:races:vrgr:dhampir"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:vrgr:dhampir:natural_attack:vampiric-bite",
+          "damage": "1d4",
+          "damage_type": "piercing",
+          "ability": "con",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:dmg:gnoll:natural_attack:bite",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Bite",
+          "source": "DMG",
+          "race": "Gnoll",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:gnoll"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:dmg:gnoll:natural_attack:bite",
+          "damage": "1d4",
+          "damage_type": "piercing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mot:leonin:natural_attack:claws",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Claws",
+          "source": "MOT",
+          "race": "Leonin",
+          "race_source": "MOT",
+          "race_id": "5etools:races:mot:leonin"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mot:leonin:natural_attack:claws",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:lizardfolk:natural_attack:bite",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Bite",
+          "source": "MPMM",
+          "race": "Lizardfolk",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:lizardfolk"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mpmm:lizardfolk:natural_attack:bite",
+          "damage": "1d6",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:vgm:lizardfolk:natural_attack:bite",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Bite",
+          "source": "VGM",
+          "race": "Lizardfolk",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:lizardfolk"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:vgm:lizardfolk:natural_attack:bite",
+          "damage": "1d6",
+          "damage_type": "piercing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:ggr:minotaur:natural_attack:horns",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Horns",
+          "source": "GGR",
+          "race": "Minotaur",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:minotaur"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:ggr:minotaur:natural_attack:horns",
+          "damage": "1d6",
+          "damage_type": "piercing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:minotaur:natural_attack:horns",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Horns",
+          "source": "MPMM",
+          "race": "Minotaur",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:minotaur"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mpmm:minotaur:natural_attack:horns",
+          "damage": "1d6",
+          "damage_type": "piercing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psa:minotaur%20%28amonkhet%29:natural_attack:natural-weapon",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Weapon",
+          "source": "PSA",
+          "race": "Minotaur (Amonkhet)",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:minotaur%20%28amonkhet%29"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:psa:minotaur%20%28amonkhet%29:natural_attack:natural-weapon",
+          "damage": "1d6",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mot:satyr:natural_attack:ram",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Ram",
+          "source": "MOT",
+          "race": "Satyr",
+          "race_source": "MOT",
+          "race_id": "5etools:races:mot:satyr"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mot:satyr:natural_attack:ram",
+          "damage": "1d4",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:satyr:natural_attack:ram",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Ram",
+          "source": "MPMM",
+          "race": "Satyr",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:satyr"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mpmm:satyr:natural_attack:ram",
+          "damage": "1d6",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:tabaxi:natural_attack:cat-s-claws",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Cat's Claws",
+          "source": "MPMM",
+          "race": "Tabaxi",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:tabaxi"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mpmm:tabaxi:natural_attack:cat-s-claws",
+          "damage": "1d6",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:vgm:tabaxi:natural_attack:cat-s-claws",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Cat's Claws",
+          "source": "VGM",
+          "race": "Tabaxi",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:tabaxi"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:vgm:tabaxi:natural_attack:cat-s-claws",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:tortle:natural_attack:claws",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Claws",
+          "source": "MPMM",
+          "race": "Tortle",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:tortle"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:mpmm:tortle:natural_attack:claws",
+          "damage": "1d6",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    },
+    {
+      "id": "5etools:races:ttp:tortle:natural_attack:claws",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Claws",
+          "source": "TTP",
+          "race": "Tortle",
+          "race_source": "TTP",
+          "race_id": "5etools:races:ttp:tortle"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "attack": {
+          "id": "5etools:races:ttp:tortle:natural_attack:claws",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true,
+          "grants_proficiency": true
+        }
+      }
+    }
+  ],
+  "notes": "Supplemental natural strikes inferred only at build time from unambiguous 5eTools traits. Do not duplicate structured 5eTools weapon or proficiency fields."
+}

@@ -35,3 +35,33 @@ export function projectSpeciesAttacks(races=[]) {
  }
  return {version:1,source:'vtt/data/creature_references_5etools.json',races:projected};
 }
+
+// Generate per-type mechanics at build time; no 5eTools prose parsing at runtime.
+export function projectSpeciesAttackBenefitCatalogs(races=[]){
+ const attack=[],movement=[],legacy=projectSpeciesAttacks(races);
+ const id=(race,trait,type)=>String(race.id)+':'+type+':'+
+  String(trait).trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
+ const granted_by=(race,trait)=>({kind:'5etools',ref:{category:'species_trait',
+  name:trait,source:race.source,race:race.name,race_source:race.source,race_id:race.id}});
+ for(const race of legacy.races){
+  for(const value of race.attacks){
+   const {trait,...fields}=value,entryId=id(race,trait,'natural_attack');
+   attack.push({id:entryId,granted_by:granted_by(race,trait),
+    benefit:{type:'attack',attack:{id:entryId,...fields}}});
+  }
+  if(race.flight_no_medium_heavy_armor){
+   const original=races.find(x=>x.id===race.id);
+   if(!original?.entries?.some(x=>x.name==='Flight'))
+    throw Error('Missing 5eTools Flight owner: '+race.name+'|'+race.source);
+   movement.push({id:id(race,'Flight','flight_armor'),
+    granted_by:granted_by(race,'Flight'),
+    benefit:{type:'movement',movement:{type:'fly',blocked_by_armor:['medium','heavy']}}});
+  }
+ }
+ return {
+  attack:{schema_version:2,benefit_type:'attack',scope:'catalog',entries:attack,
+   notes:"Supplemental natural strikes inferred only at build time from unambiguous 5eTools traits. Do not duplicate structured 5eTools weapon or proficiency fields."},
+  movement:{schema_version:2,benefit_type:'movement',scope:'catalog',entries:movement,
+   notes:"Only armor restrictions on existing 5eTools flight speeds; speed values and traits themselves remain in 5eTools."}
+ };
+}

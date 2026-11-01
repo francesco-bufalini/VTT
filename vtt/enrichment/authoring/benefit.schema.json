@@ -2624,6 +2624,19 @@
         },
         "requirements": {
           "$ref": "#/$defs/requirements"
+        },
+        "blocked_by_armor": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "light",
+              "medium",
+              "heavy"
+            ]
+          },
+          "description": "Armor categories suppressing an existing movement mode; 5eTools retains the speed."
         }
       },
       "required": [
