@@ -8,11 +8,16 @@ background, incantesimo o mostro di provenienza. È una scelta intenzionale:
 durante lo sviluppo bisogna poter scorrere e modificare tutti i benefici
 di uno stesso tipo in **un solo punto**.
 
-I nuovi file sono previsti sotto `vtt/enrichment/benefits/<tipo>.json` e
-convalidati con `vtt/enrichment/authoring/<tipo>.schema.json`.
-Gli schemi descrivono il **formato proposto**, non sostituiscono ancora i
-cataloghi eterogenei attualmente in `pwa/catalog/` e `vtt/data/`.
-Il runtime, i salvataggi e la geometria di Godot restano **immutati** da questa PR.
+I file vivono sotto `vtt/enrichment/benefits/<tipo>.json` e sono convalidati
+con `vtt/enrichment/authoring/<tipo>.schema.json`.
+**Migrazione iniziale delle razze:** `roll_mode.json` (164 regole) e
+`roll_bonus.json` (23 bonus) sono le fonti attive del runtime PWA.
+I vecchi `pwa/catalog/species_roll_modes.json` e
+`pwa/catalog/species_conditional_bonuses.json` sono stati eliminati: il
+modulo `pwa/species_benefit_catalogs.js` ricostruisce soltanto in memoria
+l'interfaccia che i calcoli della scheda usano attualmente.
+Gli altri cataloghi eterogenei rimangono da migrare; salvataggi e geometria
+di Godot sono invariati.
 
 ### Un esempio: bonus ai tiri
 

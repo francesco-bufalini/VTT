@@ -11,6 +11,7 @@ import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
 import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
+import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits} from './species_benefit_catalogs.js';
 import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,attackCategories} from './attack_count_benefits.js';
@@ -1792,17 +1793,17 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.extensions)?data.extensions:[]),
     fetch('/catalog/species_powers.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[]}).catch(()=>({races:[]})),
-    fetch('/catalog/species_conditional_bonuses.json').then(r=>r.ok?r.json():{})
-      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[]}).catch(()=>({races:[]})),
+    fetch('/benefits/roll_bonus.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
+      .then(speciesRollBonusesFromBenefits)
+      .catch(error=>{console.warn('VTT: catalogo bonus ai tiri non disponibile',error);return {races:[],load_error:true};}),
     fetch('/catalog/spell_grant_rules.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.rules)?data.rules:[])
       .catch(()=>[]),
     fetch('/catalog/species_defenses.json').then(r=>{if(!r.ok)throw Error('Difese delle specie non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
       .catch(error=>{console.warn('VTT: catalogo difese delle specie non disponibile',error);return {races:[],load_error:true};}),
-    fetch('/catalog/species_roll_modes.json').then(r=>{if(!r.ok)throw Error('Modificatori ai tiri delle specie non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
-      .catch(error=>{console.warn('VTT: vantaggi razziali condizionali non disponibili',error);return {races:[],load_error:true};}),
+    fetch('/benefits/roll_mode.json').then(r=>{if(!r.ok)throw Error('Modificatori ai tiri delle specie non disponibili');return r.json();})
+      .catch(error=>{console.warn('VTT: vantaggi razziali condizionali non disponibili',error);return {load_error:true};}),
     fetch('/catalog/sense_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1?data:{}).catch(()=>({})),
     fetch('/catalog/feature_item_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1&&Array.isArray(data.grants)?data.grants:[]).catch(()=>[]),
     // One declarative three-stage selection contract, optional for older offline shells.
@@ -1827,7 +1828,9 @@ export function loadRuleCatalogs(){
   ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants},featureItemGrants,
-    proficiencyGrants,speciesAttacks,speciesDefenses,speciesRollModes,senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureRules:featureRules||{},featureActionOverrides,
+    proficiencyGrants,speciesAttacks,speciesDefenses,
+    speciesRollModes:speciesRollModes.load_error?{races:[],load_error:true}:speciesRollModesFromBenefits(speciesRollModes,originDetails),
+    senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
     featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))

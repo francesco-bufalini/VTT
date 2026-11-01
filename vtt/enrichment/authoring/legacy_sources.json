@@ -157,24 +157,6 @@
       ]
     },
     {
-      "path": "pwa/catalog/species_roll_modes.json",
-      "sections": [
-        "races"
-      ],
-      "types": [
-        "roll_mode"
-      ]
-    },
-    {
-      "path": "pwa/catalog/species_conditional_bonuses.json",
-      "sections": [
-        "races"
-      ],
-      "types": [
-        "roll_bonus"
-      ]
-    },
-    {
       "path": "pwa/catalog/species_types.json",
       "sections": [
         "races"
@@ -326,6 +308,20 @@
       "types": [
         "area_geometry"
       ]
+    }
+  ],
+  "migrated": [
+    {
+      "source": "pwa/catalog/species_roll_modes.json",
+      "benefit_type": "roll_mode",
+      "catalog": "vtt/enrichment/benefits/roll_mode.json",
+      "runtime": "pwa/species_benefit_catalogs.js"
+    },
+    {
+      "source": "pwa/catalog/species_conditional_bonuses.json",
+      "benefit_type": "roll_bonus",
+      "catalog": "vtt/enrichment/benefits/roll_bonus.json",
+      "runtime": "pwa/species_benefit_catalogs.js"
     }
   ]
 }
