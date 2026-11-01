@@ -17,7 +17,8 @@
         ],
         "ability_modifier": "int",
         "minimum": 1
-      }
+      },
+      "roll_only": true
     },
     {
       "id": "artificer_tool_expertise",
