@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {classFeatureEntries,classFeatureActivationPatch} from '../feature_mechanics.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
 import {battleAbilityEntries} from '../action_economy.js';
+import {readFileSync} from 'node:fs';
+const featureActionOverrides=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
 
 const create=(name,owner='Artificer',source='TCE')=>{
  const key='class|'+source.toLowerCase()+'|'+owner.toLowerCase();
@@ -13,7 +15,7 @@ test('purely descriptive class powers are visible, never spend a no-op use',()=>
  const creature={rules_version:'2014',classes:[{name:'Artificer',source:'TCE',level:3}],
   resource_tracker_spent:{}};
  const features=[create('Magical Tinkering'),create('Eldritch Cannon'),create('Steel Defender')];
- const projection={features,trackers:[],feature_rules:{}};
+ const projection={features,trackers:[],feature_rules:{},feature_action_overrides:featureActionOverrides};
  const entries=classFeatureEntries(creature,projection);
  for(const id of ['magical_tinkering','command_cannon','command_defender']){
   const row=entries.find(item=>item.class_feature_id===id);
