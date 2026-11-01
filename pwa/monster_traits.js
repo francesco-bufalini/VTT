@@ -85,7 +85,7 @@ export function monsterTraits(record={}){
    // Legendary/lair attacks are also capacities of their resource trait.
    if(!isAttack||special[section]||options.length)owner.monster_actions.push({
     id,name:row.name||'Capacità · '+(index+1),description:content(row.entries||row.description||[]),
-    time:section==='bonus'?'bonus':section==='reaction'?'reaction':section==='legendary'?'legendary':section==='lairActions'?'lair':'action',
+    time:section==='bonus'?'bonus':section==='reaction'?'reaction':section==='legendary'?'free':section==='lairActions'?'lair':'action',
     origin_id:'feature:'+owner.feature_key,feature_id:'feature:'+owner.feature_key,
     tracker_id:special[section]?.monster_pool.id||tracker,
     cost:special[section]?monsterActionCost(row):tracker?1:0,
@@ -148,7 +148,7 @@ export function monsterBasicRules(record={},calculated={}){
   const role=row.monster_role,id={legendary:'legendary_action',resistance:'legendary_resistance',lair:'lair_action'}[role];
   const tracker=rows(calculated.trackers).find(t=>t.id===row.monster_pool.id||t.origin_id==='feature:'+row.feature_key);
   return {id,name:{legendary:'Azione leggendaria',resistance:'Resistenza leggendaria',lair:'Azioni di tana'}[role],
-   time:{legendary:'legendary',resistance:'legendary_resistance',lair:'lair'}[role],type:'Generale',origin:'general',
+   time:{legendary:'free',resistance:'legendary_resistance',lair:'lair'}[role],type:'Generale',origin:'general',
    origin_id:'feature:'+row.feature_key,description:content(row.entries),tracker_id:tracker?.id||row.monster_pool.id,cost:1,
    available:!!tracker&&!tracker.disabled&&Number(tracker.max)-Number(tracker.spent||0)>0,monster_action:true};
  }).filter(row=>row.id);

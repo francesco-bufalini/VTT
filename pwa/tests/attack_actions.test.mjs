@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {attackCategories,attackActionGrants,attackActionUsePatch,attackActionChoice,attackActionPayment,resolveAttackActionSteps} from '../attack_count_benefits.js';
 import {multiattackSteps,normalizeMonsterStatBlock} from '../character_core.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
+import {monsterActions} from '../monster_traits.js';
 import {actionEntries,battleActionPanels,attackActionCategory,battleAttackStepMarkup} from '../action_economy.js';
 import {JSDOM} from 'jsdom';
 
@@ -107,7 +108,7 @@ test('Cunning Action grants exactly one of Dash, Disengage or Hide as a bonus ac
  assert.equal(attackActionCategory(grant),'other');
  assert.equal(attackActionChoice(grant,'hide').label,'Nascondersi');
  assert.throws(()=>attackActionUsePatch(rogue,{attack_actions:[grant]},grant.id),/Scegli/i);
- assert.deepEqual(attackActionUsePatch(rogue,{attack_actions:[grant]},grant.id,'hide'),{});
+ assert.deepEqual(attackActionUsePatch(rogue,{attack_actions:[grant],action_entries:[{id:'hide',name:'Nascondersi',type:'Generale'}]},grant.id,'hide'),{});
  const options=[{id:'dash',name:'Scattare',type:'Generale'},
   {id:'disengage',name:'Disimpegnarsi',type:'Generale'},
   {id:'hide',name:'Nascondersi',type:'Generale'}];
@@ -152,7 +153,7 @@ test('a legendary action pool is one OR with independent costs and reusable chec
  const grants=attackActionGrants(record,[],[tracker],rules);
  const action=grants.find(row=>row.id==='monster:legendary:choices');
  assert(action,'monster legendary pool must be projected from data');
- assert.equal(action.time,'legendary');assert.equal(action.tracker_id,tracker.id);
+ assert.equal(action.time,'free');assert.equal(action.tracker_id,tracker.id);
  assert.equal(attackActionCategory(action),'other');
  const alternatives=action.steps[0].one_of;
  assert.deepEqual(alternatives.map(option=>[option.id,option.tracker_cost,option.selector.kind]),[
@@ -160,6 +161,7 @@ test('a legendary action pool is one OR with independent costs and reusable chec
   ['monster:legendary:1',2,'ability']
  ]);
  assert.equal(alternatives[0].selector.target,'skill:perception');
+ assert.equal(alternatives[0].label,'Prova di Percezione');
  assert.equal(attackActionPayment(action,'monster:legendary:1').cost,2);
  assert.throws(()=>attackActionUsePatch(record,{attack_actions:grants,trackers:[tracker]},action.id),/Scegli/i);
  assert.deepEqual(attackActionUsePatch(record,{attack_actions:grants,trackers:[tracker]},action.id,'monster:legendary:1'),
@@ -175,7 +177,8 @@ test('a legendary action pool is one OR with independent costs and reusable chec
  const buttons=[...dom.window.document.querySelectorAll('[data-act="attack-action-use"]')];
  assert.deepEqual(buttons.map(button=>button.dataset.attackActionOptionId),
   ['monster:legendary:0','monster:legendary:1']);
- assert.match(dom.window.document.body.textContent,/Detect/);
+ assert.match(dom.window.document.body.textContent,/Prova di Percezione/);
+ assert.doesNotMatch(dom.window.document.body.textContent,/Detect/);
  assert.match(dom.window.document.body.textContent,/Wing Attack/);
  dom.window.close();
 });
@@ -206,4 +209,33 @@ test('subclass and edition gates keep conditional attack sequences scoped to the
  assert(!grants.some(row=>row.id==='attack_action:hunter-whirlwind-2014'));
  assert.equal(grants.find(row=>row.id==='attack_action:hunter-volley-2014').steps[0].repeat,'per_target');
  assert.equal(attackActionGrants({...ranger,rules_version:'2024'},features,[],rules).length,0);
+});
+
+test('legendary entries refer to concrete operations; native actions consume their own pool exactly once',()=>{
+ const tracker={id:'legendary_actions',name:'Azioni leggendarie',max:3,spent:0};
+ const record={...fixture,resource_tracker_spent:{}};
+ const grants=attackActionGrants(record,[],[tracker],rules);
+ const action=grants.find(row=>row.id==='monster:legendary:choices');
+ const wing=action.steps[0].one_of.find(row=>row.id==='monster:legendary:1');
+ const source=monsterActions(record,[tracker]).find(row=>row.id===wing.selector.id);
+ assert(source,'Wing Attack must refer to an existing monster ability');
+ assert.equal(source.time,'free');assert.equal(source.cost,2);
+ assert.equal(wing.selector.kind,'ability');
+ assert.deepEqual(attackActionUsePatch(record,{attack_actions:grants,trackers:[tracker]},
+  action.id,wing.id),{resource_tracker_spent:{legendary_actions:2}});
+ const tailored=structuredClone(record);
+ tailored.stat_block.legendary[0].vtt_action_selector={kind:'check',target:'skill:insight'};
+ const revised=attackActionGrants(tailored,[],[tracker],rules).find(row=>row.id===action.id);
+ assert.equal(revised.steps[0].one_of[0].label,'Prova di Intuizione');
+ assert.equal(revised.steps[0].one_of[0].selector.target,'skill:insight');
+ const invalid=structuredClone(tailored);
+ invalid.stat_block.legendary[0].vtt_action_selector={kind:'ability',id:'invented:action'};
+ const wrong=attackActionGrants(invalid,[],[tracker],rules).find(row=>row.id===action.id);
+ assert.throws(()=>attackActionUsePatch(invalid,{attack_actions:[wrong],trackers:[tracker]},
+  wrong.id,'monster:legendary:0'),/non disponibile/i);
+ const invalidCheck=structuredClone(tailored);
+ invalidCheck.stat_block.legendary[0].vtt_action_selector={kind:'check',target:'skill:not-a-skill'};
+ const missing=attackActionGrants(invalidCheck,[],[tracker],rules).find(row=>row.id===action.id);
+ assert.throws(()=>attackActionUsePatch(invalidCheck,{attack_actions:[missing],trackers:[tracker]},
+  missing.id,'monster:legendary:0'),/non disponibile/i);
 });
