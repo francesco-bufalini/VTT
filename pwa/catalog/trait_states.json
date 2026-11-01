@@ -114,7 +114,6 @@
       "id": "armor_model:guardian",
       "group": "armor_model",
       "category": "stato",
-      "name": "Modello armatura · Guardiano",
       "trait": "Armor Model",
       "class_name": "Artificer",
       "class_source": "TCE",
@@ -122,12 +121,10 @@
       "require_equipped": {
         "extension_selection": "arcane_armor"
       },
-      "summary": "Armatura Arcana · Guardiano; guanti del tuono (svantaggio condizionale sul bersaglio colpito) e Campo difensivo.",
       "attacks": [
         {
           "id": "class_feature:thunder_gauntlets",
           "trait": "Thunder Gauntlets",
-          "name": "Thunder Gauntlets",
           "damage": "1d8",
           "damage_type": "T",
           "melee": true,
@@ -140,9 +137,7 @@
               "target": "attack_roll",
               "mode": "disadvantage",
               "trigger": "on_hit",
-              "condition_label": "Attacchi contro creature diverse dall'Artefice che ha colpito",
-              "duration": "until_start_of_next_turn",
-              "description": "Il bersaglio colpito ha svantaggio ai tiri per colpire contro creature diverse dall'Artefice fino all'inizio del prossimo turno dell'Artefice."
+              "duration": "until_start_of_next_turn"
             }
           ],
           "weapon_category": "simple",
@@ -158,7 +153,6 @@
       "id": "armor_model:infiltrator",
       "group": "armor_model",
       "category": "stato",
-      "name": "Modello armatura · Infiltratore",
       "trait": "Armor Model",
       "class_name": "Artificer",
       "class_source": "TCE",
@@ -166,12 +160,10 @@
       "require_equipped": {
         "extension_selection": "arcane_armor"
       },
-      "summary": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini, Passi Potenziati e vantaggio alle prove di Furtività.",
       "attacks": [
         {
           "id": "class_feature:lightning_launcher",
           "trait": "Lightning Launcher",
-          "name": "Lightning Launcher",
           "damage": "1d6",
           "damage_type": "L",
           "melee": false,
@@ -183,7 +175,6 @@
             "id": "lightning-launcher:extra",
             "dice": "1d6",
             "damage_type": "lightning",
-            "name": "Lightning Launcher · danno aggiuntivo",
             "tracker_id": "feature:lightning_launcher:extra_damage",
             "recharge": "turn",
             "max": 1
@@ -213,17 +204,14 @@
       "id": "barbarian_beast_form:bite",
       "group": "barbarian_beast_form",
       "category": "forma",
-      "name": "Form of the Beast · Morso",
       "trait": "Form of the Beast",
       "class_name": "Barbarian",
       "class_source": "PHB",
       "subclass": "Beast",
-      "summary": "Seleziona Morso solo quando entri in Ira. Attacco naturale 1d8 perforanti; sotto metà PF massimi, una volta per turno quando colpisci puoi recuperare PF pari alla competenza. La cura è manuale.",
       "attacks": [
         {
           "id": "barbarian:beast:bite",
           "trait": "Form of the Beast",
-          "name": "Morso",
           "damage": "1d8",
           "damage_type": "piercing",
           "melee": true,
@@ -238,17 +226,14 @@
       "id": "barbarian_beast_form:claws",
       "group": "barbarian_beast_form",
       "category": "forma",
-      "name": "Form of the Beast · Artigli",
       "trait": "Form of the Beast",
       "class_name": "Barbarian",
       "class_source": "PHB",
       "subclass": "Beast",
-      "summary": "Seleziona Artigli solo quando entri in Ira. Attacco naturale 1d6 taglienti; quando attacchi con un artiglio nell’azione Attaccare puoi fare un attacco di artiglio aggiuntivo una volta per turno (eseguilo manualmente).",
       "attacks": [
         {
           "id": "barbarian:beast:claws",
           "trait": "Form of the Beast",
-          "name": "Artigli",
           "damage": "1d6",
           "damage_type": "slashing",
           "melee": true,
@@ -263,17 +248,14 @@
       "id": "barbarian_beast_form:tail",
       "group": "barbarian_beast_form",
       "category": "forma",
-      "name": "Form of the Beast · Coda",
       "trait": "Form of the Beast",
       "class_name": "Barbarian",
       "class_source": "PHB",
       "subclass": "Beast",
-      "summary": "Seleziona Coda solo quando entri in Ira. Attacco naturale 1d8 perforanti con portata 10 ft. Come reazione all’essere colpito da un attacco di una creatura visibile entro 10 ft, tira 1d8 e aggiungilo alla CA contro quell’attacco (manuale).",
       "attacks": [
         {
           "id": "barbarian:beast:tail",
           "trait": "Form of the Beast",
-          "name": "Coda",
           "damage": "1d8",
           "damage_type": "piercing",
           "melee": true,
@@ -288,111 +270,91 @@
       "id": "barbarian_totem_aspect:bear",
       "group": "barbarian_totem_aspect",
       "category": "scelta",
-      "name": "Aspect of the Beast · Bear",
       "trait": "Aspect of the Beast",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 6° livello (non cambia con il riposo). Raddoppia la capacità di carico (inclusi i limiti a spingere, trascinare e sollevare) e ottieni vantaggio alle prove di Forza per spingere, tirare, sollevare o rompere oggetti. Applicazione manuale."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_aspect:eagle",
       "group": "barbarian_totem_aspect",
       "category": "scelta",
-      "name": "Aspect of the Beast · Eagle",
       "trait": "Aspect of the Beast",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 6° livello (non cambia con il riposo). Puoi vedere a una distanza fino a 1 miglio senza difficoltà, discernendo dettagli come a 100 ft; la luce fioca non impone svantaggio alle prove di Percezione basate sulla vista. Applicazione descrittiva."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_aspect:elk",
       "group": "barbarian_totem_aspect",
       "category": "scelta",
-      "name": "Aspect of the Beast · Elk",
       "trait": "Aspect of the Beast",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 6° livello (non cambia con il riposo). Il ritmo di viaggio tuo e dei compagni vicini è raddoppiato mentre viaggi senza essere incapacitato. Applicazione manuale."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_aspect:tiger",
       "group": "barbarian_totem_aspect",
       "category": "scelta",
-      "name": "Aspect of the Beast · Tiger",
       "trait": "Aspect of the Beast",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 6° livello (non cambia con il riposo). Scegli due competenze fra Acrobazia, Atletica, Furtività e Sopravvivenza tramite le scelte della scheda."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_aspect:wolf",
       "group": "barbarian_totem_aspect",
       "category": "scelta",
-      "name": "Aspect of the Beast · Wolf",
       "trait": "Aspect of the Beast",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 6° livello (non cambia con il riposo). Puoi seguire tracce a passo veloce e viaggiare furtivamente a ritmo normale. Applicazione descrittiva."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_attunement:bear",
       "group": "barbarian_totem_attunement",
       "category": "scelta",
-      "name": "Totemic Attunement · Bear",
       "trait": "Totemic Attunement",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 14° livello (non cambia con il riposo). Durante l’Ira, le creature ostili entro 5 ft che ti vedono o ti sentono hanno svantaggio ai tiri per colpire contro altre creature. Applica manualmente sui bersagli."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_attunement:eagle",
       "group": "barbarian_totem_attunement",
       "category": "scelta",
-      "name": "Totemic Attunement · Eagle",
       "trait": "Totemic Attunement",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 14° livello (non cambia con il riposo). Durante l’Ira puoi effettuare un breve volo fino alla tua velocità di camminata senza mantenerlo al termine del turno; applicazione manuale."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_attunement:elk",
       "group": "barbarian_totem_attunement",
       "category": "scelta",
-      "name": "Totemic Attunement · Elk",
       "trait": "Totemic Attunement",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 14° livello (non cambia con il riposo). Durante l’Ira puoi usare un’azione bonus per attraversare lo spazio di una creatura e tentare di renderla prona, infliggendo danni secondo il tratto. Effettua manualmente prove e danni."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_attunement:tiger",
       "group": "barbarian_totem_attunement",
       "category": "scelta",
-      "name": "Totemic Attunement · Tiger",
       "trait": "Totemic Attunement",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 14° livello (non cambia con il riposo). Durante l’Ira puoi effettuare un attacco in mischia come azione bonus dopo esserti mosso in linea retta di almeno 20 ft verso una creatura Grande o inferiore. Condizioni manuali."
+      "subclass": "Totem Warrior"
     },
     {
       "id": "barbarian_totem_attunement:wolf",
       "group": "barbarian_totem_attunement",
       "category": "scelta",
-      "name": "Totemic Attunement · Wolf",
       "trait": "Totemic Attunement",
       "class_name": "Barbarian",
       "class_source": "PHB",
-      "subclass": "Totem Warrior",
-      "summary": "Scelta indipendente al 14° livello (non cambia con il riposo). Durante l’Ira, come azione bonus puoi rendere prona una creatura Grande o inferiore che hai colpito con un attacco in mischia. Applicazione manuale."
+      "subclass": "Totem Warrior"
     }
   ]
 }
