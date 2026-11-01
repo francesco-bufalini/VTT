@@ -3716,6 +3716,67 @@ function openInventoryBulkMoveDialog(indices){
   });
   document.body.append(dialog);openDialog(dialog);destination.focus();
 }
+function openInventorySectionSettings(key){
+  const editor=state.editor,record=editor?.read();
+  if(!record||!inventorySectionKeys(record).includes(key))throw Error('Sezione inventario non disponibile.');
+  const containers=inventoryContainers(record),id=key.startsWith('container:')?key.slice(10):'';
+  const custom=containers.find(row=>row.id===id);
+  const name=custom?.name||({items:'Zaino',scrolls:'Pergamene magiche',documents:'Documenti'})[key];
+  const excluded=new Set(inventoryModule.inventoryExcludedWeightSections?.(record)||[]);
+  document.querySelector('#inventory-section-settings-dialog')?.remove();
+  const dialog=document.createElement('dialog');
+  dialog.id='inventory-section-settings-dialog';dialog.className='sheet-context-dialog inventory-section-settings-dialog';
+  dialog.setAttribute('aria-labelledby','inventory-section-settings-title');
+  dialog.innerHTML='<header class="sheet-context-head"><h2 id="inventory-section-settings-title">Sezione · '+esc(name)+'</h2>'+
+    '<button type="button" class="vtt-popup-close" data-inventory-section-close aria-label="Chiudi" title="Chiudi">×</button></header>'+
+    '<div class="sheet-context-body">'+(custom?
+      '<label>Nome sezione<input type="text" maxlength="80" data-inventory-section-name value="'+esc(name)+'"></label>':
+      '<p class="hint">Il nome delle sezioni predefinite non può essere modificato.</p>')+
+    '<label class="check inventory-section-weight"><input type="checkbox" data-inventory-section-exclude-weight'+(excluded.has(key)?' checked':'')+'>Escludi il peso di questa sezione dal peso trasportato</label>'+
+    '<p class="hint">Gli oggetti rimangono visibili e il loro peso individuale non cambia.</p>'+
+    '<p class="warning" data-inventory-section-error role="alert" hidden></p></div>'+
+    '<footer class="pending-choice-actions">'+(custom?
+      '<button type="button" class="btn danger" data-inventory-section-delete>Elimina sezione</button>':'')+
+      '<button type="button" class="btn" data-inventory-section-close>Chiudi</button>'+
+      '<button type="button" class="btn primary" data-inventory-section-save>Salva</button></footer>';
+  const close=()=>closeDialog(dialog,{remove:true});
+  dialog.querySelectorAll('[data-inventory-section-close]').forEach(button=>button.addEventListener('click',close));
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  dialog.querySelector('[data-inventory-section-delete]')?.addEventListener('click',()=>{
+    close();openInventoryContainerDelete(id);
+  });
+  const save=dialog.querySelector('[data-inventory-section-save]');
+  let saving=false;
+  dialog.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
+  save.addEventListener('click',async()=>{
+    if(saving)return;
+    saving=true;save.disabled=true;
+    const errorView=dialog.querySelector('[data-inventory-section-error]');
+    try{
+      await flushPendingFields();
+      if(state.editor!==editor||editor.read()?.id!==record.id||state.sheet!=='inventory')
+        throw Error('La creatura è cambiata. Riapri la sezione.');
+      const current=editor.read(),currentContainers=inventoryContainers(current);
+      if(!inventorySectionKeys(current).includes(key))throw Error('La sezione non è più disponibile.');
+      const excludedNow=new Set(inventoryModule.inventoryExcludedWeightSections?.(current)||[]);
+      if(dialog.querySelector('[data-inventory-section-exclude-weight]').checked)excludedNow.add(key);
+      else excludedNow.delete(key);
+      const changes={inventory_excluded_weight_sections:inventorySectionKeys(current).filter(section=>excludedNow.has(section))};
+      if(custom){
+        const renamed=dialog.querySelector('[data-inventory-section-name]').value.trim();
+        if(!renamed||renamed.length>80||currentContainers.some(row=>row.id!==id&&row.name.toLowerCase()===renamed.toLowerCase()))
+          throw Error('Nome non valido o già utilizzato.');
+        changes.inventory_containers=currentContainers.slice(1).map(row=>row.id===id?{...row,name:renamed}:row);
+      }
+      await patch(changes);await editor.flush();
+      close();await render();
+    }catch(error){
+      errorView.textContent=errorMessage(error);errorView.hidden=false;
+    }finally{saving=false;save.disabled=false;}
+  });
+  app.append(dialog);openDialog(dialog);
+  (dialog.querySelector('[data-inventory-section-name]')||save).focus();
+}
 function openInventoryContainerDelete(id){
   const editor=state.editor,record=editor?.read(),containers=inventoryContainers(record);
   const original=containers.find(row=>row.id===id);
@@ -9744,6 +9805,7 @@ async function handleAction(target){
     await patch(powerApplicationPatch(creature,calculated,calculated.power_selection_catalog,target.dataset.selectionId,target.dataset.optionId,false));
     await render();return;
   }
+  if(act==="inventory-section-settings"){openInventorySectionSettings(target.dataset.sectionKey);return;}
   if(["inventory-container-add","inventory-container-rename","inventory-container-delete"].includes(act)){
     const record=state.editor?.read();if(!record)throw Error("Apri prima una creatura.");
     const containers=inventoryContainers(record),id=target.dataset.containerId;
