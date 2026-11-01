@@ -607,14 +607,15 @@ export function battleAttackActionRow(item={},calculated={}){
  const control=battleActionUseBox({act:useAct,attrs,
   tracker,trackerName:item.tracker,cost,disabled:item.available===false,name:item.name});
  const description=details(item.description||'');
- return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-list-action'+
+ return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-list-action play-battle-attack-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
   '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+
   actionGlyph(actionGlyphKey(item))+'<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione')+'</strong>'+
   '<small>'+esc(battleActionTimeLabel(item.time))+'</small>'+
-  (arr(sequence.items).length?'<span class="play-action-list-parent-arrow" aria-hidden="true">↓</span>':'')+
   (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
-  '</span></summary>'+
+  '</span>'+
+  (arr(sequence.items).length?'<span class="play-action-list-parent-arrow" aria-hidden="true">↓</span>':'')+
+  '</summary>'+
   '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p>'+
   monsterActionOptionsMarkup(item)+'</div></details>'+
   control+battleAttackStepMarkup(sequence)+'</article>';
