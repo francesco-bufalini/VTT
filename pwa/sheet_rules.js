@@ -12,7 +12,7 @@ import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
 import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
-import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits} from './species_benefit_catalogs.js';
+import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits,speciesAttacksFromBenefits} from './species_benefit_catalogs.js';
 import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,attackCategories} from './attack_count_benefits.js';
@@ -1782,9 +1782,10 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
     // This catalog is supplemental. A missing/stale native host must not also
     // suppress all fixed racial ability and proficiency grants in the sheet.
-    fetch('/catalog/species_attacks.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
-      .catch(error=>{console.warn('VTT: catalogo attacchi delle specie non disponibile',error);return {races:[],load_error:true};}),
+    Promise.all(['/benefits/attack.json','/benefits/movement.json'].map(path=>
+      fetch(path).then(r=>{if(!r.ok)throw Error('HTTP '+r.status+': '+path);return r.json();})))
+      .then(([attacks,movement])=>speciesAttacksFromBenefits(attacks,movement))
+      .catch(error=>{console.warn('VTT: catalogo attacchi/movimento delle specie non disponibile',error);return {races:[],load_error:true};}),
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}

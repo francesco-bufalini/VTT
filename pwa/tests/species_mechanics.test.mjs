@@ -1,14 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {projectSpeciesAttacks} from '../tools/species_mechanics.mjs';
+import {projectSpeciesAttacks,projectSpeciesAttackBenefitCatalogs} from '../tools/species_mechanics.mjs';
+import {speciesAttacksFromBenefits} from '../species_benefit_catalogs.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 
 const json=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const source=json('../../vtt/data/creature_references_5etools.json');
-const catalog=json('../catalog/species_attacks.json');
+const generated=projectSpeciesAttackBenefitCatalogs(source.races);
+const attackBenefits=json('../../vtt/enrichment/benefits/attack.json');
+const movementBenefits=json('../../vtt/enrichment/benefits/movement.json');
+const catalog=speciesAttacksFromBenefits(attackBenefits,movementBenefits);
 const abilities={str:16,dex:12,con:14,int:10,wis:10,cha:10};
 const record=(book)=>({
  kind:'character',species:'Aarakocra',species_source:book,
@@ -19,7 +23,13 @@ const calculated=(book,changes={})=>calculateSheet({...record(book),...changes},
 const natural=sheet=>sheet.attacks.find(a=>a.id.startsWith('natural:'));
 
 test('published source data generates deterministic typed natural strikes (never prose at runtime)',()=>{
- assert.deepEqual(projectSpeciesAttacks(source.races),catalog);
+ assert.deepEqual(attackBenefits,generated.attack);
+ assert.deepEqual(movementBenefits,generated.movement);
+ const canonical=projectSpeciesAttacks(source.races);
+ const sort=rows=>[...rows].sort((a,b)=>a.id.localeCompare(b.id));
+ assert.deepEqual(sort(catalog.races),sort(canonical.races));
+ assert.equal(attackBenefits.entries.length,20);
+ assert.equal(movementBenefits.entries.length,10);
  assert.ok(catalog.races.length>=20);
  assert.equal(catalog.races.filter(r=>r.name==='Aarakocra').length,3);
  assert.ok(!catalog.races.some(r=>r.name==='Shifter (Longtooth)'&&r.source==='ERLW'),

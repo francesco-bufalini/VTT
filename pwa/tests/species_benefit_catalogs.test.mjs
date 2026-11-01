@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits} from '../species_benefit_catalogs.js';
+import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits,speciesAttacksFromBenefits} from '../species_benefit_catalogs.js';
 import {projectSpeciesRollModes} from '../tools/species_roll_modes.mjs';
 const read=relative=>JSON.parse(readFileSync(new URL(relative,import.meta.url),'utf8'));
 const rollMode=read('../../vtt/enrichment/benefits/roll_mode.json');
@@ -26,4 +26,13 @@ test('wrong per-type catalog and benefit identity are rejected',()=>{
  assert.throws(()=>speciesRollModesFromBenefits({...rollMode,schema_version:1}),/Catalogo tipizzato/);
  assert.throws(()=>speciesRollBonusesFromBenefits({...rollBonus,benefit_type:'roll_mode'}),/Catalogo tipizzato/);
  assert.throws(()=>speciesRollModesFromBenefits({...rollMode,entries:[{...rollMode.entries[0],benefit:{type:'bonus',roll_modes:[]}}]}),/Tipo di beneficio/);
+});
+
+test('typed species attacks and movement reject wrong type and invalid mechanics',()=>{
+ const attacks=read('../../vtt/enrichment/benefits/attack.json');
+ const movement=read('../../vtt/enrichment/benefits/movement.json');
+ assert.throws(()=>speciesAttacksFromBenefits({...attacks,benefit_type:'movement'},movement),/Catalogo tipizzato/);
+ assert.throws(()=>speciesAttacksFromBenefits(attacks,{...movement,benefit_type:'attack'}),/Catalogo tipizzato/);
+ const wrong={...attacks,entries:[{...attacks.entries[0],benefit:{type:'movement',attack:attacks.entries[0].benefit.attack}}]};
+ assert.throws(()=>speciesAttacksFromBenefits(wrong,movement),/Tipo di beneficio/);
 });
