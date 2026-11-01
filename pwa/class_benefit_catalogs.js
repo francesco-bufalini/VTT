@@ -51,12 +51,12 @@ async function load(fetcher,typedUrl,legacyUrl,project,legacy){
 export const loadClassActionBenefits=(fetcher=fetch)=>load(fetcher,
  '/catalog/benefits/action.json','/catalog/action_feature_overrides.json',
  classActionOverridesFromBenefits,data=>{
-  if(data?.version!==1||!Array.isArray(data.entries))throw Error('Invalid legacy class actions');
-  return data.entries;
+  // Match the old PWA behavior for incomplete fixtures and older hosts:
+  // missing optional activation metadata must never hide all class features.
+  return data?.version===1&&Array.isArray(data.entries)?data.entries:[];
  });
 export const loadClassRollBonusBenefits=(fetcher=fetch)=>load(fetcher,
  '/catalog/benefits/roll_bonus.json','/catalog/roll_bonus_rules.json',
  classRollBonusRulesFromBenefits,data=>{
-  if(data?.version!==1||!Array.isArray(data.features))throw Error('Invalid legacy class roll bonuses');
-  return data.features;
+  return data?.version===1&&Array.isArray(data.features)?data.features:[];
  });
