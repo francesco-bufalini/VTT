@@ -472,6 +472,69 @@ export function attackActionSequence(action={},record={},calculated={}){
  }
  return Array.from({length:count},()=> 'Attacco');
 }
+// A granted action is a list of operations (attacks, actions, checks or
+// abilities), never an "attack action" purely because its first step attacks.
+// Retain the choice operator and the original order instead of reducing it to
+// a flat attack count. A step with count N is N sequential entries.
+const LIST_CHOICE_MODES=new Set(['or','any','any_of','one','one_of','choose','either','alternative','alternatives']);
+export function battleActionListMode(action={}){
+ const value=String(action.choice_mode??action.steps_mode??action.step_mode??
+  action.selection_mode??action.operator??action.logic??action.combination??action.mode??'')
+  .trim().toLowerCase().replace(/[\s-]+/g,'_');
+ return action.or===true||action.choose_one===true||LIST_CHOICE_MODES.has(value)||
+  arr(action.options).length>0&&!arr(action.steps).length||
+  arr(action.steps).some(step=>step?.or===true||arr(step?.alternatives).length>0||
+   arr(step?.choices).length>0)?'or':'all';
+}
+const ACTION_STEP_NAMES={
+ attack:'Attacco a scelta',melee:'Attacco in mischia',ranged:'Attacco a distanza',
+ unarmed:'Colpo senz’armi',crossbow:'Attacco con balestra',grapple:'Prova di lotta',
+ shove:'Spingere',dash:'Scattare',disengage:'Disimpegnarsi',dodge:'Schivare',
+ hide:'Nascondersi',help:'Aiutare',movement:'Movimento',check:'Prova abilità',
+ skill:'Prova abilità',ability:'Capacità a scelta',action:'Azione a scelta'
+};
+function battleActionStepName(step={},resolved={}){
+ if(typeof step==='string')return step;
+ const selector=step.selector||step.action||step;
+ const category=String(selector.category||selector.action_id||selector.kind||'').toLowerCase();
+ const skill=String(selector.skill_id||selector.skill||'');
+ const skillName=skill&&SKILLS.find(([id])=>id===skill)?.[1];
+ const options=arr(resolved.options);
+ return String(step.label||step.name||step.attack_name||step.action_name||
+  (options.length===1?options[0].name:'')||selector.label||selector.name||
+  (skillName?'Prova di '+skillName:'')||
+  ACTION_STEP_NAMES[category]||ACTION_STEP_NAMES[String(selector.id||'').toLowerCase()]||
+  selector.id||selector.category||selector.kind||'Azione a scelta');
+}
+export function battleActionList(action={},record={},calculated={}){
+ const mode=battleActionListMode(action),items=[];
+ const typed=arr(action.steps);
+ if(typed.length){
+  const resolved=resolveAttackActionSteps(action,arr(calculated.attacks),
+   arr(calculated.action_entries));
+  for(const [index,step] of typed.entries()){
+   const alternatives=arr(step?.alternatives||step?.choices||step?.options);
+   if(alternatives.length){
+    for(const choice of alternatives)
+     items.push({label:battleActionStepName(choice),kind:String(choice?.selector?.kind||choice?.kind||'')});
+    continue;
+   }
+   const repetitions=Math.min(99,Math.max(1,Math.trunc(Number(step?.count)||1)));
+   const label=battleActionStepName(step,resolved[index]);
+   for(let n=0;n<repetitions;n++)items.push({label,kind:String(step?.selector?.kind||'')});
+  }
+ }else if(arr(action.options).length){
+  for(const option of action.options)items.push({
+   label:String(option?.name||option?.label||option?.id||'Opzione'),
+   kind:String(option?.kind||'')
+  });
+ }else{
+  for(const label of attackActionSequence(action,record,calculated))
+   items.push({label:String(label),kind:'attack'});
+ }
+ return {mode,items};
+}
+
 export function attackActionCategory(row={}){
  if(row.attack_action||arr(row.steps).length||arr(row.attack_sequence).length||['attack','two_weapon','opportunity','monster:multiattack'].includes(String(row.id))||
    Number(row.attack_count)>0||Number(row.attacks_per_action)>0||row.attack_replacement===true)return 'attacks';
@@ -512,16 +575,25 @@ export function battleActionTimeLabel(time='action'){
 // A sequence is a list of *choices* leading to the existing Attacchi table,
 // not duplicate attack rolls or automatic tracker payments.
 export function battleAttackStepMarkup(sequence=[]){
- return arr(sequence).length?'<ol class="play-attack-sequence" aria-label="Attacchi concessi">'+
-  sequence.map(label=>'<li class="play-battle-attack-step">'+
-   '<span class="play-battle-roll-formula">'+esc(label)+'</span></li>').join('')+'</ol>':'';
+ const model=Array.isArray(sequence)?{mode:'all',items:sequence.map(label=>({label:String(label)}))}:sequence||{};
+ const items=arr(model.items),mode=model.mode==='or'?'or':'all';
+ if(!items.length)return '';
+ return '<div class="play-action-index" data-action-list-mode="'+mode+'" role="group" aria-label="Lista di azioni, attacchi e tiri">'+
+  '<div class="play-action-index-heading"><span class="play-action-index-arrow" aria-hidden="true">↳</span>'+
+  '<span class="play-action-index-mode">'+(mode==='or'?'1 fra:':'tutte')+'</span></div>'+
+  '<ol class="play-attack-sequence play-action-index-steps">'+
+  items.map((item,index)=>'<li class="play-battle-attack-step">'+
+   '<span class="play-action-index-number" aria-hidden="true">'+(index+1)+'</span>'+
+   '<span class="play-battle-roll-formula">'+esc(item.label||'Azione')+'</span></li>').join('')+
+  '</ol></div>';
 }
 
 // Attack-granting routines and other actions use the same row as Capacità.
 // Only the actual Attacchi table owns range, hit dice and map controls.
 export function battleAttackActionRow(item={},calculated={}){
  const tracker=arr(calculated.trackers).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
- const cost=Math.max(0,Number(item.cost)||0),sequence=arr(item.attack_sequence);
+ const cost=Math.max(0,Number(item.cost)||0);
+ const sequence=item.action_list||battleActionList(item,{},calculated);
  const actionable=item.attack_action===true&&cost>0&&
   arr(calculated.attack_actions).some(row=>String(row.id)===String(item.id));
  // A routine without a spendable tracker is descriptive: the attacks
@@ -532,15 +604,16 @@ export function battleAttackActionRow(item={},calculated={}){
    useAct==='battle-action-activate'?' data-action-id="'+esc(item.id||'')+'"':'',
   tracker,trackerName:item.tracker,cost,disabled:item.available===false,name:item.name});
  const description=details(item.description||'');
- return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-attack-action'+
+ return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-list-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
   '<details class="play-battle-benefit-details play-battle-attack-details"><summary class="play-resource-power-open">'+
-  actionGlyph(actionGlyphKey(item))+'<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione di attacco')+'</strong>'+
+  actionGlyph(actionGlyphKey(item))+'<span class="play-battle-attack-copy"><strong>'+esc(item.name||'Azione')+'</strong>'+
   '<small>'+esc(battleActionTimeLabel(item.time))+'</small>'+
+  (arr(sequence.items).length?'<span class="play-action-list-parent-arrow" aria-hidden="true">↓</span>':'')+
   (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+
   '</span></summary>'+
   '<div class="play-battle-attack-expanded"><p>'+render5etoolsInline(description||'Dettagli non disponibili.')+'</p></div></details>'+
-  control+battleAttackStepMarkup(sequence,calculated,item)+'</article>';
+  control+battleAttackStepMarkup(sequence)+'</article>';
 }
 
 function battleAttackRow(item,calculated,attacksById,descriptions,record={},physical=false,groupedAction=false){
