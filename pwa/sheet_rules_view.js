@@ -1377,8 +1377,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }
   html+='<button type="button" class="inventory-section-add" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario"><span aria-hidden="true">＋</span><span>Aggiungi sezione</span></button>';
  }
- if(sheet==='traits'){  }
- }
  if(sheet==='traits'){
   const groups=[...bank.querySelectorAll('.trait-card')];
   html+=card('Privilegi e tratti',groups.map((node,i)=>{bind('trait:'+i,node);return go('trait:'+i,node.querySelector('summary')?.textContent||'Tratto','proficiency');}).join('')||'<p class="play-empty">Nessun tratto disponibile.</p>');
