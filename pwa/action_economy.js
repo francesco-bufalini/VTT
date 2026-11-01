@@ -934,7 +934,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   {id:'ability_checks',name:'Prova abilità',time:'action',type:'Generale',
    description:'Effettuare una prova di caratteristica o di abilità.',available:true}
  ];
- const baseById=new Map(baseRules.map(row=>[row.id,row]));
+ const baseById=new Map(baseRules.map(row=>[row.id,{origin:'general',...row}]));
  for(const row of monsterBasicRules(record,calculated))baseById.set(row.id,row);
  const attackGrants=Array.isArray(calculated.attack_count_benefits)?
   calculated.attack_count_benefits:attackCountBenefits(record,calculated.features);
