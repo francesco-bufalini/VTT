@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "category": "feats",
+  "source": "PHB",
+  "entries": [
+    {
+      "ref": {
+        "name": "Sharpshooter",
+        "source": "PHB"
+      },
+      "benefits": [
+        {
+          "type": "roll_bonus",
+          "id": "sharpshooter:hit-penalty",
+          "bonus": {
+            "targets": [
+              "ranged_weapon_attack_hit"
+            ],
+            "operation": "add",
+            "amount": -5,
+            "optional": true
+          }
+        },
+        {
+          "type": "damage_bonus",
+          "id": "sharpshooter:damage-boost",
+          "bonus": {
+            "targets": [
+              "ranged_weapon_attack_damage"
+            ],
+            "operation": "add",
+            "amount": 10,
+            "optional": true
+          }
+        },
+        {
+          "type": "effect",
+          "id": "sharpshooter:range",
+          "effects": [
+            {
+              "operation": "ignore_long_range_disadvantage",
+              "trigger": "passive",
+              "target": "ranged_weapon_attack"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
