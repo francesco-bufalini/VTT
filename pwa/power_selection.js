@@ -41,8 +41,25 @@ function optionsFor(record,rule,catalog={}){
    rows(catalog.optionalFeatureProgressions?.options).filter(option=>rows(option.types).some(t=>rows(source.feature_types).includes(t))):[];
  const listed=source.type==='list_refs'?rows(source.list_ids).flatMap(id=>
    rows(catalog.optionLists?.entries).find(entry=>entry.benefit?.option_list?.id===id)?.benefit?.option_list?.options||[]):[];
- return [...rows(source.options),...packages,...optional,...listed,...rows(record.power_selection_custom_options?.[rule.id])]
-  .filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014'))).map(row=>({...row,
+ const eligible=[...rows(source.options),...packages,...optional,...listed,...rows(record.power_selection_custom_options?.[rule.id])]
+  .filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014')));
+ // A 2024 grant can prefer the revised 5eTools definition over an older
+ // identically named option. Never silently discard an older saved choice:
+ // its exact source-qualified ID stays selectable until the player replaces it.
+ const sources=rows(source.preferred_sources).map(low);
+ const saved=new Set(Object.entries(record.power_selections||{})
+  .filter(([id])=>id===rule.id||id.startsWith(rule.id+':level:'))
+  .flatMap(([,stages])=>Object.values(stages||{}).flatMap(rows).map(identity)));
+ const winner=new Map();
+ for(const option of eligible){
+  const key=low(option.name);
+  const current=winner.get(key);
+  const rank=value=>saved.has(value.id)?-1:
+   sources.indexOf(low(value.source))<0?sources.length:sources.indexOf(low(value.source));
+  if(!current||rank(option)<rank(current))winner.set(key,option);
+ }
+ const normalized=sources.length?eligible.filter(row=>winner.get(low(row.name))===row):eligible;
+ return normalized.map(row=>({...row,
  // Source-qualified overlay: keep 5eTools texts in their catalog and layer
  // only the missing mechanics in the typed grant definition.
  effects:[...rows(row.effects),...rows(rule.option_effects?.[row.id])],

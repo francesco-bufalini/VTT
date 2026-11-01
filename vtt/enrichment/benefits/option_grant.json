@@ -1295,6 +1295,12 @@
             "type": "optional_features",
             "feature_types": [
               "MV:B"
+            ],
+            "preferred_sources": [
+              "XPHB",
+              "TCE",
+              "XGE",
+              "PHB"
             ]
           },
           "unique_across_selections": true
@@ -1758,6 +1764,12 @@
             "type": "optional_features",
             "feature_types": [
               "MM"
+            ],
+            "preferred_sources": [
+              "XPHB",
+              "TCE",
+              "XGE",
+              "PHB"
             ]
           },
           "instances": {
@@ -2130,6 +2142,12 @@
             "type": "optional_features",
             "feature_types": [
               "EI"
+            ],
+            "preferred_sources": [
+              "XPHB",
+              "TCE",
+              "XGE",
+              "PHB"
             ]
           },
           "unique_across_selections": true

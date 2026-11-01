@@ -204,3 +204,35 @@ test('multiple Metamagic feature instances have their own selection boxes and re
 
  }
 });
+
+test('2024 optional grants prefer revised source without discarding saved 2014 IDs',()=>{
+ const config=[
+  {className:'Fighter',subclass:'Battle Master',trait:'Maneuver Options',
+   rule:'optional:subclass:xphb:fighter:xphb:battle-master:mv-b',expected:23,
+   preferred:'optional:xphb:ambush',old:'optional:tce:ambush'},
+  {className:'Sorcerer',trait:'Metamagic',rule:'optional:class:xphb:sorcerer:mm',
+   expected:10,preferred:'optional:xphb:careful-spell',old:'optional:phb:careful-spell'},
+  {className:'Warlock',trait:'Eldritch Invocations',rule:'optional:class:xphb:warlock:ei',
+   expected:59,preferred:'optional:xphb:agonizing-blast',old:'optional:phb:agonizing-blast'}
+ ];
+ const allRules={...source};
+ for(const {className,subclass,trait,rule,expected,preferred,old} of config){
+  const char={kind:'character',rules_version:'2024',level:20,
+   classes:[{name:className,source:'XPHB',level:20,...(subclass?{subclass,subclass_source:'XPHB'}:{})}]};
+  const feature={name:trait,level:subclass?3:2,
+   origin_id:'feature:2024:'+rule,
+   origin_key:'class|xphb|'+className.toLowerCase()+(subclass?'|subclass|'+subclass.toLowerCase()+'|xphb':''),
+   class_name:className,class_source:'XPHB'};
+  const context={features:[feature]};
+  const current=powerSelectionModels(char,context,allRules).find(r=>r.id===rule);
+  assert(current,rule+' missing');
+  assert.equal(current.options.length,expected,rule+' deduplicates 5eTools revisions');
+  assert(current.options.some(o=>o.id===preferred),rule+' prefers XPHB');
+  assert(!current.options.some(o=>o.id===old),rule+' does not offer superseded 2014 option to a new character');
+  const saved={...char,power_selections:{[rule]:{learned:[old]}}};
+  const compatible=powerSelectionModels(saved,context,allRules).find(r=>r.id===rule);
+  assert(compatible.options.some(o=>o.id===old),rule+' keeps an existing legacy choice');
+  assert(!compatible.options.some(o=>o.id===preferred),rule+' avoids duplicate choice after loading');
+  assert.deepEqual(compatible.layers.learned.selected,[old]);
+ }
+});
