@@ -21,7 +21,7 @@ export function classActionOverridesFromBenefits(payload){
  });
 }
 export function classRollBonusRulesFromBenefits(payload){
- return catalog(payload,'roll_bonus').map(entry=>{
+ return catalog(payload,'roll_bonus').filter(entry=>['class_feature','subclass_feature'].includes(entry?.granted_by?.ref?.category)).map(entry=>{
   const {ref,benefit}=owner(entry,'roll_bonus');
   const {type,id,...mechanics}=benefit;
   return {id:id||entry.id,class_name:ref.class_name,class_source:ref.class_source,
