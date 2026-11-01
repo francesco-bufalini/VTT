@@ -85,6 +85,18 @@ def main():
     rejected("roll_bonus.schema.json", {**manual, "scope": "catalog"},
              "character-scoped grant placed in rulebook scope")
 
+    # Authoritative per-type benefit catalogs are now consumed by the PWA.
+    live = ROOT / "vtt" / "enrichment" / "benefits"
+    for path in sorted(live.glob("*.json")):
+        benefit_type = path.stem
+        assert benefit_type in types, f"Unrecognized catalog type: {path}"
+        data = load(path)
+        assert data["benefit_type"] == benefit_type
+        assert data["scope"] == "catalog"
+        grant_ids = [entry["id"] for entry in data["entries"]]
+        assert len(set(grant_ids)) == len(grant_ids), f"Duplicate grant ID: {path}"
+        check(benefit_type + ".schema.json", data, path.name)
+
     legacy = load(SCHEMAS / "legacy_sources.json")
     for source in legacy["sources"]:
         original = ROOT / source["path"]

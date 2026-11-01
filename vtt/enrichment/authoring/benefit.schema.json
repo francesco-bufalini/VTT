@@ -1782,6 +1782,54 @@
         "trigger": {
           "type": "string",
           "description": "Activation trigger"
+        },
+        "flat_proficiency": {
+          "type": "boolean"
+        },
+        "flat_choices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "proficiency_multiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "automatic_apply": {
+          "type": "boolean"
+        },
+        "exclude_initiative": {
+          "type": "boolean"
+        },
+        "weapon_requirement": {
+          "type": "string"
+        },
+        "once_per_turn": {
+          "type": "boolean"
+        },
+        "weapon_damage_die": {
+          "type": "boolean"
+        },
+        "melee_weapon_attack": {
+          "type": "boolean"
+        },
+        "tracker_id": {
+          "type": "string"
+        },
+        "tracker_cost": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "strict_tracker": {
+          "type": "boolean"
+        },
+        "uses": {
+          "$ref": "#/$defs/expression"
+        },
+        "recharge": {
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -1817,6 +1865,14 @@
         "condition_label": {
           "type": "string",
           "description": "Optional homebrew label"
+        },
+        "attack_name": {
+          "type": "string",
+          "description": "Restrict to a named attack already supplied by 5eTools."
+        },
+        "requires_proficiency": {
+          "type": "boolean",
+          "description": "The selected skill must be proficient."
         }
       },
       "additionalProperties": false
