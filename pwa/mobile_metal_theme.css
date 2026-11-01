@@ -6752,7 +6752,7 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 .play-battle-attack-expanded>p{white-space:pre-line}
 
 
-/* Battle: flat resources and action categories organised by benefit, not source. */
+/* Battle: action rows follow their rules/privileges origin, not benefit kinds. */
 #sheet-play-view [data-battle-action="resources"]>.play-resource--flat{
  margin:0;border-bottom:1px solid #aa845137;background:linear-gradient(90deg,#68462619,#211d1b0a)
 }
@@ -6893,27 +6893,51 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
  display:flex;align-items:center;justify-content:space-between;
  min-height:37px;gap:9px
 }
-/* Attack action subrows reuse the compact other-action roll-line layout.
-   The button opens the authoritative attack, rather than duplicating its dice. */
-#sheet-play-view .play-battle-benefit-row>.play-attack-sequence{
- grid-column:1/-1;display:grid;gap:0;list-style:none;
- margin:0 7px 7px 40px;padding:0 8px;border:0;border-radius:0;
- background:transparent;color:#d9c39f
+/* A list belongs to its parent action, with one continuous index rail. */
+#sheet-play-view .play-action-index{
+ grid-column:1/-1;position:relative;display:block;min-width:0;
+ margin:0 10px 9px 43px;padding:0 0 0 15px;
+ border-left:1px solid #b9935869;color:#d9c39f
 }
-#sheet-play-view .play-battle-attack-step{
- display:flex;align-items:center;justify-content:space-between;gap:9px;
- min-height:39px;width:100%;padding:3px 0;
- border-top:1px solid #a27b4a2a
+#sheet-play-view .play-action-index-heading{
+ position:relative;display:flex;align-items:center;
+ min-height:26px;padding:2px 2px 5px 0
 }
-#sheet-play-view .play-battle-attack-step>.play-battle-roll-formula{
- flex:1 1 auto;min-width:0;overflow-wrap:anywhere;color:#cbb591;
+#sheet-play-view .play-action-index-arrow{
+ position:absolute;left:-31px;top:-10px;min-width:22px;
+ color:#d9b679;font:600 17px/1.2 system-ui;text-align:center
+}
+#sheet-play-view .play-action-index-mode{
+ color:#e6c392;font:650 11px/1.35 system-ui
+}
+#sheet-play-view .play-action-index-steps{
+ display:grid;gap:0;list-style:none;margin:0;padding:0;
+ border:0;background:transparent;color:#d9c39f;
  font:400 12px/1.4 system-ui
 }
-#sheet-play-view .play-action-benefit-rows>.play-attack-sequence{
- margin:0 8px 8px 40px;padding:0 8px;list-style:none
+#sheet-play-view .play-action-index-steps>.play-battle-attack-step{
+ position:relative;display:flex;align-items:center;gap:10px;
+ min-height:34px;padding:6px 2px;border-top:1px solid #a27b4a24
 }
-#sheet-play-view .play-action-benefit-rows>.play-attack-sequence>.play-battle-attack-step{
- padding:3px 0
+#sheet-play-view .play-action-index-steps>.play-battle-attack-step:before{
+ content:"";position:absolute;left:-15px;top:50%;width:13px;
+ border-top:1px solid #b9935875
+}
+#sheet-play-view .play-action-index-steps>.play-battle-attack-step:last-child:after{
+ content:"";position:absolute;left:-16px;bottom:0;height:48%;width:2px;
+ background:#211d1b
+}
+#sheet-play-view .play-action-index-number{
+ flex:0 0 20px;color:#c0a177;font:550 10px/1.2 system-ui;
+ font-variant-numeric:tabular-nums;text-align:center
+}
+#sheet-play-view .play-action-index-steps .play-battle-roll-formula{
+ flex:1 1 auto;min-width:0;color:#d2b896;overflow-wrap:anywhere;
+ font:400 12px/1.4 system-ui
+}
+#sheet-play-view .play-action-list-parent-arrow{
+ flex:0 0 auto;margin-left:auto;color:#d7ad72;
+ font:650 16px/1.1 system-ui
 }
 @media(max-width:380px){
  #sheet-play-view .play-resource-power-row>.play-action-use-box,
@@ -6921,7 +6945,8 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
   min-width:76px;width:clamp(78px,27vw,110px);margin-inline:2px 4px;padding:4px 5px
  }
  #sheet-play-view .play-battle-other-rolls{padding-left:34px;padding-right:6px}
- #sheet-play-view .play-battle-benefit-row>.play-attack-sequence{margin-left:31px;margin-right:5px}
+ #sheet-play-view .play-action-index{margin-left:34px;margin-right:6px;padding-left:11px}
+ #sheet-play-view .play-action-index-arrow{left:-25px}
  #sheet-play-view .play-battle-benefit-details>summary.play-resource-power-open{gap:6px;padding-inline:6px}
 }
 
@@ -6946,3 +6971,32 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 }
 #sheet-play-view .play-battle-direct-action strong{font:550 13px/1.4 system-ui;color:#f4dbb6}
 #sheet-play-view .play-battle-direct-action small{font:400 11px/1.4 system-ui;color:#c5a982}
+
+/* Actions: no ability/attack/other category cards. One rules block and
+   one privileges block, separated only by a fine origin line. */
+#sheet-play-view .play-battle-actions-unified{display:grid;gap:0;min-width:0}
+#sheet-play-view .play-battle-actions-unified>.play-battle-action-source{
+ padding:0 9px 7px
+}
+#sheet-play-view .play-action-origin-divider{
+ position:relative;display:flex;align-items:center;gap:10px;
+ margin:5px 10px 2px;padding:0;color:#c7ac85;
+ font:550 10px/1.4 system-ui;letter-spacing:.03em
+}
+#sheet-play-view .play-action-origin-divider:before{
+ content:"";display:block;flex:1 1 auto;min-width:0;height:1px;
+ background:#b991555a
+}
+#sheet-play-view .play-battle-privilege-rows{padding:0 9px 9px}
+#sheet-play-view .play-battle-privilege-rows>.play-battle-action-source{
+ padding:0
+}
+#sheet-play-view .play-battle-privilege-rows>.play-resource-power-row:first-child{
+ border-top:0
+}
+#sheet-play-view .play-battle-list-action .play-battle-attack-copy{min-width:0}
+@media(max-width:380px){
+ #sheet-play-view .play-battle-actions-unified>.play-battle-action-source,
+ #sheet-play-view .play-battle-privilege-rows{padding-inline:5px}
+ #sheet-play-view .play-action-origin-divider{margin-inline:6px}
+}
