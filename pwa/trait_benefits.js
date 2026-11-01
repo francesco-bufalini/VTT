@@ -43,7 +43,7 @@ const abilityDetails=(rule,features=[],owner={})=>{
   const source=rows(features).find(row=>norm(row.name)===norm(attack.trait)&&
    classOf(row)===norm(rule.class_name)&&sourceOf(row)===norm(rule.class_source))||owner;
   const name=norm(attack.trait)===norm(rule.trait)?
-    traitStateSource(rule,owner,features).option_name:source!==owner?source.name:attack.trait||attack.id;
+    traitStateSource(rule,owner,features).option_name:source!==owner?source.name:attack.trait||attack.name||attack.id;
   items.push('Attacco · '+name+' · '+attack.damage+' '+damageLabel(attack.damage_type)+
    (distance?' · '+distance:''));
   if(attack.bonus_die)items.push('Dado aggiuntivo · '+attack.bonus_die.dice+' '+
