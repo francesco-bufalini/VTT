@@ -414,6 +414,8 @@ export function collectStructuredFeatures(record,catalogs={}){
   // Partial class mechanics tables cannot grant slots without the full feature
   // catalog; explicit homebrew feature.benefits remain usable independently.
   const spellcastingRules=catalogs.classFeatures?array(catalogs.spellcastingBenefits?.grants):[];
+  const typedOptionGrants=array(catalogs.optionGrants?.entries);
+  const typedSlotGrants=array(catalogs.slotBenefits?.entries).filter(e=>e.benefit?.kind==='spell_slots');
   const subclassKey=value=>norm(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');
   const attackCount=(row,origin,level,className,classSource)=>{
    const direct=Number(row.attacks_per_action);
@@ -449,8 +451,20 @@ export function collectStructuredFeatures(record,catalogs={}){
         (owner.subclass?!!subParts&&match(owner.subclass,subParts[0])&&
           (!owner.subclass_source||match(owner.subclass_source,subParts[1])):!subParts);
     });
-    const benefits=[...array(row.benefits),
-      ...(spellRule?.benefit&&!array(row.benefits).some(b=>b.type==='spell_selection')?[spellRule.benefit]:[])];
+    const owned=entry=>{
+      const ref=entry?.granted_by?.ref||{};
+      return entry?.granted_by?.kind==='5etools'&&
+        ['class_feature','subclass_feature'].includes(ref.category)&&
+        match(ref.class_name,className)&&(!ref.class_source||match(ref.class_source,classSource))&&
+        match(ref.name,row.name)&&
+        (ref.category==='subclass_feature'?!!subParts&&match(ref.subclass,subParts[0])&&
+          (!ref.subclass_source||match(ref.subclass_source,subParts[1])):!subParts);
+    };
+    const typed=[...typedOptionGrants,...typedSlotGrants].filter(owned).map(entry=>entry.benefit);
+    const hasTypedSpell=typed.some(b=>b.type==='option_grant'&&b.option_grant?.option_kind==='spell');
+    const existing=array(row.benefits).filter(b=>!hasTypedSpell||b.type!=='spell_selection');
+    const benefits=[...existing,...typed.filter(b=>!existing.some(old=>old.type===b.type&&old.id===b.id)),
+      ...(spellRule?.benefit&&!hasTypedSpell&&!existing.some(b=>b.type==='spell_selection')?[spellRule.benefit]:[])];
     results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
       ...(benefits.length?{benefits}:{}),
       level,requirements:gate,inactive:inactive||row.inactive===true,

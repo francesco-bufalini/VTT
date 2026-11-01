@@ -1,3 +1,4 @@
+import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
@@ -480,11 +481,15 @@ export function castingClasses(record,catalog,abilityModifiers={},features=[]){
  };
  return arr(features).flatMap(feature=>{
    if(!featureEnabled(record,feature)||record.trait_enabled?.[feature.key]===false)return [];
-   return arr(feature.benefits).filter(benefit=>benefit?.type==='spell_selection').flatMap(benefit=>{
+   return arr(feature.benefits).filter(benefit=>benefit?.type==='spell_selection'||
+     benefit?.type==='option_grant'&&benefit.option_grant?.option_kind==='spell').flatMap(declaration=>{
+     const benefit=declaration.type==='option_grant'?declaration.option_grant:declaration;
      const name=benefit.level_class_name,member=members.find(row=>same(row.name,name));
      if(!member)return [];
      const source=member.source||(record.rules_version==='2024'?'XPHB':'PHB');
-     const level=Math.max(0,int(member.level)),progression=benefit.slot_progression||{};
+     const slotGrant=arr(feature.benefits).find(row=>row.type==='resource'&&row.kind==='spell_slots');
+     const level=Math.max(0,int(member.level)),progression=resolveSpellSlotProfile(
+       slotGrant?.slot_progression||benefit.slot_progression||{});
      const slots=spellProgression(record,[{level,slot_progression:progression}]);
      const maxLevel=Math.max(slots.pact_total?slots.pact_level:0,
        ...slots.slots.map((n,i)=>n>0?i:0));
@@ -501,7 +506,7 @@ export function castingClasses(record,catalog,abilityModifiers={},features=[]){
        mode:knowledge==='known'?'Conosciuti':'Preparati',
        learned_limit:layers.learned?.limit??null,limit:limit??-1,
        cantrips:limitOf(benefit.cantrips?.limit,level)??0,
-       max_level:maxLevel,ability:benefit.ability||'int',
+       max_level:maxLevel,ability:benefit.ability||'',
        granting_trait_id:feature.origin_id,granting_trait_name:feature.name}];
    });
  });
@@ -835,7 +840,7 @@ export function spellProgression(record,classes){
    return value;
  };
  for(const member of arr(classes)){
-   const spec=member.slot_progression||{},level=clamp(int(member.level),0,20);
+   const spec=resolveSpellSlotProfile(member.slot_progression||{}),level=clamp(int(member.level),0,20);
    if(spec.pool==='pact'){
      pactTotal+=limit(spec.slot_count,level);
      pactLevel=Math.max(pactLevel,limit(spec.slot_level,level)||1);
@@ -873,7 +878,8 @@ export function calculateSheet(record={},catalogs={}){
     const maximum=Math.max(0,Math.floor(Number(calculated.values.attunement_max)||0));
     const counts=inventoryAttunementCounts(effective.inventory,maximum);
     if(counts.every((count,i)=>count===itemAttunementCount(arr(effective.inventory)[i])))
-      return {...withScalingDice(calculated),selection_models:selectionRecord.selection_models,attunements:{counts,maximum,used:counts.reduce((sum,n)=>sum+n,0)}};
+      return {...withScalingDice(calculated),selection_models:selectionRecord.selection_models,
+        selection_traits:selectionRecord.selection_traits||[],attunements:{counts,maximum,used:counts.reduce((sum,n)=>sum+n,0)}};
     effective={...effective,inventory:arr(effective.inventory).map((item,i)=>
       requiresAttunement(resolveOwnedItem(item))?{...item,attuned_count:counts[i],attuned:counts[i]>0}:item)};
   }
@@ -882,7 +888,8 @@ export function calculateSheet(record={},catalogs={}){
   const result=calculateSheetValues({...effective,inventory},catalogs);
   result.warnings.push('Sintonie sospese: il massimo dipende dalle stesse sintonie.');
   result.complete=false;
-  return {...withScalingDice(result),selection_models:selectionRecord.selection_models,attunements:{counts:inventory.map(()=>0),maximum:Math.max(0,Math.floor(result.values.attunement_max||0)),used:0}};
+  return {...withScalingDice(result),selection_models:selectionRecord.selection_models,
+    selection_traits:selectionRecord.selection_traits||[],attunements:{counts:inventory.map(()=>0),maximum:Math.max(0,Math.floor(result.values.attunement_max||0)),used:0}};
 }
 // 5etools stores monster defenses directly on the stat block. Qualified
 // entries are not silently turned into unconditional defenses.
@@ -1833,13 +1840,20 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.variants)?data:{variants:[]})
       .catch(()=>({variants:[]})),
     loadClassActionBenefits().catch(()=>[]),
-    loadClassResourceBenefits()
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides])=>({
+    loadClassResourceBenefits(),
+    fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
+    fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
+    fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,
     speciesRollModes:speciesRollModes.load_error?{races:[],load_error:true}:speciesRollModesFromBenefits(speciesRollModes,originDetails),
-    senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureRules:featureRules||{},featureActionOverrides,
+    senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,
+    optionGrants:optionGrants?.benefit_type==='option_grant'?optionGrants:{entries:[]},
+    optionLists:optionLists?.benefit_type==='option_list'?optionLists:{entries:[]},
+    slotBenefits:slotBenefits?.benefit_type==='resource'?slotBenefits:{entries:[]},
+    featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
     featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
