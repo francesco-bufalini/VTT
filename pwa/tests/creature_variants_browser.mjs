@@ -90,7 +90,7 @@ try{
  });
  await page.reload();await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).click();await sheet('battle');
  const resources=page.locator('[data-battle-action="resources"]');if(!await resources.evaluate(n=>n.open))await resources.locator(':scope > summary.play-battle-summary').click();
- await page.locator('[data-act="battle-use-ability"]').filter({hasText:/Attiva/}).first().click();
+ await page.locator('[data-act="battle-use-ability"][aria-label^="Attiva "]').first().click();
  await page.locator('[data-miniature-search]').fill('wolf');await page.locator('[data-miniature-id="wolf"]').click();
  assert.deepEqual((await record()).resource_tracker_spent,{});
  await page.locator('[data-form-hp]').fill('11');await page.locator('[data-form-confirm]').click();await page.locator('.miniature-dialog').waitFor({state:'detached'});
