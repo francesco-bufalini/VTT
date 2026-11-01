@@ -737,6 +737,8 @@ try{
  assert.equal(await resourcesPanel.locator('[data-resource-privilege],[data-ability-id]').count(),0,
   'Resources do not own abilities or privileges');
  assert.equal(await actionsPanel.locator('.play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
+ assert.equal(await actionsPanel.locator('.play-resource-power-row[data-ability-id="free_pulse"] .play-action-use-box').count(),0,
+  'A free ability with no modeled activation effect or tracker has no Use button');
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"]').count(),0,
   'No generic free tracker remains');
  assert.equal(await resourcesPanel.locator('.play-resource-free-actions').count(),0);
