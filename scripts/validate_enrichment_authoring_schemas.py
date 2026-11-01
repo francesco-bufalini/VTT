@@ -67,13 +67,19 @@ def main():
     # Deliberately wrong origin and payload kinds must fail.
     example = load(EXAMPLES / "roll_bonus.json")
     rejected("proficiency.schema.json", example, "wrong benefit type")
-    rejected("roll_bonus.schema.json", {**example, "entries": [
-        {**example["entries"][0], "granted_by": {"kind": "5etools", "ref": {
-            "category": "class_feature", "name": "Only Name"}}]
-    }, "5eTools entry without source")
-    rejected("roll_bonus.schema.json", {**example, "entries": [
-        {**example["entries"][0], "granted_by": manual["entries"][0]["granted_by"]}]
-    }, "manual grant placed in shared catalog")
+    bad_source = dict(example["entries"][0])
+    bad_source["granted_by"] = {
+        "kind": "5etools",
+        "ref": {"category": "class_feature", "name": "Only Name"},
+    }
+    rejected("roll_bonus.schema.json",
+             {**example, "entries": [bad_source]},
+             "5eTools entry without source")
+    bad_scope = dict(example["entries"][0])
+    bad_scope["granted_by"] = manual["entries"][0]["granted_by"]
+    rejected("roll_bonus.schema.json",
+             {**example, "entries": [bad_scope]},
+             "manual grant placed in shared catalog")
     rejected("roll_bonus.schema.json", {**manual, "character_id": None},
              "missing character ID for manual grant")
     rejected("roll_bonus.schema.json", {**manual, "scope": "catalog"},
