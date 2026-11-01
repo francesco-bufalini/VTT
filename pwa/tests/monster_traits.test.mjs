@@ -187,11 +187,15 @@ test('recharge variants are separate overview capabilities sharing the parent po
  const guardian={...fixture,stat_block:{...fixture.stat_block,name:'Construct Guardian'}};
  assert.equal(monsterActions(guardian,calculated(guardian).trackers).filter(row=>row.parent_action_id==='monster:action:5').length,2);
 });
-test('one lair capacity retains base, additional and nested lair descriptions',()=>{
- const data=calculated(),lair=monsterActions(fixture,data.trackers).filter(row=>row.time==='lair');
- assert.equal(lair.length,1);assert.equal(lair[0].name,'Azioni di tana');
- for(const text of ['Lava','Smoke','Additional Lair Actions','Frozen Floor','Ice covers'])assert.ok(lair[0].description.includes(text));
- assert.equal(lair[0].tracker_id,'lair_actions');assert.equal(lair[0].cost,1);
+test('lair OR choices preserve every nested action and the original source description',()=>{
+ const data=calculated(),lair=monsterActions(fixture,data.trackers)
+  .filter(row=>row.id.startsWith('monster:lairActions:'));
+ assert.deepEqual(lair.map(row=>row.name),['Lava','Smoke','Frozen Floor']);
+ for(const text of ['Lava erupts','Smoke fills','Ice covers'])
+  assert.ok(lair.some(row=>row.description.includes(text)));
+ assert.ok(lair.every(row=>row.time==='free'&&row.tracker_id==='lair_actions'&&row.cost===1));
+ const owner=monsterTraits(fixture).find(row=>row.monster_role==='lair');
+ assert.match(JSON.stringify(owner.entries),/Additional Lair Actions/);
 });
 test('legacy saved multiattack retains special use but reports only attack rolls as attacks_per_action',()=>{
  const row={...fixture.stat_block.action[0],attacks_per_action:3};
