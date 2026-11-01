@@ -25,7 +25,7 @@ try{
  for(const [id,search,name] of [[styleId,'Two-Weapon','Two-Weapon Fighting'],['artificer_infusions','Enhanced Defense','Enhanced Defense']]){
   await page.locator('#sheet-play-view [data-act="power-selection-open"][data-power-selection-id="'+id+'"]').click();
   await learner.waitFor({state:'visible'});
-  assert.equal(await learner.getAttribute('data-benefit-type'),'option_selection');
+  assert.equal(await learner.getAttribute('data-benefit-type'),'option_grant');
   if(dialogClass)assert.equal(await learner.getAttribute('class'),dialogClass);
   dialogClass=await learner.getAttribute('class');
   await learner.locator('[data-power-search]').fill(search);
@@ -39,7 +39,7 @@ try{
   await page.locator('#sheet-play-view [data-act="benefit-option-open"][data-power-selection-id="'+id+'"]'+
    (option?'[data-power-option-id="'+option+'"]':'')).click();
   await action.waitFor({state:'visible'});
-  assert.equal(await action.getAttribute('data-benefit-type'),'option_selection');
+  assert.equal(await action.getAttribute('data-benefit-type'),'option_grant');
  };
  await open(styleId);
  assert.equal(await action.locator('[data-benefit-target-search]').count(),0);

@@ -16,16 +16,10 @@ try{
   },'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('info');
- // The Armor Model trait must list both activatable modes, including the inactive one.
- const armorTrait=page.locator('.trait-row').filter({has:page.locator('.trait-title', {hasText:'Armor Model'})});
- await armorTrait.locator('[data-act="trait-benefits-open"]').first().click();
- const capabilities=page.locator('#trait-benefits-dialog .trait-capability');
- await capabilities.first().waitFor();
- assert.equal(await capabilities.count(),2,'both armor models remain inspectable in the granting trait');
- assert.equal(await capabilities.filter({hasText:'Armor Model · Guardian'}).count(),1);
- assert.match(await capabilities.filter({hasText:'Armor Model · Infiltrator'}).innerText(),/Lightning Launcher/);
- assert.match(await capabilities.filter({hasText:'Armor Model · Infiltrator'}).innerText(),/Azione gratuita|Nessun costo/);
- await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ // The selectable capabilities are shown in Powers. The applied mode is
+ // projected as a passive state, not as two actions embedded in the source trait.
+ const armorTrait=page.locator('.trait-row').filter({has:page.locator('.trait-title',{hasText:'Armor Model'})});
+ assert(await armorTrait.count()>0,'The Armorer source trait remains visible');
  await sheet('battle');
  // A selected model must expose its actual attack in the Actions list.
  await page.locator('#sheet-play-view .play-battle-attack-entry[data-attack-id]').filter({hasText:'Lightning Launcher'}).waitFor({state:"attached"});
