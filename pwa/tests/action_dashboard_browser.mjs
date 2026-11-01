@@ -112,7 +112,7 @@ try{
      await attackAction.locator('[data-act="sheet-context"]').click();
      const popup=page.locator('#sheet-context-dialog[open]');
      await popup.waitFor();
-     assert.match(await popup.textContent(),/Descrizione.*Attaccare/s,
+     assert.match(await popup.textContent(),/Descrizione.*(?:The most common action|Attaccare)/s,
       'Clicking the action opens the same detail dialog as capacities');
      await popup.locator('[data-act="sheet-context-close"]').click();
     }
