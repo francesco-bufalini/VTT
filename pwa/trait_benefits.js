@@ -160,8 +160,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   // For an applied capability, derived benefits belong to the generated
   // State trait alone, not also to the grantor. Keep parent_origin as a
   // provenance/enablement link without attributing the effect twice.
-  if(row.selection_origin_id&&String(row.origin_id||'').startsWith('selection:'))
-   return ids.has(row.origin_id);
+  if(row.selection_trait_id)return ids.has(row.selection_trait_id);
   // For physical infusions the source is the specific item instance. Their
   // parent Infuse Item class feature grants the choice, not a second copy of
   // the applied benefits or the effect's description.

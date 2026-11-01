@@ -61,12 +61,12 @@ test('reusable typed list produces a passive state trait and removes all derived
  assert(state);
  assert.equal(state.benefits.length,1);
  assert.equal(state.grant_origin_id,'feature:choice');
- const stateGroups=traitBenefitGroups(state,projected,
-  {bonuses:projected.formula_bonuses});
+ const stateGroups=traitBenefitGroups(state,calculated,
+  {bonuses:calculated.formula_bonuses});
  assert.equal(stateGroups.find(g=>g.type==='bonus')?.items.length,1,
   'The applied capability owns its benefit in States');
  const sourceGroups=traitBenefitGroups({name:'Favored Enemy',feature_origin:'feature:choice',rank:2},
-  projected,{bonuses:projected.formula_bonuses});
+  calculated,{bonuses:calculated.formula_bonuses});
  assert.equal(sourceGroups.some(g=>g.type==='bonus'),false,
   'The grantor must not duplicate the selected capability benefits');
  record={...record,...powerApplicationPatch(record,context,catalog,id,option,false)};

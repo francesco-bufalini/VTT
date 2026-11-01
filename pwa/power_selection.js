@@ -314,7 +314,10 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
    const derived=!item&&model.option_kind==='capability'&&model.benefit_type==='option_grant';
    appendTypedBenefit(grants,effect,{
     id:capabilityOrigin+':'+index,selection_origin_id:model.id,
-    origin_id:item?'item-instance:'+(item.instance_id||item.id):derived?capabilityOrigin:model.origin_id,
+    // The engine still needs the real source origin for conditional bonuses.
+    // UI attribution is independent: the generated State owns the benefits.
+    origin_id:item?'item-instance:'+(item.instance_id||item.id):model.origin_id,
+    ...(derived?{selection_trait_id:capabilityOrigin}:{}),
     parent_origin:model.source_origin_id,origin_name:option.name,automatic:false,disabled:false});
    if(effect.type==='catalog_feature')optional.push({name:option.name,source:option.source,origin_id:model.origin_id,selection_origin_id:model.id,entries:[option.description||'']});
    if(effect.type==='state_selection')states[effect.key]=effect.value;
