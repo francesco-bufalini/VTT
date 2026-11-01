@@ -35,8 +35,8 @@ try{
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  const flashResource=page.locator('#sheet-play-view [data-battle-action="others"] .play-battle-privilege-rows');
  assert.match(await flashResource.locator('.play-resource-bonus-row').filter({hasText:'Flash of Genius'}).innerText(),/\+4.*Flash of Genius[\s\S]*Prove di caratteristica.*Tiri salvezza/);
- assert.equal(await flashResource.locator('[data-act="battle-use-ability"]').count(),0,
-  'roll bonuses are listed under trackers instead of duplicated as ability buttons');
+ assert.equal(await flashResource.locator('[data-act="battle-use-ability"][aria-label*="Flash of Genius"]').count(),0,
+  'Flash of Genius is a roll bonus, not a duplicate action button; unrelated class powers may remain');
  const lightningResource=page.locator('#sheet-play-view [data-battle-action="others"] .play-battle-privilege-rows');
  assert.match(await lightningResource.locator('.play-resource-bonus-row').filter({hasText:'1d6'}).innerText(),/\+1d6[\s\S]*Danni/);
  // The rest label does not block an immediate model switch.
