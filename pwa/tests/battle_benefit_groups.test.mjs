@@ -52,6 +52,11 @@ test('multiattack is distinct from a normal attack and uses named monster strike
   'Multiattack with no tracker has no Use control');
  assert.equal(resources.querySelectorAll('[data-attack-id="monster:multiattack"]').length,0);
  assert(resources.querySelector('[data-attack-id="monster:action:1"]'));
+ assert(resources.querySelector('.play-action-origin-divider[aria-label="Attacchi di base"]'));
+ assert(resources.querySelector('[data-battle-basic="attacks"] [data-attack-id="unarmed"]'),
+  'Basic Unarmed Strike is separated from monster-granted strikes');
+ assert(!resources.querySelector('[data-attack-id="monster:action:1"]').closest('[data-battle-basic]'),
+  'Monster-granted attacks remain outside the hideable basic section');
 });
 
 test('Attacchi keeps all original attack rows and maneuvers without duplicates in Azioni',()=>{

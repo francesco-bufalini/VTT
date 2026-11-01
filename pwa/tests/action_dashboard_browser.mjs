@@ -81,6 +81,17 @@ try{
     assert(await resources.locator(':scope > summary').isVisible(),'Resources keeps its counter list');
     assert.equal(await attacks.count(),1,'Attacchi is restored as a separate table');
     assert.equal(await attacks.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is in Attacchi');
+    assert.equal(await attacks.locator('[data-battle-basic="attacks"] [data-attack-id="unarmed"]').count(),1,
+     'Unarmed belongs to the separate basic-attacks group');
+    assert.equal(await attacks.locator('.play-action-origin-divider[aria-label="Attacchi di base"]').count(),1,
+     'Basic attacks have the same visual separator as rule actions');
+    const toolbar=page.locator('#sheet-play-view .play-battle-top-tools');
+    assert.equal(await toolbar.count(),1,'Base visibility and equipment controls sit immediately above Attacchi');
+    assert.equal(await attacks.locator('[data-sheet-context="equipment"]').count(),0,
+     'The equipment shortcut is no longer inside the attack table');
+    assert.equal(await toolbar.locator('[data-sheet-context="equipment"]').count(),1);
+    const toggleBase=toolbar.locator('[data-act="battle-basics-toggle"]');
+    assert.equal(await toggleBase.getAttribute('aria-pressed'),'true');
     assert.equal(await resources.locator('[data-attack-id="unarmed"]').count(),0,'Unarmed never appears in Risorse');
     assert.equal(await resources.locator('[data-rule-action],[data-action-benefit]').count(),0,
       'Resources contains no generic actions or benefit subgroups');
@@ -118,6 +129,26 @@ try{
      assert.match(await popup.textContent(),/Descrizione.*(?:The most common action|Attaccare)/s,
       'Clicking the action opens the same detail dialog as capacities');
      await popup.locator('[data-act="sheet-context-close"]').click();
+    }
+    if(width===390){
+     await toggleBase.click();
+     assert.equal(await toggleBase.getAttribute('aria-pressed'),'false');
+     assert.equal(await ruleGroup.isVisible(),false,'The toggle hides all rule-defined actions');
+     assert.equal(await attacks.locator('[data-battle-basic="attacks"]').isVisible(),false,
+      'The same toggle also hides basic attacks');
+     assert.equal(await privilegeGroup.isVisible(),true,'Privilege actions remain visible');
+     await section('magic');await section('battle');
+     assert.equal(await toggleBase.getAttribute('aria-pressed'),'false',
+      'Hidden base rows remain hidden after a sheet rerender');
+     assert.equal(await ruleGroup.isVisible(),false);
+     await toggleBase.click();
+     assert.equal(await toggleBase.getAttribute('aria-pressed'),'true');
+     assert.equal(await ruleGroup.isVisible(),true);
+     assert.equal(await attacks.locator('[data-battle-basic="attacks"]').isVisible(),true);
+     await toolbar.locator('[data-sheet-context="equipment"]').click();
+     const equipmentPopup=page.locator('#sheet-context-dialog[open]');
+     await equipmentPopup.waitFor();
+     await equipmentPopup.locator('[data-act="sheet-context-close"]').click();
     }
     assert.equal(await privilegeGroup.locator('[data-ability-id],[data-attack-id]').count()>0,true);
     assert.equal(await ruleGroup.locator('[data-attack-id="attack"] .play-action-index-mode').textContent(),'tutte');
