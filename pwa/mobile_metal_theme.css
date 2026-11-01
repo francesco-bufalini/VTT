@@ -1222,7 +1222,6 @@ input:disabled{opacity:.75;cursor:default}
 .play-battle-monster-option-body>p{margin:5px 0 0;white-space:pre-line}
 .play-battle-attack-rolls{display:flex;flex-direction:column;align-self:flex-start;align-items:stretch;gap:5px}
 .play-battle-attack-roll{display:flex;align-items:center;justify-content:flex-end;gap:5px;width:100%;min-height:41px;min-width:0;padding:5px 7px;border:1px solid #a77c493f;border-radius:9px;background:#8a644c24;color:#f2d39a;cursor:pointer}
-.play-battle-attack-roll>b{flex:0 0 auto;font:600 14px/1.2 system-ui;font-variant-numeric:tabular-nums}
 .play-battle-attack-roll>.action-dice{flex:0 0 18px;width:18px;height:18px}
 .play-battle-equipment{border-top:1px solid #aa845139}
 @media(max-width:360px){
@@ -1273,8 +1272,8 @@ input:disabled{opacity:.75;cursor:default}
  min-height:39px;width:100%;min-width:0}
 .play-battle-roll-formula{flex:1 1 auto;min-width:0;font:400 12px/1.4 system-ui;
  color:#cbb591;overflow-wrap:break-word}
-.play-battle-attack-roll{flex:0 0 auto;width:auto;min-width:58px;min-height:34px;
- padding:5px 8px;gap:7px;border-radius:7px}
+.play-battle-attack-roll{flex:0 0 auto;width:40px;min-width:40px;min-height:34px;
+ padding:5px 8px;gap:0;justify-content:center;border-radius:7px}
 .play-battle-attack-roll>.action-dice{width:18px;height:18px;flex:0 0 18px}
 .play-battle-effect{display:flex;align-items:center;gap:9px;min-width:0;
  min-height:42px;margin:0 10px;padding:7px 0 8px 32px;border-top:1px solid #9d78482b;
