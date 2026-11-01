@@ -39,8 +39,8 @@ test('optional power cards reuse the manual casting-statistic control',()=>{
  const parameters=['selectedPowerId','selectedPowerLabel','powerLayerNames','panel','esc',
   'castingStatisticsToggle','castingStatisticsVisible','castingStatistics'];
  const render=new Function(...parameters,source+';return optionBenefitPanels;');
- const model={id:'fighting_style',title:'Fighting Style',benefit_type:'option_selection',
-  options:[],layers:{learned:{enabled:true,selected:[],limit:1}}};
+ const model={id:'fighting_style',title:'Fighting Style',benefit_type:'option_grant',
+  ability:'wis',option_kind:'capability',options:[],layers:{learned:{enabled:true,selected:[],limit:1}}};
  const calls=[];
  const make=visible=>render(x=>x,(_,row)=>String(row),{learned:'Imparati'},
   (title,body)=>'<section>'+title+body+'</section>',String,
@@ -53,6 +53,11 @@ test('optional power cards reuse the manual casting-statistic control',()=>{
  assert.doesNotMatch(hidden,/<casting-statistics/);
  const shown=make(true)({}, {power_selections:[model]});
  assert.match(shown,/casting-statistics section="selection:fighting_style"/);
+ const withoutAbility={...model,ability:undefined};
+ calls.length=0;
+ const passive=make(true)({}, {power_selections:[withoutAbility]});
+ assert.equal(calls.length,0,'No invented spellcasting DC for passive grants');
+ assert.doesNotMatch(passive,/casting-statistics/);
  assert.match(view,/castingEye\(source\)\+\(counters/);
 });
 

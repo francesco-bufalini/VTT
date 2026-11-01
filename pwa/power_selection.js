@@ -146,7 +146,8 @@ export function powerApplicationPatch(raw,calculated,catalog,id,optionId,apply,{
  if(apply&&exists&&!layer.target)throw Error('Potere già applicato.');
  if(apply&&option.min_level>model.level)throw Error('Livello insufficiente.');
  const prerequisite=model.layers.prepared||model.layers.learned;
- if(apply&&prerequisite&&!prerequisite.selected.some(row=>identity(row)===optionId))throw Error('Devi prima imparare questa opzione.');
+ if(apply&&prerequisite&&!prerequisite.selected.some(row=>identity(row)===optionId))
+  throw Error(model.layers.prepared?'Devi prima preparare questa opzione.':'Devi prima imparare questa opzione.');
  if(apply&&!exists&&!model.application?.exclusive&&layer.limit!==null&&layer.selected.length>=layer.limit)throw Error('Numero massimo di applicazioni raggiunto.');
  let target;
  if(apply&&layer.target){

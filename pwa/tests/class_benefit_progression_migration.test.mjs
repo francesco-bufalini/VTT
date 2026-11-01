@@ -37,7 +37,8 @@ test('all 151 timing/recovery/attack-count and sequence entries retain original 
 });
 
 test('all 90 subclass/class resource overrides project losslessly without changing tracker identifiers',()=>{
- assert.equal(classEntries(catalogs.resource,'resource').length,count.resource);
+ assert.equal(classEntries(catalogs.resource,'resource').filter(row=>row.benefit.kind!=='spell_slots').length,count.resource);
+ assert.equal(classEntries(catalogs.resource,'resource').filter(row=>row.benefit.kind==='spell_slots').length,21);
  assert.deepEqual(projectClassResourceOverrides(catalogs.resource),sourceResources.classes);
  for(const item of classEntries(catalogs.resource,'resource')){
   const ref=item.granted_by.ref;
