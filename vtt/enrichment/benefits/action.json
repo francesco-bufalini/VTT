@@ -1155,6 +1155,1694 @@
         "resource_name": "Focus Points",
         "resource_cost": 1
       }
+    },
+    {
+      "id": "bard_xphb_bardic_inspiration",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Bardic Inspiration",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "bard_xphb_bardic_inspiration",
+        "kind": "activation",
+        "action_id": "bardic_inspiration",
+        "activation": "bonus",
+        "tracker_name": "Bardic Inspiration",
+        "resource_cost": 1,
+        "target_mode": "single_token",
+        "target_range_feet": 60,
+        "exclude_self": true,
+        "priority": 0,
+        "dice_ref": "bardic_inspiration_die"
+      }
+    },
+    {
+      "id": "bard_phb_bardic_inspiration",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Bardic Inspiration",
+          "source": "PHB",
+          "class_name": "Bard",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "bard_phb_bardic_inspiration",
+        "kind": "activation",
+        "action_id": "bardic_inspiration",
+        "activation": "bonus",
+        "tracker_name": "Bardic Inspiration",
+        "resource_cost": 1,
+        "target_mode": "single_token",
+        "target_range_feet": 60,
+        "exclude_self": true,
+        "priority": 0,
+        "dice_ref": "bardic_inspiration_die"
+      }
+    },
+    {
+      "id": "bard_phb_xge_whispers_mantle_capture",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Mantle of Whispers",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Whispers",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 6,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "bard_phb_xge_whispers_mantle_capture",
+        "kind": "activation",
+        "action_id": "mantle_of_whispers_capture",
+        "activation": "reaction",
+        "tracker_name": "Mantle of Whispers",
+        "priority": 0
+      }
+    },
+    {
+      "id": "bard_phb_xge_whispers_shadow_lore",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Shadow Lore",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Whispers",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 14,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "bard_phb_xge_whispers_shadow_lore",
+        "kind": "activation",
+        "action_id": "shadow_lore",
+        "activation": "action",
+        "tracker_name": "Shadow Lore",
+        "priority": 0
+      }
+    },
+    {
+      "id": "druid_phb_wild_shape",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Wild Shape",
+          "source": "PHB",
+          "class_name": "Druid",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "druid_phb_wild_shape",
+        "kind": "activation",
+        "action_id": "wild_shape",
+        "activation": "action",
+        "tracker_name": "Wild Shape",
+        "priority": 0
+      }
+    },
+    {
+      "id": "druid_phb_wild_shape:source:moon",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Combat Wild Shape",
+          "source": "PHB",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Moon",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "druid_phb_wild_shape",
+        "kind": "activation",
+        "action_id": "wild_shape",
+        "activation": "bonus",
+        "tracker_name": "Wild Shape",
+        "priority": 10
+      }
+    },
+    {
+      "id": "druid_xphb_wild_shape",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Wild Shape",
+          "source": "XPHB",
+          "class_name": "Druid",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "druid_xphb_wild_shape",
+        "kind": "activation",
+        "action_id": "wild_shape",
+        "activation": "bonus",
+        "tracker_name": "Wild Shape",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_hide",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Vanish",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 14,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_hide",
+        "kind": "activation",
+        "action_id": "hide",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_use_object",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Fast Hands",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Thief",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_use_object",
+        "kind": "activation",
+        "action_id": "use_object",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_xphb_utilize",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Fast Hands",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB",
+          "subclass": "Thief",
+          "subclass_source": "XPHB"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_xphb_utilize",
+        "kind": "activation",
+        "action_id": "utilize",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_inquisitive_eye_for_detail",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Eye for Detail",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Inquisitive",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_inquisitive_eye_for_detail",
+        "kind": "activation",
+        "action_id": "eye_for_detail",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_inquisitive_insightful_fighting",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Insightful Fighting",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Inquisitive",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_inquisitive_insightful_fighting",
+        "kind": "activation",
+        "action_id": "insightful_fighting",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_inquisitive_unerring_eye",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Unerring Eye",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Inquisitive",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 13,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_inquisitive_unerring_eye",
+        "kind": "activation",
+        "action_id": "unerring_eye",
+        "activation": "action",
+        "tracker_name": "Unerring Eye",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_mastermind_help",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Master of Tactics",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Mastermind",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_mastermind_help",
+        "kind": "activation",
+        "action_id": "help",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_mastermind_misdirection",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Misdirection",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Mastermind",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 13,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_mastermind_misdirection",
+        "kind": "activation",
+        "action_id": "misdirection",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_scout_skirmisher",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Skirmisher",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Scout",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_scout_skirmisher",
+        "kind": "activation",
+        "action_id": "skirmisher",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_scout_sudden_strike",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Sudden Strike",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Scout",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 17,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_scout_sudden_strike",
+        "kind": "activation",
+        "action_id": "sudden_strike",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_swashbuckler_panache",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Panache",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Swashbuckler",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 9,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_swashbuckler_panache",
+        "kind": "activation",
+        "action_id": "panache",
+        "activation": "action",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "rogue_phb_xge_swashbuckler_elegant_maneuver",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Elegant Maneuver",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Swashbuckler",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 13,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "rogue_phb_xge_swashbuckler_elegant_maneuver",
+        "kind": "activation",
+        "action_id": "elegant_maneuver",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_xge_horizon_detect_portal",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Detect Portal",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Horizon Walker",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_xge_horizon_detect_portal",
+        "kind": "activation",
+        "action_id": "detect_portal",
+        "activation": "action",
+        "tracker_name": "Detect Portal",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_xge_horizon_planar_warrior",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Planar Warrior",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Horizon Walker",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_xge_horizon_planar_warrior",
+        "kind": "activation",
+        "action_id": "planar_warrior",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_xge_horizon_ethereal_step",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Ethereal Step",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Horizon Walker",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 7,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_xge_horizon_ethereal_step",
+        "kind": "activation",
+        "action_id": "ethereal_step",
+        "activation": "bonus",
+        "tracker_name": "Ethereal Step",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_xge_horizon_spectral_defense",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spectral Defense",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Horizon Walker",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 15,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_xge_horizon_spectral_defense",
+        "kind": "activation",
+        "action_id": "spectral_defense",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_xge_slayer_hunters_sense",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hunter's Sense",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Monster Slayer",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_xge_slayer_hunters_sense",
+        "kind": "activation",
+        "action_id": "hunters_sense",
+        "activation": "action",
+        "tracker_name": "Hunter's Sense",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_xge_slayer_slayers_prey",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Slayer's Prey",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Monster Slayer",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_xge_slayer_slayers_prey",
+        "kind": "activation",
+        "action_id": "slayers_prey",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_xge_slayer_magic_users_nemesis",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Magic-User's Nemesis",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Monster Slayer",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 11,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_xge_slayer_magic_users_nemesis",
+        "kind": "activation",
+        "action_id": "magic_users_nemesis",
+        "activation": "reaction",
+        "tracker_name": "Magic-User's Nemesis",
+        "priority": 0
+      }
+    },
+    {
+      "id": "ranger_phb_xge_slayer_slayers_counter",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Slayer's Counter",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Monster Slayer",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 15,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "ranger_phb_xge_slayer_slayers_counter",
+        "kind": "activation",
+        "action_id": "slayers_counter",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "sorcerer_phb_xge_divine_otherworldly_wings",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Otherworldly Wings",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Divine Soul",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 14,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "sorcerer_phb_xge_divine_otherworldly_wings",
+        "kind": "activation",
+        "action_id": "otherworldly_wings",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "sorcerer_phb_xge_divine_unearthly_recovery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Unearthly Recovery",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Divine Soul",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 18,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "sorcerer_phb_xge_divine_unearthly_recovery",
+        "kind": "activation",
+        "action_id": "unearthly_recovery",
+        "activation": "bonus",
+        "tracker_name": "Unearthly Recovery",
+        "priority": 0
+      }
+    },
+    {
+      "id": "sorcerer_phb_xge_storm_tempestuous_magic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Tempestuous Magic",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Storm Sorcery",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 1,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "sorcerer_phb_xge_storm_tempestuous_magic",
+        "kind": "activation",
+        "action_id": "tempestuous_magic",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "sorcerer_phb_xge_storm_guide_rain",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Storm Guide",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Storm Sorcery",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 6,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "sorcerer_phb_xge_storm_guide_rain",
+        "kind": "activation",
+        "action_id": "storm_guide_rain",
+        "activation": "action",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "sorcerer_phb_xge_storm_guide_rain_end",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Storm Guide",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Storm Sorcery",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 6,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "sorcerer_phb_xge_storm_guide_rain_end",
+        "kind": "activation",
+        "action_id": "storm_guide_rain_end",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "sorcerer_phb_xge_storm_guide_wind",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Storm Guide",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Storm Sorcery",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 6,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "sorcerer_phb_xge_storm_guide_wind",
+        "kind": "activation",
+        "action_id": "storm_guide_wind",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "sorcerer_phb_xge_storm_storms_fury",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Storm's Fury",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Storm Sorcery",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 14,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "sorcerer_phb_xge_storm_storms_fury",
+        "kind": "activation",
+        "action_id": "storms_fury",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "sorcerer_phb_xge_storm_wind_soul_shared_flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Wind Soul",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Storm Sorcery",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 18,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "sorcerer_phb_xge_storm_wind_soul_shared_flight",
+        "kind": "activation",
+        "action_id": "wind_soul_shared_flight",
+        "activation": "action",
+        "tracker_name": "Wind Soul (Shared Flight)",
+        "priority": 0
+      }
+    },
+    {
+      "id": "cleric_phb_nature_charm_animals_and_plants",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Channel Divinity: Charm Animals and Plants",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "Nature",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "cleric_phb_nature_charm_animals_and_plants",
+        "kind": "activation",
+        "action_id": "nature_charm_animals_and_plants",
+        "activation": "action",
+        "tracker_name": "Channel Divinity",
+        "priority": 0
+      }
+    },
+    {
+      "id": "cleric_phb_nature_dampen_elements",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Dampen Elements",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "Nature",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 6,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "cleric_phb_nature_dampen_elements",
+        "kind": "activation",
+        "action_id": "nature_dampen_elements",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "cleric_phb_nature_master_of_nature",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Master of Nature",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "Nature",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 17,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "cleric_phb_nature_master_of_nature",
+        "kind": "activation",
+        "action_id": "nature_master_of_nature",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "cleric_phb_tempest_wrath_of_the_storm",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Wrath of the Storm",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "Tempest",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "cleric_phb_tempest_wrath_of_the_storm",
+        "kind": "activation",
+        "action_id": "tempest_wrath_of_the_storm",
+        "activation": "reaction",
+        "tracker_name": "Wrath of the Storm",
+        "priority": 0
+      }
+    },
+    {
+      "id": "cleric_phb_tempest_destructive_wrath",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Channel Divinity: Destructive Wrath",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "Tempest",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "cleric_phb_tempest_destructive_wrath",
+        "kind": "activation",
+        "action_id": "tempest_destructive_wrath",
+        "activation": "free",
+        "tracker_name": "Channel Divinity",
+        "priority": 0
+      }
+    },
+    {
+      "id": "warlock_phb_xge_hexblade_hexblades_curse",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hexblade's Curse",
+          "source": "XGE",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Hexblade",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 1,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "warlock_phb_xge_hexblade_hexblades_curse",
+        "kind": "activation",
+        "action_id": "hexblades_curse",
+        "activation": "bonus",
+        "tracker_name": "Hexblade's Curse",
+        "priority": 0
+      }
+    },
+    {
+      "id": "warlock_phb_xge_hexblade_armor_of_hexes",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Armor of Hexes",
+          "source": "XGE",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Hexblade",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 10,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "warlock_phb_xge_hexblade_armor_of_hexes",
+        "kind": "activation",
+        "action_id": "armor_of_hexes",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "warlock_phb_undying_indestructible_life",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Indestructible Life",
+          "source": "SCAG",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "Undying",
+          "subclass_source": "SCAG"
+        }
+      },
+      "min_level": 14,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "warlock_phb_undying_indestructible_life",
+        "kind": "activation",
+        "action_id": "undying_indestructible_life",
+        "activation": "bonus",
+        "tracker_name": "Indestructible Life",
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_xge_kensei_kenseis_shot",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Kensei's Shot",
+          "source": "XGE",
+          "class_name": "Monk",
+          "class_source": "PHB",
+          "subclass": "Way of the Kensei",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_xge_kensei_kenseis_shot",
+        "kind": "activation",
+        "action_id": "kenseis_shot",
+        "activation": "bonus",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_xge_sun_soul_searing_sunburst",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Searing Sunburst",
+          "source": "XGE",
+          "class_name": "Monk",
+          "class_source": "PHB",
+          "subclass": "Way of the Sun Soul",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 11,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_xge_sun_soul_searing_sunburst",
+        "kind": "activation",
+        "action_id": "searing_sunburst",
+        "activation": "action",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_long_death_hour_of_reaping",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hour of Reaping",
+          "source": "SCAG",
+          "class_name": "Monk",
+          "class_source": "PHB",
+          "subclass": "Long Death",
+          "subclass_source": "SCAG"
+        }
+      },
+      "min_level": 6,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_long_death_hour_of_reaping",
+        "kind": "activation",
+        "action_id": "long_death_hour_of_reaping",
+        "activation": "action",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "paladin_phb_crown_champion_challenge",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Champion Challenge",
+          "source": "SCAG",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Crown",
+          "subclass_source": "SCAG"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "paladin_phb_crown_champion_challenge",
+        "kind": "activation",
+        "action_id": "crown_champion_challenge",
+        "activation": "bonus",
+        "tracker_name": "Channel Divinity",
+        "priority": 0
+      }
+    },
+    {
+      "id": "paladin_phb_crown_turn_the_tide",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Turn the Tide",
+          "source": "SCAG",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Crown",
+          "subclass_source": "SCAG"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "paladin_phb_crown_turn_the_tide",
+        "kind": "activation",
+        "action_id": "crown_turn_the_tide",
+        "activation": "bonus",
+        "tracker_name": "Channel Divinity",
+        "priority": 0
+      }
+    },
+    {
+      "id": "paladin_phb_crown_divine_allegiance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Divine Allegiance",
+          "source": "SCAG",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Crown",
+          "subclass_source": "SCAG"
+        }
+      },
+      "min_level": 7,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "paladin_phb_crown_divine_allegiance",
+        "kind": "activation",
+        "action_id": "crown_divine_allegiance",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "paladin_phb_crown_exalted_champion",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Exalted Champion",
+          "source": "SCAG",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Crown",
+          "subclass_source": "SCAG"
+        }
+      },
+      "min_level": 20,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "paladin_phb_crown_exalted_champion",
+        "kind": "activation",
+        "action_id": "crown_exalted_champion",
+        "activation": "action",
+        "tracker_name": "Exalted Champion",
+        "priority": 0
+      }
+    },
+    {
+      "id": "fighter_phb_samurai_fighting_spirit",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Fighting Spirit",
+          "source": "XGE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Samurai",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 3,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "fighter_phb_samurai_fighting_spirit",
+        "kind": "activation",
+        "action_id": "samurai_fighting_spirit",
+        "activation": "bonus",
+        "tracker_name": "Fighting Spirit",
+        "priority": 0
+      }
+    },
+    {
+      "id": "fighter_phb_samurai_strength_before_death",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Strength before Death",
+          "source": "XGE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Samurai",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 18,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "fighter_phb_samurai_strength_before_death",
+        "kind": "activation",
+        "action_id": "samurai_strength_before_death",
+        "activation": "reaction",
+        "tracker_name": "Strength before Death",
+        "priority": 0
+      }
+    },
+    {
+      "id": "fighter_phb_cavalier_warding_maneuver",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Warding Maneuver",
+          "source": "XGE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Cavalier",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 7,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "fighter_phb_cavalier_warding_maneuver",
+        "kind": "activation",
+        "action_id": "cavalier_warding_maneuver",
+        "activation": "reaction",
+        "tracker_name": "Warding Maneuver",
+        "priority": 0
+      }
+    },
+    {
+      "id": "druid_phb_dreams_hidden_paths_self",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hidden Paths",
+          "source": "XGE",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Dreams",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 10,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "druid_phb_dreams_hidden_paths_self",
+        "kind": "activation",
+        "action_id": "dreams_hidden_paths_self",
+        "activation": "bonus",
+        "tracker_name": "Hidden Paths",
+        "priority": 0
+      }
+    },
+    {
+      "id": "druid_phb_dreams_hidden_paths_ally",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hidden Paths",
+          "source": "XGE",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Dreams",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 10,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "druid_phb_dreams_hidden_paths_ally",
+        "kind": "activation",
+        "action_id": "dreams_hidden_paths_ally",
+        "activation": "action",
+        "tracker_name": "Hidden Paths",
+        "priority": 0
+      }
+    },
+    {
+      "id": "druid_phb_shepherd_spirit_totem",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spirit Totem",
+          "source": "XGE",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Shepherd",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 2,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "druid_phb_shepherd_spirit_totem",
+        "kind": "activation",
+        "action_id": "shepherd_spirit_totem",
+        "activation": "bonus",
+        "tracker_name": "Spirit Totem",
+        "priority": 0
+      }
+    },
+    {
+      "id": "wizard_phb_war_arcane_deflection",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Arcane Deflection",
+          "source": "XGE",
+          "class_name": "Wizard",
+          "class_source": "PHB",
+          "subclass": "War Magic",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 2,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "wizard_phb_war_arcane_deflection",
+        "kind": "activation",
+        "action_id": "war_arcane_deflection",
+        "activation": "reaction",
+        "tracker_name": "",
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_martial_arts_bonus_unarmed",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_martial_arts_bonus_unarmed",
+        "kind": "activation",
+        "action_id": "martial_arts_bonus_unarmed",
+        "activation": "bonus",
+        "tracker_name": "",
+        "resource_cost": 0,
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_slow_fall",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Slow Fall",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 4,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_slow_fall",
+        "kind": "activation",
+        "action_id": "slow_fall",
+        "activation": "reaction",
+        "tracker_name": "",
+        "resource_cost": 0,
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_stillness_of_mind",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Stillness of Mind",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 7,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_stillness_of_mind",
+        "kind": "activation",
+        "action_id": "stillness_of_mind",
+        "activation": "action",
+        "tracker_name": "",
+        "resource_cost": 0,
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_diamond_soul_retry",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Diamond Soul",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 14,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_diamond_soul_retry",
+        "kind": "activation",
+        "action_id": "diamond_soul_retry",
+        "activation": "free",
+        "tracker_name": "Ki Points",
+        "resource_cost": 1,
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_empty_body_invisibility",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Empty Body",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 18,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_empty_body_invisibility",
+        "kind": "activation",
+        "action_id": "empty_body_invisibility",
+        "activation": "action",
+        "tracker_name": "Ki Points",
+        "resource_cost": 4,
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_open_hand_wholeness",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Wholeness of Body",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB",
+          "subclass": "Way of the Open Hand",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 6,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_open_hand_wholeness",
+        "kind": "activation",
+        "action_id": "wholeness_of_body",
+        "activation": "action",
+        "tracker_name": "Wholeness of Body",
+        "resource_cost": 1,
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_shadow_step",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Shadow Step",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB",
+          "subclass": "Way of Shadow",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 6,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_shadow_step",
+        "kind": "activation",
+        "action_id": "shadow_step",
+        "activation": "bonus",
+        "tracker_name": "",
+        "resource_cost": 0,
+        "priority": 0
+      }
+    },
+    {
+      "id": "monk_phb_cloak_of_shadows",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Cloak of Shadows",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB",
+          "subclass": "Way of Shadow",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 11,
+      "projection": "timing_action",
+      "benefit": {
+        "type": "action",
+        "id": "monk_phb_cloak_of_shadows",
+        "kind": "activation",
+        "action_id": "cloak_of_shadows",
+        "activation": "action",
+        "tracker_name": "",
+        "resource_cost": 0,
+        "priority": 0
+      }
     }
   ],
   "notes": "Class and subclass mechanics projected from legacy catalogs. Source identities/labels come from 5eTools; native compatibility fixtures remain until runtime migration completes."

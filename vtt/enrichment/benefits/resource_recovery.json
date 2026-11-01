@@ -1,0 +1,413 @@
+{
+  "schema_version": 2,
+  "benefit_type": "resource_recovery",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "barbarian_xphb_rages_long_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Rage",
+          "source": "XPHB",
+          "class_name": "Barbarian",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "barbarian_xphb_rages_long_rest_full",
+        "resource_name": "Rages",
+        "recovery": {
+          "event": "long_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "cleric_xphb_channel_divinity_long_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Channel Divinity",
+          "source": "XPHB",
+          "class_name": "Cleric",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "cleric_xphb_channel_divinity_long_rest_full",
+        "resource_name": "Channel Divinity",
+        "recovery": {
+          "event": "long_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "druid_xphb_wild_shape_long_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Wild Shape",
+          "source": "XPHB",
+          "class_name": "Druid",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "druid_xphb_wild_shape_long_rest_full",
+        "resource_name": "Wild Shape",
+        "recovery": {
+          "event": "long_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "fighter_xphb_second_wind_long_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Second Wind",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "fighter_xphb_second_wind_long_rest_full",
+        "resource_name": "Second Wind",
+        "recovery": {
+          "event": "long_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "paladin_xphb_channel_divinity_long_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Channel Divinity",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "paladin_xphb_channel_divinity_long_rest_full",
+        "resource_name": "Channel Divinity",
+        "recovery": {
+          "event": "long_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "sorcerer_xphb_sorcery_points_long_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Font of Magic",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "sorcerer_xphb_sorcery_points_long_rest_full",
+        "resource_name": "Sorcery Points",
+        "recovery": {
+          "event": "long_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "barbarian_xphb_rages_short_rest_partial",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Rage",
+          "source": "XPHB",
+          "class_name": "Barbarian",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "barbarian_xphb_rages_short_rest_partial",
+        "resource_name": "Rages",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "partial",
+          "amount": 1
+        }
+      }
+    },
+    {
+      "id": "cleric_xphb_channel_divinity_short_rest_partial",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Channel Divinity",
+          "source": "XPHB",
+          "class_name": "Cleric",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "cleric_xphb_channel_divinity_short_rest_partial",
+        "resource_name": "Channel Divinity",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "partial",
+          "amount": 1
+        }
+      }
+    },
+    {
+      "id": "druid_xphb_wild_shape_short_rest_partial",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Wild Shape",
+          "source": "XPHB",
+          "class_name": "Druid",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "druid_xphb_wild_shape_short_rest_partial",
+        "resource_name": "Wild Shape",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "partial",
+          "amount": 1
+        }
+      }
+    },
+    {
+      "id": "fighter_xphb_second_wind_short_rest_partial",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Second Wind",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "fighter_xphb_second_wind_short_rest_partial",
+        "resource_name": "Second Wind",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "partial",
+          "amount": 1
+        }
+      }
+    },
+    {
+      "id": "paladin_xphb_channel_divinity_short_rest_partial",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Channel Divinity",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "paladin_xphb_channel_divinity_short_rest_partial",
+        "resource_name": "Channel Divinity",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "partial",
+          "amount": 1
+        }
+      }
+    },
+    {
+      "id": "sorcerer_phb_sorcery_points_short_rest_partial",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Sorcerous Restoration",
+          "source": "PHB",
+          "class_name": "Sorcerer",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 20,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "sorcerer_phb_sorcery_points_short_rest_partial",
+        "resource_name": "Sorcery Points",
+        "origin_feature": "Sorcerous Restoration",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "partial",
+          "amount": 4
+        }
+      }
+    },
+    {
+      "id": "sorcerer_xphb_sorcery_points_short_rest_optional_partial",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Sorcerous Restoration",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "sorcerer_xphb_sorcery_points_short_rest_optional_partial",
+        "resource_name": "Sorcery Points",
+        "origin_feature": "Sorcerous Restoration",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "optional_partial",
+          "formula": "half_class_level_floor",
+          "limit_per_long_rest": 1
+        }
+      }
+    },
+    {
+      "id": "bard_phb_bardic_inspiration_short_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Font of Inspiration",
+          "source": "PHB",
+          "class_name": "Bard",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "bard_phb_bardic_inspiration_short_rest_full",
+        "resource_name": "Bardic Inspiration",
+        "origin_feature": "Font of Inspiration",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "bard_xphb_bardic_inspiration_short_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Font of Inspiration",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "bard_xphb_bardic_inspiration_short_rest_full",
+        "resource_name": "Bardic Inspiration",
+        "origin_feature": "Font of Inspiration",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "druid_phb_wild_shape_short_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Wild Shape",
+          "source": "PHB",
+          "class_name": "Druid",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "druid_phb_wild_shape_short_rest_full",
+        "resource_name": "Wild Shape",
+        "origin_feature": "Wild Shape",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "full"
+        }
+      }
+    },
+    {
+      "id": "monk_xphb_focus_points_short_rest_full",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Focus Points",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "resource_recovery",
+        "id": "monk_xphb_focus_points_short_rest_full",
+        "resource_name": "Focus Points",
+        "origin_feature": "Focus Points",
+        "recovery": {
+          "event": "short_rest",
+          "mode": "full"
+        }
+      }
+    }
+  ],
+  "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."
+}

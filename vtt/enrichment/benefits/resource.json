@@ -1,0 +1,3084 @@
+{
+  "schema_version": 2,
+  "benefit_type": "resource",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "resource:phb:barbarian:rages",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Rage",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:barbarian:rages",
+        "resource": "Rage",
+        "steps": [
+          {
+            "level": 1,
+            "value": "2",
+            "reset": "long_rest"
+          },
+          {
+            "level": 3,
+            "value": "3",
+            "reset": "long_rest"
+          },
+          {
+            "level": 6,
+            "value": "4",
+            "reset": "long_rest"
+          },
+          {
+            "level": 12,
+            "value": "5",
+            "reset": "long_rest"
+          },
+          {
+            "level": 17,
+            "value": "6",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "column": "Rages"
+      }
+    },
+    {
+      "id": "resource:phb:bard:bardic-inspiration",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Bardic Inspiration",
+          "source": "PHB",
+          "class_name": "Bard",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:bard:bardic-inspiration",
+        "resource": "Bardic Inspiration",
+        "steps": [
+          {
+            "level": 1,
+            "value": "cha_mod",
+            "reset": "long_rest"
+          },
+          {
+            "level": 5,
+            "value": "cha_mod",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:bard:whispers:words-of-terror",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Words of Terror",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Whispers",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:bard:whispers:words-of-terror",
+        "resource": "Words of Terror",
+        "steps": [
+          {
+            "level": 3,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:bard:whispers:mantle-of-whispers",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Mantle of Whispers",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Whispers",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:bard:whispers:mantle-of-whispers",
+        "resource": "Mantle of Whispers",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:bard:whispers:shadow-lore",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Shadow Lore",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Whispers",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:bard:whispers:shadow-lore",
+        "resource": "Shadow Lore",
+        "steps": [
+          {
+            "level": 14,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:bard:creation:performance-of-creation",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Performance of Creation",
+          "source": "TCE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Creation",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools TCE College of Creation feature at Bard level 3; free use only (spell-slot alternative is separate)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:bard:creation:performance-of-creation",
+        "resource": "Performance of Creation",
+        "steps": [
+          {
+            "level": 3,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "TCE",
+        "origin_feature": "Performance of Creation"
+      }
+    },
+    {
+      "id": "resource:phb:bard:creation:animating-performance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Animating Performance",
+          "source": "TCE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Creation",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools TCE College of Creation feature at Bard level 6; free use only (spell-slot alternative is separate)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:bard:creation:animating-performance",
+        "resource": "Animating Performance",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "TCE",
+        "origin_feature": "Animating Performance"
+      }
+    },
+    {
+      "id": "resource:phb:cleric:channel-divinity",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Channel Divinity",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:cleric:channel-divinity",
+        "resource": "Channel Divinity",
+        "steps": [
+          {
+            "level": 2,
+            "value": "1",
+            "reset": "short_rest"
+          },
+          {
+            "level": 6,
+            "value": "2",
+            "reset": "short_rest"
+          },
+          {
+            "level": 18,
+            "value": "3",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:cleric:war:war-priest",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "War Priest",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "War Domain",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:cleric:war:war-priest",
+        "resource": "War Priest",
+        "steps": [
+          {
+            "level": 1,
+            "value": "wis_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:cleric:light:warding-flare",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Warding Flare",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "Light Domain",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:cleric:light:warding-flare",
+        "resource": "Warding Flare",
+        "steps": [
+          {
+            "level": 1,
+            "value": "wis_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:cleric:tempest:wrath-of-the-storm",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Wrath of the Storm",
+          "source": "PHB",
+          "class_name": "Cleric",
+          "class_source": "PHB",
+          "subclass": "Tempest Domain",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:cleric:tempest:wrath-of-the-storm",
+        "resource": "Wrath of the Storm",
+        "steps": [
+          {
+            "level": 1,
+            "value": "wis_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:druid:land:natural-recovery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Natural Recovery",
+          "source": "PHB",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Circle of the Land",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:druid:land:natural-recovery",
+        "resource": "Natural Recovery",
+        "steps": [
+          {
+            "level": 2,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:druid:wild-shape",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Wild Shape",
+          "source": "PHB",
+          "class_name": "Druid",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:druid:wild-shape",
+        "resource": "Wild Shape",
+        "steps": [
+          {
+            "level": 2,
+            "value": "2",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:druid:dreams:balm-of-the-summer-court",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Balm of the Summer Court",
+          "source": "XGE",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Circle of Dreams",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:druid:dreams:balm-of-the-summer-court",
+        "resource": "Balm of the Summer Court",
+        "steps": [
+          {
+            "level": 2,
+            "value": "2",
+            "reset": "long_rest"
+          },
+          {
+            "level": 3,
+            "value": "3",
+            "reset": "long_rest"
+          },
+          {
+            "level": 4,
+            "value": "4",
+            "reset": "long_rest"
+          },
+          {
+            "level": 5,
+            "value": "5",
+            "reset": "long_rest"
+          },
+          {
+            "level": 6,
+            "value": "6",
+            "reset": "long_rest"
+          },
+          {
+            "level": 7,
+            "value": "7",
+            "reset": "long_rest"
+          },
+          {
+            "level": 8,
+            "value": "8",
+            "reset": "long_rest"
+          },
+          {
+            "level": 9,
+            "value": "9",
+            "reset": "long_rest"
+          },
+          {
+            "level": 10,
+            "value": "10",
+            "reset": "long_rest"
+          },
+          {
+            "level": 11,
+            "value": "11",
+            "reset": "long_rest"
+          },
+          {
+            "level": 12,
+            "value": "12",
+            "reset": "long_rest"
+          },
+          {
+            "level": 13,
+            "value": "13",
+            "reset": "long_rest"
+          },
+          {
+            "level": 14,
+            "value": "14",
+            "reset": "long_rest"
+          },
+          {
+            "level": 15,
+            "value": "15",
+            "reset": "long_rest"
+          },
+          {
+            "level": 16,
+            "value": "16",
+            "reset": "long_rest"
+          },
+          {
+            "level": 17,
+            "value": "17",
+            "reset": "long_rest"
+          },
+          {
+            "level": 18,
+            "value": "18",
+            "reset": "long_rest"
+          },
+          {
+            "level": 19,
+            "value": "19",
+            "reset": "long_rest"
+          },
+          {
+            "level": 20,
+            "value": "20",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:druid:dreams:hidden-paths",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hidden Paths",
+          "source": "XGE",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Circle of Dreams",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:druid:dreams:hidden-paths",
+        "resource": "Hidden Paths",
+        "steps": [
+          {
+            "level": 10,
+            "value": "wis_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:druid:dreams:walker-in-dreams",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Walker in Dreams",
+          "source": "XGE",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Circle of Dreams",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:druid:dreams:walker-in-dreams",
+        "resource": "Walker in Dreams",
+        "steps": [
+          {
+            "level": 14,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:druid:shepherd:spirit-totem",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spirit Totem",
+          "source": "XGE",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Circle of the Shepherd",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:druid:shepherd:spirit-totem",
+        "resource": "Spirit Totem",
+        "steps": [
+          {
+            "level": 2,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:druid:shepherd:faithful-summons",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Faithful Summons",
+          "source": "XGE",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Circle of the Shepherd",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:druid:shepherd:faithful-summons",
+        "resource": "Faithful Summons",
+        "steps": [
+          {
+            "level": 14,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:fighter:action-surge",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Action Surge",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:fighter:action-surge",
+        "resource": "Action Surge",
+        "steps": [
+          {
+            "level": 2,
+            "value": "1",
+            "reset": "short_rest"
+          },
+          {
+            "level": 17,
+            "value": "2",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:fighter:indomitable",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Indomitable",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:fighter:indomitable",
+        "resource": "Indomitable",
+        "steps": [
+          {
+            "level": 9,
+            "value": "1",
+            "reset": "long_rest"
+          },
+          {
+            "level": 13,
+            "value": "2",
+            "reset": "long_rest"
+          },
+          {
+            "level": 17,
+            "value": "3",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:fighter:second-wind",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Second Wind",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:fighter:second-wind",
+        "resource": "Second Wind",
+        "steps": [
+          {
+            "level": 1,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:fighter:battle-master:superiority-die",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Combat Superiority",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Battle Master",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:fighter:battle-master:superiority-die",
+        "resource": "Superiority Die",
+        "steps": [
+          {
+            "level": 3,
+            "value": "4",
+            "reset": "short_rest"
+          },
+          {
+            "level": 7,
+            "value": "5",
+            "reset": "short_rest"
+          },
+          {
+            "level": 15,
+            "value": "6",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "origin_feature": "Combat Superiority"
+      }
+    },
+    {
+      "id": "resource:phb:fighter:samurai:fighting-spirit",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Fighting Spirit",
+          "source": "XGE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Samurai",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:fighter:samurai:fighting-spirit",
+        "resource": "Fighting Spirit",
+        "steps": [
+          {
+            "level": 3,
+            "value": "3",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:fighter:samurai:strength-before-death",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Strength before Death",
+          "source": "XGE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Samurai",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:fighter:samurai:strength-before-death",
+        "resource": "Strength before Death",
+        "steps": [
+          {
+            "level": 18,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:fighter:cavalier:unwavering-mark-special-attack",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Unwavering Mark",
+          "source": "XGE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Cavalier",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:fighter:cavalier:unwavering-mark-special-attack",
+        "resource": "Unwavering Mark (Special Attack)",
+        "steps": [
+          {
+            "level": 3,
+            "value": "str_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE",
+        "column": "Unwavering Mark Special Attack",
+        "origin_feature": "Unwavering Mark",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:fighter:cavalier:warding-maneuver",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Warding Maneuver",
+          "source": "XGE",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Cavalier",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:fighter:cavalier:warding-maneuver",
+        "resource": "Warding Maneuver",
+        "steps": [
+          {
+            "level": 7,
+            "value": "con_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:monk:ki-points",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Ki",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:monk:ki-points",
+        "resource": "Ki",
+        "steps": [
+          {
+            "level": 2,
+            "value": "2",
+            "reset": "short_rest"
+          },
+          {
+            "level": 3,
+            "value": "3",
+            "reset": "short_rest"
+          },
+          {
+            "level": 4,
+            "value": "4",
+            "reset": "short_rest"
+          },
+          {
+            "level": 5,
+            "value": "5",
+            "reset": "short_rest"
+          },
+          {
+            "level": 6,
+            "value": "6",
+            "reset": "short_rest"
+          },
+          {
+            "level": 7,
+            "value": "7",
+            "reset": "short_rest"
+          },
+          {
+            "level": 8,
+            "value": "8",
+            "reset": "short_rest"
+          },
+          {
+            "level": 9,
+            "value": "9",
+            "reset": "short_rest"
+          },
+          {
+            "level": 10,
+            "value": "10",
+            "reset": "short_rest"
+          },
+          {
+            "level": 11,
+            "value": "11",
+            "reset": "short_rest"
+          },
+          {
+            "level": 12,
+            "value": "12",
+            "reset": "short_rest"
+          },
+          {
+            "level": 13,
+            "value": "13",
+            "reset": "short_rest"
+          },
+          {
+            "level": 14,
+            "value": "14",
+            "reset": "short_rest"
+          },
+          {
+            "level": 15,
+            "value": "15",
+            "reset": "short_rest"
+          },
+          {
+            "level": 16,
+            "value": "16",
+            "reset": "short_rest"
+          },
+          {
+            "level": 17,
+            "value": "17",
+            "reset": "short_rest"
+          },
+          {
+            "level": 18,
+            "value": "18",
+            "reset": "short_rest"
+          },
+          {
+            "level": 19,
+            "value": "19",
+            "reset": "short_rest"
+          },
+          {
+            "level": 20,
+            "value": "20",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "column": "Ki Points"
+      }
+    },
+    {
+      "id": "resource:phb:monk:open-hand:wholeness-of-body",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Wholeness of Body",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB",
+          "subclass": "Way of the Open Hand",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:monk:open-hand:wholeness-of-body",
+        "resource": "Wholeness of Body",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:paladin:vengeance:avenging-angel",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Avenging Angel",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Oath of Vengeance",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:vengeance:avenging-angel",
+        "resource": "Avenging Angel",
+        "steps": [
+          {
+            "level": 20,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:paladin:channel-divinity",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Channel Divinity",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:channel-divinity",
+        "resource": "Channel Divinity",
+        "steps": [
+          {
+            "level": 3,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:paladin:cleansing-touch",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Cleansing Touch",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:cleansing-touch",
+        "resource": "Cleansing Touch",
+        "steps": [
+          {
+            "level": 14,
+            "value": "cha_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:paladin:divine-sense",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Divine Sense",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:divine-sense",
+        "resource": "Divine Sense",
+        "steps": [
+          {
+            "level": 1,
+            "value": "1+cha_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:paladin:ancients:elder-champion",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Elder Champion",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Oath of the Ancients",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:ancients:elder-champion",
+        "resource": "Elder Champion",
+        "steps": [
+          {
+            "level": 20,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:paladin:devotion:holy-nimbus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Holy Nimbus",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Oath of Devotion",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:devotion:holy-nimbus",
+        "resource": "Holy Nimbus",
+        "steps": [
+          {
+            "level": 20,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:paladin:lay-on-hands",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Lay on Hands",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:lay-on-hands",
+        "resource": "Lay on Hands",
+        "steps": [
+          {
+            "level": 1,
+            "value": "5",
+            "reset": "long_rest"
+          },
+          {
+            "level": 2,
+            "value": "10",
+            "reset": "long_rest"
+          },
+          {
+            "level": 3,
+            "value": "15",
+            "reset": "long_rest"
+          },
+          {
+            "level": 4,
+            "value": "20",
+            "reset": "long_rest"
+          },
+          {
+            "level": 5,
+            "value": "25",
+            "reset": "long_rest"
+          },
+          {
+            "level": 6,
+            "value": "30",
+            "reset": "long_rest"
+          },
+          {
+            "level": 7,
+            "value": "35",
+            "reset": "long_rest"
+          },
+          {
+            "level": 8,
+            "value": "40",
+            "reset": "long_rest"
+          },
+          {
+            "level": 9,
+            "value": "45",
+            "reset": "long_rest"
+          },
+          {
+            "level": 10,
+            "value": "50",
+            "reset": "long_rest"
+          },
+          {
+            "level": 11,
+            "value": "55",
+            "reset": "long_rest"
+          },
+          {
+            "level": 12,
+            "value": "60",
+            "reset": "long_rest"
+          },
+          {
+            "level": 13,
+            "value": "65",
+            "reset": "long_rest"
+          },
+          {
+            "level": 14,
+            "value": "70",
+            "reset": "long_rest"
+          },
+          {
+            "level": 15,
+            "value": "75",
+            "reset": "long_rest"
+          },
+          {
+            "level": 16,
+            "value": "80",
+            "reset": "long_rest"
+          },
+          {
+            "level": 17,
+            "value": "85",
+            "reset": "long_rest"
+          },
+          {
+            "level": 18,
+            "value": "90",
+            "reset": "long_rest"
+          },
+          {
+            "level": 19,
+            "value": "95",
+            "reset": "long_rest"
+          },
+          {
+            "level": 20,
+            "value": "100",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:paladin:ancients:undying-sentinel",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Undying Sentinel",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Oath of the Ancients",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:ancients:undying-sentinel",
+        "resource": "Undying Sentinel",
+        "steps": [
+          {
+            "level": 15,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:paladin:crown:exalted-champion",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Exalted Champion",
+          "source": "SCAG",
+          "class_name": "Paladin",
+          "class_source": "PHB",
+          "subclass": "Oath of the Crown",
+          "subclass_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:paladin:crown:exalted-champion",
+        "resource": "Exalted Champion",
+        "steps": [
+          {
+            "level": 20,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "SCAG"
+      }
+    },
+    {
+      "id": "resource:phb:ranger:horizon-walker:detect-portal",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Detect Portal",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Horizon Walker",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:ranger:horizon-walker:detect-portal",
+        "resource": "Detect Portal",
+        "steps": [
+          {
+            "level": 3,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:ranger:horizon-walker:ethereal-step",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Ethereal Step",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Horizon Walker",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:ranger:horizon-walker:ethereal-step",
+        "resource": "Ethereal Step",
+        "steps": [
+          {
+            "level": 7,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:ranger:monster-slayer:hunter-s-sense",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hunter's Sense",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Monster Slayer",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:ranger:monster-slayer:hunter-s-sense",
+        "resource": "Hunter's Sense",
+        "steps": [
+          {
+            "level": 3,
+            "value": "wis_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:ranger:monster-slayer:magic-user-s-nemesis",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Magic-User's Nemesis",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB",
+          "subclass": "Monster Slayer",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:ranger:monster-slayer:magic-user-s-nemesis",
+        "resource": "Magic-User's Nemesis",
+        "steps": [
+          {
+            "level": 11,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:rogue:inquisitive:unerring-eye",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Unerring Eye",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Inquisitive",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:rogue:inquisitive:unerring-eye",
+        "resource": "Unerring Eye",
+        "steps": [
+          {
+            "level": 13,
+            "value": "wis_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:phb:rogue:swashbuckler:master-duelist",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Master Duelist",
+          "source": "XGE",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Swashbuckler",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:rogue:swashbuckler:master-duelist",
+        "resource": "Master Duelist",
+        "steps": [
+          {
+            "level": 17,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:rogue:arcane-trickster:spell-thief",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spell Thief",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB",
+          "subclass": "Arcane Trickster",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:rogue:arcane-trickster:spell-thief",
+        "resource": "Spell Thief",
+        "steps": [
+          {
+            "level": 17,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:rogue:stroke-of-luck",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Stroke of Luck",
+          "source": "PHB",
+          "class_name": "Rogue",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:rogue:stroke-of-luck",
+        "resource": "Stroke of Luck",
+        "steps": [
+          {
+            "level": 20,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:sorcerer:divine-soul:favored-by-the-gods",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Favored by the Gods",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Divine Soul",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:sorcerer:divine-soul:favored-by-the-gods",
+        "resource": "Favored by the Gods",
+        "steps": [
+          {
+            "level": 1,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE",
+        "source_counter": "Favored by Gods"
+      }
+    },
+    {
+      "id": "resource:phb:sorcerer:divine-soul:unearthly-recovery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Unearthly Recovery",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Divine Soul",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:sorcerer:divine-soul:unearthly-recovery",
+        "resource": "Unearthly Recovery",
+        "steps": [
+          {
+            "level": 18,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:sorcerer:storm-sorcery:wind-soul-shared-flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Wind Soul",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Storm Sorcery",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:sorcerer:storm-sorcery:wind-soul-shared-flight",
+        "resource": "Wind Soul (Shared Flight)",
+        "steps": [
+          {
+            "level": 18,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE",
+        "origin_feature": "Wind Soul",
+        "source_counter": "Wind Soul"
+      }
+    },
+    {
+      "id": "resource:phb:sorcerer:sorcery-points",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Sorcery Points",
+          "source": "PHB",
+          "class_name": "Sorcerer",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:sorcerer:sorcery-points",
+        "resource": "Sorcery Points",
+        "steps": [
+          {
+            "level": 2,
+            "value": "2",
+            "reset": "long_rest"
+          },
+          {
+            "level": 3,
+            "value": "3",
+            "reset": "long_rest"
+          },
+          {
+            "level": 4,
+            "value": "4",
+            "reset": "long_rest"
+          },
+          {
+            "level": 5,
+            "value": "5",
+            "reset": "long_rest"
+          },
+          {
+            "level": 6,
+            "value": "6",
+            "reset": "long_rest"
+          },
+          {
+            "level": 7,
+            "value": "7",
+            "reset": "long_rest"
+          },
+          {
+            "level": 8,
+            "value": "8",
+            "reset": "long_rest"
+          },
+          {
+            "level": 9,
+            "value": "9",
+            "reset": "long_rest"
+          },
+          {
+            "level": 10,
+            "value": "10",
+            "reset": "long_rest"
+          },
+          {
+            "level": 11,
+            "value": "11",
+            "reset": "long_rest"
+          },
+          {
+            "level": 12,
+            "value": "12",
+            "reset": "long_rest"
+          },
+          {
+            "level": 13,
+            "value": "13",
+            "reset": "long_rest"
+          },
+          {
+            "level": 14,
+            "value": "14",
+            "reset": "long_rest"
+          },
+          {
+            "level": 15,
+            "value": "15",
+            "reset": "long_rest"
+          },
+          {
+            "level": 16,
+            "value": "16",
+            "reset": "long_rest"
+          },
+          {
+            "level": 17,
+            "value": "17",
+            "reset": "long_rest"
+          },
+          {
+            "level": 18,
+            "value": "18",
+            "reset": "long_rest"
+          },
+          {
+            "level": 19,
+            "value": "19",
+            "reset": "long_rest"
+          },
+          {
+            "level": 20,
+            "value": "20",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:sorcerer:wild-magic:tides-of-chaos",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Tides of Chaos",
+          "source": "PHB",
+          "class_name": "Sorcerer",
+          "class_source": "PHB",
+          "subclass": "Wild Magic",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:sorcerer:wild-magic:tides-of-chaos",
+        "resource": "Tides of Chaos",
+        "steps": [
+          {
+            "level": 1,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:hexblade:hexblade-s-curse",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hexblade's Curse",
+          "source": "XGE",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Hexblade",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:hexblade:hexblade-s-curse",
+        "resource": "Hexblade's Curse",
+        "steps": [
+          {
+            "level": 1,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:hexblade:accursed-specter",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Accursed Specter",
+          "source": "XGE",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Hexblade",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:hexblade:accursed-specter",
+        "resource": "Accursed Specter",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XGE"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:archfey:dark-delirium",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Dark Delirium",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Archfey",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:archfey:dark-delirium",
+        "resource": "Dark Delirium",
+        "steps": [
+          {
+            "level": 14,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:fiend:dark-one-s-luck",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Dark One's Own Luck",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Fiend",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:fiend:dark-one-s-luck",
+        "resource": "Dark One's Own Luck",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "column": "Dark One's Luck",
+        "source_counter": "Dark One's Luck",
+        "origin_feature": "Dark One's Own Luck"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:eldritch-master",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Eldritch Master",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:eldritch-master",
+        "resource": "Eldritch Master",
+        "steps": [
+          {
+            "level": 20,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:great-old-one:entropic-ward",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Entropic Ward",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Great Old One",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:great-old-one:entropic-ward",
+        "resource": "Entropic Ward",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:archfey:fey-presence",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Fey Presence",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Archfey",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:archfey:fey-presence",
+        "resource": "Fey Presence",
+        "steps": [
+          {
+            "level": 1,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:fiend:hurl-through-hell",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Hurl Through Hell",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Fiend",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:fiend:hurl-through-hell",
+        "resource": "Hurl Through Hell",
+        "steps": [
+          {
+            "level": 14,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:archfey:misty-escape",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Misty Escape",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Archfey",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:archfey:misty-escape",
+        "resource": "Misty Escape",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:undying:defy-death",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Defy Death",
+          "source": "SCAG",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Undying",
+          "subclass_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:undying:defy-death",
+        "resource": "Defy Death",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "SCAG"
+      }
+    },
+    {
+      "id": "resource:phb:warlock:undying:indestructible-life",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Indestructible Life",
+          "source": "SCAG",
+          "class_name": "Warlock",
+          "class_source": "PHB",
+          "subclass": "The Undying",
+          "subclass_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:warlock:undying:indestructible-life",
+        "resource": "Indestructible Life",
+        "steps": [
+          {
+            "level": 14,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "SCAG"
+      }
+    },
+    {
+      "id": "resource:phb:wizard:arcane-recovery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Arcane Recovery",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:wizard:arcane-recovery",
+        "resource": "Arcane Recovery",
+        "steps": [
+          {
+            "level": 1,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:wizard:conjuration:benign-transposition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Benign Transposition",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB",
+          "subclass": "School of Conjuration",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:wizard:conjuration:benign-transposition",
+        "resource": "Benign Transposition",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:wizard:illusion:illusory-step",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Illusory Self",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB",
+          "subclass": "School of Illusion",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:wizard:illusion:illusory-step",
+        "resource": "Illusory Self",
+        "steps": [
+          {
+            "level": 10,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "column": "Illusory Step",
+        "source_counter": "Illusory Step",
+        "origin_feature": "Illusory Self"
+      }
+    },
+    {
+      "id": "resource:phb:wizard:divination:portents",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Portent",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB",
+          "subclass": "School of Divination",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:wizard:divination:portents",
+        "resource": "Portents",
+        "steps": [
+          {
+            "level": 2,
+            "value": "2",
+            "reset": "long_rest"
+          },
+          {
+            "level": 14,
+            "value": "3",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "origin_feature": "Portent"
+      }
+    },
+    {
+      "id": "resource:phb:wizard:transmutation:shapechanger",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Shapechanger",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB",
+          "subclass": "School of Transmutation",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:wizard:transmutation:shapechanger",
+        "resource": "Shapechanger",
+        "steps": [
+          {
+            "level": 10,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB"
+      }
+    },
+    {
+      "id": "resource:phb:wizard:divination:third-eye",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "The Third Eye",
+          "source": "PHB",
+          "class_name": "Wizard",
+          "class_source": "PHB",
+          "subclass": "School of Divination",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:phb:wizard:divination:third-eye",
+        "resource": "The Third Eye",
+        "steps": [
+          {
+            "level": 10,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "PHB",
+        "column": "Third Eye",
+        "source_counter": "Third Eye",
+        "origin_feature": "The Third Eye"
+      }
+    },
+    {
+      "id": "resource:xphb:fighter:action-surge",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Action Surge",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Action Surge (Fighter XPHB, levels 2 and 17)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:fighter:action-surge",
+        "resource": "Action Surge",
+        "steps": [
+          {
+            "level": 2,
+            "value": "1",
+            "reset": "short_rest"
+          },
+          {
+            "level": 17,
+            "value": "2",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    },
+    {
+      "id": "resource:xphb:fighter:indomitable",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Indomitable",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Indomitable (Fighter XPHB, levels 9, 13 and 17)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:fighter:indomitable",
+        "resource": "Indomitable",
+        "steps": [
+          {
+            "level": 9,
+            "value": "1",
+            "reset": "long_rest"
+          },
+          {
+            "level": 13,
+            "value": "2",
+            "reset": "long_rest"
+          },
+          {
+            "level": 17,
+            "value": "3",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    },
+    {
+      "id": "resource:xphb:bard:bardic-inspiration",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Bardic Inspiration",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Bardic Inspiration + Font of Inspiration (2024)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:bard:bardic-inspiration",
+        "resource": "Bardic Inspiration",
+        "steps": [
+          {
+            "level": 1,
+            "value": "cha_mod",
+            "reset": "long_rest"
+          },
+          {
+            "level": 5,
+            "value": "cha_mod",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XPHB",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:xphb:bard:creation:performance-of-creation",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Performance of Creation",
+          "source": "TCE",
+          "class_name": "Bard",
+          "class_source": "XPHB",
+          "subclass": "College of Creation",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools TCE College of Creation feature at Bard level 3; free use only (spell-slot alternative is separate)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:bard:creation:performance-of-creation",
+        "resource": "Performance of Creation",
+        "steps": [
+          {
+            "level": 3,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "TCE",
+        "origin_feature": "Performance of Creation"
+      }
+    },
+    {
+      "id": "resource:xphb:bard:creation:animating-performance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Animating Performance",
+          "source": "TCE",
+          "class_name": "Bard",
+          "class_source": "XPHB",
+          "subclass": "College of Creation",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools TCE College of Creation feature at Bard level 6; free use only (spell-slot alternative is separate)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:bard:creation:animating-performance",
+        "resource": "Animating Performance",
+        "steps": [
+          {
+            "level": 6,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "TCE",
+        "origin_feature": "Animating Performance"
+      }
+    },
+    {
+      "id": "resource:xphb:paladin:lay-on-hands",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Lay on Hands",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Lay on Hands (Paladin XPHB, level 1); five times Paladin class level",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:paladin:lay-on-hands",
+        "resource": "Lay on Hands",
+        "steps": [
+          {
+            "level": 1,
+            "value": "5",
+            "reset": "long_rest"
+          },
+          {
+            "level": 2,
+            "value": "10",
+            "reset": "long_rest"
+          },
+          {
+            "level": 3,
+            "value": "15",
+            "reset": "long_rest"
+          },
+          {
+            "level": 4,
+            "value": "20",
+            "reset": "long_rest"
+          },
+          {
+            "level": 5,
+            "value": "25",
+            "reset": "long_rest"
+          },
+          {
+            "level": 6,
+            "value": "30",
+            "reset": "long_rest"
+          },
+          {
+            "level": 7,
+            "value": "35",
+            "reset": "long_rest"
+          },
+          {
+            "level": 8,
+            "value": "40",
+            "reset": "long_rest"
+          },
+          {
+            "level": 9,
+            "value": "45",
+            "reset": "long_rest"
+          },
+          {
+            "level": 10,
+            "value": "50",
+            "reset": "long_rest"
+          },
+          {
+            "level": 11,
+            "value": "55",
+            "reset": "long_rest"
+          },
+          {
+            "level": 12,
+            "value": "60",
+            "reset": "long_rest"
+          },
+          {
+            "level": 13,
+            "value": "65",
+            "reset": "long_rest"
+          },
+          {
+            "level": 14,
+            "value": "70",
+            "reset": "long_rest"
+          },
+          {
+            "level": 15,
+            "value": "75",
+            "reset": "long_rest"
+          },
+          {
+            "level": 16,
+            "value": "80",
+            "reset": "long_rest"
+          },
+          {
+            "level": 17,
+            "value": "85",
+            "reset": "long_rest"
+          },
+          {
+            "level": 18,
+            "value": "90",
+            "reset": "long_rest"
+          },
+          {
+            "level": 19,
+            "value": "95",
+            "reset": "long_rest"
+          },
+          {
+            "level": 20,
+            "value": "100",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    },
+    {
+      "id": "resource:xphb:sorcerer:innate-sorcery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Innate Sorcery",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Innate Sorcery (Sorcerer XPHB, level 1)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:sorcerer:innate-sorcery",
+        "resource": "Innate Sorcery",
+        "steps": [
+          {
+            "level": 1,
+            "value": "2",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    },
+    {
+      "id": "resource:xphb:wizard:arcane-recovery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Arcane Recovery",
+          "source": "XPHB",
+          "class_name": "Wizard",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Arcane Recovery (Wizard XPHB, level 1); use after a short rest, one use per long rest",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:wizard:arcane-recovery",
+        "resource": "Arcane Recovery",
+        "steps": [
+          {
+            "level": 1,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    },
+    {
+      "id": "resource:tce:artificer:flash-of-genius",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Flash of Genius",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "notes": "5etools classFeature Flash of Genius (Artificer TCE, level 7)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:flash-of-genius",
+        "resource": "Flash of Genius",
+        "steps": [
+          {
+            "level": 7,
+            "value": "int_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:tce:artificer:armorer:defensive-field",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Defensive Field",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools subclassFeature Defensive Field (Armorer TCE, level 3)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:armorer:defensive-field",
+        "resource": "Defensive Field",
+        "steps": [
+          {
+            "level": 3,
+            "value": "proficiency",
+            "reset": "long_rest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "resource:tce:artificer:alchemist:experimental-elixir",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Experimental Elixir",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Alchemist",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools subclassFeature Experimental Elixir (Alchemist TCE, levels 3, 6, 15); free elixirs only",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:alchemist:experimental-elixir",
+        "resource": "Experimental Elixir",
+        "steps": [
+          {
+            "level": 3,
+            "value": "1",
+            "reset": "long_rest"
+          },
+          {
+            "level": 6,
+            "value": "2",
+            "reset": "long_rest"
+          },
+          {
+            "level": 15,
+            "value": "3",
+            "reset": "long_rest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "resource:tce:artificer:alchemist:restorative-reagents",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Restorative Reagents",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Alchemist",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools subclassFeature Restorative Reagents (Alchemist TCE, level 9); free Lesser Restoration uses",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:alchemist:restorative-reagents",
+        "resource": "Restorative Reagents",
+        "steps": [
+          {
+            "level": 9,
+            "value": "int_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:tce:artificer:alchemist:chemical-mastery-heal",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Chemical Mastery",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Alchemist",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools subclassFeature Chemical Mastery (Alchemist TCE, level 15); independent Heal use",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:alchemist:chemical-mastery-heal",
+        "resource": "Chemical Mastery (Heal)",
+        "steps": [
+          {
+            "level": 15,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "origin_feature": "Chemical Mastery"
+      }
+    },
+    {
+      "id": "resource:tce:artificer:alchemist:chemical-mastery-greater-restoration",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Chemical Mastery",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Alchemist",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools subclassFeature Chemical Mastery (Alchemist TCE, level 15); independent Greater Restoration use",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:alchemist:chemical-mastery-greater-restoration",
+        "resource": "Chemical Mastery (Greater Restoration)",
+        "steps": [
+          {
+            "level": 15,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "origin_feature": "Chemical Mastery"
+      }
+    },
+    {
+      "id": "resource:tce:artificer:artillerist:eldritch-cannon",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Eldritch Cannon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Artillerist",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools subclassFeature Eldritch Cannon (Artillerist TCE, level 3); one free creation",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:artillerist:eldritch-cannon",
+        "resource": "Eldritch Cannon",
+        "steps": [
+          {
+            "level": 3,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "resource:tce:artificer:battle-smith:arcane-jolt",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Arcane Jolt",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Battle Smith",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools subclassFeature Arcane Jolt (Battle Smith TCE, level 9)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:battle-smith:arcane-jolt",
+        "resource": "Arcane Jolt",
+        "steps": [
+          {
+            "level": 9,
+            "value": "int_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:tce:artificer:armorer:perfected-armor",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Guardian",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "subclass_source": "TCE"
+        }
+      },
+      "notes": "5etools subclassFeature Guardian under Perfected Armor (Armorer TCE, level 15)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:tce:artificer:armorer:perfected-armor",
+        "resource": "Perfected Armor",
+        "steps": [
+          {
+            "level": 15,
+            "value": "proficiency",
+            "reset": "long_rest"
+          }
+        ],
+        "origin_feature": "Guardian"
+      }
+    },
+    {
+      "id": "resource:xphb:rogue:stroke-of-luck",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Stroke of Luck",
+          "source": "XPHB",
+          "class_name": "Rogue",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Stroke of Luck (Rogue XPHB, level 20)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:rogue:stroke-of-luck",
+        "resource": "Stroke of Luck",
+        "steps": [
+          {
+            "level": 20,
+            "value": "1",
+            "reset": "short_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    },
+    {
+      "id": "resource:xphb:ranger:tireless-temporary-hit-points",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Tireless",
+          "source": "XPHB",
+          "class_name": "Ranger",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Tireless (Ranger XPHB, level 10); temporary-hit-point action uses only",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:ranger:tireless-temporary-hit-points",
+        "resource": "Tireless (Temporary Hit Points)",
+        "steps": [
+          {
+            "level": 10,
+            "value": "wis_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB",
+        "origin_feature": "Tireless",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:xphb:ranger:nature-s-veil",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Nature's Veil",
+          "source": "XPHB",
+          "class_name": "Ranger",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Nature's Veil (Ranger XPHB, level 14)",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:ranger:nature-s-veil",
+        "resource": "Nature's Veil",
+        "steps": [
+          {
+            "level": 14,
+            "value": "wis_mod",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB",
+        "minimum": 1
+      }
+    },
+    {
+      "id": "resource:xphb:barbarian:persistent-rage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Persistent Rage",
+          "source": "XPHB",
+          "class_name": "Barbarian",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Persistent Rage (Barbarian XPHB, level 15); initiative-triggered restoration of Rage uses only",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:barbarian:persistent-rage",
+        "resource": "Persistent Rage",
+        "steps": [
+          {
+            "level": 15,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    },
+    {
+      "id": "resource:xphb:monk:uncanny-metabolism",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Uncanny Metabolism",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Uncanny Metabolism (Monk XPHB, level 2); initiative-triggered recovery, with Focus Points and healing applied separately",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:monk:uncanny-metabolism",
+        "resource": "Uncanny Metabolism",
+        "steps": [
+          {
+            "level": 2,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    },
+    {
+      "id": "resource:xphb:warlock:magical-cunning",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Magical Cunning",
+          "source": "XPHB",
+          "class_name": "Warlock",
+          "class_source": "XPHB"
+        }
+      },
+      "notes": "5etools classFeature Magical Cunning (Warlock XPHB, level 2); rite use only, Pact Magic slot recovery applied separately",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:xphb:warlock:magical-cunning",
+        "resource": "Magical Cunning",
+        "steps": [
+          {
+            "level": 2,
+            "value": "1",
+            "reset": "long_rest"
+          }
+        ],
+        "resource_source": "XPHB"
+      }
+    }
+  ],
+  "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."
+}

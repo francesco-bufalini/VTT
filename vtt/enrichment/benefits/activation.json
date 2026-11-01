@@ -1,0 +1,685 @@
+{
+  "schema_version": 2,
+  "benefit_type": "activation",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "barbarian:2014:instinctive-pounce",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Instinctive Pounce",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:instinctive-pounce",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:relentless-rage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Relentless Rage",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:relentless-rage",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:frenzy-entra-in-frenesia",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Frenzy",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Berserker",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:frenzy-entra-in-frenesia",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:intimidating-presence",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Intimidating Presence",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Berserker",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:intimidating-presence",
+        "rules_version": "2014",
+        "activation": "action"
+      }
+    },
+    {
+      "id": "barbarian:2014:retaliation-attacco-in-mischia",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Retaliation",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Berserker",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:retaliation-attacco-in-mischia",
+        "rules_version": "2014",
+        "activation": "reaction",
+        "attack_selector": "melee"
+      }
+    },
+    {
+      "id": "barbarian:2014:spirit-seeker-beast-sense-rituale-",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spirit Seeker",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Totem Warrior",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:spirit-seeker-beast-sense-rituale-",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:spirit-seeker-speak-with-animals-rituale-",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spirit Seeker",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Totem Warrior",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:spirit-seeker-speak-with-animals-rituale-",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:spirit-walker-commune-with-nature-rituale-",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spirit Walker",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Totem Warrior",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:spirit-walker-commune-with-nature-rituale-",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:battlerager-armor-punte",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Battlerager Armor",
+          "source": "SCAG",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Battlerager",
+          "subclass_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:battlerager-armor-punte",
+        "rules_version": "2014",
+        "activation": "bonus"
+      }
+    },
+    {
+      "id": "barbarian:2014:reckless-abandon-pf-temporanei",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Reckless Abandon",
+          "source": "SCAG",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Battlerager",
+          "subclass_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:reckless-abandon-pf-temporanei",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:battlerager-charge-scatto",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Battlerager Charge",
+          "source": "SCAG",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Battlerager",
+          "subclass_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:battlerager-charge-scatto",
+        "rules_version": "2014",
+        "activation": "bonus"
+      }
+    },
+    {
+      "id": "barbarian:2014:spiked-retribution",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spiked Retribution",
+          "source": "SCAG",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Battlerager",
+          "subclass_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:spiked-retribution",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:ancestral-protectors-protezione",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Ancestral Protectors",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Ancestral Guardian",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:ancestral-protectors-protezione",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:spirit-shield",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Spirit Shield",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Ancestral Guardian",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:spirit-shield",
+        "rules_version": "2014",
+        "activation": "reaction"
+      }
+    },
+    {
+      "id": "barbarian:2014:consult-the-spirits-augury-clairvoyance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Consult the Spirits",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Ancestral Guardian",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:consult-the-spirits-augury-clairvoyance",
+        "rules_version": "2014",
+        "activation": "free",
+        "contextual_resource": {
+          "name": "Consult the Spirits",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      }
+    },
+    {
+      "id": "barbarian:2014:storm-aura-attiva-riattiva",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Storm Aura",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Storm Herald",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:storm-aura-attiva-riattiva",
+        "rules_version": "2014",
+        "activation": "bonus"
+      }
+    },
+    {
+      "id": "barbarian:2014:raging-storm-reazione",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Raging Storm",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Storm Herald",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:raging-storm-reazione",
+        "rules_version": "2014",
+        "activation": "reaction"
+      }
+    },
+    {
+      "id": "barbarian:2014:fanatical-focus-ripeti-ts",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Fanatical Focus",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Zealot",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:fanatical-focus-ripeti-ts",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:zealous-presence",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Zealous Presence",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Zealot",
+          "subclass_source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:zealous-presence",
+        "rules_version": "2014",
+        "activation": "bonus",
+        "contextual_resource": {
+          "name": "Zealous Presence",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "barbarian:2014:form-of-the-beast-scegli-forma",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Form of the Beast",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Beast",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:form-of-the-beast-scegli-forma",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:bestial-soul-adattamento",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Bestial Soul",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Beast",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:bestial-soul-adattamento",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:infectious-fury",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Infectious Fury",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Beast",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:infectious-fury",
+        "rules_version": "2014",
+        "activation": "free",
+        "contextual_resource": {
+          "name": "Infectious Fury",
+          "max": "proficiency",
+          "recharge": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "barbarian:2014:call-the-hunt",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Call the Hunt",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Beast",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:call-the-hunt",
+        "rules_version": "2014",
+        "activation": "bonus",
+        "contextual_resource": {
+          "name": "Call the Hunt",
+          "max": "proficiency",
+          "recharge": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "barbarian:2014:magic-awareness",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Magic Awareness",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Wild Magic",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:magic-awareness",
+        "rules_version": "2014",
+        "activation": "action",
+        "contextual_resource": {
+          "name": "Magic Awareness",
+          "max": "proficiency",
+          "recharge": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "barbarian:2014:wild-surge-tira-d8",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Wild Surge",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Wild Magic",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:wild-surge-tira-d8",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:bolstering-magic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Bolstering Magic",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Wild Magic",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:bolstering-magic",
+        "rules_version": "2014",
+        "activation": "action",
+        "contextual_resource": {
+          "name": "Bolstering Magic",
+          "max": "proficiency",
+          "recharge": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "barbarian:2014:unstable-backlash",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Unstable Backlash",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Wild Magic",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:unstable-backlash",
+        "rules_version": "2014",
+        "activation": "reaction"
+      }
+    },
+    {
+      "id": "barbarian:2014:controlled-surge-scelta",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Controlled Surge",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Wild Magic",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:controlled-surge-scelta",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:elemental-cleaver-potenzia-arma",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Elemental Cleaver",
+          "source": "BGG",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Giant",
+          "subclass_source": "BGG"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:elemental-cleaver-potenzia-arma",
+        "rules_version": "2014",
+        "activation": "free"
+      }
+    },
+    {
+      "id": "barbarian:2014:mighty-impel",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Mighty Impel",
+          "source": "BGG",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Giant",
+          "subclass_source": "BGG"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "barbarian:2014:mighty-impel",
+        "rules_version": "2014",
+        "activation": "bonus"
+      }
+    },
+    {
+      "id": "ranger:2014:primeval-awareness",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Primeval Awareness",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "activation",
+        "id": "ranger:2014:primeval-awareness",
+        "rules_version": "2014",
+        "activation": "action",
+        "descriptive_only": true
+      }
+    }
+  ],
+  "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."
+}
