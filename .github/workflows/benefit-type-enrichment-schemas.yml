@@ -8,6 +8,8 @@ on:
       - 'vtt/enrichment/benefits/**'
       - 'assets/spell_area_geometry.json'
       - 'scripts/validate_enrichment_authoring_schemas.py'
+      - 'scripts/audit_background_benefits.py'
+      - 'scripts/test_background_benefit_migration.py'
       - '.github/workflows/benefit-type-enrichment-schemas.yml'
   pull_request:
     paths:
@@ -15,6 +17,8 @@ on:
       - 'vtt/enrichment/benefits/**'
       - 'assets/spell_area_geometry.json'
       - 'scripts/validate_enrichment_authoring_schemas.py'
+      - 'scripts/audit_background_benefits.py'
+      - 'scripts/test_background_benefit_migration.py'
       - '.github/workflows/benefit-type-enrichment-schemas.yml'
   workflow_dispatch:
 
@@ -32,3 +36,7 @@ jobs:
         run: python -m pip install 'jsonschema==4.23.0'
       - name: Validate benefit schemas, fixtures and legacy areas
         run: python scripts/validate_enrichment_authoring_schemas.py
+      - name: Test background audit and catalog contract
+        run: python -m unittest discover -s scripts -p test_background_benefit_migration.py
+      - name: Audit bundled background indexes
+        run: python scripts/audit_background_benefits.py --output /tmp/vtt-background-index-audit.json

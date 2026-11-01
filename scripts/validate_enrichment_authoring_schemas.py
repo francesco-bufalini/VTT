@@ -59,6 +59,22 @@ def main():
         seen.add(benefit_type)
     assert len(seen) == len(types)
 
+    # Validate real migrated catalogs, not only illustrative fixtures. A
+    # background grant goes into the file for its mechanical type, never a
+    # background-specific file and never a character-scoped shared catalog.
+    benefits = ROOT / "vtt" / "enrichment" / "benefits"
+    migrated = 0
+    for path in sorted(benefits.glob("*.json")):
+        benefit_type = path.stem
+        assert benefit_type in types, f"Unknown benefit catalog: {path}"
+        document = load(path)
+        assert document.get("scope") == "catalog", f"Character override in {path}"
+        assert document.get("benefit_type") == benefit_type, path
+        ids = [entry["id"] for entry in document["entries"]]
+        assert len(ids) == len(set(ids)), f"Duplicate grant IDs: {path}"
+        check(benefit_type + ".schema.json", document, str(path))
+        migrated += len(ids)
+
     manual = load(EXAMPLES / "roll_bonus.character.json")
     check("roll_bonus.schema.json", manual, "manually added trait benefit")
     assert manual["entries"][0]["granted_by"]["kind"] == "character_trait"
@@ -85,6 +101,26 @@ def main():
     rejected("roll_bonus.schema.json", {**manual, "scope": "catalog"},
              "character-scoped grant placed in rulebook scope")
 
+    # Authoritative per-type benefit catalogs are now consumed by the PWA.
+    live = ROOT / "vtt" / "enrichment" / "benefits"
+    for path in sorted(live.glob("*.json")):
+        benefit_type = path.stem
+        assert benefit_type in types, f"Unrecognized catalog type: {path}"
+        data = load(path)
+        assert data["benefit_type"] == benefit_type
+        assert data["scope"] == "catalog"
+        grant_ids = [entry["id"] for entry in data["entries"]]
+        assert len(set(grant_ids)) == len(grant_ids), f"Duplicate grant ID: {path}"
+        check(benefit_type + ".schema.json", data, path.name)
+
+    # Class and subclass rules are added to the same type catalogs as species.
+    for benefit_type, expected in (("action", 52), ("roll_bonus", 15)):
+        data = load(live / f"{benefit_type}.json")
+        owned = [entry for entry in data["entries"] if
+                 entry["granted_by"]["ref"]["category"] in ("class_feature", "subclass_feature")]
+        assert len(owned) == expected, f"{benefit_type}: missing migrated class/subclass entries"
+        assert all(entry["granted_by"]["ref"].get("class_source") for entry in owned)
+
     legacy = load(SCHEMAS / "legacy_sources.json")
     for source in legacy["sources"]:
         original = ROOT / source["path"]
@@ -94,19 +130,6 @@ def main():
             assert section in data, f"{original}: missing {section}"
         assert set(source["types"]) <= set(types), source
 
-    # Migration stage 1: validate production type-owned class/subclass catalogs too.
-    migrated = ROOT / "vtt" / "enrichment" / "benefits"
-    for benefit_type, expected in (("action", 52), ("roll_bonus", 15)):
-        document = load(migrated / f"{benefit_type}.json")
-        check(f"{benefit_type}.schema.json", document, f"production {benefit_type}")
-        assert len(document["entries"]) == expected
-        ids = [row["id"] for row in document["entries"]]
-        assert len(ids) == len(set(ids)), f"Duplicate {benefit_type} grant IDs"
-        for entry in document["entries"]:
-            assert entry["granted_by"]["kind"] == "5etools"
-            assert entry["granted_by"]["ref"]["source"]
-            assert entry["granted_by"]["ref"]["class_source"]
-
     geometries = load(ROOT / "assets" / "spell_area_geometry.json")
     assert len(geometries) >= 600, "Existing geometry catalog truncated"
     for ref, geometry in geometries.items():
@@ -114,7 +137,7 @@ def main():
 
     print(f"PASS: {len(types)} typed catalogs/examples, one character override, "
           f"{len(schema_paths)} schemas, {len(legacy['sources'])} legacy source inventories, "
-          f"{len(geometries)} spell geometries, and negative tests")
+          f"{len(geometries)} spell geometries, {migrated} migrated grants, and negative tests")
 
 
 if __name__ == "__main__":

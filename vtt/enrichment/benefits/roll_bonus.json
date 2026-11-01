@@ -4,6 +4,673 @@
   "scope": "catalog",
   "entries": [
     {
+      "id": "racial:erlw:half_elf:variant_mark_of_detection",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Deductive Intuition",
+          "source": "ERLW",
+          "race": "Half-Elf",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Detection",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:half_elf:variant_mark_of_detection",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:insight",
+            "skill:investigation"
+          ],
+          "condition_label": "Solo per le abilità indicate nel privilegio.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:human:variant_mark_of_finding",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hunter's Intuition",
+          "source": "ERLW",
+          "race": "Human",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Finding",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:human:variant_mark_of_finding",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:perception",
+            "skill:survival"
+          ],
+          "condition_label": "Solo per le abilità indicate nel privilegio.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:half_orc:variant_mark_of_finding",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hunter's Intuition",
+          "source": "ERLW",
+          "race": "Half-Orc",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Finding",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:half_orc:variant_mark_of_finding",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:perception",
+            "skill:survival"
+          ],
+          "condition_label": "Solo per le abilità indicate nel privilegio.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:human:variant_mark_of_handling",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Wild Intuition",
+          "source": "ERLW",
+          "race": "Human",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Handling",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:human:variant_mark_of_handling",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:animal handling",
+            "skill:nature"
+          ],
+          "condition_label": "Solo per le abilità indicate nel privilegio.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:halfling:mark_of_healing",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Medical Intuition",
+          "source": "ERLW",
+          "race": "Halfling",
+          "race_source": "PHB",
+          "subrace": "Mark of Healing",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:halfling:mark_of_healing",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:medicine",
+            "tool_check"
+          ],
+          "condition_label": "Solo per la prova indicata dal privilegio oppure usando kit da erborista. Usa una prova di caratteristica per gli strumenti.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:halfling:mark_of_hospitality",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Ever Hospitable",
+          "source": "ERLW",
+          "race": "Halfling",
+          "race_source": "PHB",
+          "subrace": "Mark of Hospitality",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:halfling:mark_of_hospitality",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:persuasion",
+            "tool_check"
+          ],
+          "condition_label": "Solo per la prova indicata dal privilegio oppure usando strumenti da birraio o da cuoco. Usa una prova di caratteristica per gli strumenti.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:human:variant_mark_of_making",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Artisan's Intuition",
+          "source": "ERLW",
+          "race": "Human",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Making",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:human:variant_mark_of_making",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:arcana",
+            "tool_check"
+          ],
+          "condition_label": "Solo per la prova indicata dal privilegio oppure usando strumenti da artigiano. Usa una prova di caratteristica per gli strumenti.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:human:variant_mark_of_passage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Intuitive Motion",
+          "source": "ERLW",
+          "race": "Human",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Passage",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:human:variant_mark_of_passage",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:acrobatics",
+            "tool_check"
+          ],
+          "condition_label": "Solo per la prova indicata dal privilegio oppure usando veicoli terrestri (guida o manutenzione). Usa una prova di caratteristica per gli strumenti.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:gnome:mark_of_scribing",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gifted Scribe",
+          "source": "ERLW",
+          "race": "Gnome",
+          "race_source": "PHB",
+          "subrace": "Mark of Scribing",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:gnome:mark_of_scribing",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:history",
+            "tool_check"
+          ],
+          "condition_label": "Solo per la prova indicata dal privilegio oppure usando strumenti da calligrafo. Usa una prova di caratteristica per gli strumenti.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:human:variant_mark_of_sentinel",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sentinel's Intuition",
+          "source": "ERLW",
+          "race": "Human",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Sentinel",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:human:variant_mark_of_sentinel",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:insight",
+            "skill:perception"
+          ],
+          "condition_label": "Solo per le abilità indicate nel privilegio.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:elf:mark_of_shadow",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Cunning Intuition",
+          "source": "ERLW",
+          "race": "Elf",
+          "race_source": "PHB",
+          "subrace": "Mark of Shadow",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:elf:mark_of_shadow",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:stealth",
+            "skill:performance"
+          ],
+          "condition_label": "Solo per le abilità indicate nel privilegio.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:half_elf:variant_mark_of_storm",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Windwright's Intuition",
+          "source": "ERLW",
+          "race": "Half-Elf",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Storm",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:half_elf:variant_mark_of_storm",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:acrobatics",
+            "tool_check"
+          ],
+          "condition_label": "Solo per la prova indicata dal privilegio oppure usando strumenti da navigatore. Usa una prova di caratteristica per gli strumenti.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:erlw:dwarf:mark_of_warding",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Warder's Intuition",
+          "source": "ERLW",
+          "race": "Dwarf",
+          "race_source": "PHB",
+          "subrace": "Mark of Warding",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:erlw:dwarf:mark_of_warding",
+        "bonus": {
+          "dice": "1d4",
+          "targets": [
+            "skill:investigation",
+            "tool_check"
+          ],
+          "condition_label": "Solo per la prova indicata dal privilegio oppure usando strumenti da scasso. Usa una prova di caratteristica per gli strumenti.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:ggr:vedalken:tireless_precision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Tireless Precision",
+          "source": "GGR",
+          "race": "Vedalken",
+          "race_source": "GGR"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:ggr:vedalken:tireless_precision",
+        "bonus": {
+          "targets": [
+            "skill_check",
+            "tool_check"
+          ],
+          "dice": "1d4",
+          "condition_label": "Solo con l'abilità o lo strumento scelto tramite Tireless Precision.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:vrgr:reborn:knowledge_from_a_past_life",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Knowledge from a Past Life",
+          "source": "VRGR",
+          "race": "Reborn",
+          "race_source": "VRGR"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:vrgr:reborn:knowledge_from_a_past_life",
+        "bonus": {
+          "targets": [
+            "skill_check"
+          ],
+          "dice": "1d6",
+          "condition_label": "Quando effettui una prova che utilizza un'abilità. Puoi decidere dopo aver visto il d20.",
+          "optional": true,
+          "tracker_id": "racial:vrgr:reborn:past_life:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "tracker_cost": 1,
+          "strict_tracker": true
+        }
+      }
+    },
+    {
+      "id": "racial:mpmm:harengon:lucky_footwork",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Lucky Footwork",
+          "source": "MPMM",
+          "race": "Harengon",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:mpmm:harengon:lucky_footwork",
+        "bonus": {
+          "targets": [
+            "save:dex"
+          ],
+          "dice": "1d4",
+          "condition_label": "Reazione dopo un tiro salvezza di Destrezza fallito; non se sei Prono o hai velocità 0.",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "racial:mpmm:harengon:hare_trigger",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hare-Trigger",
+          "source": "MPMM",
+          "race": "Harengon",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:mpmm:harengon:hare_trigger",
+        "bonus": {
+          "flat_proficiency": true,
+          "automatic_apply": true,
+          "targets": [
+            "initiative"
+          ]
+        }
+      }
+    },
+    {
+      "id": "racial:mpmm:hobgoblin:fortune_from_the_many",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fortune from the Many",
+          "source": "MPMM",
+          "race": "Hobgoblin",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:mpmm:hobgoblin:fortune_from_the_many",
+        "bonus": {
+          "targets": [
+            "attack_roll",
+            "ability_check",
+            "saving_throw"
+          ],
+          "flat_choices": [
+            1,
+            2,
+            3
+          ],
+          "condition_label": "Solo dopo un tiro per colpire mancato o una prova/TS fallita. Bonus pari al numero di alleati visibili entro 30 ft, massimo +3.",
+          "optional": true,
+          "tracker_id": "racial:mpmm:hobgoblin:fortune:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "tracker_cost": 1,
+          "strict_tracker": true,
+          "exclude_initiative": true
+        }
+      }
+    },
+    {
+      "id": "racial:phb:dwarf:stonecunning",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stonecunning",
+          "source": "PHB",
+          "race": "Dwarf",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:phb:dwarf:stonecunning",
+        "bonus": {
+          "proficiency_multiplier": 2,
+          "targets": [
+            "skill:history"
+          ],
+          "condition_label": "Solo prove di Intelligenza (Storia) sull'origine di costruzioni in pietra; sei considerato competente anche senza Storia."
+        }
+      }
+    },
+    {
+      "id": "racial:phb:gnome:rock:artificers_lore",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Artificer's Lore",
+          "source": "PHB",
+          "race": "Gnome",
+          "race_source": "PHB",
+          "subrace": "Rock",
+          "subrace_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:phb:gnome:rock:artificers_lore",
+        "bonus": {
+          "proficiency_multiplier": 2,
+          "targets": [
+            "skill:history"
+          ],
+          "condition_label": "Solo prove di Intelligenza (Storia) su oggetti magici, alchemici o tecnologici; sostituisce la normale competenza."
+        }
+      }
+    },
+    {
+      "id": "racial:aag:giff:astral_spark",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Astral Spark",
+          "source": "AAG",
+          "race": "Giff",
+          "race_source": "AAG"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:aag:giff:astral_spark",
+        "bonus": {
+          "flat_proficiency": true,
+          "damage_type": "force",
+          "targets": [
+            "attack_damage"
+          ],
+          "weapon_requirement": "equipped_weapon",
+          "tracker_id": "racial:aag:giff:astral_spark:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "tracker_cost": 1,
+          "strict_tracker": true,
+          "once_per_turn": true,
+          "condition_label": "Una volta per turno, quando infliggi danni con un'arma semplice o da guerra. Verifica manualmente il limite per turno."
+        }
+      }
+    },
+    {
+      "id": "racial:mpmm:goblin:fury_of_the_small",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fury of the Small",
+          "source": "MPMM",
+          "race": "Goblin",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:mpmm:goblin:fury_of_the_small",
+        "bonus": {
+          "flat_proficiency": true,
+          "targets": [
+            "attack_damage",
+            "spell_damage"
+          ],
+          "tracker_id": "racial:mpmm:goblin:fury_of_the_small:uses",
+          "uses": "proficiency",
+          "recharge": "long_rest",
+          "tracker_cost": 1,
+          "strict_tracker": true,
+          "once_per_turn": true,
+          "condition_label": "Una volta per turno: solo contro una creatura di taglia superiore alla tua, se subisce danni dall'attacco o incantesimo."
+        }
+      }
+    },
+    {
+      "id": "racial:phb:half_orc:savage_attacks",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Savage Attacks",
+          "source": "PHB",
+          "race": "Half-Orc",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "rules_version": "2014",
+        "id": "racial:phb:half_orc:savage_attacks",
+        "bonus": {
+          "weapon_damage_die": true,
+          "melee_weapon_attack": true,
+          "targets": [
+            "attack_damage"
+          ],
+          "condition_label": "Solo su un colpo critico con un attacco con arma da mischia. Tira una volta un dado danno dell'arma."
+        }
+      }
+    },
+    {
       "id": "flash_of_genius",
       "granted_by": {
         "kind": "5etools",
@@ -434,5 +1101,5 @@
       }
     }
   ],
-  "notes": "Class and subclass mechanics projected from legacy catalogs. Source identities/labels come from 5eTools; native compatibility fixtures remain until runtime migration completes."
+  "notes": "Regole esplicite; mai dedurre i bonus dalla descrizione. tool_check = tiri generici di caratteristica per strumenti; skill_check = prove con abilità, non tutte le prove. Condizioni applicate manualmente. | Class/subclass bonus rules share this type-owned catalog with species, source-qualified by granted_by.ref.category."
 }

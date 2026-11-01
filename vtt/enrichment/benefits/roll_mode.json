@@ -1,0 +1,4117 @@
+{
+  "schema_version": 2,
+  "benefit_type": "roll_mode",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "5etools:races:aag:astral%20elf:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "AAG",
+          "race": "Astral Elf",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:astral%20elf"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:aag:autognome:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mechanical Nature",
+          "source": "AAG",
+          "race": "Autognome",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:autognome"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro Paralizzato o Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:bugbear:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MPMM",
+          "race": "Bugbear",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:bugbear"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:bullywug:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Swamp Camouflage",
+          "source": "DMG",
+          "race": "Bullywug",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:bullywug"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Per nasconderti in terreno paludoso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:deep%20gnome:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnomish Magic Resistance",
+          "source": "MPMM",
+          "race": "Deep Gnome",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:deep%20gnome"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro incantesimi"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:deep%20gnome:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnomish Magic Resistance",
+          "source": "MPMM",
+          "race": "Deep Gnome",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:deep%20gnome"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro incantesimi"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:deep%20gnome:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnomish Magic Resistance",
+          "source": "MPMM",
+          "race": "Deep Gnome",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:deep%20gnome"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro incantesimi"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:deep%20gnome:roll_mode:4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Svirfneblin Camouflage",
+          "source": "MPMM",
+          "race": "Deep Gnome",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:deep%20gnome"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Attivando uno degli usi di Camuffamento svirfneblin"
+          }
+        ],
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "5etools:races:vrgr:dhampir:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Deathless Nature",
+          "source": "VRGR",
+          "race": "Dhampir",
+          "race_source": "VRGR",
+          "race_id": "5etools:races:vrgr:dhampir"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro malattie o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vrgr:dhampir:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Deathless Nature",
+          "source": "VRGR",
+          "race": "Dhampir",
+          "race_source": "VRGR",
+          "race_id": "5etools:races:vrgr:dhampir"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "death_save",
+            "mode": "advantage",
+            "condition_label": "Solo sui tiri salvezza contro la morte"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vrgr:dhampir:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vampiric Bite",
+          "source": "VRGR",
+          "race": "Dhampir",
+          "race_source": "VRGR",
+          "race_id": "5etools:races:vrgr:dhampir"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "advantage",
+            "condition_label": "Solo con il morso e con metà o meno dei PF massimi",
+            "attack_name": "bite"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:duergar:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "MPMM",
+          "race": "Duergar",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:duergar"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro il veleno o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:duergar:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Psionic Fortitude",
+          "source": "MPMM",
+          "race": "Duergar",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:duergar"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare Affascinato o Stordito"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:dwarf:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "PHB",
+          "race": "Dwarf",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:dwarf"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro il veleno o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psk:dwarf%20%28kaladesh%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "PSK",
+          "race": "Dwarf (Kaladesh)",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:dwarf%20%28kaladesh%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro il veleno o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:eladrin:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MPMM",
+          "race": "Eladrin",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:eladrin"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:elf:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PHB",
+          "race": "Elf",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:elf"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PSK",
+          "race": "Elf (Kaladesh)",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:elf%20%28kaladesh%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PSZ",
+          "race": "Elf (Zendikar)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:elf%20%28zendikar%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:firbolg:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Speech of Beast and Leaf",
+          "source": "MPMM",
+          "race": "Firbolg",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:firbolg"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:cha",
+            "mode": "advantage",
+            "condition_label": "Per influenzare bestie, piante o vegetazione"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vgm:firbolg:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Speech of Beast and Leaf",
+          "source": "VGM",
+          "race": "Firbolg",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:firbolg"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:cha",
+            "mode": "advantage",
+            "condition_label": "Per influenzare bestie, piante o vegetazione"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:aag:giff:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hippo Build",
+          "source": "AAG",
+          "race": "Giff",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:giff"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:str",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:aag:giff:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hippo Build",
+          "source": "AAG",
+          "race": "Giff",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:giff"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:str",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:githzerai:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mental Discipline",
+          "source": "MPMM",
+          "race": "Githzerai",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:githzerai"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro le condizioni Affascinato o Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:gnome%20%28deep%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stone Camouflage",
+          "source": "DMG",
+          "race": "Gnome (Deep)",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:gnome%20%28deep%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Per nasconderti in terreno roccioso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:gnome%20%28deep%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "DMG",
+          "race": "Gnome (Deep)",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:gnome%20%28deep%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:gnome%20%28deep%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "DMG",
+          "race": "Gnome (Deep)",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:gnome%20%28deep%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:gnome%20%28deep%29:roll_mode:4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "DMG",
+          "race": "Gnome (Deep)",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:gnome%20%28deep%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:goblin:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MPMM",
+          "race": "Goblin",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:goblin"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:grimlock:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Keen Hearing and Smell",
+          "source": "DMG",
+          "race": "Grimlock",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:grimlock"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "advantage",
+            "condition_label": "Quando usi l’udito o l’olfatto"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:grimlock:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stone Camouflage",
+          "source": "DMG",
+          "race": "Grimlock",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:grimlock"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Per nasconderti in terreno roccioso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:half-elf:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PHB",
+          "race": "Half-Elf",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:half-elf"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:halfling:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brave",
+          "source": "PHB",
+          "race": "Halfling",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:halfling"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:hobgoblin:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MPMM",
+          "race": "Hobgoblin",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:hobgoblin"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:kalashtar:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dual Mind",
+          "source": "ERLW",
+          "race": "Kalashtar",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:kalashtar"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:kalashtar:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mental Discipline",
+          "source": "ERLW",
+          "race": "Kalashtar",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:kalashtar"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro le condizioni Affascinato o Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dsotdq:kender:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fearless",
+          "source": "DSotDQ",
+          "race": "Kender",
+          "race_source": "DSotDQ",
+          "race_id": "5etools:races:dsotdq:kender"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kenku:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Ambusher",
+          "source": "DMG",
+          "race": "Kenku",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:kenku"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "advantage",
+            "condition_label": "Nel primo round, contro una creatura sorpresa"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:kenku:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Expert Duplication",
+          "source": "MPMM",
+          "race": "Kenku",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:kenku"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "advantage",
+            "condition_label": "Per copiare fedelmente scritti od oggetti"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:kenku:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Kenku Recall",
+          "source": "MPMM",
+          "race": "Kenku",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:kenku"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill",
+            "mode": "advantage",
+            "condition_label": "Su una prova con un’abilità in cui sei competente; spendi un uso",
+            "requires_proficiency": true
+          }
+        ],
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "5etools:races:vgm:kenku:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Expert Forgery",
+          "source": "VGM",
+          "race": "Kenku",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:kenku"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "advantage",
+            "condition_label": "Per duplicare una scrittura o un oggetto esistente"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kobold:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Pack Tactics",
+          "source": "DMG",
+          "race": "Kobold",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:kobold"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "advantage",
+            "condition_label": "Se un alleato non incapacitato è entro 5 ft dal bersaglio"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kobold:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "DMG",
+          "race": "Kobold",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:kobold"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage",
+            "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kobold:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "DMG",
+          "race": "Kobold",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:kobold"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "disadvantage",
+            "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:kobold:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Draconic Cry",
+          "source": "MPMM",
+          "race": "Kobold",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:kobold"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "advantage",
+            "condition_label": "Contro nemico che ha sentito il grido; effetto attivo fino al tuo prossimo turno"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:kobold:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Kobold Legacy",
+          "source": "MPMM",
+          "race": "Kobold",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:kobold"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Solo se hai scelto Defiance: contro Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vgm:kobold:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Pack Tactics",
+          "source": "VGM",
+          "race": "Kobold",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:kobold"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "advantage",
+            "condition_label": "Se un alleato non incapacitato è entro 5 ft dal bersaglio"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vgm:kobold:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "VGM",
+          "race": "Kobold",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:kobold"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage",
+            "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vgm:kobold:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "VGM",
+          "race": "Kobold",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:kobold"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "disadvantage",
+            "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psz:kor:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brave",
+          "source": "PSZ",
+          "race": "Kor",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:kor"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kuo-toa:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Slippery",
+          "source": "DMG",
+          "race": "Kuo-Toa",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:kuo-toa"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "advantage",
+            "condition_label": "Per sfuggire a una presa"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kuo-toa:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Slippery",
+          "source": "DMG",
+          "race": "Kuo-Toa",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:kuo-toa"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per sfuggire a una presa"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kuo-toa:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "DMG",
+          "race": "Kuo-Toa",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:kuo-toa"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage",
+            "condition_label": "Solo quando sei alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kuo-toa:roll_mode:4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "DMG",
+          "race": "Kuo-Toa",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:kuo-toa"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "disadvantage",
+            "condition_label": "Solo alla luce solare diretta, per prove basate sulla vista"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:lr:locathah:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Leviathan Will",
+          "source": "LR",
+          "race": "Locathah",
+          "race_source": "LR",
+          "race_id": "5etools:races:lr:locathah"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro Affascinato, Spaventato, Paralizzato, Avvelenato, Stordito o sonno"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ggr:loxodon:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Loxodon Serenity",
+          "source": "GGR",
+          "race": "Loxodon",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:loxodon"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro Affascinato o Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ggr:loxodon:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Keen Smell",
+          "source": "GGR",
+          "race": "Loxodon",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:loxodon"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "advantage",
+            "condition_label": "Quando la prova coinvolge l’olfatto"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ggr:loxodon:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Keen Smell",
+          "source": "GGR",
+          "race": "Loxodon",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:loxodon"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:survival",
+            "mode": "advantage",
+            "condition_label": "Quando la prova coinvolge l’olfatto"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ggr:loxodon:roll_mode:4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Keen Smell",
+          "source": "GGR",
+          "race": "Loxodon",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:loxodon"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:investigation",
+            "mode": "advantage",
+            "condition_label": "Quando la prova coinvolge l’olfatto"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:minotaur:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Labyrinthine Recall",
+          "source": "MPMM",
+          "race": "Minotaur",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:minotaur"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:survival",
+            "mode": "advantage",
+            "condition_label": "Per orientarti o seguire tracce"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:aag:plasmoid:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Amorphous",
+          "source": "AAG",
+          "race": "Plasmoid",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:plasmoid"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "advantage",
+            "condition_label": "Per iniziare o sfuggire a una presa"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:aag:plasmoid:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Resilience",
+          "source": "AAG",
+          "race": "Plasmoid",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:plasmoid"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vrgr:reborn:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Deathless Nature",
+          "source": "VRGR",
+          "race": "Reborn",
+          "race_source": "VRGR",
+          "race_id": "5etools:races:vrgr:reborn"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro malattie o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vrgr:reborn:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Deathless Nature",
+          "source": "VRGR",
+          "race": "Reborn",
+          "race_source": "VRGR",
+          "race_id": "5etools:races:vrgr:reborn"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "death_save",
+            "mode": "advantage",
+            "condition_label": "Solo sui tiri salvezza contro la morte"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mot:satyr:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Magic Resistance",
+          "source": "MOT",
+          "race": "Satyr",
+          "race_source": "MOT",
+          "race_id": "5etools:races:mot:satyr"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro incantesimi o altri effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:satyr:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Magic Resistance",
+          "source": "MPMM",
+          "race": "Satyr",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:satyr"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro incantesimi"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:sea%20elf:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MPMM",
+          "race": "Sea Elf",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:sea%20elf"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:shadar-kai:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MPMM",
+          "race": "Shadar-Kai",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:shadar-kai"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:shifter:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shifting",
+          "source": "MPMM",
+          "race": "Shifter",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:shifter"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:wis",
+            "mode": "advantage",
+            "condition_label": "Solo con variante Wildhunt scelta, durante la mutazione"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:aag:thri-kreen:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Chameleon Carapace",
+          "source": "AAG",
+          "race": "Thri-kreen",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:thri-kreen"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Dopo aver mimetizzato il carapace, per nasconderti nell’ambiente"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:tortle:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shell Defense",
+          "source": "MPMM",
+          "race": "Tortle",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:tortle"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:str",
+            "mode": "advantage",
+            "condition_label": "Solo mentre sei ritirato nel guscio"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:tortle:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shell Defense",
+          "source": "MPMM",
+          "race": "Tortle",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:tortle"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:con",
+            "mode": "advantage",
+            "condition_label": "Solo mentre sei ritirato nel guscio"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:tortle:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shell Defense",
+          "source": "MPMM",
+          "race": "Tortle",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:tortle"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:dex",
+            "mode": "disadvantage",
+            "condition_label": "Solo mentre sei ritirato nel guscio"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ttp:tortle:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shell Defense",
+          "source": "TTP",
+          "race": "Tortle",
+          "race_source": "TTP",
+          "race_id": "5etools:races:ttp:tortle"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:str",
+            "mode": "advantage",
+            "condition_label": "Solo mentre sei ritirato nel guscio"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ttp:tortle:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shell Defense",
+          "source": "TTP",
+          "race": "Tortle",
+          "race_source": "TTP",
+          "race_id": "5etools:races:ttp:tortle"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:con",
+            "mode": "advantage",
+            "condition_label": "Solo mentre sei ritirato nel guscio"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ttp:tortle:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shell Defense",
+          "source": "TTP",
+          "race": "Tortle",
+          "race_source": "TTP",
+          "race_id": "5etools:races:ttp:tortle"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:dex",
+            "mode": "disadvantage",
+            "condition_label": "Solo mentre sei ritirato nel guscio"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:troglodyte:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Chameleon Skin",
+          "source": "DMG",
+          "race": "Troglodyte",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:troglodyte"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Per nasconderti"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:troglodyte:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "DMG",
+          "race": "Troglodyte",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:troglodyte"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage",
+            "condition_label": "Solo quando sei alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:troglodyte:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "DMG",
+          "race": "Troglodyte",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:troglodyte"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "disadvantage",
+            "condition_label": "Solo alla luce solare diretta, per prove basate sulla vista"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ggr:vedalken:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vedalken Dispassion",
+          "source": "GGR",
+          "race": "Vedalken",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:vedalken"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ggr:vedalken:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vedalken Dispassion",
+          "source": "GGR",
+          "race": "Vedalken",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:vedalken"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ggr:vedalken:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vedalken Dispassion",
+          "source": "GGR",
+          "race": "Vedalken",
+          "race_source": "GGR",
+          "race_id": "5etools:races:ggr:vedalken"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psk:vedalken:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vedalken Cunning",
+          "source": "PSK",
+          "race": "Vedalken",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:vedalken"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psk:vedalken:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vedalken Cunning",
+          "source": "PSK",
+          "race": "Vedalken",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:vedalken"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psk:vedalken:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vedalken Cunning",
+          "source": "PSK",
+          "race": "Vedalken",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:vedalken"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ai:verdan:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Telepathic Insight",
+          "source": "AI",
+          "race": "Verdan",
+          "race_source": "AI",
+          "race_id": "5etools:races:ai:verdan"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:ai:verdan:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Telepathic Insight",
+          "source": "AI",
+          "race": "Verdan",
+          "race_source": "AI",
+          "race_id": "5etools:races:ai:verdan"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:warforged:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Constructed Resilience",
+          "source": "ERLW",
+          "race": "Warforged",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:warforged"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:yuan-ti:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Magic Resistance",
+          "source": "MPMM",
+          "race": "Yuan-Ti",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:yuan-ti"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro incantesimi"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:yuan-ti:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Poison Resilience",
+          "source": "MPMM",
+          "race": "Yuan-Ti",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:yuan-ti"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:vgm:yuan-ti%20pureblood:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Magic Resistance",
+          "source": "VGM",
+          "race": "Yuan-ti Pureblood",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:yuan-ti%20pureblood"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro incantesimi o altri effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:egw:dragonborn%20%28draconblood%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Forceful Presence",
+          "source": "EGW",
+          "race": "Dragonborn (Draconblood)",
+          "race_source": "EGW",
+          "race_id": "5etools:races:egw:dragonborn%20%28draconblood%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:intimidation",
+            "mode": "advantage",
+            "condition_label": "Attivando Presenza imponente"
+          }
+        ],
+        "uses": 1,
+        "recharge": "short_rest"
+      }
+    },
+    {
+      "id": "5etools:races:egw:dragonborn%20%28draconblood%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Forceful Presence",
+          "source": "EGW",
+          "race": "Dragonborn (Draconblood)",
+          "race_source": "EGW",
+          "race_id": "5etools:races:egw:dragonborn%20%28draconblood%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:persuasion",
+            "mode": "advantage",
+            "condition_label": "Attivando Presenza imponente"
+          }
+        ],
+        "uses": 1,
+        "recharge": "short_rest"
+      }
+    },
+    {
+      "id": "5etools:races:mtf:dwarf%20%28duergar%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "MTF",
+          "race": "Dwarf (Duergar)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:dwarf%20%28duergar%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro il veleno o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:dwarf%20%28duergar%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Duergar Resilience",
+          "source": "MTF",
+          "race": "Dwarf (Duergar)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:dwarf%20%28duergar%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro illusioni, Affascinato o Paralizzato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:dwarf%20%28duergar%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "MTF",
+          "race": "Dwarf (Duergar)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:dwarf%20%28duergar%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage",
+            "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:dwarf%20%28duergar%29:roll_mode:4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "MTF",
+          "race": "Dwarf (Duergar)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:dwarf%20%28duergar%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "disadvantage",
+            "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:dwarf%20%28hill%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "PHB",
+          "race": "Dwarf (Hill)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:dwarf%20%28hill%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro il veleno o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "ERLW",
+          "race": "Dwarf (Mark of Warding)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro il veleno o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:dwarf%20%28mountain%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "PHB",
+          "race": "Dwarf (Mountain)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:dwarf%20%28mountain%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro il veleno o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28drow%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PHB",
+          "race": "Elf (Drow)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:elf%20%28drow%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28drow%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "PHB",
+          "race": "Elf (Drow)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:elf%20%28drow%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage",
+            "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28drow%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "PHB",
+          "race": "Elf (Drow)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:elf%20%28drow%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "disadvantage",
+            "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:dmg:elf%20%28eladrin%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "DMG",
+          "race": "Elf (Eladrin)",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:elf%20%28eladrin%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28eladrin%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MTF",
+          "race": "Elf (Eladrin)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:elf%20%28eladrin%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28high%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PHB",
+          "race": "Elf (High)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:elf%20%28high%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:elf%20%28mark%20of%20shadow%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "ERLW",
+          "race": "Elf (Mark of Shadow)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:elf%20%28mark%20of%20shadow%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:egw:elf%20%28pallid%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "EGW",
+          "race": "Elf (Pallid)",
+          "race_source": "EGW",
+          "race_id": "5etools:races:egw:elf%20%28pallid%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:egw:elf%20%28pallid%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Incisive Sense",
+          "source": "EGW",
+          "race": "Elf (Pallid)",
+          "race_source": "EGW",
+          "race_id": "5etools:races:egw:elf%20%28pallid%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:investigation",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:egw:elf%20%28pallid%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Incisive Sense",
+          "source": "EGW",
+          "race": "Elf (Pallid)",
+          "race_source": "EGW",
+          "race_id": "5etools:races:egw:elf%20%28pallid%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:insight",
+            "mode": "advantage",
+            "condition_label": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28sea%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MTF",
+          "race": "Elf (Sea)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:elf%20%28sea%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28shadar-kai%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "MTF",
+          "race": "Elf (Shadar-kai)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:elf%20%28shadar-kai%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28wood%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PHB",
+          "race": "Elf (Wood)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:elf%20%28wood%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29%20%28bishatar%20and%20tirahar%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PSK",
+          "race": "Elf (Kaladesh) (Bishatar and Tirahar)",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:elf%20%28kaladesh%29%20%28bishatar%20and%20tirahar%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29%20%28vahadar%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PSK",
+          "race": "Elf (Kaladesh) (Vahadar)",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:elf%20%28kaladesh%29%20%28vahadar%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28joraga%20nation%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PSZ",
+          "race": "Elf (Zendikar) (Joraga Nation)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:elf%20%28zendikar%29%20%28joraga%20nation%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PSZ",
+          "race": "Elf (Zendikar) (Mul Daya Nation)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "PSZ",
+          "race": "Elf (Zendikar) (Mul Daya Nation)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage",
+            "condition_label": "Se tu o il bersaglio siete alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Sunlight Sensitivity",
+          "source": "PSZ",
+          "race": "Elf (Zendikar) (Mul Daya Nation)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "disadvantage",
+            "condition_label": "Prova basata sulla vista, con te o l’oggetto osservato alla luce solare diretta"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28tajuru%20nation%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PSZ",
+          "race": "Elf (Zendikar) (Tajuru Nation)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:elf%20%28zendikar%29%20%28tajuru%20nation%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:gith%20%28githzerai%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mental Discipline",
+          "source": "MTF",
+          "race": "Gith (Githzerai)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:gith%20%28githzerai%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro le condizioni Affascinato o Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:gnome%20%28deep%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "MTF",
+          "race": "Gnome (Deep)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:gnome%20%28deep%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:gnome%20%28deep%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "MTF",
+          "race": "Gnome (Deep)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:gnome%20%28deep%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:gnome%20%28deep%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "MTF",
+          "race": "Gnome (Deep)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:gnome%20%28deep%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:mtf:gnome%20%28deep%29:roll_mode:4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stone Camouflage",
+          "source": "MTF",
+          "race": "Gnome (Deep)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:gnome%20%28deep%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Per nasconderti in terreno roccioso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "SCAG",
+          "race": "Gnome (Deep/Svirfneblin)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "SCAG",
+          "race": "Gnome (Deep/Svirfneblin)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "SCAG",
+          "race": "Gnome (Deep/Svirfneblin)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29:roll_mode:4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stone Camouflage",
+          "source": "SCAG",
+          "race": "Gnome (Deep/Svirfneblin)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Per nasconderti in terreno roccioso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28forest%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome (Forest)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome%20%28forest%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28forest%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome (Forest)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome%20%28forest%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28forest%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome (Forest)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome%20%28forest%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "ERLW",
+          "race": "Gnome (Mark of Scribing)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "ERLW",
+          "race": "Gnome (Mark of Scribing)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "ERLW",
+          "race": "Gnome (Mark of Scribing)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28rock%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome (Rock)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome%20%28rock%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:int",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28rock%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome (Rock)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome%20%28rock%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:wis",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28rock%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Gnome Cunning",
+          "source": "PHB",
+          "race": "Gnome (Rock)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:gnome%20%28rock%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:cha",
+            "mode": "advantage",
+            "condition_label": "Contro magia o effetti magici"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Lavastep Grit",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Lavastep Tribe)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "skill:stealth",
+            "mode": "advantage",
+            "condition_label": "Per nasconderti in terreno roccioso o sotterraneo"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:half-elf%20%28%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "PHB",
+          "race": "Half-Elf ()",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:half-elf%20%28%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20aquatic%20elf%20descent%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "SCAG",
+          "race": "Half-Elf (Variant; Aquatic Elf Descent)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:half-elf%20%28variant%3B%20aquatic%20elf%20descent%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20drow%20descent%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "SCAG",
+          "race": "Half-Elf (Variant; Drow Descent)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:half-elf%20%28variant%3B%20drow%20descent%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20detection%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "ERLW",
+          "race": "Half-Elf (Variant; Mark of Detection)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20detection%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "ERLW",
+          "race": "Half-Elf (Variant; Mark of Storm)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20moon%20elf%20or%20sun%20elf%20descent%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "SCAG",
+          "race": "Half-Elf (Variant; Moon Elf or Sun Elf Descent)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:half-elf%20%28variant%3B%20moon%20elf%20or%20sun%20elf%20descent%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20wood%20elf%20descent%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fey Ancestry",
+          "source": "SCAG",
+          "race": "Half-Elf (Variant; Wood Elf Descent)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:half-elf%20%28variant%3B%20wood%20elf%20descent%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o terminare la condizione Affascinato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:scag:halfling%20%28ghostwise%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brave",
+          "source": "SCAG",
+          "race": "Halfling (Ghostwise)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:halfling%20%28ghostwise%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:halfling%20%28lightfoot%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brave",
+          "source": "PHB",
+          "race": "Halfling (Lightfoot)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:halfling%20%28lightfoot%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:egw:halfling%20%28lotusden%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brave",
+          "source": "EGW",
+          "race": "Halfling (Lotusden)",
+          "race_source": "EGW",
+          "race_id": "5etools:races:egw:halfling%20%28lotusden%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:halfling%20%28mark%20of%20healing%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brave",
+          "source": "ERLW",
+          "race": "Halfling (Mark of Healing)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:halfling%20%28mark%20of%20healing%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:halfling%20%28mark%20of%20hospitality%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brave",
+          "source": "ERLW",
+          "race": "Halfling (Mark of Hospitality)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:halfling%20%28mark%20of%20hospitality%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:halfling%20%28stout%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brave",
+          "source": "PHB",
+          "race": "Halfling (Stout)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:halfling%20%28stout%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Spaventato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:phb:halfling%20%28stout%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stout Resilience",
+          "source": "PHB",
+          "race": "Halfling (Stout)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:halfling%20%28stout%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro il veleno o la condizione Avvelenato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28beasthide%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shifting Feature",
+          "source": "ERLW",
+          "race": "Shifter (Beasthide)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:shifter%20%28beasthide%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:wis",
+            "mode": "advantage",
+            "condition_label": "Solo nella forma Wildhunt mentre sei mutato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28longtooth%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shifting Feature",
+          "source": "ERLW",
+          "race": "Shifter (Longtooth)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:shifter%20%28longtooth%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:wis",
+            "mode": "advantage",
+            "condition_label": "Solo nella forma Wildhunt mentre sei mutato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28swiftstride%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shifting Feature",
+          "source": "ERLW",
+          "race": "Shifter (Swiftstride)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:shifter%20%28swiftstride%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:wis",
+            "mode": "advantage",
+            "condition_label": "Solo nella forma Wildhunt mentre sei mutato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28wildhunt%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Shifting Feature",
+          "source": "ERLW",
+          "race": "Shifter (Wildhunt)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:shifter%20%28wildhunt%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:wis",
+            "mode": "advantage",
+            "condition_label": "Solo nella forma Wildhunt mentre sei mutato"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psx:vampire%20%28ixalan%29:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Feast of Blood",
+          "source": "PSX",
+          "race": "Vampire (Ixalan)",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:vampire%20%28ixalan%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:str",
+            "mode": "advantage",
+            "condition_label": "Per 1 minuto dopo aver usato Bloodthirst"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psx:vampire%20%28ixalan%29:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Feast of Blood",
+          "source": "PSX",
+          "race": "Vampire (Ixalan)",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:vampire%20%28ixalan%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check:dex",
+            "mode": "advantage",
+            "condition_label": "Per 1 minuto dopo aver usato Bloodthirst"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psx:vampire%20%28ixalan%29:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Feast of Blood",
+          "source": "PSX",
+          "race": "Vampire (Ixalan)",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:vampire%20%28ixalan%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:str",
+            "mode": "advantage",
+            "condition_label": "Per 1 minuto dopo aver usato Bloodthirst"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5etools:races:psx:vampire%20%28ixalan%29:roll_mode:4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Feast of Blood",
+          "source": "PSX",
+          "race": "Vampire (Ixalan)",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:vampire%20%28ixalan%29"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "save:dex",
+            "mode": "advantage",
+            "condition_label": "Per 1 minuto dopo aver usato Bloodthirst"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {selectedRacialBonusSources,racialBonusFeatures,racialBonusEntries,racialBonusTrackers} from '../species_conditional_bonuses.js';
+import {speciesRollBonusesFromBenefits} from '../species_benefit_catalogs.js';
 import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
 import {appendRollBonus} from '../sheet_rules_view.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {rollOptionalDice} from '../sheet_roll_origin.js';
-const rules=JSON.parse(readFileSync(new URL('../catalog/species_conditional_bonuses.json',import.meta.url),'utf8'));
+const rules=speciesRollBonusesFromBenefits(JSON.parse(readFileSync(
+ new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8')));
 const character=(species,source,options={})=>({
  kind:'character',rules_version:'2014',level:8,species,species_source:source,
  species_id:'5etools:races:'+source.toLowerCase()+':'+species.toLowerCase(),

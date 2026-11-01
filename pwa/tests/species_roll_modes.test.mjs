@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {projectSpeciesRollModes} from '../tools/species_roll_modes.mjs';
+import {speciesRollModesFromBenefits} from '../species_benefit_catalogs.js';
 import {selectedSpeciesRollModeRules,speciesRollModeEntries,speciesRollModeFeatures,
  speciesRollModeMatches,speciesRollModeTrackers,applicableSpeciesRollModes} from '../species_roll_modes.js';
 import {calculateSheet} from '../sheet_rules.js';
@@ -12,7 +13,8 @@ import {collectTraitRows} from '../trait_projection.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const refs=read('../../vtt/data/creature_references_5etools.json');
-const catalog=read('../catalog/species_roll_modes.json');
+const typed=read('../../vtt/enrichment/benefits/roll_mode.json');
+const catalog=speciesRollModesFromBenefits(typed,{races:refs.races});
 const find=(name,source)=>refs.races.find(x=>x.name===name&&x.source===source);
 const character=(species,source,extra={})=>({
  kind:'character',rules_version:'2014',level:5,
