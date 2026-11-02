@@ -687,12 +687,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '</div>';
   html+='<div class="play-vitals">'+
     vital('defense','Classe armatura','shield','CA','ac')+
-    roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+
+    btn('Ispirazione','spark','data-act="sheet-inspiration-toggle" aria-pressed="'+Boolean(c.inspiration)+'"',
+      '<small>Ispirazione</small><output>'+(c.inspiration?'Attiva':'Non attiva')+'</output>')+
     vital('movement','Movimento e velocità','dash',fastest.label,fastest.key,' ft',true)+'</div>';
-  html+='<div class="play-ability-quickstats play-battle-quickstats">'+
-   '<button type="button" class="play-quickstat" data-act="sheet-senses-open" aria-label="Apri percezione passiva e sensi">'+icon('eye')+'<span>Percezione passiva</span><strong>'+output('passive_perception')+'</strong></button>'+
-   '<button type="button" class="play-quickstat" data-act="battle-competences-open" aria-label="Apri competenze">'+icon('proficiency')+'<span>Competenze</span><strong>'+output('proficiency',true)+'</strong></button>'+
-   '<button type="button" class="play-quickstat" data-act="sheet-inspiration-toggle" aria-pressed="'+Boolean(c.inspiration)+'" aria-label="Attiva o disattiva ispirazione">'+icon('spark')+'<span>Ispirazione</span><strong>'+(c.inspiration?'Attiva':'Non attiva')+'</strong></button></div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
   const statusTag=(key,label)=>'<button type="button" class="play-status-tag" data-act="state-trait-jump" data-state-trait="'+esc('state|'+key)+'" title="'+esc(label)+'">'+esc(label)+'</button>';
@@ -1046,9 +1043,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='skills'){
   // The six characteristic tiles stay rollable; the list below contains skills only.
   html='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
+  html+='<div class="play-vitals play-ability-vitals" role="group" aria-label="Statistiche e competenze">'+
+   btn('Percezione passiva e sensi','eye','data-act="sheet-senses-open"',
+     '<small>Percezione passiva</small>'+output('passive_perception'))+
+   btn('Competenze','proficiency','data-act="sheet-context" data-sheet-context="tools"',
+     '<small>Competenze</small>'+output('proficiency',true))+
+   roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+
+   '</div>';
   const tools=panelNamed('Altre competenze');bind('tools',tools);
   html+='<section class="play-competences" aria-label="Abilità">'+
-   '<h2 class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></h2>'+
    '<div class="play-skills-content"><div class="play-skills">'+SKILLS.map(([key,label,ability])=>{
     const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;
     return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,
@@ -1451,7 +1454,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
 export function refreshPlayReadouts(root,creature,calculated){
  for(const button of root.querySelectorAll('[data-act="sheet-inspiration-toggle"]')){
   button.setAttribute('aria-pressed',String(Boolean(creature.inspiration)));
-  const value=button.querySelector('strong');
+  const value=button.querySelector('output');
   if(value)value.textContent=creature.inspiration?'Attiva':'Non attiva';
  }
  for(const node of root.querySelectorAll('[data-read-field]'))node.textContent=String(creature[node.dataset.readField]??0);
