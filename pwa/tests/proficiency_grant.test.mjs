@@ -69,7 +69,7 @@ import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from '../pend
 
 const skilledCatalog=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/proficiency_grant.json',import.meta.url),'utf8'));
 const proficiencyIndex=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
-const skilledRecord=source=>({...record(),rules_version:source==='XPHB'?'2024':'2014',
+const skilledRecord=source=>({...record(),proficiency_choices:[],rules_version:source==='XPHB'?'2024':'2014',
   feats_catalog:[{name:'Skilled',source}]});
 const permanentChoices=character=>{
  const models=proficiencyGrantModels(character,{features:[]},skilledCatalog);
