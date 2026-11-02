@@ -116,8 +116,8 @@ def main():
     # Class and subclass rules are added to the same type catalogs as species.
     migrated_counts = {
         "action": 117, "roll_bonus": 15, "activation": 31,
-        "resource_recovery": 17, "attack_count": 26,
-        "action_sequence": 12, "resource": 90,
+        "resource_recovery": 17, "attack_count": 0,
+        "action_sequence": 38, "resource": 90,
     }
     for benefit_type, expected in migrated_counts.items():
         data = load(live / f"{benefit_type}.json")
