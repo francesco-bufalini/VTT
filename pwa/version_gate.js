@@ -58,7 +58,9 @@ function limit(promise, ms) {
 // "updated" means the controller changed; caller must navigate to reset the
 // browser's ES module map. During an open session, main.js already listens for
 // controllerchange and flushes pending edits before reloading.
-export async function ensureCurrentAppVersion({ waitForUpdate = false, strict = false } = {}) {
+export async function ensureCurrentAppVersion({
+  waitForUpdate = false, strict = false, updateTimeoutMs = 12000
+} = {}) {
   const service = typeof navigator === "undefined" ? null : navigator.serviceWorker;
   const previous = service?.controller;
   if (!previous) return "uncontrolled"; // All assets are being loaded from the network.
@@ -88,13 +90,31 @@ export async function ensureCurrentAppVersion({ waitForUpdate = false, strict = 
     service.addEventListener("controllerchange", onChange);
   });
   try {
-    // The new worker is activated only after its required offline shell was
-    // downloaded successfully. If that fails, refuse a mixed-version session.
-    await limit(registration.update(), 60000);
-    if (service.controller === previous) await limit(changed, 60000);
-    if (await workerRevision(service.controller) !== served)
-      throw new Error("Versione PWA non allineata al desktop. Riprova.");
-    return "updated";
+    try {
+      // Only the installed, fully cached worker can claim the page. However,
+      // a slow/broken installation must not block the local creature archive
+      // for a full minute on a reachable desktop.
+      await limit(registration.update(), updateTimeoutMs);
+      if (service.controller === previous) await limit(changed, updateTimeoutMs);
+      if (await workerRevision(service.controller) !== served)
+        throw new Error("Versione PWA non allineata al desktop. Riprova.");
+      return "updated";
+    } catch (error) {
+      if (strict) throw error; // Pairing must never use a mixed-version module graph.
+      // The server's verified live assets are available, but the cached worker
+      // cannot activate. Deregister it and request a *new document* instead of
+      // loading a mixture of old cached and new live ES modules in this page.
+      // This does not touch IndexedDB or CacheStorage.
+      try {
+        await limit(registration.unregister(), 7000);
+      } catch (cleanupError) {
+        throw new Error("Impossibile disattivare la vecchia cache della PWA. Riprova.", {
+          cause: cleanupError
+        });
+      }
+      console.warn("VTT: aggiornamento offline non completato; riavvio dalla versione del server", error);
+      return "recovered";
+    }
   } finally {
     service.removeEventListener("controllerchange", onChange);
   }
