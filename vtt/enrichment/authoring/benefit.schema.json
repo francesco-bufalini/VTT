@@ -3239,8 +3239,7 @@
       "type": "object",
       "required": [
         "id",
-        "groups",
-        "trigger"
+        "groups"
       ],
       "properties": {
         "id": {

@@ -1435,7 +1435,7 @@ async function computeLocalData(record){
   }
   return {...calculated,loadError,companion_view:companionView,companion_rules:companionData,combat_snapshot:state.map||null,
     power_selections,power_selection_catalog:powerSelectionCatalog,proficiency_grants,
-    pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
+    pending_choices:pendingCharacterChoices(record,{...calculated,proficiency_grants},{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
     infusion_catalog,infusion_mechanics};
 }
@@ -3161,7 +3161,7 @@ function racialRestTrainingPanel(c,calculated){
  }).join('');
 }
 function proficiencyGrantPanels(c,calculated){
- return (calculated.proficiency_grants||[]).map(model=>{
+ return (calculated.proficiency_grants||[]).filter(model=>!model.permanent).map(model=>{
   const picked=model.selected||[],slots=model.slots||[];
   const entries=slots.map((slot,i)=>{
    const row=picked[i],value=row?
@@ -3183,7 +3183,7 @@ async function openProficiencyGrantDialog(id){
  const creature=state.editor?.read();
  if(!creature)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(creature);
- const model=(calculated.proficiency_grants||[]).find(row=>row.id===id);
+ const model=(calculated.proficiency_grants||[]).find(row=>row.id===id&&!row.permanent);
  if(!model)throw Error('Concessione di competenze non disponibile.');
  const opt=(key,label,value)=>'<option value="'+esc(key)+'"'+(key===value?' selected':'')+'>'+esc(label)+'</option>';
  const picks=model.slots.map((slot,i)=>{
@@ -9703,7 +9703,7 @@ async function handleAction(target){
     if(!dialog?.open||!current||dialog.dataset.creatureId!==current.id)
       throw Error('Riapri il privilegio dalla scheda.');
     const fresh=await computeLocalData(current);
-    const model=(fresh.proficiency_grants||[]).find(row=>row.id===dialog.dataset.proficiencyGrantId);
+    const model=(fresh.proficiency_grants||[]).find(row=>row.id===dialog.dataset.proficiencyGrantId&&!row.permanent);
     if(!model)throw Error('Privilegio non disponibile.');
     const selected=[...dialog.querySelectorAll('[data-proficiency-grant-pick]')]
       .sort((a,b)=>Number(a.dataset.proficiencyGrantPick)-Number(b.dataset.proficiencyGrantPick))

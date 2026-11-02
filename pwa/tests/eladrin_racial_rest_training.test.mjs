@@ -86,7 +86,7 @@ test('five species trait grants have exact typed slot filters and source-qualifi
   ['Githyanki','MPMM',['skill','weapon/tool']]
  ];
  assert.equal(proficiencyBenefits.benefit_type,'proficiency_grant');
- assert.equal(proficiencyBenefits.entries.length,5);
+ assert.equal(proficiencyBenefits.entries.filter(row=>row.granted_by?.ref?.category==='species_trait').length,5);
  for(const [name,source,filters] of expected){
   const r=record(name,source),models=proficiencyGrantModels(r,{features:featuresFor(r)},proficiencyBenefits);
   assert.equal(models.length,1,name);
