@@ -1233,6 +1233,40 @@
         "time": "action",
         "attack_replacement": true
       }
+    },
+    {
+      "id": "sequence:mpmm:earth-genasi:blade-ward-bonus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Merge with Stone",
+          "source": "MPMM",
+          "race": "Genasi",
+          "race_source": "MPMM",
+          "subrace": "Earth",
+          "subrace_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:mpmm:earth-genasi:blade-ward-bonus",
+        "time": "bonus",
+        "tracker_id": "race:mpmm:genasi:earth:blade_ward_bonus:uses",
+        "tracker_cost": 1,
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "spell",
+                "name": "Blade Ward",
+                "source": "PHB"
+              },
+              "count": 1
+            }
+          ]
+        }
+      }
     }
   ],
   "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."
