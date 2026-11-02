@@ -388,3 +388,21 @@ tipizzati.
 ### Sensi (sense.json)
 
 Concessioni con portata in piedi (`range_feet`), proprietario `granted_by` legato a 5eTools e combinazione per massimo. `mode: "increase_if_existing"` con `fallback_feet` copre Umbral Sight; `choice_required` preserva le scelte di Custom Lineage. I sensi dei mostri e quelli aggiunti manualmente restano fonti indipendenti. L'audit 5eTools è un fixture di test, non un secondo catalogo di regole.
+
+## Estensioni degli incantesimi e passi di sequenza `spell`
+
+Il catalogo [`spell_extension.json`](spell_extension.json) contiene benefici
+che associano un incantesimo canonico (`spell.name` + `spell.source`) al
+tratto 5eTools che lo modifica. Quando si apre l'incantesimo nella PWA, la
+descrizione **corrente** del tratto viene mostrata immediatamente dopo il
+quadro dei dati strutturati, senza copiarla nel catalogo dei benefici.
+Solo i tratti effettivamente posseduti e abilitati vengono proiettati.
+
+Le `action_sequence` possono includere uno step con
+`selector: {kind: "spell", name: "Blade Ward", source: "PHB"}`.
+Lo step risolve soltanto gli incantesimi accessibili alla creatura e apre
+la stessa finestra di lancio degli incantesimi ordinari. Tempo di lancio
+e costo appartengono alla sequenza: non sovrascrivono l'incantesimo
+originale. Il Genasi della Terra (MPMM) ne è il primo esempio: Blade
+Ward normalmente lanciabile come previsto dal suo catalogo e una
+sequenza alternativa come azione bonus con tracker dedicato.
