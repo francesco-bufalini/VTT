@@ -709,7 +709,8 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  for(const strike of [...arr(featureContext.featAttacks),...arr(featureContext.selectionAttacks)])if(strike?.id&&strike.damage){
   append({...strike,slot:'natural',melee:strike.melee!==false,
     origin_id:strike.origin_id,origin_name:strike.origin_name,
-    range_feet:Number(strike.range_feet)||5},strike.ability||'str',strike.grants_proficiency===true||
+    range_feet:Number(strike.range_feet)||5},
+    strike.intelligence_override&&record.attack_ability==='int'?'int':strike.ability||'str',strike.grants_proficiency===true||
       trainedWeapon(strike.id,strike.name,strike.weapon_category),strike.damage);
  }
  for(const linked of arr(featureContext.companionAttacks))if(linked.id&&Number.isFinite(linked.hit)){
@@ -1098,6 +1099,11 @@ function calculateSheetValues(record={},catalogs={}){
   const companionValues=record.parent_creature_id&&kind==='monster'?
     record.companion_owner_values||{}:{};
   const proficiencies=fixedProficiencies(record,proficiencyIndex,features);
+  // Trained attacks granted by an applied capability carry their own
+  // proficiency. It is not tied to an item name or a particular subclass.
+  for(const strike of arr(record.attack_grants))
+    if(strike.grants_proficiency===true&&strike.name&&sourceEnabled(strike))
+      proficiencies.set('weapon:'+String(strike.name).trim().toLowerCase(),true);
   // Template training uses the owner's current proficiency, even for saved
   // companions created before this data was included in their stat block.
   for(const [skill,rank] of Object.entries(companionValues.skill_ranks||{}))
@@ -1553,6 +1559,7 @@ function calculateSheetValues(record={},catalogs={}){
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,
     featAttacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
     selectionAttacks:arr(record.attack_grants).filter(row=>sourceEnabled(row)),
+    selection_models:record.selection_models||[],
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),feature_action_overrides:catalogs.featureActionOverrides||[],traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   featureContext.companionAttacks=arr(companionValues.attacks);
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],(target,attack)=>{

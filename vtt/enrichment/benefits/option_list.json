@@ -12362,7 +12362,8 @@
                       "trigger": "on_hit",
                       "duration": "until_start_of_next_turn"
                     }
-                  ]
+                  ],
+                  "weapon_category": "simple"
                 },
                 {
                   "type": "feature_grant",
@@ -12371,7 +12372,8 @@
                 }
               ],
               "local": true,
-              "source": "VTT"
+              "source": "VTT",
+              "name": "Guardian"
             }
           ]
         }
@@ -12417,7 +12419,8 @@
                     "tracker_id": "feature:lightning_launcher:extra_damage",
                     "recharge": "turn",
                     "max": 1
-                  }
+                  },
+                  "weapon_category": "simple"
                 },
                 {
                   "type": "resources",
@@ -12452,7 +12455,8 @@
                 }
               ],
               "local": true,
-              "source": "VTT"
+              "source": "VTT",
+              "name": "Infiltrator"
             }
           ]
         }

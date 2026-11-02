@@ -116,6 +116,13 @@ export function powerRestSelections(record={},calculated={}){
  for(const choice of arr(calculated.racial_rest_choices))
    if(arr(calculated.features).some(f=>f.origin_id===choice.origin_id&&enabled(record,f)))
      add(choice.group,choice.trait,choice.recovery);
+ // Generic applied capability selections are rest-changeable without a
+ // special trait-state rule or a resource tracker.
+ for(const model of arr(calculated.selection_models)){
+   const trigger=model.layers?.applied?.trigger;
+   if(typeof trigger==='string')add(model.id,model.title,trigger);
+   else for(const event of arr(trigger))add(model.id,model.title,event);
+ }
  for(const member of arr(calculated.casting_classes))
    if(member.mode==='Preparati')
      add('spells:'+String(member.id),String(member.name||'Incantesimi')+' · preparazione','long_rest');

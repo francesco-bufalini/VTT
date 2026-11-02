@@ -1,5 +1,5 @@
 // One selection engine. Source definitions only supply options and stage data.
-import {targetableInventoryItems,itemAttunementCount,activeItemOptionEffects} from './item_controls.js';
+import {targetableInventoryItems,itemAttunementCount,itemKind,requiresAttunement,activeItemOptionEffects} from './item_controls.js';
 import {originSpellId,originChoiceMatches} from './spell_selection.js';
 import {isContentAvailableForRules} from './source_edition.js';
 import {traitStateSource} from './trait_state_rules.js';
@@ -198,7 +198,9 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
     const targetId=applied?.target_item_id||'';
     if(model.application?.destination==='item'){
      const item=rows(record.inventory).find(row=>(row.instance_id||row.id)===targetId);
-     if(!item||Number(item.quantity??1)<=0||item.disabled||item.active===false)continue;
+     if(!item||Number(item.quantity??1)<=0||item.disabled||item.active===false||
+       ['weapon','shield','armor'].includes(itemKind(item))&&!rows(item.equipped_slots).length||
+       requiresAttunement(item)&&!itemAttunementCount(item))continue;
     }
     const childOrigin=targetId?'item-instance:'+targetId:'selection:'+model.id+':'+selectedOption.id;
     const childInstance=child.id+':from:'+childOrigin;
@@ -293,7 +295,7 @@ export function powerApplicationPatch(raw,calculated,catalog,id,optionId,apply,{
    const count=itemAttunementCount(target),remaining={...structuredClone(target),quantity:Number(target.quantity)-1,instance_id:'instance_'+crypto.randomUUID(),equipped:false,equipped_slots:[],attuned_count:Math.max(0,count-1),attuned:count>1};
    inventory.splice(itemIndex+1,0,remaining);target.quantity=1;target.attuned_count=Math.min(1,count);target.attuned=count>0;
   }
-  if(exists&&old.find(row=>row.id===optionId)?.target_item_id===(target.instance_id||target.id))throw Error('Potere già applicato.');
+  if(old.some(row=>row.id===optionId&&row.target_item_id===(target.instance_id||target.id)))throw Error('Potere già applicato.');
   const previousIdentity=target.instance_id||target.id;
   target.instance_id=target.instance_id||'instance_'+crypto.randomUUID();record.inventory=inventory;
   for(const [key,values] of Object.entries(record.power_applications||{}))record.power_applications[key]=rows(values).map(row=>row.target_item_id===previousIdentity?{...row,target_item_id:target.instance_id}:row);

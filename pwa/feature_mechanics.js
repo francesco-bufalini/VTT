@@ -49,8 +49,15 @@ export function classFeatureDescriptors(record={},calculated={}){
   // State-dependent privileges are declared in the trait state catalog.
   const requiredStates=rows(calculated.trait_state_catalog).filter(rule=>
     low(rule.class_name)===low(owner)&&rows(rule.granted_features).includes(feature.name));
-  const gated=requiredStates.length>0&&!requiredStates.some(rule=>
-    rows(calculated.active_trait_state_ids).includes(rule.id));
+  const selectionOwners=rows(calculated.selection_models).flatMap(model=>
+    rows(model.options).filter(option=>rows(option.effects).some(effect=>
+      effect.type==='feature_grant'&&low(effect.name)===low(feature.name))).map(option=>({
+      model,option,active:[...rows(model.layers.applied?.selected),...rows(model.fixed)]
+        .some(selected=>(typeof selected==='string'?selected:selected?.id)===option.id)
+    })));
+  const gated=(requiredStates.length>0&&!requiredStates.some(rule=>
+    rows(calculated.active_trait_state_ids).includes(rule.id)))||
+    (selectionOwners.length>0&&!selectionOwners.some(entry=>entry.active));
   const available=featureEnabled(record,feature)&&!gated;
   const resource=baseResource;
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)===low(resource)&&
