@@ -38,7 +38,6 @@
         "option_list",
         "option_grant",
         "proficiency_grant",
-        "proficiency",
         "progression",
         "resource",
         "resource_recovery",
@@ -292,12 +291,6 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/rollMode"
-      }
-    },
-    "proficiencies": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/proficiency"
       }
     },
     "defenses": {
@@ -906,27 +899,6 @@
           {
             "required": [
               "steps"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "type": {
-            "const": "proficiency"
-          }
-        },
-        "required": [
-          "type"
-        ]
-      },
-      "then": {
-        "anyOf": [
-          {
-            "required": [
-              "proficiencies"
             ]
           }
         ]
@@ -3238,8 +3210,7 @@
     "proficiencyGrant": {
       "type": "object",
       "required": [
-        "id",
-        "groups"
+        "id"
       ],
       "properties": {
         "id": {
@@ -3309,9 +3280,107 @@
             "short_rest",
             "long_rest"
           ]
+        },
+        "grants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "key"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "skill",
+                  "expertise",
+                  "save",
+                  "weapon",
+                  "armor",
+                  "tool",
+                  "language",
+                  "attack",
+                  "other"
+                ]
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "source_rules": {
+          "type": "object",
+          "required": [
+            "section",
+            "stages"
+          ],
+          "properties": {
+            "section": {
+              "enum": [
+                "class",
+                "race",
+                "subrace",
+                "background",
+                "feat",
+                "classFeature",
+                "subclassFeature"
+              ]
+            },
+            "metadata": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "stages": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "stage",
+                  "fields"
+                ],
+                "properties": {
+                  "stage": {
+                    "enum": [
+                      "default",
+                      "starting",
+                      "multiclass"
+                    ]
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "grants"
+          ]
+        },
+        {
+          "required": [
+            "groups"
+          ]
+        },
+        {
+          "required": [
+            "source_rules"
+          ]
+        }
+      ]
     },
     "optionGrant": {
       "type": "object",

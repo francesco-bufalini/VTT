@@ -120,7 +120,7 @@
         "languages"
       ],
       "types": [
-        "proficiency",
+        "proficiency_grant",
         "language",
         "choice"
       ]
@@ -280,7 +280,7 @@
         "feats"
       ],
       "types": [
-        "proficiency"
+        "proficiency_grant"
       ]
     },
     {
@@ -432,6 +432,28 @@
       "benefit_type": "effect_extension",
       "catalog": "vtt/enrichment/benefits/effect_extension.json",
       "runtime": "pwa/effect_extensions.js"
+    },
+    {
+      "source": "vtt/enrichment/benefits/proficiency.json",
+      "benefit_type": "proficiency_grant",
+      "catalog": "vtt/enrichment/benefits/proficiency_grant.json",
+      "runtime": "pwa/trait_flavours.js"
+    },
+    {
+      "source": "pwa/catalog/proficiency_grants.json",
+      "sections": [
+        "class",
+        "race",
+        "subrace",
+        "background",
+        "feat",
+        "classFeature",
+        "subclassFeature"
+      ],
+      "benefit_type": "proficiency_grant",
+      "catalog": "vtt/enrichment/benefits/proficiency_grant.json",
+      "runtime": "pwa/proficiency_catalog.js",
+      "partial": false
     }
   ]
 }
