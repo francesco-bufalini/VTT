@@ -7,12 +7,13 @@ import {abilitiesForCreature} from '../activated_abilities.js';
 import {battleActionPanels,abilityAttackRoll,actionGlyph} from '../action_economy.js';
 import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch,resourceAttackId,resourceAbilityGlyphKey} from '../sheet_rules_view.js';
 import {companionOwnerActions} from '../companion_rules.js';
+import {armorerSelectionCatalog,withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_grants.mjs';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const companions=read('companion_spells');
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),traitStates:read('trait_states').states,
  featureActionOverrides:JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries};
-const selectionCatalogs={...catalogs,powerSelections:read('power_selections'),
+const selectionCatalogs={...withArmorerGrants(catalogs),powerSelections:read('power_selections'),
  optionalFeatureProgressions:read('optional_feature_progressions')};
 const sheet=(name,subclass,source='PHB',subclassSource='TCE')=>({
  id:'owner',kind:'character',name:'Creatore',rules_version:'2014',level:8,
@@ -106,7 +107,7 @@ test('Lightning Launcher stays in Attacchi, while Resources retains only the cou
  });
  assert.equal(resourceLinkedSubclassTrait(tracker,calculated.features,[],calculated),null);
  assert.throws(()=>subclassTrackerUsePatch(record,calculated,tracker.id,tracker.origin_id),/non disponibile/);
- const disabled=project({...record,origin_enabled:{[tracker.origin_id]:false}});
+ const disabled=project({...record,origin_enabled:{[tracker.origin_id]:false}},true);
  assert(!abilitiesForCreature(record,[],disabled).some(row=>row.roll_attack?.id==='class_feature:lightning_launcher'));
 });
 test('a trait with both a paid summon and a free command retains both resource groups',()=>{
@@ -200,8 +201,9 @@ test('Defensive Field retains its counter but exposes its action only with activ
   ['armor_model:infiltrator',true,false],
   ['armor_model:guardian',true,true]
  ]){
-  const record={...base,inventory:worn?[armor]:[],trait_state_selection:{armor_model:model}};
-  const calculated=project(record);
+  const plain={...base,inventory:worn?[armor]:[]};
+  const record=worn?applyArmorerModel(plain,selectionCatalogs,model):plain;
+  const calculated=project(record,true);
   const tracker=calculated.trackers.find(row=>row.name==='Defensive Field');
   assert(tracker,'The counter survives armor/model changes');
   render(record,calculated,app=>{
@@ -224,8 +226,10 @@ test('Defensive Field retains its counter but exposes its action only with activ
 });
 
 test('trait operation identity deduplicates translated descriptive actions and attacks name their action',()=>{
- const record={...sheet('Artificer','Armorer','TCE'),inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],trait_state_selection:{armor_model:'armor_model:infiltrator'}};
- const calculated=project(record);
+ const record=applyArmorerModel({...sheet('Artificer','Armorer','TCE'),
+  inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}]},
+  selectionCatalogs,'armor_model:infiltrator');
+ const calculated=project(record,true);
  render(record,calculated,app=>{
   const trait=calculated.features.find(row=>row.name==='Magical Tinkering');
   const group=[...app.querySelectorAll('[data-battle-action="others"] [data-ability-id]')].find(node=>node.textContent.includes('Magical Tinkering'));
