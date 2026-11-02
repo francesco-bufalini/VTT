@@ -11,7 +11,8 @@ const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const rules=read('../../vtt/enrichment/benefits/option_grant.json');
 const optional=read('../catalog/optional_feature_progressions.json');
 const old=read('../catalog/power_selections.json');
-const source={...old,optionGrants:rules,optionalFeatureProgressions:optional};
+const lists=read('../../vtt/enrichment/benefits/option_list.json');
+const source={...old,optionGrants:rules,optionLists:lists,optionalFeatureProgressions:optional};
 const owner={class_name:'Ranger',class_source:'PHB',trait:'Favored Enemy'};
 const feature={name:'Favored Enemy',origin_id:'feature:choice',origin_key:'class|phb|ranger',
  requirements:{class_name:'Ranger',class_source:'PHB'}};

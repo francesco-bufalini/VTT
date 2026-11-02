@@ -9,6 +9,7 @@ import {applyOriginSpellChoice} from '../spell_selection.js';
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const index=read('../catalog/classes.json');
 const grants=read('../../vtt/enrichment/benefits/option_grant.json');
+const lists=read('../../vtt/enrichment/benefits/option_list.json');
 const resources=read('../../vtt/enrichment/benefits/resource.json');
 const spellcasting=read('../catalog/spellcasting_benefits.json');
 const optionCatalog=read('../catalog/optional_feature_progressions.json');
@@ -39,7 +40,7 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
  for(const entry of grants.entries){
   const ref=sourceFor(entry),record=makeRecord(ref);
   const features=collectStructuredFeatures(record,{classFeatures:index,
-   spellcastingBenefits:spellcasting,optionGrants:grants,slotBenefits:resources});
+   spellcastingBenefits:spellcasting,optionGrants:grants,optionLists:lists,slotBenefits:resources});
   const matching=features.filter(feature=>feature.benefits?.some(benefit=>
    benefit.type==='option_grant'&&benefit.id===entry.benefit.id));
   if(!matching.length)missing.push(entry.benefit.id);
@@ -47,7 +48,7 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
   if(matching.length>1&&!entry.benefit.option_grant.instances)
    ambiguous.push([entry.benefit.id,matching.map(f=>f.origin_id)]);
   if(matching.length&&entry.benefit.option_grant.option_kind!=='spell'){
-   const catalog={...powerCatalog,optionGrants:grants,optionalFeatureProgressions:optionCatalog};
+   const catalog={...powerCatalog,optionGrants:grants,optionLists:lists,optionalFeatureProgressions:optionCatalog};
    const selection=powerSelectionModels(record,{features},catalog);
    if(!selection.some(m=>m.id===entry.benefit.id)&&
      !entry.benefit.option_grant.requires_application)modelMissing.push(entry.benefit.id);
@@ -85,7 +86,7 @@ test('audit: optional spell-choice privileges create source-scoped spell pickers
  const catalogs={
   classFeatures:index,classMechanics:read('../catalog/class_mechanics.json'),
   abilityGrants:read('../catalog/ability_grants.json'),
-  spellcastingBenefits:spellcasting,optionGrants:grants,
+  spellcastingBenefits:spellcasting,optionGrants:grants,optionLists:lists,
   powerSelections:powerCatalog,optionalFeatureProgressions:optionCatalog
  };
  const checks=[
@@ -124,7 +125,7 @@ test('Pact of the Tome PHB: three cantrips chosen, persisted, castable, and with
  const ruleId='optional:class:phb:warlock:pb';
  const rules={classFeatures:index,classMechanics:read('../catalog/class_mechanics.json'),
   abilityGrants:read('../catalog/ability_grants.json'),
-  spellcastingBenefits:spellcasting,optionGrants:grants,
+  spellcastingBenefits:spellcasting,optionGrants:grants,optionLists:lists,
   powerSelections:powerCatalog,optionalFeatureProgressions:optionCatalog};
  const spellCatalog=Array.from({length:4},(_,i)=>({
   id:'test:cantrip:'+i,name:'Cantrip '+i,source:'PHB',level:0,classes:['Wizard']

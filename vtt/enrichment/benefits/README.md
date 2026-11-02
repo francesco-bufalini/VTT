@@ -166,3 +166,27 @@ teletrasporti, forme e ascendenti draconici, scelte per il riposo,
 incantesimi concessi e annotazioni passive. La migrazione è parziale,
 e queste proprietà non vanno copiate in altri cataloghi finché il
 runtime non sarà aggiornato per consumarle.
+
+---
+
+## Scelte di privilegi: option_grant e option_list
+
+Le 17 progressioni di opzioni di classi e sottoclassi, i 3 selettori
+speciali e le 21 concessioni di incantesimi sono ora dichiarati in
+[`option_grant.json`](option_grant.json) (41 concessioni in totale).
+
+Le 272 opzioni di `optional_feature_progressions.json` sono conservate
+con ID e payload esatti in [`option_list.json`](option_list.json): una voce
+source-qualified per ciascuna optional feature 5eTools, inclusi i suoi
+`types` e gli eventuali effetti specifici. Le 17 concessioni usano ora
+`source.type = "list_refs"` con `feature_types` per interrogare questo
+catalogo condiviso, senza duplicare le opzioni tra Fighting Style,
+Maneuvers o altre concessioni. `pwa/power_selection.js` legge i nuovi
+dati in priorità e usa le opzioni legacy soltanto quando il nuovo
+catalogo non è disponibile sui vecchi host/offline shell.
+
+I file precedenti rimangono temporaneamente per compatibilità con codice
+e test non ancora migrati. Non aggiungere nuove opzioni ai dati legacy.
+I privilegi di magia delle classi mantengono inoltre la precedente logica
+runtime di selezione degli incantesimi: la concessione tipizzata non è
+ancora una sostituzione del relativo motore.

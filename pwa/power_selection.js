@@ -37,10 +37,19 @@ function optionsFor(record,rule,catalog={}){
   subchoices:{count:pack.count,label:pack.label||pack.name,options:pack.options}
  })));
  const source=rule.source||{};
- const optional=source.type==='optional_features'?
-   rows(catalog.optionalFeatureProgressions?.options).filter(option=>rows(option.types).some(t=>rows(source.feature_types).includes(t))):[];
- const listed=source.type==='list_refs'?rows(source.list_ids).flatMap(id=>
-   rows(catalog.optionLists?.entries).find(entry=>entry.benefit?.option_list?.id===id)?.benefit?.option_list?.options||[]):[];
+ // Canonical optional features live in the typed option_list catalog. The
+ // old optional-feature data is read only on legacy/offline hosts without it.
+ const listEntries=rows(catalog.optionLists?.entries);
+ const featureTypes=rows(source.feature_types);
+ const optional=source.type==='optional_features'||
+   (source.type==='list_refs'&&featureTypes.length&&!listEntries.length)?
+   rows(catalog.optionalFeatureProgressions?.options).filter(option=>
+     rows(option.types).some(type=>featureTypes.includes(type))):[];
+ const listed=source.type==='list_refs'?rows(source.list_ids).length?
+   rows(source.list_ids).flatMap(id=>rows(listEntries.find(entry=>
+     entry.benefit?.option_list?.id===id)?.benefit?.option_list?.options)):
+   listEntries.flatMap(entry=>rows(entry.benefit?.option_list?.options)).filter(option=>
+     rows(option.types).some(type=>featureTypes.includes(type))):[];
  const eligible=[...rows(source.options),...packages,...optional,...listed,...rows(record.power_selection_custom_options?.[rule.id])]
   .filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014')));
  // A 2024 grant can prefer the revised 5eTools definition over an older
