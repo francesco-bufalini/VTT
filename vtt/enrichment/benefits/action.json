@@ -2892,7 +2892,6 @@
         "id": "race:mpmm:centaur:charge",
         "operation": "racial_power",
         "activation": "bonus",
-        "name": "Charge",
         "action_runtime": {
           "kind": "actions",
           "roll_attack": {
@@ -2946,7 +2945,6 @@
         "id": "race:mpmm:firbolg:hidden_step",
         "operation": "racial_power",
         "activation": "bonus",
-        "name": "Hidden Step",
         "resource": "race:mpmm:firbolg:hidden_step:uses",
         "action_runtime": {
           "kind": "active_conditions",
@@ -2981,7 +2979,6 @@
         "id": "race:dmg:gnoll:rampage",
         "operation": "racial_power",
         "activation": "bonus",
-        "name": "Rampage",
         "action_runtime": {
           "kind": "actions",
           "roll_attack": {
@@ -3154,7 +3151,6 @@
         "id": "race:mpmm:goliath:stones_endurance",
         "operation": "racial_power",
         "activation": "reaction",
-        "name": "Stone's Endurance",
         "resource": "race:mpmm:goliath:stones_endurance:uses",
         "action_runtime": {
           "kind": "tracked_actions",
@@ -3188,7 +3184,6 @@
         "id": "race:aag:hadozee:hadozee_dodge",
         "operation": "racial_power",
         "activation": "reaction",
-        "name": "Hadozee Dodge",
         "resource": "race:aag:hadozee:hadozee_dodge:uses",
         "action_runtime": {
           "kind": "tracked_actions",
@@ -3222,7 +3217,6 @@
         "id": "race:phb:half_orc:relentless_endurance",
         "operation": "racial_power",
         "activation": "free",
-        "name": "Relentless Endurance",
         "resource": "race:phb:half_orc:relentless_endurance:uses",
         "action_runtime": {
           "kind": "tracked_actions",
@@ -3252,7 +3246,6 @@
         "id": "race:mpmm:harengon:rabbit_hop",
         "operation": "racial_power",
         "activation": "bonus",
-        "name": "Rabbit Hop",
         "resource": "race:mpmm:harengon:rabbit_hop:uses",
         "action_runtime": {
           "kind": "tracked_actions"
@@ -3277,7 +3270,6 @@
         "id": "race:mpmm:lizardfolk:hungry_jaws",
         "operation": "racial_power",
         "activation": "bonus",
-        "name": "Hungry Jaws",
         "resource": "race:mpmm:lizardfolk:hungry_jaws:uses",
         "action_runtime": {
           "kind": "tracked_actions"
@@ -3302,7 +3294,6 @@
         "id": "race:mpmm:orc:adrenaline_rush",
         "operation": "racial_power",
         "activation": "bonus",
-        "name": "Adrenaline Rush",
         "resource": "race:mpmm:orc:adrenaline_rush:uses",
         "action_runtime": {
           "kind": "tracked_actions",
@@ -3329,7 +3320,6 @@
         "id": "race:mpmm:orc:relentless_endurance",
         "operation": "racial_power",
         "activation": "free",
-        "name": "Relentless Endurance",
         "resource": "race:mpmm:orc:relentless_endurance:uses",
         "action_runtime": {
           "kind": "tracked_actions",
@@ -3359,7 +3349,6 @@
         "id": "race:mpmm:satyr:mirthful_leaps",
         "operation": "racial_power",
         "activation": "movement",
-        "name": "Mirthful Leaps",
         "action_runtime": {
           "kind": "actions",
           "roll_effect": {
@@ -3387,7 +3376,6 @@
         "id": "race:mpmm:shifter:shifting",
         "operation": "racial_power",
         "activation": "bonus",
-        "name": "Shifting",
         "resource": "race:mpmm:shifter:shifting:uses",
         "action_runtime": {
           "kind": "tracked_actions",
@@ -4097,7 +4085,6 @@
         "id": "feat:phb:war-caster:opportunity-spell",
         "name": "Attacco opportunità con incantesimo",
         "activation": "reaction",
-        "description": "Quando una creatura ostile provoca un attacco di opportunità, puoi usare la reazione per lanciare un incantesimo con tempo di lancio di 1 azione che bersagli soltanto quella creatura.",
         "resource_cost": 0,
         "parameters": {
           "feat_2014": true
@@ -4120,7 +4107,6 @@
         "id": "feat:phb:charger:bonus-melee",
         "name": "Charger · Attacco in mischia",
         "activation": "bonus",
-        "description": "Un attacco in mischia come azione bonus con un attacco disponibile; nessun requisito preliminare di Scattare.",
         "parameters": {
           "feat_2014": true,
           "runtime": {
@@ -4145,7 +4131,6 @@
         "id": "feat:phb:charger:bonus-shove",
         "name": "Charger · Spinta",
         "activation": "bonus",
-        "description": "Una Spinta come azione bonus; nessun requisito preliminare di Scattare.",
         "parameters": {
           "feat_2014": true,
           "runtime": {
@@ -4170,7 +4155,6 @@
         "id": "feat:sato:agent-of-order:stasis-strike-use",
         "name": "Stasis Strike",
         "activation": "contextual",
-        "description": "Una volta per turno, quando danneggi una creatura visibile entro 60 ft, puoi infliggere 1d8 danni da forza extra. TS Saggezza (CD 8 + competenza + caratteristica scelta per Scion of the Outer Planes); in caso di fallimento, Trattenuto fino all'inizio del tuo prossimo turno. Il bersaglio e l'esito del TS si confermano manualmente.",
         "resource_cost": 1,
         "parameters": {
           "feat_2014": true,
@@ -4208,7 +4192,6 @@
         "id": "feat:bmt:cartomancer:prepare-hidden-ace",
         "name": "Hidden Ace",
         "activation": "contextual",
-        "description": "Scegli una carta e un incantesimo della lista della tua classe dopo un riposo lungo, quindi lancialo dalla carta con un'azione bonus entro otto ore.",
         "resource_cost": 0,
         "parameters": {
           "feat_2014": true,
@@ -4233,9 +4216,7 @@
       "benefit": {
         "type": "action",
         "id": "feat:phb:defensive-duelist:reaction",
-        "name": "Defensive Duelist",
         "activation": "reaction",
-        "description": "Reazione, quando una creatura ti colpisce con un attacco in mischia: se impugni un'arma con Finesse con cui sei competente, aggiungi il bonus di competenza alla CA contro quel solo attacco; potrebbe trasformarlo in un mancato. Richiede Destrezza 13. Nessun tiro o attivazione nell'app.",
         "descriptive_only": true,
         "parameters": {
           "feat_2014": true,
@@ -4261,7 +4242,6 @@
         "id": "feat:xge:dragon-fear:roar",
         "name": "Dragon Fear · Ruggito terrificante",
         "activation": "action",
-        "description": "In alternativa al soffio, spendi uno degli stessi utilizzi di Breath Weapon: le creature che scegli entro 30 ft e che possono vederti o sentirti effettuano un TS Saggezza (CD 8 + competenza + CAR). Chi fallisce è Spaventato da te per 1 minuto. Un bersaglio che subisce danni può ripetere il TS e terminare l'effetto se riesce. I risultati dei TS si confermano manualmente.",
         "resource_cost": 1,
         "parameters": {
           "feat_2014": true,
@@ -4301,7 +4281,6 @@
         "name": "Forza arcana",
         "activation": "contextual",
         "resource_cost": 1,
-        "description": "Quando effettui una prova o un tiro salvezza di Forza, spendi 1 carica per aggiungere il modificatore di Intelligenza al tiro.",
         "parameters": {
           "applied_item_option_id": "infusion|tce|armor of magical strength"
         }
@@ -4327,7 +4306,6 @@
         "name": "Resistere alla caduta",
         "activation": "reaction",
         "resource_cost": 1,
-        "description": "Quando stai per cadere prono, puoi spendere 1 carica e usare la reazione per evitare di cadere prono.",
         "parameters": {
           "applied_item_option_id": "infusion|tce|armor of magical strength"
         }
@@ -4353,7 +4331,6 @@
         "name": "Passo tortuoso",
         "activation": "bonus",
         "resource_cost": 0,
-        "description": "Teletrasportati fino a 15 piedi in uno spazio libero che puoi vedere e che hai occupato durante il turno corrente.",
         "parameters": {
           "applied_item_option_id": "infusion|tce|boots of the winding path"
         }
@@ -4379,7 +4356,6 @@
         "name": "Ritrovare la concentrazione",
         "activation": "reaction",
         "resource_cost": 1,
-        "description": "Quando fallisci un tiro salvezza di Costituzione per mantenere la concentrazione su un incantesimo, usa la reazione e 1 carica per trasformarlo in successo.",
         "parameters": {
           "applied_item_option_id": "infusion|tce|mind sharpener"
         }
@@ -4405,7 +4381,6 @@
         "name": "Accendere o spegnere la luce",
         "activation": "bonus",
         "resource_cost": 0,
-        "description": "Con un'azione bonus puoi accendere o spegnere la luce dell'arma: luce intensa entro 30 piedi e luce fioca per altri 30 piedi.",
         "parameters": {
           "applied_item_option_id": "infusion|tce|radiant weapon"
         }
@@ -4431,7 +4406,6 @@
         "name": "Lampo accecante",
         "activation": "reaction",
         "resource_cost": 1,
-        "description": "Subito dopo essere stato colpito da un attacco, usa la reazione e spendi 1 carica: l'attaccante deve superare un TS di Costituzione contro la CD degli incantesimi, altrimenti è accecato fino alla fine del suo prossimo turno.",
         "parameters": {
           "applied_item_option_id": "infusion|tce|radiant weapon"
         }
@@ -4457,7 +4431,6 @@
         "name": "Repulsione",
         "activation": "reaction",
         "resource_cost": 1,
-        "description": "Subito dopo aver subito un attacco in mischia che ti colpisce, usa la reazione e spendi 1 carica per spingere l'attaccante fino a 15 piedi lontano da te. Lo spostamento va applicato manualmente.",
         "parameters": {
           "applied_item_option_id": "infusion|tce|repulsion shield",
           "runtime": {
@@ -4488,7 +4461,6 @@
         "name": "Recuperare uno slot",
         "activation": "action",
         "resource_cost": 1,
-        "description": "Come azione recuperi uno slot incantesimo speso di 3° livello o inferiore. Il recupero dello slot va registrato manualmente.",
         "parameters": {
           "applied_item_option_id": "infusion|tce|spell-refueling ring"
         }

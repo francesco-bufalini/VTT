@@ -233,50 +233,6 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
   const flavourChoices=traitFlavourChoices(record,calculated.features||[],catalogs.flavours||{},calculated.proficiencies||[]);
   const flavouredOwners=new Set(flavourChoices.map(choice=>choice.origin_id));
   result.push(...flavourChoices,...flavourBenefitChoices(record,calculated.features||[],catalogs));
-  // A background that offers several feats never grants all of them.
-  // Reuse the same pending-choice UI and source-qualified feat ownership.
-  for(const bg of effectiveBackgrounds(record)){
-   const background=String(bg.source||'')?
-     catalogs.originDetails?.backgrounds?.[norm(bg.name)+'|'+norm(bg.source)]:
-     Object.values(catalogs.originDetails?.backgrounds||{}).filter(row=>
-       norm(row.name)===norm(bg.name)).length===1?
-       Object.values(catalogs.originDetails.backgrounds).find(row=>norm(row.name)===norm(bg.name)):null;
-   const declaration=background?.background_feat_choice;
-   if(!declaration||!arr(declaration.options).length||
-     !enabled(record,'background|'+norm(background.source)+'|'+norm(background.name)))continue;
-   const sid='background|'+norm(background.source)+'|'+norm(background.name);
-   const available=[];
-   for(const option of arr(declaration.options)){
-    const detail=catalogs.originDetails?.feats?.[norm(option.name)+'|'+norm(option.source)]||{};
-    const feat={name:detail.name||String(option.name).replace(/\b[a-z]/g,c=>c.toUpperCase()),
-      source:detail.source||String(option.source).toUpperCase()};
-    const rules=arr(catalogs.classMechanics?.additional_spells).find(row=>
-      row?.kind==='feat'&&norm(row.name)===norm(feat.name)&&norm(row.source)===norm(feat.source));
-    if(option.spell_variant){
-     const variant=arr(rules?.blocks).find(row=>
-       norm(row.name)===norm(option.spell_variant)||
-       norm(row.name).replace(/ spells$/,'')===norm(option.spell_variant));
-     if(!variant)continue; // Missing variant data must never turn into a different feat.
-     available.push({...feat,spell_variant:variant.name});
-    }else{
-     available.push(...expandedSpellFeatOptions([feat],catalogs.classMechanics?.additional_spells||[]));
-    }
-   }
-   const values=available.map(feat=>({...feat,value:norm(feat.source)+'|'+norm(feat.name)+
-     (feat.spell_variant?'|'+norm(feat.spell_variant):'')}));
-   const owned=arr(record.feats_catalog).find(feat=>feat?.granted_by===sid&&!feat.disabled);
-   const selected=owned?norm(owned.source)+'|'+norm(owned.name)+
-     (owned.spell_variant?'|'+norm(owned.spell_variant):''):'';
-   result.push({id:'background-feat:'+sid,kind:'background_feat',origin_id:sid,
-     name:'Background · '+background.name,label:'Talento concesso',count:1,
-     options:values.map(row=>row.value),option_rows:Object.fromEntries(values.map(row=>[
-       row.value,{name:row.name,source:row.source,...(row.spell_variant?{spell_variant:row.spell_variant}:{})}])),
-     option_labels:Object.fromEntries(values.map(row=>[
-       row.value,(row.display_name||row.name)+' ('+row.source+')'])),
-     category_options:arr(declaration.categories),
-     selected:selected?[selected]:[],remaining:selected?0:1});
-  }
-
  // Permanent grants use the ordinary privilege-choice interface. Each group
  // has its own stable ID so saving one group never erases another one.
  for(const model of arr(calculated.proficiency_grants).filter(row=>row.permanent)){
@@ -579,9 +535,9 @@ export function savePendingChoice(record,choice,values=[],details={}){
   const {migration_patch,...current}=choice;
   return {...migration_patch,...savePendingChoice({...record,...migration_patch},current,values,details)};
  }
- if(!choice||!['bonus','ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','background_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace','trait_flavour','flavour_feat'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['bonus','ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace','trait_flavour','flavour_feat'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
- const raw=unique(arr(values).map(value=>['advancement_feat','flavour_feat','background_feat'].includes(choice.kind)?norm(value):
+ const raw=unique(arr(values).map(value=>['advancement_feat','flavour_feat'].includes(choice.kind)?norm(value):
    ['subclass','subrace'].includes(choice.kind)?String(value):strip(value)));
  const prefix='__custom__:';
  const mixed=choice.proficiency_kind==='mixed';
@@ -633,17 +589,6 @@ export function savePendingChoice(record,choice,values=[],details={}){
      ...(choice.feat_name?{feats_catalog:arr(record.feats_catalog).map(feat=>
        norm(feat.name)===norm(choice.feat_name)&&norm(feat.source)===norm(choice.feat_source)?
         {...feat,spell_variant:choice.variant_values?.[selected[0]]||''}:feat)}:{})};
- }
- if(choice.kind==='background_feat'){
-  const rest=arr(record.feats_catalog).filter(row=>row?.granted_by!==choice.origin_id);
-  if(!selected.length)return {feats_catalog:rest};
-  const chosen=choice.option_rows?.[selected[0]];
-  if(!chosen?.name||!chosen?.source)throw Error('Talento del background non disponibile.');
-  return {feats_catalog:[...rest,{id:'background:'+choice.origin_id+':feat:'+selected[0],
-    name:chosen.name,source:chosen.source,
-    ...(chosen.spell_variant?{spell_variant:chosen.spell_variant}:{}),
-    granted_by:choice.origin_id,granting_origin_name:'Background · '+choice.name,
-    automatic:false}]};
  }
  if(['advancement_mode','advancement_feat'].includes(choice.kind)){
   const previous=arr(record.advancement_choices).find(row=>row.origin_id===choice.origin_id);

@@ -33,19 +33,7 @@ export function effectiveBackgrounds(record={}){
 // description, copied into VTT benefit files or permanently saved on a hero.
 // An unavailable background also removes its virtual feat on recalculation.
 export function withBackgroundGrantedFeats(record={},backgrounds={},feats={},spellRules=[]){
- const selectedBackgrounds=effectiveBackgrounds(record);
- const activeOrigins=new Set(selectedBackgrounds.map(row=>
-   'background|'+norm(row.source)+'|'+norm(row.name)).filter(id=>
-    record.origin_enabled?.[id]!==false&&
-    !array(record.proficiency_origins).some(row=>row?.id===id&&row.disabled)));
- const original=array(record.feats_catalog);
- // Persisted choices from a background no longer owned must not grant feats.
- // Keep the saved record itself untouched so selecting that background again
- // can restore the player's earlier choice.
- const stored=original.filter(feat=>{
-  const owner=String(feat?.granted_by||'');
-  return !owner.startsWith('background|')||activeOrigins.has(owner);
- });
+ const stored=array(record.feats_catalog);
  const additions=[],seen=new Set(stored.filter(row=>row?.name&&row?.source)
   .map(row=>norm(row.name)+'|'+norm(row.source)+'|'+norm(row.spell_variant)));
  for(const origin of effectiveBackgrounds(record)){
@@ -93,8 +81,7 @@ export function withBackgroundGrantedFeats(record={},backgrounds={},feats={},spe
    }
   }
  }
- return additions.length||stored.length!==original.length?
-  {...record,feats_catalog:[...stored,...additions]}:record;
+ return additions.length?{...record,feats_catalog:[...stored,...additions]}:record;
 }
 // Feature grants use the existing trait IDs, not a second class-wide source.
 // A compact proficiency catalog can resolve these even without descriptions offline.

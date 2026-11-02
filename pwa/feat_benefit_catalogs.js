@@ -55,25 +55,25 @@ export function featMechanicsFromBenefits(catalogs={}){
    push('trackers',{id,name:b.resource,max:formula?0:number,
     ...(formula?{max_formula:formula}:{}),recharge:b.recharge,...extra});
   }else if(type==='action'){
-   if(!b.name||!b.activation)throw Error('Azione talento incompleta: '+entry.id);
-   push('actions',{id,name:b.name,action_type:b.activation,
+   if(!(b.name||ref.name)||!b.activation)throw Error('Azione talento incompleta: '+entry.id);
+   push('actions',{id,name:b.name||ref.name,action_type:b.activation,
     ...(b.resource_cost!==undefined?{resource_cost:b.resource_cost}:{}),
     ...(b.description?{description:b.description}:{}),
     ...(b.descriptive_only?{descriptive_only:true}:{}),...extra});
   }else if(type==='attack'){
    if(!b.attack?.damage||!b.attack?.damage_type)throw Error('Attacco talento incompleto: '+entry.id);
-   push('attacks',{...b.attack,name:b.name,
+   push('attacks',{...b.attack,name:b.name||ref.name,
     ...(b.description?{description:b.description}:{}),...extra});
   }else if(type==='d20_reroll'){
    const rule=b.d20_reroll;
    if(!rule?.target||!rule.resource)throw Error('Ritiro d20 incompleto: '+entry.id);
-   push('rerolls',{id,name:b.name,targets:[rule.target],
+   push('rerolls',{id,name:b.name||ref.name,targets:[rule.target],
     tracker_id:rule.resource,tracker_cost:parameters.tracker_cost||1,
     ...(parameters.condition_label?{condition_label:parameters.condition_label}:{}),...extra});
   }else if(type==='base_override'){
    if(b.base_override?.target!=='movement_cost:climb'||parameters.mode!=='climb_at_walking_cost')
     throw Error('Costo di movimento non riconosciuto: '+entry.id);
-   push('movement_rules',{mode:parameters.mode,description:b.description});
+   push('movement_rules',{mode:parameters.mode});
   }else if(type==='effect_extension'){
    if(!parameters.spell_imprint||b.effects?.[0]?.target_kind!=='item')
     throw Error('Estensione di oggetto non valida: '+entry.id);

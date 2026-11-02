@@ -3,6 +3,7 @@ import {targetableInventoryItems,itemAttunementCount,itemKind,requiresAttunement
 import {originSpellId,originChoiceMatches} from './spell_selection.js';
 import {isContentAvailableForRules} from './source_edition.js';
 import {traitStateSource} from './trait_state_rules.js';
+import {inheritCanonicalBenefitNames} from './benefit_source_text.js';
 const rows=v=>Array.isArray(v)?v:[];
 const low=v=>String(v??'').trim().toLowerCase();
 const identity=v=>typeof v==='string'?v:v?.id;
@@ -19,7 +20,7 @@ export function powerSelectionLimit(spec,level){
 }
 function definitions(catalog){
  const optional=catalog.optionalFeatureProgressions||{};
- const typed=rows(catalog.optionGrants?.entries).filter(entry=>entry?.benefit?.type==='option_grant')
+ const typed=rows(inheritCanonicalBenefitNames(catalog.optionGrants).entries).filter(entry=>entry?.benefit?.type==='option_grant')
   .map(entry=>({...entry.benefit.option_grant,origin_ref:entry.granted_by?.ref}));
  const legacy=[...rows(catalog.selections),...rows(optional.progressions).map(rule=>({...rule,
   forget:'unapply',unique_across_selections:true,source:{type:'optional_features',feature_types:rule.feature_types}}))];
@@ -43,7 +44,7 @@ function optionsFor(record,rule,catalog={}){
  const source=rule.source||{};
  // Canonical optional features live in the typed option_list catalog. The
  // old optional-feature data is read only on legacy/offline hosts without it.
- const listEntries=rows(catalog.optionLists?.entries);
+ const listEntries=rows(inheritCanonicalBenefitNames(catalog.optionLists).entries);
  const featureTypes=rows(source.feature_types);
  const legacyOptional=rows(catalog.optionalFeatureProgressions?.options).filter(option=>
    rows(option.types).some(type=>featureTypes.includes(type)));

@@ -518,7 +518,6 @@
         "type": "attack",
         "id": "feat:xge:dragon-hide:claws",
         "name": "Dragon Hide · Artigli",
-        "description": "Artigli retrattili come arma naturale; colpo senz'armi che infligge 1d4 + modificatore di Forza danni taglienti invece del normale danno contundente.",
         "attack": {
           "id": "feat:xge:dragon-hide:claws",
           "damage": "1d4",

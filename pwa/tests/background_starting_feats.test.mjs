@@ -2,13 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {withBackgroundGrantedFeats} from '../structured_effects.js';
-import {backgroundFeatIndexFromBenefits} from '../background_benefit_catalogs.js';
 
-const raw=JSON.parse(readFileSync(
+const all=JSON.parse(readFileSync(
  new URL('../../vtt/data/compendium_backgrounds_5etools.json',import.meta.url),'utf8')).backgrounds;
-const typed=JSON.parse(readFileSync(
- new URL('../../vtt/enrichment/benefits/feat_grant.json',import.meta.url),'utf8'));
-const all=backgroundFeatIndexFromBenefits(typed,raw);
 const spellRules=[{kind:'feat',name:'Magic Initiate',source:'XPHB',
  blocks:[{name:'Cleric Spells'},{name:'Druid Spells'},{name:'Wizard Spells'}]}];
 const featDetails={
@@ -55,18 +51,4 @@ test('canonical background mirror holds upstream feat fields, not inferred prose
  assert.deepEqual(acolyte.feats,[{'magic initiate; cleric|xphb':true}]);
  assert.equal(old.feats,undefined);
  assert.deepEqual(all['artisan|xphb'].feats,[{'crafter|xphb':true}]);
-});
-
-test('Rewarded/Ruined and Dark Gift backgrounds require one explicit feat selection',()=>{
- for(const name of ['rewarded|bmt','ruined|bmt','haunted one|rhw',
-   'investigator|rhw','mist wanderer|rhw','spirit medium|rhw']){
-  const rule=all[name];
-  assert(rule?.background_feat_choice,name);
-  assert.deepEqual(rule.feats,[],name+' must not grant all offered feats');
- }
- assert.equal(all['rewarded|bmt'].background_feat_choice.options.length,3);
- assert.equal(all['ruined|bmt'].background_feat_choice.options.length,3);
- assert.deepEqual(all['haunted one|rhw'].background_feat_choice.categories,['DG']);
- const character={background:'Rewarded',background_source:'BMT',feats_catalog:[]};
- assert.equal(withBackgroundGrantedFeats(character,all,featDetails,spellRules),character);
 });

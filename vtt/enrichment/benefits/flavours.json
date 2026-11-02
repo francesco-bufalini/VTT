@@ -13,7 +13,6 @@
           "source": "PHB"
         }
       },
-      "label": "Incremento delle caratteristiche",
       "trigger": "level_up",
       "flavours": [
         {
@@ -38,7 +37,6 @@
           "source": "XPHB"
         }
       },
-      "label": "Incremento delle caratteristiche",
       "trigger": "level_up",
       "flavours": [
         {
@@ -94,32 +92,27 @@
         {
           "id": "flavour:dragonborn:ftd:chromatic:black",
           "name": "Black",
-          "legacy_ancestry": "black",
-          "detail": "Resistenza a acid"
+          "legacy_ancestry": "black"
         },
         {
           "id": "flavour:dragonborn:ftd:chromatic:blue",
           "name": "Blue",
-          "legacy_ancestry": "blue",
-          "detail": "Resistenza a lightning"
+          "legacy_ancestry": "blue"
         },
         {
           "id": "flavour:dragonborn:ftd:chromatic:green",
           "name": "Green",
-          "legacy_ancestry": "green",
-          "detail": "Resistenza a poison"
+          "legacy_ancestry": "green"
         },
         {
           "id": "flavour:dragonborn:ftd:chromatic:red",
           "name": "Red",
-          "legacy_ancestry": "red",
-          "detail": "Resistenza a fire"
+          "legacy_ancestry": "red"
         },
         {
           "id": "flavour:dragonborn:ftd:chromatic:white",
           "name": "White",
-          "legacy_ancestry": "white",
-          "detail": "Resistenza a cold"
+          "legacy_ancestry": "white"
         }
       ]
     },
@@ -140,32 +133,27 @@
         {
           "id": "flavour:dragonborn:ftd:gem:amethyst",
           "name": "Amethyst",
-          "legacy_ancestry": "amethyst",
-          "detail": "Resistenza a force"
+          "legacy_ancestry": "amethyst"
         },
         {
           "id": "flavour:dragonborn:ftd:gem:crystal",
           "name": "Crystal",
-          "legacy_ancestry": "crystal",
-          "detail": "Resistenza a radiant"
+          "legacy_ancestry": "crystal"
         },
         {
           "id": "flavour:dragonborn:ftd:gem:emerald",
           "name": "Emerald",
-          "legacy_ancestry": "emerald",
-          "detail": "Resistenza a psychic"
+          "legacy_ancestry": "emerald"
         },
         {
           "id": "flavour:dragonborn:ftd:gem:sapphire",
           "name": "Sapphire",
-          "legacy_ancestry": "sapphire",
-          "detail": "Resistenza a thunder"
+          "legacy_ancestry": "sapphire"
         },
         {
           "id": "flavour:dragonborn:ftd:gem:topaz",
           "name": "Topaz",
-          "legacy_ancestry": "topaz",
-          "detail": "Resistenza a necrotic"
+          "legacy_ancestry": "topaz"
         }
       ]
     },
@@ -186,32 +174,27 @@
         {
           "id": "flavour:dragonborn:ftd:metallic:brass",
           "name": "Brass",
-          "legacy_ancestry": "brass",
-          "detail": "Resistenza a fire"
+          "legacy_ancestry": "brass"
         },
         {
           "id": "flavour:dragonborn:ftd:metallic:bronze",
           "name": "Bronze",
-          "legacy_ancestry": "bronze",
-          "detail": "Resistenza a lightning"
+          "legacy_ancestry": "bronze"
         },
         {
           "id": "flavour:dragonborn:ftd:metallic:copper",
           "name": "Copper",
-          "legacy_ancestry": "copper",
-          "detail": "Resistenza a acid"
+          "legacy_ancestry": "copper"
         },
         {
           "id": "flavour:dragonborn:ftd:metallic:gold",
           "name": "Gold",
-          "legacy_ancestry": "gold",
-          "detail": "Resistenza a fire"
+          "legacy_ancestry": "gold"
         },
         {
           "id": "flavour:dragonborn:ftd:metallic:silver",
           "name": "Silver",
-          "legacy_ancestry": "silver",
-          "detail": "Resistenza a cold"
+          "legacy_ancestry": "silver"
         }
       ]
     },
@@ -5181,7 +5164,6 @@
           "race_source": "PHB"
         }
       },
-      "label": "Eredità infernale",
       "flavours": [
         {
           "id": "flavour:tiefling:infernal-legacy:mtf:baalzebul",

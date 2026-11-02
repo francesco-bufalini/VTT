@@ -4,6 +4,7 @@ import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefi
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
 import {loadFeatBenefitCatalogs} from './feat_benefit_catalogs.js';
 import {infusionDefinitionsFromOptionLists} from './infusion_benefit_catalogs.js';
+import {inheritCanonicalBenefitNames} from './benefit_source_text.js';
 import {backgroundAbilityIndexFromBenefits,backgroundFeatIndexFromBenefits} from './background_benefit_catalogs.js';
 import {projectTraitFlavourBenefits,traitFlavourModels} from './trait_flavours.js';
 import {proficiencyIndexFromBenefits} from './proficiency_catalog.js';
@@ -1833,8 +1834,8 @@ let catalogPromise;
 export function loadRuleCatalogs(){
   if(!catalogPromise){
   // Canonical benefit catalogs replace the nine retired legacy sources.
-  const typedOptionGrants=fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const typedOptionLists=fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const typedOptionGrants=fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).then(inheritCanonicalBenefitNames).catch(()=>({}));
+  const typedOptionLists=fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).then(inheritCanonicalBenefitNames).catch(()=>({}));
   const typedProficiencyGrants=fetch('/benefits/proficiency_grant.json')
     .then(r=>r.ok?r.json():{}).catch(()=>({}));
   const typedBaseOverrides=fetch('/benefits/base_override.json')

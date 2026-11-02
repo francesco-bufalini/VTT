@@ -62,7 +62,6 @@ const FILES := {
   "/activated_abilities.js": ["res://pwa/activated_abilities.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules.js": ["res://pwa/sheet_rules.js", "text/javascript; charset=utf-8"],
 	"/feat_benefit_catalogs.js": ["res://pwa/feat_benefit_catalogs.js", "text/javascript; charset=utf-8"],
-	"/background_benefit_catalogs.js": ["res://pwa/background_benefit_catalogs.js", "text/javascript; charset=utf-8"],
 	"/infusion_benefit_catalogs.js": ["res://pwa/infusion_benefit_catalogs.js", "text/javascript; charset=utf-8"],
 	"/trait_flavours.js": ["res://pwa/trait_flavours.js", "text/javascript; charset=utf-8"],
 	"/scaling_dice.js": ["res://pwa/scaling_dice.js", "text/javascript; charset=utf-8"],

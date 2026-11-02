@@ -3,15 +3,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {allocationVariants,originVariants,effectiveAllocations,allocationComplete} from '../ability_choice_rules.js';
-import {backgroundAbilityIndexFromBenefits} from '../background_benefit_catalogs.js';
 
-const index={...JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8')),
- background:backgroundAbilityIndexFromBenefits(JSON.parse(readFileSync(
-  new URL('../../vtt/enrichment/benefits/bonus.json',import.meta.url),'utf8')))};
+const index=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const prof=proficiencyTestIndex();
 const key=row=>row.name.toLowerCase()+'|'+row.source.toLowerCase();
 
-test('2024 background score grants are projected from typed bonus files',()=>{
+test('5eTools structured 2024 background grants are projected without per-background supplements',()=>{
  assert.equal(index.background.length,74);
  assert.equal(prof.background.length,150);
  assert.equal(new Set(index.background.map(key)).size,index.background.length);

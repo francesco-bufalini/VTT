@@ -6848,7 +6848,7 @@ function openPendingChoiceDialog(choice){
    (choice.kind==='ability_fixed'?'Incrementi già applicati automaticamente dalla fonte selezionata.':
     'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
     ' concesse dal privilegio. Le scelte sono associate alla loro origine.')+'</p>'+
-   (['advancement_feat','flavour_feat','background_feat'].includes(choice.kind)?'<input type="search" data-pending-filter placeholder="Cerca un talento" aria-label="Cerca un talento">':'')+
+   (['advancement_feat','flavour_feat'].includes(choice.kind)?'<input type="search" data-pending-filter placeholder="Cerca un talento" aria-label="Cerca un talento">':'')+
    '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
    (rows||customRow?'<div class="pending-choice-options vtt-selection-list">'+rows+customRow+'</div>':
     '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+

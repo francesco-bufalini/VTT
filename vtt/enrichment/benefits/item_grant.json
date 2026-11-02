@@ -27,29 +27,25 @@
             "id": "armor-chest",
             "name": "Arcane Armor · Armatura toracica",
             "type": "MA",
-            "quantity": 1,
-            "description": "Parte della tua Armatura Arcana. Non applica CA finché non viene equipaggiata."
+            "quantity": 1
           },
           {
             "id": "armor-boots",
             "name": "Arcane Armor · Stivali",
             "type": "G",
-            "quantity": 1,
-            "description": "Stivali dell'Armatura Arcana."
+            "quantity": 1
           },
           {
             "id": "armor-helmet",
             "name": "Arcane Armor · Elmo",
             "type": "G",
-            "quantity": 1,
-            "description": "Elmo dell'Armatura Arcana."
+            "quantity": 1
           },
           {
             "id": "armor-special-weapon",
             "name": "Arcane Armor · Arma speciale",
             "type": "G",
-            "quantity": 1,
-            "description": "Arma speciale del modello di armatura, i cui attacchi sono già gestiti dal modello."
+            "quantity": 1
           }
         ],
         "parameters": {
@@ -79,20 +75,17 @@
           {
             "id": "flamethrower",
             "name": "Eldritch Cannon · Flamethrower",
-            "type": "G",
-            "description": "Cannone arcano: lanciafiamme (azione bonus per attivarlo)."
+            "type": "G"
           },
           {
             "id": "force-ballista",
             "name": "Eldritch Cannon · Force Ballista",
-            "type": "G",
-            "description": "Cannone arcano: balista di forza (azione bonus per attivarlo)."
+            "type": "G"
           },
           {
             "id": "protector",
             "name": "Eldritch Cannon · Protector",
-            "type": "G",
-            "description": "Cannone arcano: protettore (azione bonus per attivarlo)."
+            "type": "G"
           }
         ],
         "parameters": {
@@ -135,8 +128,7 @@
                 }
               ],
               "half_on_save": true,
-              "origin": "cannon",
-              "description": "Cono di 15 ft a partire dal cannone; TS Des, metà danni se superato. Gli oggetti infiammabili non indossati o trasportati prendono fuoco."
+              "origin": "cannon"
             },
             "force-ballista": {
               "id": "force-ballista",
@@ -156,12 +148,10 @@
               "on_hit_effects": [
                 {
                   "operation": "push",
-                  "distance_feet": 5,
-                  "description": "Spinge il bersaglio di 5 ft lontano dal cannone."
+                  "distance_feet": 5
                 }
               ],
-              "origin": "cannon",
-              "description": "Attacco a distanza con incantesimo dalla posizione del cannone, fino a 120 ft."
+              "origin": "cannon"
             },
             "protector": {
               "id": "protector",
@@ -171,8 +161,7 @@
               "radius_feet": 10,
               "temp_hp": "1d8 + int_mod",
               "minimum_modifier": 1,
-              "origin": "cannon",
-              "description": "Il cannone e le creature scelte entro 10 ft dal cannone ottengono PF temporanei; si usa il valore più alto, non si sommano."
+              "origin": "cannon"
             }
           },
           "command_action_id": "command_cannon"
@@ -199,8 +188,7 @@
           {
             "id": "artisan-tools",
             "name": "Strumenti da artigiano creati",
-            "type": "G",
-            "description": "Scegli e rinomina il tipo di strumenti creato dal privilegio."
+            "type": "G"
           }
         ],
         "parameters": {
@@ -231,8 +219,7 @@
           {
             "id": "created-object",
             "name": "Oggetto creato · Performance of Creation",
-            "type": "G",
-            "description": "Scegli l'oggetto non magico e adattane i dati nella scheda inventario."
+            "type": "G"
           }
         ],
         "parameters": {
@@ -263,26 +250,22 @@
           {
             "id": "clockwork-toy",
             "name": "Tinker · Giocattolo a orologeria",
-            "type": "G",
-            "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF) che percorre 5 ft sul terreno ogni turno in direzione casuale ed emette rumori. Cessa di funzionare dopo 24 ore, a meno di ripararlo impiegando 1 ora; puoi smontarlo come azione e recuperare i materiali."
+            "type": "G"
           },
           {
             "id": "fire-starter",
             "name": "Tinker · Accendifuoco",
-            "type": "G",
-            "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF); usarlo richiede un'azione per accendere una candela, una torcia o un fuoco da campo. Cessa di funzionare dopo 24 ore, salvo riparazione di 1 ora; puoi smontarlo come azione."
+            "type": "G"
           },
           {
             "id": "music-box",
             "name": "Tinker · Scatola musicale",
-            "type": "G",
-            "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF) che riproduce una canzone quando viene aperto e si ferma quando finisce o viene chiuso. Cessa di funzionare dopo 24 ore, salvo riparazione di 1 ora; puoi smontarlo come azione."
+            "type": "G"
           }
         ],
         "parameters": {
           "max_owned": 3,
-          "allow_duplicate_choices": true,
-          "description": "Puoi mantenere fino a tre dispositivi costruiti con Tinker. La costruzione, il costo in materiali, la durata di 24 ore e l'eventuale riparazione sono gestiti manualmente; ciascun dispositivo viene aggiunto come oggetto separato in Inventario."
+          "allow_duplicate_choices": true
         }
       }
     }

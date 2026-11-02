@@ -36,7 +36,6 @@ const SHELL = [
   "/attack_range.js",
   "/trait_benefits.js",
   "/feat_benefit_catalogs.js",
-  "/background_benefit_catalogs.js",
   "/infusion_benefit_catalogs.js",
   "/trait_benefit_distribution.js",
   "/trait_benefit_editor.js",

@@ -38,6 +38,7 @@
         "race",
         "subrace",
         "feat",
+        "background",
         "advancement_rules"
       ],
       "types": [

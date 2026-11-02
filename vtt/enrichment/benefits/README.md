@@ -452,26 +452,3 @@ e costo appartengono alla sequenza: non sovrascrivono l'incantesimo
 originale. Il Genasi della Terra (MPMM) ne è il primo esempio: Blade
 Ward normalmente lanciabile come previsto dal suo catalogo e una
 sequenza alternativa come azione bonus con tracker dedicato.
-
-## Benefici dei background (2014 e 2024)
-
-I background mantengono **nome e descrizione** del compendio 5eTools; le
-concessioni strutturate sono nei file divisi per beneficio:
-
-- `proficiency_grant.json`: competenze e lingue, già migrate.
-- `bonus.json`: 74 allocazioni di caratteristiche dei background 2024/
-  recenti, ciascuna con le due distribuzioni alternative (+2/+1 e tre +1).
-  L'allocazione è dichiarata in `selection.source.variants` e viene
-  conservata nei normali `origin_ability_choices` dei personaggi esistenti.
-- `feat_grant.json`: 84 background con talenti iniziali, comprendendo
-  86 concessioni nominate. I background che offrono più alternative hanno
-  una selezione `kind: feat`, senza applicare tutti i talenti.
-  Le alternative per categoria (ad es. Dark Gift) rimangono dichiarate
-  nella selezione con `source.categories`: non vengono trasformate in
-  talenti arbitrari o assegnate automaticamente.
-
-`pwa/background_benefit_catalogs.js` proietta i dati tipizzati nella
-GUI esistente, preservando gli ID di origine `background|source|name`.
-I benefici di equipaggiamento iniziale non sono generati a partire dalle
-descrizioni testuali; serviranno i campi strutturati di origine per
-modellarli come `item_grant` senza inventare dati.
