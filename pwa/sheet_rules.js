@@ -1309,6 +1309,13 @@ function calculateSheetValues(record={},catalogs={}){
            (!source||!x.source||same(x.source,source))))return false;
       }
     }
+    // A capability applied as a passive State is a real, scoped grant
+    // origin. It exists only while its parent option is currently applied;
+    // never accept a stale identifier from an old saved character.
+    if(sid.startsWith('selection:'))return arr(record.selection_traits).some(trait=>
+      (trait.id===sid||trait.origin_id===sid)&&
+      record.origin_enabled?.[sid]!==false&&
+      !arr(record.proficiency_origins).some(row=>row.id===sid&&row.disabled));
     if(sid.startsWith('feature:')){
       const owner=features.find(feature=>feature.origin_id===sid);
       if(owner)return featureEnabled(record,owner);
