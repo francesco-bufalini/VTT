@@ -5,7 +5,7 @@ const MARGIN := Vector2i(32, 40)
 const MINIMUM := Vector2i(720, 480)
 
 var browser: Control
-var _origin := ""
+var _view_url := ""
 var _placed := false
 var _available := Vector2i.ZERO
 
@@ -22,9 +22,17 @@ func _ready() -> void:
 	set_process(false)
 
 
-func show_pwa(origin: String) -> bool:
-	if origin.is_empty() or not ClassDB.class_exists("WebView"):
+static func view_url(origin: String, section: String) -> String:
+	if origin.is_empty() or section not in ["creatures", "compendium"]:
+		return ""
+	return origin.trim_suffix("/") + "/?native_view=" + section
+
+
+func show_pwa(origin: String, section: String = "creatures") -> bool:
+	var url := view_url(origin, section)
+	if url.is_empty() or not ClassDB.class_exists("WebView"):
 		return false
+	title = "Compendio" if section == "compendium" else "Creature"
 	if not is_instance_valid(browser):
 		browser = ClassDB.instantiate("WebView") as Control
 		if browser == null:
@@ -36,12 +44,12 @@ func show_pwa(origin: String) -> bool:
 		# The PWA now owns its IndexedDB. Incognito would erase the archive.
 		browser.set("incognito", false)
 		browser.set("devtools", OS.is_debug_build())
-		browser.set("url", origin)
-		_origin = origin
+		browser.set("url", url)
+		_view_url = url
 		add_child(browser)
-	elif _origin != origin:
-		browser.set("url", origin)
-		_origin = origin
+	elif _view_url != url:
+		browser.set("url", url)
+		_view_url = url
 	_fit()
 	show()
 	set_process(true)
