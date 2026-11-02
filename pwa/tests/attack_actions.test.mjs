@@ -300,6 +300,22 @@ test('migrated Extra Attack sequences replace the normal attack and never stack 
  const disabled={...fighter,trait_enabled:{[features.find(row=>row.name==='Extra Attack (3)').key]:false}};
  const disabledGrants=attackActionGrants(disabled,features,[],rules).filter(row=>row.attack_replacement);
  assert.equal(attacksPerActionFromSequences(disabledGrants),3);
+ const subclasses={class_features:[],subclass_features:[
+  {class_name:'Bard',class_source:'PHB',subclass_name:'College of Valor',
+   subclass_source:'PHB',level:6,name:'Extra Attack'},
+  {class_name:'Artificer',class_source:'TCE',subclass_name:'Battle Smith',
+   subclass_source:'TCE',level:5,name:'Extra Attack'}
+ ]};
+ for(const member of [
+  {name:'Bard',source:'PHB',level:6,subclass:'College of Valor',subclass_source:'PHB'},
+  {name:'Artificer',source:'TCE',level:5,subclass:'Battle Smith',subclass_source:'TCE'}
+ ]){
+  const character={classes:[member],rules_version:'2014'};
+  const own=collectStructuredFeatures(character,{classFeatures:subclasses,featureRules:rules});
+  const actions=attackActionGrants(character,own,[],rules).filter(row=>row.attack_replacement);
+  assert.equal(actions.length,1,member.name+' subclass must own its sequence');
+  assert.equal(attacksPerActionFromSequences(actions),2);
+ }
 });
 
 test('blade invocations grant generic attack sequences only when their option is selected',()=>{
