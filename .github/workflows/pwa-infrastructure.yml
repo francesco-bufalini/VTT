@@ -277,6 +277,14 @@ jobs:
           timeout 90s "$GODOT" --headless --path . --script res://tests/test_pwa_host.gd 2>&1 | tee /tmp/pwa-godot.log
           ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-godot.log
           grep -q 'PASS: desktop PWA' /tmp/pwa-godot.log
+      - name: Verify the native Creature PWA embed contract (headless)
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          timeout 45s "$GODOT" --headless --path . --script res://tests/test_pwa_embedded_window.gd 2>&1 | tee /tmp/pwa-embed-godot.log
+          ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-embed-godot.log
+          grep -q 'Embedded PWA Creature toolbar contract OK' /tmp/pwa-embed-godot.log
       - name: Assemble standalone offline prototype
         shell: bash
         run: |

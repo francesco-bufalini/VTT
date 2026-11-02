@@ -35,6 +35,7 @@ const FEEDBACK_DURATION_MS := 2000
 var board_root: Node3D
 var ui_root: CanvasLayer
 var status_label: Label
+var _creatures_window: Window
 var _feedback_hide_at_msec := 0
 
 
@@ -111,6 +112,17 @@ func _build_toolbar() -> void:
 		["Posiziona carro romano (2×2)", ITEM_CREATE],
 		["Gestisci item / associa token…", ITEM_MANAGE]
 	], _on_master))
+
+	# Open the current PWA in a desktop WebView; no native creature editor.
+	var creatures_button := Button.new()
+	creatures_button.name = "OpenCreaturePwa"
+	creatures_button.text = "Creature"
+	creatures_button.tooltip_text = "Apri l'archivio creature della PWA"
+	creatures_button.focus_mode = Control.FOCUS_NONE
+	creatures_button.custom_minimum_size = Vector2(88, 34)
+	creatures_button.add_theme_font_size_override("font_size", 13)
+	creatures_button.pressed.connect(_open_creatures)
+	row.add_child(creatures_button)
 
 	row.add_child(_menu("Compendio", [
 		["Apri Compendio", COMPENDIUM_OPEN]
@@ -201,6 +213,44 @@ func _on_master(id: int) -> void:
 			board_root.call("_on_context_menu_id_pressed", id)
 
 
+
+
+# The embedded UI is the ordinary browser PWA served by the existing board
+# host. It has its own persistent IndexedDB; no native archive or IPC bridge.
+func _open_creatures() -> void:
+	var host: Node = get_node_or_null("/root/PwaHost")
+	if host == null or not host.has_method("local_origin"):
+		_set_status("Server PWA non disponibile.")
+		return
+	var origin: String = String(host.call("local_origin"))
+	if origin.is_empty():
+		_set_status("Server PWA non attivo: apri una partita per accedere alle creature.")
+		return
+	if DisplayServer.get_name() == "headless":
+		_set_status("La scheda Creature richiede una finestra grafica.")
+		return
+	# The bundled native WebView is currently supported on Windows and macOS.
+	# Other platforms remain able to open the exact same PWA externally.
+	if OS.get_name() not in ["Windows", "macOS"] or not ClassDB.class_exists("WebView"):
+		var result: Error = OS.shell_open(origin)
+		if result == OK:
+			_show_temporary_feedback("PWA aperta nel browser esterno")
+		else:
+			_set_status("Impossibile aprire la PWA: " + error_string(result))
+		return
+	if not is_instance_valid(_creatures_window):
+		var window_script: Script = load("res://vtt/pwa_embedded_window.gd") as Script
+		if window_script == null:
+			_set_status("Finestra Creature non disponibile.")
+			return
+		_creatures_window = window_script.new() as Window
+		if _creatures_window == null:
+			_set_status("Impossibile creare la finestra Creature.")
+			return
+		_creatures_window.hide()
+		board_root.add_child(_creatures_window)
+	if not bool(_creatures_window.call("show_pwa", origin)):
+		_set_status("Impossibile avviare la WebView delle creature.")
 
 
 func _on_compendium(id: int) -> void:
