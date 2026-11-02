@@ -15,7 +15,8 @@ function projectSubraceMechanics(subraces,references){
   const source=canonical.find(r=>key(r)===key(row));
   return source?{...row,...(source.speed!==undefined?{speed:source.speed}:{}),
     ...(source.size!==undefined?{size:source.size}:{}),
-    ...(source.creatureTypes!==undefined?{creatureTypes:source.creatureTypes}:{})}:row;
+    ...(source.creatureTypes!==undefined?{creatureTypes:source.creatureTypes}:{}),
+    ...(source.creatureTypeTags!==undefined?{creatureTypeTags:source.creatureTypeTags}:{})}:row;
  });
 }
 // Targeted refresh after regenerating structured background indexes. Avoid
@@ -292,28 +293,16 @@ const legacyText=await readFile(new URL('../../vtt/spells/spell_catalog_phb_2014
 const legacyStart=legacyText.indexOf('{',legacyText.indexOf('const SPELLS:'));
 mechanics.legacy_spells=Object.values(JSON.parse(legacyText.slice(legacyStart)));
 const references=await read('../../vtt/data/creature_references_5etools.json');
-// Mirror the native CreatureRules.species_creature_type lookup. 5etools puts
- // many non-Humanoid types inside the named "Creature Type" trait, not in
- // creatureTypes. Keep source-qualified entries so 2014/2024 books do not mix.
- const creatureKinds=['aberration','beast','celestial','construct','dragon','elemental',
-  'fey','fiend','giant','humanoid','monstrosity','ooze','plant','undead'];
- const speciesTypes=references.races.flatMap(race=>{
-  const trait=(race.entries||[]).find(entry=>String(entry?.name||'').trim().toLowerCase()==='creature type');
-  if(!trait)return [];
-  const text=JSON.stringify(trait.entries||[]).toLowerCase();
-  const kind=creatureKinds.find(value=>new RegExp('\\b'+value+'\\b').test(text));
-  return kind?[{id:race.id,name:race.name,source:race.source,creatureTypes:[kind]}]:[];
- });
- await writeFile(new URL('../catalog/species_types.json',import.meta.url),
-  JSON.stringify({version:1,source:'vtt/data/creature_references_5etools.json',races:speciesTypes},null,2)+'\n');
-
+// Creature type and lineage tags are intrinsic fields of the 5eTools race,
+// never benefits and never inferred from the descriptive "Creature Type" trait.
 // These structured race rows are also the native speed source. Keep only
 // mechanics/identity here; the existing features URL owns descriptions.
 await writeFile(new URL('../catalog/species_attacks.json',import.meta.url),
  JSON.stringify(projectSpeciesAttacks(references.races),null,2)+'\n');
 await writeFile(new URL('../catalog/species_roll_modes.json',import.meta.url),
  JSON.stringify(projectSpeciesRollModes(references.races),null,2)+'\n');
-const allSpecies=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));
+const allSpecies=references.races.map(({id,name,source,speed,size,creatureTypes,creatureTypeTags})=>
+ ({id,name,source,speed,size,creatureTypes,creatureTypeTags}));
 await syncProficiencyCatalog();
 const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
 const featureCatalog=await read('../../vtt/data/subclass_features_5etools.json');
