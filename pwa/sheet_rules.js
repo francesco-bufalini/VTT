@@ -1898,8 +1898,10 @@ export function loadRuleCatalogs(){
     typedBaseOverrides,
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
      ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/damage_modifier.json']
-       .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))
-  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers])=>({
+       .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({}))),
+    fetch('/benefits/spell_extension.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
+    fetch('/benefits/action_sequence.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
+  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers,spellExtensions,actionSequenceBenefits])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants:proficiencyIndexFromBenefits(languageVocabulary,proficiencyGrantBenefits),speciesAttacks,
@@ -1916,6 +1918,8 @@ export function loadRuleCatalogs(){
      flavourDamageModifiers:flavourDamageModifiers?.benefit_type==='damage_modifier'?flavourDamageModifiers:{entries:[]},
     slotBenefits:slotBenefits?.benefit_type==='resource'?slotBenefits:{entries:[]},
     baseOverrideBenefits:baseOverrideBenefits?.benefit_type==='base_override'?baseOverrideBenefits:null,
+    spellExtensions:spellExtensions?.benefit_type==='spell_extension'?spellExtensions:{entries:[]},
+    actionSequenceBenefits:actionSequenceBenefits?.benefit_type==='action_sequence'?actionSequenceBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
     featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,speciesPowers,speciesConditionalBonuses,
