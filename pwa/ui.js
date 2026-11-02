@@ -639,7 +639,8 @@ function syncNav(){
   // The embedded site owns the viewport; offline browsing keeps the app dock.
   document.body.classList.toggle('catalog-web-mode',catalogWebVisible());
   const hasCreature=isCreatureOpen();
-  document.body.dataset.nativeView=nativeEntryView;
+  if(nativeEntryView)document.body.dataset.nativeView=nativeEntryView;
+  else delete document.body.dataset.nativeView;
   document.body.classList.toggle('native-creature-sheet',Boolean(nativeEntryView&&hasCreature));
   const topbar=document.querySelector('.topbar');
   if(topbar)topbar.hidden=state.page==='catalog'||state.page==='session'||state.page==='library'&&state.libraryMode;
