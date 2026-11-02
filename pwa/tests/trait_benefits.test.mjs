@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {signedTraitFormula,traitBenefitGroups} from '../trait_benefits.js';
@@ -261,7 +262,7 @@ test('manifest ability previews are source scoped, disabled visibly, and preserv
 });
 
 test('typed racial proficiencies are owned by Menacing and Keen Senses, not generic species',()=>{
- const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url)));
+ const index=proficiencyTestIndex();
  const native=JSON.parse(readFileSync(new URL('../../vtt/data/proficiency_grants_5etools.json',import.meta.url)));
  for(const [race,source,skill,featureName] of [
    ['Half-Orc','PHB','intimidation','Menacing'],['Elf','PHB','perception','Keen Senses'],
@@ -305,7 +306,7 @@ test('typed racial proficiencies are owned by Menacing and Keen Senses, not gene
 });
 
 test('stored proficiency choices migrate their display origin to the named trait without changing persistence ID',()=>{
- const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url)));
+ const index=proficiencyTestIndex();
  const original='race|phb|half-elf';
  const record={kind:'character',species:'Half-Elf',species_source:'PHB',level:2,
   proficiency_choices:[{origin_id:original,kind:'skill',key:'insight'}]};

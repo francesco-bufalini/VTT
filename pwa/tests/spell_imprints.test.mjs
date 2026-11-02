@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -10,7 +11,7 @@ import {eligibleSpellImprintSpells,eligibleSpellImprintItems,storeSpellImprintPa
 } from '../spell_imprints.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={abilityGrants:read('ability_grants'),classMechanics:read('class_mechanics'),
- classFeatures:read('classes'),spellcastingBenefits:read('spellcasting_benefits'),proficiencyGrants:read('proficiency_grants'),
+ classFeatures:read('classes'),spellcastingBenefits:read('spellcasting_benefits'),proficiencyGrants:proficiencyTestIndex(),
  effectExtensions:read('effect_extensions').extensions};
 const wizard=()=>({
  id:'wiz-card',kind:'character',rules_version:'2014',level:5,

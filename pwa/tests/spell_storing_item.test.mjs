@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -10,7 +11,7 @@ import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classFeatures:read('classes'),classMechanics:read('class_mechanics'),
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
  traitStates:read('trait_states').states,rollBonusRules:read('roll_bonus_rules').features,
  effectExtensions:read('effect_extensions').extensions};
 const artificer=(level=11)=>({

@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,7 +6,7 @@ import {calculateSheet,formulaValue,applicableDiceBonuses,validBonusDice} from '
 import {recoveryPatch,requirementPatch,nativeRows,nativeRowPatch,spellCastPlan} from '../native_sheet.js';
 import {sessionSpellEntries} from '../spell_selection.js';
 const load=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
-const catalogs={classMechanics:load('class_mechanics'),abilityGrants:load('ability_grants'),proficiencyGrants:load('proficiency_grants')};
+const catalogs={classMechanics:load('class_mechanics'),abilityGrants:load('ability_grants'),proficiencyGrants:proficiencyTestIndex()};
 const casterCatalogs={...catalogs,classFeatures:load('classes'),spellcastingBenefits:load('spellcasting_benefits')};
 const base={kind:'character',level:8,class:'Wizard',class_source:'PHB',abilities:{str:10,dex:14,con:12,int:16,wis:10,cha:16}};
 
