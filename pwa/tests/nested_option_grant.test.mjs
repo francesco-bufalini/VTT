@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerApplicationPatch,projectSelectionBenefits} from '../power_selection.js';
+import {calculateSheet} from '../sheet_rules.js';
+import {classFeatureEntries} from '../feature_mechanics.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const grants=read('../../vtt/enrichment/benefits/option_grant.json');
@@ -108,4 +110,39 @@ test('applied Druidic Warrior, Blessed Warrior and Pact of the Tome grant indepe
     powerApplicationPatch(record,ctx,indexed,scenario.rule,scenario.option,false))};
   assert(!projectSelectionBenefits(record,indexed,ctx.features).origin_spell_grants.some(row=>row.spell_id===spell.id));
  }
+});
+
+test('the actual sheet resolves the applied state trait, trained attack and conditional action',()=>{
+ const index={...catalog,
+  classMechanics:read('../catalog/class_mechanics.json'),
+  classFeatures:read('../catalog/classes.json'),
+  abilityGrants:read('../catalog/ability_grants.json'),
+  proficiencyGrants:read('../catalog/proficiency_grants.json'),
+  traitStates:read('../catalog/trait_states.json').states,
+  featureActionOverrides:read('../../vtt/data/action_feature_overrides.json').entries};
+ let record=armored();
+ let calculated=calculateSheet(record,index);
+ assert(!classFeatureEntries(record,calculated).some(row=>row.class_feature_id==='defensive_field'));
+ let features={features:calculated.features};
+ record={...record,...powerApplicationPatch(record,features,catalog,'arcane_armor','arcane_armor',true,{itemIndex:0})};
+ calculated=calculateSheet(record,index);
+ const model=powerSelectionModels(record,{features:calculated.features},catalog).find(row=>row.id.startsWith('armor_model:from:'));
+ assert(model);
+ record={...record,...powerApplicationPatch(record,{features:calculated.features},catalog,model.id,'armor_model:infiltrator',true)};
+ calculated=calculateSheet(record,index);
+ assert.equal(calculated.selection_record?.selection_traits?.[0]?.name,'Infiltrator');
+ assert(calculated.attacks.some(row=>row.id==='class_feature:lightning_launcher'),
+  JSON.stringify(calculated.attacks.map(row=>row.id)));
+ assert(calculated.proficiencies.includes('weapon:lightning launcher'));
+ assert.equal(calculated.values.speed,35);
+ assert(!classFeatureEntries(record,calculated).some(row=>row.class_feature_id==='defensive_field'));
+ record={...record,...powerApplicationPatch(record,{features:calculated.features},catalog,model.id,'armor_model:guardian',true)};
+ calculated=calculateSheet(record,index);
+ assert(calculated.attacks.some(row=>row.id==='class_feature:thunder_gauntlets'));
+ assert(classFeatureEntries(record,calculated).some(row=>row.class_feature_id==='defensive_field'));
+ const disabled={...record,origin_enabled:{
+  [calculated.features.find(row=>row.name==='Arcane Armor').origin_id]:false}};
+ const off=calculateSheet(disabled,index);
+ assert(!off.attacks.some(row=>row.id==='class_feature:thunder_gauntlets'));
+ assert(!classFeatureEntries(disabled,off).some(row=>row.class_feature_id==='defensive_field'));
 });
