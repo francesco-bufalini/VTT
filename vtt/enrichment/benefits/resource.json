@@ -3812,6 +3812,144 @@
           "profile": "third_caster_up"
         }
       }
+    },
+    {
+      "id": "resource:contextual:barbarian:2014:consult-the-spirits-augury-clairvoyance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Consult the Spirits",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Ancestral Guardian",
+          "subclass_source": "XGE"
+        }
+      },
+      "projection": "contextual_resource",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:contextual:barbarian:2014:consult-the-spirits-augury-clairvoyance",
+        "resource": "Consult the Spirits",
+        "uses": 1,
+        "recharge": "short_rest"
+      }
+    },
+    {
+      "id": "resource:contextual:barbarian:2014:zealous-presence",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Zealous Presence",
+          "source": "XGE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Zealot",
+          "subclass_source": "XGE"
+        }
+      },
+      "projection": "contextual_resource",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:contextual:barbarian:2014:zealous-presence",
+        "resource": "Zealous Presence",
+        "uses": 1,
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "resource:contextual:barbarian:2014:infectious-fury",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Infectious Fury",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Beast",
+          "subclass_source": "TCE"
+        }
+      },
+      "projection": "contextual_resource",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:contextual:barbarian:2014:infectious-fury",
+        "resource": "Infectious Fury",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "resource:contextual:barbarian:2014:call-the-hunt",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Call the Hunt",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Beast",
+          "subclass_source": "TCE"
+        }
+      },
+      "projection": "contextual_resource",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:contextual:barbarian:2014:call-the-hunt",
+        "resource": "Call the Hunt",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "resource:contextual:barbarian:2014:magic-awareness",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Magic Awareness",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Wild Magic",
+          "subclass_source": "TCE"
+        }
+      },
+      "projection": "contextual_resource",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:contextual:barbarian:2014:magic-awareness",
+        "resource": "Magic Awareness",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
+    },
+    {
+      "id": "resource:contextual:barbarian:2014:bolstering-magic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Bolstering Magic",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Wild Magic",
+          "subclass_source": "TCE"
+        }
+      },
+      "projection": "contextual_resource",
+      "benefit": {
+        "type": "resource",
+        "id": "resource:contextual:barbarian:2014:bolstering-magic",
+        "resource": "Bolstering Magic",
+        "uses": "proficiency",
+        "recharge": "long_rest"
+      }
     }
   ],
   "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."

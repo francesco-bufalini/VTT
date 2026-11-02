@@ -104,6 +104,8 @@ try{
  await deactivation.click();await action.waitFor({state:'visible'});
  assert.equal(await action.locator('[data-benefit-target-search]').count(),0);
  await action.locator('[data-act="benefit-option-remove"][data-index="0"]').click();
+ // The application is flushed to IndexedDB before this dialog detaches.
+ await action.waitFor({state:'detached'});
  await page.waitForFunction(async()=>{
   const {listCreatures}=await import('/creatures.js');
   return (await listCreatures())[0]?.creature.power_applications?.arcane_armor?.length===0;

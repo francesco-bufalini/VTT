@@ -9939,6 +9939,10 @@ async function handleAction(target){
     const change=inventoryModule.genericVariantPatch(record,index,variant,act==='item-variant-add');
     closeDialog(dialog,{remove:true});
     await patch({inventory:change.inventory});
+    // Persist inventory mutations before redrawing the item popup, preventing
+    // a subsequent read from racing an in-flight asynchronous save.
+    await editor.flush();
+    if(state.saveError)throw Error(state.saveError);
     state.inventorySelectedIndex=change.index;state.sheetPopup='item:'+change.index;
     state.sheetPopupTitle=ownedItemDisplayName(change.inventory[change.index]);
     await render();

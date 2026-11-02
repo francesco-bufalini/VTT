@@ -3,7 +3,7 @@ const rows=x=>Array.isArray(x)?x:[];
 const low=x=>String(x??'').toLowerCase().trim();
 const rank={resistance:1,immunity:2,condition_immunity:3,vulnerability:-1};
 export function speciesDefensesFromBenefits(catalog={},flavours={}){
- if(catalog.schema_version!==2||catalog.benefit_type!=='defense')
+ if(catalog.schema_version!==2||catalog.benefit_type!=='damage_modifier')
   return {version:1,races:[],load_error:true};
  const index=new Map(),get=(name,source,id)=>{
   const key=low(name)+'|'+low(source);
@@ -15,7 +15,7 @@ export function speciesDefensesFromBenefits(catalog={},flavours={}){
    r.trait_details.push({name:trait,entries});
  };
  for(const x of rows(catalog.entries)){
-  if(x.granted_by?.kind!=='5etools'||x.benefit?.type!=='defense')continue;
+  if(x.granted_by?.kind!=='5etools'||x.benefit?.type!=='damage_modifier')continue;
   const ref=x.granted_by.ref||{},meta=x.benefit.parameters?.species||{};
   const name=ref.race||meta.race_name,source=ref.race_source||meta.race_source||ref.source;
   if(!name||!source)continue;

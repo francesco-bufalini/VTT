@@ -269,7 +269,7 @@ test('legendary entries refer to concrete operations; native actions consume the
 });
 
 test('migrated Extra Attack sequences replace the normal attack and never stack across levels or classes',()=>{
- const types=['action','activation','resource_recovery','attack_count','action_sequence'];
+ const types=['action','resource','resource_recovery','action_sequence'];
  const typed=Object.fromEntries(types.map(type=>[type,file('../../vtt/enrichment/benefits/'+type+'.json')]));
  const rules=projectFeatureTimingRules(typed);
  assert.equal(rules.attack_count_grants.length,0);
@@ -319,7 +319,7 @@ test('migrated Extra Attack sequences replace the normal attack and never stack 
 });
 
 test('blade invocations grant generic attack sequences only when their option is selected',()=>{
- const types=['action','activation','resource_recovery','attack_count','action_sequence'];
+ const types=['action','resource','resource_recovery','action_sequence'];
  const rules=projectFeatureTimingRules(Object.fromEntries(types.map(type=>
   [type,file('../../vtt/enrichment/benefits/'+type+'.json')])));
  const classFeatures={class_features:[],subclass_features:[]};

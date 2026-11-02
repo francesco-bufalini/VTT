@@ -1,7 +1,7 @@
 // Substituted by the host with the fingerprint of the actual served assets.
 // Each deployed version gets an atomic app-shell cache; IndexedDB is untouched.
 const REVISION = "__VTT_COMMIT_SHA__";
-const CACHE = "vtt-mobile-shell-v202-" + REVISION;
+const CACHE = "vtt-mobile-shell-v203-" + REVISION;
 const CATALOGS = ["/catalog/generic_item_variants.json", "/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
 const SHELL = [
   "/miniature-images/ore.webp",
@@ -57,9 +57,9 @@ const SHELL = [
   "/icons/info/talents.svg",
   "/icons/info/biography.svg",
   
-  "/benefits/attack.json", "/benefits/movement.json",
+  "/benefits/attack.json", "/benefits/base_override.json",
   "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
-   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/defense.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/spell_slot_profiles.js",
+   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/damage_modifier.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/spell_slot_profiles.js",
   "/species_defenses.js",
   "/species_defense_benefits.js",
   "/spell_grant_benefits.js",
@@ -135,12 +135,11 @@ const SHELL = [
   "/creature_format.js",
 
   "/catalog/benefits/action.json",
-  "/catalog/benefits/activation.json",
   "/catalog/benefits/resource_recovery.json",
-  "/catalog/benefits/attack_count.json",
   "/catalog/benefits/action_sequence.json",
   "/catalog/benefits/resource.json",
   "/class_benefit_progression.js",
+  "/base_override_benefits.js",
   "/catalog/benefits/roll_bonus.json",
   "/class_benefit_catalogs.js",
   "/catalog/combat_action_supplements_5etools.json",
@@ -195,8 +194,8 @@ const REQUIRED_CATALOGS = [
 
   "/catalog/feature_slot_spells.json",
 
-  "/catalog/activated_abilities.json", "/catalog/effects_5etools.json",  "/benefits/attack.json", "/benefits/movement.json", "/benefits/defense.json", "/benefits/flavours.json",
- "/catalog/benefits/action.json", "/catalog/benefits/activation.json", "/catalog/benefits/resource_recovery.json", "/catalog/benefits/attack_count.json", "/catalog/benefits/action_sequence.json", "/catalog/benefits/resource.json", "/catalog/combat_actions_5etools.json",
+  "/catalog/activated_abilities.json", "/catalog/effects_5etools.json",  "/benefits/attack.json", "/benefits/base_override.json", "/benefits/damage_modifier.json", "/benefits/flavours.json",
+ "/catalog/benefits/action.json", "/catalog/benefits/resource_recovery.json", "/catalog/benefits/action_sequence.json", "/catalog/benefits/resource.json", "/catalog/combat_actions_5etools.json",
   "/catalog/combat_action_supplements_5etools.json",
 
   "/catalog/miniatures.json"

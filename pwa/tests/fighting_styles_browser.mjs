@@ -170,11 +170,30 @@ try{
  await sheet('magic');
  const druidic=page.locator('#sheet-play-view .benefit-option-list')
   .filter({has:page.locator('[data-option-kind="spell"]')}).first();
- const source=page.locator('#sheet-play-view [data-selection-id^="spell_choice:druidic_warrior:from:"]');
+ // Source-qualified option cards can be appended after the sheet's native
+ // section. Their stable selection ID, not the wrapper, identifies ownership.
+ const source=page.locator('[data-selection-id^="spell_choice:druidic_warrior:from:"]');
+ // The first Poteri render may finish after the navigation helper returns.
+ // Wait for the source card to be attached instead of racing its initial paint.
+ await source.waitFor({state:'attached'});
  assert.equal(await source.count(),1,
   'Druidic Warrior has its own source-scoped option grant before any cantrip is learned');
  assert.equal(await source.getAttribute('data-option-kind'),'spell');
- await source.locator('[data-act="power-selection-open"]').first().click();
+ const learnButton=source.locator('[data-act="power-selection-open"]').first();
+ if(!await learnButton.isVisible()){
+  const layers=await learnButton.evaluate(el=>{
+   const rows=[];
+   for(let node=el;node&&rows.length<12;node=node.parentElement){
+    const st=getComputedStyle(node),rect=node.getBoundingClientRect();
+    rows.push({tag:node.tagName,id:node.id,classes:typeof node.className==='string'?node.className:'',
+     hidden:node.hidden,display:st.display,visibility:st.visibility,opacity:st.opacity,
+     width:rect.width,height:rect.height,ariaHidden:node.getAttribute('aria-hidden')});
+   }
+   return rows;
+  });
+  console.log('DRUIDIC-ANCESTORS',JSON.stringify(layers));
+ }
+ await learnButton.click();
  const choicesDialog=page.locator('#power-selection-dialog[open]');
  await choicesDialog.waitFor({state:'visible'});
  assert(await choicesDialog.locator('.power-selection-results [data-power-option-id]').count()>0,

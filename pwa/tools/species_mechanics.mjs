@@ -37,8 +37,8 @@ export function projectSpeciesAttacks(races=[]) {
 }
 
 // Generate per-type mechanics at build time; no 5eTools prose parsing at runtime.
-export function projectSpeciesAttackBenefitCatalogs(races=[]){
- const attack=[],movement=[],legacy=projectSpeciesAttacks(races);
+export function projectSpeciesAttackBenefitCatalogs(races=[],existingScoreBenefits=[]){
+ const attack=[],base_override=[],legacy=projectSpeciesAttacks(races);
  const id=(race,trait,type)=>String(race.id)+':'+type+':'+
   String(trait).trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
  const granted_by=(race,trait)=>({kind:'5etools',ref:{category:'species_trait',
@@ -53,15 +53,18 @@ export function projectSpeciesAttackBenefitCatalogs(races=[]){
    const original=races.find(x=>x.id===race.id);
    if(!original?.entries?.some(x=>x.name==='Flight'))
     throw Error('Missing 5eTools Flight owner: '+race.name+'|'+race.source);
-   movement.push({id:id(race,'Flight','flight_armor'),
+   base_override.push({id:id(race,'Flight','flight_armor'),
     granted_by:granted_by(race,'Flight'),
-    benefit:{type:'movement',movement:{type:'fly',blocked_by_armor:['medium','heavy']}}});
+    benefit:{type:'base_override',id:id(race,'Flight','flight_armor'),
+     base_override:{target:'speed:fly',operation:'inherit',source_field:'speed.fly',
+      condition:{not:{any:[{equipped_armor_category:'medium'},{equipped_armor_category:'heavy'}]}}}}});
   }
  }
  return {
   attack:{schema_version:2,benefit_type:'attack',scope:'catalog',entries:attack,
    notes:"Supplemental natural strikes inferred only at build time from unambiguous 5eTools traits. Do not duplicate structured 5eTools weapon or proficiency fields."},
-  movement:{schema_version:2,benefit_type:'movement',scope:'catalog',entries:movement,
-   notes:"Only armor restrictions on existing 5eTools flight speeds; speed values and traits themselves remain in 5eTools."}
+  base_override:{schema_version:2,benefit_type:'base_override',scope:'catalog',entries:[...base_override,...(Array.isArray(existingScoreBenefits)?
+    existingScoreBenefits:existingScoreBenefits?.entries||[]).filter(row=>row.projection==='legacy_base_override')],
+   notes:"Conditional score grants: inherit existing 5eTools speed.fly when its armor requirement holds. The same type models conditionally granted AC, natural AC and other numerical scores."}
  };
 }

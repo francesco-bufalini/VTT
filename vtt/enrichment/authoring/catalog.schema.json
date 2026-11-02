@@ -17,10 +17,8 @@
         "ability_score",
         "action",
         "action_sequence",
-        "activation",
         "area_geometry",
         "attack",
-        "attack_count",
         "base_override",
         "bonus",
         "choice",
@@ -29,7 +27,6 @@
         "d20_reroll",
         "damage_bonus",
         "damage_modifier",
-        "defense",
         "effect",
         "effect_extension",
         "feat_grant",
@@ -37,7 +34,6 @@
         "incoming_damage",
         "item_grant",
         "language",
-        "movement",
         "numeric_modifier",
         "option_selection",
         "option_list",
@@ -374,7 +370,10 @@
         "projection": {
           "enum": [
             "timing_action",
-            "class_action_override"
+            "class_action_override",
+            "timing_contextual_action",
+            "contextual_resource",
+            "legacy_base_override"
           ],
           "description": "Temporary migration projection discriminator. Omit on other catalog types; remove once runtime consumes typed actions directly."
         }

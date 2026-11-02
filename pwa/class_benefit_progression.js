@@ -15,12 +15,19 @@ function grants(catalog,type){
  });
 }
 export function projectFeatureTimingRules(catalogs={}){
- const contextual_actions=grants(catalogs.activation,'activation').map(({ref,benefit})=>{
-  const {type,id,contextual_resource,...fields}=benefit;
-  return {id,class_name:ref.class_name,class_source:ref.class_source,
-   feature:ref.name,subclass:ref.subclass||'',...fields,
-   ...(contextual_resource?{resource:contextual_resource}:{})};
- });
+ const contextualResources=new Map(grants(catalogs.resource,'resource')
+  .filter(({entry})=>entry.projection==='contextual_resource')
+  .map(({entry,benefit})=>[entry.id,benefit]));
+ const contextual_actions=grants(catalogs.action,'action')
+  .filter(({entry})=>entry.projection==='timing_contextual_action')
+  .map(({ref,benefit})=>{
+   const {type,id,resource_id,...fields}=benefit;
+   const tracker=resource_id?contextualResources.get(resource_id):null;
+   if(resource_id&&!tracker)throw Error('Tracker contestuale mancante: '+resource_id);
+   return {id,class_name:ref.class_name,class_source:ref.class_source,
+    feature:ref.name,subclass:ref.subclass||'',...fields,
+    ...(tracker?{resource:{name:tracker.resource,max:tracker.uses,recharge:tracker.recharge}}:{})};
+  });
  const actions=grants(catalogs.action,'action')
   .filter(({entry})=>entry.projection==='timing_action')
   .map(({entry,ref,benefit})=>{
@@ -35,11 +42,6 @@ export function projectFeatureTimingRules(catalogs={}){
    min_level:entry.min_level,resource_name,
    ...(origin_feature?{feature:origin_feature}:{}),...recovery};
  });
- const attack_count_grants=grants(catalogs.attack_count,'attack_count').map(({entry,ref,benefit})=>({
-  class_name:ref.class_name,class_source:ref.class_source,feature:ref.name,
-  min_level:entry.min_level,attacks_per_action:benefit.attack_count,
-  ...(ref.subclass?{subclass:ref.subclass}:{})
- }));
  const attack_actions=grants(catalogs.action_sequence,'action_sequence').map(({entry,ref,benefit})=>{
   const {type,id,sequence,...fields}=benefit;
   return {id,class_name:ref.class_name,class_source:ref.class_source,feature:ref.name,
@@ -47,11 +49,11 @@ export function projectFeatureTimingRules(catalogs={}){
    ...(benefit.attack_replacement?{feature_source:ref.source}:{}),
    ...(ref.subclass?{subclass:ref.subclass}:{})};
  });
- return {version:1,contextual_actions,actions,recoveries,attack_count_grants,attack_actions};
+ return {version:1,contextual_actions,actions,recoveries,attack_count_grants:[],attack_actions};
 }
 export function projectClassResourceOverrides(catalog){
  const groups=new Map();
- for(const {entry,ref,benefit} of grants(catalog,'resource').filter(row=>row.benefit.kind!=='spell_slots')){
+ for(const {entry,ref,benefit} of grants(catalog,'resource').filter(row=>row.benefit.kind!=='spell_slots'&&row.entry.projection!=='contextual_resource')){
   const groupKey=ref.class_source+'|'+ref.class_name;
   if(!groups.has(groupKey))groups.set(groupKey,{
    class:ref.class_name,source:ref.class_source,resources:[]
@@ -84,7 +86,7 @@ async function legacyTiming(fetcher){
 }
 export async function loadClassFeatureTimingBenefits(fetcher=fetch){
  try{
-  const types=['action','activation','resource_recovery','attack_count','action_sequence'];
+  const types=['action','resource','resource_recovery','action_sequence'];
   const values=await Promise.all(types.map(type=>readTyped(fetcher,type)));
   return projectFeatureTimingRules(Object.fromEntries(types.map((type,i)=>[type,values[i]])));
  }catch(error){

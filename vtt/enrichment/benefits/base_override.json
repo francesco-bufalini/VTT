@@ -1,0 +1,1625 @@
+{
+  "schema_version": 2,
+  "benefit_type": "base_override",
+  "scope": "catalog",
+  "notes": "Conditional score grants: inherit existing 5eTools speed.fly when its armor requirement holds. The same type models conditionally granted AC, natural AC and other numerical scores.",
+  "entries": [
+    {
+      "id": "5etools:races:eepc:aarakocra:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "EEPC",
+          "race": "Aarakocra",
+          "race_source": "EEPC",
+          "race_id": "5etools:races:eepc:aarakocra"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:eepc:aarakocra:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:aarakocra:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "MPMM",
+          "race": "Aarakocra",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:aarakocra"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:mpmm:aarakocra:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psa:aven:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSA",
+          "race": "Aven",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:aven"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:psa:aven:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psd:aven:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSD",
+          "race": "Aven",
+          "race_source": "PSD",
+          "race_id": "5etools:races:psd:aven"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:psd:aven:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:fairy:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "MPMM",
+          "race": "Fairy",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:fairy"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:mpmm:fairy:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:wbtw:fairy:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "WBtW",
+          "race": "Fairy",
+          "race_source": "WBtW",
+          "race_id": "5etools:races:wbtw:fairy"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:wbtw:fairy:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:scc:owlin:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "SCC",
+          "race": "Owlin",
+          "race_source": "SCC",
+          "race_id": "5etools:races:scc:owlin"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:scc:owlin:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psx:siren:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSX",
+          "race": "Siren",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:siren"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:psx:siren:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psa:aven%20%28hawk-headed%29:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSA",
+          "race": "Aven (Hawk-Headed)",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:aven%20%28hawk-headed%29"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:psa:aven%20%28hawk-headed%29:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:races:psa:aven%20%28ibis-headed%29:flight_armor:flight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Flight",
+          "source": "PSA",
+          "race": "Aven (Ibis-Headed)",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:aven%20%28ibis-headed%29"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "5etools:races:psa:aven%20%28ibis-headed%29:flight_armor:flight",
+        "base_override": {
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "base_override:feats:phb:tavern-brawler:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Tavern Brawler",
+          "source": "PHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:feats:phb:tavern-brawler:0",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "replace",
+          "expression": "1d4"
+        },
+        "parameters": {
+          "legacy_group": "feats",
+          "legacy_owner_index": 0,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:feats:xge:dragon-hide:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dragon Hide",
+          "source": "XGE"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:feats:xge:dragon-hide:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "13 + dex_mod"
+        },
+        "parameters": {
+          "legacy_group": "feats",
+          "legacy_owner_index": 1,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:phb:sorcerer:draconic-resilience:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Draconic Resilience",
+          "source": "PHB",
+          "class_name": "Sorcerer",
+          "class_source": "PHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:phb:sorcerer:draconic-resilience:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "13 + dex_mod"
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 0,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:xphb:sorcerer:draconic-resilience:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Draconic Resilience",
+          "source": "XPHB",
+          "class_name": "Sorcerer",
+          "class_source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:xphb:sorcerer:draconic-resilience:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "10 + dex_mod + cha_mod"
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 1,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:phb:barbarian:unarmored-defense:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Unarmored Defense",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:phb:barbarian:unarmored-defense:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "10 + dex_mod + con_mod"
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 2,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:xphb:barbarian:unarmored-defense:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Unarmored Defense",
+          "source": "XPHB",
+          "class_name": "Barbarian",
+          "class_source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:xphb:barbarian:unarmored-defense:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "10 + dex_mod + con_mod"
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 3,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:phb:monk:unarmored-defense:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Unarmored Defense",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:phb:monk:unarmored-defense:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "10 + dex_mod + wis_mod",
+          "condition": {
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 4,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "no_shield"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:features:xphb:monk:unarmored-defense:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Unarmored Defense",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:xphb:monk:unarmored-defense:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "10 + dex_mod + wis_mod",
+          "condition": {
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 5,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "no_shield"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:features:xphb:bard:dazzling-footwork:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Dazzling Footwork",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:xphb:bard:dazzling-footwork:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "10 + dex_mod + cha_mod",
+          "condition": {
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 6,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "no_shield"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:features:phb:monk:martial-arts:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:phb:monk:martial-arts:0",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d4",
+          "condition": {
+            "scope": "class",
+            "class_name": "Monk",
+            "class_source": "PHB",
+            "min_level": 1,
+            "max_level": 4,
+            "no_armor": true,
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 7,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": true,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:phb:monk:martial-arts:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:phb:monk:martial-arts:1",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d6",
+          "condition": {
+            "scope": "class",
+            "class_name": "Monk",
+            "class_source": "PHB",
+            "min_level": 5,
+            "max_level": 10,
+            "no_armor": true,
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 7,
+          "legacy_ordinal": 1,
+          "legacy_nested_requirements": true,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:phb:monk:martial-arts:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:phb:monk:martial-arts:2",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d8",
+          "condition": {
+            "scope": "class",
+            "class_name": "Monk",
+            "class_source": "PHB",
+            "min_level": 11,
+            "max_level": 16,
+            "no_armor": true,
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 7,
+          "legacy_ordinal": 2,
+          "legacy_nested_requirements": true,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:phb:monk:martial-arts:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:phb:monk:martial-arts:3",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d10",
+          "condition": {
+            "scope": "class",
+            "class_name": "Monk",
+            "class_source": "PHB",
+            "min_level": 17,
+            "max_level": 20,
+            "no_armor": true,
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 7,
+          "legacy_ordinal": 3,
+          "legacy_nested_requirements": true,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:xphb:monk:martial-arts:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:xphb:monk:martial-arts:0",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d6",
+          "condition": {
+            "scope": "class",
+            "class_name": "Monk",
+            "class_source": "XPHB",
+            "min_level": 1,
+            "max_level": 4,
+            "no_armor": true,
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 8,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": true,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:xphb:monk:martial-arts:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:xphb:monk:martial-arts:1",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d8",
+          "condition": {
+            "scope": "class",
+            "class_name": "Monk",
+            "class_source": "XPHB",
+            "min_level": 5,
+            "max_level": 10,
+            "no_armor": true,
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 8,
+          "legacy_ordinal": 1,
+          "legacy_nested_requirements": true,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:xphb:monk:martial-arts:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:xphb:monk:martial-arts:2",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d10",
+          "condition": {
+            "scope": "class",
+            "class_name": "Monk",
+            "class_source": "XPHB",
+            "min_level": 11,
+            "max_level": 16,
+            "no_armor": true,
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 8,
+          "legacy_ordinal": 2,
+          "legacy_nested_requirements": true,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:features:xphb:monk:martial-arts:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Martial Arts",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:features:xphb:monk:martial-arts:3",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d12",
+          "condition": {
+            "scope": "class",
+            "class_name": "Monk",
+            "class_source": "XPHB",
+            "min_level": 17,
+            "max_level": 20,
+            "no_armor": true,
+            "no_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "features",
+          "legacy_owner_index": 8,
+          "legacy_ordinal": 3,
+          "legacy_nested_requirements": true,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:gauntlets-of-ogre-power:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Gauntlets of Ogre Power",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:gauntlets-of-ogre-power:0",
+        "base_override": {
+          "target": "ability:str",
+          "operation": "minimum",
+          "expression": "19"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 0,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:headband-of-intellect:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Headband of Intellect",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:headband-of-intellect:0",
+        "base_override": {
+          "target": "ability:int",
+          "operation": "minimum",
+          "expression": "19"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 1,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:amulet-of-health:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Amulet of Health",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:amulet-of-health:0",
+        "base_override": {
+          "target": "ability:con",
+          "operation": "minimum",
+          "expression": "19"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 2,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:belt-of-hill-giant-strength:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Belt of Hill Giant Strength",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:belt-of-hill-giant-strength:0",
+        "base_override": {
+          "target": "ability:str",
+          "operation": "minimum",
+          "expression": "21"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 3,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:belt-of-stone-giant-strength:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Belt of Stone Giant Strength",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:belt-of-stone-giant-strength:0",
+        "base_override": {
+          "target": "ability:str",
+          "operation": "minimum",
+          "expression": "23"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 4,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:belt-of-frost-giant-strength:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Belt of Frost Giant Strength",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:belt-of-frost-giant-strength:0",
+        "base_override": {
+          "target": "ability:str",
+          "operation": "minimum",
+          "expression": "23"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 5,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:belt-of-fire-giant-strength:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Belt of Fire Giant Strength",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:belt-of-fire-giant-strength:0",
+        "base_override": {
+          "target": "ability:str",
+          "operation": "minimum",
+          "expression": "25"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 6,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:belt-of-cloud-giant-strength:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Belt of Cloud Giant Strength",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:belt-of-cloud-giant-strength:0",
+        "base_override": {
+          "target": "ability:str",
+          "operation": "minimum",
+          "expression": "27"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 7,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:items:dmg:belt-of-storm-giant-strength:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "item",
+          "name": "Belt of Storm Giant Strength",
+          "source": "DMG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:items:dmg:belt-of-storm-giant-strength:0",
+        "base_override": {
+          "target": "ability:str",
+          "operation": "minimum",
+          "expression": "29"
+        },
+        "parameters": {
+          "legacy_group": "items",
+          "legacy_owner_index": 8,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:species:aag:autognome:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Armored Casing",
+          "source": "AAG",
+          "race": "Autognome",
+          "race_source": "AAG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:aag:autognome:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "13 + dex_mod"
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 0,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:species:aag:thri-kreen:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Chameleon Carapace",
+          "source": "AAG",
+          "race": "Thri-kreen",
+          "race_source": "AAG"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:aag:thri-kreen:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "13 + dex_mod"
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 1,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:species:psz:goblin:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin",
+          "race_source": "PSZ"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:psz:goblin:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "11 + dex_mod"
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 2,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:species:ggr:loxodon:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Armor",
+          "source": "GGR",
+          "race": "Loxodon",
+          "race_source": "GGR"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:ggr:loxodon:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "12 + con_mod",
+          "condition": {
+            "allow_armor": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 3,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "allow_armor"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:species:lr:locathah:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Armor",
+          "source": "LR",
+          "race": "Locathah",
+          "race_source": "LR"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:lr:locathah:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "12 + dex_mod",
+          "condition": {
+            "allow_armor": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 4,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "allow_armor"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:species:vgm:lizardfolk:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Armor",
+          "source": "VGM",
+          "race": "Lizardfolk",
+          "race_source": "VGM"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:vgm:lizardfolk:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "13 + dex_mod",
+          "condition": {
+            "allow_armor": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 5,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "allow_armor"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:species:mpmm:lizardfolk:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Armor",
+          "source": "MPMM",
+          "race": "Lizardfolk",
+          "race_source": "MPMM"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:mpmm:lizardfolk:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "13 + dex_mod",
+          "condition": {
+            "allow_armor": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 6,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "allow_armor"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:species:ttp:tortle:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Armor",
+          "source": "TTP",
+          "race": "Tortle",
+          "race_source": "TTP"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:ttp:tortle:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "17",
+          "condition": {
+            "ignore_armor": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 7,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "ignore_armor"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:species:mpmm:tortle:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Armor",
+          "source": "MPMM",
+          "race": "Tortle",
+          "race_source": "MPMM"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:species:mpmm:tortle:0",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "expression": "17",
+          "condition": {
+            "ignore_armor": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "species",
+          "legacy_owner_index": 8,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "ignore_armor"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:optional_features:tce:unarmed-fighting:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Unarmed Fighting",
+          "source": "TCE"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:optional_features:tce:unarmed-fighting:0",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d6"
+        },
+        "parameters": {
+          "legacy_group": "optional_features",
+          "legacy_owner_index": 0,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:optional_features:tce:unarmed-fighting:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Unarmed Fighting",
+          "source": "TCE"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:optional_features:tce:unarmed-fighting:1",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d8",
+          "condition": {
+            "no_weapon_or_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "optional_features",
+          "legacy_owner_index": 0,
+          "legacy_ordinal": 1,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "no_weapon_or_shield"
+          ]
+        }
+      }
+    },
+    {
+      "id": "base_override:optional_features:xphb:unarmed-fighting:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Unarmed Fighting",
+          "source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:optional_features:xphb:unarmed-fighting:0",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d6"
+        },
+        "parameters": {
+          "legacy_group": "optional_features",
+          "legacy_owner_index": 1,
+          "legacy_ordinal": 0,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": []
+        }
+      }
+    },
+    {
+      "id": "base_override:optional_features:xphb:unarmed-fighting:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Unarmed Fighting",
+          "source": "XPHB"
+        }
+      },
+      "projection": "legacy_base_override",
+      "benefit": {
+        "type": "base_override",
+        "id": "base_override:optional_features:xphb:unarmed-fighting:1",
+        "base_override": {
+          "target": "attack_damage_base:unarmed",
+          "operation": "alternative",
+          "expression": "1d8",
+          "condition": {
+            "no_weapon_or_shield": true
+          }
+        },
+        "parameters": {
+          "legacy_group": "optional_features",
+          "legacy_owner_index": 1,
+          "legacy_ordinal": 1,
+          "legacy_nested_requirements": false,
+          "legacy_outer_condition_keys": [
+            "no_weapon_or_shield"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -26,6 +26,27 @@
           }
         ]
       }
+    },
+    {
+      "id": "demo:damage_modifier:resistance",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:resistance"
+        }
+      },
+      "benefit": {
+        "type": "damage_modifier",
+        "id": "demo:resistance",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ]
+      }
     }
   ]
 }

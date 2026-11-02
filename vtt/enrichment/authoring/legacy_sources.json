@@ -13,10 +13,8 @@
       ],
       "types": [
         "action",
-        "activation",
         "action_sequence",
-        "resource_recovery",
-        "attack_count"
+        "resource_recovery"
       ]
     },
     {
@@ -64,17 +62,7 @@
         "resource",
         "option_selection",
         "spell_grant",
-        "action",
         "proficiency_grant"
-      ]
-    },
-    {
-      "path": "pwa/catalog/species_types.json",
-      "sections": [
-        "races"
-      ],
-      "types": [
-        "trait"
       ]
     },
     {
@@ -106,7 +94,7 @@
       ],
       "types": [
         "numeric_modifier",
-        "defense",
+        "damage_modifier",
         "spell_grant",
         "item_grant"
       ]
@@ -139,7 +127,7 @@
       ],
       "types": [
         "area_geometry",
-        "movement",
+        "base_override",
         "effect"
       ]
     },
@@ -148,6 +136,19 @@
       "sections": [],
       "types": [
         "area_geometry"
+      ]
+    },
+    {
+      "path": "vtt/data/base_value_overrides.json",
+      "sections": [
+        "feats",
+        "features",
+        "items",
+        "species",
+        "optional_features"
+      ],
+      "types": [
+        "base_override"
       ]
     }
   ],
@@ -172,8 +173,8 @@
     },
     {
       "source": "pwa/catalog/species_attacks.json",
-      "benefit_type": "movement",
-      "catalog": "vtt/enrichment/benefits/movement.json",
+      "benefit_type": "base_override",
+      "catalog": "vtt/enrichment/benefits/base_override.json",
       "runtime": "pwa/species_benefit_catalogs.js"
     },
     {
@@ -302,8 +303,8 @@
     },
     {
       "source": "pwa/catalog/species_defenses.json",
-      "benefit_type": "defense",
-      "catalog": "vtt/enrichment/benefits/defense.json",
+      "benefit_type": "damage_modifier",
+      "catalog": "vtt/enrichment/benefits/damage_modifier.json",
       "runtime": "pwa/species_defense_benefits.js"
     },
     {
@@ -352,6 +353,13 @@
       "benefit_type": "resource",
       "catalog": "vtt/enrichment/benefits/resource.json",
       "runtime": "pwa/sheet_rules.js"
+    },
+    {
+      "source": "vtt/data/base_value_overrides.json",
+      "benefit_type": "base_override",
+      "catalog": "vtt/enrichment/benefits/base_override.json",
+      "runtime": "pwa/base_override_benefits.js",
+      "partial": false
     }
   ]
 }

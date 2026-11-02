@@ -8,10 +8,10 @@ import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const sourceTiming=read('../../vtt/data/feature_timing_recovery_rules.json');
 const generatedResources=read('../catalog/class_mechanics.json').resource_overrides;
-const benefitTypes=['action','activation','resource_recovery','attack_count','action_sequence','resource'];
+const benefitTypes=['action','resource_recovery','action_sequence','resource'];
 const catalogs=Object.fromEntries(benefitTypes.map(type=>
  [type,read('../../vtt/enrichment/benefits/'+type+'.json')]));
-const count={action:65,activation:31,resource_recovery:17,attack_count:0,action_sequence:38,resource:90};
+const count={action:65,resource_recovery:17,action_sequence:38,resource:90};
 const classEntries=(catalog,type)=>catalog.entries.filter(entry=>
  entry.granted_by?.kind==='5etools'&&
  ['class_feature','subclass_feature'].includes(entry.granted_by.ref.category)&&
@@ -22,6 +22,8 @@ test('all 151 timing/recovery/attack-sequence entries preserve mechanics after m
  for(const name of ['contextual_actions','actions','recoveries'])
   assert.deepEqual(projected[name],sourceTiming[name],name+' changed when projected');
  assert.deepEqual(projected.attack_count_grants,[]);
+ assert.equal(catalogs.action.entries.filter(e=>e.projection==='timing_contextual_action').length,31);
+ assert.equal(catalogs.resource.entries.filter(e=>e.projection==='contextual_resource').length,6);
  assert.deepEqual(projected.attack_actions.slice(0,12),sourceTiming.attack_actions);
  const replacements=projected.attack_actions.filter(rule=>rule.attack_replacement);
  assert.equal(replacements.length,26);
@@ -48,7 +50,7 @@ test('all 151 timing/recovery/attack-sequence entries preserve mechanics after m
 });
 
 test('all 90 subclass/class resource overrides project losslessly without changing tracker identifiers',()=>{
- assert.equal(classEntries(catalogs.resource,'resource').filter(row=>row.benefit.kind!=='spell_slots').length,count.resource);
+ assert.equal(classEntries(catalogs.resource,'resource').filter(row=>row.benefit.kind!=='spell_slots'&&row.projection!=='contextual_resource').length,count.resource);
  assert.equal(classEntries(catalogs.resource,'resource').filter(row=>row.benefit.kind==='spell_slots').length,21);
  assert.deepEqual(projectClassResourceOverrides(catalogs.resource),generatedResources);
  for(const item of classEntries(catalogs.resource,'resource')){
@@ -64,6 +66,8 @@ test('class/subclass source references use the actual rulebook, not the parent c
   ['Way of the Sun Soul','XGE'],['The Hexblade','XGE'],['Armorer','TCE']
  ];
  const all=benefitTypes.flatMap(type=>classEntries(catalogs[type],type));
+ all.push(...catalogs.action.entries.filter(e=>e.projection==='timing_contextual_action'));
+
  for(const [subclass,source] of cases){
   const matches=all.filter(item=>item.granted_by.ref.subclass===subclass);
   assert(matches.length,subclass+' missing');

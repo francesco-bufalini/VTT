@@ -9,7 +9,7 @@ const typedAction=read('../../vtt/enrichment/benefits/action.json');
 const typedRoll=read('../../vtt/enrichment/benefits/roll_bonus.json');
 
 test('all 52 class actions survive the typed migration with exact operation, costs and source',()=>{
- assert.equal(typedAction.entries.filter(row=>row.projection!=='timing_action'&&['class_feature','subclass_feature'].includes(row.granted_by.ref.category)).length,52);
+ assert.equal(typedAction.entries.filter(row=>row.projection!=='timing_action'&&row.projection!=='timing_contextual_action'&&['class_feature','subclass_feature'].includes(row.granted_by.ref.category)).length,52);
  assert.equal(typedAction.entries.filter(row=>row.projection==='timing_action').length,65);
  const rules=classActionOverridesFromBenefits(typedAction);
  assert.equal(rules.length,52);

@@ -12,10 +12,8 @@
         "ability_score",
         "action",
         "action_sequence",
-        "activation",
         "area_geometry",
         "attack",
-        "attack_count",
         "base_override",
         "bonus",
         "choice",
@@ -24,7 +22,6 @@
         "d20_reroll",
         "damage_bonus",
         "damage_modifier",
-        "defense",
         "effect",
         "effect_extension",
         "feat_grant",
@@ -32,7 +29,6 @@
         "incoming_damage",
         "item_grant",
         "language",
-        "movement",
         "numeric_modifier",
         "option_selection",
         "option_list",
@@ -297,9 +293,6 @@
         "$ref": "#/$defs/defense"
       }
     },
-    "movement": {
-      "$ref": "#/$defs/movement"
-    },
     "sense": {
       "$ref": "#/$defs/sense"
     },
@@ -349,9 +342,6 @@
     },
     "base_override": {
       "$ref": "#/$defs/bonus"
-    },
-    "attack_count": {
-      "$ref": "#/$defs/expression"
     },
     "d20_reroll": {
       "$ref": "#/$defs/reroll"
@@ -725,7 +715,55 @@
               "base_override"
             ]
           }
-        ]
+        ],
+        "properties": {
+          "base_override": {
+            "allOf": [
+              {
+                "required": [
+                  "target",
+                  "operation"
+                ]
+              },
+              {
+                "if": {
+                  "properties": {
+                    "operation": {
+                      "const": "inherit"
+                    }
+                  },
+                  "required": [
+                    "operation"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "source_field"
+                  ]
+                },
+                "else": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "amount"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "value"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "expression"
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
       }
     },
     {
@@ -744,27 +782,6 @@
           {
             "required": [
               "incoming_damage"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "type": {
-            "const": "attack_count"
-          }
-        },
-        "required": [
-          "type"
-        ]
-      },
-      "then": {
-        "anyOf": [
-          {
-            "required": [
-              "attack_count"
             ]
           }
         ]
@@ -909,27 +926,6 @@
       "if": {
         "properties": {
           "type": {
-            "const": "defense"
-          }
-        },
-        "required": [
-          "type"
-        ]
-      },
-      "then": {
-        "anyOf": [
-          {
-            "required": [
-              "defenses"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "type": {
             "const": "sense"
           }
         },
@@ -942,27 +938,6 @@
           {
             "required": [
               "sense"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "type": {
-            "const": "movement"
-          }
-        },
-        "required": [
-          "type"
-        ]
-      },
-      "then": {
-        "anyOf": [
-          {
-            "required": [
-              "movement"
             ]
           }
         ]
@@ -1369,6 +1344,11 @@
             "required": [
               "effects"
             ]
+          },
+          {
+            "required": [
+              "defenses"
+            ]
           }
         ]
       }
@@ -1399,27 +1379,6 @@
           {
             "required": [
               "options"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "type": {
-            "const": "activation"
-          }
-        },
-        "required": [
-          "type"
-        ]
-      },
-      "then": {
-        "anyOf": [
-          {
-            "required": [
-              "activation"
             ]
           }
         ]
@@ -1808,6 +1767,52 @@
         "expression": {
           "type": "string",
           "description": "Engine predicate"
+        },
+        "equipped_armor_category": {
+          "enum": [
+            "none",
+            "light",
+            "medium",
+            "heavy"
+          ],
+          "description": "Category of currently worn armor when determining a conditional score grant."
+        },
+        "no_shield": {
+          "type": "boolean",
+          "description": "Runtime requirement for an alternate numeric base value."
+        },
+        "no_armor": {
+          "type": "boolean",
+          "description": "Runtime requirement for an alternate numeric base value."
+        },
+        "no_weapon_or_shield": {
+          "type": "boolean",
+          "description": "Runtime requirement for an alternate numeric base value."
+        },
+        "allow_armor": {
+          "type": "boolean",
+          "description": "Runtime requirement for an alternate numeric base value."
+        },
+        "ignore_armor": {
+          "type": "boolean",
+          "description": "Runtime requirement for an alternate numeric base value."
+        },
+        "scope": {
+          "type": "string"
+        },
+        "class_name": {
+          "type": "string"
+        },
+        "class_source": {
+          "type": "string"
+        },
+        "min_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_level": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
@@ -1964,7 +1969,9 @@
             "replace",
             "reroll",
             "grant_proficiency",
-            "expertise"
+            "expertise",
+            "inherit",
+            "alternative"
           ]
         },
         "amount": {
@@ -2080,6 +2087,11 @@
             "disadvantage"
           ],
           "description": "Alternative mode instead of numeric roll bonus."
+        },
+        "source_field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Canonical structured 5eTools value source (speed.fly, etc.), used when operation is inherit."
         }
       },
       "additionalProperties": false

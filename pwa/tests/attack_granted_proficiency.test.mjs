@@ -8,7 +8,7 @@ import {speciesAttacksFromBenefits} from '../species_benefit_catalogs.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const typed=name=>JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/'+name+'.json',import.meta.url),'utf8'));
 const ability=read('ability_grants'),states=read('trait_states').states;
-const species=speciesAttacksFromBenefits(typed('attack'),typed('movement'));
+const species=speciesAttacksFromBenefits(typed('attack'),typed('base_override'));
 const abilities={str:16,dex:14,con:12,int:16,wis:10,cha:10};
 
 test('attack benefit training is explicit, optional, source-bound and not category-wide',()=>{

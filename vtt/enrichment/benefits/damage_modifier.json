@@ -1,10 +1,10 @@
 {
   "schema_version": 2,
-  "benefit_type": "defense",
+  "benefit_type": "damage_modifier",
   "scope": "catalog",
   "entries": [
     {
-      "id": "defense:dragonborn:ftd:chromatic:black",
+      "id": "damage_modifier:dragonborn:ftd:chromatic:black",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -13,8 +13,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:chromatic:black",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:chromatic:black",
         "defenses": [
           {
             "kind": "resistance",
@@ -35,7 +35,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:chromatic:blue",
+      "id": "damage_modifier:dragonborn:ftd:chromatic:blue",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -44,8 +44,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:chromatic:blue",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:chromatic:blue",
         "defenses": [
           {
             "kind": "resistance",
@@ -66,7 +66,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:chromatic:green",
+      "id": "damage_modifier:dragonborn:ftd:chromatic:green",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -75,8 +75,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:chromatic:green",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:chromatic:green",
         "defenses": [
           {
             "kind": "resistance",
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:chromatic:red",
+      "id": "damage_modifier:dragonborn:ftd:chromatic:red",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -106,8 +106,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:chromatic:red",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:chromatic:red",
         "defenses": [
           {
             "kind": "resistance",
@@ -128,7 +128,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:chromatic:white",
+      "id": "damage_modifier:dragonborn:ftd:chromatic:white",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -137,8 +137,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:chromatic:white",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:chromatic:white",
         "defenses": [
           {
             "kind": "resistance",
@@ -159,7 +159,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:gem:amethyst",
+      "id": "damage_modifier:dragonborn:ftd:gem:amethyst",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -168,8 +168,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:gem:amethyst",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:gem:amethyst",
         "defenses": [
           {
             "kind": "resistance",
@@ -190,7 +190,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:gem:crystal",
+      "id": "damage_modifier:dragonborn:ftd:gem:crystal",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -199,8 +199,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:gem:crystal",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:gem:crystal",
         "defenses": [
           {
             "kind": "resistance",
@@ -221,7 +221,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:gem:emerald",
+      "id": "damage_modifier:dragonborn:ftd:gem:emerald",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -230,8 +230,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:gem:emerald",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:gem:emerald",
         "defenses": [
           {
             "kind": "resistance",
@@ -252,7 +252,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:gem:sapphire",
+      "id": "damage_modifier:dragonborn:ftd:gem:sapphire",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -261,8 +261,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:gem:sapphire",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:gem:sapphire",
         "defenses": [
           {
             "kind": "resistance",
@@ -283,7 +283,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:gem:topaz",
+      "id": "damage_modifier:dragonborn:ftd:gem:topaz",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -292,8 +292,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:gem:topaz",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:gem:topaz",
         "defenses": [
           {
             "kind": "resistance",
@@ -314,7 +314,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:metallic:brass",
+      "id": "damage_modifier:dragonborn:ftd:metallic:brass",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -323,8 +323,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:metallic:brass",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:metallic:brass",
         "defenses": [
           {
             "kind": "resistance",
@@ -345,7 +345,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:metallic:bronze",
+      "id": "damage_modifier:dragonborn:ftd:metallic:bronze",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -354,8 +354,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:metallic:bronze",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:metallic:bronze",
         "defenses": [
           {
             "kind": "resistance",
@@ -376,7 +376,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:metallic:copper",
+      "id": "damage_modifier:dragonborn:ftd:metallic:copper",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -385,8 +385,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:metallic:copper",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:metallic:copper",
         "defenses": [
           {
             "kind": "resistance",
@@ -407,7 +407,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:metallic:gold",
+      "id": "damage_modifier:dragonborn:ftd:metallic:gold",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -416,8 +416,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:metallic:gold",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:metallic:gold",
         "defenses": [
           {
             "kind": "resistance",
@@ -438,7 +438,7 @@
       }
     },
     {
-      "id": "defense:dragonborn:ftd:metallic:silver",
+      "id": "damage_modifier:dragonborn:ftd:metallic:silver",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -447,8 +447,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:dragonborn:ftd:metallic:silver",
+        "type": "damage_modifier",
+        "id": "damage_modifier:dragonborn:ftd:metallic:silver",
         "defenses": [
           {
             "kind": "resistance",
@@ -469,7 +469,7 @@
       }
     },
     {
-      "id": "defense:species:dmg:aasimar:celestial-resistance:1:necrotic:",
+      "id": "damage_modifier:species:dmg:aasimar:celestial-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -482,8 +482,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:dmg:aasimar:celestial-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:dmg:aasimar:celestial-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -503,7 +503,7 @@
       }
     },
     {
-      "id": "defense:species:dmg:aasimar:celestial-resistance:1:radiant:1",
+      "id": "damage_modifier:species:dmg:aasimar:celestial-resistance:1:radiant:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -516,8 +516,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:dmg:aasimar:celestial-resistance:1:radiant:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:dmg:aasimar:celestial-resistance:1:radiant:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -537,7 +537,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:aasimar:celestial-resistance:1:necrotic:",
+      "id": "damage_modifier:species:mpmm:aasimar:celestial-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -550,8 +550,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:aasimar:celestial-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:aasimar:celestial-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -571,7 +571,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:aasimar:celestial-resistance:1:radiant:1",
+      "id": "damage_modifier:species:mpmm:aasimar:celestial-resistance:1:radiant:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -584,8 +584,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:aasimar:celestial-resistance:1:radiant:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:aasimar:celestial-resistance:1:radiant:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -605,7 +605,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:aasimar:celestial-resistance:1:necrotic:",
+      "id": "damage_modifier:species:vgm:aasimar:celestial-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -618,8 +618,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:aasimar:celestial-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:aasimar:celestial-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -639,7 +639,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:aasimar:celestial-resistance:1:radiant:1",
+      "id": "damage_modifier:species:vgm:aasimar:celestial-resistance:1:radiant:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -652,8 +652,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:aasimar:celestial-resistance:1:radiant:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:aasimar:celestial-resistance:1:radiant:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -673,7 +673,7 @@
       }
     },
     {
-      "id": "defense:species:psk:aetherborn:born-of-aether:1:necrotic:",
+      "id": "damage_modifier:species:psk:aetherborn:born-of-aether:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -686,8 +686,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psk:aetherborn:born-of-aether:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psk:aetherborn:born-of-aether:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -707,7 +707,7 @@
       }
     },
     {
-      "id": "defense:species:aag:autognome:mechanical-nature:1:poison:",
+      "id": "damage_modifier:species:aag:autognome:mechanical-nature:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -720,8 +720,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:aag:autognome:mechanical-nature:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:aag:autognome:mechanical-nature:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -741,7 +741,7 @@
       }
     },
     {
-      "id": "defense:species:aag:autognome:mechanical-nature:3:disease:1",
+      "id": "damage_modifier:species:aag:autognome:mechanical-nature:3:disease:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -754,8 +754,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:aag:autognome:mechanical-nature:3:disease:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:aag:autognome:mechanical-nature:3:disease:1",
         "defenses": [
           {
             "kind": "condition_immunity",
@@ -775,7 +775,7 @@
       }
     },
     {
-      "id": "defense:species:rhw:dhampir:trace-of-undeath:1:necrotic:",
+      "id": "damage_modifier:species:rhw:dhampir:trace-of-undeath:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -788,8 +788,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:rhw:dhampir:trace-of-undeath:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:rhw:dhampir:trace-of-undeath:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -809,7 +809,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:phb:dragonborn:0:acid",
+      "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:acid",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -818,8 +818,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:phb:dragonborn:0:acid",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:acid",
         "defenses": [
           {
             "kind": "resistance",
@@ -840,7 +840,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:phb:dragonborn:0:cold",
+      "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:cold",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -849,8 +849,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:phb:dragonborn:0:cold",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:cold",
         "defenses": [
           {
             "kind": "resistance",
@@ -871,7 +871,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:phb:dragonborn:0:fire",
+      "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:fire",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -880,8 +880,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:phb:dragonborn:0:fire",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:fire",
         "defenses": [
           {
             "kind": "resistance",
@@ -902,7 +902,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:phb:dragonborn:0:lightning",
+      "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:lightning",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -911,8 +911,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:phb:dragonborn:0:lightning",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:lightning",
         "defenses": [
           {
             "kind": "resistance",
@@ -933,7 +933,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:phb:dragonborn:0:poison",
+      "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:poison",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -942,8 +942,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:phb:dragonborn:0:poison",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:phb:dragonborn:0:poison",
         "defenses": [
           {
             "kind": "resistance",
@@ -964,7 +964,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:duergar:dwarven-resilience:1:poison:",
+      "id": "damage_modifier:species:mpmm:duergar:dwarven-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -977,8 +977,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:duergar:dwarven-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:duergar:dwarven-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -998,7 +998,7 @@
       }
     },
     {
-      "id": "defense:species:phb:dwarf:dwarven-resilience:1:poison:",
+      "id": "damage_modifier:species:phb:dwarf:dwarven-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1011,8 +1011,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:phb:dwarf:dwarven-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:phb:dwarf:dwarven-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1032,7 +1032,7 @@
       }
     },
     {
-      "id": "defense:species:psk:dwarf-kaladesh:dwarven-resilience:1:poison:",
+      "id": "damage_modifier:species:psk:dwarf-kaladesh:dwarven-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1045,8 +1045,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psk:dwarf-kaladesh:dwarven-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psk:dwarf-kaladesh:dwarven-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1066,7 +1066,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:githyanki:psychic-resilience:1:psychic:",
+      "id": "damage_modifier:species:mpmm:githyanki:psychic-resilience:1:psychic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1079,8 +1079,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:githyanki:psychic-resilience:1:psychic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:githyanki:psychic-resilience:1:psychic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1100,7 +1100,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:githzerai:psychic-resilience:1:psychic:",
+      "id": "damage_modifier:species:mpmm:githzerai:psychic-resilience:1:psychic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1113,8 +1113,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:githzerai:psychic-resilience:1:psychic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:githzerai:psychic-resilience:1:psychic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1134,7 +1134,7 @@
       }
     },
     {
-      "id": "defense:species:psz:goblin:grit:1:fire:",
+      "id": "damage_modifier:species:psz:goblin:grit:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1147,8 +1147,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:goblin:grit:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:goblin:grit:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1168,7 +1168,7 @@
       }
     },
     {
-      "id": "defense:species:psz:goblin:grit:1:psychic:1",
+      "id": "damage_modifier:species:psz:goblin:grit:1:psychic:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1181,8 +1181,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:goblin:grit:1:psychic:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:goblin:grit:1:psychic:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -1202,7 +1202,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:goliath:mountain-born:1:cold:",
+      "id": "damage_modifier:species:mpmm:goliath:mountain-born:1:cold:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1215,8 +1215,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:goliath:mountain-born:1:cold:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:goliath:mountain-born:1:cold:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1236,7 +1236,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:goliath:mountain-born:1:cold:",
+      "id": "damage_modifier:species:vgm:goliath:mountain-born:1:cold:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1249,8 +1249,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:goliath:mountain-born:1:cold:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:goliath:mountain-born:1:cold:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1270,7 +1270,7 @@
       }
     },
     {
-      "id": "defense:species:oga:grung:poison-immunity:2:poison:",
+      "id": "damage_modifier:species:oga:grung:poison-immunity:2:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1283,8 +1283,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:oga:grung:poison-immunity:2:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:oga:grung:poison-immunity:2:poison:",
         "defenses": [
           {
             "kind": "immunity",
@@ -1304,7 +1304,7 @@
       }
     },
     {
-      "id": "defense:species:oga:grung:poison-immunity:3:poisoned:1",
+      "id": "damage_modifier:species:oga:grung:poison-immunity:3:poisoned:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1317,8 +1317,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:oga:grung:poison-immunity:3:poisoned:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:oga:grung:poison-immunity:3:poisoned:1",
         "defenses": [
           {
             "kind": "condition_immunity",
@@ -1338,7 +1338,7 @@
       }
     },
     {
-      "id": "defense:species:efa:kalashtar:mental-discipline:1:psychic:",
+      "id": "damage_modifier:species:efa:kalashtar:mental-discipline:1:psychic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1351,8 +1351,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:efa:kalashtar:mental-discipline:1:psychic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:efa:kalashtar:mental-discipline:1:psychic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1372,7 +1372,7 @@
       }
     },
     {
-      "id": "defense:species:erlw:kalashtar:mental-discipline:1:psychic:",
+      "id": "damage_modifier:species:erlw:kalashtar:mental-discipline:1:psychic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1385,8 +1385,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:erlw:kalashtar:mental-discipline:1:psychic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:erlw:kalashtar:mental-discipline:1:psychic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1406,7 +1406,7 @@
       }
     },
     {
-      "id": "defense:species:psa:naga:poison-immunity:2:poison:",
+      "id": "damage_modifier:species:psa:naga:poison-immunity:2:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1419,8 +1419,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psa:naga:poison-immunity:2:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psa:naga:poison-immunity:2:poison:",
         "defenses": [
           {
             "kind": "immunity",
@@ -1440,7 +1440,7 @@
       }
     },
     {
-      "id": "defense:species:psa:naga:poison-immunity:3:poisoned:1",
+      "id": "damage_modifier:species:psa:naga:poison-immunity:3:poisoned:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1453,8 +1453,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psa:naga:poison-immunity:3:poisoned:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psa:naga:poison-immunity:3:poisoned:1",
         "defenses": [
           {
             "kind": "condition_immunity",
@@ -1474,7 +1474,7 @@
       }
     },
     {
-      "id": "defense:species:aag:plasmoid:natural-resilience:1:acid:",
+      "id": "damage_modifier:species:aag:plasmoid:natural-resilience:1:acid:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1487,8 +1487,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:aag:plasmoid:natural-resilience:1:acid:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:aag:plasmoid:natural-resilience:1:acid:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1508,7 +1508,7 @@
       }
     },
     {
-      "id": "defense:species:aag:plasmoid:natural-resilience:1:poison:1",
+      "id": "damage_modifier:species:aag:plasmoid:natural-resilience:1:poison:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1521,8 +1521,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:aag:plasmoid:natural-resilience:1:poison:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:aag:plasmoid:natural-resilience:1:poison:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -1542,7 +1542,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:rhw:reborn:0:cold",
+      "id": "damage_modifier:choice:species-defense:rhw:reborn:0:cold",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -1551,8 +1551,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:rhw:reborn:0:cold",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:rhw:reborn:0:cold",
         "defenses": [
           {
             "kind": "resistance",
@@ -1573,7 +1573,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:rhw:reborn:0:necrotic",
+      "id": "damage_modifier:choice:species-defense:rhw:reborn:0:necrotic",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -1582,8 +1582,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:rhw:reborn:0:necrotic",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:rhw:reborn:0:necrotic",
         "defenses": [
           {
             "kind": "resistance",
@@ -1604,7 +1604,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:rhw:reborn:0:poison",
+      "id": "damage_modifier:choice:species-defense:rhw:reborn:0:poison",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -1613,8 +1613,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:rhw:reborn:0:poison",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:rhw:reborn:0:poison",
         "defenses": [
           {
             "kind": "resistance",
@@ -1635,7 +1635,7 @@
       }
     },
     {
-      "id": "defense:species:vrgr:reborn:deathless-nature:1:poison:",
+      "id": "damage_modifier:species:vrgr:reborn:deathless-nature:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1648,8 +1648,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vrgr:reborn:deathless-nature:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vrgr:reborn:deathless-nature:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1678,7 +1678,7 @@
       }
     },
     {
-      "id": "defense:species:lfl:rimekin:cold-resistance:1:cold:",
+      "id": "damage_modifier:species:lfl:rimekin:cold-resistance:1:cold:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1691,8 +1691,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:lfl:rimekin:cold-resistance:1:cold:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:lfl:rimekin:cold-resistance:1:cold:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1712,7 +1712,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:sea-elf:child-of-the-sea:1:cold:",
+      "id": "damage_modifier:species:mpmm:sea-elf:child-of-the-sea:1:cold:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1725,8 +1725,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:sea-elf:child-of-the-sea:1:cold:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:sea-elf:child-of-the-sea:1:cold:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1746,7 +1746,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:shadar-kai:necrotic-resistance:1:necrotic:",
+      "id": "damage_modifier:species:mpmm:shadar-kai:necrotic-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1759,8 +1759,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:shadar-kai:necrotic-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:shadar-kai:necrotic-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1780,7 +1780,7 @@
       }
     },
     {
-      "id": "defense:species:dmg:skeleton:undead-nature:2:poison:",
+      "id": "damage_modifier:species:dmg:skeleton:undead-nature:2:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1793,8 +1793,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:dmg:skeleton:undead-nature:2:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:dmg:skeleton:undead-nature:2:poison:",
         "defenses": [
           {
             "kind": "immunity",
@@ -1814,7 +1814,7 @@
       }
     },
     {
-      "id": "defense:species:dmg:skeleton:undead-nature:3:exhaustion:1",
+      "id": "damage_modifier:species:dmg:skeleton:undead-nature:3:exhaustion:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1827,8 +1827,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:dmg:skeleton:undead-nature:3:exhaustion:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:dmg:skeleton:undead-nature:3:exhaustion:1",
         "defenses": [
           {
             "kind": "condition_immunity",
@@ -1848,7 +1848,7 @@
       }
     },
     {
-      "id": "defense:species:dmg:skeleton:undead-nature:3:poisoned:2",
+      "id": "damage_modifier:species:dmg:skeleton:undead-nature:3:poisoned:2",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1861,8 +1861,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:dmg:skeleton:undead-nature:3:poisoned:2",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:dmg:skeleton:undead-nature:3:poisoned:2",
         "defenses": [
           {
             "kind": "condition_immunity",
@@ -1882,7 +1882,7 @@
       }
     },
     {
-      "id": "defense:species:dmg:skeleton:brittle-bones:1:bludgeoning:3",
+      "id": "damage_modifier:species:dmg:skeleton:brittle-bones:1:bludgeoning:3",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1895,8 +1895,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:dmg:skeleton:brittle-bones:1:bludgeoning:3",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:dmg:skeleton:brittle-bones:1:bludgeoning:3",
         "defenses": [
           {
             "kind": "vulnerability",
@@ -1916,7 +1916,7 @@
       }
     },
     {
-      "id": "defense:species:phb:tiefling:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:phb:tiefling:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1929,8 +1929,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:phb:tiefling:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:phb:tiefling:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1950,7 +1950,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:triton:guardian-of-the-depths:1:cold:",
+      "id": "damage_modifier:species:mpmm:triton:guardian-of-the-depths:1:cold:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1963,8 +1963,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:triton:guardian-of-the-depths:1:cold:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:triton:guardian-of-the-depths:1:cold:",
         "defenses": [
           {
             "kind": "resistance",
@@ -1984,7 +1984,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:triton:guardians-of-the-depths:1:cold:",
+      "id": "damage_modifier:species:vgm:triton:guardians-of-the-depths:1:cold:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -1997,8 +1997,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:triton:guardians-of-the-depths:1:cold:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:triton:guardians-of-the-depths:1:cold:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2018,7 +2018,7 @@
       }
     },
     {
-      "id": "defense:species:psz:vampire:vampiric-resistance:1:necrotic:",
+      "id": "damage_modifier:species:psz:vampire:vampiric-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2031,8 +2031,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:vampire:vampiric-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:vampire:vampiric-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2052,7 +2052,7 @@
       }
     },
     {
-      "id": "defense:species:efa:warforged:construct-resilience:1:poison:",
+      "id": "damage_modifier:species:efa:warforged:construct-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2065,8 +2065,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:efa:warforged:construct-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:efa:warforged:construct-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2086,7 +2086,7 @@
       }
     },
     {
-      "id": "defense:species:erlw:warforged:constructed-resilience:1:poison:",
+      "id": "damage_modifier:species:erlw:warforged:constructed-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2099,8 +2099,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:erlw:warforged:constructed-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:erlw:warforged:constructed-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2129,7 +2129,7 @@
       }
     },
     {
-      "id": "defense:species:erlw:warforged:constructed-resilience:3:disease:1",
+      "id": "damage_modifier:species:erlw:warforged:constructed-resilience:3:disease:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2142,8 +2142,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:erlw:warforged:constructed-resilience:3:disease:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:erlw:warforged:constructed-resilience:3:disease:1",
         "defenses": [
           {
             "kind": "condition_immunity",
@@ -2172,7 +2172,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:yuan-ti:poison-resilience:1:poison:",
+      "id": "damage_modifier:species:mpmm:yuan-ti:poison-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2185,8 +2185,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:yuan-ti:poison-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:yuan-ti:poison-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2206,7 +2206,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:yuan-ti-pureblood:poison-immunity:2:poison:",
+      "id": "damage_modifier:species:vgm:yuan-ti-pureblood:poison-immunity:2:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2219,8 +2219,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:yuan-ti-pureblood:poison-immunity:2:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:yuan-ti-pureblood:poison-immunity:2:poison:",
         "defenses": [
           {
             "kind": "immunity",
@@ -2240,7 +2240,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:yuan-ti-pureblood:poison-immunity:3:poisoned:1",
+      "id": "damage_modifier:species:vgm:yuan-ti-pureblood:poison-immunity:3:poisoned:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2253,8 +2253,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:yuan-ti-pureblood:poison-immunity:3:poisoned:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:yuan-ti-pureblood:poison-immunity:3:poisoned:1",
         "defenses": [
           {
             "kind": "condition_immunity",
@@ -2274,7 +2274,7 @@
       }
     },
     {
-      "id": "defense:species:dmg:zombie:undead-nature:2:poison:",
+      "id": "damage_modifier:species:dmg:zombie:undead-nature:2:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2287,8 +2287,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:dmg:zombie:undead-nature:2:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:dmg:zombie:undead-nature:2:poison:",
         "defenses": [
           {
             "kind": "immunity",
@@ -2308,7 +2308,7 @@
       }
     },
     {
-      "id": "defense:species:dmg:zombie:undead-nature:3:poisoned:1",
+      "id": "damage_modifier:species:dmg:zombie:undead-nature:3:poisoned:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2321,8 +2321,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:dmg:zombie:undead-nature:3:poisoned:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:dmg:zombie:undead-nature:3:poisoned:1",
         "defenses": [
           {
             "kind": "condition_immunity",
@@ -2342,7 +2342,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:elf-shadar-kai:necrotic-resistance:1:necrotic:",
+      "id": "damage_modifier:species:mtf:elf-shadar-kai:necrotic-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2355,8 +2355,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:elf-shadar-kai:necrotic-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:elf-shadar-kai:necrotic-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2376,7 +2376,7 @@
       }
     },
     {
-      "id": "defense:species:eepc:genasi-fire:fire-resistance:1:fire:",
+      "id": "damage_modifier:species:eepc:genasi-fire:fire-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2389,8 +2389,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:eepc:genasi-fire:fire-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:eepc:genasi-fire:fire-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2410,7 +2410,7 @@
       }
     },
     {
-      "id": "defense:species:eepc:genasi-water:acid-resistance:1:acid:",
+      "id": "damage_modifier:species:eepc:genasi-water:acid-resistance:1:acid:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2423,8 +2423,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:eepc:genasi-water:acid-resistance:1:acid:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:eepc:genasi-water:acid-resistance:1:acid:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2444,7 +2444,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:genasi-air:lightning-resistance:1:lightning:",
+      "id": "damage_modifier:species:mpmm:genasi-air:lightning-resistance:1:lightning:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2457,8 +2457,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:genasi-air:lightning-resistance:1:lightning:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:genasi-air:lightning-resistance:1:lightning:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2478,7 +2478,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:genasi-fire:fire-resistance:1:fire:",
+      "id": "damage_modifier:species:mpmm:genasi-fire:fire-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2491,8 +2491,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:genasi-fire:fire-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:genasi-fire:fire-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2512,7 +2512,7 @@
       }
     },
     {
-      "id": "defense:species:mpmm:genasi-water:acid-resistance:1:acid:",
+      "id": "damage_modifier:species:mpmm:genasi-water:acid-resistance:1:acid:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2525,8 +2525,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mpmm:genasi-water:acid-resistance:1:acid:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mpmm:genasi-water:acid-resistance:1:acid:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2546,7 +2546,7 @@
       }
     },
     {
-      "id": "defense:species:erlw:half-elf-variant-mark-of-storm:storm-s-boon:1:lightning:",
+      "id": "damage_modifier:species:erlw:half-elf-variant-mark-of-storm:storm-s-boon:1:lightning:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2559,8 +2559,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:erlw:half-elf-variant-mark-of-storm:storm-s-boon:1:lightning:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:erlw:half-elf-variant-mark-of-storm:storm-s-boon:1:lightning:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2580,7 +2580,7 @@
       }
     },
     {
-      "id": "defense:species:phb:halfling-stout:stout-resilience:1:poison:",
+      "id": "damage_modifier:species:phb:halfling-stout:stout-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2593,8 +2593,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:phb:halfling-stout:stout-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:phb:halfling-stout:stout-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2614,7 +2614,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:aasimar-fallen:celestial-resistance:1:necrotic:",
+      "id": "damage_modifier:species:vgm:aasimar-fallen:celestial-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2627,8 +2627,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:aasimar-fallen:celestial-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:aasimar-fallen:celestial-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2648,7 +2648,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:aasimar-fallen:celestial-resistance:1:radiant:1",
+      "id": "damage_modifier:species:vgm:aasimar-fallen:celestial-resistance:1:radiant:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2661,8 +2661,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:aasimar-fallen:celestial-resistance:1:radiant:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:aasimar-fallen:celestial-resistance:1:radiant:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -2682,7 +2682,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:aasimar-protector:celestial-resistance:1:necrotic:",
+      "id": "damage_modifier:species:vgm:aasimar-protector:celestial-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2695,8 +2695,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:aasimar-protector:celestial-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:aasimar-protector:celestial-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2716,7 +2716,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:aasimar-protector:celestial-resistance:1:radiant:1",
+      "id": "damage_modifier:species:vgm:aasimar-protector:celestial-resistance:1:radiant:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2729,8 +2729,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:aasimar-protector:celestial-resistance:1:radiant:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:aasimar-protector:celestial-resistance:1:radiant:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -2750,7 +2750,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:aasimar-scourge:celestial-resistance:1:necrotic:",
+      "id": "damage_modifier:species:vgm:aasimar-scourge:celestial-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2763,8 +2763,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:aasimar-scourge:celestial-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:aasimar-scourge:celestial-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -2784,7 +2784,7 @@
       }
     },
     {
-      "id": "defense:species:vgm:aasimar-scourge:celestial-resistance:1:radiant:1",
+      "id": "damage_modifier:species:vgm:aasimar-scourge:celestial-resistance:1:radiant:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -2797,8 +2797,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:vgm:aasimar-scourge:celestial-resistance:1:radiant:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:vgm:aasimar-scourge:celestial-resistance:1:radiant:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -2818,7 +2818,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:acid",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:acid",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -2827,8 +2827,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:acid",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:acid",
         "defenses": [
           {
             "kind": "resistance",
@@ -2849,7 +2849,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:cold",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:cold",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -2858,8 +2858,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:cold",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:cold",
         "defenses": [
           {
             "kind": "resistance",
@@ -2880,7 +2880,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:fire",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:fire",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -2889,8 +2889,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:fire",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:fire",
         "defenses": [
           {
             "kind": "resistance",
@@ -2911,7 +2911,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:lightning",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:lightning",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -2920,8 +2920,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:lightning",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:lightning",
         "defenses": [
           {
             "kind": "resistance",
@@ -2942,7 +2942,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:poison",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:poison",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -2951,8 +2951,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:poison",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-draconblood:0:poison",
         "defenses": [
           {
             "kind": "resistance",
@@ -2973,7 +2973,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:acid",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:acid",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -2982,8 +2982,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:acid",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:acid",
         "defenses": [
           {
             "kind": "resistance",
@@ -3004,7 +3004,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:cold",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:cold",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -3013,8 +3013,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:cold",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:cold",
         "defenses": [
           {
             "kind": "resistance",
@@ -3035,7 +3035,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:fire",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:fire",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -3044,8 +3044,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:fire",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:fire",
         "defenses": [
           {
             "kind": "resistance",
@@ -3066,7 +3066,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:lightning",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:lightning",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -3075,8 +3075,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:lightning",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:lightning",
         "defenses": [
           {
             "kind": "resistance",
@@ -3097,7 +3097,7 @@
       }
     },
     {
-      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:poison",
+      "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:poison",
       "granted_by": {
         "kind": "flavour",
         "ref": {
@@ -3106,8 +3106,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:poison",
+        "type": "damage_modifier",
+        "id": "damage_modifier:choice:species-defense:egw:dragonborn-ravenite:0:poison",
         "defenses": [
           {
             "kind": "resistance",
@@ -3128,7 +3128,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:dwarf-duergar:dwarven-resilience:1:poison:",
+      "id": "damage_modifier:species:mtf:dwarf-duergar:dwarven-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3141,8 +3141,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:dwarf-duergar:dwarven-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:dwarf-duergar:dwarven-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3162,7 +3162,7 @@
       }
     },
     {
-      "id": "defense:species:phb:dwarf-hill:dwarven-resilience:1:poison:",
+      "id": "damage_modifier:species:phb:dwarf-hill:dwarven-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3175,8 +3175,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:phb:dwarf-hill:dwarven-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:phb:dwarf-hill:dwarven-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3196,7 +3196,7 @@
       }
     },
     {
-      "id": "defense:species:erlw:dwarf-mark-of-warding:dwarven-resilience:1:poison:",
+      "id": "damage_modifier:species:erlw:dwarf-mark-of-warding:dwarven-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3209,8 +3209,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:erlw:dwarf-mark-of-warding:dwarven-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:erlw:dwarf-mark-of-warding:dwarven-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3230,7 +3230,7 @@
       }
     },
     {
-      "id": "defense:species:phb:dwarf-mountain:dwarven-resilience:1:poison:",
+      "id": "damage_modifier:species:phb:dwarf-mountain:dwarven-resilience:1:poison:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3243,8 +3243,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:phb:dwarf-mountain:dwarven-resilience:1:poison:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:phb:dwarf-mountain:dwarven-resilience:1:poison:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3264,7 +3264,7 @@
       }
     },
     {
-      "id": "defense:species:psx:goblin-ixalan:grit:1:fire:",
+      "id": "damage_modifier:species:psx:goblin-ixalan:grit:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3277,8 +3277,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psx:goblin-ixalan:grit:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psx:goblin-ixalan:grit:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3298,7 +3298,7 @@
       }
     },
     {
-      "id": "defense:species:psx:goblin-ixalan:grit:1:psychic:1",
+      "id": "damage_modifier:species:psx:goblin-ixalan:grit:1:psychic:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3311,8 +3311,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psx:goblin-ixalan:grit:1:psychic:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psx:goblin-ixalan:grit:1:psychic:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -3332,7 +3332,7 @@
       }
     },
     {
-      "id": "defense:species:psz:goblin-zendikar-grotag-tribe:grit:1:fire:",
+      "id": "damage_modifier:species:psz:goblin-zendikar-grotag-tribe:grit:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3345,8 +3345,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:goblin-zendikar-grotag-tribe:grit:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:goblin-zendikar-grotag-tribe:grit:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3366,7 +3366,7 @@
       }
     },
     {
-      "id": "defense:species:psz:goblin-zendikar-grotag-tribe:grit:1:psychic:1",
+      "id": "damage_modifier:species:psz:goblin-zendikar-grotag-tribe:grit:1:psychic:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3379,8 +3379,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:goblin-zendikar-grotag-tribe:grit:1:psychic:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:goblin-zendikar-grotag-tribe:grit:1:psychic:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -3400,7 +3400,7 @@
       }
     },
     {
-      "id": "defense:species:psz:goblin-zendikar-lavastep-tribe:grit:1:fire:",
+      "id": "damage_modifier:species:psz:goblin-zendikar-lavastep-tribe:grit:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3413,8 +3413,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:goblin-zendikar-lavastep-tribe:grit:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:goblin-zendikar-lavastep-tribe:grit:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3434,7 +3434,7 @@
       }
     },
     {
-      "id": "defense:species:psz:goblin-zendikar-lavastep-tribe:grit:1:psychic:1",
+      "id": "damage_modifier:species:psz:goblin-zendikar-lavastep-tribe:grit:1:psychic:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3447,8 +3447,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:goblin-zendikar-lavastep-tribe:grit:1:psychic:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:goblin-zendikar-lavastep-tribe:grit:1:psychic:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -3468,7 +3468,7 @@
       }
     },
     {
-      "id": "defense:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:fire:",
+      "id": "damage_modifier:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3481,8 +3481,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3502,7 +3502,7 @@
       }
     },
     {
-      "id": "defense:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:psychic:1",
+      "id": "damage_modifier:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:psychic:1",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3515,8 +3515,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:psychic:1",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:psychic:1",
         "defenses": [
           {
             "kind": "resistance",
@@ -3536,7 +3536,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-asmodeus:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-asmodeus:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3549,8 +3549,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-asmodeus:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-asmodeus:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3570,7 +3570,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-baalzebul:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-baalzebul:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3583,8 +3583,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-baalzebul:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-baalzebul:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3604,7 +3604,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-dispater:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-dispater:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3617,8 +3617,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-dispater:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-dispater:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3638,7 +3638,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-fierna:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-fierna:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3651,8 +3651,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-fierna:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-fierna:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3672,7 +3672,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-glasya:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-glasya:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3685,8 +3685,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-glasya:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-glasya:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3706,7 +3706,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-levistus:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-levistus:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3719,8 +3719,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-levistus:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-levistus:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3740,7 +3740,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-mammon:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-mammon:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3753,8 +3753,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-mammon:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-mammon:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3774,7 +3774,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-mephistopheles:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-mephistopheles:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3787,8 +3787,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-mephistopheles:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-mephistopheles:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3808,7 +3808,7 @@
       }
     },
     {
-      "id": "defense:species:scag:tiefling-variant-devil-s-tongue:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:scag:tiefling-variant-devil-s-tongue:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3821,8 +3821,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:scag:tiefling-variant-devil-s-tongue:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:scag:tiefling-variant-devil-s-tongue:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3842,7 +3842,7 @@
       }
     },
     {
-      "id": "defense:species:scag:tiefling-variant-hellfire:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:scag:tiefling-variant-hellfire:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3855,8 +3855,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:scag:tiefling-variant-hellfire:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:scag:tiefling-variant-hellfire:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3876,7 +3876,7 @@
       }
     },
     {
-      "id": "defense:species:scag:tiefling-variant-infernal-legacy:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:scag:tiefling-variant-infernal-legacy:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3889,8 +3889,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:scag:tiefling-variant-infernal-legacy:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:scag:tiefling-variant-infernal-legacy:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3910,7 +3910,7 @@
       }
     },
     {
-      "id": "defense:species:scag:tiefling-variant-winged:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:scag:tiefling-variant-winged:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3923,8 +3923,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:scag:tiefling-variant-winged:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:scag:tiefling-variant-winged:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3944,7 +3944,7 @@
       }
     },
     {
-      "id": "defense:species:mtf:tiefling-zariel:hellish-resistance:1:fire:",
+      "id": "damage_modifier:species:mtf:tiefling-zariel:hellish-resistance:1:fire:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3957,8 +3957,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:mtf:tiefling-zariel:hellish-resistance:1:fire:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:mtf:tiefling-zariel:hellish-resistance:1:fire:",
         "defenses": [
           {
             "kind": "resistance",
@@ -3978,7 +3978,7 @@
       }
     },
     {
-      "id": "defense:species:psx:vampire-ixalan:vampiric-resistance:1:necrotic:",
+      "id": "damage_modifier:species:psx:vampire-ixalan:vampiric-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -3991,8 +3991,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psx:vampire-ixalan:vampiric-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psx:vampire-ixalan:vampiric-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -4012,7 +4012,7 @@
       }
     },
     {
-      "id": "defense:species:psz:vampire-zendikar:vampiric-resistance:1:necrotic:",
+      "id": "damage_modifier:species:psz:vampire-zendikar:vampiric-resistance:1:necrotic:",
       "granted_by": {
         "kind": "5etools",
         "ref": {
@@ -4025,8 +4025,8 @@
         }
       },
       "benefit": {
-        "type": "defense",
-        "id": "defense:species:psz:vampire-zendikar:vampiric-resistance:1:necrotic:",
+        "type": "damage_modifier",
+        "id": "damage_modifier:species:psz:vampire-zendikar:vampiric-resistance:1:necrotic:",
         "defenses": [
           {
             "kind": "resistance",
@@ -4045,5 +4045,6 @@
         }
       }
     }
-  ]
+  ],
+  "notes": "Source-qualified damage resistance, immunity, vulnerability, and condition immunity. Structured 5eTools fields remain primary where available."
 }

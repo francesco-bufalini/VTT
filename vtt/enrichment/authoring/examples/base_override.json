@@ -18,9 +18,46 @@
         "type": "base_override",
         "id": "demo:base_override",
         "base_override": {
-          "target": "speed",
-          "operation": "set",
-          "amount": 35
+          "target": "speed:fly",
+          "operation": "inherit",
+          "source_field": "speed.fly",
+          "condition": {
+            "not": {
+              "any": [
+                {
+                  "equipped_armor_category": "medium"
+                },
+                {
+                  "equipped_armor_category": "heavy"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "demo:base_override:ac",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:natural-armor"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "demo:armor-class",
+        "base_override": {
+          "target": "ac_unarmored",
+          "operation": "alternative",
+          "condition": {
+            "not": {
+              "equipped_armor_category": "heavy"
+            }
+          },
+          "expression": "13 + dex_mod"
         }
       }
     }
