@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "benefit_type": "creature_grant",
+  "scope": "catalog",
+  "notes": "Granted only by an applied option or trait. Companion template and live owner bindings remain in the shared companion catalog.",
+  "entries": [
+    {
+      "id": "creature_grant:infusion:tce:homunculus-servant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|homunculus servant",
+          "name": "Homunculus Servant",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "creature_grant",
+        "id": "homunculus_servant_2014",
+        "creature_grant": {
+          "creature": {
+            "template_id": "homunculus_servant",
+            "ref": {
+              "category": "monster",
+              "name": "Homunculus Servant",
+              "source": "TCE"
+            }
+          },
+          "application": {
+            "destination": "item",
+            "source_option_id": "infusion|tce|homunculus servant"
+          },
+          "activation": "item",
+          "min_class_level": 2,
+          "limit_per_owner": 1,
+          "owner_actions": [
+            {
+              "id": "command",
+              "name": "Comanda homunculus",
+              "action_type": "bonus",
+              "description": "Comandi all'omuncolo di compiere un'azione; senza comando usa Schivare."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
