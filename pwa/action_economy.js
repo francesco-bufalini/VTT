@@ -1118,7 +1118,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // addressable by their stable native IDs in a declarative OR group.
  const actionContext={...calculated,
   action_entries:[...entries,...monsterActions(record,calculated.trackers)],
-  spell_entries:sessionSpellEntries(record,calculated,spells).map(row=>({
+  spell_entries:sessionSpellEntries(record,{...calculated,
+   origin_spells:arr(calculated.origin_spells),casting_classes:arr(calculated.casting_classes)},spells).map(row=>({
    ...row,source:row.source||arr(spells).find(spell=>spell.id===row.id)?.source||''}))};
  const enrich=row=>({...row,
   attack_sequence:attackActionSequence(row,record,actionContext),
