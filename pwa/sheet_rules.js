@@ -2,6 +2,8 @@ import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
+import {loadFeatBenefitCatalogs} from './feat_benefit_catalogs.js';
+import {infusionDefinitionsFromOptionLists} from './infusion_benefit_catalogs.js';
 import {projectTraitFlavourBenefits,traitFlavourModels} from './trait_flavours.js';
 import {proficiencyIndexFromBenefits} from './proficiency_catalog.js';
 import {baseValueOverridesFromBenefits} from './base_override_benefits.js';
@@ -870,6 +872,7 @@ export function calculateSheet(record={},catalogs={}){
   const backgroundFeats=withBackgroundGrantedFeats(hydrated,catalogs.originDetails?.backgrounds||{},
     catalogs.originDetails?.feats||{},catalogs.classMechanics?.additional_spells||[]);
   const ownerFeatures=collectStructuredFeatures(backgroundFeats,catalogs);
+  const effectiveCatalogs={...catalogs,features:ownerFeatures};
    const flavourRecord=projectTraitFlavourBenefits(backgroundFeats,ownerFeatures,catalogs);
    let effective=projectSelectionBenefits(flavourRecord,catalogs,ownerFeatures);
   const selectionRecord={...effective,selection_traits:[...arr(effective.selection_traits),...arr(flavourRecord.flavour_traits)]};
@@ -881,12 +884,13 @@ export function calculateSheet(record={},catalogs={}){
     return {...calculated,scaling_dice:dice,selection_record:{
       ...selectionRecord,
       dice_bonuses:arr(selectionRecord.dice_bonuses).map(resolve),
-      action_grants:arr(selectionRecord.action_grants).map(resolve)}};
+      action_grants:[...arr(selectionRecord.action_grants).map(resolve),
+       ...arr(calculated.item_action_grants)]}};
   };
   // Imported or externally edited stacks can exceed the current capacity.
   // Bound their effective benefits without rewriting the owner's saved data.
   for(let pass=0;pass<8;pass++){
-    const calculated=calculateSheetValues(effective,catalogs);
+    const calculated=calculateSheetValues(effective,effectiveCatalogs);
     const maximum=Math.max(0,Math.floor(Number(calculated.values.attunement_max)||0));
     const counts=inventoryAttunementCounts(effective.inventory,maximum);
     if(counts.every((count,i)=>count===itemAttunementCount(arr(effective.inventory)[i])))
@@ -897,7 +901,7 @@ export function calculateSheet(record={},catalogs={}){
   }
   const inventory=arr(effective.inventory).map(item=>requiresAttunement(resolveOwnedItem(item))?
     {...item,attuned_count:0,attuned:false}:item);
-  const result=calculateSheetValues({...effective,inventory},catalogs);
+  const result=calculateSheetValues({...effective,inventory},effectiveCatalogs);
   result.warnings.push('Sintonie sospese: il massimo dipende dalle stesse sintonie.');
   result.complete=false;
   return {...withScalingDice(result),selection_models:selectionRecord.selection_models,
@@ -1792,6 +1796,8 @@ function calculateSheetValues(record={},catalogs={}){
       return tracker?[{...row,tracker_id:tracker.id,resource_cost:1}]:[];
     }),
     feat_attacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
+    item_action_grants:arr(record.action_grants).filter(row=>
+      String(row.origin_id||'').startsWith('item-option:')&&sourceEnabled(row)),
     actions:[...barbarian.actions,...contextual.actions].map(row=>contextualTrackerIds.has(row.tracker_id)?
       {...row,tracker_id:contextualTrackerIds.get(row.tracker_id)}:row),
     proficiency_catalog_overrides:proficiencyIndex,
@@ -1899,10 +1905,12 @@ export function loadRuleCatalogs(){
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
      ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/damage_modifier.json']
        .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({}))),
+    loadFeatBenefitCatalogs(),
     fetch('/benefits/spell_extension.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
     fetch('/catalog/benefits/action_sequence.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
-  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers,spellExtensions,actionSequenceBenefits])=>({
-    abilityGrants:variantFamilyAbilityGrants(abilityGrants),
+  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers,featBenefits,spellExtensions,actionSequenceBenefits])=>({
+    abilityGrants:{...variantFamilyAbilityGrants(abilityGrants),...featBenefits,
+      artificer_infusions:optionLists?.benefit_type==='option_list'?infusionDefinitionsFromOptionLists(optionLists):[]},
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants:proficiencyIndexFromBenefits(languageVocabulary,proficiencyGrantBenefits),speciesAttacks,
     speciesDefenses:speciesDefensesFromBenefits(speciesDefenses,flavours),
