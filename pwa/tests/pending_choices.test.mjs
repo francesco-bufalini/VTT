@@ -2,14 +2,17 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from '../pending_choices.js';
+import {proficiencyGrantModels} from '../proficiency_grant.js';
 import {nativeSection} from '../native_sheet.js';
 const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
 const abilities=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const catalogs={proficiencyGrants:index,abilityGrants:abilities};
+const typedGrants=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/proficiency_grant.json',import.meta.url),'utf8'));
 const artificer=()=>({kind:'character',class:'Artificer',class_source:'TCE',
  classes:[{name:'Artificer',source:'TCE',level:10}],rules_version:'2014',
  feats_catalog:[],proficiency_choices:[],origin_spell_grants:[]});
-const choices=(c,calculated={})=>pendingCharacterChoices(c,calculated,catalogs);
+const choices=(c,calculated={})=>pendingCharacterChoices(c,{...calculated,
+ proficiency_grants:proficiencyGrantModels(c,calculated,typedGrants)},catalogs);
 
 test('Artificer class skill pool uses its original limited options',()=>{
  const c=artificer(),pool=choices(c).find(x=>x.kind==='proficiency'&&x.label==='Abilità');
@@ -189,7 +192,7 @@ test('Other Proficiencies summarizes trained skills and expertise as well as too
 test('Skilled 2014 and 2024 share one three-choice skill/tool budget',()=>{
  for(const source of ['PHB','XPHB']){
   const feat=index.feat.find(row=>row.name==='Skilled'&&row.source===source);
-  assert.deepEqual(feat?.proficiencyChoices?.[0]?.choose?.fromKinds,['skill','tool']);
+  assert(feat&&!feat.proficiencyChoices,'Skilled uses the new permanent typed grant');
   const c={...artificer(),feats_catalog:[{name:'Skilled',source}]};
   const picks=choices(c).filter(row=>row.origin_id==='feat|'+source.toLowerCase()+'|skilled');
   assert.equal(picks.length,1);
