@@ -128,6 +128,7 @@ const FILES := {
 	"/state_activation_benefits.js": ["res://pwa/state_activation_benefits.js", "text/javascript; charset=utf-8"],
 	"/power_selection.js": ["res://pwa/power_selection.js", "text/javascript; charset=utf-8"],
 	"/proficiency_grant.js": ["res://pwa/proficiency_grant.js", "text/javascript; charset=utf-8"],
+	"/proficiency_catalog.js": ["res://pwa/proficiency_catalog.js", "text/javascript; charset=utf-8"],
 	"/optional_feature_progression.js": ["res://pwa/optional_feature_progression.js", "text/javascript; charset=utf-8"],
 	"/action_economy.js": ["res://pwa/action_economy.js", "text/javascript; charset=utf-8"],
 	"/demo.js": ["res://pwa/demo.js", "text/javascript; charset=utf-8"],
