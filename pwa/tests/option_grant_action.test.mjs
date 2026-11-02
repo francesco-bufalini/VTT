@@ -17,7 +17,8 @@ test('Arcane Armor derives its action from its option grant, without duplicate m
  assert.ok(armor);
  assert.equal(armor.layers.applied.trigger,'action');
  assert.ok(!Object.hasOwn(armor,'activation_action'));
- assert.equal(armor.title,'Armatura Arcana');
+ assert.equal(armor.title,undefined,'The option grant uses the 5eTools trait name');
+ assert.equal(typed.entries.find(e=>e.benefit?.option_grant?.id==='arcane_armor')?.granted_by?.ref?.name,'Arcane Armor');
 });
 
 function scenario(deactivation='reaction'){
