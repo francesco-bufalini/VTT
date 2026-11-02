@@ -18,6 +18,7 @@ test('ASI has exactly two flavours, and its two independently owned +1 bonuses c
  const features=[asi(4),asi(8)];let record=base();
  const choices=traitFlavourChoices(record,features,catalogs.flavours);
  assert.equal(choices.length,2);assert(choices.every(c=>c.options.length===2));
+ assert.throws(()=>save(base(),choices[0],[]),/Flavour non disponibile/);
  record=save(record,choices[0],[choices[0].options[0]]);
  let picks=flavourBenefitChoices(record,features,catalogs);
  assert.equal(picks.length,2);

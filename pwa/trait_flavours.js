@@ -129,7 +129,7 @@ export function flavourBenefitChoices(record={},features=[],catalogs={}){
  return all;
 }
 export function saveTraitFlavourChoice(record={},choice={},selected=[]){
- if(choice.kind!=='trait_flavour'||selected.length>1||
+ if(choice.kind!=='trait_flavour'||selected.length!==1||
    selected.some(id=>!rows(choice.options).includes(id)))throw Error('Flavour non disponibile.');
  const id=selected[0]||'',owner=choice.origin_id;
  const values={...(record.trait_flavours||{})};
@@ -169,7 +169,7 @@ export function saveTraitFlavourChoice(record={},choice={},selected=[]){
  return patch;
 }
 export function saveFlavourFeatChoice(record={},choice={},values=[]){
- if(choice.kind!=='flavour_feat'||values.length>1||
+ if(choice.kind!=='flavour_feat'||values.length!==1||
   values.some(value=>!rows(choice.options).includes(value)))throw Error('Talento non disponibile.');
  const feats=rows(record.feats_catalog).filter(f=>f.granted_by!==choice.origin_id&&
   f.granted_by!==choice.flavour_parent_id);
