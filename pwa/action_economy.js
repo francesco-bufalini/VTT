@@ -614,20 +614,22 @@ export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
   const payment=isChoice&&arr(action.steps).length?attackActionPayment(action,choiceId):null;
   const cost=payment?.cost||0;
   const tracker=arr(calculated.trackers).find(row=>row.id===(payment?.tracker_id||action.tracker_id));
+  if(kind==='spell'){
+   const spells=arr(part.options);
+   if(!spells.length||part.resolved===false)return '';
+   return spells.map((spell,index)=>'<button type="button" class="play-battle-attack-step-use" data-act="action-cast-spell"'+
+    ' data-spell-id="'+esc(spell.id||'')+'" data-grant-id="'+esc(spell.grant_id||'')+'"'+
+    ' data-casting-class="'+esc(spell.casting_class||'')+'"'+
+    ' data-sequence-time="'+esc(action.time||'')+'"'+
+    ' data-sequence-action-id="'+esc(action.id||'')+'">'+
+    (spells.length===1?'Lancia':'Lancia · '+esc(spell.casting_label||('Fonte '+(index+1))))+'</button>').join('');
+  }
   if(isChoice&&cost>0)return battleActionUseBox({
    act:'attack-action-use',
    attrs:' data-attack-action-id="'+esc(action.id||'')+'" data-attack-action-option-id="'+esc(choiceId)+'"',
    tracker,trackerName:action.tracker,cost,label:'Usa',name:part.label||option?.name||action.name,
    disabled:action.available===false||part.resolved===false});
-  if(kind==='spell'){
-    if(!option||part.resolved===false)return '';
-    return '<button type="button" class="play-battle-attack-step-use" data-act="action-cast-spell"'+
-     ' data-spell-id="'+esc(option.id||'')+'" data-grant-id="'+esc(option.grant_id||'')+'"'+
-     ' data-casting-class="'+esc(option.casting_class||'')+'"'+
-     ' data-sequence-time="'+esc(action.time||'')+'"'+
-     ' data-sequence-action-id="'+esc(action.id||'')+'">Lancia</button>';
-   }
-   const isCheck=kind==='check'||!!option?.check_target;
+  const isCheck=kind==='check'||!!option?.check_target;
   const isAction=kind==='action'||kind==='ability';
   const act=isCheck?'battle-action-roll':isAction?'battle-action-jump':'battle-attack-jump';
   const reference=isCheck?selector.target||option?.check_target||'':
