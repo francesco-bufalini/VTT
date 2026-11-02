@@ -46,10 +46,11 @@ fallback più sotto documentano le fasi precedenti e non il runtime attuale.
 1. Verificare `data/backgrounds.json` nel mirror 5eTools usato per il
    compendio. Competenze, talenti iniziali, caratteristiche, incantesimi
    aggiuntivi ed equipaggiamento spesso sono già espressi strutturalmente.
-2. Se il campo c'è in 5eTools ma manca negli indici VTT/PWA, **correggere
-   importatore o generatore**. Non duplicarlo in un supplemento.
-3. Solo se la meccanica manca realmente in 5eTools, aggiungerla sotto il
-   suo tipo con origine canonica `name + source`, senza copiare la prosa.
+2. Se il campo esiste in 5eTools, copiarlo **una sola volta** nel catalogo
+   tipizzato pertinente con un identificatore canonico; adattare il lettore PWA
+   alla copia locale ed evitare una seconda applicazione dell'effetto.
+3. Se la meccanica non è presente in 5eTools, integrarla nello stesso catalogo
+   e con la stessa origine canonica `name + source`, senza copiare la prosa.
 4. Le aggiunte manuali appartengono esclusivamente alla scheda del
    personaggio, `scope: character`, mai ai file condivisi.
 

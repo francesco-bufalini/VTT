@@ -870,7 +870,10 @@ export function calculateSheet(record={},catalogs={}){
   const normalizedEquipmentInventory=effectiveEquipmentInventory(record.inventory,
     {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
   const hydrated=hydrateGenericVariants({...record,inventory:normalizedEquipmentInventory},catalogs.genericItemVariants);
-  const backgroundFeats=withBackgroundGrantedFeats(hydrated,backgroundStartingFeatsFromBenefits(catalogs.flavourFeatGrants),
+  const backgroundFeats=withBackgroundGrantedFeats(hydrated,
+    catalogs.flavourFeatGrants?.schema_version===2?
+      backgroundStartingFeatsFromBenefits(catalogs.flavourFeatGrants):
+      catalogs.originDetails?.backgrounds||{},
     catalogs.originDetails?.feats||{},catalogs.classMechanics?.additional_spells||[]);
   const ownerFeatures=collectStructuredFeatures(backgroundFeats,catalogs);
   const effectiveCatalogs={...catalogs,features:ownerFeatures};
