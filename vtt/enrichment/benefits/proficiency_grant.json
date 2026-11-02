@@ -179,6 +179,64 @@
           "trigger": "long_rest"
         }
       }
+    },
+    {
+      "id": "proficiency_grant:skilled_phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Skilled",
+          "source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "proficiency_grant",
+        "id": "skilled_phb",
+        "proficiency_grant": {
+          "id": "skilled_phb",
+          "groups": [
+            {
+              "filter": {
+                "kinds": [
+                  "skill",
+                  "tool"
+                ]
+              },
+              "count": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "proficiency_grant:skilled_xphb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Skilled",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "proficiency_grant",
+        "id": "skilled_xphb",
+        "proficiency_grant": {
+          "id": "skilled_xphb",
+          "groups": [
+            {
+              "filter": {
+                "kinds": [
+                  "skill",
+                  "tool"
+                ]
+              },
+              "count": 3
+            }
+          ]
+        }
+      }
     }
   ]
 }
