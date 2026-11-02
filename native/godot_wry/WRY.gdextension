@@ -1,0 +1,18 @@
+[configuration]
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = "4.1"
+reloadable = false
+
+[libraries]
+windows.debug.x86_64 = "windows/godot_wry.dll"
+windows.release.x86_64 = "windows/godot_wry.dll"
+macos.debug = "macos/libgodot_wry.framework"
+macos.release = "macos/libgodot_wry.framework"
+linux.debug.x86_64 = "linux/libgodot_wry.so"
+linux.release.x86_64 = "linux/libgodot_wry.so"
+
+[dependencies]
+windows.debug.x86_64 = { "windows/godot_wry.dll": "" }
+windows.release.x86_64 = { "windows/godot_wry.dll": "" }
+macos.debug = { "macos/libgodot_wry.framework": "Contents/Frameworks" }
+macos.release = { "macos/libgodot_wry.framework": "Contents/Frameworks" }

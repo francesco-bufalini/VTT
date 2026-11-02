@@ -306,6 +306,12 @@ func _start_listener() -> Error:
 	return OK
 
 
+# Return only the active loopback origin. No pairing secret or archive is exposed.
+func local_origin() -> String:
+	if not _server.is_listening():
+		return ""
+	return "http://127.0.0.1:%d" % _server.get_local_port()
+
 func _stop_listener() -> void:
 	_short_code = ""
 	_short_code_expiry = 0
