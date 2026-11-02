@@ -155,6 +155,7 @@ try{
    classes:[{name:'Ranger',source:'PHB',level:2}],
    abilities:{str:12,dex:16,con:12,int:10,wis:16,cha:10}};
   const catalogs=await loadRuleCatalogs(),selectionCatalog={...catalogs.powerSelections,
+   optionGrants:catalogs.optionGrants,optionLists:catalogs.optionLists,
    optionalFeatureProgressions:catalogs.optionalFeatureProgressions};
   const calculated=calculateSheet(record,catalogs);
   const learned={...record,...powerSelectionPatch(record,calculated,selectionCatalog,
