@@ -574,6 +574,11 @@
         }
       },
       "additionalProperties": false
+    },
+    "tracker_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable tracker ID charged by an action or spell sequence"
     }
   },
   "allOf": [
