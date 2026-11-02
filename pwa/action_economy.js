@@ -654,7 +654,9 @@ export function battleAttackActionRow(item={},calculated={}){
  const control=hasAlternatives?'':battleActionUseBox({act:useAct,
   attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':
    useAct==='battle-action-activate'?' data-action-id="'+esc(item.id||'')+'"':'',
-  tracker,trackerName:item.tracker,cost,label:'Usa',disabled:item.available===false,name:item.name});
+  tracker,trackerName:item.tracker,cost,
+  label:item.option_grant_active===true?'Disattiva':'Usa',
+  disabled:item.available===false,name:item.name});
  return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-list-action play-battle-attack-action'+
   (item.available===false?' play-battle-attack-unavailable':'')+'" data-attack-id="'+esc(item.id||'')+'">'+
   '<button type="button" class="play-resource-power-open play-battle-action-detail-open" data-act="sheet-context" data-sheet-context="'+esc(battleActionContextKey(item))+'" title="'+esc(item.name||'Azione')+'" aria-label="Dettagli '+esc(item.name||'Azione')+'">'+
@@ -754,6 +756,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions,record={},phys
    act==='battle-action-activate'?' data-action-id="'+esc(item.id)+'"':
    act==='combat-action'?' data-mode="'+esc(item.action_id)+'"':'';
   const control=battleActionUseBox({act,attrs,tracker,cost:Number(item.cost)||0,
+   label:item.option_grant_active===true?'Disattiva':'Usa',
    trackerName:item.tracker||'',disabled:item.available===false,name:actionName});
   return '<article class="play-resource-power-row play-battle-benefit-row play-battle-attack-entry play-battle-other-action'+
    (item.available===false?' play-battle-attack-unavailable':'')+
@@ -848,10 +851,17 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
   if(!raw||raw==='passive')continue;
   if(ability.id==='vtt_wild_shape'&&result.some(row=>row.rule_action_id==='wild_shape'||row.id==='wild_shape'))continue;
   const name=String(ability.name||'').trim().toLocaleLowerCase('it');
-  if(!name||seen.has(name))continue;
+  if(!name)continue;
+  // Prefer the typed option-grant action to a legacy row with the same name.
+  if(seen.has(name)){
+   if(!ability.option_grant_id)continue;
+   const previous=result.findIndex(row=>String(row.name||'').trim().toLocaleLowerCase('it')===name);
+   if(previous>=0)result.splice(previous,1);
+  }
   result.push({id:'activated:'+ability.id,ability_id:ability.id,name:ability.name,
    description:ability.description||'',descriptive_only:ability.descriptive_only===true,
-    ...(ability.option_grant_id?{option_grant_id:ability.option_grant_id}:{}),
+    ...(ability.option_grant_id?{option_grant_id:ability.option_grant_id,
+     option_grant_active:ability.option_grant_active===true}:{}),
    time:raw==='contextual'?'contextual':timing(raw),type:'Capacità',
    origin:'personal',origin_id:ability.feature_id||ability.origin_id||'',
    tracker_id:String(ability.tracker_id||''),tracker:ability.tracker_name||ability.resource_name||'',

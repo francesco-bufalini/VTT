@@ -3624,9 +3624,44 @@
                 },
                 "refund_on_remove": {
                   "type": "boolean"
+                },
+                "deactivation_trigger": {
+                  "enum": [
+                    "action",
+                    "bonus",
+                    "reaction",
+                    "free",
+                    "movement"
+                  ],
+                  "description": "Optional action type for deactivating an applied action-triggered option grant. Omitted means free. Only valid when applied.trigger is an action type."
                 }
               },
-              "additionalProperties": true
+              "additionalProperties": true,
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "deactivation_trigger"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "trigger"
+                    ],
+                    "properties": {
+                      "trigger": {
+                        "enum": [
+                          "action",
+                          "bonus",
+                          "reaction",
+                          "free",
+                          "movement"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
             }
           },
           "additionalProperties": false
@@ -3831,35 +3866,6 @@
         "migration_group": {
           "type": "string",
           "description": "Supplemental source-family marker used only to distinguish migrated static bootstrap families; not a game mechanic."
-        },
-        "activation_action": {
-          "type": "object",
-          "required": [
-            "id",
-            "action_type"
-          ],
-          "properties": {
-            "id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "name": {
-              "type": "string"
-            },
-            "action_type": {
-              "enum": [
-                "action",
-                "bonus",
-                "reaction",
-                "free",
-                "movement"
-              ]
-            },
-            "description": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
         }
       },
       "additionalProperties": false

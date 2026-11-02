@@ -9,6 +9,8 @@ const identity=v=>typeof v==='string'?v:v?.id;
 export const POWER_SELECTION_TRIGGERS={level_up:'Passaggio di livello',short_rest:'Riposo breve',long_rest:'Riposo lungo',action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento'};
 export const OPTION_GRANT_ACTION_TYPES=Object.freeze(['action','bonus','reaction','free','movement']);
 export const optionGrantActionTrigger=model=>OPTION_GRANT_ACTION_TYPES.includes(String(model?.layers?.applied?.trigger||''));
+export const optionGrantDeactivationTrigger=model=>optionGrantActionTrigger(model)?
+  model.layers.applied.deactivation_trigger||'free':null;
 export const powerSelectionTriggerLabel=v=>Array.isArray(v)?v.map(powerSelectionTriggerLabel).join(' / '):POWER_SELECTION_TRIGGERS[v]||v||'';
 export function powerSelectionLimit(spec,level){
  if(spec==null)return null;if(typeof spec==='number')return spec;
@@ -177,7 +179,9 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
    }
    if(stage==='applied'&&rule.capacity_bonus_field)limit+=rows(catalog.capacity_grants||calculated.selection_capacity_grants).reduce((n,r)=>n+Number(r[rule.capacity_bonus_field]||0),0);
    if(stage==='applied'&&!rule.application?.target&&!spec.target)selected=selected.map(identity);
-   layers[stage]={enabled:true,selected,used:selected.length,limit,trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger),automatic:spec.mode==='automatic',target:stage==='applied'?rule.application?.target||spec.target:null};
+   layers[stage]={enabled:true,selected,used:selected.length,limit,trigger:spec.trigger||null,
+    ...(stage==='applied'&&spec.deactivation_trigger?{deactivation_trigger:spec.deactivation_trigger}:{}),
+    change_label:powerSelectionTriggerLabel(spec.trigger),automatic:spec.mode==='automatic',target:stage==='applied'?rule.application?.target||spec.target:null};
   }
   if(layers.learned?.limit===0&&!layers.learned.selected.length)continue;
   // A rule with no stages, or with explicit fixed options, needs no selection UI.
@@ -188,9 +192,9 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
    benefit_type:rule.benefit_type||'option_selection',
    source_type:'option_catalog',ui:'generic',options,layers,level,fixed,
    origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required};
-  if(optionGrantActionTrigger(model)&&(!model.activation_action?.id||
-    model.activation_action.action_type!==model.layers.applied.trigger))
-   throw Error('Azione di applicazione non definita per '+model.id);
+  const deactivation=model.layers.applied?.deactivation_trigger;
+  if(deactivation!=null&&(!optionGrantActionTrigger(model)||!OPTION_GRANT_ACTION_TYPES.includes(deactivation)))
+   throw Error('Trigger di disattivazione non valido per '+model.id);
   models.push(model);
   for(const applied of [...rows(model.layers.applied?.selected),...rows(model.fixed)]){
    const selectedOption=model.options.find(option=>option.id===identity(applied));
@@ -286,9 +290,12 @@ export function powerSelectionTargets(record,model,option){const target=model?.l
 export function powerApplicationPatch(raw,calculated,catalog,id,optionId,apply,{itemIndex=-1,effectChoice={},viaAction=false}={}){
  const record=structuredClone(normalizeSelectionRecord(raw,catalog)),model=powerSelectionModels(record,calculated,catalog).find(m=>m.id===id),option=model?.options.find(o=>o.id===optionId),layer=model?.layers.applied;
  if(!option||!layer)throw Error('Applicazione non disponibile.');
- if(optionGrantActionTrigger(model)&&(!viaAction||!model.activation_action?.id||
-   model.activation_action.action_type!==layer.trigger))
+ if(optionGrantActionTrigger(model)&&!viaAction)
   throw Error('Questa capacità si applica e disattiva soltanto usando la sua azione.');
+ if(optionGrantActionTrigger(model)&&apply&&layer.selected.length)
+  throw Error('Disattiva prima la capacità attiva tramite la sua azione.');
+ if(optionGrantActionTrigger(model)&&!apply&&!layer.selected.length)
+  throw Error('Nessuna applicazione attiva da disattivare.');
  if(layer.automatic)throw Error('Applicazione automatica dalla conoscenza.');
  const old=rows(record.power_applications?.[id]),exists=old.some(row=>row.id===optionId);
  if(apply&&exists&&!layer.target)throw Error('Potere già applicato.');

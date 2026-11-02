@@ -1,6 +1,7 @@
 // Native nonspell capabilities: eligibility comes from the same projected
 // feature/origin graph as the sheet, never from guessed class-level thresholds.
 import {companionOwnerActions} from './companion_rules.js';
+import {optionGrantActionTrigger,optionGrantDeactivationTrigger} from './power_selection.js';
 import {featureActionEntries,classFeatureDescriptors} from "./feature_mechanics.js";
 import {activeItemOptionEffects,ownedItemDisplayName} from "./item_controls.js";
 const rows=v=>Array.isArray(v)?v:[];
@@ -192,16 +193,17 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   for(const power of rows(projection.racial_abilities))
     add(power,'Specie · '+(creature.species||'')+' · '+(creature.species_source||''),
       power.origin_id||'');
-  // Action-triggered option grants appear in the regular battle action list.
+  // The grant itself defines the action. Only its effective timing changes
+  // between activation and deactivation; no second action declaration exists.
   for(const model of rows(projection.power_selections)){
-    const action=model.activation_action,trigger=model.layers?.applied?.trigger;
-    if(!action?.id||!["action","bonus","reaction","free","movement"].includes(trigger)||
-      action.action_type!==trigger)continue;
-    add({id:"option-grant-action:"+model.id,name:action.name||model.title,
-      mode:"option_grant_action",option_grant_id:model.id,
+    if(!optionGrantActionTrigger(model))continue;
+    const active=rows(model.layers.applied.selected).length>0;
+    const timing=active?optionGrantDeactivationTrigger(model):model.layers.applied.trigger;
+    add({id:"option-grant-action:"+model.id,name:model.title||model.id,
+      mode:"option_grant_action",option_grant_id:model.id,option_grant_active:active,
       feature_id:model.source_origin_id,feature_name:model.title,
-      action_type:trigger,activation_mode:trigger,resource_cost:0,
-      description:action.description||model.description||""},
+      action_type:timing,activation_mode:timing,resource_cost:0,
+      description:model.description||""},
       model.owner?.class_name?"Classe · "+model.owner.class_name:"Privilegio · "+model.title,
       model.source_origin_id||"");
   }

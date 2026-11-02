@@ -318,16 +318,30 @@ Le opzioni definite in `option_list.json` concedono benefici tramite i propri
 gli Stati, oppure estendono il tratto dell'oggetto destinatario; i benefici
 sono attribuiti a quel tratto, non a una nuova classe di beneficio `state`.
 
-Un `option_grant` con `layers.applied.trigger` pari a `action`, `bonus`,
-`reaction`, `free` o `movement` deve dichiarare `activation_action`.
-Questa azione compare nelle Azioni. Non è possibile applicare o disattivare
-manualmente un'opzione di questo tipo attraverso la GUI di Poteri, Stati o
-Inventario: l'azione avvia la selezione, conferma il bersaglio e modifica
-l'applicazione utilizzando la stessa proiezione dei benefici delle altre opzioni.
+Se `layers.applied.trigger` di un `option_grant` è `action`, `bonus`,
+`reaction`, `free` o `movement`, il motore **genera automaticamente**
+l'azione nel pannello Azioni, a partire da ID e titolo dell'istanza.
+**Non serve `activation_action`**: ID, nome e tipo di azione sono già
+definiti dal grant e dal suo trigger.
 
-Arcane Armor è ora un `option_grant` con trigger di un'azione e una sola
-opzione, applicata all'armatura scelta; la disattivazione dell'azione ritira
-gli effetti sull'oggetto. Gli altri trigger di riposo/livello rimangono
+Il campo facoltativo `layers.applied.deactivation_trigger` è valido solo
+per i grant applicati tramite azione. Dichiara il tipo di azione necessario
+a interrompere un'applicazione; il valore predefinito è `free`. Quando
+un'opzione del grant è attiva, l'azione mostra **Disattiva**, con il tipo di
+azione di disattivazione. Non si può applicare un'ulteriore opzione fino
+alla disattivazione; quando più oggetti sono stati applicati in passato
+è possibile selezionare individualmente quale applicazione rimuovere.
+
+Non è possibile applicare o disattivare manualmente questi benefici
+attraverso Poteri, Stati o Inventario: l'azione apre il selettore delle
+opzioni e degli eventuali bersagli e utilizza il normale motore di
+proiezione dei benefici. Per esempio un grant modellato per Ira potrebbe
+usare `trigger: "bonus"` e `deactivation_trigger: "bonus"`.
+
+Arcane Armor è un `option_grant` con trigger `action` e una sola
+opzione, applicata all'armatura scelta; senza trigger di disattivazione
+esplicito, disattivarla è un'azione gratuita e ritira gli effetti
+sull'oggetto. Gli altri trigger di riposo/livello rimangono
 invariati. `state` e `state_activation` non sono più benefici canonici.
 
 La lettura transitoria di `pwa/catalog/trait_states.json` resta per i

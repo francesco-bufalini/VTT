@@ -52,7 +52,7 @@ import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrai
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
-import {powerSelectionModels,powerSelectionTargets,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerStateActivationPatch,optionGrantActionTrigger} from './power_selection.js';
+import {powerSelectionModels,powerSelectionTargets,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerStateActivationPatch,optionGrantActionTrigger,optionGrantDeactivationTrigger,powerSelectionTriggerLabel} from './power_selection.js';
 import {claimFeatureItemPatch,featureItemPowers,featureItemGrants} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -3371,10 +3371,12 @@ async function openBenefitOptionDialog(selectionId,optionId,{viaAction=false}={}
  if(!option)throw Error('Opzione non disponibile.');
  const layer=model.layers.applied,target=layer?.target;
  const actionTriggered=optionGrantActionTrigger(model);
- if(viaAction&&(!actionTriggered||!model.activation_action?.id))throw Error('Azione di applicazione non disponibile.');
+ if(viaAction&&!actionTriggered)throw Error('Azione di applicazione non disponibile.');
  const manualControls=!actionTriggered||viaAction;
+ const deactivating=viaAction&&(layer?.selected||[]).length>0;
  const prerequisite=model.layers.prepared||model.layers.learned;
- const known=!prerequisite||prerequisite.selected.some(row=>selectedPowerId(row)===optionId);
+ const known=!prerequisite||prerequisite.selected.some(row=>selectedPowerId(row)===optionId)||
+  (layer?.selected||[]).some(row=>selectedPowerId(row)===optionId);
  const applications=(layer?.selected||[]).filter(row=>selectedPowerId(row)===optionId).map(row=>{const index=(record.inventory||[]).findIndex(item=>(item.instance_id||item.id)===row.target_item_id);return {...(typeof row==='string'?{id:row}:row),inventory_index:index,target_name:record.inventory?.[index]?.name};});
  const active=applications.length>0||model.fixed?.includes(optionId),description=await benefitOptionDescription(option);
  if(state.editor?.read()?.id!==record.id)return;
@@ -3387,24 +3389,25 @@ async function openBenefitOptionDialog(selectionId,optionId,{viaAction=false}={}
  const facts=[{label:'Stato',value:active?'Applicata':known?'Conosciuta':'Da imparare'},
   ...(option.min_level?[{label:'Livello richiesto',value:String(option.min_level)}]:[]),
   ...(target?[{label:'Bersaglio',value:target.label||'Oggetto'}]:[]),
-  ...(layer?.change_label?[{label:'Quando cambiare',value:layer.change_label}]:[])];
+  ...(layer?.change_label?[{label:viaAction?'Costo':'Quando cambiare',
+   value:deactivating?powerSelectionTriggerLabel(optionGrantDeactivationTrigger(model)):layer.change_label}]:[])];
  const benefits=[...(option.attacks||[]).map(row=>row.name||row.trait),...(option.granted_features||[]),
   ...(option.numeric_grants||[]).map(row=>row.trait||row.id)];
  dialog.innerHTML=actionDialogIntro(option.name,facts,description||'Descrizione non disponibile nel catalogo.',model.title,'benefit-option-close')+
   (benefits.length?'<section class="infusion-dialog-active"><h3>Benefici</h3>'+benefits.map(name=>'<p>'+esc(name)+'</p>').join('')+'</section>':'')+
-  (applications.length&&target&&manualControls?'<section class="infusion-dialog-active"><h3>Applicazioni attive</h3>'+applications.map(row=>
+  (applications.length&&target&&manualControls&&(!viaAction||deactivating)?'<section class="infusion-dialog-active"><h3>Applicazioni attive</h3>'+applications.map(row=>
     '<div class="infusion-dialog-item"><span>'+esc(row.target_name||'Applicazione attiva')+'</span><button type="button" class="btn" '+
     'data-act="benefit-option-remove" data-index="'+(row.inventory_index??-1)+'">Disattiva</button></div>').join('')+'</section>':'')+
-  (known&&target&&manualControls?'<label class="vtt-list-search inventory-global-search benefit-target-search"><input type="search" data-benefit-target-search '+
+  (known&&target&&manualControls&&!deactivating?'<label class="vtt-list-search inventory-global-search benefit-target-search"><input type="search" data-benefit-target-search '+
     'aria-label="'+esc(target.label||'Oggetto compatibile')+'" placeholder="'+esc(target.label||'Oggetto compatibile')+'" autocomplete="off"></label>'+
     '<div class="inventory-search-results vtt-selection-list benefit-target-results" role="list"></div>':'')+
-  (known&&option.effect_choice?'<label>'+esc(option.effect_choice.label||'Scelta effetto')+'<select data-benefit-effect>'+option.effect_choice.options.map(value=>
+  (known&&option.effect_choice&&!deactivating?'<label>'+esc(option.effect_choice.label||'Scelta effetto')+'<select data-benefit-effect>'+option.effect_choice.options.map(value=>
    '<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
   '<p class="hint" data-benefit-error role="status" hidden></p><div class="actions magic-dialog-actions">'+
-  (known&&layer&&!layer.automatic&&manualControls?'<button type="button" class="btn primary" data-act="benefit-option-apply"'+(target?' disabled':'')+'>'+
+  (known&&layer&&!layer.automatic&&manualControls&&(!deactivating||!target)?'<button type="button" class="btn primary" data-act="benefit-option-apply"'+(target?' disabled':'')+'>'+
    (active&&!target?'Disattiva':'Applica')+'</button>':'')+
   '<button type="button" class="btn" data-act="benefit-option-close">Chiudi</button></div>';
- if(known&&target&&manualControls){
+ if(known&&target&&manualControls&&!deactivating){
   const input=dialog.querySelector('[data-benefit-target-search]'),results=dialog.querySelector('.benefit-target-results');
   const paint=()=>{
    const candidates=powerSelectionTargets(record,model,option).filter(({item})=>matchesSearch(input.value,item.name,item.source)).map(({item,index})=>({item,index}));
@@ -3427,24 +3430,26 @@ async function openBenefitOptionDialog(selectionId,optionId,{viaAction=false}={}
 // Action-bound option grants have no manual apply control in Powers.
 async function openOptionGrantActionDialog(record,calculated,ability){
  const model=(calculated.power_selections||[]).find(row=>row.id===ability.option_grant_id);
- if(!model||!optionGrantActionTrigger(model)||!model.activation_action?.id)
+ if(!model||!optionGrantActionTrigger(model))
   throw Error('Azione di applicazione non disponibile.');
  const prerequisite=model.layers.prepared||model.layers.learned;
  const active=new Set((model.layers.applied?.selected||[]).map(selectedPowerId));
- const choices=model.options.filter(option=>
-  (!prerequisite||prerequisite.selected.some(row=>selectedPowerId(row)===option.id)||active.has(option.id))&&
-  (option.min_level<=model.level||active.has(option.id)));
+ const deactivating=active.size>0;
+ const choices=model.options.filter(option=>deactivating?active.has(option.id):
+  (!prerequisite||prerequisite.selected.some(row=>selectedPowerId(row)===option.id))&&
+  option.min_level<=model.level);
  if(!choices.length)throw Error('Nessuna opzione disponibile per questa azione.');
  if(choices.length===1)return openBenefitOptionDialog(model.id,choices[0].id,{viaAction:true});
  app.querySelector('#option-grant-action-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='option-grant-action-dialog';
  dialog.className='sheet-roll-dialog magic-spell-dialog benefit-option-dialog';
  dialog.dataset.creatureId=record.id;dialog.dataset.powerSelectionId=model.id;
- dialog.innerHTML=actionDialogIntro(model.activation_action.name||model.title,
-  [{label:'Azione',value:model.layers.applied.change_label||model.layers.applied.trigger}],
-  model.activation_action.description||model.description||'',model.title,'option-grant-action-close')+
+ dialog.innerHTML=actionDialogIntro((deactivating?'Disattiva ':'')+model.title,
+  [{label:'Costo',value:powerSelectionTriggerLabel(deactivating?
+    optionGrantDeactivationTrigger(model):model.layers.applied.trigger)}],
+  model.description||'',model.title,'option-grant-action-close')+
   '<div class="benefit-option-list">'+choices.map(option=>'<button type="button" class="btn" data-act="option-grant-action-select" data-power-option-id="'+esc(option.id)+'">'+
-   esc(option.name||option.id)+(active.has(option.id)?' · Attiva':'')+'</button>').join('')+'</div>';
+   esc((deactivating?'Disattiva ':'')+(option.name||option.id))+'</button>').join('')+'</div>';
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
 }
 
