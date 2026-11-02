@@ -179,7 +179,7 @@ const FILES := {
 	
 	"/catalog/species_powers.json": ["res://pwa/catalog/species_powers.json", "application/json; charset=utf-8"],
 	
-	"/catalog/sense_grants.json": ["res://pwa/catalog/sense_grants.json", "application/json; charset=utf-8"],
+	"/benefits/sense.json": ["res://vtt/enrichment/benefits/sense.json", "application/json; charset=utf-8"],
 	"/benefits/roll_mode.json": ["res://vtt/enrichment/benefits/roll_mode.json", "application/json; charset=utf-8"],
 	"/benefits/roll_bonus.json": ["res://vtt/enrichment/benefits/roll_bonus.json", "application/json; charset=utf-8"],
 	"/benefits/resource.json": ["res://vtt/enrichment/benefits/resource.json", "application/json; charset=utf-8"],

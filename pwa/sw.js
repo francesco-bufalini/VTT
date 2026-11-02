@@ -109,7 +109,7 @@ const SHELL = [
   "/skill_definitions.js",
   "/offhand_rules.js",
   "/sense_rules.js",
-  "/catalog/sense_grants.json",
+  "/benefits/sense.json",
   "/ability_choice_rules.js",
   "/feat_picker.js",
   "/rule_supplements.js",
@@ -190,7 +190,7 @@ const CORE_SHELL = SHELL.filter(path =>
 const REQUIRED_CATALOGS = [
   "/catalog/ability_grants.json", "/catalog/class_mechanics.json",
   "/benefits/option_grant.json", "/catalog/species_powers.json", "/catalog/languages_5etools.json", "/catalog/classes.json",
-  "/catalog/player.json", "/catalog/sense_grants.json", "/benefits/proficiency_grant.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
+  "/catalog/player.json", "/benefits/sense.json", "/benefits/proficiency_grant.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json", "/catalog/power_selections.json",
   "/catalog/optional_feature_progressions.json",
   "/catalog/feature_slot_spells.json", "/catalog/spellcasting_benefits.json",

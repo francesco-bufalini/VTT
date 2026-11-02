@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {selectedSources,grantedFields,fixedProficiencies} from '../structured_effects.js';
 import {calculateSenses} from '../sense_rules.js';
 const prof=proficiencyTestIndex();
-const senses=JSON.parse(readFileSync(new URL('../catalog/sense_grants.json',import.meta.url),'utf8'));
+const senses=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/sense.json',import.meta.url),'utf8'));
 test('Custom Lineage chooses darkvision or skill, not both, and preserves dormant skill',()=>{
  const key='race|tce|custom lineage';
  const saved={species:'Custom Lineage',species_source:'TCE',

@@ -1914,7 +1914,7 @@ export function loadRuleCatalogs(){
     fetch('/benefits/roll_mode.json').then(r=>{if(!r.ok)throw Error('Modificatori ai tiri delle specie non disponibili');return r.json();})
       .then(data=>data?.schema_version===2&&data.benefit_type==='roll_mode'?data:{load_error:true})
       .catch(error=>{console.warn('VTT: vantaggi razziali condizionali non disponibili',error);return {load_error:true};}),
-    fetch('/catalog/sense_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1?data:{}).catch(()=>({})),
+    fetch('/benefits/sense.json').then(r=>r.ok?r.json():{}).then(data=>data?.schema_version===2&&data?.benefit_type==='sense'&&data?.scope==='catalog'&&Array.isArray(data.entries)?data:{}).catch(()=>({})),
     loadFeatureItemGrantBenefits(),
     legacyPowerSelections,
     legacyOptionalFeatures,

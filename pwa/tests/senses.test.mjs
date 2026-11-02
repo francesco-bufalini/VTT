@@ -1,10 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {calculateSenses,senseLightRows} from '../sense_rules.js';
+import {calculateSenses,senseLightRows,senseGrantsFromBenefits} from '../sense_rules.js';
 import {addBenefitPatch,removeBenefitPatch} from '../trait_benefit_editor.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-const catalog=JSON.parse(readFileSync(new URL('../catalog/sense_grants.json',import.meta.url),'utf8'));
+const catalog=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/sense.json',import.meta.url),'utf8'));
+const audit=JSON.parse(readFileSync(new URL('./sense_5etools_audit.json',import.meta.url),'utf8'));
+const typed=senseGrantsFromBenefits(catalog);
+test('all 152 canonical sense grants have unique IDs, source ownership and exact modifiers',()=>{
+ assert.equal(catalog.schema_version,2);
+ assert.equal(catalog.benefit_type,'sense');
+ assert.equal(catalog.entries.length,152);
+ assert.equal(new Set(catalog.entries.map(e=>e.id)).size,152);
+ assert.deepEqual([typed.species.length,typed.subraces.length,typed.features.length],[137,9,6]);
+ assert(catalog.entries.every(e=>e.granted_by?.kind==='5etools'&&e.benefit?.sense?.range_feet>0));
+ const umbral=catalog.entries.find(e=>e.granted_by?.ref?.name==='Umbral Sight');
+ assert.equal(umbral.benefit.sense.mode,'increase_if_existing');
+ assert.equal(umbral.benefit.sense.fallback_feet,60);
+ const lineage=catalog.entries.find(e=>e.granted_by?.ref?.race==='Custom Lineage');
+ assert.equal(lineage.benefit.sense.choice_required,'darkvision');
+});
 test('2014 race and subrace ranges respect explicit source and light levels',()=>{
  const elf=calculateSenses({species:'Elf',species_source:'PHB'},[],catalog);
  assert.equal(elf.distances.darkvision,60);
@@ -57,13 +72,13 @@ test('item-granted senses require the exact active item, even with structured it
 });
 
 test('every 2014 5etools race and subrace has its latest source-qualified senses audited',()=>{
- assert.equal(catalog.audit.races.length,134);
- assert.equal(catalog.audit.subraces.length,98);
+ assert.equal(audit.races.length,134);
+ assert.equal(audit.subraces.length,98);
  const vision=senses=>Object.fromEntries((senses||[]).map(v=>{
   const [type,feet]=v.split(':');return [type,Number(feet)];
  }));
  let verified=0;
- for(const race of catalog.audit.races){
+ for(const race of audit.races){
   const character={species:race.name,species_source:race.source};
   const actual=calculateSenses(character,[],catalog).distances;
   const expected=vision(race.senses);
@@ -75,8 +90,8 @@ test('every 2014 5etools race and subrace has its latest source-qualified senses
   }
   verified++;
  }
- for(const sub of catalog.audit.subraces){
-  const parent=catalog.audit.races.find(r=>r.name===sub.race_name&&r.source===sub.race_source);
+ for(const sub of audit.subraces){
+  const parent=audit.races.find(r=>r.name===sub.race_name&&r.source===sub.race_source);
   const expected=vision(parent?.senses),extra=vision(sub.senses);
   for(const [type,feet] of Object.entries(extra))expected[type]=Math.max(expected[type]||0,feet);
   const actual=calculateSenses({species:sub.race_name,species_source:sub.race_source,

@@ -37,7 +37,7 @@ test('every dependency of the Godot-served JavaScript module graph has an HTTP r
 });
 test('all offline-critical racial and sense catalogs are exposed by the desktop host',()=>{
  for(const uri of ['/sense_rules.js','/species_powers.js',
-  '/catalog/sense_grants.json','/catalog/species_powers.json','/benefits/option_grant.json','/benefits/defense.json']){
+  '/benefits/sense.json','/catalog/species_powers.json','/benefits/option_grant.json','/benefits/defense.json']){
   assert(served.has(uri),'Missing Godot host mapping: '+uri);
   assert(existsSync(path.join(root,served.get(uri))),'Mapped source is missing: '+uri);
  }

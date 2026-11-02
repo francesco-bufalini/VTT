@@ -11,6 +11,37 @@ export const SENSE_NAMES={normal:'Visione normale',darkvision:'Scurovisione',
 export const SENSE_OPTIONS=Object.entries(SENSE_NAMES).filter(([key])=>key!=='normal');
 export const senseRange=feet=>formatDistance(feet);
 
+// Convert canonical typed sense grants into source-qualified sheet rows.
+// The legacy sense_grants catalog is not fetched or regenerated.
+export function senseGrantsFromBenefits(catalog={}){
+ const result={species:[],subraces:[],features:[]};
+ if(catalog?.schema_version!==2||catalog?.benefit_type!=='sense'||
+   catalog?.scope!=='catalog'||!Array.isArray(catalog.entries))return result;
+ for(const entry of catalog.entries){
+  if(entry?.benefit?.type!=='sense'||entry?.granted_by?.kind!=='5etools')continue;
+  const ref=entry.granted_by.ref||{},grant=entry.benefit.sense||{};
+  const type=String(grant.type||''),range_feet=Number(grant.range_feet);
+  if(!SENSE_OPTIONS.some(([id])=>id===type)||!Number.isInteger(range_feet)||
+    range_feet<1||range_feet>10000)continue;
+  const base={type,range_feet,...(grant.mode?{mode:grant.mode}:{}),
+   ...(grant.fallback_feet?{fallback_feet:grant.fallback_feet}:{}),
+   ...(grant.choice_required?{choice_required:grant.choice_required}:{})};
+  if(ref.category==='species_trait'&&ref.race&&ref.race_source){
+   if(ref.subrace&&ref.subrace_source)
+    result.subraces.push({name:ref.subrace,source:ref.subrace_source,
+     race_name:ref.race,race_source:ref.race_source,trait:ref.name,...base});
+   else result.species.push({name:ref.race,source:ref.race_source,trait:ref.name,...base});
+  }else if(['optional_feature','class_feature','subclass_feature'].includes(ref.category)){
+   result.features.push({name:ref.name,
+    ...(!ref.class_name&&ref.source?{source:ref.source}:{}),
+    ...(ref.class_name?{class_name:ref.class_name,class_source:ref.class_source}:{}),
+    ...base});
+  }
+ }
+ return result;
+}
+
+
 export function senseLightRows(distances={}){
  // 2014 PHB: normal vision has no intrinsic range. Dim light is lightly obscured:
  // sight-based Perception checks have disadvantage (-5 to applicable passive Perception).
@@ -46,6 +77,7 @@ function monsterSenses(record){
 }
 export function calculateSenses(record={},features=[],catalog={},sourceEnabled=()=>true){
  const hidden=removedBenefitIds(record),grants=[];
+ const typed=senseGrantsFromBenefits(catalog);
  const originOn=id=>!id||record.origin_enabled?.[id]!==false&&
   !arr(record.proficiency_origins).some(row=>row?.id===id&&row.disabled);
  const activeFeature=f=>!f.inactive&&!f.disabled&&record.trait_enabled?.[f.key]!==false&&
@@ -67,7 +99,7 @@ export function calculateSenses(record={},features=[],catalog={},sourceEnabled=(
   grants.push({...row,range_feet:feet});
  };
  for(const row of arr(record.sense_grants))add(row);
- for(const row of arr(catalog.species)){
+ for(const row of arr(typed.species)){
   if(!same(record.species,row.name)||!same(record.species_source,row.source))continue;
   const origin='race|'+norm(row.source)+'|'+norm(row.name);
   // Custom Lineage (TCE) offers darkvision OR a skill. The raw JSON lists
@@ -80,7 +112,7 @@ export function calculateSenses(record={},features=[],catalog={},sourceEnabled=(
    parent_origin:feature?origin:'',origin_name:feature?'Tratto · '+feature.name:'Specie · '+row.name,
    type:row.type,range_feet:row.range_feet,automatic:true});
  }
- for(const row of arr(catalog.subraces)){
+ for(const row of arr(typed.subraces)){
   if(!same(record.species,row.race_name)||!same(record.subrace,row.name)||
    !same(record.subrace_source,row.source)||
    row.race_source&&!same(record.species_source,row.race_source))continue;
@@ -94,7 +126,7 @@ export function calculateSenses(record={},features=[],catalog={},sourceEnabled=(
  }
  for(const feature of features){
   if(!activeFeature(feature))continue;
-  for(const rule of arr(catalog.features)){
+  for(const rule of arr(typed.features)){
    if(!same(feature.name,rule.name)||
     rule.class_name&&!same(feature.requirements?.class_name||feature.class_name,rule.class_name)||
     rule.class_source&&!same(feature.requirements?.class_source||feature.class_source,rule.class_source)||

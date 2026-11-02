@@ -5,6 +5,7 @@ import {traitFlavourChoices,flavourBenefitChoices,saveTraitFlavourChoice,
   saveFlavourFeatChoice,projectTraitFlavourBenefits} from '../trait_flavours.js';
 import {savePendingChoice} from '../pending_choices.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {calculateSenses} from '../sense_rules.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={flavours:read('flavours'),flavourBonuses:read('bonus'),
@@ -182,4 +183,24 @@ test('Resilient 2024 forbids an already proficient save except the owned current
  const withProficiency=traitFlavourChoices(selected,[],catalogs.flavours,['save:str','save:dex','save:wis'])[0];
  assert(withProficiency.options.some(option=>option.endsWith(':wis')));
  assert.equal(withProficiency.selected.length,1);
+});
+
+test('selected flavour can grant a sense without preserving it on alternate variants',()=>{
+ const feature={name:'Draconic Ancestry',
+  origin_id:'feature:species|dragonborn (chromatic)|ftd|1|draconic ancestry',
+  origin_key:'species|dragonborn (chromatic)|ftd'};
+ const initial={rules_version:'2014',species:'Dragonborn (Chromatic)',species_source:'FTD',
+  subrace:'Red',subrace_source:'FTD'};
+ const choice=traitFlavourChoices(initial,[feature],catalogs.flavours)[0];
+ const red='flavour:dragonborn:ftd:chromatic:red',blue='flavour:dragonborn:ftd:chromatic:blue';
+ const senseCatalog={entries:[{id:'test:flavour:sense',
+  granted_by:{kind:'flavour',ref:{category:'flavour',id:red}},
+  benefit:{type:'sense',id:'test:flavour:sense',sense:{type:'truesight',range_feet:30}}}]};
+ const selected=save(initial,choice,[red]);
+ const projected=projectTraitFlavourBenefits(selected,[feature],{...catalogs,senseGrants:senseCatalog});
+ assert.equal(projected.sense_grants.length,1);
+ assert.equal(projected.sense_grants[0].origin_id,projected.flavour_traits[0].origin_id);
+ assert.equal(calculateSenses(projected,[],{}).distances.truesight,30);
+ const switched=save(selected,traitFlavourChoices(selected,[feature],catalogs.flavours)[0],[blue]);
+ assert.equal(projectTraitFlavourBenefits(switched,[feature],{...catalogs,senseGrants:senseCatalog}).sense_grants.length,0);
 });
