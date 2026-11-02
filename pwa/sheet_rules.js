@@ -1900,7 +1900,7 @@ export function loadRuleCatalogs(){
      ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/damage_modifier.json']
        .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({}))),
     fetch('/benefits/spell_extension.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
-    fetch('/benefits/action_sequence.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
+    fetch('/catalog/benefits/action_sequence.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
   ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers,spellExtensions,actionSequenceBenefits])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
