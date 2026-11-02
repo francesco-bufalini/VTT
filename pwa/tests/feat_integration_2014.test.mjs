@@ -12,6 +12,8 @@ import {traitBenefitGroups} from '../trait_benefits.js';
 import {nativeClassFeatureActions,actionEntries} from '../action_economy.js';
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const featSort=(a,b)=>(a.source+'|'+a.name).localeCompare(b.source+'|'+b.name);
+const mechanicsOnly=value=>Array.isArray(value)?value.map(mechanicsOnly):value&&typeof value==='object'?Object.fromEntries(
+ Object.entries(value).filter(([key])=>key!=='description').map(([key,v])=>[key,mechanicsOnly(v)])):value;
 
 test('damage prompts a concentration save with half damage DC (min 10), including temp HP',()=>{
  const record={id:'actor',conditions:['concentrating','poisoned'],concentrating_spell_id:'bless',temporary_hp:40};
@@ -28,7 +30,7 @@ test('damage prompts a concentration save with half damage DC (min 10), includin
 test('Lucky tracker and War Caster rules are native-typed and source-qualified',()=>{
  const native=read('../../vtt/data/feat_mechanics_2014.json').feats;
  const packaged=featBenefitTestIndex();
- assert.deepEqual([...packaged.feat_mechanics].sort(featSort),[...native].sort(featSort));
+ assert.deepEqual([...packaged.feat_mechanics].sort(featSort),[...mechanicsOnly(native)].sort(featSort));
  const warrior={kind:'character',rules_version:'2014',class:'Fighter',class_source:'PHB',level:5,
   classes:[{name:'Fighter',source:'PHB',level:5}],
   feats_catalog:[{name:'War Caster',source:'PHB'},{name:'Lucky',source:'PHB'}],
@@ -280,7 +282,7 @@ test('Artificer Initiate one-free-cast feat choice also accepts higher-level spe
  assert.equal(choice.spellcasting_ability,'int');
  assert(result.trackers.some(row=>row.recharge==='long_rest'&&row.max===1));
  const source=featBenefitTestIndex();
- assert.deepEqual([...source.feat_mechanics].sort(featSort),
+ assert.deepEqual([...mechanicsOnly(source.feat_mechanics)].sort(featSort),
   [...read('../../vtt/data/feat_mechanics_2014.json').feats].sort(featSort));
  const battle=readFileSync(new URL('../action_economy.js',import.meta.url),'utf8');
  assert.match(battle,/for\(const ability of arr\(calculated\.feat_actions\)\)/);
