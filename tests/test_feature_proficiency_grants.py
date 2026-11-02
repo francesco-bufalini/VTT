@@ -89,11 +89,10 @@ class FeatureProficiencyTests(unittest.TestCase):
                 source = entry["benefit"]["proficiency_grant"]["source_rules"]
                 row = original[ref["id"]]
                 self.assertEqual((ref["name"], ref["source"]), (row["name"], row["source"]))
-                self.assertEqual(source["stages"][0]["fields"], {
+                self.assertEqual({**source.get("metadata", {}), **source["stages"][0]["fields"]}, {
                     key: value for key, value in row.items()
                     if key not in ("name", "source", "id", "class_name", "class_source",
-                                   "subclass_short_name", "subclass_source", "level",
-                                   "trait_proficiencies", "trait_proficiency_choices")
+                                   "subclass_short_name", "subclass_source", "level")
                 })
                 self.assertTrue(any(trait["id"] == row["id"] and trait["class_source"] == row["class_source"] for trait in traits[field]), row["id"])
 
