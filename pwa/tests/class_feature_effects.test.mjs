@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import {resolveVariant,applyVariantEdit,variantDamage} from '../creature_variants.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +12,7 @@ import {actionEntries} from '../action_economy.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  spellcastingBenefits:read('spellcasting_benefits'),
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
  featureRules:JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8')),
  featureActionOverrides:JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries};
 const sheet=(name,level=5,edition='2014')=>({kind:'character',rules_version:edition,class:name,

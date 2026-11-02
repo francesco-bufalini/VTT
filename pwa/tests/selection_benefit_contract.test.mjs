@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -96,7 +97,7 @@ test('multiple options extend the same object without replacing one another or s
  assert.deepEqual(r.inventory[0].option_extensions.map(e=>e.id),['second']);
 });
 const completeCatalogs={...catalogs,scalingDice:read('scaling_dice'),classFeatures:read('classes'),classMechanics:read('class_mechanics'),
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),traitStates:read('trait_states').states,
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),traitStates:read('trait_states').states,
  effectExtensions:read('effect_extensions').extensions};
 test('Arcane Armor affects only its extended item and its nested model disappears with the owner',()=>{
  const rules=withArmorerGrants(completeCatalogs);

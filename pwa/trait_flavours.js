@@ -101,7 +101,7 @@ export function traitFlavourChoices(record={},features=[],catalog={},proficienci
 }
 export function flavourGrantsFor(record={},features=[],catalogs={}){
  const benefitFiles=[catalogs.flavourBonuses,catalogs.flavourFeatGrants,
-  catalogs.flavourDefenses,catalogs.flavourProficiencies];
+  catalogs.flavourDefenses,catalogs.proficiencyGrantBenefits];
  const entries=benefitFiles.flatMap(catalog=>rows(catalog?.entries));
  return traitFlavourModels(record,features,catalogs.flavours||{}).map(model=>({
   ...model,benefits:model.selected&&model.explicit?entries.filter(e=>
@@ -242,12 +242,12 @@ export function projectTraitFlavourBenefits(record={},features=[],catalogs={}){
      target:value.target,expression:String(value.expression??value.amount??0),
      automatic:true,disabled:false});
    }
-   if(benefit.type==='proficiency')for(const grant of rows(benefit.proficiencies)){
+   if(benefit.type==='proficiency_grant')for(const grant of rows(benefit.proficiency_grant?.grants)){
     const kind=grant.kind==='saving_throw'?'save':grant.kind;
-    if(!kind||!grant.id||grant.grant===false)continue;
-    if(!proficiencies.some(row=>row.kind===kind&&row.key===grant.id&&
+    if(!kind||!grant.key)continue;
+    if(!proficiencies.some(row=>row.kind===kind&&row.key===grant.key&&
       row.origin_id===model.flavour_origin_id))
-     proficiencies.push({kind,key:grant.id,origin_id:model.flavour_origin_id,
+     proficiencies.push({kind,key:grant.key,origin_id:model.flavour_origin_id,
       flavour_parent_id:model.owner.origin_id,origin_name:model.selected.name,
       automatic:true,disabled:false});
    }

@@ -9,7 +9,7 @@ import {calculateSheet} from '../sheet_rules.js';
 const read=name=>JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={flavours:read('flavours'),flavourBonuses:read('bonus'),
   flavourFeatGrants:read('feat_grant'),flavourDefenses:read('defense'),
-  flavourProficiencies:read('proficiency'),
+  proficiencyGrantBenefits:read('proficiency_grant'),
   originDetails:{feats:{'Alert|PHB':{}}}};
 const asi=level=>({name:'Ability Score Improvement',origin_id:'feature:class|phb|fighter|'+level+'|ability score improvement',
   origin_key:'class|phb|fighter',class_name:'Fighter',class_source:'PHB',level});
@@ -83,7 +83,8 @@ test('feat with chosen ability migrates without double-counting old score alloca
 });
 test('all flavour grants reference an existing flavour, not the original trait',()=>{
  const ids=new Set(catalogs.flavours.entries.flatMap(e=>e.flavours.map(f=>f.id)));
- for(const catalog of [catalogs.flavourBonuses,catalogs.flavourDefenses,catalogs.flavourFeatGrants,catalogs.flavourProficiencies])
+ for(const catalog of [catalogs.flavourBonuses,catalogs.flavourDefenses,catalogs.flavourFeatGrants,
+ {entries:catalogs.proficiencyGrantBenefits.entries.filter(e=>e.granted_by?.kind==='flavour')}])
   for(const entry of catalog.entries){
    assert.equal(entry.granted_by.kind,'flavour');
    assert(ids.has(entry.granted_by.ref.id),entry.id);

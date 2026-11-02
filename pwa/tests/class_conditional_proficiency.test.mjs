@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -81,7 +82,7 @@ test('Rune Knight Fire Rune requires an owned option and tool proficiency and do
 
 test('2014 class catalogs expose Tool Expertise at level 6 and do not project it before level 6',()=>{
  const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
-  proficiencyGrants:read('proficiency_grants'),rollBonusRules:rules};
+  proficiencyGrants:proficiencyTestIndex(),rollBonusRules:rules};
  const r=record('Artificer','TCE');
  const low={...r,level:5,classes:[{...r.classes[0],level:5}]};
  assert(!calculateSheet(low,catalogs).features.some(f=>f.name==='Tool Expertise'));

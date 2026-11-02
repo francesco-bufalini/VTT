@@ -1,10 +1,11 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {allocationVariants,originVariants,effectiveAllocations,allocationComplete} from '../ability_choice_rules.js';
 
 const index=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
-const prof=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
+const prof=proficiencyTestIndex();
 const key=row=>row.name.toLowerCase()+'|'+row.source.toLowerCase();
 
 test('5eTools structured 2024 background grants are projected without per-background supplements',()=>{

@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {proficiencyGrantModels,proficiencyGrantOptions,proficiencyGrantPatch} from '../proficiency_grant.js';
@@ -68,7 +69,7 @@ import {readFileSync} from 'node:fs';
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from '../pending_choices.js';
 
 const skilledCatalog=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/proficiency_grant.json',import.meta.url),'utf8'));
-const proficiencyIndex=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
+const proficiencyIndex=proficiencyTestIndex();
 const skilledRecord=source=>({...record(),proficiency_choices:[],rules_version:source==='XPHB'?'2024':'2014',
   feats_catalog:[{name:'Skilled',source}]});
 const permanentChoices=character=>{

@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -13,7 +14,7 @@ const catalogs={
  classMechanics:json('../catalog/class_mechanics.json'),
  classFeatures:json('../catalog/classes.json'),
  abilityGrants:json('../catalog/ability_grants.json'),
- proficiencyGrants:json('../catalog/proficiency_grants.json'),
+ proficiencyGrants:proficiencyTestIndex(),
  featureRules:json('../../vtt/data/feature_timing_recovery_rules.json')
 };
 const bard=(level,subclass='College of Creation',source='PHB')=>({

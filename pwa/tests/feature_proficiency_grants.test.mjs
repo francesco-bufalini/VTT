@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -7,7 +8,7 @@ import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from '../pend
 import {traitBenefitGroups} from '../trait_benefits.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants')};
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex()};
 const armorer=(level=3,source='TCE')=>({kind:'character',rules_version:source==='TCE'?'2014':'2024',
  level,classes:[{name:'Artificer',source,level,subclass:'Armorer',subclass_source:source}],
  abilities:{str:10,dex:14,con:14,int:16,wis:10,cha:10},inventory:[]});
