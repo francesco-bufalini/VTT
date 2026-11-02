@@ -38,7 +38,7 @@ test('the migrated Eldritch Cannon retains its action and inventory options',()=
  const cannon=featureItemGrantsFromBenefits(typed).find(row=>row.id==='artificer-eldritch-cannon');
  assert.equal(cannon.activation_action_id,'eldritch_cannon');
  assert.equal(cannon.items.length,3);
- assert.equal(cannon.powers.length>0,true);
+ assert.equal(Object.keys(cannon.powers||{}).length,3);
  assert.equal(cannon.max_owned_by_level.length>0,true);
 });
 test('item grant catalog has host and offline cache routes',()=>{
