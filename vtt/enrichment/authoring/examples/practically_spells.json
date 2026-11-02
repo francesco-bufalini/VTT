@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "benefit_type": "practically_spells",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "practically_spells:feature_slot_primeval_awareness_phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Primeval Awareness",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "practically_spells",
+        "id": "feature_slot_primeval_awareness_phb",
+        "parameters": {
+          "spell": {
+            "id": "feature_slot_primeval_awareness_phb",
+            "name": "Primeval Awareness",
+            "source": "VTT",
+            "level": 1,
+            "school": "Divination",
+            "internal_grant": true,
+            "time": [
+              {
+                "number": 1,
+                "unit": "action"
+              }
+            ],
+            "range": {
+              "type": "self"
+            },
+            "duration": [
+              {
+                "type": "timed",
+                "duration": {
+                  "type": "minute",
+                  "amount": 1
+                }
+              }
+            ],
+            "lists": []
+          },
+          "grant": {
+            "class_name": "Ranger",
+            "class_sources": [
+              "PHB"
+            ],
+            "feature_names": [
+              "Primeval Awareness"
+            ],
+            "levels": [
+              {
+                "level": 3,
+                "spells": [
+                  "Primeval Awareness|VTT"
+                ]
+              }
+            ],
+            "payment_mode": "slot",
+            "casting_ability_not_required": true,
+            "mechanic_source": "typed.practically_spells"
+          }
+        }
+      }
+    }
+  ]
+}

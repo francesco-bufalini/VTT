@@ -658,8 +658,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    (c.conditions||[]).includes(row.id));
  const currentExhaustion=exhaustionLevel(c);
  if(currentExhaustion){
-   const exhaustionSource=availableConditions.find(row=>row.id==='exhaustion');
-   activeConditions.push(exhaustionConditionRows(c.rules_version,exhaustionSource)[currentExhaustion-1]);
+   const source=availableConditions.find(row=>row.id==='exhaustion');
+   activeConditions.push(availableConditions.find(row=>row.id==='exhaustion:'+currentExhaustion)||
+     exhaustionConditionRows(c.rules_version,source)[currentExhaustion-1]);
  }
  for(const row of activeConditions){
   const detail=document.createElement("section");
@@ -1158,8 +1159,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      '<span aria-hidden="true">'+(entry.applied?'✓':'○')+'</span></span></button></div>';
    }).join('')+(entries.length?'':'<p class="play-empty">'+esc(empty)+'</p>'),
    castingEye(source)+(counters?'<div class="play-magic-source-resources" aria-label="Riepilogo '+esc(title)+'">'+counters+'</div>':''),
-   'play-magic-class-card play-infusion-card',
-   'data-selection-id="'+esc(source.dataset.selectionId||'')+'" data-option-kind="'+esc(source.dataset.optionKind||'')+'"');
+   'play-magic-class-card play-infusion-card');
   originPanels.forEach((node,i)=>{
    if(node.querySelector('.benefit-option-list')){
      const source=node.querySelector('.benefit-option-list'),id=source.dataset.selectionId;
@@ -1203,29 +1203,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      (spellRows?'<div class="play-magic-origin-spells">'+spellRows+'</div>':'')+
      '</section>';
   });
-  // A nested spell-choice grant can live inside the class's own power
-  // panel rather than at bank root. Render its picker in the play sheet too:
-  // otherwise the only button lives in the hidden legacy editor (0x0).
-  const visibleIds=new Set(originPanels.map(panel=>panel.querySelector('.benefit-option-list')?.dataset.selectionId).filter(Boolean));
-  for(const source of bank.querySelectorAll('.benefit-option-list[data-selection-id][data-option-kind="spell"]')){
-   const id=source.dataset.selectionId;
-   if(visibleIds.has(id))continue;
-   visibleIds.add(id);
-   const title=heading(source.closest('.panel'))||'Scelta incantesimi';
-   const controls=[...source.querySelectorAll('.benefit-option-controls button')].map(button=>
-    btn(button.textContent.trim()+' '+title,'book',
-     'data-act="power-selection-open" data-power-selection-id="'+esc(id)+
-     '" data-power-stage="'+esc(button.dataset.powerStage)+'"',
-     '<span>'+esc(button.textContent.trim())+'</span>')).join('');
-   const entries=[...source.querySelectorAll('.magic-spell-row[data-power-option-id]')].map(row=>{
-    const button=row.querySelector('.magic-spell-open');
-    if(!button)return null;
-    return {name:button.textContent.trim(),applied:row.dataset.optionActive==='true',
-     attrs:'data-act="benefit-option-open" data-power-selection-id="'+esc(id)+
-      '" data-power-option-id="'+esc(row.dataset.powerOptionId)+'"'};
-   }).filter(Boolean);
-   html+=learnedOptionCard(title,entries,controls,'','Nessun incantesimo conosciuto.',source);
-  }
  }
  if(sheet==='inventory'){
   const containers=inventoryContainers(c);

@@ -1,0 +1,295 @@
+{
+  "schema_version": 2,
+  "benefit_type": "condition",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "exhaustion:2014:1:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 1
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2014:1:condition",
+        "rules_version": "2014",
+        "condition": "exhaustion:1",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:2:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 2
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2014:2:condition",
+        "rules_version": "2014",
+        "condition": "exhaustion:2",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:3:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 3
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2014:3:condition",
+        "rules_version": "2014",
+        "condition": "exhaustion:3",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:4:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 4
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2014:4:condition",
+        "rules_version": "2014",
+        "condition": "exhaustion:4",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:5:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 5
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2014:5:condition",
+        "rules_version": "2014",
+        "condition": "exhaustion:5",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:6:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 6
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2014:6:condition",
+        "rules_version": "2014",
+        "condition": "exhaustion:6",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": "dead"
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:1:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 1
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2024:1:condition",
+        "rules_version": "2024",
+        "condition": "exhaustion:1",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:2:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 2
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2024:2:condition",
+        "rules_version": "2024",
+        "condition": "exhaustion:2",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:3:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 3
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2024:3:condition",
+        "rules_version": "2024",
+        "condition": "exhaustion:3",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:4:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 4
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2024:4:condition",
+        "rules_version": "2024",
+        "condition": "exhaustion:4",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:5:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 5
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2024:5:condition",
+        "rules_version": "2024",
+        "condition": "exhaustion:5",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": ""
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:6:condition",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 6
+        }
+      },
+      "benefit": {
+        "type": "condition",
+        "id": "exhaustion:2024:6:condition",
+        "rules_version": "2024",
+        "condition": "exhaustion:6",
+        "parameters": {
+          "exhaustion_tier": true,
+          "result_condition": "dead"
+        }
+      }
+    }
+  ]
+}

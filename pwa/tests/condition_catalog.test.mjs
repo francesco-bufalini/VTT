@@ -86,9 +86,8 @@ test("5etools status popup safely escapes homebrew content and renders exhaustio
 });
 
 test("six exhaustion levels share the condition selector without breaking saved sheets",()=>{
- const source=conditionOptions(conditionCatalogFrom5etools(
-   JSON.parse(nativeFile("../../vtt/data/effects_5etools.json"))),"2014")
-   .find(row=>row.id==="exhaustion");
+ const source=JSON.parse(nativeFile("../../vtt/data/effects_5etools.json")).entries
+   .find(row=>row.id==="5etools:conditions:phb:exhaustion");
  const rows=exhaustionConditionRows("2014",source);
  assert.deepEqual(rows.map(row=>row.id),["exhaustion:1","exhaustion:2","exhaustion:3","exhaustion:4","exhaustion:5","exhaustion:6"]);
  assert.ok(rows.every(row=>row.category===EXHAUSTION_CONDITION_CATEGORY));

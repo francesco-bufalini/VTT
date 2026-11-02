@@ -1445,7 +1445,7 @@ async function computeLocalData(record){
   const proficiency_grants=proficiencyGrantModels(record,calculated,catalogs.proficiencyGrantBenefits);
   // Spell-like class privileges are ordinary levelled spell definitions. Keep
   // their catalog details available offline and after an asynchronous refresh.
-  const featureSpells=catalogs.featureSlotSpells?.spells||[];
+  const featureSpells=catalogs.practicallySpells?.spells||[];
   if(featureSpells.length){
     const definitions=new Map((state.spellCatalog||[]).map(row=>[row.id,row]));
     for(const definition of featureSpells)definitions.set(definition.id,definition);
@@ -2746,14 +2746,11 @@ function conditionGrid(active,attribute,edition="2014",exhaustion=0){
  // Numeric exhaustion becomes one selected virtual condition; session token
  // condition editors retain their existing native condition identifiers.
  const options=sheet?[
-   ...nativeOptions.filter(row=>row.id!=='exhaustion'&&!/^exhaustion:[1-6]$/.test(row.id)),
-   ...exhaustionConditionRows(edition,source)
+   ...nativeOptions.filter(row=>row.id!=='exhaustion'),
+   ...(nativeOptions.some(row=>row.id==='exhaustion:1')?[]:exhaustionConditionRows(edition,source))
  ]:nativeOptions;
  if(sheet&&exhaustion>0)applied.add('exhaustion:'+exhaustion);
- const knownCategories=[
-   ...CONDITION_CATEGORIES.map(([category,title])=>({category,title})),
-   ...(sheet?[{category:EXHAUSTION_CONDITION_CATEGORY,title:'Indebolimento'}]:[])
- ];
+ const knownCategories=CONDITION_CATEGORIES.map(([category,title])=>({category,title}));
  const unknown=[...new Set(options.map(row=>row.category))]
    .filter(category=>!knownCategories.some(group=>group.category===category))
    .map(category=>({category,title:category}));

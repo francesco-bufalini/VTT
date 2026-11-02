@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT practically spells catalog",
+  "allOf": [
+    {
+      "$ref": "catalog.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "benefit_type": {
+          "const": "practically_spells"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "benefit": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "const": "practically_spells"
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "required": [
+                      "spell",
+                      "grant"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

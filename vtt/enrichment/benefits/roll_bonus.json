@@ -1320,6 +1320,162 @@
           }
         }
       }
+    },
+    {
+      "id": "exhaustion:2024:1:roll_bonus:d20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 1
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "exhaustion:2024:1:roll_bonus:d20",
+        "rules_version": "2024",
+        "bonus": {
+          "target": "any_d20",
+          "flat_bonus": -2
+        },
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:2:roll_bonus:d20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 2
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "exhaustion:2024:2:roll_bonus:d20",
+        "rules_version": "2024",
+        "bonus": {
+          "target": "any_d20",
+          "flat_bonus": -4
+        },
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:3:roll_bonus:d20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 3
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "exhaustion:2024:3:roll_bonus:d20",
+        "rules_version": "2024",
+        "bonus": {
+          "target": "any_d20",
+          "flat_bonus": -6
+        },
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:4:roll_bonus:d20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 4
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "exhaustion:2024:4:roll_bonus:d20",
+        "rules_version": "2024",
+        "bonus": {
+          "target": "any_d20",
+          "flat_bonus": -8
+        },
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:5:roll_bonus:d20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 5
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "exhaustion:2024:5:roll_bonus:d20",
+        "rules_version": "2024",
+        "bonus": {
+          "target": "any_d20",
+          "flat_bonus": -10
+        },
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:6:roll_bonus:d20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 6
+        }
+      },
+      "benefit": {
+        "type": "roll_bonus",
+        "id": "exhaustion:2024:6:roll_bonus:d20",
+        "rules_version": "2024",
+        "bonus": {
+          "target": "any_d20",
+          "flat_bonus": -12
+        },
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
     }
   ],
   "notes": "Regole esplicite; mai dedurre i bonus dalla descrizione. tool_check = tiri generici di caratteristica per strumenti; skill_check = prove con abilità, non tutte le prove. Condizioni applicate manualmente. | Class/subclass bonus rules share this type-owned catalog with species, source-qualified by granted_by.ref.category."

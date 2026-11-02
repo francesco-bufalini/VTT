@@ -38,7 +38,6 @@ const SHELL = [
   "/feat_benefit_catalogs.js",
   "/infusion_benefit_catalogs.js",
   "/benefit_source_text.js",
-  "/5etools_benefit_projections.js",
   "/trait_benefit_distribution.js",
   "/trait_benefit_editor.js",
   "/effect_extensions.js",
@@ -48,6 +47,7 @@ const SHELL = [
   "/spell_extension_benefits.js",
   "/condition_catalog.js",
   "/exhaustion_rules.js",
+  "/practically_spells.js",
   "/chat_notifications.js",
   "/action_economy.js",
   "/icons/action_dashboard_gloss.svg",
@@ -63,8 +63,8 @@ const SHELL = [
   "/icons/info/biography.svg",
   
   "/benefits/attack.json", "/benefits/base_override.json", "/benefits/d20_reroll.json",
-  "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
-   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/creature_grant.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/damage_modifier.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/benefits/spell_extension.json", "/spell_slot_profiles.js",
+  "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json", "/benefits/condition.json",
+   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/condition.json", "/benefits/creature_grant.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/damage_modifier.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/benefits/spell_extension.json", "/spell_slot_profiles.js",
   "/species_defenses.js",
   "/species_defense_benefits.js",
   "/spell_grant_benefits.js",
@@ -161,7 +161,7 @@ const SHELL = [
   "/catalog/trait_states.json",
 
 
-  "/catalog/feature_slot_spells.json",
+  "/benefits/practically_spells.json",
 
 
 
@@ -197,7 +197,7 @@ const REQUIRED_CATALOGS = [
   "/catalog/player.json", "/benefits/sense.json", "/benefits/proficiency_grant.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json",
 
-  "/catalog/feature_slot_spells.json",
+  "/benefits/practically_spells.json",
 
   "/catalog/activated_abilities.json", "/catalog/effects_5etools.json",  "/benefits/attack.json", "/benefits/base_override.json", "/benefits/d20_reroll.json", "/benefits/damage_modifier.json", "/benefits/flavours.json",
  "/catalog/benefits/action.json", "/catalog/benefits/resource_recovery.json", "/catalog/benefits/action_sequence.json", "/catalog/benefits/resource.json", "/catalog/combat_actions_5etools.json",

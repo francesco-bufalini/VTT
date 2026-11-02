@@ -55,7 +55,8 @@
         "temporary_hp",
         "tracker",
         "trait",
-        "creature_grant"
+        "creature_grant",
+        "practically_spells"
       ]
     },
     "scope": {
@@ -375,10 +376,9 @@
             "class_action_override",
             "timing_contextual_action",
             "contextual_resource",
-            "legacy_base_override",
-            "5etools_structured"
+            "legacy_base_override"
           ],
-          "description": "Projection discriminator for migration adapters and source-owned structured 5eTools copies; not a new benefit type."
+          "description": "Temporary migration projection discriminator. Omit on other catalog types; remove once runtime consumes typed actions directly."
         }
       },
       "additionalProperties": false

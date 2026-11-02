@@ -1,4 +1,3 @@
-import {abilityIndexFromBenefits,backgroundStartingFeatsFromBenefits} from './5etools_benefit_projections.js';
 import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
@@ -44,6 +43,7 @@ import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers
 import {featureItemGrants,racialItemGrantFeatures,loadFeatureItemGrantBenefits} from './feature_item_grants.js';
 import {barbarian2014Supplements,barbarian2014ProficiencyCatalog} from './barbarian_2014.js';
 import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
+import {practicallySpellsFromBenefits} from './practically_spells.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
 export {SKILLS};
@@ -871,10 +871,7 @@ export function calculateSheet(record={},catalogs={}){
   const normalizedEquipmentInventory=effectiveEquipmentInventory(record.inventory,
     {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
   const hydrated=hydrateGenericVariants({...record,inventory:normalizedEquipmentInventory},catalogs.genericItemVariants);
-  const backgroundFeats=withBackgroundGrantedFeats(hydrated,
-    catalogs.flavourFeatGrants?.schema_version===2?
-      backgroundStartingFeatsFromBenefits(catalogs.flavourFeatGrants):
-      catalogs.originDetails?.backgrounds||{},
+  const backgroundFeats=withBackgroundGrantedFeats(hydrated,catalogs.originDetails?.backgrounds||{},
     catalogs.originDetails?.feats||{},catalogs.classMechanics?.additional_spells||[]);
   const ownerFeatures=collectStructuredFeatures(backgroundFeats,catalogs);
   const effectiveCatalogs={...catalogs,features:ownerFeatures};
@@ -955,7 +952,7 @@ function calculateSheetValues(record={},catalogs={}){
   if(!classesCatalog)warnings.add("Catalogo classi non caricato: dadi vita automatici non disponibili");
   if(catalogs.speciesAttacks?.load_error)warnings.add("Catalogo attacchi naturali non disponibile: gli attacchi della specie sono incompleti");
   const classes=localClasses(record),kind=record.kind==="monster"?"monster":"character";
-  const exhaustion_effects=activeExhaustionEffects(record,catalogs.exhaustionRules||{});
+  const exhaustion_effects=activeExhaustionEffects(record,catalogs.exhaustionBenefits||{});
   if(kind==='character'&&!variantOwns(record,'movement')){
     const races=arr(classesCatalog?.races);
     const race=races.find(row=>record.species_id&&row.id===record.species_id)||races.find(row=>same(row.name,record.species)&&same(row.source,record.species_source));
@@ -1857,8 +1854,7 @@ export function loadRuleCatalogs(){
     // Transitional legacy state selections only; new passive capabilities
     // are options with source-bound effects, not canonical state benefits.
     fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();}).then(data=>({
-      states:data?.version===1&&Array.isArray(data.states)?data.states:[],
-      exhaustion:data?.exhaustion||{}
+      states:data?.version===1&&Array.isArray(data.states)?data.states:[]
     })),
     loadClassRollBonusBenefits(),
     loadScalingDieBenefits(),
@@ -1894,9 +1890,8 @@ export function loadRuleCatalogs(){
     loadFeatureItemGrantBenefits(),
     emptyPowerSelections,
     emptyOptionalFeatures,
-    fetch('/catalog/feature_slot_spells.json').then(r=>r.ok?r.json():{}).then(data=>
-      data?.version===1&&Array.isArray(data.spells)&&Array.isArray(data.grants)?data:{spells:[],grants:[]})
-      .catch(()=>({spells:[],grants:[]})),
+    fetch('/benefits/practically_spells.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
+      .then(practicallySpellsFromBenefits),
     emptySpellcastingBenefits,
     fetch('/catalog/generic_item_variants.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.variants)?data:{variants:[]})
@@ -1908,19 +1903,22 @@ export function loadRuleCatalogs(){
     typedProficiencyGrants,
     typedBaseOverrides,
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
+    Promise.all(['condition','roll_mode','roll_bonus','base_override'].map(type=>
+      fetch('/benefits/'+type+'.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status+': '+type);return r.json();})))
+      .then(([condition,roll_mode,roll_bonus,base_override])=>({condition,roll_mode,roll_bonus,base_override})),
      ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/damage_modifier.json']
        .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({}))),
     loadFeatBenefitCatalogs(),
     fetch('/benefits/spell_extension.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
     fetch('/catalog/benefits/action_sequence.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
-  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers,featBenefits,spellExtensions,actionSequenceBenefits])=>({
-    abilityGrants:{...variantFamilyAbilityGrants({...abilityGrants,...abilityIndexFromBenefits(flavourBonuses)}),...featBenefits,
+  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,practicallySpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,exhaustionBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers,featBenefits,spellExtensions,actionSequenceBenefits])=>({
+    abilityGrants:{...variantFamilyAbilityGrants(abilityGrants),...featBenefits,
       artificer_infusions:optionLists?.benefit_type==='option_list'?infusionDefinitionsFromOptionLists(optionLists):[]},
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants:proficiencyIndexFromBenefits(languageVocabulary,proficiencyGrantBenefits),speciesAttacks,
     speciesDefenses:speciesDefensesFromBenefits(speciesDefenses,flavours),
     speciesRollModes:speciesRollModes.load_error?{races:[],load_error:true}:speciesRollModesFromBenefits(speciesRollModes,originDetails),
-    senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,
+    senseGrants,powerSelections,optionalFeatureProgressions,practicallySpells,spellcastingBenefits,genericItemVariants,
     optionGrants:optionGrants?.benefit_type==='option_grant'?optionGrants:{entries:[]},
     optionLists:optionLists?.benefit_type==='option_list'?optionLists:{entries:[]},
     proficiencyGrantBenefits:proficiencyGrantBenefits?.schema_version===2&&
@@ -1934,10 +1932,10 @@ export function loadRuleCatalogs(){
     spellExtensions:spellExtensions?.benefit_type==='spell_extension'?spellExtensions:{entries:[]},
     actionSequenceBenefits:actionSequenceBenefits?.benefit_type==='action_sequence'?actionSequenceBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
-    traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
-    featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,
+    traitStates:traitStates.states,exhaustionBenefits,rollBonusRules,scalingDice,classFeatures,effectExtensions,
+    featureSpellGrants:[...supplementalClassSpells,...practicallySpells.grants],practicallySpells,itemGrants:supplementalItemBonuses,
     originDetails,speciesPowers,speciesConditionalBonuses,
-    spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
+    spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...practicallySpells.spells].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   }
   return catalogPromise;

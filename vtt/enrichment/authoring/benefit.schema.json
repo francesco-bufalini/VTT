@@ -50,7 +50,8 @@
         "temporary_hp",
         "tracker",
         "trait",
-        "creature_grant"
+        "creature_grant",
+        "practically_spells"
       ]
     },
     "id": {

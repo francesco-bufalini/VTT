@@ -1,0 +1,159 @@
+{
+  "schema_version": 2,
+  "benefit_type": "practically_spells",
+  "scope": "catalog",
+  "notes": "Feature-based spell mechanics; not members of any spell list. The original 5eTools trait supplies its description.",
+  "entries": [
+    {
+      "id": "practically_spells:feature_slot_primeval_awareness_phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Primeval Awareness",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "practically_spells",
+        "id": "feature_slot_primeval_awareness_phb",
+        "parameters": {
+          "spell": {
+            "id": "feature_slot_primeval_awareness_phb",
+            "name": "Primeval Awareness",
+            "source": "VTT",
+            "level": 1,
+            "school": "Divination",
+            "internal_grant": true,
+            "time": [
+              {
+                "number": 1,
+                "unit": "action"
+              }
+            ],
+            "range": {
+              "type": "self"
+            },
+            "duration": [
+              {
+                "type": "timed",
+                "duration": {
+                  "type": "minute",
+                  "amount": 1
+                }
+              }
+            ],
+            "lists": []
+          },
+          "grant": {
+            "class_name": "Ranger",
+            "class_sources": [
+              "PHB"
+            ],
+            "feature_names": [
+              "Primeval Awareness"
+            ],
+            "levels": [
+              {
+                "level": 3,
+                "spells": [
+                  "Primeval Awareness|VTT"
+                ]
+              }
+            ],
+            "payment_mode": "slot",
+            "casting_ability_not_required": true,
+            "mechanic_source": "typed.practically_spells"
+          },
+          "mechanics": {
+            "kind": "sense_creature_presence",
+            "duration_minutes_per_slot_level": 1,
+            "normal_radius_miles": 1,
+            "favored_terrain_radius_miles": 6,
+            "creature_types": "as_defined_by_granting_trait",
+            "reveals_number_or_location": false
+          }
+        }
+      }
+    },
+    {
+      "id": "practically_spells:feature_slot_combat_wild_shape_heal_phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Combat Wild Shape",
+          "source": "PHB",
+          "class_name": "Druid",
+          "class_source": "PHB",
+          "subclass": "Circle of the Moon",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "practically_spells",
+        "id": "feature_slot_combat_wild_shape_heal_phb",
+        "parameters": {
+          "spell": {
+            "id": "feature_slot_combat_wild_shape_heal_phb",
+            "name": "Combat Wild Shape · Cura",
+            "source": "VTT",
+            "level": 1,
+            "school": "Evocation",
+            "internal_grant": true,
+            "time": [
+              {
+                "number": 1,
+                "unit": "bonus"
+              }
+            ],
+            "range": {
+              "type": "self"
+            },
+            "duration": [
+              {
+                "type": "instant"
+              }
+            ],
+            "lists": []
+          },
+          "grant": {
+            "class_name": "Druid",
+            "class_sources": [
+              "PHB"
+            ],
+            "subclass": "Circle of the Moon",
+            "subclass_sources": [
+              "PHB"
+            ],
+            "feature_names": [
+              "Combat Wild Shape"
+            ],
+            "levels": [
+              {
+                "level": 2,
+                "spells": [
+                  "Combat Wild Shape · Cura|VTT"
+                ]
+              }
+            ],
+            "cast_action_type": "bonus",
+            "payment_mode": "slot",
+            "casting_ability_not_required": true,
+            "requires_context": "Confermo di essere in Forma selvatica",
+            "mechanic_source": "typed.practically_spells"
+          },
+          "mechanics": {
+            "kind": "healing",
+            "dice_per_slot_level": "1d8",
+            "target": "current_wild_shape",
+            "maximum": "current_wild_shape_hit_point_maximum",
+            "slot_cost": 1
+          }
+        }
+      }
+    }
+  ]
+}

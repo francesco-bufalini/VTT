@@ -20,8 +20,7 @@
     {
       "path": "pwa/catalog/trait_states.json",
       "sections": [
-        "states",
-        "exhaustion"
+        "states"
       ],
       "types": [
         "option_grant",
@@ -357,6 +356,12 @@
       "catalog": "vtt/enrichment/benefits/base_override.json",
       "runtime": "pwa/base_override_benefits.js",
       "partial": false
+    },
+    {
+      "source": "pwa/catalog/trait_states.json#exhaustion",
+      "benefit_type": "condition",
+      "catalog": "vtt/enrichment/benefits/condition.json",
+      "runtime": "pwa/exhaustion_rules.js"
     }
   ]
 }

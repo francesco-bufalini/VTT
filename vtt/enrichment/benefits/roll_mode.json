@@ -4427,6 +4427,206 @@
           "feat_2014": true
         }
       }
+    },
+    {
+      "id": "exhaustion:2014:1:roll_mode",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 1
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "exhaustion:2014:1:roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "disadvantage"
+          }
+        ],
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:2:roll_mode",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 2
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "exhaustion:2014:2:roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "disadvantage"
+          }
+        ],
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:3:roll_mode",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 3
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "exhaustion:2014:3:roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "disadvantage"
+          },
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage"
+          },
+          {
+            "target": "saving_throw",
+            "mode": "disadvantage"
+          }
+        ],
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:4:roll_mode",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 4
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "exhaustion:2014:4:roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "disadvantage"
+          },
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage"
+          },
+          {
+            "target": "saving_throw",
+            "mode": "disadvantage"
+          }
+        ],
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:5:roll_mode",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 5
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "exhaustion:2014:5:roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "disadvantage"
+          },
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage"
+          },
+          {
+            "target": "saving_throw",
+            "mode": "disadvantage"
+          }
+        ],
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:6:roll_mode",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 6
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "exhaustion:2014:6:roll_mode",
+        "rules_version": "2014",
+        "roll_modes": [
+          {
+            "target": "ability_check",
+            "mode": "disadvantage"
+          },
+          {
+            "target": "attack_roll",
+            "mode": "disadvantage"
+          },
+          {
+            "target": "saving_throw",
+            "mode": "disadvantage"
+          }
+        ],
+        "parameters": {
+          "exhaustion_tier": true
+        }
+      }
     }
   ]
 }

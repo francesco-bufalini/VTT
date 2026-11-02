@@ -7,11 +7,12 @@ import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionRollModifier,
 import {classFeatureRollSources} from '../feature_mechanics.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-const rules=JSON.parse(readFileSync(fileURLToPath(
- new URL('../catalog/trait_states.json',import.meta.url)),'utf8')).exhaustion;
+const types=['condition','roll_mode','roll_bonus','base_override'];
+const rules=Object.fromEntries(types.map(type=>[type,JSON.parse(readFileSync(fileURLToPath(
+ new URL('../../vtt/enrichment/benefits/'+type+'.json',import.meta.url)),'utf8'))]));
 const base={kind:'character',name:'Eroe',abilities:{str:14,dex:12,con:12,int:10,wis:10,cha:10},
  max_hp_base:37,speed_base:30,inventory:[],conditions:['poisoned'],rules_version:'2014'};
-const calculate=(record)=>calculateSheet(record,{exhaustionRules:rules});
+const calculate=(record)=>calculateSheet(record,{exhaustionBenefits:rules});
 const trait=(level)=>({category:'stati',rank:0,readonly:true,
  condition_id:'exhaustion:'+level,origin_key:'state|condition:exhaustion:'+level});
 test('2014 cumulative exhaustion slows at 2, penalizes d20 modes at 1/3 and halves HP at 4',()=>{
@@ -85,4 +86,24 @@ test('numeric transformations are catalog-driven, compositional, and safe for ab
  assert.equal(exhaustionAdjustedValue(20,'hp',active),20);
  assert.equal(exhaustionIsDead(active),false);
  assert.deepEqual(activeExhaustionEffects({...base,exhaustion:3},{}),[]);
+});
+
+test('each exhaustion tier is an independent source-qualified condition with cumulative typed benefits',()=>{
+ for(const edition of ['2014','2024']){
+  const book=edition==='2014'?'PHB':'XPHB';
+  for(let level=1;level<=6;level++){
+   const condition=rules.condition.entries.filter(entry=>
+    entry.benefit.condition==='exhaustion:'+level&&
+    entry.granted_by.ref.source===book);
+   assert.equal(condition.length,1,edition+' tier '+level);
+   assert.equal(condition[0].granted_by.ref.level,level);
+   const effects=activeExhaustionEffects({...base,rules_version:edition,exhaustion:level},rules);
+   assert(effects.every(row=>row.origin_id==='state|condition:exhaustion:'+level));
+   assert.equal(effects.some(row=>row.type==='condition'&&row.condition==='dead'),level===6);
+  }
+ }
+ assert(rules.roll_mode.entries.some(entry=>entry.granted_by.ref.level===3&&
+   entry.benefit.roll_modes.some(mode=>mode.target==='saving_throw')));
+ assert(rules.base_override.entries.some(entry=>entry.granted_by.ref.level===5&&
+   entry.benefit.base_override.operation==='set'));
 });

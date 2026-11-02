@@ -22,23 +22,32 @@ export const CONDITION_CATEGORIES = Object.freeze([
 // Exhaustion uses the existing numeric field on the creature, also read by
 // desktop rules and rest recovery. Virtual condition IDs expose each level
 // through the same selector without altering native condition identifiers.
-export const EXHAUSTION_CONDITION_CATEGORY = "exhaustion_levels";
+export const EXHAUSTION_CONDITION_CATEGORY = "conditions";
 export function exhaustionLevel(record={}){
   const value=Number(record.exhaustion??record.exhaustion_level??0);
   return Number.isFinite(value)?Math.max(0,Math.min(6,Math.trunc(value))):0;
 }
 export function exhaustionConditionRows(edition="2014",source=null){
-  const version=edition==="2024"?"2024":"2014";
-  return Array.from({length:6},(_,index)=>{
-    const level=index+1;
-    return {id:"exhaustion:"+level,name:"Exhaustion "+level,
-      label:"Indebolimento · Livello "+level,category:EXHAUSTION_CONDITION_CATEGORY,
-      source:source?.source||"D&D "+version,page:source?.page,
-      entries:[
-        "Indebolimento di livello "+level+". Gli effetti del livello seguono le regole "+version+".",
-        ...(source?.entries==null?[]:[source.entries])
-      ]};
-  });
+ const version=edition==="2024"?"2024":"2014";
+ const sourceEntries=Array.isArray(source?.entries)?source.entries:[];
+ const table=version==="2014"?sourceEntries.find(row=>row?.type==="table"&&
+   Array.isArray(row.rows)&&row.rows.length>=6):null;
+ return Array.from({length:6},(_,index)=>{
+  const level=index+1;
+  // Details are taken directly from the PHB/XPHB 5eTools Exhaustion entry.
+  // The cumulative PHB table is sliced, not reworded or copied by hand.
+  const entries=table?[...sourceEntries.filter(row=>typeof row==="string").slice(0,1),
+   {...table,rows:table.rows.slice(0,level)}]:
+   sourceEntries;
+  return {id:"exhaustion:"+level,
+    name:(source?.name||"Exhaustion")+" · Level "+level,
+    label:"Indebolimento · Livello "+level,
+    category:EXHAUSTION_CONDITION_CATEGORY,
+    source:source?.source|| (version==="2024"?"XPHB":"PHB"),
+    origin:source?.origin||"5etools",
+    source_condition_id:source?.id||"",
+    edition:version,page:source?.page,entries};
+ });
 }
 export function exhaustionSelectionPatch(record,id,checked){
   const match=/^exhaustion:([1-6])$/.exec(String(id||""));
@@ -92,8 +101,14 @@ export function conditionCatalogFrom5etools(payload){
         (id==="surprised"&&row.name==="Surprised")
       ));
       if(effect){
-        rows.push({...effect,id});
-        seen.add(id);
+        if(id==="exhaustion"){
+          rows.push(...exhaustionConditionRows(edition,{...effect,id}));
+          for(let level=1;level<=6;level++)seen.add("exhaustion:"+level);
+          seen.add(id);
+        }else{
+          rows.push({...effect,id});
+          seen.add(id);
+        }
       }else if(["helped","hidden","dead"].includes(id)){
         rows.push({id,name:id,category:"conditions",source:"VTT",
           entries:["Marcatore tattico senza effetti automatici."]});
@@ -159,7 +174,7 @@ function renderEntry(value,depth=0){
   return name+contents.map(item=>renderEntry(item,depth+1)).join("");
 }
 export function conditionDescriptionHtml(row){
-  const category=row?.category===EXHAUSTION_CONDITION_CATEGORY?"Indebolimento":
+  const category=/^exhaustion:[1-6]$/.test(String(row?.id||""))?"Indebolimento":
     CONDITION_CATEGORIES.find(([id])=>id===row?.category)?.[1]||"Stato";
   const source=String(row?.source||row?.origin||"");
   const metadata=[category,source&&(source==="VTT"?"VTT":source),

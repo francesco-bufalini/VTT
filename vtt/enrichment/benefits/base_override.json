@@ -1646,6 +1646,560 @@
           "mode": "climb_at_walking_cost"
         }
       }
+    },
+    {
+      "id": "exhaustion:2014:2:base_override:speed-half",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 2
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:2:base_override:speed-half",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "speed",
+          "operation": "multiply",
+          "expression": "0.5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "stage": 2
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:3:base_override:speed-half",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 3
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:3:base_override:speed-half",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "speed",
+          "operation": "multiply",
+          "expression": "0.5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "stage": 2
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:4:base_override:speed-half",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 4
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:4:base_override:speed-half",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "speed",
+          "operation": "multiply",
+          "expression": "0.5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "stage": 2
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:4:base_override:hp-half",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 4
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:4:base_override:hp-half",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "hp",
+          "operation": "multiply",
+          "expression": "0.5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "hp"
+          ],
+          "stage": 4
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:5:base_override:speed-half",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 5
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:5:base_override:speed-half",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "speed",
+          "operation": "multiply",
+          "expression": "0.5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "stage": 2
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:5:base_override:hp-half",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 5
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:5:base_override:hp-half",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "hp",
+          "operation": "multiply",
+          "expression": "0.5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "hp"
+          ],
+          "stage": 4
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:5:base_override:speed-zero",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 5
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:5:base_override:speed-zero",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "speed",
+          "operation": "set",
+          "expression": "0"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "stage": 5
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:6:base_override:speed-half",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 6
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:6:base_override:speed-half",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "speed",
+          "operation": "multiply",
+          "expression": "0.5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "stage": 2
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:6:base_override:hp-half",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 6
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:6:base_override:hp-half",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "hp",
+          "operation": "multiply",
+          "expression": "0.5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "hp"
+          ],
+          "stage": 4
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2014:6:base_override:speed-zero",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:phb:exhaustion",
+          "name": "Exhaustion",
+          "source": "PHB",
+          "edition": "2014",
+          "level": 6
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2014:6:base_override:speed-zero",
+        "rules_version": "2014",
+        "base_override": {
+          "target": "speed",
+          "operation": "set",
+          "expression": "0"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "stage": 5
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:1:base_override:speed-minus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 1
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2024:1:base_override:speed-minus",
+        "rules_version": "2024",
+        "base_override": {
+          "target": "speed",
+          "operation": "add",
+          "expression": "-5"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "minimum": 0,
+          "stage": 1
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:2:base_override:speed-minus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 2
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2024:2:base_override:speed-minus",
+        "rules_version": "2024",
+        "base_override": {
+          "target": "speed",
+          "operation": "add",
+          "expression": "-10"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "minimum": 0,
+          "stage": 1
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:3:base_override:speed-minus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 3
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2024:3:base_override:speed-minus",
+        "rules_version": "2024",
+        "base_override": {
+          "target": "speed",
+          "operation": "add",
+          "expression": "-15"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "minimum": 0,
+          "stage": 1
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:4:base_override:speed-minus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 4
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2024:4:base_override:speed-minus",
+        "rules_version": "2024",
+        "base_override": {
+          "target": "speed",
+          "operation": "add",
+          "expression": "-20"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "minimum": 0,
+          "stage": 1
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:5:base_override:speed-minus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 5
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2024:5:base_override:speed-minus",
+        "rules_version": "2024",
+        "base_override": {
+          "target": "speed",
+          "operation": "add",
+          "expression": "-25"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "minimum": 0,
+          "stage": 1
+        }
+      }
+    },
+    {
+      "id": "exhaustion:2024:6:base_override:speed-minus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "condition",
+          "id": "5etools:conditions:xphb:exhaustion",
+          "name": "Exhaustion",
+          "source": "XPHB",
+          "edition": "2024",
+          "level": 6
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "exhaustion:2024:6:base_override:speed-minus",
+        "rules_version": "2024",
+        "base_override": {
+          "target": "speed",
+          "operation": "add",
+          "expression": "-30"
+        },
+        "parameters": {
+          "exhaustion_tier": true,
+          "targets": [
+            "speed",
+            "speed:climb",
+            "speed:swim",
+            "speed:fly",
+            "speed:burrow"
+          ],
+          "minimum": 0,
+          "stage": 1
+        }
+      }
     }
   ]
 }
