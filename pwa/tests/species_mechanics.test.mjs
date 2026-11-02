@@ -24,14 +24,16 @@ const natural=sheet=>sheet.attacks.find(a=>a.id.startsWith('natural:'));
 
 test('published source data generates deterministic typed natural strikes (never prose at runtime)',()=>{
  assert.deepEqual({...attackBenefits,entries:attackBenefits.entries.filter(entry=>entry.granted_by?.ref?.category==='species_trait')},generated.attack);
- assert.deepEqual(scoreBenefits,generated.base_override);
+ const generatedScoreIds=new Set(generated.base_override.entries.map(entry=>entry.id));
+ assert.deepEqual({...scoreBenefits,entries:scoreBenefits.entries.filter(entry=>generatedScoreIds.has(entry.id))},
+  generated.base_override,'Species-specific base overrides remain identical; other origins share the same catalog');
  const canonical=projectSpeciesAttacks(source.races);
  const sort=rows=>[...rows].sort((a,b)=>a.id.localeCompare(b.id));
  assert.deepEqual(sort(catalog.races),sort(canonical.races));
  assert.equal(attackBenefits.entries.filter(entry=>entry.granted_by?.ref?.category==='species_trait').length,20);
  assert(attackBenefits.entries.some(entry=>entry.id==='feat:xge:dragon-hide:claws'),'Feat attacks belong to the same typed attack catalog');
  assert.equal(scoreBenefits.entries.filter(e=>e.benefit.base_override?.target==='speed:fly').length,10);
- assert.equal(scoreBenefits.entries.length,49);
+ assert.equal(scoreBenefits.entries.filter(entry=>generatedScoreIds.has(entry.id)).length,49);
  assert.ok(catalog.races.length>=20);
  assert.equal(catalog.races.filter(r=>r.name==='Aarakocra').length,3);
  assert.ok(!catalog.races.some(r=>r.name==='Shifter (Longtooth)'&&r.source==='ERLW'),
