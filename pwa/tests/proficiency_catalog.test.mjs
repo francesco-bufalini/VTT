@@ -1,18 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {proficiencyIndexFromBenefits,proficiencySourceEntry,PROFICIENCY_SOURCE_SECTIONS}
  from '../proficiency_catalog.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const typed=read('../../vtt/enrichment/benefits/proficiency_grant.json');
-const metadata=read('../catalog/proficiency_grants.json');
+const languages=read('../../vtt/data/languages_5etools.json');
 
 test('all proficiency source mechanics are authored only in proficiency_grant v2',()=>{
  assert.equal(typed.schema_version,2);
  assert.equal(typed.benefit_type,'proficiency_grant');
- for(const section of PROFICIENCY_SOURCE_SECTIONS)assert.equal(metadata[section],undefined);
+ assert.equal(existsSync(new URL('../catalog/proficiency_grants.json',import.meta.url)),false);
+ for(const section of PROFICIENCY_SOURCE_SECTIONS)assert.equal(languages[section],undefined);
  const sources=typed.entries.filter(e=>e.benefit?.proficiency_grant?.source_rules);
  const fixed=typed.entries.filter(e=>e.benefit?.proficiency_grant?.grants);
  const selectable=typed.entries.filter(e=>e.benefit?.proficiency_grant?.groups);
@@ -22,7 +23,7 @@ test('all proficiency source mechanics are authored only in proficiency_grant v2
  assert.equal(new Set(typed.entries.map(e=>e.id)).size,430);
  assert.deepEqual(fixed.map(e=>e.benefit.proficiency_grant.grants[0].kind),Array(12).fill('save'));
  assert(fixed.every(e=>e.granted_by.kind==='flavour'));
- assert.equal(metadata.languages.length,111);
+ assert.equal(languages.languages.length,111);
 });
 
 test('every migrated section is reconstructed from the typed catalog without dropping source metadata',()=>{
@@ -39,7 +40,7 @@ test('every migrated section is reconstructed from the typed catalog without dro
  const feat=index.feat.find(e=>e.name==='Skilled'&&e.source==='PHB');
  assert(feat&&!feat.proficiencyChoices,'Skilled choices are in the typed permanent grant');
  assert.equal(index.subrace.filter(e=>e.name==='Variant; Mark of Finding').length,2);
- assert.equal(proficiencyIndexFromBenefits(metadata,typed).race.length,124);
+ assert.equal(proficiencyIndexFromBenefits(languages,typed).race.length,124);
 });
 
 test('typed source profiles round-trip, including subclass level, replacements and ownership',()=>{

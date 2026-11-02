@@ -70,16 +70,31 @@ class FeatureProficiencyTests(unittest.TestCase):
              patch.object(generator, "generate_language_catalog", return_value=(Path("languages.json"), 0)):
             generator.main()
         output = json.loads(write.call_args.args[0])
+        self.assertNotIn("languages", output)
         self.assertEqual(output["classFeature"][0]["languageProficiencies"], [{"draconic": True}])
         self.assertEqual(output["subclassFeature"][0]["armorProficiencies"], [{"heavy": True}])
 
     def test_catalog_features_match_the_shipped_trait_catalog_and_both_outputs(self):
         native = json.loads((ROOT / "vtt/data/proficiency_grants_5etools.json").read_text(encoding="utf-8"))
-        browser = json.loads((ROOT / "pwa/catalog/proficiency_grants.json").read_text(encoding="utf-8"))
+        typed = json.loads((ROOT / "vtt/enrichment/benefits/proficiency_grant.json").read_text(encoding="utf-8"))
         traits = json.loads((ROOT / "pwa/catalog/classes.json").read_text(encoding="utf-8"))
         for group, field in [("classFeature", "class_features"), ("subclassFeature", "subclass_features")]:
-            self.assertEqual(native[group], browser[group])
-            for row in native[group]:
+            catalog_rows = [entry for entry in typed["entries"]
+                            if entry.get("benefit", {}).get("proficiency_grant", {})
+                            .get("source_rules", {}).get("section") == group]
+            self.assertEqual(len(native[group]), len(catalog_rows))
+            original = {row["id"]: row for row in native[group]}
+            for entry in catalog_rows:
+                ref = entry["granted_by"]["ref"]
+                source = entry["benefit"]["proficiency_grant"]["source_rules"]
+                row = original[ref["id"]]
+                self.assertEqual((ref["name"], ref["source"]), (row["name"], row["source"]))
+                self.assertEqual(source["stages"][0]["fields"], {
+                    key: value for key, value in row.items()
+                    if key not in ("name", "source", "id", "class_name", "class_source",
+                                   "subclass_short_name", "subclass_source", "level",
+                                   "trait_proficiencies", "trait_proficiency_choices")
+                })
                 self.assertTrue(any(trait["id"] == row["id"] and trait["class_source"] == row["class_source"] for trait in traits[field]), row["id"])
 
 

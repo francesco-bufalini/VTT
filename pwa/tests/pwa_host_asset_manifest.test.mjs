@@ -63,3 +63,8 @@ test('every offline catalog has a Godot route',()=>{
  assert.deepEqual(catalogs.filter(uri=>uri!=='/catalog/spells.json'&&!served.has(uri)),[],
   'Offline catalogs must be downloadable before installing the shell');
 });
+
+test('typed proficiencies and canonical 5eTools languages are served without a legacy alias',()=>{
+ assert.equal(served.get('/catalog/languages_5etools.json'),'vtt/data/languages_5etools.json');
+ assert.equal(served.has('/catalog/proficiency_grants.json'),false);
+});

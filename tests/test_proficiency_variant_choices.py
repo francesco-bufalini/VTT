@@ -41,12 +41,15 @@ class VariantProficiencyTests(unittest.TestCase):
         self.assertEqual(rows[0]["armorProficiencies"], [{"light": True, "medium": True}])
 
     def test_browser_keeps_variant_identity_without_unselected_grants(self) -> None:
-        browser = json.loads((ROOT / "pwa/catalog/proficiency_grants.json").read_text(encoding="utf-8"))
+        typed = json.loads((ROOT / "vtt/enrichment/benefits/proficiency_grant.json").read_text(encoding="utf-8"))
         mechanics = json.loads((ROOT / "pwa/catalog/class_mechanics.json").read_text(encoding="utf-8"))
         variants = {"Variant; Drow Descent", "Variant; Moon Elf or Sun Elf Descent",
                     "Variant; Wood Elf Descent"}
-        self.assertFalse(any(row.get("raceName") == "Half-Elf" and row.get("source") == "SCAG"
-                             and row["name"] in variants for row in browser["subrace"]))
+        self.assertFalse(any(entry.get("granted_by", {}).get("ref", {}).get("race") == "Half-Elf"
+                             and entry["granted_by"]["ref"].get("source") == "SCAG"
+                             and entry["granted_by"]["ref"].get("name") in variants
+                             and entry.get("benefit", {}).get("proficiency_grant", {}).get("source_rules", {}).get("section") == "subrace"
+                             for entry in typed["entries"]))
         selectable = {row["name"] for row in mechanics["subraces"]
                       if row.get("raceName") == "Half-Elf" and row.get("source") == "SCAG"}
         self.assertTrue(variants.issubset(selectable))

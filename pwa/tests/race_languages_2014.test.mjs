@@ -49,8 +49,8 @@ test('2014 racial language catalog stays identical to native and reviewed genera
  }
 });
 
-test('complete typed 5etools language list is shared without adding another PWA request',()=>{
- assert.deepEqual(catalog.languages,native.languages);
+test('complete typed language vocabulary comes from dedicated 5eTools data',()=>{
+ assert.equal(native.languages,undefined,'Proficiency sources must not duplicate the language glossary');
  assert.deepEqual(catalog.languages,publishedLanguages.languages);
  assert(catalog.languages.length>=100);
  const [human]=picks(char('Human','PHB'));
