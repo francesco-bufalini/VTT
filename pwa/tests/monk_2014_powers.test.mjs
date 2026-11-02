@@ -1,3 +1,4 @@
+import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,7 +7,7 @@ import {persistentBattleAbility} from '../sheet_rules_view.js';
 
 const catalog=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
 const rules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
-const featureActionOverrides=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
+const featureActionOverrides=classActionOverridesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/action.json',import.meta.url),'utf8')));
 const feature=(name,source='PHB',subclass='')=>{
  const owner='class|'+source.toLowerCase()+'|monk'+(subclass?'|subclass|'+subclass.toLowerCase()+'|phb':'');
  return {name,origin_key:owner,origin_id:'feature:'+owner+'|'+name.toLowerCase(),

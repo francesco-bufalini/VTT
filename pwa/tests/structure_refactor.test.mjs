@@ -1,3 +1,4 @@
+import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -35,7 +36,7 @@ test('current bestiary imports type multiattack without migrating saved sheets',
  assert.deepEqual(parseCreatureExport(makeCreatureExport(record)).creature,record);
 });
 
-const featureActionOverrides=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
+const featureActionOverrides=classActionOverridesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/action.json',import.meta.url),'utf8')));
 const feature=(name,owner='Monk',source='XPHB')=>({name,
  origin_key:`class|${source.toLowerCase()}|${owner.toLowerCase()}`,
  origin_id:`feature:${owner}:${name}`,entries:['Description']});

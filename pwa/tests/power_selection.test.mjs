@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {powerSelectionModels,powerSelectionPatch,powerSelectionLimit,
   powerApplicationPatch,powerSelectionTargets} from '../power_selection.js';
-const data={...JSON.parse(readFileSync(new URL('../catalog/power_selections.json',import.meta.url),'utf8')),optionalFeatureProgressions:JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'))};
+const data={optionGrants:JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_grant.json',import.meta.url),'utf8')),
+ optionLists:JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_list.json',import.meta.url),'utf8'))};
 const owner=(className,source,name)=>({name,origin_id:'feature:'+name,
  origin_key:'class|'+source.toLowerCase()+'|'+className.toLowerCase(),
  requirements:{class_name:className,class_source:source}});
@@ -61,7 +62,7 @@ test('spell selection benefits project the same stage and source contract as opt
      applied:{mode:'automatic',from:'learned'}}}
  ]};
  const [wizard,druid,sorcerer]=powerSelectionModels({},calculated,data);
- assert.equal(wizard.benefit_type,'spell_selection');
+ assert.equal(wizard.benefit_type,'option_grant');
  assert.equal(wizard.source.type,'spell_catalog');
  assert.deepEqual(Object.keys(wizard.layers),['learned','prepared']);
  assert.equal(wizard.layers.learned.limit,18);

@@ -9,7 +9,7 @@ const root=new URL('../',import.meta.url),native=new URL('../../vtt/data/',impor
 const artifacts=new URL('../.test-artifacts/',import.meta.url);
 await mkdir(artifacts,{recursive:true});
 const spells={version:1,spells:[{id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard'],entries:['Test reference.']},{id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Bard','Wizard']}]};
-const aliases={'/catalog/feature_timing_recovery_rules.json':'feature_timing_recovery_rules.json','/catalog/combat_actions_5etools.json':'combat_actions_5etools.json','/catalog/action_feature_overrides.json':'action_feature_overrides.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json','/catalog/miniatures.json':'token_catalog_offline.json'};
+const aliases={'/catalog/feature_timing_recovery_rules.json':'feature_timing_recovery_rules.json','/catalog/combat_actions_5etools.json':'combat_actions_5etools.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json','/catalog/miniatures.json':'token_catalog_offline.json'};
 const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
@@ -17,8 +17,11 @@ const server=createServer(async(req,res)=>{
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify(spells));return;}
   if(path==='/icons/action_controls.svg'){res.setHeader('Content-Type','image/svg+xml');res.end(await readFile(new URL('../../vtt/icons/action_controls.svg',import.meta.url)));return;}
-  if(!/^\/(?:[a-z_0-9.-]+|catalog\/[a-z_0-9.-]+|icons\/gold_generated\/gold_[0-3]\.svg|icons\/[a-z_0-9.-]+)?$/.test(path)){res.writeHead(404);res.end();return;}
-  const location=aliases[path]?new URL(aliases[path],native):new URL(path==='/'?'index.html':path.slice(1),root);
+  if(!/^\/(?:[a-z_0-9.-]+|catalog\/[a-z_0-9.-]+|benefits\/[a-z_0-9.-]+|catalog\/benefits\/[a-z_0-9.-]+|icons\/gold_generated\/gold_[0-3]\.svg|icons\/[a-z_0-9.-]+)?$/.test(path)){res.writeHead(404);res.end();return;}
+  const typed=path.startsWith('/benefits/')?path.slice('/benefits/'.length):
+    path.startsWith('/catalog/benefits/')?path.slice('/catalog/benefits/'.length):'';
+   const location=typed?new URL('../../vtt/enrichment/benefits/'+typed,import.meta.url):
+    aliases[path]?new URL(aliases[path],native):new URL(path==='/'?'index.html':path.slice(1),root);
   const body=await readFile(location);
   const type=path.endsWith('.js')?'text/javascript':path.endsWith('.css')?'text/css':path.endsWith('.json')?'application/json':path.endsWith('.png')?'image/png':path.endsWith('.svg')?'image/svg+xml':path.endsWith('.webmanifest')?'application/manifest+json':'text/html';
   res.setHeader('Content-Type',type);res.end(body);

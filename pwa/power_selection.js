@@ -226,37 +226,30 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   }
   }
  }
- // Spell selection extends the same learned/prepared/applied layer contract.
- // A benefit declares both the spell catalogue and the owning class level;
- // this read-only projection deliberately preserves existing spell storage/UI.
- for(const template of rows(catalog.templates).length?rows(catalog.templates):
-   [{id:'class_spellcasting',source:'spell_selection'}])
-   if(['casting_classes','spell_selection'].includes(template.source))
-   for(const member of rows(calculated.casting_classes)){
-     const declared=member.selection_layers||{};
-     const layers={};
-     if(Object.keys(declared).length){
-       for(const [stage,spec] of Object.entries(declared)){
-         layers[stage]={enabled:true,selected:[],limit:spec.limit??null,
-           trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger),
-           automatic:spec.mode==='automatic'||spec.mode==='class_list',
-           storage:spec.storage||null};
-       }
-     }else for(const [stage,spec] of Object.entries(template.layers||{})){
-       if(stage==='learned'&&member.mode==='Conosciuti'||
-         stage==='prepared'&&member.mode==='Preparati')
-         layers[stage]={enabled:true,selected:[],limit:member.limit,
-           trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger)};
-     }
-     models.push({id:template.id+':'+member.id,title:member.name+' · Incantesimi',
-       benefit_type:rows(catalog.optionGrants?.entries).length?'option_grant':'spell_selection',
-       option_kind:'spell',source_type:'spell_catalog',
-       source:member.spell_list_source||{type:'spell_catalog',class_name:member.spell_list_class_name||member.name},
-       spell_list_class_name:member.spell_list_class_name||member.name,
-       level_class_name:member.level_class_name||member.name,
-       origin_id:member.granting_trait_id||'',
-       ui:'existing',options:[],layers,cantrips:member.cantrips});
+ // Class spell selection is generated from the owning typed option grant
+ // projected into casting_classes. Its identifier is stable for saved sheets.
+ for(const member of rows(calculated.casting_classes)){
+  const declared=member.selection_layers||{},layers={};
+  if(Object.keys(declared).length){
+   for(const [stage,spec] of Object.entries(declared)){
+    layers[stage]={enabled:true,selected:[],limit:spec.limit??null,
+     trigger:spec.trigger||null,change_label:powerSelectionTriggerLabel(spec.trigger),
+     automatic:spec.mode==='automatic'||spec.mode==='class_list',
+     storage:spec.storage||null};
    }
+  }else{
+   const stage=member.mode==='Conosciuti'?'learned':'prepared';
+   layers[stage]={enabled:true,selected:[],limit:member.limit??null,
+    trigger:null,change_label:powerSelectionTriggerLabel(null)};
+  }
+  models.push({id:'class_spellcasting:'+member.id,title:member.name+' · Incantesimi',
+   benefit_type:'option_grant',option_kind:'spell',source_type:'spell_catalog',
+   source:member.spell_list_source||{type:'spell_catalog',class_name:member.spell_list_class_name||member.name},
+   spell_list_class_name:member.spell_list_class_name||member.name,
+   level_class_name:member.level_class_name||member.name,
+   origin_id:member.granting_trait_id||'',
+   ui:'existing',options:[],layers,cantrips:member.cantrips});
+ }
  // Dependent choices require an available, applied parent, including its source gates.
  let available=models;
  for(let pass=0;pass<models.length;pass++){

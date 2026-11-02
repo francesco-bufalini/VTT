@@ -8,6 +8,19 @@ nel catalogo pertinente (per esempio `proficiency.json`, `roll_bonus.json`,
 `resource.json`), con `granted_by.kind = "5etools"` e
 `ref = { "category": "background", "name": "...", "source": "..." }`.
 
+## Completamento dei nove cataloghi legacy (2 novembre 2026)
+
+I file `action_feature_overrides.json`, `class_resource_overrides.json`,
+`roll_bonus_rules.json`, `power_selections.json`, `feature_item_grants.json`,
+`scaling_dice.json`, `effect_extensions.json`, `spellcasting_benefits.json`
+e `optional_feature_progressions.json` sono stati eliminati dopo la
+migrazione nei cataloghi per tipo di beneficio. Gli override di classe
+derivano ora da `resource.json` e le box di incantesimi sono proiettate
+dagli `option_grant` senza un template globale. Le descrizioni storiche dei
+fallback più sotto documentano le fasi precedenti e non il runtime attuale.
+
+---
+
 ## Prima di aggiungere una voce
 
 1. Verificare `data/backgrounds.json` nel mirror 5eTools usato per il

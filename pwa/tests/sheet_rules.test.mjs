@@ -11,7 +11,7 @@ import {fixedProficiencies,structuredFeatureGrants,automaticId} from "../structu
 
 const load=file=>JSON.parse(readFileSync(fileURLToPath(new URL("../catalog/"+file+".json",import.meta.url)),"utf8"));
 const catalogs={abilityGrants:load("ability_grants"),classMechanics:load("class_mechanics"),
-  spellcastingBenefits:load("spellcasting_benefits"),proficiencyGrants:proficiencyTestIndex()};
+  optionGrants:JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_grant.json',import.meta.url),'utf8')),slotBenefits:JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/resource.json',import.meta.url),'utf8')),proficiencyGrants:proficiencyTestIndex()};
 const character=(overrides={})=>({kind:"character",level:1,abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:10},
   armor_class_base:10,max_hp_base:12,speed_base:30,inventory:[],...overrides});
 

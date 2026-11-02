@@ -1,3 +1,4 @@
+import {classRollBonusRulesFromBenefits} from '../class_benefit_catalogs.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,7 +8,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import {nativeClassFeatureActions} from '../action_economy.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
-const rules=read('roll_bonus_rules').features;
+const rules=classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8')));
 const feature=(name,owner,source='PHB',subclass='')=>({
  name,class_name:owner,class_source:source,origin_id:'feature:'+owner+':'+name,
  origin_key:'class|'+source.toLowerCase()+'|'+owner.toLowerCase()+

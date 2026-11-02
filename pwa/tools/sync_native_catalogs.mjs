@@ -1,3 +1,4 @@
+import {projectClassResourceOverrides} from '../class_benefit_progression.js';
 import {syncProficiencyCatalog} from './sync_proficiency_catalog.mjs';
 // Regenerate the browser's existing catalog URLs from native structured data.
 // No native files are changed; no catalog output is edited by hand.
@@ -275,9 +276,9 @@ abilityIndex.meta={...abilityIndex.meta,artificer_infusions:'TCE typed infusion 
  feat_numeric_bonuses:'PHB 2014 unconditional numeric feat effects from vtt/data/feat_numeric_bonuses_2014.json'};
 await writeFile(new URL('../catalog/ability_grants.json',import.meta.url),JSON.stringify(abilityIndex,null,2)+'\n');
 const mechanics=await read('../../vtt/data/class_mechanics_5etools.json');
-const resources=await read('../../vtt/data/class_resource_overrides.json');
-mechanics.resource_overrides=resources.classes;
-mechanics.resource_overrides_meta=resources.meta;
+const resources=await read('../../vtt/enrichment/benefits/resource.json');
+mechanics.resource_overrides=projectClassResourceOverrides(resources);
+mechanics.resource_overrides_meta={format:2,source:'vtt/enrichment/benefits/resource.json',build_only:true};
 mechanics.monster_resources=[];
 for(const part of ['a','b','c','mm']){
  const document=await read('../../vtt/data/fightclub_monster_resources_2014_'+part+'.json');

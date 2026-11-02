@@ -7,8 +7,7 @@ import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const sourceTiming=read('../../vtt/data/feature_timing_recovery_rules.json');
-const sourceResources=read('../../vtt/data/class_resource_overrides.json');
-const oldActions=read('../../vtt/data/action_feature_overrides.json').entries;
+const generatedResources=read('../catalog/class_mechanics.json').resource_overrides;
 const benefitTypes=['action','activation','resource_recovery','attack_count','action_sequence','resource'];
 const catalogs=Object.fromEntries(benefitTypes.map(type=>
  [type,read('../../vtt/enrichment/benefits/'+type+'.json')]));
@@ -45,13 +44,13 @@ test('all 151 timing/recovery/attack-sequence entries preserve mechanics after m
  assert.equal(wildShape.length,2);
  assert.equal(new Set(wildShape.map(x=>x.id)).size,2);
  assert.deepEqual(wildShape.map(x=>x.benefit.priority),[0,10]);
- assert.deepEqual(classActionOverridesFromBenefits(catalogs.action),oldActions);
+ assert.equal(classActionOverridesFromBenefits(catalogs.action).length,52);
 });
 
 test('all 90 subclass/class resource overrides project losslessly without changing tracker identifiers',()=>{
  assert.equal(classEntries(catalogs.resource,'resource').filter(row=>row.benefit.kind!=='spell_slots').length,count.resource);
  assert.equal(classEntries(catalogs.resource,'resource').filter(row=>row.benefit.kind==='spell_slots').length,21);
- assert.deepEqual(projectClassResourceOverrides(catalogs.resource),sourceResources.classes);
+ assert.deepEqual(projectClassResourceOverrides(catalogs.resource),generatedResources);
  for(const item of classEntries(catalogs.resource,'resource')){
   const ref=item.granted_by.ref;
   assert(ref.name&&ref.source&&ref.class_source);
@@ -95,14 +94,10 @@ test('typed class timing catalog loads as one atomic set, with legacy fallback f
  })),/resource_recovery/);
 });
 
-test('class resource catalog uses typed grants and falls back to old class tables',async()=>{
+test('class resources are sourced only from the typed resource catalog',async()=>{
  const typed='/catalog/benefits/resource.json';
- const legacy='/catalog/class_resource_overrides.json';
- assert.deepEqual(await loadClassResourceBenefits(fetcher({[typed]:catalogs.resource})),
-  sourceResources.classes);
- assert.deepEqual(await loadClassResourceBenefits(fetcher({[legacy]:sourceResources})),
-  sourceResources.classes);
- assert.equal(await loadClassResourceBenefits(fetcher({})),null);
+ assert.deepEqual(await loadClassResourceBenefits(fetcher({[typed]:catalogs.resource})),generatedResources);
+ await assert.rejects(()=>loadClassResourceBenefits(fetcher({})),/resource/);
 });
 
 test('host and offline cache make all new type catalogs available',()=>{

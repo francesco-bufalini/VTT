@@ -6,9 +6,10 @@ import {spellEligible,knownSpellProgress,knownClassSpellIds,changeKnownClassSpel
   addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 
 const load=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
+const typed=name=>JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={
   classFeatures:load('classes'),classMechanics:load('class_mechanics'),
-  spellcastingBenefits:load('spellcasting_benefits')
+  optionGrants:typed('option_grant'),slotBenefits:typed('resource')
 };
 const record=(name,level,extras={})=>({
   kind:'character',rules_version:'2014',level,class:name,class_source:name==='Artificer'?'TCE':'PHB',
@@ -133,8 +134,9 @@ test('custom class and foreign 5eTools spell list require no named-class branche
 });
 
 test('prepared spell minimum is read from benefit data, not a caster name',()=>{
- const original=catalogs.spellcastingBenefits.grants.find(g=>
-   g.owner.class_name==='Cleric'&&g.owner.class_source==='PHB');
+ const original=catalogs.optionGrants.entries.find(g=>
+   g.benefit?.option_grant?.option_kind==='spell'&&
+   g.granted_by.ref.class_name==='Cleric'&&g.granted_by.ref.class_source==='PHB');
  const trait={name:'Spellcasting',key:'caster',origin_key:'class|phb|cleric',
    origin_id:'feature:caster',benefits:[original.benefit]};
  const [caster]=castingClasses({classes:[{name:'Cleric',source:'PHB',level:1}],abilities:{wis:1}},
@@ -184,65 +186,30 @@ test('legacy saved book entries remain learnable through the generic manual laye
  assert.equal(saved.spellbook_spells.length,1,'legacy data remains untouched');
 });
 
-test('all 21 canonical class spellcasting grants reproduce the legacy calculated casting state',()=>{
- const read=rel=>JSON.parse(readFileSync(new URL(rel,import.meta.url),'utf8'));
- const typed=read('../../vtt/enrichment/benefits/option_grant.json');
- const slotBenefits=read('../../vtt/enrichment/benefits/resource.json');
- const oldRules=catalogs.spellcastingBenefits.grants;
- const spellGrants=typed.entries.filter(row=>row.benefit?.option_grant?.option_kind==='spell'&&
+test('all 21 canonical class spellcasting grants and slot entitlements resolve on active traits',()=>{
+ const spellGrants=catalogs.optionGrants.entries.filter(row=>
+  row.benefit?.option_grant?.option_kind==='spell'&&
   row.benefit.option_grant.source?.type==='spell_catalog'&&!row.benefit.option_grant.nested);
- const ownedSlots=slotBenefits.entries.filter(row=>row.benefit?.kind==='spell_slots');
- assert.equal(spellGrants.length,oldRules.length);
- assert.equal(ownedSlots.length,oldRules.length);
- for(const old of oldRules){
-  const owner=old.owner,character={
-   ...record(owner.class_name,20),
+ const ownedSlots=catalogs.slotBenefits.entries.filter(row=>row.benefit?.kind==='spell_slots');
+ assert.equal(spellGrants.length,21);
+ assert.equal(ownedSlots.length,21);
+ for(const grant of spellGrants){
+  const owner=grant.granted_by.ref;
+  assert(ownedSlots.some(slot=>slot.granted_by.ref.class_name===owner.class_name&&
+   slot.granted_by.ref.class_source===owner.class_source&&
+   slot.granted_by.ref.name===owner.name&&
+   (slot.granted_by.ref.subclass||'')===(owner.subclass||'')),grant.id);
+  const character={...record(owner.class_name,20),
    rules_version:owner.class_source==='XPHB'?'2024':'2014',
    class:owner.class_name,class_source:owner.class_source,
    classes:[{name:owner.class_name,source:owner.class_source,level:20,
-     ...(owner.subclass?{subclass:owner.subclass,
-       subclass_source:owner.subclass_source||owner.class_source}:{})}]
+    ...(owner.subclass?{subclass:owner.subclass,
+     subclass_source:owner.subclass_source||owner.class_source}:{})}]
   };
-  const identity=row=>JSON.stringify(row);
-  const matches=spellGrants.filter(row=>row.granted_by.ref.class_name===owner.class_name&&
-   row.granted_by.ref.class_source===owner.class_source&&
-   row.granted_by.ref.name===owner.trait&&
-   (row.granted_by.ref.subclass||'')===(owner.subclass||''));
-  assert.equal(matches.length,1,identity(owner));
-  const legacy=calculateSheet(character,catalogs);
-  const current=calculateSheet(character,{
-   classFeatures:catalogs.classFeatures,classMechanics:catalogs.classMechanics,
-   optionGrants:typed,slotBenefits
-  });
-  assert.equal(current.casting_classes.length,legacy.casting_classes.length,identity(owner));
-  // A named slot profile is declarative metadata: compare the resolved
-  // parameters used by the engine, not the redundant profile label.
-  const resolved=members=>members.map(member=>{
-   const copy=structuredClone(member);
-   if(copy.slot_progression)delete copy.slot_progression.profile;
-   // Canonical rule tables store only change points. Legacy tables repeated
-   // each unchanged value at every class level; both evaluate identically.
-   const compact=value=>{
-    if(!value||typeof value!=='object')return;
-    if(Array.isArray(value)){
-     for(const part of value)compact(part);
-     return;
-    }
-    if(Array.isArray(value.by_class_level)){
-     let last=Symbol('first');
-     value.by_class_level=value.by_class_level.filter(([,n])=>{
-      if(n===last)return false;
-      last=n;
-      return true;
-     });
-    }
-    for(const part of Object.values(value))compact(part);
-   };
-   compact(copy.slot_progression);
-   return copy;
-  });
-  assert.deepEqual(resolved(current.casting_classes),resolved(legacy.casting_classes),identity(owner));
-  assert.deepEqual(current.spell_slots,legacy.spell_slots,identity(owner));
-  assert.deepEqual(current.pact_slots,legacy.pact_slots,identity(owner));
+  const result=calculateSheet(character,catalogs);
+  assert(result.casting_classes.some(row=>row.name===owner.class_name),
+   'Missing typed spellcaster '+grant.id);
+  assert(result.casting_classes.every(row=>row.selection_layers&&
+   Object.keys(row.selection_layers).length>0),grant.id);
  }
 });

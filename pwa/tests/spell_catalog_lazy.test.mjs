@@ -45,7 +45,7 @@ test('numeric sheet rules never request the full spell compendium',async()=>{
       path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
       path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
       path==='/catalog/trait_states.json'?{version:1,states:[]}:
-      path==='/catalog/benefits/action.json'?{schema_version:2,benefit_type:'action',scope:'catalog',entries:[]}:
+      path.startsWith('/catalog/benefits/')?{schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:
           (path.startsWith('/benefits/')&&path.endsWith('.json'))?
         {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
     return new Response(JSON.stringify(data),{status:200});
@@ -61,66 +61,39 @@ test('numeric sheet rules never request the full spell compendium',async()=>{
   }
 });
 
-test('typed option lists avoid fetching the duplicate legacy catalog, with an old-host fallback',async()=>{
-  const {readFileSync}=await import('node:fs');
-  const {loadRuleCatalogs,clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
-  const read=rel=>JSON.parse(readFileSync(new URL(rel,import.meta.url),'utf8'));
-  const optionGrants=read('../../vtt/enrichment/benefits/option_grant.json');
-  const optionLists=read('../../vtt/enrichment/benefits/option_list.json');
-  const legacyOptions=read('../catalog/optional_feature_progressions.json');
-  const legacyPower=read('../catalog/power_selections.json');
-  const legacySpellcasting=read('../catalog/spellcasting_benefits.json');
-  const originalFetch=globalThis.fetch;
-  try{
-    for(const kind of ['complete','partial','partialPowerGrant','partialSpellGrant','legacy']){
-      const modern=kind!=='legacy';
-      const typedLists=kind==='partial'?{...optionLists,entries:optionLists.entries.slice(1)}:optionLists;
-      const typedGrants=kind==='partialPowerGrant'?{...optionGrants,entries:optionGrants.entries.filter(row=>
-        row.benefit?.option_grant?.id!=='arcane_armor')}:
-        kind==='partialSpellGrant'?{...optionGrants,entries:optionGrants.entries.filter(row=>
-          row.benefit?.option_grant?.id!=='class_spellcasting:class|phb|wizard')}:
-        optionGrants;
-      const calls=[];
-      clearLocalRuleCatalogCache();
-      globalThis.fetch=async path=>{
-        calls.push(path);
-        const catalogs={
-          '/benefits/option_grant.json':modern?typedGrants:{},
-          '/benefits/option_list.json':modern?typedLists:{},
-          '/catalog/optional_feature_progressions.json':legacyOptions,
-          '/catalog/power_selections.json':legacyPower,
-          '/catalog/spellcasting_benefits.json':legacySpellcasting
-        };
-        const data=Object.hasOwn(catalogs,path)?catalogs[path]:
-          path==='/catalog/class_mechanics.json'?{legacy_spells:[]}:
-          path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
-          path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
-          path==='/catalog/trait_states.json'?{version:1,states:[]}:
-          path==='/catalog/benefits/action.json'?{schema_version:2,benefit_type:'action',scope:'catalog',entries:[]}:
-          (path.startsWith('/benefits/')&&path.endsWith('.json'))?
-            {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
-        return new Response(JSON.stringify(data),{status:200});
-      };
-      const result=await loadRuleCatalogs();
-      const hasCompleteLists=kind==='complete'||kind==='partialPowerGrant'||kind==='partialSpellGrant';
-      assert.equal(result.optionLists.entries.length,kind==='legacy'?0:kind==='partial'?274:275);
-      assert.equal(result.optionalFeatureProgressions.options.length,hasCompleteLists?0:272);
-      assert.equal(calls.includes('/catalog/optional_feature_progressions.json'),!hasCompleteLists,
-        'Skip the old 272-option download only when the typed catalog is available');
-      assert.equal(calls.filter(path=>path==='/benefits/option_list.json').length,1);
-      assert.equal(calls.filter(path=>path==='/benefits/option_grant.json').length,1);
-      assert.equal(result.powerSelections.selections.length,
-        kind==='legacy'||kind==='partialPowerGrant'?3:0);
-      assert.equal(result.spellcastingBenefits.grants.length,
-        kind==='legacy'||kind==='partialSpellGrant'?21:0);
-      assert.equal(calls.includes('/catalog/power_selections.json'),
-        kind==='legacy'||kind==='partialPowerGrant');
-      assert.equal(calls.includes('/catalog/spellcasting_benefits.json'),
-        kind==='legacy'||kind==='partialSpellGrant');
-
-    }
-  }finally{
-    clearLocalRuleCatalogCache();
-    globalThis.fetch=originalFetch;
+test('typed option catalogs never fetch any retired legacy JSON',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const {loadRuleCatalogs,clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
+ const read=rel=>JSON.parse(readFileSync(new URL(rel,import.meta.url),'utf8'));
+ const optionGrants=read('../../vtt/enrichment/benefits/option_grant.json');
+ const optionLists=read('../../vtt/enrichment/benefits/option_list.json');
+ const prior=globalThis.fetch;
+ try{
+  for(const kind of ['complete','partial']){
+   const lists=kind==='partial'?{...optionLists,entries:optionLists.entries.slice(1)}:optionLists;
+   const calls=[];clearLocalRuleCatalogCache();
+   globalThis.fetch=async path=>{
+    calls.push(path);
+    const data=path==='/benefits/option_grant.json'?optionGrants:
+     path==='/benefits/option_list.json'?lists:
+     path==='/catalog/class_mechanics.json'?{legacy_spells:[]}:
+     path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
+     path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
+     path==='/catalog/trait_states.json'?{version:1,states:[]}:
+     path.startsWith('/catalog/benefits/')?{schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:
+     (path.startsWith('/benefits/')&&path.endsWith('.json'))?
+      {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
+    return new Response(JSON.stringify(data),{status:200});
+   };
+   const result=await loadRuleCatalogs();
+   assert.equal(result.optionLists.entries.length,kind==='complete'?275:274);
+   assert.equal(result.optionGrants.entries.length,optionGrants.entries.length);
+   assert.equal(result.optionalFeatureProgressions.options.length,0);
+   assert.equal(result.powerSelections.selections.length,0);
+   assert.equal(result.spellcastingBenefits.grants.length,0);
+   for(const filename of ['optional_feature_progressions','power_selections','spellcasting_benefits']){
+    assert(!calls.includes('/catalog/'+filename+'.json'),filename+' must be retired');
+   }
   }
+ }finally{clearLocalRuleCatalogCache();globalThis.fetch=prior;}
 });

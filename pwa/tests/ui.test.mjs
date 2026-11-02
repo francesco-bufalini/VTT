@@ -705,8 +705,8 @@ async function useCastingCatalog(t){
  globalThis.fetch=async(url,options)=>{
   const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics',
     '/catalog/proficiency_grants.json':'proficiency_grants','/catalog/classes.json':'classes',
-    '/catalog/spellcasting_benefits.json':'spellcasting_benefits'})[url];
-  return file?new Response(readFileSync(new URL('../catalog/'+file+'.json',import.meta.url),'utf8'),{status:200}):previous(url,options);
+    '/benefits/option_grant.json':'option_grant','/benefits/resource.json':'resource'})[url];
+  return file?new Response(readFileSync(new URL((file==='option_grant'||file==='resource'?'../../vtt/enrichment/benefits/':'../catalog/')+file+'.json',import.meta.url),'utf8'),{status:200}):previous(url,options);
  };
  t.after(()=>{globalThis.fetch=previous;clearLocalRuleCatalogCache();});
 }
@@ -1429,7 +1429,6 @@ test('ASI opens its sole next picker automatically until ability allocation is c
   if(key==='backgrounds')return new Response(JSON.stringify({backgrounds:{}}),{status:200});
   if(key==='feature_timing_recovery_rules')return new Response(JSON.stringify({version:1,actions:[],recoveries:[]}),{status:200});
   if(key==='trait_states')return new Response(JSON.stringify({version:1,states:[],exhaustion:{}}),{status:200});
-  if(key==='roll_bonus_rules')return new Response(JSON.stringify({version:1,features:[]}),{status:200});
   if(key==='species_attacks')return new Response(JSON.stringify({version:1,races:[]}),{status:200});
   if(files.has(key))return new Response(readFileSync(new URL('../catalog/'+key+'.json',import.meta.url),'utf8'),{status:200});
   if(sourcePath.startsWith('/benefits/'))return referenceCatalogFetch(url,options);

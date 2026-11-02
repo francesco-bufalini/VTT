@@ -1,3 +1,5 @@
+import {featureItemGrantsFromBenefits} from '../feature_item_grants.js';
+import {classRollBonusRulesFromBenefits} from '../class_benefit_catalogs.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,11 +11,11 @@ import {classFeatureRollSources} from '../feature_mechanics.js';
 import {withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_grants.mjs';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
-const classFeatures=read('classes'),itemRules=read('feature_item_grants').grants;
+const classFeatures=read('classes'),itemRules=featureItemGrantsFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/item_grant.json',import.meta.url),'utf8')));
 const mechanics={...read('class_mechanics'),feature_item_grants:itemRules};
 const catalogs={classFeatures,classMechanics:mechanics,featureItemGrants:itemRules,
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
- traitStates:read('trait_states').states,rollBonusRules:read('roll_bonus_rules').features};
+ traitStates:read('trait_states').states,rollBonusRules:classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8')))};
 const art=(level,subclass='Armorer')=>({
  kind:'character',rules_version:'2014',class:'Artificer',class_source:'TCE',level,
  classes:[{name:'Artificer',source:'TCE',level,subclass,subclass_source:'TCE'}],

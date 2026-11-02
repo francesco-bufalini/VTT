@@ -1,3 +1,5 @@
+import {scalingDiceFromBenefits} from '../scaling_dice.js';
+import {effectExtensionsFromBenefits} from '../effect_extensions.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,8 +18,16 @@ import {itemOptionChargeTrackers,activeItemOptionEffects,requiresAttunement,equi
 import {collectTraitRows} from '../trait_projection.js';
 import {armorerSelectionCatalog,withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_grants.mjs';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
-const catalogs={powerSelections:read('power_selections'),optionalFeatureProgressions:read('optional_feature_progressions')};
-const combined={...catalogs.powerSelections,optionalFeatureProgressions:catalogs.optionalFeatureProgressions};
+const typed=name=>JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/'+name+'.json',import.meta.url),'utf8'));
+const optionGrants=typed('option_grant'),optionLists=typed('option_list');
+const optionalFeatureProgressions={
+ progressions:optionGrants.entries.map(row=>row.benefit?.option_grant)
+  .filter(row=>row?.source?.feature_types?.length),
+ options:optionLists.entries.filter(row=>row.granted_by?.kind==='5etools')
+  .flatMap(row=>row.benefit?.option_list?.options||[])
+};
+const catalogs={optionGrants,optionLists,optionalFeatureProgressions};
+const combined={...catalogs};
 const feature={name:'Choice owner',class_name:'Ranger',class_source:'PHB',origin_key:'class|phb|ranger',origin_id:'feature:owner',level:2};
 const record=()=>({id:'owner',rules_version:'2014',classes:[{name:'Ranger',source:'PHB',level:2}],inventory:[{id:'thing',name:'Any object',quantity:2}],optional_features_catalog:[]});
 const schema=destination=>({selections:[{id:'data-choice',title:'Arbitrary title',owner:{class_name:'Ranger',class_source:'PHB',trait:'Choice owner'},source:{options:[{id:'option',name:'Selected benefit',effects:[{type:'bonus',target:'ability:str',expression:'2'}]}]},layers:{learned:{limit:1},applied:{limit:1}},application:{destination,...(destination==='item'?{target:{kind:'item',label:'Choose any object'}}:{})}}]});
@@ -96,9 +106,9 @@ test('multiple options extend the same object without replacing one another or s
  r={...r,...powerApplicationPatch(r,context,catalog,'data-choice','first',false)};
  assert.deepEqual(r.inventory[0].option_extensions.map(e=>e.id),['second']);
 });
-const completeCatalogs={...catalogs,scalingDice:read('scaling_dice'),classFeatures:read('classes'),classMechanics:read('class_mechanics'),
+const completeCatalogs={...catalogs,scalingDice:scalingDiceFromBenefits(typed('scaling_die')),classFeatures:read('classes'),classMechanics:read('class_mechanics'),
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),traitStates:read('trait_states').states,
- effectExtensions:read('effect_extensions').extensions};
+ effectExtensions:effectExtensionsFromBenefits(typed('effect_extension'))};
 test('Arcane Armor affects only its extended item and its nested model disappears with the owner',()=>{
  const rules=withArmorerGrants(completeCatalogs);
  const character={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',
@@ -123,7 +133,12 @@ test('an applied Fighting Style is described and attributed to its owner, withou
  let r={...record(),abilities:{str:12,dex:14,int:10},classes:[{name:'Ranger',source:'PHB',level:2}]};
  const id='optional:class:phb:ranger:fs-r',option='optional:phb:archery';
  // A declared primitive verifies benefit routing independently of catalogue coverage.
- const catalog={...completeCatalogs,optionalFeatureProgressions:{...catalogs.optionalFeatureProgressions,options:catalogs.optionalFeatureProgressions.options.map(row=>row.id===option?{...row,effects:[{type:'bonus',target:'ability:str',expression:'2'}]}:row)}};
+ const modifiedLists=structuredClone(catalogs.optionLists);
+  const chosen=modifiedLists.entries.find(row=>row.benefit?.option_list?.options?.some(entry=>entry.id===option));
+  assert(chosen);
+  chosen.benefit.option_list.options.find(row=>row.id===option).effects=[
+   {type:'bonus',target:'ability:str',expression:'2'}];
+  const catalog={...completeCatalogs,optionLists:modifiedLists};
  let c=calculateSheet(r,catalog);
  r={...r,...powerSelectionPatch(r,c,combined,id,'learned',option)};
  r={...r,...powerApplicationPatch(r,c,combined,id,option,true)};

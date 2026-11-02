@@ -1,3 +1,4 @@
+import {scalingDiceFromBenefits} from '../scaling_dice.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +17,7 @@ const catalogs={
  abilityGrants:json('../catalog/ability_grants.json'),
  proficiencyGrants:proficiencyTestIndex(),
  featureRules:json('../../vtt/data/feature_timing_recovery_rules.json'),
- scalingDice:json('../catalog/scaling_dice.json')
+ scalingDice:scalingDiceFromBenefits(json('../../vtt/enrichment/benefits/scaling_die.json'))
 };
 const bard=edition=>({
  id:'bard-'+edition,name:'Bardo',kind:'character',rules_version:edition==='PHB'?'2014':'2024',

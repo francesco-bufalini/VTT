@@ -1,3 +1,4 @@
+import {classRollBonusRulesFromBenefits} from '../class_benefit_catalogs.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -87,7 +88,7 @@ test('Slippery Mind grants Wisdom save proficiency from Rogue level 15',()=>{
 });
 
 test('roll supplements keep contextual choices opt-in and bonus formulas typed',()=>{
-  const rules=read('roll_bonus_rules').features;
+  const rules=classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8')));
   const extra=id=>rules.find(x=>x.id===id);
   assert.deepEqual(extra('fey_wanderer_otherworldly_glamour')?.bonus,{
     targets:['ability_check:cha'],ability_modifier:'wis',minimum:1

@@ -3,17 +3,6 @@
   "description": "Legacy sources and their per-type destinations. Inventory for migration planning, NOT validation of legacy payloads against the new canonical schema.",
   "sources": [
     {
-      "path": "vtt/data/action_feature_overrides.json",
-      "sections": [
-        "entries"
-      ],
-      "types": [
-        "action",
-        "activation",
-        "resource"
-      ]
-    },
-    {
       "path": "vtt/data/feature_timing_recovery_rules.json",
       "sections": [
         "contextual_actions",
@@ -31,27 +20,6 @@
       ]
     },
     {
-      "path": "vtt/data/class_resource_overrides.json",
-      "sections": [
-        "classes"
-      ],
-      "types": [
-        "resource",
-        "progression"
-      ]
-    },
-    {
-      "path": "pwa/catalog/roll_bonus_rules.json",
-      "sections": [
-        "features"
-      ],
-      "types": [
-        "roll_bonus",
-        "numeric_modifier",
-        "roll_mode"
-      ]
-    },
-    {
       "path": "pwa/catalog/trait_states.json",
       "sections": [
         "states",
@@ -64,29 +32,6 @@
         "attack",
         "numeric_modifier",
         "roll_mode"
-      ]
-    },
-    {
-      "path": "pwa/catalog/power_selections.json",
-      "sections": [
-        "templates",
-        "selections"
-      ],
-      "types": [
-        "option_selection",
-        "choice",
-        "effect_extension"
-      ]
-    },
-    {
-      "path": "pwa/catalog/feature_item_grants.json",
-      "sections": [
-        "grants"
-      ],
-      "types": [
-        "item_grant",
-        "companion_grant",
-        "attack"
       ]
     },
     {
@@ -130,48 +75,6 @@
       ],
       "types": [
         "trait"
-      ]
-    },
-    {
-      "path": "pwa/catalog/scaling_dice.json",
-      "sections": [
-        "dice"
-      ],
-      "types": [
-        "scaling_die"
-      ]
-    },
-    {
-      "path": "pwa/catalog/effect_extensions.json",
-      "sections": [
-        "extensions"
-      ],
-      "types": [
-        "effect_extension"
-      ]
-    },
-    {
-      "path": "pwa/catalog/spellcasting_benefits.json",
-      "sections": [
-        "grants"
-      ],
-      "types": [
-        "spellcasting",
-        "spell_selection",
-        "spell_slot"
-      ]
-    },
-    {
-      "path": "pwa/catalog/optional_feature_progressions.json",
-      "sections": [
-        "progressions",
-        "options"
-      ],
-      "types": [
-        "option_selection",
-        "progression",
-        "choice",
-        "item_grant"
       ]
     },
     {
@@ -326,7 +229,6 @@
       "sections": [
         "progressions"
       ],
-      "partial": true,
       "benefit_type": "option_grant",
       "catalog": "vtt/enrichment/benefits/option_grant.json",
       "runtime": "pwa/power_selection.js"
@@ -336,7 +238,6 @@
       "sections": [
         "options"
       ],
-      "partial": true,
       "benefit_type": "option_list",
       "catalog": "vtt/enrichment/benefits/option_list.json",
       "runtime": "pwa/power_selection.js"
@@ -346,7 +247,6 @@
       "sections": [
         "selections"
       ],
-      "partial": true,
       "benefit_type": "option_grant",
       "catalog": "vtt/enrichment/benefits/option_grant.json",
       "runtime": "pwa/power_selection.js"
@@ -356,10 +256,9 @@
       "sections": [
         "grants"
       ],
-      "partial": true,
       "benefit_type": "option_grant",
       "catalog": "vtt/enrichment/benefits/option_grant.json",
-      "runtime": "pwa/power_selection.js"
+      "runtime": "pwa/sheet_rules.js"
     },
     {
       "source": "pwa/catalog/scaling_dice.json",
@@ -429,6 +328,30 @@
         "subraces",
         "features"
       ]
+    },
+    {
+      "source": "vtt/data/action_feature_overrides.json",
+      "benefit_type": "action",
+      "catalog": "vtt/enrichment/benefits/action.json",
+      "runtime": "pwa/class_benefit_catalogs.js"
+    },
+    {
+      "source": "vtt/data/class_resource_overrides.json",
+      "benefit_type": "resource",
+      "catalog": "vtt/enrichment/benefits/resource.json",
+      "runtime": "pwa/class_benefit_progression.js"
+    },
+    {
+      "source": "pwa/catalog/roll_bonus_rules.json",
+      "benefit_type": "roll_bonus",
+      "catalog": "vtt/enrichment/benefits/roll_bonus.json",
+      "runtime": "pwa/class_benefit_catalogs.js"
+    },
+    {
+      "source": "pwa/catalog/spellcasting_benefits.json",
+      "benefit_type": "resource",
+      "catalog": "vtt/enrichment/benefits/resource.json",
+      "runtime": "pwa/sheet_rules.js"
     }
   ]
 }

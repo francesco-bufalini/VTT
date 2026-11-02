@@ -1,3 +1,4 @@
+import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import {resolveVariant,applyVariantEdit,variantDamage} from '../creature_variants.js';
 import test from 'node:test';
@@ -11,10 +12,11 @@ import {rollSheetDice,sheetRollFormula} from '../sheet_rules_view.js';
 import {actionEntries} from '../action_economy.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
- spellcastingBenefits:read('spellcasting_benefits'),
+ optionGrants:read('../../vtt/enrichment/benefits/option_grant.json'),
+ slotBenefits:read('../../vtt/enrichment/benefits/resource.json'),
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
  featureRules:JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8')),
- featureActionOverrides:JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries};
+ featureActionOverrides:classActionOverridesFromBenefits(read('../../vtt/enrichment/benefits/action.json'))};
 const sheet=(name,level=5,edition='2014')=>({kind:'character',rules_version:edition,class:name,
  class_source:edition==='2024'?'XPHB':'PHB',level,classes:[{name,level,source:edition==='2024'?'XPHB':'PHB'}],
  abilities:{str:18,dex:16,con:14,int:16,wis:16,cha:18},inventory:[],max_hp_base:50,current_hp:10,
@@ -144,7 +146,7 @@ test('Innate Sorcery is paid, grants Sorcerer DC/attack benefits and does not bo
 });
 test('descriptive class overrides cannot duplicate the executable privilege of the same trait',()=>{
  const c=sheet('Sorcerer',5),out=calculateSheet(c,catalogs);
- const overrides=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
+ const overrides=classActionOverridesFromBenefits(read('../../vtt/enrichment/benefits/action.json'));
  const actions=actionEntries(c,out,[],overrides);
  assert.equal(actions.filter(a=>a.class_feature_id==='font_of_magic').length,1);
  assert(!actions.some(a=>a.name==='Conversione slot e punti stregoneria'));

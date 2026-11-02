@@ -4,8 +4,11 @@ import {readFileSync} from 'node:fs';
 import {optionalFeatureSelectionModels} from '../optional_feature_progression.js';
 import {powerSelectionModels,powerSelectionPatch,powerSelectionCustomPatch,powerApplicationPatch} from '../power_selection.js';
 
-const optional=JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'));
-const catalog={optionalFeatureProgressions:optional,selections:[],templates:[]};
+const grants=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_grant.json',import.meta.url),'utf8'));
+const lists=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_list.json',import.meta.url),'utf8'));
+const optional={progressions:grants.entries.map(e=>e.benefit?.option_grant)
+ .filter(g=>g?.source?.feature_types?.length)};
+const catalog={optionGrants:grants,optionLists:lists};
 const context={features:optional.progressions.map(rule=>({name:rule.owner.trait,class_name:rule.owner.class_name,class_source:rule.owner.class_source,origin_key:'class|'+rule.owner.class_source.toLowerCase()+'|'+rule.owner.class_name.toLowerCase(),origin_id:'feature:'+rule.id}))};
 const character=(name,level=2,extra={})=>({id:'a',rules_version:'2014',
  classes:[{name,source:'PHB',level}],...extra});

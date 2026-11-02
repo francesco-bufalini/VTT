@@ -81,7 +81,7 @@ jobs:
           manifest = json.loads((root / "manifest.webmanifest").read_text())
           assert manifest["scope"] == "/" and manifest["start_url"] == "/"
           required = {"/", "/index.html", "/main.js", "/ui.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js",
-                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/activated_abilities.js", "/character_core.js", "/level_up.js", "/quick_homebrew.js", "/species_origin_rules.js", "/spell_item_effects.js", "/skill_definitions.js", "/offhand_rules.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/catalog/ability_grants.json", "/catalog/activated_abilities.json", "/catalog/class_resource_overrides.json", "/catalog/class_mechanics.json", "/catalog/feature_timing_recovery_rules.json", "/catalog/languages_5etools.json", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/activated_abilities.js", "/character_core.js", "/level_up.js", "/quick_homebrew.js", "/species_origin_rules.js", "/spell_item_effects.js", "/skill_definitions.js", "/offhand_rules.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/catalog/ability_grants.json", "/catalog/activated_abilities.json", "/benefits/resource.json", "/catalog/class_mechanics.json", "/catalog/feature_timing_recovery_rules.json", "/catalog/languages_5etools.json", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                       "/icon-192.png", "/icon-512.png"}
           served = (root / "sw.js").read_text()
           for name in required - {"/sw.js"}:
@@ -297,10 +297,12 @@ jobs:
           (root / "benefits").mkdir(parents=True, exist_ok=True)
           (root / "catalog" / "benefits").mkdir(parents=True, exist_ok=True)
           # A standalone prototype uses the same typed benefits as the Godot host.
-          for name in ("attack", "movement", "roll_mode", "roll_bonus", "resource", "proficiency_grant"):
+          for name in ("attack", "movement", "roll_mode", "roll_bonus", "resource", "proficiency_grant",
+                         "option_grant", "option_list", "flavours", "bonus", "feat_grant",
+                         "defense", "scaling_die", "item_grant", "effect_extension"):
               copy2(Path("vtt/enrichment/benefits") / (name + ".json"),
                     root / "benefits" / (name + ".json"))
-          for name in ("action", "roll_bonus"):
+          for name in ("action", "activation", "resource_recovery", "attack_count", "action_sequence", "resource", "roll_bonus"):
               copy2(Path("vtt/enrichment/benefits") / (name + ".json"),
                     root / "catalog" / "benefits" / (name + ".json"))
           # All creature-action SVG sprite sheets must survive offline packaging.
@@ -318,13 +320,11 @@ jobs:
           }
           for source, target in sources.items():
               copy2(Path("vtt/data") / source, root / "catalog" / target)
-          copy2(Path("vtt/data/action_feature_overrides.json"), root / "catalog/action_feature_overrides.json")
           copy2(Path("vtt/data/combat_action_supplements_5etools.json"), root / "catalog/combat_action_supplements_5etools.json")
           copy2(Path("vtt/data/combat_actions_5etools.json"), root / "catalog/combat_actions_5etools.json")
           copytree(Path("pwa/icons"), root / "icons", dirs_exist_ok=True)
           copy2(Path("vtt/icons/action_controls.svg"), root / "icons/action_controls.svg")
           copy2(Path("vtt/data/feature_timing_recovery_rules.json"), root / "catalog/feature_timing_recovery_rules.json")
-          copy2(Path("vtt/data/class_resource_overrides.json"), root / "catalog/class_resource_overrides.json")
           for file in ("classes", "ability_grants", "class_mechanics"):
               copy2(Path("pwa/catalog") / (file + ".json"), root / "catalog" / (file + ".json"))
           (root / "start-preview.cmd").write_text(
@@ -360,7 +360,7 @@ jobs:
               catalog = json.loads((root / "benefits" / (name + ".json")).read_text())
               assert catalog["schema_version"] == 2 and catalog["benefit_type"] == name
               assert catalog["scope"] == "catalog" and catalog["entries"]
-          for file in ["player", "backgrounds", "features", "items", "spells", "classes", "ability_grants", "activated_abilities", "class_resource_overrides", "class_mechanics", "languages_5etools"]:
+          for file in ["player", "backgrounds", "features", "items", "spells", "classes", "ability_grants", "activated_abilities", "class_mechanics", "languages_5etools"]:
               assert (root / "catalog" / (file + ".json")).exists(), file
           choices = json.loads((root / "catalog/classes.json").read_text())
           assert choices["version"] == 1 and len(choices["classes"]) >= 12

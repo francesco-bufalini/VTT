@@ -1,3 +1,4 @@
+import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,9 +14,10 @@ const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',impo
 const companions=read('companion_spells');
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),traitStates:read('trait_states').states,
- featureActionOverrides:JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries};
-const selectionCatalogs={...withArmorerGrants(catalogs),powerSelections:read('power_selections'),
- optionalFeatureProgressions:read('optional_feature_progressions')};
+ featureActionOverrides:classActionOverridesFromBenefits(read('../../vtt/enrichment/benefits/action.json'))};
+const selectionCatalogs={...withArmorerGrants(catalogs),
+ optionGrants:read('../../vtt/enrichment/benefits/option_grant.json'),
+ optionLists:read('../../vtt/enrichment/benefits/option_list.json')};
 const sheet=(name,subclass,source='PHB',subclassSource='TCE')=>({
  id:'owner',kind:'character',name:'Creatore',rules_version:'2014',level:8,
  classes:[{name,source,level:8,subclass,subclass_source:subclassSource}],
