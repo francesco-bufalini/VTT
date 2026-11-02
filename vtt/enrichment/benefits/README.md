@@ -389,24 +389,6 @@ tipizzati.
 
 Concessioni con portata in piedi (`range_feet`), proprietario `granted_by` legato a 5eTools e combinazione per massimo. `mode: "increase_if_existing"` con `fallback_feet` copre Umbral Sight; `choice_required` preserva le scelte di Custom Lineage. I sensi dei mostri e quelli aggiunti manualmente restano fonti indipendenti. L'audit 5eTools è un fixture di test, non un secondo catalogo di regole.
 
-## Estensioni degli incantesimi e passi di sequenza `spell`
-
-Il catalogo [`spell_extension.json`](spell_extension.json) contiene benefici
-che associano un incantesimo canonico (`spell.name` + `spell.source`) al
-tratto 5eTools che lo modifica. Quando si apre l'incantesimo nella PWA, la
-descrizione **corrente** del tratto viene mostrata immediatamente dopo il
-quadro dei dati strutturati, senza copiarla nel catalogo dei benefici.
-Solo i tratti effettivamente posseduti e abilitati vengono proiettati.
-
-Le `action_sequence` possono includere uno step con
-`selector: {kind: "spell", name: "Blade Ward", source: "PHB"}`.
-Lo step risolve soltanto gli incantesimi accessibili alla creatura e apre
-la stessa finestra di lancio degli incantesimi ordinari. Tempo di lancio
-e costo appartengono alla sequenza: non sovrascrivono l'incantesimo
-originale. Il Genasi della Terra (MPMM) ne è il primo esempio: Blade
-Ward normalmente lanciabile come previsto dal suo catalogo e una
-sequenza alternativa come azione bonus con tracker dedicato.
-
 ## Infusioni applicate a oggetti: risorse e creature (2014)
 
 Le cariche di Armor of Magical Strength, Mind Sharpener, Radiant Weapon,
@@ -427,3 +409,46 @@ Resistant Armor continua a usare `effect_choice.damage_type` nell'istanza
 dell'applicazione: l'estensione `resistance` legge il valore con
 `value_from_item_choice`. Due oggetti possono scegliere resistenze diverse;
 nessun flavour globale o nuovo tipo di beneficio è necessario.
+
+## Talenti e infusioni pre-2024: rimozione delle dipendenze da ability_grants
+
+`pwa/catalog/ability_grants.json` non contiene più `feat_mechanics`,
+`feat_numeric_bonuses` né `artificer_infusions`. Le 19 regole supplementari
+dei talenti precedenti al 2024 sono suddivise, per beneficio, fra
+`roll_mode`, `roll_bonus`, `resource`, `action`, `attack`,
+`d20_reroll`, `base_override` (costo della scalata di Athlete) ed
+`effect_extension` (incantesimo associato alla carta di Cartomancer).
+I cinque modificatori numerici dei quattro talenti PHB sono in `bonus.json`.
+L'adattatore `pwa/feat_benefit_catalogs.js` ricostruisce solo in memoria
+il contratto temporaneo dei vecchi tiri/azioni senza recuperare i dati dal
+catalogo legacy; i file `vtt/data/feat_*_2014.json` restano riferimenti di
+regressione per la fedeltà della migrazione.
+
+Le 16 definizioni delle infusioni TCE vengono lette da `option_list.json`.
+Le otto capacità attivabili di sei infusioni sono ora `action` con
+`parameters.applied_item_option_id`: l'azione appare soltanto quando
+l'opzione è effettivamente applicata a quella singola copia dell'oggetto
+e usa il tracker relativo alla stessa copia. I bonus numerici e i filtri
+dell'oggetto provengono dalle definizioni `item_effects` delle opzioni,
+le risorse dal catalogo `resource`, Homunculus dal `creature_grant`
+e Resistant Armor dall'`effect_choice` della singola applicazione.
+L'adattatore `pwa/infusion_benefit_catalogs.js` evita una seconda
+definizione delle infusioni in `ability_grants.json`.
+
+## Estensioni degli incantesimi e passi di sequenza `spell`
+
+Il catalogo [`spell_extension.json`](spell_extension.json) contiene benefici
+che associano un incantesimo canonico (`spell.name` + `spell.source`) al
+tratto 5eTools che lo modifica. Quando si apre l'incantesimo nella PWA, la
+descrizione **corrente** del tratto viene mostrata immediatamente dopo il
+quadro dei dati strutturati, senza copiarla nel catalogo dei benefici.
+Solo i tratti effettivamente posseduti e abilitati vengono proiettati.
+
+Le `action_sequence` possono includere uno step con
+`selector: {kind: "spell", name: "Blade Ward", source: "PHB"}`.
+Lo step risolve soltanto gli incantesimi accessibili alla creatura e apre
+la stessa finestra di lancio degli incantesimi ordinari. Tempo di lancio
+e costo appartengono alla sequenza: non sovrascrivono l'incantesimo
+originale. Il Genasi della Terra (MPMM) ne è il primo esempio: Blade
+Ward normalmente lanciabile come previsto dal suo catalogo e una
+sequenza alternativa come azione bonus con tracker dedicato.
