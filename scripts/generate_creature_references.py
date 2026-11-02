@@ -28,7 +28,7 @@ def build(offline=False, refresh=False, races_only=False):
             # Keep machine-readable 5etools defenses. Do not infer new
             # damage types from trait prose or flatten "choose" objects:
             # the caller only grants unconditional string entries.
-            for field in ('resist', 'immune', 'vulnerable', 'conditionImmune'):
+            for field in ('creatureTypes', 'creatureTypeTags', 'resist', 'immune', 'vulnerable', 'conditionImmune'):
                 if field in raw:
                     row[field] = raw[field]
         return row
@@ -92,13 +92,20 @@ def build(offline=False, refresh=False, races_only=False):
                 'id': row['id'], 'name': raw['name'], 'source': row['source'],
                 'raceName': raw['raceName'], 'raceSource': raw['raceSource'],
                 'speed': native['speed'],
-                **{key: merged[key] for key in ('size', 'creatureTypes') if key in merged},
+                **{key: merged[key] for key in ('size', 'creatureTypes', 'creatureTypeTags') if key in merged},
             })
     meta = {"source_url":BASE,"sha256":hashes}
     if races_only:
         # A bounded refresh adds typed identities to the existing snapshot;
         # do not silently refresh native descriptions or other mechanics.
-        race_rows = previous['races']
+        # Keep the native snapshot intact except for typed race identity.
+        refreshed = {race['id']: race for race in race_rows}
+        race_rows = [
+            {**{k: v for k, v in old.items() if k not in ('creatureTypes', 'creatureTypeTags')},
+             **{k: new[k] for k in ('creatureTypes', 'creatureTypeTags') if k in new}}
+            if (new := refreshed.get(old['id'])) else old
+            for old in previous['races']
+        ]
         meta = {**previous['meta'], 'subrace_identity_sha256': hashes['races.json']}
     output = {"meta":meta,"classes":classes,"races":race_rows,
               "subraces":subrace_rows,"class_features":features}
