@@ -12368,7 +12368,9 @@
                 {
                   "type": "feature_grant",
                   "name": "Defensive Field",
-                  "source": "TCE"
+                  "source": "TCE",
+                  "class_name": "Artificer",
+                  "class_source": "TCE"
                 }
               ],
               "local": true,

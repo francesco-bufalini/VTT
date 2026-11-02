@@ -1560,6 +1560,9 @@ function calculateSheetValues(record={},catalogs={}){
     featAttacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
     selectionAttacks:arr(record.attack_grants).filter(row=>sourceEnabled(row)),
     selection_models:record.selection_models||[],
+    option_feature_gates:arr(catalogs.optionLists?.entries).flatMap(entry=>
+      arr(entry.benefit?.option_list?.options).flatMap(option=>
+        arr(option.effects).filter(effect=>effect.type==='feature_grant'))),
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),feature_action_overrides:catalogs.featureActionOverrides||[],traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   featureContext.companionAttacks=arr(companionValues.attacks);
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],(target,attack)=>{
@@ -1737,6 +1740,7 @@ function calculateSheetValues(record={},catalogs={}){
         target_id:row.target_id,target_instance_id:row.target_instance_id,
         target_inventory_index:row.target_inventory_index})),
     feature_rules:catalogs.featureRules||{},feature_action_overrides:catalogs.featureActionOverrides||[],
+    selection_models:record.selection_models||[],option_feature_gates:featureContext.option_feature_gates,
     base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
     feat_roll_modes:[...featMechanics.roll_modes,...barbarian.conditional_modes,

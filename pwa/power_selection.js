@@ -348,7 +348,8 @@ const EFFECT_FIELDS={bonus:'formula_bonuses',dice:'dice_bonuses',attack:'attack_
 function appendTypedBenefit(grants,effect,origin){
  const field=EFFECT_FIELDS[effect?.type];if(!field)return false;
  const {type,...values}=effect;
- grants[field].push({...values,...values.data,...origin});return true;
+ grants[field].push({...values,...values.data,...origin,
+  ...(['attack','resources'].includes(effect.type)&&values.id?{id:values.id}:{})});return true;
 }
 // Apply only declared primitive benefits from active item extensions.
 // Old saved copies can read upgraded definitions from the offline catalog.
@@ -451,7 +452,7 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
     id:capabilityOrigin+':'+index,selection_origin_id:model.id,
     // The engine still needs the real source origin for conditional bonuses.
     // UI attribution is independent: the generated State owns the benefits.
-    origin_id:item?'item-instance:'+(item.instance_id||item.id):model.origin_id,
+    origin_id:item?'item-instance:'+(item.instance_id||item.id):derived?capabilityOrigin:model.origin_id,
     ...(derived?{selection_trait_id:capabilityOrigin}:{}),
     parent_origin:model.source_origin_id,origin_name:option.name,automatic:false,disabled:false});
    if(effect.type==='catalog_feature')optional.push({name:option.name,source:option.source,origin_id:model.origin_id,selection_origin_id:model.id,entries:[option.description||'']});
