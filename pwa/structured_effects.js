@@ -417,6 +417,7 @@ export function collectStructuredFeatures(record,catalogs={}){
   const spellcastingRules=catalogs.classFeatures?array(catalogs.spellcastingBenefits?.grants):[];
   const typedOptionGrants=array(catalogs.optionGrants?.entries);
   const typedSlotGrants=array(catalogs.slotBenefits?.entries).filter(e=>e.benefit?.kind==='spell_slots');
+  const speciesSequences=array(catalogs.actionSequenceBenefits?.entries).filter(e=>e.benefit?.type==='action_sequence'&&e.granted_by?.ref?.category==='species_trait');
   const subclassKey=value=>norm(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');
   const attackCount=(row,origin,level,className,classSource)=>{
    const direct=Number(row.attacks_per_action);
@@ -466,7 +467,17 @@ export function collectStructuredFeatures(record,catalogs={}){
     const existing=array(row.benefits).filter(b=>!hasTypedSpell||b.type!=='spell_selection');
     const benefits=[...existing,...typed.filter(b=>!existing.some(old=>old.type===b.type&&old.id===b.id)),
       ...(spellRule?.benefit&&!hasTypedSpell&&!existing.some(b=>b.type==='spell_selection')?[spellRule.benefit]:[])];
+    const speciesSequence=speciesSequences.find(entry=>{
+      const ref=entry.granted_by.ref;
+      return match(ref.name,row.name)&&match(ref.race,record.species)&&
+        match(ref.race_source,record.species_source)&&
+        (!ref.subrace||match(ref.subrace,record.subrace))&&
+        (!ref.subrace_source||match(ref.subrace_source,record.subrace_source));
+    })?.benefit;
     results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
+      ...(speciesSequence?{action_sequence:{name:row.name,...speciesSequence.sequence,
+        time:speciesSequence.time,tracker_id:speciesSequence.tracker_id,
+        tracker_cost:speciesSequence.tracker_cost}}:{}),
       ...(benefits.length?{benefits}:{}),
       level,requirements:gate,inactive:inactive||row.inactive===true,
       bonuses:array(row.bonuses),
