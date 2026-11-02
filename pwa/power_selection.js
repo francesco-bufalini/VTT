@@ -41,16 +41,22 @@ function optionsFor(record,rule,catalog={}){
  // old optional-feature data is read only on legacy/offline hosts without it.
  const listEntries=rows(catalog.optionLists?.entries);
  const featureTypes=rows(source.feature_types);
- const optional=source.type==='optional_features'||
-   (source.type==='list_refs'&&featureTypes.length&&!listEntries.length)?
-   rows(catalog.optionalFeatureProgressions?.options).filter(option=>
-     rows(option.types).some(type=>featureTypes.includes(type))):[];
+ const legacyOptional=rows(catalog.optionalFeatureProgressions?.options).filter(option=>
+   rows(option.types).some(type=>featureTypes.includes(type)));
  const listed=source.type==='list_refs'?rows(source.list_ids).length?
    rows(source.list_ids).flatMap(id=>rows(listEntries.find(entry=>
      entry.benefit?.option_list?.id===id)?.benefit?.option_list?.options)):
    listEntries.flatMap(entry=>rows(entry.benefit?.option_list?.options)).filter(option=>
      rows(option.types).some(type=>featureTypes.includes(type))):[];
- const eligible=[...rows(source.options),...packages,...optional,...listed,...rows(record.power_selection_custom_options?.[rule.id])]
+ // A partially deployed typed catalog must not hide a legacy option. When
+ // both are available retain legacy order and prefer typed records by ID.
+ const byId=new Map(listed.map(option=>[option.id,option]));
+ const legacyIds=new Set(legacyOptional.map(option=>option.id));
+ const options=source.type==='optional_features'?legacyOptional:
+   source.type==='list_refs'&&legacyOptional.length?
+     [...legacyOptional.map(option=>byId.get(option.id)||option),
+       ...listed.filter(option=>!legacyIds.has(option.id))]:listed;
+ const eligible=[...rows(source.options),...packages,...options,...rows(record.power_selection_custom_options?.[rule.id])]
   .filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014')));
  // A 2024 grant can prefer the revised 5eTools definition over an older
  // identically named option. Never silently discard an older saved choice:

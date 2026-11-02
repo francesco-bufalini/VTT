@@ -70,14 +70,16 @@ test('typed option lists avoid fetching the duplicate legacy catalog, with an ol
   const legacyOptions=read('../catalog/optional_feature_progressions.json');
   const originalFetch=globalThis.fetch;
   try{
-    for(const modern of [true,false]){
+    for(const kind of ['complete','partial','legacy']){
+      const modern=kind!=='legacy';
+      const typedLists=kind==='partial'?{...optionLists,entries:optionLists.entries.slice(1)}:optionLists;
       const calls=[];
       clearLocalRuleCatalogCache();
       globalThis.fetch=async path=>{
         calls.push(path);
         const catalogs={
           '/benefits/option_grant.json':modern?optionGrants:{},
-          '/benefits/option_list.json':modern?optionLists:{},
+          '/benefits/option_list.json':modern?typedLists:{},
           '/catalog/optional_feature_progressions.json':legacyOptions
         };
         const data=Object.hasOwn(catalogs,path)?catalogs[path]:
@@ -91,9 +93,10 @@ test('typed option lists avoid fetching the duplicate legacy catalog, with an ol
         return new Response(JSON.stringify(data),{status:200});
       };
       const result=await loadRuleCatalogs();
-      assert.equal(result.optionLists.entries.length,modern?272:0);
-      assert.equal(result.optionalFeatureProgressions.options.length,modern?0:272);
-      assert.equal(calls.includes('/catalog/optional_feature_progressions.json'),!modern,
+      assert.equal(result.optionLists.entries.length,
+        kind==='complete'?272:kind==='partial'?271:0);
+      assert.equal(result.optionalFeatureProgressions.options.length,kind==='complete'?0:272);
+      assert.equal(calls.includes('/catalog/optional_feature_progressions.json'),kind!=='complete',
         'Skip the old 272-option download only when the typed catalog is available');
       assert.equal(calls.filter(path=>path==='/benefits/option_list.json').length,1);
       assert.equal(calls.filter(path=>path==='/benefits/option_grant.json').length,1);

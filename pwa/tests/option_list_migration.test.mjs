@@ -66,3 +66,24 @@ test('typed list_refs grants do not depend on the old optional-feature catalog',
  assert(model.options.some(row=>row.id==='optional:phb:archery'));
  assert(model.options.some(row=>row.id==='optional:tce:blind-fighting'));
 });
+
+test('partial typed lists recover missing legacy choices in canonical order without duplicating IDs',()=>{
+ const rule=grants.entries.find(entry=>entry.benefit?.option_grant?.id==='optional:class:phb:warlock:ei')
+  .benefit.option_grant;
+ const record={kind:'character',rules_version:'2014',classes:[{name:'Warlock',source:'PHB',level:5}]};
+ const context={features:[{name:'Eldritch Invocations',class_name:'Warlock',class_source:'PHB',
+  origin_id:'feature:warlock',origin_key:'class|phb|warlock'}]};
+ const original=powerSelectionModels(record,context,{
+   optionGrants:grants,optionLists:lists,
+   optionalFeatureProgressions:legacy}).find(row=>row.id===rule.id);
+ const firstEldritch=lists.entries.findIndex(entry=>
+   entry.benefit?.option_list?.options?.[0]?.types?.includes('EI'));
+ assert(firstEldritch>=0);
+ const partial={...lists,entries:lists.entries.filter((_,i)=>i!==firstEldritch)};
+ const migrated=powerSelectionModels(record,context,{
+   optionGrants:grants,optionLists:partial,
+   optionalFeatureProgressions:legacy}).find(row=>row.id===rule.id);
+ assert(original&&migrated);
+ assert.deepEqual(migrated.options,original.options);
+ assert.equal(new Set(migrated.options.map(row=>row.id)).size,migrated.options.length);
+});

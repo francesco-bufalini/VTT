@@ -1784,10 +1784,14 @@ export function loadRuleCatalogs(){
     const entries=Array.isArray(lists?.entries)?lists.entries:[];
     const sources=rules.map(row=>row.benefit?.option_grant?.source)
       .filter(source=>source?.type==='list_refs'&&Array.isArray(source.feature_types)&&source.feature_types.length);
-    const supported=new Set(entries.flatMap(entry=>Array.isArray(entry.benefit?.option_list?.options)?
-      entry.benefit.option_list.options.flatMap(option=>Array.isArray(option.types)?option.types:[]):[]));
+    const listedOptions=entries.flatMap(entry=>Array.isArray(entry.benefit?.option_list?.options)?
+      entry.benefit.option_list.options:[]);
+    const supported=new Set(listedOptions.flatMap(option=>Array.isArray(option.types)?option.types:[]));
+    // 272 is the audited migrated 5eTools optional-feature inventory. A
+    // partial static update must use the legacy catalog for missing options.
+    const complete=listedOptions.length>=272&&new Set(listedOptions.map(option=>option.id)).size===listedOptions.length;
     if(grants?.benefit_type==='option_grant'&&lists?.benefit_type==='option_list'&&
-      sources.length&&sources.every(source=>source.feature_types.every(type=>supported.has(type))))
+      complete&&sources.length&&sources.every(source=>source.feature_types.every(type=>supported.has(type))))
       return {progressions:[],options:[]};
     return fetch('/catalog/optional_feature_progressions.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.progressions)&&Array.isArray(data.options)?
