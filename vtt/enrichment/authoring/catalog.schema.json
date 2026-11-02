@@ -50,6 +50,7 @@
         "spell_selection",
         "spell_slot",
         "spellcasting",
+        "spell_extension",
         "targeting",
         "temporary_hp",
         "tracker",
