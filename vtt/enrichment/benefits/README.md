@@ -239,3 +239,10 @@ provengono da `vtt/data/artificer_infusions_5etools.json`. L'operazione
 in `effects[].parameters`. `pwa/effect_extensions.js` proietta i record
 nella struttura runtime già in uso, mantenendo i vincoli sulle singole
 istanze di oggetti; il vecchio JSON resta solo per host precedenti.
+
+Le 3 scelte personalizzate di `power_selections.json` e le 21 progressioni
+di `spellcasting_benefits.json` non sono più scaricate sui client dotati
+del catalogo tipizzato completo. I metadati delle concessioni rimangono in
+`option_grant.json` e i profili slot in `resource.json`; il motore legge
+direttamente entrambi. I vecchi file sono consultati solo come fallback se
+una delle famiglie tipizzate risulta incompleta.

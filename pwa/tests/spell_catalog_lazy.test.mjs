@@ -68,19 +68,28 @@ test('typed option lists avoid fetching the duplicate legacy catalog, with an ol
   const optionGrants=read('../../vtt/enrichment/benefits/option_grant.json');
   const optionLists=read('../../vtt/enrichment/benefits/option_list.json');
   const legacyOptions=read('../catalog/optional_feature_progressions.json');
+  const legacyPower=read('../catalog/power_selections.json');
+  const legacySpellcasting=read('../catalog/spellcasting_benefits.json');
   const originalFetch=globalThis.fetch;
   try{
-    for(const kind of ['complete','partial','legacy']){
+    for(const kind of ['complete','partial','partialPowerGrant','partialSpellGrant','legacy']){
       const modern=kind!=='legacy';
       const typedLists=kind==='partial'?{...optionLists,entries:optionLists.entries.slice(1)}:optionLists;
+      const typedGrants=kind==='partialPowerGrant'?{...optionGrants,entries:optionGrants.entries.filter(row=>
+        row.benefit?.option_grant?.id!=='arcane_armor')}:
+        kind==='partialSpellGrant'?{...optionGrants,entries:optionGrants.entries.filter(row=>
+          row.benefit?.option_grant?.id!=='class_spellcasting:class|phb|wizard')}:
+        optionGrants;
       const calls=[];
       clearLocalRuleCatalogCache();
       globalThis.fetch=async path=>{
         calls.push(path);
         const catalogs={
-          '/benefits/option_grant.json':modern?optionGrants:{},
+          '/benefits/option_grant.json':modern?typedGrants:{},
           '/benefits/option_list.json':modern?typedLists:{},
-          '/catalog/optional_feature_progressions.json':legacyOptions
+          '/catalog/optional_feature_progressions.json':legacyOptions,
+          '/catalog/power_selections.json':legacyPower,
+          '/catalog/spellcasting_benefits.json':legacySpellcasting
         };
         const data=Object.hasOwn(catalogs,path)?catalogs[path]:
           path==='/catalog/class_mechanics.json'?{legacy_spells:[]}:
@@ -100,6 +109,15 @@ test('typed option lists avoid fetching the duplicate legacy catalog, with an ol
         'Skip the old 272-option download only when the typed catalog is available');
       assert.equal(calls.filter(path=>path==='/benefits/option_list.json').length,1);
       assert.equal(calls.filter(path=>path==='/benefits/option_grant.json').length,1);
+      assert.equal(result.powerSelections.selections.length,
+        kind==='legacy'||kind==='partialPowerGrant'?3:0);
+      assert.equal(result.spellcastingBenefits.grants.length,
+        kind==='legacy'||kind==='partialSpellGrant'?21:0);
+      assert.equal(calls.includes('/catalog/power_selections.json'),
+        kind==='legacy'||kind==='partialPowerGrant');
+      assert.equal(calls.includes('/catalog/spellcasting_benefits.json'),
+        kind==='legacy'||kind==='partialSpellGrant');
+
     }
   }finally{
     clearLocalRuleCatalogCache();
