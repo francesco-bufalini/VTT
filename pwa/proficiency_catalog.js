@@ -25,10 +25,52 @@ export function proficiencyIndexFromBenefits(metadata={},catalog={}){
    const starting=rows(rules.stages).find(s=>s.stage==='starting')?.fields||{};
    const multiclass=rows(rules.stages).find(s=>s.stage==='multiclass')?.fields||{};
    const {savingThrows,...skills}=starting;
-   record.startingProficiencies=skills;record.multiclassProficiencies=multiclass;
+   record.startingProficiencies=skills;
+   if(Object.keys(multiclass).length)record.multiclassProficiencies=multiclass;
    if(savingThrows!==undefined)record.savingThrows=savingThrows;
   }else Object.assign(record,rows(rules.stages).find(s=>s.stage==='default')?.fields||{});
   index[rules.section].push(record);
  }
  return index;
+}
+
+// Used by the upstream 5eTools synchronization tool to update the same
+// canonical catalog, never to recreate the retired proficiency index.
+export function proficiencySourceEntry(section,origin,id){
+ if(!PROFICIENCY_SOURCE_SECTIONS.includes(section)||!origin?.name||!origin?.source)
+  throw Error('Origine delle competenze non valida.');
+ const category=section==='race'?'species':section==='classFeature'?'class_feature':
+  section==='subclassFeature'?'subclass_feature':section;
+ const ref={category,name:origin.name,source:origin.source,
+  ...(origin.id?{id:origin.id}:{}),
+  ...(origin.raceName?{race:origin.raceName,race_source:origin.raceSource}:{}),
+  ...(origin.class_name?{class_name:origin.class_name,class_source:origin.class_source}:{}),
+  ...(origin.subclass_short_name?{subclass:origin.subclass_short_name,
+   subclass_source:origin.subclass_source}:{}),
+  ...(Number.isInteger(origin.level)?{level:origin.level}:{})};
+ const fields={...origin};
+ for(const key of ['name','source','id','raceName','raceSource','class_name',
+  'class_source','subclass_short_name','subclass_source','level'])delete fields[key];
+ let source_rules;
+ if(section==='class'){
+  const starting=fields.startingProficiencies||{},multiclass=fields.multiclassProficiencies||{};
+  const savingThrows=fields.savingThrows||[];
+  delete fields.startingProficiencies;delete fields.multiclassProficiencies;delete fields.savingThrows;
+  source_rules={section,metadata:fields,stages:[
+   {stage:'starting',fields:{...starting,...(savingThrows.length?{savingThrows}:{})}},
+   {stage:'multiclass',fields:multiclass}]};
+ }else{
+  const metadata={};
+  for(const key of ['trait_proficiencies','trait_proficiency_choices',
+   'replaces_parent_languages','language_grant_replaced_by',
+   'language_grant_requires_opt_in','proficiencyReplacements']){
+   if(Object.hasOwn(fields,key)){metadata[key]=fields[key];delete fields[key];}
+  }
+  source_rules={section,metadata,stages:[{stage:'default',fields}]};
+ }
+ const key=id||'migrated:'+section+':'+encodeURIComponent(
+  [origin.source,origin.name,origin.raceName||'',origin.class_name||'',
+   origin.subclass_short_name||'',origin.id||''].join('|'));
+ return {id:key,granted_by:{kind:'5etools',ref},
+  benefit:{type:'proficiency_grant',id:key,proficiency_grant:{id:key,source_rules}}};
 }
