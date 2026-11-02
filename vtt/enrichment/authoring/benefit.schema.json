@@ -3267,6 +3267,10 @@
             },
             "packages": {
               "type": "array"
+            },
+            "filter": {
+              "type": "string",
+              "description": "Structured spell-list selector, e.g. level=0|class=druid."
             }
           },
           "additionalProperties": true
@@ -3637,6 +3641,10 @@
               "additionalProperties": true
             }
           }
+        },
+        "nested": {
+          "type": "boolean",
+          "description": "This grant is available only through a selected option's option_grant effect."
         }
       },
       "additionalProperties": false

@@ -1420,7 +1420,8 @@ async function computeLocalData(record){
   const infusion_catalog=catalogs.abilityGrants?.artificer_infusions||[];
   const infusion_mechanics={...(catalogs.classMechanics||{}),feature_item_grants:catalogs.featureItemGrants||[]};
   const powerSelectionCatalog={...(catalogs.powerSelections||{}),optionGrants:catalogs.optionGrants||{},
-    optionLists:catalogs.optionLists||{},optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{},capacity_grants:featureItemGrants(record,calculated.features||[],catalogs.featureItemGrants||[])};
+    optionLists:catalogs.optionLists||{},optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{},
+    spells:catalogs.spells||[],capacity_grants:featureItemGrants(record,calculated.features||[],catalogs.featureItemGrants||[])};
   const power_selections=powerSelectionModels(record,calculated,powerSelectionCatalog);
   // Spell-like class privileges are ordinary levelled spell definitions. Keep
   // their catalog details available offline and after an asynchronous refresh.
@@ -3257,7 +3258,7 @@ function learningPickerOptionGroups(options,renderRow,levelOf,minLevel=0) {
 function optionBenefitPanels(c,calculated){
  return (calculated.power_selections||[]).filter(model=>
    ['option_selection','option_grant'].includes(model.benefit_type)&&
-   (model.option_kind!=='spell'||model.source?.type!=='spell_catalog')).map(model=>{
+   (model.option_kind!=='spell'||model.source?.type!=='spell_catalog'||model.nested)).map(model=>{
   const primary=model.layers.learned||model.layers.prepared;
   const byId=new Map(model.options.map(option=>[option.id,option]));
   const entries=primary?primary.selected:model.fixed?.length?model.fixed:model.options.map(option=>option.id);
@@ -3286,6 +3287,8 @@ function optionBenefitPanels(c,calculated){
 }
 async function openBenefitSelectionDialog(id,stage){
  const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
+ const before=state.calculated?.power_selections?.find(model=>model.id===id);
+ if(before?.option_kind==='spell')await loadFullSpellCatalog();
  const calculated=await computeLocalData(record);
  const model=calculated.power_selections?.find(row=>row.id===id&&['option_selection','option_grant'].includes(row.benefit_type));
  const layer=model?.layers?.[stage];

@@ -706,7 +706,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
     trainedWeapon(weapon.id,weapon.name,weapon.weapon_category),weapon.damage);
  // Grant a distinct natural strike from a typed feat without changing all
  // unarmed strikes or making the weapon depend on inventory equipment.
- for(const strike of arr(featureContext.featAttacks))if(strike?.id&&strike.damage){
+ for(const strike of [...arr(featureContext.featAttacks),...arr(featureContext.selectionAttacks)])if(strike?.id&&strike.damage){
   append({...strike,slot:'natural',melee:strike.melee!==false,
     origin_id:strike.origin_id,origin_name:strike.origin_name,
     range_feet:Number(strike.range_feet)||5},strike.ability||'str',strike.grants_proficiency===true||
@@ -1552,6 +1552,7 @@ function calculateSheetValues(record={},catalogs={}){
   };
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,
     featAttacks:featMechanics.attacks.filter(row=>sourceEnabled(row)),
+    selectionAttacks:arr(record.attack_grants).filter(row=>sourceEnabled(row)),
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),feature_action_overrides:catalogs.featureActionOverrides||[],traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   featureContext.companionAttacks=arr(companionValues.attacks);
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],(target,attack)=>{
@@ -1731,7 +1732,8 @@ function calculateSheetValues(record={},catalogs={}){
     feature_rules:catalogs.featureRules||{},feature_action_overrides:catalogs.featureActionOverrides||[],
     base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
-    feat_roll_modes:[...featMechanics.roll_modes,...barbarian.conditional_modes].filter(row=>sourceEnabled(row)),
+    feat_roll_modes:[...featMechanics.roll_modes,...barbarian.conditional_modes,
+      ...arr(record.roll_mode_grants)].filter(row=>sourceEnabled(row)),
     feat_roll_bonuses:featMechanics.roll_bonuses.filter(row=>sourceEnabled(row)),
     feat_d20_rerolls:[...featMechanics.rerolls,...arr(record.d20_reroll_grants)]
       .filter(row=>sourceEnabled(row)&&!row.disabled&&!suppressed.has('d20_reroll:'+String(row.id||''))),

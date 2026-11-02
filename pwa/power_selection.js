@@ -1,6 +1,6 @@
 // One selection engine. Source definitions only supply options and stage data.
 import {targetableInventoryItems,itemAttunementCount,activeItemOptionEffects} from './item_controls.js';
-import {originSpellId} from './spell_selection.js';
+import {originSpellId,originChoiceMatches} from './spell_selection.js';
 import {isContentAvailableForRules} from './source_edition.js';
 import {traitStateSource} from './trait_state_rules.js';
 const rows=v=>Array.isArray(v)?v:[];
@@ -56,8 +56,15 @@ function optionsFor(record,rule,catalog={}){
    source.type==='list_refs'&&legacyOptional.length?
      [...legacyOptional.map(option=>byId.get(option.id)||option),
        ...listed.filter(option=>!legacyIds.has(option.id))]:listed;
- const eligible=[...rows(source.options),...packages,...options,...rows(record.power_selection_custom_options?.[rule.id])]
-  .filter(row=>!row.hidden&&(!row.source||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014')));
+ const spellOptions=source.type==='spell_catalog'&&source.filter?
+   rows(catalog.spells).filter(spell=>spell?.id&&spell?.name&&
+     originChoiceMatches({filter:source.filter},spell).matches).map(spell=>({
+       id:spell.id,spell_id:spell.id,name:spell.name,source:spell.source,
+       level:Number(spell.level)||0,ability:rule.ability,
+       details:{category:'spells',name:spell.name,source:spell.source}
+     })):[];
+ const eligible=[...rows(source.options),...packages,...options,...spellOptions,...rows(record.power_selection_custom_options?.[rule.id])]
+  .filter(row=>!row.hidden&&(!row.source||row.local===true||row._homebrew||isContentAvailableForRules(row,record.rules_version||'2014')));
  // A 2024 grant can prefer the revised 5eTools definition over an older
  // identically named option. Never silently discard an older saved choice:
  // its exact source-qualified ID stays selectable until the player replaces it.
@@ -79,7 +86,7 @@ function optionsFor(record,rule,catalog={}){
  // only the missing mechanics in the typed grant definition.
  effects:[...rows(row.effects),...rows(rule.option_effects?.[row.id])],
  min_level:row.min_level||(rule.benefit_type==='option_grant'?0:rows(row.prerequisite).length?Math.min(...rows(row.prerequisite).map(p=>Number(p.level?.level||p.level)||0)):0),
- details:row.details||(!row._homebrew&&row.source?{category:'optional_features',name:row.name,source:row.source}:undefined)}));}
+ details:row.details||(!row.local&&!row._homebrew&&row.source?{category:'optional_features',name:row.name,source:row.source}:undefined)}));}
 // Saved characters originally stored every copy of a repeated feature under
 // one rule ID. Partition only the excess choices when its feature-level
 // instances become available; preserve order, subchoices and extra choices.
@@ -111,8 +118,15 @@ export function normalizeSelectionRecord(record={},catalog={}){
 }
 export function powerSelectionModels(raw={},calculated={},catalog={}){
  const record=normalizeSelectionRecord(raw,catalog),models=[];
- for(const rule of definitions(catalog)){
-  if(rule.option_kind==='spell'&&rule.source?.type==='spell_catalog')continue;
+ const rules=definitions(catalog);
+ // Active options may grant other option_grants, scoped to their concrete
+ // source (a generated State or an extended item). Unapplied options do not.
+ const queue=rules.filter(rule=>!rule.nested).map(rule=>({rule,depth:0}));
+ const seenNested=new Set();
+ for(let cursor=0;cursor<queue.length;cursor++){
+  if(queue.length>512)throw Error('Troppe concessioni di opzioni annidate.');
+  const {rule,nestedFeature,depth}=queue[cursor];
+  if(rule.option_kind==='spell'&&rule.source?.type==='spell_catalog'&&!nestedFeature)continue;
   // Class progression continues through the existing casting engine; list
   // and fixed spell grants use the same selection phases as capabilities.
   // Source-owned grants can originate from any trait, not only a character class.
@@ -121,7 +135,7 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   if(!owner||!isContentAvailableForRules({source:rule.owner?.class_source||rule.origin_ref?.source},record.rules_version||'2014'))continue;
   const traitName=rule.owner?.trait||rule.origin_ref?.name;
   const level=Number(owner.level)||0;
-  const candidates=rows(calculated.features).filter(f=>
+  const candidates=(nestedFeature?[nestedFeature]:rows(calculated.features)).filter(f=>
    low(f.name)===low(traitName)&&
    (!classOwner||low(f.class_name||f.requirements?.class_name||String(f.origin_key).split('|')[2])===low(rule.owner.class_name))&&
    (!rule.owner?.class_source||low(f.class_source||f.requirements?.class_source||String(f.origin_key).split('|')[1])===low(rule.owner.class_source))&&
@@ -130,11 +144,14 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   const instances=rule.instances?.mode==='per_feature'?candidates:candidates.slice(0,1);
   for(const [index,feature] of instances.entries()){
   const firstLevel=Number(rows(rule.layers?.[rule.instances?.stage]?.limit?.by_class_level)[0]?.[0])||0;
-  const instanceId=rule.instances?.mode==='per_feature'&&
-   Number(feature.level)!==firstLevel?rule.id+':level:'+(Number(feature.level)||0):rule.id;
+  const instanceId=nestedFeature?.nested_instance_id||(
+   rule.instances?.mode==='per_feature'&&
+   Number(feature.level)!==firstLevel?rule.id+':level:'+(Number(feature.level)||0):rule.id);
   const origin=feature?.origin_id||'';
   if([origin,feature.origin_key,String(feature.origin_key||'').split('|').slice(0,3).join('|')].some(id=>id&&(record.origin_enabled?.[id]===false||rows(record.proficiency_origins).some(row=>row.id===id&&row.disabled))))continue;
-  const parent=rule.requires_application,binding=parent?rows(record.power_applications?.[parent.selection]).find(row=>!parent.bound||rows(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id)):null;
+  const parent=rule.requires_application,binding=nestedFeature?.nested_target_item_id?
+   {target_item_id:nestedFeature.nested_target_item_id}:parent?
+   rows(record.power_applications?.[parent.selection]).find(row=>!parent.bound||rows(record.inventory).some(item=>(item.instance_id||item.id)===row.target_item_id)):null;
   if(parent&&!binding)continue;
   const options=optionsFor(record,rule,catalog).map(option=>{
    if(rule.option_kind!=='trait_state'&&rule.option_origin_kind!=='trait_state')return option;
@@ -164,11 +181,38 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
   // A rule with no stages, or with explicit fixed options, needs no selection UI.
   const fixed=rows(rule.fixed).length?rows(rule.fixed).map(identity):
     !Object.keys(layers).length?options.map(option=>option.id):[];
-  models.push({...rule,id:instanceId,title:(rule.title||feature.name)+
+  const model={...rule,id:instanceId,title:(rule.title||feature.name)+
    (rule.instances?.mode==='per_feature'?' · livello '+(Number(feature.level)||1):''),
    benefit_type:rule.benefit_type||'option_selection',
    source_type:'option_catalog',ui:'generic',options,layers,level,fixed,
-   origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required});
+   origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required};
+  models.push(model);
+  for(const applied of [...rows(model.layers.applied?.selected),...rows(model.fixed)]){
+   const selectedOption=model.options.find(option=>option.id===identity(applied));
+   if(!selectedOption)continue;
+   for(const effect of [...rows(selectedOption.effects),...rows(selectedOption.item_effects?.effects)]
+     .filter(effect=>effect.type==='option_grant')){
+    const child=rules.find(candidate=>candidate.id===effect.grant_id&&candidate.nested);
+    if(!child)throw Error('Concessione annidata non definita: '+effect.grant_id);
+    if(depth>=8)throw Error('Ciclo o profondità eccessiva nelle concessioni di opzioni.');
+    const targetId=applied?.target_item_id||'';
+    if(model.application?.destination==='item'){
+     const item=rows(record.inventory).find(row=>(row.instance_id||row.id)===targetId);
+     if(!item||Number(item.quantity??1)<=0||item.disabled||item.active===false)continue;
+    }
+    const childOrigin=targetId?'item-instance:'+targetId:'selection:'+model.id+':'+selectedOption.id;
+    const childInstance=child.id+':from:'+childOrigin;
+    if(seenNested.has(childInstance))continue;
+    seenNested.add(childInstance);
+    queue.push({rule:child,depth:depth+1,nestedFeature:{
+     name:child.owner?.trait||child.origin_ref?.name||child.id,
+     origin_id:childOrigin,origin_key:feature.origin_key,
+     class_name:child.owner?.class_name||feature.class_name,
+     class_source:child.owner?.class_source||feature.class_source,
+     level:feature.level,nested_instance_id:childInstance,nested_target_item_id:targetId
+    }});
+   }
+  }
   }
  }
  // Spell selection extends the same learned/prepared/applied layer contract.
@@ -255,7 +299,15 @@ export function powerApplicationPatch(raw,calculated,catalog,id,optionId,apply,{
   for(const [key,values] of Object.entries(record.power_applications||{}))record.power_applications[key]=rows(values).map(row=>row.target_item_id===previousIdentity?{...row,target_item_id:target.instance_id}:row);
  }
  if(apply&&option.effect_choice&&!rows(option.effect_choice.options).includes(effectChoice[option.effect_choice.key]))throw Error('Scelta effetto non valida.');
- const next=model.application?.exclusive?[]:old.filter(row=>row.id!==optionId);
+ // Applying the same capability to two objects creates two independent
+ // extensions. Removing one must leave the other intact.
+ const next=model.application?.exclusive?[]:layer.target?[...old]:old.filter(row=>row.id!==optionId);
+ if(!apply&&layer.target){
+  const targetId=record.inventory?.[itemIndex]?.instance_id||record.inventory?.[itemIndex]?.id;
+  const index=next.findIndex(row=>row.id===optionId&&(!targetId||row.target_item_id===targetId));
+  if(index<0)throw Error('Applicazione sull’oggetto non trovata.');
+  next.splice(index,1);
+ }
  if(apply)next.push({id:optionId,...(target?{target_item_id:target.instance_id}:{}),...(Object.keys(effectChoice).length?{effect_choice}:{})});
  if(model.application_tracker_id){
   const tracker=rows(calculated.trackers).find(row=>row.id===model.application_tracker_id&&!row.disabled);if(!tracker)throw Error('Tracker non disponibile.');
@@ -285,7 +337,7 @@ export function powerSelectionCustomPatch(record,calculated,catalog,id,stage,opt
  return {...powerSelectionPatch({...record,power_selection_custom_options:custom},calculated,catalog,id,stage,optionId),power_selection_custom_options:custom};
 }
 // Existing primitive benefit types are shared by powers and owned items.
-const EFFECT_FIELDS={bonus:'formula_bonuses',dice:'dice_bonuses',
+const EFFECT_FIELDS={bonus:'formula_bonuses',dice:'dice_bonuses',attack:'attack_grants',
  scaling_die:'scaling_dice',proficiency:'proficiency_choices',
  resources:'resource_trackers',spells:'origin_spell_grants',
  actions:'action_grants',senses:'sense_grants',
@@ -357,7 +409,7 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
    const origin={origin_id,parent_origin:model.source_origin_id,
     origin_name:model.title||option.name||model.id};
    const declaration={type:'spells',id:'option_grant:'+model.id+':'+spellId,
-    spell_id:spellId,owner_origin_id:model.source_origin_id,
+    spell_id:spellId,cantrip:Number(option.level)===0,owner_origin_id:model.source_origin_id,
     mode:'granted',payment_mode:usesTracker?'tracker':allowsSlot?'slot':'free',
     tracker_id:trackerId,tracker_cost:Number(tracker?.cost||payment.tracker_cost)||1,
     slot_alternative:usesTracker&&allowsSlot,
