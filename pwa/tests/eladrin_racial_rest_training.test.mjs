@@ -2,13 +2,15 @@ import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {racialPowerProjection,racialPowerSpellDefinitions,restTrainingPatch} from '../species_powers.js';
+import {racialPowerProjection,racialPowerSpellDefinitions} from '../species_powers.js';
+import {proficiencyGrantModels,proficiencyGrantOptions,proficiencyGrantPatch} from '../proficiency_grant.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 import {powerRestSelections,powerRestChoicePatch} from '../trait_state_rules.js';
 import {fixedProficiencies} from '../structured_effects.js';
 import {calculateSheet} from '../sheet_rules.js';
 const index=speciesPowerTestIndex();
 const grants=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
+const proficiencyBenefits=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/proficiency_grant.json',import.meta.url),'utf8'));
 const native=JSON.parse(readFileSync(new URL('../../vtt/data/creature_references_5etools.json',import.meta.url),'utf8'));
 const rule=(name,source)=>index.races.find(r=>r.name===name&&r.source===source);
 const record=(name,source='MPMM')=>({id:'test-'+name,kind:'character',rules_version:'2014',
@@ -51,12 +53,10 @@ test('season is a real racial picker, source qualified with descriptive rest gui
  const calculated={features:featuresFor(selected),racial_rest_choices:projection(selected).rest_choices};
  const choices=powerRestSelections(selected,calculated);
  assert(choices.some(x=>x.id==='eladrin_season'));
- assert(choices.some(x=>x.id==='eladrin_training'));
  const rested={...selected,...powerRestChoicePatch(selected,'long_rest',calculated)};
  const summer={...rested,...savePendingChoice(rested,after,['summer'])};
  assert.equal(summer.trait_state_selection.eladrin_season,'summer');
  assert.equal(summer.rest_selection_available.eladrin_season,true);
- assert.equal(summer.rest_selection_available.eladrin_training,true,'changing season does not consume training');
  assert.throws(()=>savePendingChoice({...r,species:'Shadar-Kai'},first,['winter']),/Stagione/);
 });
 test('Fey Step displays the original selected seasonal effect only after level three',()=>{
@@ -77,7 +77,7 @@ test('Fey Step displays the original selected seasonal effect only after level t
   assert(!young.description.includes(chosen.entry.slice(0,45)));
  }
 });
-test('all five latest pre-2024 racial rest proficiencies use their exact distinct slot types',()=>{
+test('five species trait grants have exact typed slot filters and source-qualified owners',()=>{
  const expected=[
   ['Astral Elf','AAG',['skill','weapon/tool']],
   ['Eladrin','MPMM',['weapon/tool','weapon/tool']],
@@ -85,30 +85,21 @@ test('all five latest pre-2024 racial rest proficiencies use their exact distinc
   ['Shadar-Kai','MPMM',['weapon/tool','weapon/tool']],
   ['Githyanki','MPMM',['skill','weapon/tool']]
  ];
- for(const [name,source,kinds] of expected){
-  const r=record(name,source),p=projection(r),choices=p.rest_choices.filter(x=>x.kind==='training');
-  assert.equal(choices.length,1,name);
-  const choice=choices[0];
-  assert.deepEqual(choice.picks.map(row=>row.kinds.join('/')),kinds,name);
-  const two=kinds[0]==='skill'?['skill:arcana','tool:smiths tools']:
-    ['weapon:longsword','tool:smiths tools'];
-  const allowed={skill:['arcana','perception'],weapon:['longsword','shortsword'],
-    tool:['smiths tools','weavers tools'],unavailable:[]};
-  const chosen={...r,...restTrainingPatch(r,choice,two,allowed)};
-  assert.deepEqual(chosen.proficiency_choices.map(row=>row.kind),two.map(x=>x.split(':')[0]));
-  assert(chosen.proficiency_choices.every(x=>x.rest_training_group===choice.group&&x.origin_id===choice.root_id));
-  assert.equal(restTrainingPatch(chosen,choice,two,allowed).proficiency_choices.length,2);
-  const calculated={features:featuresFor(chosen),racial_rest_choices:p.rest_choices};
-  const rested={...chosen,...powerRestChoicePatch(chosen,'long_rest',calculated)};
-  assert.deepEqual(rested.proficiency_choices,[],'old trance proficiencies expire at next long rest');
-  const replacement=kinds[0]==='skill'?['skill:perception','tool:weavers tools']:
-    ['weapon:shortsword','tool:weavers tools'];
-  const updated={...rested,...restTrainingPatch(rested,choice,replacement,allowed)};
-  assert.equal(updated.proficiency_choices.length,2,'reselection replaces, never accumulates');
-  assert.deepEqual(updated.proficiency_choices.map(row=>row.key),replacement.map(x=>x.split(':')[1]));
-  assert.throws(()=>restTrainingPatch(rested,choice,['tool:smiths tools','tool:smiths tools'],allowed),name==='Astral Elf'||name==='Githyanki'?/non valida/:/due volte/);
+ assert.equal(proficiencyBenefits.benefit_type,'proficiency_grant');
+ assert.equal(proficiencyBenefits.entries.length,5);
+ for(const [name,source,filters] of expected){
+  const r=record(name,source),models=proficiencyGrantModels(r,{features:featuresFor(r)},proficiencyBenefits);
+  assert.equal(models.length,1,name);
+  assert.deepEqual(models[0].slots.map(slot=>slot.filter.kinds.join('/')),filters,name);
+  assert.equal(models[0].trigger,'long_rest');
+  assert.equal(models[0].limit,2);
+  assert.equal(projection(r).rest_choices.some(row=>row.kind==='training'),false,
+    'no legacy duplicate training projection');
  }
+ const legacy=JSON.parse(readFileSync(new URL('../catalog/species_powers.json',import.meta.url),'utf8'));
+ assert(legacy.races.every(race=>!race.rest_training));
 });
+
 test('Fey Step uses the original source text for the chosen season when available',()=>{
  const r={...record('Eladrin'),trait_state_selection:{eladrin_season:'summer'}};
  const nativeRace=native.races.find(x=>x.name==='Eladrin'&&x.source==='MPMM');
@@ -118,72 +109,69 @@ test('Fey Step uses the original source text for the chosen season when availabl
  assert.match(definition.description,/fire damage equal to your proficiency bonus/);
  assert.doesNotMatch(definition.description,/\\{@damage/);
 });
-test('rest expiration preserves permanent and unrelated proficiency choices',()=>{
- const r=record('Sea Elf'),choice=projection(r).rest_choices.find(x=>x.kind==='training');
- const withGrant={...r,proficiency_choices:[
-   {kind:'skill',key:'arcana',origin_id:'background|phb|sage'},
-   {kind:'weapon',key:'longsword',origin_id:choice.root_id,rest_training_group:choice.group}
- ]};
- const calc={features:featuresFor(withGrant),racial_rest_choices:projection(withGrant).rest_choices};
- const patch=powerRestChoicePatch(withGrant,'long_rest',calc);
- assert.deepEqual(patch.proficiency_choices.map(x=>x.key),['arcana']);
- assert.equal(patch.rest_selection_available[choice.group],true);
- assert.equal(powerRestChoicePatch(withGrant,'short_rest',calc).proficiency_choices,undefined);
-});
-test('temporary choices reject previously owned proficiencies and wrong source',()=>{
- const r=record('Eladrin'),choice=projection(r).rest_choices.find(x=>x.kind==='training');
- const allowed={skill:[],weapon:['longsword','shortsword'],tool:['smiths tools'],unavailable:['weapon:longsword']};
- assert.throws(()=>restTrainingPatch(r,choice,['weapon:longsword','tool:smiths tools'],allowed),/non possiedi/);
- assert.throws(()=>restTrainingPatch(r,choice,['skill:arcana','tool:smiths tools'],allowed),/non valida/);
-});
-test('existing racial training choices are projected on the character and old permanent grants survive',()=>{
- const r=record('Eladrin'),nativeRace=native.races.find(x=>x.name==='Eladrin'&&x.source==='MPMM');
- const c=calculateSheet(r,{speciesPowers:index,proficiencyGrants:grants,
-   classMechanics:{races:[nativeRace],additional_spells:[]},
-   originDetails:{races:{'eladrin|mpmm':nativeRace}}});
- assert(c.racial_rest_choices.some(x=>x.group==='eladrin_training'));
- assert(c.racial_rest_choices.some(x=>x.group==='eladrin_season'));
- assert(c.origin_spells.some(x=>x.spell_id==='vtt_eladrin_fey_step'));
- assert(c.trackers.some(x=>x.id==='race:mpmm:eladrin:fey_step:uses'));
- const choice=c.racial_rest_choices.find(x=>x.kind==='training');
- const chosen={...r,...restTrainingPatch(r,choice,['weapon:longsword','tool:smiths tools'],
-   {weapon:['longsword'],tool:['smiths tools'],skill:[],unavailable:[]})};
- const prof=fixedProficiencies(chosen,grants,c.features);
- assert(prof.has('weapon:longsword'));
- assert(prof.has('tool:smiths tools'));
- const resolved=calculateSheet(chosen,{speciesPowers:index,proficiencyGrants:grants,
-   classMechanics:{races:[nativeRace],additional_spells:[]},
-   originDetails:{races:{'eladrin|mpmm':nativeRace}}});
- assert(resolved.proficiency_sources['weapon:longsword'].some(row=>
-   row.id===choice.origin_id),'temporary proficiency belongs to Trance trait');
- const disabled={...chosen,origin_enabled:{[choice.origin_id]:false}};
- const muted=calculateSheet(disabled,{speciesPowers:index,proficiencyGrants:grants,
-   classMechanics:{races:[nativeRace],additional_spells:[]},
-   originDetails:{races:{'eladrin|mpmm':nativeRace}}});
- assert(!muted.proficiencies.includes('weapon:longsword'),
-   'disabling the granting racial trait removes temporary proficiencies');
+test('selected proficiencies persist across a rest and can be replaced at any time',()=>{
+ const r=record('Sea Elf'),model=proficiencyGrantModels(r,{features:featuresFor(r)},proficiencyBenefits)[0];
+ const allowed={index:grants,unavailable:[]};
+ const first={...r,...proficiencyGrantPatch(r,model,['weapon:longsword',"tool:smith's tools"],allowed)};
+ assert.deepEqual(first.proficiency_choices.map(row=>row.kind),['weapon','tool']);
+ assert(first.proficiency_choices.every(row=>
+   row.rest_training_group===model.id&&row.proficiency_grant_id===model.id&&
+   row.granting_feature_origin_id===model.origin_id));
+ const afterRest={...first,...powerRestChoicePatch(first,'long_rest',
+  {features:featuresFor(first),proficiency_grants:[model]})};
+ assert.equal(afterRest.rest_selection_available[model.id],true);
+ assert.equal(afterRest.proficiency_choices.length,2);
+ const updatedModel=proficiencyGrantModels(afterRest,{features:featuresFor(afterRest)},proficiencyBenefits)[0];
+ const updated={...afterRest,...proficiencyGrantPatch(afterRest,updatedModel,
+  ['weapon:shortsword',"tool:weaver's tools"],allowed)};
+ assert.deepEqual(updated.proficiency_choices.map(row=>row.key),['shortsword',"weaver's tools"]);
+ assert.equal(updated.proficiency_choices.length,2);
+ assert.throws(()=>proficiencyGrantPatch(afterRest,model,
+  ['weapon:longsword','weapon:longsword'],allowed),/due volte/);
 });
 
-test('Githyanki Astral Knowledge grants exactly two temporary proficiencies, not duplicate permanent ones',()=>{
- const r=record('Githyanki'),features=featuresFor(r),powers=projection(r);
+test('filters, unavailable proficiencies and exact trait ownership are enforced',()=>{
+ const r=record('Astral Elf','AAG'),model=proficiencyGrantModels(r,{features:featuresFor(r)},proficiencyBenefits)[0];
+ const index=grants;
+ assert(proficiencyGrantOptions(model.slots[0],r,index).some(row=>row.id==='skill:arcana'));
+ assert(!proficiencyGrantOptions(model.slots[0],r,index).some(row=>row.id==='weapon:longsword'));
+ assert.throws(()=>proficiencyGrantPatch(r,model,
+  ['weapon:longsword',"tool:smith's tools"],{index,unavailable:[]}),/non valida/);
+ assert.throws(()=>proficiencyGrantPatch(r,model,
+  ['skill:arcana',"tool:smith's tools"],{index,unavailable:['skill:arcana']}),/non possiedi/);
+ const chosen={...r,...proficiencyGrantPatch(r,model,
+  ['skill:arcana','weapon:longsword'],{index,unavailable:[]})};
+ const active=fixedProficiencies(chosen,grants,featuresFor(chosen));
+ assert(active.has('skill:arcana')&&active.has('weapon:longsword'));
+ const disabled={...chosen,origin_enabled:{[model.origin_id]:false}};
+ assert(!fixedProficiencies(disabled,grants,featuresFor(disabled)).has('weapon:longsword'));
+ const other=record('Eladrin');
+ assert.equal(proficiencyGrantModels(other,{features:featuresFor(other)},
+  { ...proficiencyBenefits,entries:[proficiencyBenefits.entries[0]]}).length,0);
+});
+
+test('legacy saved training slots remain effective without automatic expiration',()=>{
+ const r=record('Githyanki'),features=featuresFor(r),model=proficiencyGrantModels(r,{features},proficiencyBenefits)[0];
  const ordinary=pendingCharacterChoices(r,{features},{proficiencyGrants:grants,speciesPowers:index});
- assert(!ordinary.some(x=>x.kind==='proficiency'&&['skill','tool'].includes(x.proficiency_kind)),
-   'Astral Knowledge must not create ordinary permanent racial skill/tool choices');
- assert(ordinary.some(x=>x.kind==='proficiency'&&x.proficiency_kind==='language'),
-   'the unrelated MPMM language choice must remain');
+ assert(!ordinary.some(x=>x.kind==='proficiency'&&['skill','tool'].includes(x.proficiency_kind)));
+ assert(ordinary.some(x=>x.kind==='proficiency'&&x.proficiency_kind==='language'));
  const before=fixedProficiencies(r,grants,features);
- assert(![...before.keys()].some(key=>key.startsWith('skill:')||key.startsWith('tool:')),
-   'no automatic permanent Astral Knowledge proficiency');
- const choice=powers.rest_choices.find(x=>x.group==='githyanki_training');
- assert(choice&&choice.picks.length===2);
- const chosen={...r,...restTrainingPatch(r,choice,['skill:arcana','weapon:longsword'],
-   {skill:['arcana'],weapon:['longsword'],tool:[],unavailable:[]})};
- const selected=fixedProficiencies(chosen,grants,features);
- assert(selected.has('skill:arcana')&&selected.has('weapon:longsword'));
- assert.equal([...selected.keys()].filter(k=>k.startsWith('skill:')||k.startsWith('weapon:')||k.startsWith('tool:')).length,2);
- const restored={...chosen,...powerRestChoicePatch(chosen,'long_rest',
-   {features,racial_rest_choices:powers.rest_choices})};
- const expired=fixedProficiencies(restored,grants,features);
- assert(!expired.has('skill:arcana')&&!expired.has('weapon:longsword'));
- assert.equal(restored.rest_selection_available.githyanki_training,true);
+ assert(!before.has('skill:arcana'));
+ const stored={...r,proficiency_choices:[
+  {kind:'skill',key:'arcana',origin_id:model.root_id,rest_training_group:model.id,
+   granting_feature_origin_id:model.origin_id},
+  {kind:'weapon',key:'longsword',origin_id:model.root_id,rest_training_group:model.id,
+   granting_feature_origin_id:model.origin_id}
+ ]};
+ const current=proficiencyGrantModels(stored,{features},proficiencyBenefits)[0];
+ assert.equal(current.selected.length,2);
+ const active=fixedProficiencies(stored,grants,features);
+ assert(active.has('skill:arcana')&&active.has('weapon:longsword'));
+ const rested={...stored,...powerRestChoicePatch(stored,'long_rest',
+   {features,proficiency_grants:[current]})};
+ assert(fixedProficiencies(rested,grants,features).has('skill:arcana'));
+ const changed={...rested,...proficiencyGrantPatch(rested,current,
+   ['skill:perception',"tool:smith's tools"],{index:grants,unavailable:[]})};
+ assert(!fixedProficiencies(changed,grants,features).has('skill:arcana'));
+ assert(fixedProficiencies(changed,grants,features).has('skill:perception'));
 });

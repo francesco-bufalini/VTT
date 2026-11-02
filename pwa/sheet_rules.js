@@ -1822,6 +1822,8 @@ export function loadRuleCatalogs(){
   // the 272 optional features a second time from the legacy JSON.
   const typedOptionGrants=fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
   const typedOptionLists=fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const typedProficiencyGrants=fetch('/benefits/proficiency_grant.json')
+    .then(r=>r.ok?r.json():{}).catch(()=>({}));
   // The migrated 3 inline power choices and 21 class spell selections are
   // read directly from option_grant. Old shells use their previous catalogs.
   // Coverage is checked per family so a partial static deployment can fall
@@ -1929,10 +1931,11 @@ export function loadRuleCatalogs(){
     loadClassResourceBenefits(),
     typedOptionGrants,
     typedOptionLists,
+    typedProficiencyGrants,
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
      ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/defense.json','/benefits/proficiency.json']
        .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses,flavourProficiencies])=>({
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses,flavourProficiencies])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,
@@ -1940,6 +1943,8 @@ export function loadRuleCatalogs(){
     senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,
     optionGrants:optionGrants?.benefit_type==='option_grant'?optionGrants:{entries:[]},
     optionLists:optionLists?.benefit_type==='option_list'?optionLists:{entries:[]},
+    proficiencyGrantBenefits:proficiencyGrantBenefits?.schema_version===2&&
+      proficiencyGrantBenefits?.benefit_type==='proficiency_grant'?proficiencyGrantBenefits:{entries:[]},
      flavours:flavours?.catalog_type==='flavours'?flavours:{entries:[]},
      flavourBonuses:flavourBonuses?.benefit_type==='bonus'?flavourBonuses:{entries:[]},
      flavourFeatGrants:flavourFeatGrants?.benefit_type==='feat_grant'?flavourFeatGrants:{entries:[]},

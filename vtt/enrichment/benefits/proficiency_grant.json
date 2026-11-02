@@ -1,0 +1,184 @@
+{
+  "schema_version": 2,
+  "benefit_type": "proficiency_grant",
+  "scope": "catalog",
+  "notes": "Origin-qualified proficiency selection grants migrated from species_powers.json rest_training. Change trigger is descriptive; saved selections remain until replaced.",
+  "entries": [
+    {
+      "id": "proficiency_grant:astral_trance_training",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Astral Trance",
+          "source": "AAG",
+          "race": "Astral Elf",
+          "race_source": "AAG"
+        }
+      },
+      "benefit": {
+        "type": "proficiency_grant",
+        "id": "astral_trance_training",
+        "proficiency_grant": {
+          "id": "astral_trance_training",
+          "groups": [
+            {
+              "filter": {
+                "kinds": [
+                  "skill"
+                ]
+              },
+              "count": 1
+            },
+            {
+              "filter": {
+                "kinds": [
+                  "weapon",
+                  "tool"
+                ]
+              },
+              "count": 1
+            }
+          ],
+          "trigger": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "proficiency_grant:eladrin_training",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Trance",
+          "source": "MPMM",
+          "race": "Eladrin",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "proficiency_grant",
+        "id": "eladrin_training",
+        "proficiency_grant": {
+          "id": "eladrin_training",
+          "groups": [
+            {
+              "filter": {
+                "kinds": [
+                  "weapon",
+                  "tool"
+                ]
+              },
+              "count": 2
+            }
+          ],
+          "trigger": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "proficiency_grant:sea_elf_training",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Trance",
+          "source": "MPMM",
+          "race": "Sea Elf",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "proficiency_grant",
+        "id": "sea_elf_training",
+        "proficiency_grant": {
+          "id": "sea_elf_training",
+          "groups": [
+            {
+              "filter": {
+                "kinds": [
+                  "weapon",
+                  "tool"
+                ]
+              },
+              "count": 2
+            }
+          ],
+          "trigger": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "proficiency_grant:shadar_kai_training",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Trance",
+          "source": "MPMM",
+          "race": "Shadar-Kai",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "proficiency_grant",
+        "id": "shadar_kai_training",
+        "proficiency_grant": {
+          "id": "shadar_kai_training",
+          "groups": [
+            {
+              "filter": {
+                "kinds": [
+                  "weapon",
+                  "tool"
+                ]
+              },
+              "count": 2
+            }
+          ],
+          "trigger": "long_rest"
+        }
+      }
+    },
+    {
+      "id": "proficiency_grant:githyanki_training",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Astral Knowledge",
+          "source": "MPMM",
+          "race": "Githyanki",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "proficiency_grant",
+        "id": "githyanki_training",
+        "proficiency_grant": {
+          "id": "githyanki_training",
+          "groups": [
+            {
+              "filter": {
+                "kinds": [
+                  "skill"
+                ]
+              },
+              "count": 1
+            },
+            {
+              "filter": {
+                "kinds": [
+                  "weapon",
+                  "tool"
+                ]
+              },
+              "count": 1
+            }
+          ],
+          "trigger": "long_rest"
+        }
+      }
+    }
+  ]
+}

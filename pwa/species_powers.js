@@ -199,16 +199,6 @@ export function racialPowerProjection(record={},index={},features=[],originDetai
      mode:'innate',payment_mode:'tracker',tracker_id:teleport.tracker_id,
      tracker_cost:1,cantrip:false,casting_ability_not_required:true,automatic:true});
  }
- const training=race.rest_training,trainingOwner=training&&featureFor(training.trait);
- if(trainingOwner&&training.group&&training.recovery){
-   const picks=rows(training.picks).length?training.picks:[
-     ...Array.from({length:training.skill_count||1},()=>({label:'Abilità',kinds:['skill']})),
-     ...Array.from({length:training.weapon_tool_count||1},()=>({label:'Arma o strumento',kinds:['weapon','tool']}))
-   ];
-   output.rest_choices.push({group:training.group,trait:training.trait,recovery:training.recovery,
-     kind:'training',root_id:raceRoot,origin_id:trainingOwner.origin_id,
-     picks,description:descriptionFor(training.trait,trainingOwner)});
- }
  const season=race.season_choice,seasonOwner=season&&featureFor(season.trait);
  if(seasonOwner&&season.group&&rows(season.options).length)
    output.rest_choices.push({group:season.group,trait:season.trait,recovery:season.recovery,
@@ -268,33 +258,6 @@ export function endTemporaryConditionPatch(record={},key='racial:firbolg:hidden_
  if(current.added_condition&&!stillGranted)
    patch.conditions=rows(record.conditions).filter(value=>norm(value)!==norm(current.effect_condition));
  return patch;
-}
-// Temporary training stays a typed proficiency grant; the rest label is descriptive.
-// A source-defined set of proficiency slots: skill+weapon/tool or two weapon/tools.
-export function restTrainingPatch(record={},choice={},selected=[],allowed={}){
- if(!choice.group||!choice.root_id||!choice.origin_id||!choice.trait||
-   !rows(choice.picks).length)throw Error('Competenze temporanee non disponibili.');
- if(!Array.isArray(selected)||selected.length!==choice.picks.length)
-   throw Error('Scegli tutte le competenze previste dal privilegio.');
- const picks=selected.map((value,i)=>{
-   const [kind,...parts]=String(value||'').split(':'),key=parts.join(':').toLowerCase();
-   if(!rows(choice.picks[i]?.kinds).includes(kind)||!key||
-     !rows(allowed[kind]).includes(key))throw Error('Competenza non valida per questa scelta.');
-   return {kind,key};
- });
- if(new Set(picks.map(row=>row.kind+':'+row.key)).size!==picks.length)
-   throw Error('Non puoi selezionare due volte la stessa competenza.');
- if(picks.some(row=>rows(allowed.unavailable).includes(row.kind+':'+row.key)))
-   throw Error('Puoi scegliere soltanto competenze che non possiedi già.');
- return {
-   proficiency_choices:[
-     ...rows(record.proficiency_choices).filter(row=>row?.rest_training_group!==choice.group),
-     ...picks.map(row=>({...row,origin_id:choice.root_id,rest_training_group:choice.group,
-       granting_feature_origin_id:choice.origin_id,
-       origin_name:'Tratto · '+choice.trait}))
-   ],
-   trait_state_selection:{...(record.trait_state_selection||{}),[choice.group]:'selected'}
- };
 }
 export function healingHandsPatch(record={},calculated={},power={},rollDie=()=>1,target=null) {
  if(power.mode!=='heal_dice'||power.heal_dice?.count!=='proficiency'||

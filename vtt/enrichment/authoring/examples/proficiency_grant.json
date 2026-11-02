@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "benefit_type": "proficiency_grant",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "demo:proficiency_grant",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:proficiency_grant"
+        }
+      },
+      "benefit": {
+        "type": "proficiency_grant",
+        "id": "demo:proficiencies",
+        "proficiency_grant": {
+          "id": "demo:proficiencies",
+          "groups": [
+            {
+              "filter": {
+                "kinds": [
+                  "skill"
+                ],
+                "exclude": [
+                  "skill:perception"
+                ]
+              },
+              "count": 2
+            }
+          ],
+          "trigger": "long_rest"
+        }
+      }
+    }
+  ]
+}

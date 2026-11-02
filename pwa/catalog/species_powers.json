@@ -54,28 +54,6 @@
         "action_type": "bonus",
         "target_mode": "teleport_self",
         "range_feet": 30
-      },
-      "rest_training": {
-        "trait": "Astral Trance",
-        "group": "astral_trance_training",
-        "recovery": "long_rest",
-        "skill_count": 1,
-        "weapon_tool_count": 1,
-        "picks": [
-          {
-            "label": "Abilità",
-            "kinds": [
-              "skill"
-            ]
-          },
-          {
-            "label": "Arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          }
-        ]
       }
     },
     {
@@ -253,27 +231,6 @@
           "spring",
           "summer"
         ]
-      },
-      "rest_training": {
-        "trait": "Trance",
-        "group": "eladrin_training",
-        "recovery": "long_rest",
-        "picks": [
-          {
-            "label": "Prima arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          },
-          {
-            "label": "Seconda arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          }
-        ]
       }
     },
     {
@@ -334,27 +291,7 @@
     },
     {
       "name": "Githyanki",
-      "source": "MPMM",
-      "rest_training": {
-        "trait": "Astral Knowledge",
-        "group": "githyanki_training",
-        "recovery": "long_rest",
-        "picks": [
-          {
-            "label": "Abilità",
-            "kinds": [
-              "skill"
-            ]
-          },
-          {
-            "label": "Arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          }
-        ]
-      }
+      "source": "MPMM"
     },
     {
       "name": "Gnoll",
@@ -402,53 +339,11 @@
     },
     {
       "name": "Sea Elf",
-      "source": "MPMM",
-      "rest_training": {
-        "trait": "Trance",
-        "group": "sea_elf_training",
-        "recovery": "long_rest",
-        "picks": [
-          {
-            "label": "Prima arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          },
-          {
-            "label": "Seconda arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          }
-        ]
-      }
+      "source": "MPMM"
     },
     {
       "name": "Shadar-Kai",
-      "source": "MPMM",
-      "rest_training": {
-        "trait": "Trance",
-        "group": "shadar_kai_training",
-        "recovery": "long_rest",
-        "picks": [
-          {
-            "label": "Prima arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          },
-          {
-            "label": "Seconda arma o strumento",
-            "kinds": [
-              "weapon",
-              "tool"
-            ]
-          }
-        ]
-      }
+      "source": "MPMM"
     },
     {
       "name": "Shifter",

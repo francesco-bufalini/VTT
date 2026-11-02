@@ -37,6 +37,7 @@
         "option_selection",
         "option_list",
         "option_grant",
+        "proficiency_grant",
         "proficiency",
         "progression",
         "resource",
@@ -477,6 +478,9 @@
     },
     "option_grant": {
       "$ref": "#/$defs/optionGrant"
+    },
+    "proficiency_grant": {
+      "$ref": "#/$defs/proficiencyGrant"
     },
     "option_list": {
       "$ref": "#/$defs/optionList"
@@ -3230,6 +3234,85 @@
           "$ref": "#/$defs/roll"
         }
       }
+    },
+    "proficiencyGrant": {
+      "type": "object",
+      "required": [
+        "id",
+        "groups",
+        "trigger"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "groups": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "filter",
+              "count"
+            ],
+            "properties": {
+              "filter": {
+                "type": "object",
+                "required": [
+                  "kinds"
+                ],
+                "properties": {
+                  "kinds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "enum": [
+                        "skill",
+                        "expertise",
+                        "save",
+                        "weapon",
+                        "armor",
+                        "tool",
+                        "language"
+                      ]
+                    }
+                  },
+                  "include": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "exclude": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "trigger": {
+          "enum": [
+            "level_up",
+            "short_rest",
+            "long_rest"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "optionGrant": {
       "type": "object",
