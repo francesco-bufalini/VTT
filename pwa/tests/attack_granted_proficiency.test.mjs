@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -36,7 +37,7 @@ test('attack benefit training is explicit, optional, source-bound and not catego
 
 test('all state-created weapons carry explicit proficiency with their source trait',()=>{
  const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
-   traitStates:states,proficiencyGrants:read('proficiency_grants')};
+   traitStates:states,proficiencyGrants:proficiencyTestIndex()};
  const record={kind:'character',rules_version:'2014',level:8,
    classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
    abilities,inventory:[{id:'plate',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],

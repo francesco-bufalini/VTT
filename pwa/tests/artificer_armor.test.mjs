@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -11,7 +12,7 @@ import {traitBenefitGroups} from '../trait_benefits.js';
 import {recoveryPatch,restRecoveryPreview,completeRest} from '../native_sheet.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
  traitStates:read('trait_states').states,rollBonusRules:read('roll_bonus_rules').features,
  featureActionOverrides:JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries};
 const sheet=(name,level=5,source='PHB',subclass='')=>({kind:'character',rules_version:source==='XPHB'?'2024':'2014',level,

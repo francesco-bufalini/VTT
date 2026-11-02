@@ -1,10 +1,11 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
-const catalog=read('../catalog/proficiency_grants.json');
+const catalog=proficiencyTestIndex();
 const native=read('../../vtt/data/proficiency_grants_5etools.json');
 const catalogs={proficiencyGrants:catalog,classMechanics:read('../catalog/class_mechanics.json'),
  classFeatures:read('../catalog/classes.json'),abilityGrants:read('../catalog/ability_grants.json')};

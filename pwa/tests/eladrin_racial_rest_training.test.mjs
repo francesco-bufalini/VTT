@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +10,7 @@ import {powerRestSelections,powerRestChoicePatch} from '../trait_state_rules.js'
 import {fixedProficiencies} from '../structured_effects.js';
 import {calculateSheet} from '../sheet_rules.js';
 const index=speciesPowerTestIndex();
-const grants=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
+const grants=proficiencyTestIndex();
 const proficiencyBenefits=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/proficiency_grant.json',import.meta.url),'utf8'));
 const native=JSON.parse(readFileSync(new URL('../../vtt/data/creature_references_5etools.json',import.meta.url),'utf8'));
 const rule=(name,source)=>index.races.find(r=>r.name===name&&r.source===source);

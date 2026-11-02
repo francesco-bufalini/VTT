@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -8,7 +9,7 @@ import {effectExtensionsFor} from '../effect_extensions.js';
 import {withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_grants.mjs';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
  traitStates:read('trait_states').states,effectExtensions:read('effect_extensions').extensions};
 const armor=(type='HA',strength='15',stealth=true)=>({
  id:'plate',name:'Plate Armor',type,ac:18,strength,stealth,quantity:1,equipped_slots:['body']

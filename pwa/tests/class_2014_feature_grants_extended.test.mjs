@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,7 +7,7 @@ import {pendingCharacterChoices} from '../pending_choices.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
-  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants')};
+  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex()};
 const character=(klass,subclass='',subclassSource='PHB',level=3)=>({
   kind:'character',rules_version:'2014',class:klass,class_source:'PHB',level,
   classes:[{name:klass,source:'PHB',level,subclass,subclass_source:subclassSource}],

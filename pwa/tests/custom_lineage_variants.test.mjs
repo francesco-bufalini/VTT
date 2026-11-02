@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -8,7 +9,7 @@ import {calculateSenses} from '../sense_rules.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 
 const senseCatalog=JSON.parse(readFileSync(new URL('../catalog/sense_grants.json',import.meta.url),'utf8'));
-const profCatalog=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
+const profCatalog=proficiencyTestIndex();
 const abilityCatalog=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const baseline={id:'5etools:races:tce:custom%20lineage',name:'Custom Lineage',source:'TCE'};
 const base={kind:'character',rules_version:'2014',species:'',species_source:'',
