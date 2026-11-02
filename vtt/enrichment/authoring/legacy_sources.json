@@ -37,7 +37,6 @@
         "race",
         "subrace",
         "feat",
-        "background",
         "advancement_rules"
       ],
       "types": [
@@ -59,17 +58,6 @@
         "option_selection",
         "spell_grant",
         "proficiency_grant"
-      ]
-    },
-    {
-      "path": "pwa/catalog/feature_slot_spells.json",
-      "sections": [
-        "spells",
-        "grants"
-      ],
-      "types": [
-        "spell_grant",
-        "spell_slot"
       ]
     },
     {
@@ -362,6 +350,12 @@
       "benefit_type": "condition",
       "catalog": "vtt/enrichment/benefits/condition.json",
       "runtime": "pwa/exhaustion_rules.js"
+    },
+    {
+      "source": "pwa/catalog/feature_slot_spells.json",
+      "benefit_type": "practically_spells",
+      "catalog": "vtt/enrichment/benefits/practically_spells.json",
+      "runtime": "pwa/practically_spells.js"
     }
   ]
 }

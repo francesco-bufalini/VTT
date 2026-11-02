@@ -64,7 +64,7 @@ const SHELL = [
   
   "/benefits/attack.json", "/benefits/base_override.json", "/benefits/d20_reroll.json",
   "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json", "/benefits/condition.json",
-   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/condition.json", "/benefits/creature_grant.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/damage_modifier.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/benefits/spell_extension.json", "/spell_slot_profiles.js",
+   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/creature_grant.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/damage_modifier.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/benefits/spell_extension.json", "/spell_slot_profiles.js",
   "/species_defenses.js",
   "/species_defense_benefits.js",
   "/spell_grant_benefits.js",
@@ -194,7 +194,7 @@ const CORE_SHELL = SHELL.filter(path =>
 const REQUIRED_CATALOGS = [
   "/catalog/ability_grants.json", "/catalog/class_mechanics.json",
   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/creature_grant.json", "/benefits/item_grant.json", "/benefits/scaling_die.json", "/benefits/effect_extension.json", "/benefits/spell_extension.json", "/catalog/species_powers.json", "/catalog/languages_5etools.json", "/catalog/classes.json",
-  "/catalog/player.json", "/benefits/sense.json", "/benefits/proficiency_grant.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
+  "/catalog/player.json", "/benefits/sense.json", "/benefits/proficiency_grant.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json", "/benefits/condition.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json",
 
   "/benefits/practically_spells.json",
