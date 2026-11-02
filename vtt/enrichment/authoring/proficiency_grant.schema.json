@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT proficiency_grant benefit catalog v2",
+  "allOf": [
+    {
+      "$ref": "catalog.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "benefit_type": {
+          "const": "proficiency_grant"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "benefit": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "proficiency_grant"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "proficiency_grant"
+                  },
+                  "proficiency_grant": {
+                    "$ref": "benefit.schema.json#/$defs/proficiencyGrant"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

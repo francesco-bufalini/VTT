@@ -1309,6 +1309,13 @@ function calculateSheetValues(record={},catalogs={}){
            (!source||!x.source||same(x.source,source))))return false;
       }
     }
+    // A capability applied as a passive State is a real, scoped grant
+    // origin. It exists only while its parent option is currently applied;
+    // never accept a stale identifier from an old saved character.
+    if(sid.startsWith('selection:'))return arr(record.selection_traits).some(trait=>
+      (trait.id===sid||trait.origin_id===sid)&&
+      record.origin_enabled?.[sid]!==false&&
+      !arr(record.proficiency_origins).some(row=>row.id===sid&&row.disabled));
     if(sid.startsWith('feature:')){
       const owner=features.find(feature=>feature.origin_id===sid);
       if(owner)return featureEnabled(record,owner);
@@ -1792,6 +1799,8 @@ export function loadRuleCatalogs(){
   // the 272 optional features a second time from the legacy JSON.
   const typedOptionGrants=fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
   const typedOptionLists=fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const typedProficiencyGrants=fetch('/benefits/proficiency_grant.json')
+    .then(r=>r.ok?r.json():{}).catch(()=>({}));
   // The migrated 3 inline power choices and 21 class spell selections are
   // read directly from option_grant. Old shells use their previous catalogs.
   // Coverage is checked per family so a partial static deployment can fall
@@ -1894,8 +1903,9 @@ export function loadRuleCatalogs(){
     loadClassResourceBenefits(),
     typedOptionGrants,
     typedOptionLists,
-    fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits])=>({
+    fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
+    typedProficiencyGrants
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,
@@ -1903,6 +1913,8 @@ export function loadRuleCatalogs(){
     senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,
     optionGrants:optionGrants?.benefit_type==='option_grant'?optionGrants:{entries:[]},
     optionLists:optionLists?.benefit_type==='option_list'?optionLists:{entries:[]},
+    proficiencyGrantBenefits:proficiencyGrantBenefits?.schema_version===2&&
+      proficiencyGrantBenefits?.benefit_type==='proficiency_grant'?proficiencyGrantBenefits:{entries:[]},
     slotBenefits:slotBenefits?.benefit_type==='resource'?slotBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,

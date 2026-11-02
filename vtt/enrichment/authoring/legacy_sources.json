@@ -135,7 +135,8 @@
         "resource",
         "option_selection",
         "spell_grant",
-        "action"
+        "action",
+        "proficiency_grant"
       ]
     },
     {

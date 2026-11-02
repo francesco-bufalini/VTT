@@ -42,7 +42,7 @@ import {serverBackups, serverBackupMarkup} from "./server_backups.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, classMechanicsRow, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
-import {healingHandsPatch,restTrainingPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
+import {healingHandsPatch,endTemporaryConditionPatch,racialAbilityEffectFormula,racialAbilityTemporaryHpPatch} from "./species_powers.js";
 import {featureRollTarget,featureRollFlatBonuses,featureRollExtensionBonuses} from './feature_rolls.js';
 import {availableZeroHpResponses,resolveZeroHpDamage} from './zero_hp_responses.js';
 import {incomingDamageOptions,resolveIncomingDamage} from './defense_summary.js';
@@ -61,7 +61,8 @@ import {attackActionUsePatch,attackActionChoice} from './attack_count_benefits.j
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,applicableFeatRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools,canLevelUp,constitutionHpAdjustment,minimumXpForLevel} from "./character_core.js";
 import {availableXpLevels,levelUpSteps,classHitDieFaces,averageHitDie,levelUpHpPatch,levelUpProgressionImpact} from "./level_up.js";
-import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,trainingProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {proficiencyGrantModels,proficiencyGrantOptions,proficiencyGrantPatch} from './proficiency_grant.js';
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
@@ -1423,6 +1424,7 @@ async function computeLocalData(record){
     optionLists:catalogs.optionLists||{},optionalFeatureProgressions:catalogs.optionalFeatureProgressions||{},
     spells:catalogs.spells||[],capacity_grants:featureItemGrants(record,calculated.features||[],catalogs.featureItemGrants||[])};
   const power_selections=powerSelectionModels(record,calculated,powerSelectionCatalog);
+  const proficiency_grants=proficiencyGrantModels(record,calculated,catalogs.proficiencyGrantBenefits);
   // Spell-like class privileges are ordinary levelled spell definitions. Keep
   // their catalog details available offline and after an asynchronous refresh.
   const featureSpells=catalogs.featureSlotSpells?.spells||[];
@@ -1432,7 +1434,7 @@ async function computeLocalData(record){
     state.spellCatalog=[...definitions.values()];
   }
   return {...calculated,loadError,companion_view:companionView,companion_rules:companionData,combat_snapshot:state.map||null,
-    power_selections,power_selection_catalog:powerSelectionCatalog,
+    power_selections,power_selection_catalog:powerSelectionCatalog,proficiency_grants,
     pending_choices:pendingCharacterChoices(record,calculated,{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
     infusion_catalog,infusion_mechanics};
@@ -2644,6 +2646,7 @@ async function editorView() {
         manualMagicSources(c,calculated),
         'magic-panel')+
       optionBenefitPanels(c,calculated)+
+       proficiencyGrantPanels(c,calculated)+
        racialRestTrainingPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
@@ -3145,68 +3148,69 @@ function documentRow(item,index,stored){
 // Exclusive, data-defined equipment models share the infusion card layout.
 // The state catalog supplies both choices, their eligibility and effects.
 
+// Racial season choices still use the existing generic trait-state picker.
 function racialRestTrainingPanel(c,calculated){
- return (calculated.racial_rest_choices||[]).map(choice=>{
-  if(choice.kind==='racial_option'){
-   const key=c.trait_state_selection?.[choice.group]||'';
-   return panel(choice.label||choice.trait,
-    '<div class="infusion-overview"><strong>Stagione attuale</strong>'+
-      '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
-    '<div class="infusion-dialog-item"><strong>'+esc(choice.option_labels?.[key]||'Da scegliere')+'</strong></div>'+
-    '<div class="actions"><button type="button" class="btn primary" data-act="racial-option-open" data-racial-option-group="'+esc(choice.group)+'">'+
-      (key?'Cambia stagione':'Scegli stagione')+'</button></div>',
-    'armor-model-panel');
-  }
-  const selected=(c.proficiency_choices||[]).filter(row=>row.rest_training_group===choice.group);
-  const entries=(choice.picks||[]).map((pick,i)=>{
-   const row=selected[i],value=row?(row.kind==='skill'?'Abilità':row.kind==='weapon'?'Arma':'Strumento')+
-     ' · '+row.key:'Da scegliere';
-   return '<div class="infusion-dialog-item"><span>'+esc(pick.label||'Competenza')+
-     '<small>'+esc(value)+'</small></span></div>';
-  }).join('');
-  return panel(choice.trait,
-    '<div class="infusion-overview"><strong>Competenze temporanee</strong>'+
-      '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
-    entries+'<div class="actions"><button type="button" class="btn primary" data-act="rest-training-open" data-training-group="'+esc(choice.group)+'">'+
-    (selected.length?'Cambia competenze':'Scegli competenze')+'</button></div>',
-    'armor-model-panel');
+ return (calculated.racial_rest_choices||[]).filter(choice=>choice.kind==='racial_option').map(choice=>{
+  const key=c.trait_state_selection?.[choice.group]||'';
+  return panel(choice.label||choice.trait,
+   '<div class="infusion-overview"><strong>Stagione attuale</strong>'+
+   '<span class="power-selection-rest">'+esc(selectionRestLabel(choice.recovery))+'</span></div>'+
+   '<div class="infusion-dialog-item"><strong>'+esc(choice.option_labels?.[key]||'Da scegliere')+'</strong></div>'+
+   '<div class="actions"><button type="button" class="btn primary" data-act="racial-option-open" data-racial-option-group="'+esc(choice.group)+'">'+
+   (key?'Cambia stagione':'Scegli stagione')+'</button></div>','armor-model-panel');
  }).join('');
 }
-async function openRacialRestTrainingDialog(group){
+function proficiencyGrantPanels(c,calculated){
+ return (calculated.proficiency_grants||[]).map(model=>{
+  const picked=model.selected||[],slots=model.slots||[];
+  const entries=slots.map((slot,i)=>{
+   const row=picked[i],value=row?
+    (slot.filter?.kinds?.length===1?slot.label:({skill:'Abilità',weapon:'Arma',tool:'Strumento',
+     expertise:'Maestria',save:'Tiro salvezza',armor:'Armatura',language:'Lingua'}[row.kind]||row.kind))+
+    ' · '+row.key:'Da scegliere';
+   return '<div class="infusion-dialog-item"><span>'+esc(slot.label||'Competenza')+
+     '<small>'+esc(value)+'</small></span></div>';
+  }).join('');
+  return panel(model.title,
+   '<div class="infusion-overview"><strong>Competenze '+picked.length+' / '+slots.length+'</strong>'+
+    (model.change_label?'<span class="power-selection-rest">'+esc(model.change_label)+'</span>':'')+
+   '</div>'+entries+
+   '<div class="actions"><button type="button" class="btn primary" data-act="proficiency-grant-open" data-proficiency-grant-id="'+esc(model.id)+'">Scegli</button></div>',
+   'armor-model-panel');
+ }).join('');
+}
+async function openProficiencyGrantDialog(id){
  const creature=state.editor?.read();
  if(!creature)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(creature);
- const choice=(calculated.racial_rest_choices||[]).find(row=>row.group===group&&row.kind==='training');
- if(!choice)throw Error('Privilegio non disponibile.');
- const selected=(creature.proficiency_choices||[]).filter(row=>row.rest_training_group===group);
+ const model=(calculated.proficiency_grants||[]).find(row=>row.id===id);
+ if(!model)throw Error('Concessione di competenze non disponibile.');
  const opt=(key,label,value)=>'<option value="'+esc(key)+'"'+(key===value?' selected':'')+'>'+esc(label)+'</option>';
- const skills=SKILLS.map(([key,label])=>['skill:'+key,label]);
- const weapons=trainingProficiencyOptions('weapon',creature).map(key=>['weapon:'+key,key]);
- const tools=trainingProficiencyOptions('tool',creature).map(key=>['tool:'+key,key]);
- const picks=(choice.picks||[]).map((pick,i)=>{
-   const current=selected[i]?selected[i].kind+':'+selected[i].key:'';
-   const groups=(pick.kinds||[]).map(kind=>{
-     const options=kind==='skill'?skills:kind==='weapon'?weapons:tools;
-     const label=kind==='skill'?'Abilità':kind==='weapon'?'Armi':'Strumenti';
-     return '<optgroup label="'+label+'">'+options.map(([id,name])=>opt(id,name,current)).join('')+'</optgroup>';
-   }).join('');
-   return '<label>'+esc(pick.label||'Competenza')+
-     '<select data-rest-training-pick="'+i+'">'+opt('','Scegli',current)+groups+'</select></label>';
+ const picks=model.slots.map((slot,i)=>{
+  const row=model.selected[i],current=row?row.kind+':'+row.key:'';
+  const pool=proficiencyGrantOptions(slot,creature,calculated.proficiency_catalog_overrides||{});
+  const groups=(slot.filter?.kinds||[]).map(kind=>{
+   const label=({skill:'Abilità',weapon:'Armi',tool:'Strumenti',save:'Tiri salvezza',
+     expertise:'Maestrie',armor:'Armature',language:'Lingue'}[kind]||kind);
+   return '<optgroup label="'+esc(label)+'">'+pool.filter(value=>value.kind===kind)
+     .map(value=>opt(value.id,value.name,current)).join('')+'</optgroup>';
+  }).join('');
+  return '<label>'+esc(slot.label||'Competenza')+
+    '<select data-proficiency-grant-pick="'+i+'">'+opt('','Scegli',current)+groups+'</select></label>';
  }).join('');
- app.querySelector('#racial-rest-training-dialog')?.remove();
+ app.querySelector('#proficiency-grant-dialog')?.remove();
  const dialog=document.createElement('dialog');
- dialog.id='racial-rest-training-dialog';
+ dialog.id='proficiency-grant-dialog';
  dialog.className='sheet-roll-dialog magic-spell-dialog armor-model-dialog';
- dialog.dataset.trainingGroup=group;dialog.dataset.creatureId=creature.id;
- dialog.innerHTML=actionDialogIntro(choice.trait,[
-   {label:'Cambio',value:selectionRestLabel(choice.recovery)},
-   {label:'Origine',value:'Tratto · '+choice.trait},
-   {label:'Durata',value:'Fino al prossimo riposo lungo'}
- ],choice.description||'','Specie · '+creature.species,'rest-training-close')+
+ dialog.dataset.proficiencyGrantId=id;dialog.dataset.creatureId=creature.id;
+ dialog.innerHTML=actionDialogIntro(model.title,[
+   {label:'Cambio',value:model.change_label||'A piacimento'},
+   {label:'Origine',value:'Tratto · '+model.title}
+ ],'','','proficiency-grant-close')+
  '<div class="magic-ability-detail">'+picks+'</div>'+
- '<p class="hint" data-rest-training-error role="status" hidden></p>'+
- '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="rest-training-apply">Applica competenze</button>'+
- '<button type="button" class="btn" data-act="rest-training-close">Chiudi</button></div>';
+ '<p class="hint" data-proficiency-grant-error role="status" hidden></p>'+
+ '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-act="proficiency-grant-apply">Conferma</button>'+
+ '<button type="button" class="btn" data-act="proficiency-grant-close">Chiudi</button></div>';
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  openDialog(dialog);
 }
@@ -9684,33 +9688,30 @@ async function handleAction(target){
     if(!choice)throw Error('Scelta razziale non disponibile.');
     await openCharacterChoice(choice);return;
   }
-  if(act==='rest-training-open'){
-    await openRacialRestTrainingDialog(String(target.dataset.trainingGroup||''));
+  if(act==='proficiency-grant-open'){
+    await openProficiencyGrantDialog(String(target.dataset.proficiencyGrantId||''));
     return;
   }
-  if(act==='rest-training-close'){
-    closeDialog(app.querySelector('#racial-rest-training-dialog'),{remove:true});
+  if(act==='proficiency-grant-close'){
+    closeDialog(app.querySelector('#proficiency-grant-dialog'),{remove:true});
     return;
   }
-  if(act==='rest-training-apply'){
-    const dialog=app.querySelector('#racial-rest-training-dialog');
-    const current=state.editor?.read();
+  if(act==='proficiency-grant-apply'){
+    const dialog=app.querySelector('#proficiency-grant-dialog'),current=state.editor?.read();
     if(!dialog?.open||!current||dialog.dataset.creatureId!==current.id)
       throw Error('Riapri il privilegio dalla scheda.');
     const fresh=await computeLocalData(current);
-    const choice=(fresh.racial_rest_choices||[]).find(row=>row.group===dialog.dataset.trainingGroup);
-    if(!choice)throw Error('Privilegio non disponibile.');
-    const selected=[...dialog.querySelectorAll('[data-rest-training-pick]')]
-      .sort((a,b)=>Number(a.dataset.restTrainingPick)-Number(b.dataset.restTrainingPick))
+    const model=(fresh.proficiency_grants||[]).find(row=>row.id===dialog.dataset.proficiencyGrantId);
+    if(!model)throw Error('Privilegio non disponibile.');
+    const selected=[...dialog.querySelectorAll('[data-proficiency-grant-pick]')]
+      .sort((a,b)=>Number(a.dataset.proficiencyGrantPick)-Number(b.dataset.proficiencyGrantPick))
       .map(row=>row.value||'');
     const withoutOwn={...current,proficiency_choices:(current.proficiency_choices||[])
-      .filter(row=>row.rest_training_group!==choice.group)};
+      .filter(row=>row.proficiency_grant_id!==model.id&&row.rest_training_group!==model.id)};
     const outside=await computeLocalData(withoutOwn);
-    const allowed={skill:SKILLS.map(([key])=>key),
-      weapon:trainingProficiencyOptions('weapon',current),
-      tool:trainingProficiencyOptions('tool',current),
-      unavailable:outside.proficiencies||[]};
-    const changes=restTrainingPatch(current,choice,selected,allowed);
+    const changes=proficiencyGrantPatch(current,model,selected,{
+      index:fresh.proficiency_catalog_overrides||{},unavailable:outside.proficiencies||[]
+    });
     target.disabled=true;
     try{
       await patch(changes);
@@ -9718,7 +9719,7 @@ async function handleAction(target){
       closeDialog(dialog,{remove:true});await render();
     }catch(error){
       target.disabled=false;
-      const errorView=dialog.querySelector('[data-rest-training-error]');
+      const errorView=dialog.querySelector('[data-proficiency-grant-error]');
       errorView.hidden=false;errorView.textContent=errorMessage(error);
     }
     return;

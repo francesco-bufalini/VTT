@@ -74,12 +74,17 @@ function optionPool(kind,record,index){
 }
 const simpleTrainingWeapons=['club','dagger','greatclub','handaxe','javelin','light hammer',
  'mace','quarterstaff','sickle','spear','light crossbow','dart','shortbow','sling'];
-export function trainingProficiencyOptions(kind,record={},index={}){
- if(!['skill','weapon','tool'].includes(kind))return [];
+export function selectableProficiencyOptions(kind,record={},index={}){
+ if(!kindFields.includes(kind))return [];
  const options=optionPool(kind,record,index);
  if(kind==='weapon')options.push(...simpleTrainingWeapons);
- return unique(options).filter(key=>!['simple','martial','all'].includes(key))
+ return unique(options).filter(key=>kind!=='weapon'||!['simple','martial','all'].includes(key))
    .sort((a,b)=>a.localeCompare(b,'it'));
+}
+// Compatibility API for existing skill/weapon/tool training consumers.
+export function trainingProficiencyOptions(kind,record={},index={}){
+ return ['skill','weapon','tool'].includes(kind)?
+  selectableProficiencyOptions(kind,record,index):[];
 }
 function allowedByRule(kind,data,key,record,index){
  const choose=data?.choose;

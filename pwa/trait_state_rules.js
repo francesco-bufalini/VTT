@@ -116,6 +116,10 @@ export function powerRestSelections(record={},calculated={}){
  for(const choice of arr(calculated.racial_rest_choices))
    if(arr(calculated.features).some(f=>f.origin_id===choice.origin_id&&enabled(record,f)))
      add(choice.group,choice.trait,choice.recovery);
+ // Proficiency grants keep their selected benefits until the player replaces
+ // them. Their declared rest trigger is guidance, like option_grant stages.
+ for(const grant of arr(calculated.proficiency_grants))
+   add(grant.id,grant.title,grant.trigger);
  // Generic applied capability selections are rest-changeable without a
  // special trait-state rule or a resource tracker.
  for(const model of arr(calculated.selection_models)){
@@ -139,14 +143,7 @@ export function powerRestChoicePatch(record={},event='',calculated={}){
  if(!groups.length)return {};
  const ready={...(record.rest_selection_available||{})};
  for(const group of groups)ready[group.id]=true;
- const expired=new Set(arr(calculated.racial_rest_choices)
-   .filter(choice=>choice.kind==='training'&&groups.some(row=>row.id===choice.group))
-   .map(choice=>choice.group));
- // Training grants expire after the next eligible rest; never silently
- // retain proficiencies from a previous trance after their expiry.
- return {rest_selection_available:ready,
-   ...(expired.size?{proficiency_choices:arr(record.proficiency_choices).filter(row=>
-     !expired.has(row?.rest_training_group))}:{})};
+ return {rest_selection_available:ready};
 }
 export function traitStateActions(record={},features=[],catalog=[]) {
   return arr(catalog).flatMap(rule=>{
