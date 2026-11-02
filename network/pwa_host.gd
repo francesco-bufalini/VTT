@@ -173,7 +173,6 @@ const FILES := {
 	"/benefits/scaling_die.json": ["res://vtt/enrichment/benefits/scaling_die.json", "application/json; charset=utf-8"],
 	"/catalog/effect_extensions.json": ["res://pwa/catalog/effect_extensions.json", "application/json; charset=utf-8"],
 	"/benefits/effect_extension.json": ["res://vtt/enrichment/benefits/effect_extension.json", "application/json; charset=utf-8"],
-	"/catalog/species_types.json": ["res://pwa/catalog/species_types.json", "application/json; charset=utf-8"],
 	"/benefits/attack.json": ["res://vtt/enrichment/benefits/attack.json", "application/json; charset=utf-8"],
 	"/benefits/movement.json": ["res://vtt/enrichment/benefits/movement.json", "application/json; charset=utf-8"],
 	
