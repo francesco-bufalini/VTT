@@ -60,3 +60,46 @@ test('numeric sheet rules never request the full spell compendium',async()=>{
     globalThis.fetch=originalFetch;
   }
 });
+
+test('typed option lists avoid fetching the duplicate legacy catalog, with an old-host fallback',async()=>{
+  const {readFileSync}=await import('node:fs');
+  const {loadRuleCatalogs,clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
+  const read=rel=>JSON.parse(readFileSync(new URL(rel,import.meta.url),'utf8'));
+  const optionGrants=read('../../vtt/enrichment/benefits/option_grant.json');
+  const optionLists=read('../../vtt/enrichment/benefits/option_list.json');
+  const legacyOptions=read('../catalog/optional_feature_progressions.json');
+  const originalFetch=globalThis.fetch;
+  try{
+    for(const modern of [true,false]){
+      const calls=[];
+      clearLocalRuleCatalogCache();
+      globalThis.fetch=async path=>{
+        calls.push(path);
+        const catalogs={
+          '/benefits/option_grant.json':modern?optionGrants:{},
+          '/benefits/option_list.json':modern?optionLists:{},
+          '/catalog/optional_feature_progressions.json':legacyOptions
+        };
+        const data=Object.hasOwn(catalogs,path)?catalogs[path]:
+          path==='/catalog/class_mechanics.json'?{legacy_spells:[]}:
+          path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
+          path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
+          path==='/catalog/trait_states.json'?{version:1,states:[]}:
+          path==='/catalog/benefits/action.json'?{schema_version:2,benefit_type:'action',scope:'catalog',entries:[]}:
+          /^\\/benefits\\/(roll_mode|roll_bonus|attack|movement|resource)\\.json$/.test(path)?
+            {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
+        return new Response(JSON.stringify(data),{status:200});
+      };
+      const result=await loadRuleCatalogs();
+      assert.equal(result.optionLists.entries.length,modern?272:0);
+      assert.equal(result.optionalFeatureProgressions.options.length,modern?0:272);
+      assert.equal(calls.includes('/catalog/optional_feature_progressions.json'),!modern,
+        'Skip the old 272-option download only when the typed catalog is available');
+      assert.equal(calls.filter(path=>path==='/benefits/option_list.json').length,1);
+      assert.equal(calls.filter(path=>path==='/benefits/option_grant.json').length,1);
+    }
+  }finally{
+    clearLocalRuleCatalogCache();
+    globalThis.fetch=originalFetch;
+  }
+});
