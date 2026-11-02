@@ -1862,7 +1862,7 @@ export function loadRuleCatalogs(){
     const supported=new Set(listedOptions.flatMap(option=>Array.isArray(option.types)?option.types:[]));
     // 272 is the audited migrated 5eTools optional-feature inventory. A
     // partial static update must use the legacy catalog for missing options.
-    const complete=listedOptions.length>=272&&new Set(listedOptions.map(option=>option.id)).size===listedOptions.length;
+    const complete=entries.length>=275&&listedOptions.length>=272&&new Set(listedOptions.map(option=>option.id)).size===listedOptions.length;
     if(grants?.benefit_type==='option_grant'&&lists?.benefit_type==='option_list'&&
       complete&&sources.length&&sources.every(source=>source.feature_types.every(type=>supported.has(type))))
       return {progressions:[],options:[]};

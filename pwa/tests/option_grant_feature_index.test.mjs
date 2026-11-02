@@ -59,8 +59,9 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
  }));
  // The catalog source report is intentionally preserved even if upstream
  // 5eTools does not currently contain a source, so that omissions are visible.
- assert.equal(grants.entries.length,44);
- const children=grants.entries.filter(entry=>entry.benefit.option_grant.nested);
+ const originals=grants.entries.filter(entry=>!entry.benefit.option_grant.compatibility?.supplement_only);
+ assert.equal(originals.length,44);
+ const children=originals.filter(entry=>entry.benefit.option_grant.nested);
  assert.equal(children.length,4);
  for(const child of children){
   const refs=lists.entries.flatMap(entry=>entry.benefit.option_list?.options||[])

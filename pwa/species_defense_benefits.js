@@ -7,7 +7,7 @@ export function speciesDefensesFromBenefits(catalog={},flavours={}){
   return {version:1,races:[],load_error:true};
  const index=new Map(),get=(name,source,id)=>{
   const key=low(name)+'|'+low(source);
-  if(!index.has(key))index.set(key,{id:id||'5etools:races:'+low(source)+':'+encodeURIComponent(low(name)),name,source,entries:[],choices:[],trait_details:[]});
+  if(!index.has(key))index.set(key,{id:id||'5etools:races:'+low(source)+':'+encodeURIComponent(low(name)).replace(/[()]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase()),name,source,entries:[],choices:[],trait_details:[]});
   return index.get(key);
  };
  const describe=(r,trait,entries)=>{

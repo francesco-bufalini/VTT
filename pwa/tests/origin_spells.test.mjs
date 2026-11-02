@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {spellGrantRulesFromBenefits} from '../spell_grant_benefits.js';
 import {structuredSpellGrants,originChoiceMatches,applyOriginSpellChoice,originSpellId,sessionSpellEntries} from '../spell_selection.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {spellCastPlan} from '../native_sheet.js';
@@ -172,7 +173,8 @@ test('a separate racial casting benefit binds to its own named trait',()=>{
 });
 
 test('Wind Caller can spend its daily tracker OR an ordinary/Pact slot without duplicated spells',()=>{
- const rules=JSON.parse(readFileSync(new URL('../catalog/spell_grant_rules.json',import.meta.url),'utf8')).rules;
+ const optionGrants=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_grant.json',import.meta.url),'utf8'));
+ const rules=spellGrantRulesFromBenefits(optionGrants);
  const speciesId='5etools:races:mpmm:aarakocra';
  const owner='feature:wind_caller';
  const c=record({species:'Aarakocra',species_source:'MPMM',species_id:speciesId,level:3,
@@ -210,11 +212,12 @@ test('Wind Caller can spend its daily tracker OR an ordinary/Pact slot without d
 });
 
 test('MPMM Aasimar Light Bearer is a Charisma cantrip and never spends spell slots',()=>{
- const rules=JSON.parse(readFileSync(new URL('../catalog/spell_grant_rules.json',import.meta.url),'utf8')).rules;
+ const optionGrants=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_grant.json',import.meta.url),'utf8'));
+ const rules=spellGrantRulesFromBenefits(optionGrants);
  const creature=record({species:'Aasimar',species_source:'MPMM',
    species_id:'5etools:races:mpmm:aasimar',
    spellcasting_section_abilities:{}});
- const derived=calculateSheet(creature,{classMechanics:mechanics,spells,spellGrantRules:rules});
+ const derived=calculateSheet(creature,{classMechanics:mechanics,spells,optionGrants});
  const light=derived.origin_spells.find(grant=>grant.spell_id==='phb2014_light');
  assert(light,'Light Bearer grant exists');
  assert.equal(light.cantrip,true);

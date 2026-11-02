@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 import {dragonbornFtdProfile,dragonbornFtdChoice,dragonbornFtdSaveChoice,
   dragonbornFtdProjection,dragonbornFtdResistances} from '../dragonborn_ftd.js';
 import {selectedSpeciesDefenseRules} from '../species_defenses.js';
+import {speciesDefensesFromBenefits} from '../species_defense_benefits.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
@@ -13,7 +14,8 @@ import {persistentBattleAbility} from '../sheet_rules_view.js';
 import {abilityAreaPolygon,pointInAbilityArea,abilityAreaPreview} from '../ability_areas.js';
 
 const powers=speciesPowerTestIndex();
-const defenses=JSON.parse(readFileSync(new URL('../catalog/species_defenses.json',import.meta.url),'utf8'));
+const typed=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
+const defenses=speciesDefensesFromBenefits(typed('../../vtt/enrichment/benefits/defense.json'),typed('../../vtt/enrichment/benefits/flavours.json'));
 const base={kind:'character',rules_version:'2014',level:5,
  abilities:{str:12,dex:12,con:16,int:10,wis:10,cha:10},
  resource_tracker_spent:{},active_class_features:{}};

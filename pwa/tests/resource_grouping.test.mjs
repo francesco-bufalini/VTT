@@ -91,11 +91,10 @@ test('Lightning Launcher remains a concrete attack; its extra-damage tracker is 
   assert(strike,'The attack belongs to the Attacchi table');
   assert(strike.querySelector('.vtt-action-glyph'));
   assert.equal(app.querySelector('[data-battle-action="resources"] [data-attack-id="class_feature:lightning_launcher"]'),null);
-  const attack=abilities.find(row=>row.roll_attack?.id==='class_feature:lightning_launcher');
-  assert(attack,'The generic calculated attack powers the attack action');
-  assert.equal(attack.resource_cost,0);
-  assert.equal(attack.tracker_id,'');
-  assert.equal(abilityAttackRoll(attack,calculated).target,'attack_hit:class_feature:lightning_launcher');
+  assert(!abilities.some(row=>row.roll_attack?.id==='class_feature:lightning_launcher'),
+   'The attack is rendered directly in Attacchi rather than duplicated as an ability');
+  assert.equal(abilityAttackRoll({name:'Lightning Launcher',roll_attack:{kind:'attack',id:'class_feature:lightning_launcher'}},calculated).target,
+   'attack_hit:class_feature:lightning_launcher');
  });
  const lost=project({...record,inventory:[]},true);
  assert(!lost.attacks.some(row=>row.id==='class_feature:lightning_launcher'));

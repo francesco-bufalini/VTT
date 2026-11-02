@@ -183,10 +183,12 @@ test("PHB 2014 supplemental feat grants are generated from native data",async()=
 
 test("2014 Tavern Brawler grants improvised weapon training using typed proficiency catalog",async()=>{
  const {readFileSync}=await import("node:fs");
- const native=JSON.parse(readFileSync(new URL("../../vtt/data/feat_proficiency_bonuses_2014.json",import.meta.url)));
+ const native=JSON.parse(readFileSync(new URL("../../vtt/enrichment/benefits/proficiency_grant.json",import.meta.url)));
  const packaged=proficiencyTestIndex();
  const rule=packaged.feat.find(f=>f.name==="Tavern Brawler"&&f.source==="PHB");
- assert.deepEqual(rule,native.feats[0]);
+ const migrated=native.entries.find(e=>e.granted_by?.ref?.category==="feat"&&e.granted_by.ref.name==="Tavern Brawler"&&e.granted_by.ref.source==="PHB");
+ assert(migrated);
+ assert.deepEqual(rule.weaponProficiencies,migrated.benefit.proficiency_grant.source_rules.stages[0].fields.weaponProficiencies);
  const base={...fighter(5),hand_main_special:"improvised"};
  const trained={...base,feats_catalog:[{name:"Tavern Brawler",source:"PHB"}]};
  const catalogs={...catalog,proficiencyGrants:packaged};

@@ -4,12 +4,13 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {racialPowerProjection,endTemporaryConditionPatch} from '../species_powers.js';
 import {structuredSpellGrants,sessionSpellEntries} from '../spell_selection.js';
+import {spellGrantRulesFromBenefits} from '../spell_grant_benefits.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {recoveryPatch} from '../native_sheet.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const powers=speciesPowerTestIndex();
-const spellRules=read('../catalog/spell_grant_rules.json').rules;
+const spellRules=spellGrantRulesFromBenefits(read('../../vtt/enrichment/benefits/option_grant.json'));
 const rawRaces=read('../../vtt/data/creature_references_5etools.json').races;
 const base={kind:'character',rules_version:'2014',level:5,
  abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},inventory:[]};

@@ -83,8 +83,10 @@ test('feat with chosen ability migrates without double-counting old score alloca
 });
 test('all flavour grants reference an existing flavour, not the original trait',()=>{
  const ids=new Set(catalogs.flavours.entries.flatMap(e=>e.flavours.map(f=>f.id)));
- for(const catalog of [catalogs.flavourBonuses,catalogs.flavourDefenses,catalogs.flavourFeatGrants,
- {entries:catalogs.proficiencyGrantBenefits.entries.filter(e=>e.granted_by?.kind==='flavour')}])
+ for(const catalog of [catalogs.flavourFeatGrants,
+ ...[catalogs.flavourBonuses,catalogs.flavourDefenses,catalogs.proficiencyGrantBenefits].map(c=>({
+  entries:c.entries.filter(e=>e.granted_by?.kind==='flavour')
+ }))])
   for(const entry of catalog.entries){
    assert.equal(entry.granted_by.kind,'flavour');
    assert(ids.has(entry.granted_by.ref.id),entry.id);
