@@ -6,7 +6,9 @@ import {traitStateSource} from './trait_state_rules.js';
 const rows=v=>Array.isArray(v)?v:[];
 const low=v=>String(v??'').trim().toLowerCase();
 const identity=v=>typeof v==='string'?v:v?.id;
-export const POWER_SELECTION_TRIGGERS={level_up:'Passaggio di livello',short_rest:'Riposo breve',long_rest:'Riposo lungo'};
+export const POWER_SELECTION_TRIGGERS={level_up:'Passaggio di livello',short_rest:'Riposo breve',long_rest:'Riposo lungo',action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento'};
+export const OPTION_GRANT_ACTION_TYPES=Object.freeze(['action','bonus','reaction','free','movement']);
+export const optionGrantActionTrigger=model=>OPTION_GRANT_ACTION_TYPES.includes(String(model?.layers?.applied?.trigger||''));
 export const powerSelectionTriggerLabel=v=>Array.isArray(v)?v.map(powerSelectionTriggerLabel).join(' / '):POWER_SELECTION_TRIGGERS[v]||v||'';
 export function powerSelectionLimit(spec,level){
  if(spec==null)return null;if(typeof spec==='number')return spec;
@@ -186,6 +188,9 @@ export function powerSelectionModels(raw={},calculated={},catalog={}){
    benefit_type:rule.benefit_type||'option_selection',
    source_type:'option_catalog',ui:'generic',options,layers,level,fixed,
    origin_id:binding?'item-instance:'+binding.target_item_id:origin,source_origin_id:origin,required};
+  if(optionGrantActionTrigger(model)&&(!model.activation_action?.id||
+    model.activation_action.action_type!==model.layers.applied.trigger))
+   throw Error('Azione di applicazione non definita per '+model.id);
   models.push(model);
   for(const applied of [...rows(model.layers.applied?.selected),...rows(model.fixed)]){
    const selectedOption=model.options.find(option=>option.id===identity(applied));
@@ -272,13 +277,18 @@ export function powerSelectionPatch(raw,calculated,catalog,id,stage,optionId,det
  let value=optionId;
  if(option.subchoices){const names=rows(details).map(v=>String(v).trim());if(names.length!==option.subchoices.count||new Set(names.map(low)).size!==names.length||names.some(n=>!n||n.length>70||/[<>{}]/.test(n))||rows(option.subchoices.options).length&&names.some(n=>!option.subchoices.options.some(o=>o.id===n)))throw Error('Specifica tutte le sotto-opzioni richieste, senza duplicati.');value={id:optionId,subchoices:names};}
  record.power_selections={...record.power_selections,[id]:{...record.power_selections?.[id],[stage]:exists&&!updating?old.filter(row=>identity(row)!==optionId):[...old.filter(row=>identity(row)!==optionId&&(!option.choice_slot||model.options.find(o=>o.id===identity(row))?.choice_slot!==option.choice_slot)),value]}};
+ if(exists&&!updating&&optionGrantActionTrigger(model)&&rows(record.power_applications?.[id]).some(row=>row.id===optionId))
+  throw Error('Disattiva la capacità tramite la sua azione prima di rimuoverla.');
  if(exists&&!updating)record.power_applications={...record.power_applications,[id]:rows(record.power_applications?.[id]).filter(row=>row.id!==optionId)};
  return statePatch({...record,inventory:projectSelectionBenefits(record,{powerSelections:catalog,optionalFeatureProgressions:catalog.optionalFeatureProgressions},calculated.features||[]).inventory});
 }
 export function powerSelectionTargets(record,model,option){const target=model?.layers.applied?.target;if(!target)return [];const selector=target.selector==='option.item_selector'?option.item_selector||{}:target;return targetableInventoryItems(record,selector,item=>!item.disabled&&(!target.slot||rows(item.equipped_slots).includes(target.slot)));}
-export function powerApplicationPatch(raw,calculated,catalog,id,optionId,apply,{itemIndex=-1,effectChoice={}}={}){
+export function powerApplicationPatch(raw,calculated,catalog,id,optionId,apply,{itemIndex=-1,effectChoice={},viaAction=false}={}){
  const record=structuredClone(normalizeSelectionRecord(raw,catalog)),model=powerSelectionModels(record,calculated,catalog).find(m=>m.id===id),option=model?.options.find(o=>o.id===optionId),layer=model?.layers.applied;
  if(!option||!layer)throw Error('Applicazione non disponibile.');
+ if(optionGrantActionTrigger(model)&&(!viaAction||!model.activation_action?.id||
+   model.activation_action.action_type!==layer.trigger))
+  throw Error('Questa capacità si applica e disattiva soltanto usando la sua azione.');
  if(layer.automatic)throw Error('Applicazione automatica dalla conoscenza.');
  const old=rows(record.power_applications?.[id]),exists=old.some(row=>row.id===optionId);
  if(apply&&exists&&!layer.target)throw Error('Potere già applicato.');

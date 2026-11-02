@@ -311,21 +311,27 @@ Restano in attesa di migrazione dedicata `Potent Dragonmark` EFA (la caratterist
 Dragonmark) e il talento `Ability Score Improvement` XPHB (possiede due
 varianti di distribuzione dei punteggi, distinte dall'ASI di classe).
 
-## Beneficio state_activation: attivazione degli Stati
+## Applicazione tramite azioni di option_grant
 
-`state_activation.json` definisce **soltanto** attivazione e disattivazione
-di uno Stato passivo identificato da `state_id`: `mode` (`toggle`,
-`activate`, `deactivate`), economia di azione (`activation` e
-`deactivation`) e facoltativamente `resource.id` / `resource.cost`.
-Il costo si applica esclusivamente durante l'attivazione e fa riferimento
-a un tracker già concesso da `resource.json`, senza crearne uno nuovo.
+Le opzioni definite in `option_list.json` concedono benefici tramite i propri
+`effects[]`. Le capacità passive applicate creano un tratto visualizzato fra
+gli Stati, oppure estendono il tratto dell'oggetto destinatario; i benefici
+sono attribuiti a quel tratto, non a una nuova classe di beneficio `state`.
 
-Le definizioni degli Stati e i benefici che questi applicano rimangono
-separati. `trigger` è informazione contestuale, non un esecutore automatico
-di eventi. La PWA integra queste voci nei propri Stati di classe/sottoclasse
-esistenti; gli ID salvati restano invariati. Il catalogo parte vuoto:
-le scelte permanenti come i Totem non vengono trasformate arbitrariamente
-in attivazioni gratuite.
+Un `option_grant` con `layers.applied.trigger` pari a `action`, `bonus`,
+`reaction`, `free` o `movement` deve dichiarare `activation_action`.
+Questa azione compare nelle Azioni. Non è possibile applicare o disattivare
+manualmente un'opzione di questo tipo attraverso la GUI di Poteri, Stati o
+Inventario: l'azione avvia la selezione, conferma il bersaglio e modifica
+l'applicazione utilizzando la stessa proiezione dei benefici delle altre opzioni.
+
+Arcane Armor è ora un `option_grant` con trigger di un'azione e una sola
+opzione, applicata all'armatura scelta; la disattivazione dell'azione ritira
+gli effetti sull'oggetto. Gli altri trigger di riposo/livello rimangono
+invariati. `state` e `state_activation` non sono più benefici canonici.
+
+La lettura transitoria di `pwa/catalog/trait_states.json` resta per i
+vecchi tratti non ancora migrati alle opzioni, senza nuovi tipi di beneficio.
 
 ### Talento Resilient (2014/2024)
 

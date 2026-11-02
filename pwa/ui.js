@@ -52,7 +52,7 @@ import {preparePortraitImage,prepareMiniaturePortrait} from './character_portrai
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {armorClassBaseFormula} from './armor_class_formula.js';
 import {traitStateActivationPatch,powerRestSelections,selectionRestLabel} from './trait_state_rules.js';
-import {powerSelectionModels,powerSelectionTargets,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerStateActivationPatch} from './power_selection.js';
+import {powerSelectionModels,powerSelectionTargets,powerSelectionPatch,powerApplicationPatch,powerSelectionCustomPatch,powerStateActivationPatch,optionGrantActionTrigger} from './power_selection.js';
 import {claimFeatureItemPatch,featureItemPowers,featureItemGrants} from './feature_item_grants.js';
 import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,useStoredSpellPatch,storedSpellExtension,storedSpellMaxUses} from './spell_storing_item.js';
 import {eligibleSpellImprintItems,eligibleSpellImprintSpells,storeSpellImprintPatch,useSpellImprintPatch,spellImprintExtension,spellImprintAtItem,spellImprintActive} from './spell_imprints.js';
@@ -3364,12 +3364,15 @@ async function benefitOptionDescription(option){
  const detail=await detailedEntry(ref.category,{name:ref.name,source:ref.source,_category:ref.category});
  return flattenDescription(detail)||option.description||'';
 }
-async function openBenefitOptionDialog(selectionId,optionId){
+async function openBenefitOptionDialog(selectionId,optionId,{viaAction=false}={}){
  const record=state.editor?.read();if(!record)throw Error('Apri prima una creatura.');
  const calculated=await computeLocalData(record),model=calculated.power_selections.find(row=>row.id===selectionId);
  const option=model?.options.find(row=>row.id===optionId);
  if(!option)throw Error('Opzione non disponibile.');
  const layer=model.layers.applied,target=layer?.target;
+ const actionTriggered=optionGrantActionTrigger(model);
+ if(viaAction&&(!actionTriggered||!model.activation_action?.id))throw Error('Azione di applicazione non disponibile.');
+ const manualControls=!actionTriggered||viaAction;
  const prerequisite=model.layers.prepared||model.layers.learned;
  const known=!prerequisite||prerequisite.selected.some(row=>selectedPowerId(row)===optionId);
  const applications=(layer?.selected||[]).filter(row=>selectedPowerId(row)===optionId).map(row=>{const index=(record.inventory||[]).findIndex(item=>(item.instance_id||item.id)===row.target_item_id);return {...(typeof row==='string'?{id:row}:row),inventory_index:index,target_name:record.inventory?.[index]?.name};});
@@ -3379,6 +3382,7 @@ async function openBenefitOptionDialog(selectionId,optionId){
  const dialog=document.createElement('dialog');dialog.id='benefit-option-dialog';
  dialog.className='sheet-roll-dialog magic-spell-dialog benefit-option-dialog';
  dialog.dataset.powerSelectionId=selectionId;dialog.dataset.powerOptionId=optionId;
+ dialog.dataset.viaOptionAction=String(viaAction&&actionTriggered);
  dialog.dataset.creatureId=record.id;dialog.dataset.benefitType=model.benefit_type;dialog.dataset.selectedItem='';dialog.dataset.selectedCatalogIndex='';
  const facts=[{label:'Stato',value:active?'Applicata':known?'Conosciuta':'Da imparare'},
   ...(option.min_level?[{label:'Livello richiesto',value:String(option.min_level)}]:[]),
@@ -3388,19 +3392,19 @@ async function openBenefitOptionDialog(selectionId,optionId){
   ...(option.numeric_grants||[]).map(row=>row.trait||row.id)];
  dialog.innerHTML=actionDialogIntro(option.name,facts,description||'Descrizione non disponibile nel catalogo.',model.title,'benefit-option-close')+
   (benefits.length?'<section class="infusion-dialog-active"><h3>Benefici</h3>'+benefits.map(name=>'<p>'+esc(name)+'</p>').join('')+'</section>':'')+
-  (applications.length&&target?'<section class="infusion-dialog-active"><h3>Applicazioni attive</h3>'+applications.map(row=>
+  (applications.length&&target&&manualControls?'<section class="infusion-dialog-active"><h3>Applicazioni attive</h3>'+applications.map(row=>
     '<div class="infusion-dialog-item"><span>'+esc(row.target_name||'Applicazione attiva')+'</span><button type="button" class="btn" '+
     'data-act="benefit-option-remove" data-index="'+(row.inventory_index??-1)+'">Disattiva</button></div>').join('')+'</section>':'')+
-  (known&&target?'<label class="vtt-list-search inventory-global-search benefit-target-search"><input type="search" data-benefit-target-search '+
+  (known&&target&&manualControls?'<label class="vtt-list-search inventory-global-search benefit-target-search"><input type="search" data-benefit-target-search '+
     'aria-label="'+esc(target.label||'Oggetto compatibile')+'" placeholder="'+esc(target.label||'Oggetto compatibile')+'" autocomplete="off"></label>'+
     '<div class="inventory-search-results vtt-selection-list benefit-target-results" role="list"></div>':'')+
   (known&&option.effect_choice?'<label>'+esc(option.effect_choice.label||'Scelta effetto')+'<select data-benefit-effect>'+option.effect_choice.options.map(value=>
    '<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>':'')+
   '<p class="hint" data-benefit-error role="status" hidden></p><div class="actions magic-dialog-actions">'+
-  (known&&layer&&!layer.automatic?'<button type="button" class="btn primary" data-act="benefit-option-apply"'+(target?' disabled':'')+'>'+
+  (known&&layer&&!layer.automatic&&manualControls?'<button type="button" class="btn primary" data-act="benefit-option-apply"'+(target?' disabled':'')+'>'+
    (active&&!target?'Disattiva':'Applica')+'</button>':'')+
   '<button type="button" class="btn" data-act="benefit-option-close">Chiudi</button></div>';
- if(known&&target){
+ if(known&&target&&manualControls){
   const input=dialog.querySelector('[data-benefit-target-search]'),results=dialog.querySelector('.benefit-target-results');
   const paint=()=>{
    const candidates=powerSelectionTargets(record,model,option).filter(({item})=>matchesSearch(input.value,item.name,item.source)).map(({item,index})=>({item,index}));
@@ -3417,6 +3421,30 @@ async function openBenefitOptionDialog(selectionId,optionId){
   input.addEventListener('input',paint);paint();
   if(target.allow_catalog)ensureInventorySearchCatalog();
  }
+ app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
+}
+
+// Action-bound option grants have no manual apply control in Powers.
+async function openOptionGrantActionDialog(record,calculated,ability){
+ const model=(calculated.power_selections||[]).find(row=>row.id===ability.option_grant_id);
+ if(!model||!optionGrantActionTrigger(model)||!model.activation_action?.id)
+  throw Error('Azione di applicazione non disponibile.');
+ const prerequisite=model.layers.prepared||model.layers.learned;
+ const active=new Set((model.layers.applied?.selected||[]).map(selectedPowerId));
+ const choices=model.options.filter(option=>
+  (!prerequisite||prerequisite.selected.some(row=>selectedPowerId(row)===option.id)||active.has(option.id))&&
+  (option.min_level<=model.level||active.has(option.id)));
+ if(!choices.length)throw Error('Nessuna opzione disponibile per questa azione.');
+ if(choices.length===1)return openBenefitOptionDialog(model.id,choices[0].id,{viaAction:true});
+ app.querySelector('#option-grant-action-dialog')?.remove();
+ const dialog=document.createElement('dialog');dialog.id='option-grant-action-dialog';
+ dialog.className='sheet-roll-dialog magic-spell-dialog benefit-option-dialog';
+ dialog.dataset.creatureId=record.id;dialog.dataset.powerSelectionId=model.id;
+ dialog.innerHTML=actionDialogIntro(model.activation_action.name||model.title,
+  [{label:'Azione',value:model.layers.applied.change_label||model.layers.applied.trigger}],
+  model.activation_action.description||model.description||'',model.title,'option-grant-action-close')+
+  '<div class="benefit-option-list">'+choices.map(option=>'<button type="button" class="btn" data-act="option-grant-action-select" data-power-option-id="'+esc(option.id)+'">'+
+   esc(option.name||option.id)+(active.has(option.id)?' · Attiva':'')+'</button>').join('')+'</div>';
  app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});openDialog(dialog);
 }
 
@@ -7508,6 +7536,9 @@ async function handleAction(target){
     if(ability.available===false)throw Error('Requisiti di equipaggiamento non soddisfatti.');
     // Generic typed attack abilities open the same unified d20 popup as
     // ordinary weapons. No special-case code is needed for a specific race.
+    if(ability.option_grant_id){
+      await openOptionGrantActionDialog(c,calculated,ability);return;
+    }
     if(ability.mode==='spell_imprint'){
       await openSpellImprintDialog(c,calculated,ability);return;
     }
@@ -8963,6 +8994,10 @@ async function handleAction(target){
     const c=state.editor.read();
     if(trait.selection_id&&trait.option_id){
       const calculated=await computeLocalData(c);
+      const model=calculated.power_selections?.find(row=>row.id===trait.selection_id);
+      if(optionGrantActionTrigger(model)){
+        dismissTraitBenefitDialog();await openOptionGrantActionDialog(c,calculated,{option_grant_id:model.id});return;
+      }
       await patch(powerApplicationPatch(c,calculated,calculated.power_selection_catalog,
         trait.selection_id,trait.option_id,false));
       dismissTraitBenefitDialog();await render();return;
@@ -9730,6 +9765,19 @@ async function handleAction(target){
   if(act==='benefit-option-open'){
     await openBenefitOptionDialog(target.dataset.powerSelectionId,target.dataset.powerOptionId);return;
   }
+  if(act==='option-grant-action-close'){
+    closeDialog(app.querySelector('#option-grant-action-dialog'),{remove:true});return;
+  }
+  if(act==='option-grant-action-select'){
+    const dialog=app.querySelector('#option-grant-action-dialog'),record=state.editor?.read();
+    if(!dialog?.open||!record||record.id!==dialog.dataset.creatureId)throw Error('Riapri l’azione.');
+    const calculated=await computeLocalData(record),id=dialog.dataset.powerSelectionId;
+    const model=calculated.power_selections.find(row=>row.id===id);
+    if(!model||!optionGrantActionTrigger(model)||!model.options.some(row=>row.id===target.dataset.powerOptionId))
+      throw Error('Opzione non disponibile.');
+    closeDialog(dialog,{remove:true});
+    await openBenefitOptionDialog(id,target.dataset.powerOptionId,{viaAction:true});return;
+  }
   if(act==='benefit-option-close'){
     closeDialog(app.querySelector('#benefit-option-dialog'),{remove:true});return;
   }
@@ -9770,7 +9818,7 @@ async function handleAction(target){
       }
       const selection=option.effect_choice,value=dialog.querySelector('[data-benefit-effect]')?.value;
       const changes=powerApplicationPatch(current,calculated,calculated.power_selection_catalog,id,optionId,apply,
-        {itemIndex,effectChoice:selection?{[selection.key]:value}:{}});
+        {itemIndex,effectChoice:selection?{[selection.key]:value}:{},viaAction:dialog.dataset.viaOptionAction==='true'});
       if(state.editor?.read()?.id!==record.id)throw Error('La scheda è cambiata: riapri il beneficio.');
       await patch(changes);if(state.saveError)throw Error(state.saveError);await state.editor.flush();
       closeDialog(dialog,{remove:true});

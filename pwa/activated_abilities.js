@@ -76,6 +76,9 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   // Class capabilities are unlocked only by an actual structured trait. The
   // preexisting IDs remain stable for saved grants and Android interoperability.
   for(const feature of features){
+    // An action-triggered option grant owns the activation of this trait.
+    if(rows(projection.power_selections).some(model=>model.source_origin_id===feature.origin_id&&
+      ["action","bonus","reaction","free","movement"].includes(model.layers?.applied?.trigger)))continue;
     const parts=String(feature.origin_key||"").split("|");
     if(parts[0]!=="class"||parts.length<3)continue;
     const owner=parts[2];
@@ -189,5 +192,18 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
   for(const power of rows(projection.racial_abilities))
     add(power,'Specie · '+(creature.species||'')+' · '+(creature.species_source||''),
       power.origin_id||'');
+  // Action-triggered option grants appear in the regular battle action list.
+  for(const model of rows(projection.power_selections)){
+    const action=model.activation_action,trigger=model.layers?.applied?.trigger;
+    if(!action?.id||!["action","bonus","reaction","free","movement"].includes(trigger)||
+      action.action_type!==trigger)continue;
+    add({id:"option-grant-action:"+model.id,name:action.name||model.title,
+      mode:"option_grant_action",option_grant_id:model.id,
+      feature_id:model.source_origin_id,feature_name:model.title,
+      action_type:trigger,activation_mode:trigger,resource_cost:0,
+      description:action.description||model.description||""},
+      model.owner?.class_name?"Classe · "+model.owner.class_name:"Privilegio · "+model.title,
+      model.source_origin_id||"");
+  }
   return result.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||"")));
 }

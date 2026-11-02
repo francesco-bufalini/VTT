@@ -49,8 +49,6 @@
         "spell_selection",
         "spell_slot",
         "spellcasting",
-        "state",
-        "state_activation",
         "targeting",
         "temporary_hp",
         "tracker",
@@ -477,9 +475,6 @@
     },
     "option_list": {
       "$ref": "#/$defs/optionList"
-    },
-    "state_activation": {
-      "$ref": "#/$defs/stateActivation"
     },
     "proficiencies": {
       "type": "array",
@@ -3599,7 +3594,12 @@
                       "enum": [
                         "short_rest",
                         "long_rest",
-                        "level_up"
+                        "level_up",
+                        "action",
+                        "bonus",
+                        "reaction",
+                        "free",
+                        "movement"
                       ]
                     },
                     {
@@ -3831,6 +3831,35 @@
         "migration_group": {
           "type": "string",
           "description": "Supplemental source-family marker used only to distinguish migrated static bootstrap families; not a game mechanic."
+        },
+        "activation_action": {
+          "type": "object",
+          "required": [
+            "id",
+            "action_type"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string"
+            },
+            "action_type": {
+              "enum": [
+                "action",
+                "bonus",
+                "reaction",
+                "free",
+                "movement"
+              ]
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -3863,80 +3892,6 @@
             "spell",
             "capability"
           ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "stateActivation": {
-      "type": "object",
-      "description": "An action/trigger that activates or deactivates an existing passive State. Its effects are declared separately, and payments reference existing resources.",
-      "required": [
-        "state_id",
-        "mode",
-        "activation"
-      ],
-      "properties": {
-        "state_id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "mode": {
-          "enum": [
-            "toggle",
-            "activate",
-            "deactivate"
-          ]
-        },
-        "activation": {
-          "enum": [
-            "action",
-            "bonus",
-            "reaction",
-            "free",
-            "contextual",
-            "movement"
-          ]
-        },
-        "deactivation": {
-          "enum": [
-            "action",
-            "bonus",
-            "reaction",
-            "free",
-            "contextual",
-            "movement"
-          ]
-        },
-        "group": {
-          "type": "string",
-          "minLength": 1
-        },
-        "trigger": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Descriptive event or condition; not an automatic event executor."
-        },
-        "resource": {
-          "type": "object",
-          "required": [
-            "id",
-            "cost"
-          ],
-          "properties": {
-            "id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "name": {
-              "type": "string",
-              "minLength": 1
-            },
-            "cost": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          "additionalProperties": false
         }
       },
       "additionalProperties": false

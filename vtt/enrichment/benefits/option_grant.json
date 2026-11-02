@@ -40,7 +40,8 @@
           "layers": {
             "applied": {
               "limit": null,
-              "storage": "power_applications"
+              "storage": "power_applications",
+              "trigger": "action"
             }
           },
           "application": {
@@ -57,7 +58,13 @@
             }
           },
           "option_kind": "capability",
-          "migration_group": "power_selections"
+          "migration_group": "power_selections",
+          "activation_action": {
+            "id": "arcane_armor",
+            "name": "Arcane Armor",
+            "action_type": "action",
+            "description": "Con un’azione, applica Arcane Armor all'armatura indossata scelta. I suoi effetti rimangono fino alla disattivazione."
+          }
         }
       }
     },

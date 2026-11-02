@@ -840,7 +840,7 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
   seen.add(identity);
  }
  for(const ability of activated){
-  if(!String(ability.origin||'').startsWith('Classe ·')&&
+  if(!ability.option_grant_id&&!String(ability.origin||'').startsWith('Classe ·')&&
      !String(ability.origin||'').startsWith('Specie ·')&&
      !String(ability.feature_id||'').startsWith('feature:class|')&&
      !String(ability.feature_id||'').startsWith('feature:species|'))continue;
@@ -851,6 +851,7 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
   if(!name||seen.has(name))continue;
   result.push({id:'activated:'+ability.id,ability_id:ability.id,name:ability.name,
    description:ability.description||'',descriptive_only:ability.descriptive_only===true,
+    ...(ability.option_grant_id?{option_grant_id:ability.option_grant_id}:{}),
    time:raw==='contextual'?'contextual':timing(raw),type:'Capacità',
    origin:'personal',origin_id:ability.feature_id||ability.origin_id||'',
    tracker_id:String(ability.tracker_id||''),tracker:ability.tracker_name||ability.resource_name||'',
@@ -1034,7 +1035,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // Hide also exposes the ordinary Stealth check without inventing a new roll.
  for(const row of classAbilities.filter(row=>!arr(calculated.attacks).some(attack=>
    String(attack.id)===String(row.roll_attack?.id||row.attack_id||''))&&
-   (row.action_ref||String(row.id||'').startsWith('activated:')&&row.time==='reaction'))){
+   (row.action_ref||row.option_grant_id||String(row.id||'').startsWith('activated:')&&row.time==='reaction'))){
    if(specials.some(item=>item.id===row.id))continue;
    specials.push({...row,
      ...(row.action_ref==='hide'?{skill_ids:['stealth']}:{}),
