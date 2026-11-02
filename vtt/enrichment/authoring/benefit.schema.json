@@ -2846,17 +2846,42 @@
     "sense": {
       "type": "object",
       "required": [
-        "type"
+        "type",
+        "range_feet"
       ],
       "properties": {
         "type": {
-          "type": "string",
-          "description": "darkvision, blindsight, tremorsense, truesight, etc."
+          "enum": [
+            "darkvision",
+            "blindsight",
+            "tremorsense",
+            "truesight",
+            "devils_sight"
+          ],
+          "description": "Canonical sense (normal vision is inherent)."
         },
         "range_feet": {
-          "type": "number",
-          "description": "Feet",
-          "minimum": 0
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Sense range in feet."
+        },
+        "mode": {
+          "enum": [
+            "maximum",
+            "increase_if_existing"
+          ],
+          "description": "Increase_if_existing stacks with an existing sense, with a fallback."
+        },
+        "fallback_feet": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "choice_required": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required value of the origin sense choice (for Custom Lineage)."
         },
         "requirements": {
           "$ref": "#/$defs/requirements"

@@ -1,0 +1,1513 @@
+{
+  "source": "5etools-2014-src/data/races.json",
+  "units": "feet",
+  "races": [
+    {
+      "name": "Aarakocra",
+      "source": "DMG",
+      "senses": []
+    },
+    {
+      "name": "Aarakocra",
+      "source": "EEPC",
+      "senses": []
+    },
+    {
+      "name": "Aarakocra",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Aasimar",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Aasimar",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Aasimar",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Aetherborn",
+      "source": "PSK",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Astral Elf",
+      "source": "AAG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Autognome",
+      "source": "AAG",
+      "senses": []
+    },
+    {
+      "name": "Aven",
+      "source": "PSA",
+      "senses": []
+    },
+    {
+      "name": "Aven",
+      "source": "PSD",
+      "senses": []
+    },
+    {
+      "name": "Bugbear",
+      "source": "ERLW",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Bugbear",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Bugbear",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Bullywug",
+      "source": "DMG",
+      "senses": []
+    },
+    {
+      "name": "Centaur",
+      "source": "GGR",
+      "senses": []
+    },
+    {
+      "name": "Centaur",
+      "source": "MOT",
+      "senses": []
+    },
+    {
+      "name": "Centaur",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Changeling",
+      "source": "ERLW",
+      "senses": []
+    },
+    {
+      "name": "Changeling",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Custom Lineage",
+      "source": "TCE",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Deep Gnome",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Dhampir",
+      "source": "VRGR",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Dragonborn",
+      "source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Dragonborn (Chromatic)",
+      "source": "FTD",
+      "senses": []
+    },
+    {
+      "name": "Dragonborn (Gem)",
+      "source": "FTD",
+      "senses": []
+    },
+    {
+      "name": "Dragonborn (Metallic)",
+      "source": "FTD",
+      "senses": []
+    },
+    {
+      "name": "Duergar",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Dwarf",
+      "source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Dwarf (Kaladesh)",
+      "source": "PSK",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Eladrin",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Elf",
+      "source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Elf (Kaladesh)",
+      "source": "PSK",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Elf (Zendikar)",
+      "source": "PSZ",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Fairy",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Fairy",
+      "source": "WBtW",
+      "senses": []
+    },
+    {
+      "name": "Firbolg",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Firbolg",
+      "source": "VGM",
+      "senses": []
+    },
+    {
+      "name": "Genasi",
+      "source": "EEPC",
+      "senses": []
+    },
+    {
+      "name": "Genasi",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Giff",
+      "source": "AAG",
+      "senses": []
+    },
+    {
+      "name": "Gith",
+      "source": "MTF",
+      "senses": []
+    },
+    {
+      "name": "Githyanki",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Githzerai",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Gnoll",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Gnome",
+      "source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Gnome (Deep)",
+      "source": "DMG",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "ERLW",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "GGR",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "PSZ",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Goblin",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Goblin (Dankwood)",
+      "source": "AWM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Goliath",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Goliath",
+      "source": "VGM",
+      "senses": []
+    },
+    {
+      "name": "Grimlock",
+      "source": "DMG",
+      "senses": [
+        "blindsight:30"
+      ]
+    },
+    {
+      "name": "Grung",
+      "source": "OGA",
+      "senses": []
+    },
+    {
+      "name": "Hadozee",
+      "source": "AAG",
+      "senses": []
+    },
+    {
+      "name": "Half-Elf",
+      "source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Half-Orc",
+      "source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Halfling",
+      "source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Harengon",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Harengon",
+      "source": "WBtW",
+      "senses": []
+    },
+    {
+      "name": "Hexblood",
+      "source": "VRGR",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Hobgoblin",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Hobgoblin",
+      "source": "ERLW",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Hobgoblin",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Hobgoblin",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Human",
+      "source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Human (Innistrad)",
+      "source": "PSI",
+      "senses": []
+    },
+    {
+      "name": "Human (Ixalan)",
+      "source": "PSX",
+      "senses": []
+    },
+    {
+      "name": "Human (Kaladesh)",
+      "source": "PSK",
+      "senses": []
+    },
+    {
+      "name": "Human (Zendikar)",
+      "source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Kalashtar",
+      "source": "ERLW",
+      "senses": []
+    },
+    {
+      "name": "Kender",
+      "source": "DSotDQ",
+      "senses": []
+    },
+    {
+      "name": "Kenku",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Kenku",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Kenku",
+      "source": "VGM",
+      "senses": []
+    },
+    {
+      "name": "Khenra",
+      "source": "PSA",
+      "senses": []
+    },
+    {
+      "name": "Kobold",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Kobold",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Kobold",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Kor",
+      "source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Kuo-Toa",
+      "source": "DMG",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Leonin",
+      "source": "MOT",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Lizardfolk",
+      "source": "DMG",
+      "senses": []
+    },
+    {
+      "name": "Lizardfolk",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Lizardfolk",
+      "source": "VGM",
+      "senses": []
+    },
+    {
+      "name": "Locathah",
+      "source": "LR",
+      "senses": []
+    },
+    {
+      "name": "Loxodon",
+      "source": "GGR",
+      "senses": []
+    },
+    {
+      "name": "Merfolk",
+      "source": "DMG",
+      "senses": []
+    },
+    {
+      "name": "Merfolk",
+      "source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Minotaur",
+      "source": "GGR",
+      "senses": []
+    },
+    {
+      "name": "Minotaur",
+      "source": "MOT",
+      "senses": []
+    },
+    {
+      "name": "Minotaur",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Minotaur (Amonkhet)",
+      "source": "PSA",
+      "senses": []
+    },
+    {
+      "name": "Naga",
+      "source": "PSA",
+      "senses": []
+    },
+    {
+      "name": "Orc",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Orc",
+      "source": "EGW",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Orc",
+      "source": "ERLW",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Orc",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Orc",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Orc (Ixalan)",
+      "source": "PSX",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Owlin",
+      "source": "SCC",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Plasmoid",
+      "source": "AAG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Reborn",
+      "source": "VRGR",
+      "senses": []
+    },
+    {
+      "name": "Satyr",
+      "source": "MOT",
+      "senses": []
+    },
+    {
+      "name": "Satyr",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Sea Elf",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Shadar-Kai",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Shifter",
+      "source": "ERLW",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Shifter",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Simic Hybrid",
+      "source": "GGR",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Siren",
+      "source": "PSX",
+      "senses": []
+    },
+    {
+      "name": "Skeleton",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Tabaxi",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Tabaxi",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Thri-kreen",
+      "source": "AAG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Tiefling",
+      "source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Tortle",
+      "source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Tortle",
+      "source": "TTP",
+      "senses": []
+    },
+    {
+      "name": "Triton",
+      "source": "MOT",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Triton",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Triton",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Troglodyte",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Vampire",
+      "source": "PSZ",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Vedalken",
+      "source": "GGR",
+      "senses": []
+    },
+    {
+      "name": "Vedalken",
+      "source": "PSK",
+      "senses": []
+    },
+    {
+      "name": "Verdan",
+      "source": "AI",
+      "senses": []
+    },
+    {
+      "name": "Warforged",
+      "source": "ERLW",
+      "senses": []
+    },
+    {
+      "name": "Yuan-Ti",
+      "source": "MPMM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Yuan-ti Pureblood",
+      "source": "VGM",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Zombie",
+      "source": "DMG",
+      "senses": [
+        "darkvision:60"
+      ]
+    }
+  ],
+  "subraces": [
+    {
+      "name": "Amonkhet",
+      "source": "PSA",
+      "senses": []
+    },
+    {
+      "name": "Fallen",
+      "source": "VGM",
+      "race_name": "Aasimar",
+      "race_source": "VGM",
+      "senses": []
+    },
+    {
+      "name": "Protector",
+      "source": "VGM",
+      "race_name": "Aasimar",
+      "race_source": "VGM",
+      "senses": []
+    },
+    {
+      "name": "Scourge",
+      "source": "VGM",
+      "race_name": "Aasimar",
+      "race_source": "VGM",
+      "senses": []
+    },
+    {
+      "name": "Hawk-Headed",
+      "source": "PSA",
+      "race_name": "Aven",
+      "race_source": "PSA",
+      "senses": []
+    },
+    {
+      "name": "Ibis-Headed",
+      "source": "PSA",
+      "race_name": "Aven",
+      "race_source": "PSA",
+      "senses": []
+    },
+    {
+      "source": "PHB",
+      "race_name": "Dragonborn",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Draconblood",
+      "source": "EGW",
+      "race_name": "Dragonborn",
+      "race_source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Ravenite",
+      "source": "EGW",
+      "race_name": "Dragonborn",
+      "race_source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Duergar",
+      "source": "MTF",
+      "race_name": "Dwarf",
+      "race_source": "PHB",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Hill",
+      "source": "PHB",
+      "race_name": "Dwarf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Warding",
+      "source": "ERLW",
+      "race_name": "Dwarf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mountain",
+      "source": "PHB",
+      "race_name": "Dwarf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Drow",
+      "source": "PHB",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Eladrin",
+      "source": "DMG",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Eladrin",
+      "source": "MTF",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "High",
+      "source": "PHB",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Shadow",
+      "source": "ERLW",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Pallid",
+      "source": "EGW",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Sea",
+      "source": "MTF",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Shadar-kai",
+      "source": "MTF",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Wood",
+      "source": "PHB",
+      "race_name": "Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Bishatar and Tirahar",
+      "source": "PSK",
+      "race_name": "Elf (Kaladesh)",
+      "race_source": "PSK",
+      "senses": []
+    },
+    {
+      "name": "Vahadar",
+      "source": "PSK",
+      "race_name": "Elf (Kaladesh)",
+      "race_source": "PSK",
+      "senses": []
+    },
+    {
+      "name": "Joraga Nation",
+      "source": "PSZ",
+      "race_name": "Elf (Zendikar)",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Mul Daya Nation",
+      "source": "PSZ",
+      "race_name": "Elf (Zendikar)",
+      "race_source": "PSZ",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Tajuru Nation",
+      "source": "PSZ",
+      "race_name": "Elf (Zendikar)",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Air",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "senses": []
+    },
+    {
+      "name": "Earth",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "senses": []
+    },
+    {
+      "name": "Fire",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Water",
+      "source": "EEPC",
+      "race_name": "Genasi",
+      "race_source": "EEPC",
+      "senses": []
+    },
+    {
+      "name": "Air",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Earth",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Fire",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Water",
+      "source": "MPMM",
+      "race_name": "Genasi",
+      "race_source": "MPMM",
+      "senses": []
+    },
+    {
+      "name": "Githyanki",
+      "source": "MTF",
+      "race_name": "Gith",
+      "race_source": "MTF",
+      "senses": []
+    },
+    {
+      "name": "Githzerai",
+      "source": "MTF",
+      "race_name": "Gith",
+      "race_source": "MTF",
+      "senses": []
+    },
+    {
+      "name": "Deep",
+      "source": "MTF",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Deep/Svirfneblin",
+      "source": "SCAG",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "senses": [
+        "darkvision:120"
+      ]
+    },
+    {
+      "name": "Forest",
+      "source": "PHB",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Scribing",
+      "source": "ERLW",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Rock",
+      "source": "PHB",
+      "race_name": "Gnome",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Ixalan",
+      "source": "PSX",
+      "race_name": "Goblin",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Zendikar; Grotag Tribe",
+      "source": "PSZ",
+      "race_name": "Goblin",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Zendikar; Lavastep Tribe",
+      "source": "PSZ",
+      "race_name": "Goblin",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Zendikar; Tuktuk Tribe",
+      "source": "PSZ",
+      "race_name": "Goblin",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "source": "PHB",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Aquatic Elf Descent",
+      "source": "SCAG",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Drow Descent",
+      "source": "SCAG",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Mark of Detection",
+      "source": "ERLW",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Mark of Storm",
+      "source": "ERLW",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Moon Elf or Sun Elf Descent",
+      "source": "SCAG",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Wood Elf Descent",
+      "source": "SCAG",
+      "race_name": "Half-Elf",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "source": "PHB",
+      "race_name": "Half-Orc",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "race_name": "Half-Orc",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Ghostwise",
+      "source": "SCAG",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Lightfoot",
+      "source": "PHB",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Lotusden",
+      "source": "EGW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Healing",
+      "source": "ERLW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Hospitality",
+      "source": "ERLW",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Stout",
+      "source": "PHB",
+      "race_name": "Halfling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "source": "PHB",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Keldon",
+      "source": "PSD",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Handling",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Making",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Passage",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mark of Sentinel",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant",
+      "source": "PHB",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "race_name": "Human",
+      "race_source": "PHB",
+      "senses": [
+        "darkvision:60"
+      ]
+    },
+    {
+      "name": "Gavony",
+      "source": "PSI",
+      "race_name": "Human (Innistrad)",
+      "race_source": "PSI",
+      "senses": []
+    },
+    {
+      "name": "Kessig",
+      "source": "PSI",
+      "race_name": "Human (Innistrad)",
+      "race_source": "PSI",
+      "senses": []
+    },
+    {
+      "name": "Nephalia",
+      "source": "PSI",
+      "race_name": "Human (Innistrad)",
+      "race_source": "PSI",
+      "senses": []
+    },
+    {
+      "name": "Stensia",
+      "source": "PSI",
+      "race_name": "Human (Innistrad)",
+      "race_source": "PSI",
+      "senses": []
+    },
+    {
+      "name": "Ixalan; Blue",
+      "source": "PSX",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Ixalan; Green",
+      "source": "PSX",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Zendikar; Cosi Creed",
+      "source": "PSZ",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Zendikar; Emeria Creed",
+      "source": "PSZ",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Zendikar; Ula Creed",
+      "source": "PSZ",
+      "race_name": "Merfolk",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Beasthide",
+      "source": "ERLW",
+      "race_name": "Shifter",
+      "race_source": "ERLW",
+      "senses": []
+    },
+    {
+      "name": "Longtooth",
+      "source": "ERLW",
+      "race_name": "Shifter",
+      "race_source": "ERLW",
+      "senses": []
+    },
+    {
+      "name": "Swiftstride",
+      "source": "ERLW",
+      "race_name": "Shifter",
+      "race_source": "ERLW",
+      "senses": []
+    },
+    {
+      "name": "Wildhunt",
+      "source": "ERLW",
+      "race_name": "Shifter",
+      "race_source": "ERLW",
+      "senses": []
+    },
+    {
+      "source": "PHB",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Asmodeus",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Baalzebul",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Dispater",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Fierna",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Glasya",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Levistus",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mammon",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Mephistopheles",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Devil's Tongue",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Hellfire",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Infernal Legacy",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Variant; Winged",
+      "source": "SCAG",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Zariel",
+      "source": "MTF",
+      "race_name": "Tiefling",
+      "race_source": "PHB",
+      "senses": []
+    },
+    {
+      "name": "Ixalan",
+      "source": "PSX",
+      "race_name": "Vampire",
+      "race_source": "PSZ",
+      "senses": []
+    },
+    {
+      "name": "Zendikar",
+      "source": "PSZ",
+      "race_name": "Vampire",
+      "race_source": "PSZ",
+      "senses": []
+    }
+  ]
+}

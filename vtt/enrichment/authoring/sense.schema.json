@@ -26,11 +26,15 @@
               "benefit": {
                 "type": "object",
                 "required": [
-                  "type"
+                  "type",
+                  "sense"
                 ],
                 "properties": {
                   "type": {
                     "const": "sense"
+                  },
+                  "sense": {
+                    "$ref": "benefit.schema.json#/$defs/sense"
                   }
                 }
               }

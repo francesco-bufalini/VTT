@@ -1,0 +1,3215 @@
+{
+  "schema_version": 2,
+  "benefit_type": "sense",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "sense:species:dmg:aasimar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Aasimar",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:aasimar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:aasimar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Aasimar",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:aasimar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:aasimar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Aasimar",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:aasimar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:aasimar-fallen:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Aasimar (Fallen)",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:aasimar-fallen:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:aasimar-protector:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Aasimar (Protector)",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:aasimar-protector:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:aasimar-scourge:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Aasimar (Scourge)",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:aasimar-scourge:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psk:aetherborn:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSK",
+          "race": "Aetherborn",
+          "race_source": "PSK"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psk:aetherborn:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:aag:astral-elf:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "AAG",
+          "race": "Astral Elf",
+          "race_source": "AAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:aag:astral-elf:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:bugbear:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Bugbear",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:bugbear:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:bugbear:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Bugbear",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:bugbear:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:bugbear:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Bugbear",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:bugbear:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:tce:custom-lineage:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "TCE",
+          "race": "Custom Lineage",
+          "race_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:tce:custom-lineage:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60,
+          "choice_required": "darkvision"
+        }
+      }
+    },
+    {
+      "id": "sense:species:tce:custom-lineage-darkvision:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Variable Trait; Darkvision",
+          "source": "TCE",
+          "race": "Custom Lineage; Darkvision",
+          "race_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:tce:custom-lineage-darkvision:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:deep-gnome:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Deep Gnome",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:deep-gnome:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:vrgr:dhampir:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VRGR",
+          "race": "Dhampir",
+          "race_source": "VRGR"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vrgr:dhampir:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:egw:dragonborn-draconblood:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "EGW",
+          "race": "Dragonborn (Draconblood)",
+          "race_source": "EGW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:egw:dragonborn-draconblood:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:egw:dragonborn-ravenite:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "EGW",
+          "race": "Dragonborn (Ravenite)",
+          "race_source": "EGW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:egw:dragonborn-ravenite:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:duergar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Duergar",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:duergar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:dwarf:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Dwarf",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:dwarf:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:dwarf-duergar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "MTF",
+          "race": "Dwarf (Duergar)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:dwarf-duergar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:dwarf-hill:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Dwarf (Hill)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:dwarf-hill:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psk:dwarf-kaladesh:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSK",
+          "race": "Dwarf (Kaladesh)",
+          "race_source": "PSK"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psk:dwarf-kaladesh:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:dwarf-mark-of-warding:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Dwarf (Mark of Warding)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:dwarf-mark-of-warding:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:dwarf-mountain:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Dwarf (Mountain)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:dwarf-mountain:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:eladrin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Eladrin",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:eladrin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:elf:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Elf",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:elf:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:elf-drow:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "PHB",
+          "race": "Elf (Drow)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:elf-drow:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:elf-eladrin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Elf (Eladrin)",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:elf-eladrin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:elf-eladrin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Elf (Eladrin)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:elf-eladrin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:elf-high:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Elf (High)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:elf-high:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psk:elf-kaladesh:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSK",
+          "race": "Elf (Kaladesh)",
+          "race_source": "PSK"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psk:elf-kaladesh:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psk:elf-kaladesh-bishatar-and-tirahar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSK",
+          "race": "Elf (Kaladesh) (Bishatar and Tirahar)",
+          "race_source": "PSK"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psk:elf-kaladesh-bishatar-and-tirahar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psk:elf-kaladesh-vahadar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSK",
+          "race": "Elf (Kaladesh) (Vahadar)",
+          "race_source": "PSK"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psk:elf-kaladesh-vahadar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:elf-mark-of-shadow:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Elf (Mark of Shadow)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:elf-mark-of-shadow:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:egw:elf-pallid:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "EGW",
+          "race": "Elf (Pallid)",
+          "race_source": "EGW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:egw:elf-pallid:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:elf-sea:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Elf (Sea)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:elf-sea:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:elf-shadar-kai:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Elf (Shadar-kai)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:elf-shadar-kai:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:elf-wood:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Elf (Wood)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:elf-wood:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:elf-zendikar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Elf (Zendikar)",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:elf-zendikar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:elf-zendikar-joraga-nation:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Elf (Zendikar) (Joraga Nation)",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:elf-zendikar-joraga-nation:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:elf-zendikar-mul-daya-nation:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "PSZ",
+          "race": "Elf (Zendikar) (Mul Daya Nation)",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:elf-zendikar-mul-daya-nation:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:elf-zendikar-tajuru-nation:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Elf (Zendikar) (Tajuru Nation)",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:elf-zendikar-tajuru-nation:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:genasi:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Genasi",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:genasi:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:genasi-air:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Genasi (Air)",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:genasi-air:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:genasi-earth:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Genasi (Earth)",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:genasi-earth:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:eepc:genasi-fire:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "EEPC",
+          "race": "Genasi (Fire)",
+          "race_source": "EEPC"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:eepc:genasi-fire:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:genasi-fire:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Genasi (Fire)",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:genasi-fire:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:genasi-water:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Genasi (Water)",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:genasi-water:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:gnoll:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Gnoll",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:gnoll:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:gnome:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Gnome",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:gnome:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:gnome-deep:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "DMG",
+          "race": "Gnome (Deep)",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:gnome-deep:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:gnome-deep:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "MTF",
+          "race": "Gnome (Deep)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:gnome-deep:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:gnome-deep-svirfneblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "SCAG",
+          "race": "Gnome (Deep/Svirfneblin)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:gnome-deep-svirfneblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:gnome-forest:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Gnome (Forest)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:gnome-forest:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:gnome-mark-of-scribing:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Gnome (Mark of Scribing)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:gnome-mark-of-scribing:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:gnome-rock:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Gnome (Rock)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:gnome-rock:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:goblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Goblin",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:goblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:goblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Goblin",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:goblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:ggr:goblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "GGR",
+          "race": "Goblin",
+          "race_source": "GGR"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:ggr:goblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:goblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Goblin",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:goblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:goblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Goblin",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:goblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:goblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Goblin",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:goblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:awm:goblin-dankwood:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "AWM",
+          "race": "Goblin (Dankwood)",
+          "race_source": "AWM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:awm:goblin-dankwood:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psx:goblin-ixalan:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSX",
+          "race": "Goblin (Ixalan)",
+          "race_source": "PSX"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psx:goblin-ixalan:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:goblin-zendikar-grotag-tribe:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Grotag Tribe)",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:goblin-zendikar-grotag-tribe:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:goblin-zendikar-lavastep-tribe:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Lavastep Tribe)",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:goblin-zendikar-lavastep-tribe:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:goblin-zendikar-tuktuk-tribe:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Tuktuk Tribe)",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:goblin-zendikar-tuktuk-tribe:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:grimlock:blindsight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Blindsight",
+          "source": "DMG",
+          "race": "Grimlock",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:grimlock:blindsight",
+        "sense": {
+          "type": "blindsight",
+          "range_feet": 30
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:half-elf:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Half-Elf",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:half-elf:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:half-elf-undefined:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Half-Elf (undefined)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:half-elf-undefined:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:half-elf-variant-aquatic-elf-descent:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCAG",
+          "race": "Half-Elf (Variant; Aquatic Elf Descent)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:half-elf-variant-aquatic-elf-descent:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:half-elf-variant-drow-descent:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCAG",
+          "race": "Half-Elf (Variant; Drow Descent)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:half-elf-variant-drow-descent:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:half-elf-variant-mark-of-detection:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Half-Elf (Variant; Mark of Detection)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:half-elf-variant-mark-of-detection:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:half-elf-variant-mark-of-storm:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Half-Elf (Variant; Mark of Storm)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:half-elf-variant-mark-of-storm:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:half-elf-variant-moon-elf-or-sun-elf-descent:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCAG",
+          "race": "Half-Elf (Variant; Moon Elf or Sun Elf Descent)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:half-elf-variant-moon-elf-or-sun-elf-descent:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:half-elf-variant-wood-elf-descent:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCAG",
+          "race": "Half-Elf (Variant; Wood Elf Descent)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:half-elf-variant-wood-elf-descent:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:half-orc:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Half-Orc",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:half-orc:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:half-orc-undefined:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Half-Orc (undefined)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:half-orc-undefined:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:half-orc-variant-mark-of-finding:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Half-Orc (Variant; Mark of Finding)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:half-orc-variant-mark-of-finding:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vrgr:hexblood:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VRGR",
+          "race": "Hexblood",
+          "race_source": "VRGR"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vrgr:hexblood:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:hobgoblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Hobgoblin",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:hobgoblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:hobgoblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Hobgoblin",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:hobgoblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:hobgoblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Hobgoblin",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:hobgoblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:hobgoblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Hobgoblin",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:hobgoblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:human-variant-mark-of-finding:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Human (Variant; Mark of Finding)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:human-variant-mark-of-finding:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:kenku:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Kenku",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:kenku:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:kobold:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Kobold",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:kobold:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:kobold:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Kobold",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:kobold:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:kobold:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Kobold",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:kobold:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:kuo-toa:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "DMG",
+          "race": "Kuo-Toa",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:kuo-toa:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:mot:leonin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MOT",
+          "race": "Leonin",
+          "race_source": "MOT"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mot:leonin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:orc:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Orc",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:orc:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:egw:orc:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "EGW",
+          "race": "Orc",
+          "race_source": "EGW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:egw:orc:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:orc:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Orc",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:orc:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:orc:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Orc",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:orc:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:orc:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Orc",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:orc:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psx:orc-ixalan:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSX",
+          "race": "Orc (Ixalan)",
+          "race_source": "PSX"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psx:orc-ixalan:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scc:owlin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCC",
+          "race": "Owlin",
+          "race_source": "SCC"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scc:owlin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:species:aag:plasmoid:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "AAG",
+          "race": "Plasmoid",
+          "race_source": "AAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:aag:plasmoid:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:sea-elf:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Sea Elf",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:sea-elf:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:shadar-kai:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Shadar-Kai",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:shadar-kai:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:shifter:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Shifter",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:shifter:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:shifter:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Shifter",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:shifter:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:shifter-beasthide:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Shifter (Beasthide)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:shifter-beasthide:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:shifter-longtooth:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Shifter (Longtooth)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:shifter-longtooth:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:shifter-swiftstride:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Shifter (Swiftstride)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:shifter-swiftstride:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:erlw:shifter-wildhunt:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Shifter (Wildhunt)",
+          "race_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:erlw:shifter-wildhunt:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:ggr:simic-hybrid:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "GGR",
+          "race": "Simic Hybrid",
+          "race_source": "GGR"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:ggr:simic-hybrid:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:skeleton:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Skeleton",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:skeleton:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:tabaxi:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Tabaxi",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:tabaxi:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:tabaxi:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Tabaxi",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:tabaxi:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:aag:thri-kreen:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "AAG",
+          "race": "Thri-kreen",
+          "race_source": "AAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:aag:thri-kreen:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:tiefling:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Tiefling",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:tiefling:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-asmodeus:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Asmodeus)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-asmodeus:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-baalzebul:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Baalzebul)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-baalzebul:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-dispater:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Dispater)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-dispater:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-fierna:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Fierna)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-fierna:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-glasya:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Glasya)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-glasya:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-levistus:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Levistus)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-levistus:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-mammon:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Mammon)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-mammon:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-mephistopheles:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Mephistopheles)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-mephistopheles:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:phb:tiefling-undefined:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PHB",
+          "race": "Tiefling (undefined)",
+          "race_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:phb:tiefling-undefined:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:tiefling-variant-devil-s-tongue:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCAG",
+          "race": "Tiefling (Variant; Devil's Tongue)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:tiefling-variant-devil-s-tongue:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:tiefling-variant-hellfire:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCAG",
+          "race": "Tiefling (Variant; Hellfire)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:tiefling-variant-hellfire:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:tiefling-variant-infernal-legacy:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCAG",
+          "race": "Tiefling (Variant; Infernal Legacy)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:tiefling-variant-infernal-legacy:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:scag:tiefling-variant-winged:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "SCAG",
+          "race": "Tiefling (Variant; Winged)",
+          "race_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:scag:tiefling-variant-winged:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mtf:tiefling-zariel:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MTF",
+          "race": "Tiefling (Zariel)",
+          "race_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mtf:tiefling-zariel:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mot:triton:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MOT",
+          "race": "Triton",
+          "race_source": "MOT"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mot:triton:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:triton:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Triton",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:triton:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:triton:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Triton",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:triton:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:troglodyte:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Troglodyte",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:troglodyte:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:vampire:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Vampire",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:vampire:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psx:vampire-ixalan:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSX",
+          "race": "Vampire (Ixalan)",
+          "race_source": "PSX"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psx:vampire-ixalan:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:psz:vampire-zendikar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "PSZ",
+          "race": "Vampire (Zendikar)",
+          "race_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:psz:vampire-zendikar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:mpmm:yuan-ti:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "MPMM",
+          "race": "Yuan-Ti",
+          "race_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:mpmm:yuan-ti:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:vgm:yuan-ti-pureblood:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "VGM",
+          "race": "Yuan-ti Pureblood",
+          "race_source": "VGM"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:vgm:yuan-ti-pureblood:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:species:dmg:zombie:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "DMG",
+          "race": "Zombie",
+          "race_source": "DMG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:species:dmg:zombie:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:phb:gnome:mtf:deep:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "MTF",
+          "race": "Gnome",
+          "race_source": "PHB",
+          "subrace": "Deep",
+          "subrace_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:phb:gnome:mtf:deep:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:phb:gnome:scag:deep-svirfneblin:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "SCAG",
+          "race": "Gnome",
+          "race_source": "PHB",
+          "subrace": "Deep/Svirfneblin",
+          "subrace_source": "SCAG"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:phb:gnome:scag:deep-svirfneblin:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:phb:dragonborn:egw:draconblood:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "EGW",
+          "race": "Dragonborn",
+          "race_source": "PHB",
+          "subrace": "Draconblood",
+          "subrace_source": "EGW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:phb:dragonborn:egw:draconblood:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:phb:elf:phb:drow:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "PHB",
+          "race": "Elf",
+          "race_source": "PHB",
+          "subrace": "Drow",
+          "subrace_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:phb:elf:phb:drow:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:phb:dwarf:mtf:duergar:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "MTF",
+          "race": "Dwarf",
+          "race_source": "PHB",
+          "subrace": "Duergar",
+          "subrace_source": "MTF"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:phb:dwarf:mtf:duergar:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:eepc:genasi:eepc:fire:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "EEPC",
+          "race": "Genasi",
+          "race_source": "EEPC",
+          "subrace": "Fire",
+          "subrace_source": "EEPC"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:eepc:genasi:eepc:fire:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:psz:elf-zendikar:psz:mul-daya-nation:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Superior Darkvision",
+          "source": "PSZ",
+          "race": "Elf (Zendikar)",
+          "race_source": "PSZ",
+          "subrace": "Mul Daya Nation",
+          "subrace_source": "PSZ"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:psz:elf-zendikar:psz:mul-daya-nation:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:phb:dragonborn:egw:ravenite:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "EGW",
+          "race": "Dragonborn",
+          "race_source": "PHB",
+          "subrace": "Ravenite",
+          "subrace_source": "EGW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:phb:dragonborn:egw:ravenite:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:subrace:phb:human:erlw:variant-mark-of-finding:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Darkvision",
+          "source": "ERLW",
+          "race": "Human",
+          "race_source": "PHB",
+          "subrace": "Variant; Mark of Finding",
+          "subrace_source": "ERLW"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:subrace:phb:human:erlw:variant-mark-of-finding:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 60
+        }
+      }
+    },
+    {
+      "id": "sense:feature:optional:phb:devil-s-sight:devils-sight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Devil's Sight",
+          "source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:feature:optional:phb:devil-s-sight:devils-sight",
+        "sense": {
+          "type": "devils_sight",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:feature:optional:xge:devil-s-sight:devils-sight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Devil's Sight",
+          "source": "XGE"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:feature:optional:xge:devil-s-sight:devils-sight",
+        "sense": {
+          "type": "devils_sight",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:feature:optional:tce:blind-fighting:blindsight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Blind Fighting",
+          "source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:feature:optional:tce:blind-fighting:blindsight",
+        "sense": {
+          "type": "blindsight",
+          "range_feet": 10
+        }
+      }
+    },
+    {
+      "id": "sense:feature:sorcerer:phb:eyes-of-the-dark:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Eyes of the Dark",
+          "source": "XGE",
+          "class_name": "Sorcerer",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:feature:sorcerer:phb:eyes-of-the-dark:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 120
+        }
+      }
+    },
+    {
+      "id": "sense:feature:cleric:phb:eyes-of-night:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Eyes of Night",
+          "source": "TCE",
+          "class_name": "Cleric",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:feature:cleric:phb:eyes-of-night:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 300
+        }
+      }
+    },
+    {
+      "id": "sense:feature:ranger:phb:umbral-sight:darkvision",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Umbral Sight",
+          "source": "XGE",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "sense",
+        "id": "sense:feature:ranger:phb:umbral-sight:darkvision",
+        "sense": {
+          "type": "darkvision",
+          "range_feet": 30,
+          "mode": "increase_if_existing",
+          "fallback_feet": 60
+        }
+      }
+    }
+  ],
+  "notes": "2014 source-qualified sense grants. See 5eTools for prose; monster stat blocks and character manual grants remain separate."
+}

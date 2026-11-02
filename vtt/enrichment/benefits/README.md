@@ -355,3 +355,7 @@ corrispondente tiro salvezza allo stesso flavour. La scelta 2024 esclude i tiri
 salvezza già competenti, ma conserva visibile una variante salvata in precedenza.
 La scelta precedente non viene duplicata e il cambio di variante ritira solo
 le competenze e i bonus appartenenti a quella istanza del talento.
+
+### Sensi (sense.json)
+
+Concessioni con portata in piedi (`range_feet`), proprietario `granted_by` legato a 5eTools e combinazione per massimo. `mode: "increase_if_existing"` con `fallback_feet` copre Umbral Sight; `choice_required` preserva le scelte di Custom Lineage. I sensi dei mostri e quelli aggiunti manualmente restano fonti indipendenti. L'audit 5eTools è un fixture di test, non un secondo catalogo di regole.

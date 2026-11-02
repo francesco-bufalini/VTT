@@ -133,17 +133,6 @@
       ]
     },
     {
-      "path": "pwa/catalog/sense_grants.json",
-      "sections": [
-        "species",
-        "subraces",
-        "features"
-      ],
-      "types": [
-        "sense"
-      ]
-    },
-    {
       "path": "pwa/catalog/scaling_dice.json",
       "sections": [
         "dice"
@@ -429,6 +418,17 @@
       "benefit_type": "proficiency_grant",
       "catalog": "vtt/enrichment/benefits/proficiency_grant.json",
       "runtime": "pwa/proficiency_catalog.js"
+    },
+    {
+      "source": "pwa/catalog/sense_grants.json",
+      "benefit_type": "sense",
+      "catalog": "vtt/enrichment/benefits/sense.json",
+      "runtime": "pwa/sense_rules.js",
+      "sections": [
+        "species",
+        "subraces",
+        "features"
+      ]
     }
   ]
 }
