@@ -3,8 +3,6 @@ extends Node
 const GRID := 10
 const GAME_SPELLS := 11
 
-const COMPENDIUM_OPEN := 64
-
 const COMBAT_START := 70
 const COMBAT_INITIATIVE := 71
 const COMBAT_END := 72
@@ -35,7 +33,7 @@ const FEEDBACK_DURATION_MS := 2000
 var board_root: Node3D
 var ui_root: CanvasLayer
 var status_label: Label
-var _creatures_window: Window
+var _pwa_window: Window
 var _feedback_hide_at_msec := 0
 
 
@@ -124,9 +122,15 @@ func _build_toolbar() -> void:
 	creatures_button.pressed.connect(_open_creatures)
 	row.add_child(creatures_button)
 
-	row.add_child(_menu("Compendio", [
-		["Apri Compendio", COMPENDIUM_OPEN]
-	], _on_compendium))
+	var compendium_button := Button.new()
+	compendium_button.name = "OpenCompendiumPwa"
+	compendium_button.text = "Compendio"
+	compendium_button.tooltip_text = "Apri il compendio della PWA"
+	compendium_button.focus_mode = Control.FOCUS_NONE
+	compendium_button.custom_minimum_size = Vector2(104, 34)
+	compendium_button.add_theme_font_size_override("font_size", 13)
+	compendium_button.pressed.connect(_open_compendium)
+	row.add_child(compendium_button)
 
 	row.add_child(_menu("Misura", [
 		["Righello", MEASURE_RULER],
@@ -215,47 +219,51 @@ func _on_master(id: int) -> void:
 
 
 
-# The embedded UI is the ordinary browser PWA served by the existing board
-# host. It has its own persistent IndexedDB; no native archive or IPC bridge.
+# Both native toolbar entries open scoped views in the same persistent
+# browser PWA. The desktop board owns Partita, not the embedded PWA.
 func _open_creatures() -> void:
+	_open_pwa_view("creatures")
+
+
+func _open_compendium() -> void:
+	_open_pwa_view("compendium")
+
+
+func _open_pwa_view(section: String) -> void:
 	var host: Node = get_node_or_null("/root/PwaHost")
 	if host == null or not host.has_method("local_origin"):
 		_set_status("Server PWA non disponibile.")
 		return
 	var origin: String = String(host.call("local_origin"))
 	if origin.is_empty():
-		_set_status("Server PWA non attivo: apri una partita per accedere alle creature.")
+		_set_status("Server PWA non attivo: apri una partita per accedere alla PWA.")
 		return
 	if DisplayServer.get_name() == "headless":
-		_set_status("La scheda Creature richiede una finestra grafica.")
+		_set_status("La PWA richiede una finestra grafica.")
 		return
+	var window_script: Script = load("res://vtt/pwa_embedded_window.gd") as Script
+	if window_script == null:
+		_set_status("Finestra PWA non disponibile.")
+		return
+	var url: String = String(window_script.call("view_url", origin, section))
 	# The bundled native WebView is currently supported on Windows and macOS.
-	# Other platforms remain able to open the exact same PWA externally.
+	# Other platforms can use the exact same scoped PWA externally.
 	if OS.get_name() not in ["Windows", "macOS"] or not ClassDB.class_exists("WebView"):
-		var result: Error = OS.shell_open(origin)
+		var result: Error = OS.shell_open(url)
 		if result == OK:
 			_show_temporary_feedback("PWA aperta nel browser esterno")
 		else:
 			_set_status("Impossibile aprire la PWA: " + error_string(result))
 		return
-	if not is_instance_valid(_creatures_window):
-		var window_script: Script = load("res://vtt/pwa_embedded_window.gd") as Script
-		if window_script == null:
-			_set_status("Finestra Creature non disponibile.")
+	if not is_instance_valid(_pwa_window):
+		_pwa_window = window_script.new() as Window
+		if _pwa_window == null:
+			_set_status("Impossibile creare la finestra PWA.")
 			return
-		_creatures_window = window_script.new() as Window
-		if _creatures_window == null:
-			_set_status("Impossibile creare la finestra Creature.")
-			return
-		_creatures_window.hide()
-		board_root.add_child(_creatures_window)
-	if not bool(_creatures_window.call("show_pwa", origin)):
-		_set_status("Impossibile avviare la WebView delle creature.")
-
-
-func _on_compendium(id: int) -> void:
-	if id == COMPENDIUM_OPEN:
-		board_root.call("toggle_compendium")
+		_pwa_window.hide()
+		board_root.add_child(_pwa_window)
+	if not bool(_pwa_window.call("show_pwa", origin, section)):
+		_set_status("Impossibile aprire la sezione PWA richiesta.")
 
 
 
