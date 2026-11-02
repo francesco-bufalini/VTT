@@ -149,7 +149,6 @@ const FILES := {
 	"/benefits/bonus.json": ["res://vtt/enrichment/benefits/bonus.json", "application/json; charset=utf-8"],
 	"/benefits/feat_grant.json": ["res://vtt/enrichment/benefits/feat_grant.json", "application/json; charset=utf-8"],
 	"/benefits/defense.json": ["res://vtt/enrichment/benefits/defense.json", "application/json; charset=utf-8"],
-	"/benefits/proficiency.json": ["res://vtt/enrichment/benefits/proficiency.json", "application/json; charset=utf-8"],
 	"/spell_slot_profiles.js": ["res://pwa/spell_slot_profiles.js", "text/javascript; charset=utf-8"],
 	"/class_benefit_progression.js": ["res://pwa/class_benefit_progression.js", "text/javascript; charset=utf-8"],
 	"/catalog/benefits/roll_bonus.json": ["res://vtt/enrichment/benefits/roll_bonus.json", "application/json; charset=utf-8"],

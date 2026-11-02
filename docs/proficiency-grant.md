@@ -46,3 +46,21 @@ La vecchia selezione di Skilled è stata rimossa dall'indice legacy per
 non produrre doppi selettori. I personaggi esistenti mantengono le scelte
 salvate con `feat|phb|skilled` e `feat|xphb|skilled`, convertite ai nuovi
 identificativi al successivo salvataggio del selettore.
+
+## Sorgente unificata
+
+Il catalogo è ora l'unica fonte per **ogni** competenza: concessioni fisse
+(`grants: [{kind, key}]`), gruppi di scelte (`groups: [{filter, count}]`)
+e profili strutturati di classe, specie, background e tratti
+(`source_rules`). I profili di classe conservano separatamente le regole
+di livello iniziale e di multiclasse, i vincoli delle liste, le sostituzioni
+di competenze già possedute e le associazioni ai tratti 5eTools.
+
+Le competenze fisse dei flavour di Resilient PHB/XPHB sono state spostate da
+`benefits/proficiency.json`: quel file, lo schema e l'esempio dedicati
+sono stati eliminati. Il vecchio indice `pwa/catalog/proficiency_grants.json`
+contiene ora soltanto il vocabolario dei linguaggi e le informazioni di
+generazione: nessuna concessione di competenza è più definita lì.
+La PWA costruisce a runtime, in `pwa/proficiency_catalog.js`, la proiezione
+compatibile con gli handler esistenti; le regole provengono esclusivamente
+da `benefits/proficiency_grant.json`.

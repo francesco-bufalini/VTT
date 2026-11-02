@@ -59,7 +59,7 @@ const SHELL = [
   "/benefits/attack.json", "/benefits/movement.json",
   "/catalog/species_defenses.json",
   "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
-   "/benefits/state_activation.json", "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/defense.json", "/benefits/proficiency.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/spell_slot_profiles.js",
+   "/benefits/state_activation.json", "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/defense.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/spell_slot_profiles.js",
   "/species_defenses.js",
   "/class_defenses.js",
   "/catalog/class_defense_rules.js",

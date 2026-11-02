@@ -3,6 +3,7 @@ import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
 import {projectTraitFlavourBenefits,traitFlavourModels} from './trait_flavours.js';
+import {proficiencyIndexFromBenefits} from './proficiency_catalog.js';
 import {scalingDiceFor,resolveScalingDieBenefit,loadScalingDieBenefits} from './scaling_dice.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
 import {monsterTraits,bindMonsterTrackers,monsterAttackOwner,monsterActionName} from './monster_traits.js';
@@ -1933,12 +1934,12 @@ export function loadRuleCatalogs(){
     typedOptionLists,
     typedProficiencyGrants,
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
-     ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/defense.json','/benefits/proficiency.json']
+     ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/defense.json']
        .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses,flavourProficiencies])=>({
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
-    proficiencyGrants,speciesAttacks,speciesDefenses,
+    proficiencyGrants:proficiencyIndexFromBenefits(proficiencyGrants,proficiencyGrantBenefits),speciesAttacks,speciesDefenses,
     speciesRollModes:speciesRollModes.load_error?{races:[],load_error:true}:speciesRollModesFromBenefits(speciesRollModes,originDetails),
     senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,
     optionGrants:optionGrants?.benefit_type==='option_grant'?optionGrants:{entries:[]},
@@ -1949,7 +1950,6 @@ export function loadRuleCatalogs(){
      flavourBonuses:flavourBonuses?.benefit_type==='bonus'?flavourBonuses:{entries:[]},
      flavourFeatGrants:flavourFeatGrants?.benefit_type==='feat_grant'?flavourFeatGrants:{entries:[]},
      flavourDefenses:flavourDefenses?.benefit_type==='defense'?flavourDefenses:{entries:[]},
-    flavourProficiencies:flavourProficiencies?.benefit_type==='proficiency'?flavourProficiencies:{entries:[]},
     slotBenefits:slotBenefits?.benefit_type==='resource'?slotBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
