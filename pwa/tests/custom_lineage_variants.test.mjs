@@ -8,7 +8,7 @@ import {selectedSources,fixedProficiencies} from '../structured_effects.js';
 import {calculateSenses} from '../sense_rules.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 
-const senseCatalog=JSON.parse(readFileSync(new URL('../catalog/sense_grants.json',import.meta.url),'utf8'));
+const senseCatalog=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/sense.json',import.meta.url),'utf8'));
 const profCatalog=proficiencyTestIndex();
 const abilityCatalog=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const baseline={id:'5etools:races:tce:custom%20lineage',name:'Custom Lineage',source:'TCE'};
