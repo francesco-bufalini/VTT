@@ -120,15 +120,6 @@
       ]
     },
     {
-      "path": "pwa/catalog/species_types.json",
-      "sections": [
-        "races"
-      ],
-      "types": [
-        "trait"
-      ]
-    },
-    {
       "path": "pwa/catalog/scaling_dice.json",
       "sections": [
         "dice"
