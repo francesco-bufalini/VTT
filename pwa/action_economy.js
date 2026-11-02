@@ -2,6 +2,7 @@ import {loadClassActionBenefits} from './class_benefit_catalogs.js';
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
 import {SKILLS} from './sheet_rules.js';
+import {sessionSpellEntries} from './spell_selection.js';
 import {attackRangeLabel} from './attack_range.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 import {attackCountBenefits,attacksPerActionFromBenefits,attacksPerActionFromSequences,attackActionGrants,resolveAttackActionSteps,attackActionPayment} from './attack_count_benefits.js';
@@ -427,7 +428,7 @@ export function attackActionSequence(action={},record={},calculated={}){
  // that is not an attack roll. The old count is a fallback for saved records.
  if(arr(action.steps).length){
   const resolved=resolveAttackActionSteps(action,arr(calculated.attacks),
-   arr(calculated.action_entries));
+   arr(calculated.action_entries),arr(calculated.spell_entries));
   const labels={attack:'Attacco a scelta',melee:'Attacco in mischia',
    ranged:'Attacco a distanza',unarmed:'Colpo senz’armi',
    crossbow:'Attacco con balestra',grapple:'Prova di lotta',shove:'Spingere'};
@@ -499,7 +500,7 @@ const ACTION_STEP_LABELS={
  unarmed:'Colpo senz’armi',crossbow:'Attacco con balestra',grapple:'Prova di lotta',
  shove:'Spingere',dash:'Scattare',disengage:'Disimpegnarsi',dodge:'Schivare',
  hide:'Nascondersi',help:'Aiutare',movement:'Movimento',check:'Prova abilità',
- skill:'Prova abilità',ability:'Capacità a scelta',action:'Azione a scelta'
+ skill:'Prova abilità',ability:'Capacità a scelta',action:'Azione a scelta',spell:'Incantesimo a scelta'
 };
 function battleActionStepName(part={}){
  if(typeof part==='string')return part;
@@ -519,7 +520,7 @@ export function battleActionList(action={},record={},calculated={}){
  const steps=arr(action.steps);
  if(steps.length){
   const resolved=resolveAttackActionSteps(action,arr(calculated.attacks),
-   arr(calculated.action_entries));
+   arr(calculated.action_entries),arr(calculated.spell_entries));
   const add=(part,choiceId='')=>({
    label:battleActionStepName(part)+(part.repeat==='per_target'?' · per bersaglio':''),
    part,choiceId
@@ -548,6 +549,11 @@ export function battleActionList(action={},record={},calculated={}){
 }
 
 export function attackActionCategory(row={}){
+ if(row.attack_action&&arr(row.steps).length&&arr(row.steps).every(step=>{
+   const choices=arr(step.one_of||step.any_of);
+   return choices.length?choices.every(choice=>['action','check','ability','spell'].includes(choice.selector?.kind)):
+    ['action','check','ability','spell'].includes(step.selector?.kind);
+ }))return 'other';
  if(row.attack_action&&arr(row.steps).some(step=>{
   const choices=arr(step.one_of||step.any_of);
   return choices.length&&choices.every(choice=>['action','check','ability'].includes(choice.selector?.kind));
@@ -613,7 +619,15 @@ export function battleAttackStepMarkup(sequence=[],calculated={},action={}){
    attrs:' data-attack-action-id="'+esc(action.id||'')+'" data-attack-action-option-id="'+esc(choiceId)+'"',
    tracker,trackerName:action.tracker,cost,label:'Usa',name:part.label||option?.name||action.name,
    disabled:action.available===false||part.resolved===false});
-  const isCheck=kind==='check'||!!option?.check_target;
+  if(kind==='spell'){
+    if(!option||part.resolved===false)return '';
+    return '<button type="button" class="play-battle-attack-step-use" data-act="action-cast-spell"'+
+     ' data-spell-id="'+esc(option.id||'')+'" data-grant-id="'+esc(option.grant_id||'')+'"'+
+     ' data-casting-class="'+esc(option.casting_class||'')+'"'+
+     ' data-sequence-time="'+esc(action.time||'')+'"'+
+     ' data-sequence-action-id="'+esc(action.id||'')+'">Lancia</button>';
+   }
+   const isCheck=kind==='check'||!!option?.check_target;
   const isAction=kind==='action'||kind==='ability';
   const act=isCheck?'battle-action-roll':isAction?'battle-action-jump':'battle-attack-jump';
   const reference=isCheck?selector.target||option?.check_target||'':
@@ -648,10 +662,15 @@ export function battleAttackActionRow(item={},calculated={}){
  const cost=Math.max(0,Number(item.cost)||0);
  const sequence=item.action_list||battleActionList(item,{},calculated);
  const hasAlternatives=arr(item.steps).some(step=>arr(step.one_of||step.any_of).length);
+ const spellOnly=arr(item.steps).length>0&&arr(item.steps).every(step=>{
+  const alternatives=arr(step.one_of||step.any_of);
+  return alternatives.length?alternatives.every(part=>part.selector?.kind==='spell'):
+   step.selector?.kind==='spell';
+ });
  const actionable=item.attack_action===true&&cost>0&&!hasAlternatives&&
   arr(calculated.attack_actions).some(row=>String(row.id)===String(item.id));
  const useAct=cost>0&&tracker?(actionable?'attack-action-use':'battle-action-activate'):'';
- const control=hasAlternatives?'':battleActionUseBox({act:useAct,
+ const control=hasAlternatives||spellOnly?'':battleActionUseBox({act:useAct,
   attrs:actionable?' data-attack-action-id="'+esc(item.id||'')+'"':
    useAct==='battle-action-activate'?' data-action-id="'+esc(item.id||'')+'"':'',
   tracker,trackerName:item.tracker,cost,
@@ -1096,7 +1115,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // Covered monster options are hidden as standalone actions, but remain
  // addressable by their stable native IDs in a declarative OR group.
  const actionContext={...calculated,
-  action_entries:[...entries,...monsterActions(record,calculated.trackers)]};
+  action_entries:[...entries,...monsterActions(record,calculated.trackers)],
+  spell_entries:sessionSpellEntries(record,calculated,spells).map(row=>({
+   ...row,source:row.source||arr(spells).find(spell=>spell.id===row.id)?.source||''}))};
  const enrich=row=>({...row,
   attack_sequence:attackActionSequence(row,record,actionContext),
   action_list:battleActionList(row,record,actionContext)});
