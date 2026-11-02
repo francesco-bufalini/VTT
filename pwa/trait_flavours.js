@@ -121,6 +121,7 @@ export function flavourBenefitChoices(record={},features=[],catalogs={}){
      name:model.selected.name,label:'Talento concesso',
      count:1,selected,options:featOptions,
      option_labels:Object.fromEntries(feats.map(f=>[norm(f.source)+'|'+norm(f.name),f.name+' ('+f.source+')'])),
+     option_rows:Object.fromEntries(feats.map(f=>[norm(f.source)+'|'+norm(f.name),{name:f.name,source:f.source}])),
      remaining:selected.length?0:1});
    }
   }
@@ -174,8 +175,10 @@ export function saveFlavourFeatChoice(record={},choice={},values=[]){
   f.granted_by!==choice.flavour_parent_id);
  if(values.length){
   const [source,...names]=values[0].split('|'),name=names.join('|');
+  const canonical=choice.option_rows?.[values[0]]||{};
   if(!source||!name)throw Error('Talento non disponibile.');
-  feats.push({id:'flavour:'+choice.origin_id,name,source:source.toUpperCase(),
+  feats.push({id:'flavour:'+choice.origin_id,name:canonical.name||name,
+   source:canonical.source||source.toUpperCase(),
    granted_by:choice.origin_id,flavour_parent_id:choice.flavour_parent_id});
  }
  return {feats_catalog:feats};

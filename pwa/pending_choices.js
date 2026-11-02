@@ -488,7 +488,7 @@ export function savePendingChoice(record,choice,values=[],details={}){
  }
  if(!choice||!['bonus','ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace','trait_flavour','flavour_feat'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
- const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):
+ const raw=unique(arr(values).map(value=>['advancement_feat','flavour_feat'].includes(choice.kind)?norm(value):
    ['subclass','subrace'].includes(choice.kind)?String(value):strip(value)));
  const prefix='__custom__:';
  const mixed=choice.proficiency_kind==='mixed';
