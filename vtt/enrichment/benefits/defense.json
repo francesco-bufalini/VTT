@@ -20,7 +20,18 @@
             "kind": "resistance",
             "damage_type": "acid"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28chromatic%29",
+            "race_name": "Dragonborn (Chromatic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Chromatic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -40,7 +51,18 @@
             "kind": "resistance",
             "damage_type": "lightning"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28chromatic%29",
+            "race_name": "Dragonborn (Chromatic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Chromatic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -60,7 +82,18 @@
             "kind": "resistance",
             "damage_type": "poison"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28chromatic%29",
+            "race_name": "Dragonborn (Chromatic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Chromatic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -80,7 +113,18 @@
             "kind": "resistance",
             "damage_type": "fire"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28chromatic%29",
+            "race_name": "Dragonborn (Chromatic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Chromatic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -100,7 +144,18 @@
             "kind": "resistance",
             "damage_type": "cold"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28chromatic%29",
+            "race_name": "Dragonborn (Chromatic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Chromatic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -120,7 +175,18 @@
             "kind": "resistance",
             "damage_type": "force"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28gem%29",
+            "race_name": "Dragonborn (Gem)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Gem Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -140,7 +206,18 @@
             "kind": "resistance",
             "damage_type": "radiant"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28gem%29",
+            "race_name": "Dragonborn (Gem)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Gem Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -160,7 +237,18 @@
             "kind": "resistance",
             "damage_type": "psychic"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28gem%29",
+            "race_name": "Dragonborn (Gem)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Gem Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -180,7 +268,18 @@
             "kind": "resistance",
             "damage_type": "thunder"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28gem%29",
+            "race_name": "Dragonborn (Gem)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Gem Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -200,7 +299,18 @@
             "kind": "resistance",
             "damage_type": "necrotic"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28gem%29",
+            "race_name": "Dragonborn (Gem)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Gem Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -220,7 +330,18 @@
             "kind": "resistance",
             "damage_type": "fire"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28metallic%29",
+            "race_name": "Dragonborn (Metallic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Metallic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -240,7 +361,18 @@
             "kind": "resistance",
             "damage_type": "lightning"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28metallic%29",
+            "race_name": "Dragonborn (Metallic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Metallic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -260,7 +392,18 @@
             "kind": "resistance",
             "damage_type": "acid"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28metallic%29",
+            "race_name": "Dragonborn (Metallic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Metallic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -280,7 +423,18 @@
             "kind": "resistance",
             "damage_type": "fire"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28metallic%29",
+            "race_name": "Dragonborn (Metallic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Metallic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
@@ -300,7 +454,18 @@
             "kind": "resistance",
             "damage_type": "cold"
           }
-        ]
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:ftd:dragonborn%20%28metallic%29",
+            "race_name": "Dragonborn (Metallic)",
+            "race_source": "FTD",
+            "trait": "Draconic Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your Metallic Ancestry."
+            ]
+          }
+        }
       }
     },
     {
