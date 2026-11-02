@@ -375,9 +375,10 @@
             "class_action_override",
             "timing_contextual_action",
             "contextual_resource",
-            "legacy_base_override"
+            "legacy_base_override",
+            "5etools_structured"
           ],
-          "description": "Temporary migration projection discriminator. Omit on other catalog types; remove once runtime consumes typed actions directly."
+          "description": "Projection discriminator for migration adapters and source-owned structured 5eTools copies; not a new benefit type."
         }
       },
       "additionalProperties": false
