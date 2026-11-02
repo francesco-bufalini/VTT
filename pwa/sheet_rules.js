@@ -1855,11 +1855,9 @@ export function loadRuleCatalogs(){
     // Already visible spell references are supplied by the PWA on demand.
     Promise.resolve([]),
     loadClassFeatureTimingBenefits(),
-    // Transitional legacy state selections only; new passive capabilities
-    // are options with source-bound effects, not canonical state benefits.
-    fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();}).then(data=>({
-      states:data?.version===1&&Array.isArray(data.states)?data.states:[]
-    })),
+    // All subclass forms and totem options now come from option_grant/list.
+    // The legacy trait-state runtime remains inert for older direct callers.
+    Promise.resolve({states:[]}),
     loadClassRollBonusBenefits(),
     loadScalingDieBenefits(),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})

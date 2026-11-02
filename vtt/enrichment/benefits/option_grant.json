@@ -10928,6 +10928,154 @@
           }
         }
       }
+    },
+    {
+      "id": "option_grant:barbarian_2014:beast-form",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Form of the Beast",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Beast",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "barbarian_2014:beast-form",
+        "option_grant": {
+          "id": "barbarian_2014:beast-form",
+          "owner": {
+            "class_name": "Barbarian",
+            "class_source": "PHB",
+            "subclass": "Beast",
+            "trait": "Form of the Beast"
+          },
+          "option_kind": "capability",
+          "option_origin_kind": "trait_state",
+          "source": {
+            "type": "list_refs",
+            "list_ids": [
+              "barbarian:2014:beast-form"
+            ]
+          },
+          "layers": {
+            "applied": {
+              "limit": 1,
+              "trigger": "free",
+              "storage": "power_applications",
+              "deactivation_trigger": "free"
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "exclusive": true
+          },
+          "legacy_selection_group": "barbarian_beast_form",
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:barbarian_2014:totem-aspect",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Aspect of the Beast",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Totem Warrior",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "barbarian_2014:totem-aspect",
+        "option_grant": {
+          "id": "barbarian_2014:totem-aspect",
+          "owner": {
+            "class_name": "Barbarian",
+            "class_source": "PHB",
+            "subclass": "Totem Warrior",
+            "trait": "Aspect of the Beast"
+          },
+          "option_kind": "capability",
+          "option_origin_kind": "trait_state",
+          "source": {
+            "type": "list_refs",
+            "list_ids": [
+              "barbarian:2014:totem-aspect"
+            ]
+          },
+          "layers": {
+            "applied": {
+              "limit": 1,
+              "trigger": "level_up",
+              "storage": "power_applications"
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "exclusive": true
+          },
+          "legacy_selection_group": "barbarian_totem_aspect",
+          "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:barbarian_2014:totem-attunement",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Totemic Attunement",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Totem Warrior",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "barbarian_2014:totem-attunement",
+        "option_grant": {
+          "id": "barbarian_2014:totem-attunement",
+          "owner": {
+            "class_name": "Barbarian",
+            "class_source": "PHB",
+            "subclass": "Totem Warrior",
+            "trait": "Totemic Attunement"
+          },
+          "option_kind": "capability",
+          "option_origin_kind": "trait_state",
+          "source": {
+            "type": "list_refs",
+            "list_ids": [
+              "barbarian:2014:totem-attunement"
+            ]
+          },
+          "layers": {
+            "applied": {
+              "limit": 1,
+              "trigger": "level_up",
+              "storage": "power_applications"
+            }
+          },
+          "application": {
+            "destination": "origin",
+            "exclusive": true
+          },
+          "legacy_selection_group": "barbarian_totem_attunement",
+          "benefit_type": "option_grant"
+        }
+      }
     }
   ]
 }

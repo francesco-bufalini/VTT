@@ -36,7 +36,7 @@ function customCatalog(layers={learned:{limit:2},applied:{limit:1}}){
 test('class and subclass grants preserve source identifiers and declare only one selection mechanism',()=>{
  assert.equal(rules.benefit_type,'option_grant');
  const originals=rules.entries.filter(e=>!e.benefit.option_grant.compatibility?.supplement_only);
- assert.equal(originals.length,44);
+ assert.equal(originals.length,47);
  assert.equal(new Set(rules.entries.map(row=>row.id)).size,rules.entries.length);
  assert(originals.every(row=>row.granted_by?.kind==='5etools'));
  assert(originals.filter(row=>!row.benefit.option_grant.nested).every(row=>row.granted_by.ref.class_source));

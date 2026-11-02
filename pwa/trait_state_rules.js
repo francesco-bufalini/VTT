@@ -1,5 +1,5 @@
-// Generic, data-driven state privileges. Individual class/subclass effects live
-// in catalog/trait_states.json; this runtime never recognizes a trait by name.
+// Compatibility helpers for older state-only records and external callers.
+// Built-in subclass capabilities are now defined as option_list/option_grant.
 import {resolveOwnedItem,activeItemOptionEffects} from './item_controls.js';
 const arr = value => Array.isArray(value) ? value : [];
 const norm = value => String(value ?? '').trim().toLowerCase();

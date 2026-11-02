@@ -8,6 +8,18 @@ nel catalogo pertinente (per esempio `proficiency_grant.json`, `roll_bonus.json`
 `resource.json`), con `granted_by.kind = "5etools"` e
 `ref = { "category": "background", "name": "...", "source": "..." }`.
 
+## Barbaro 2014: varianti di stato migrate (2 novembre 2026)
+
+Le 13 voci del vecchio `pwa/catalog/trait_states.json` sono ora tre liste
+`option_list` (`Form of the Beast`, `Aspect of the Beast`, `Totemic Attunement`)
+e tre concessioni `option_grant` associate ai rispettivi privilegi 5eTools.
+Gli attacchi della forma Beast sono effetti dell'opzione applicata, non
+un catalogo `state` parallelo. Titoli e descrizioni dei sotto-elementi sono
+risolti dal privilegio 5eTools; il JSON non contiene descrizioni inventate.
+La proiezione riconosce `trait_state_selection` nelle vecchie schede e la
+converte in memoria in `power_applications` senza cambiare gli ID delle
+opzioni. Il caricamento e la cache offline non richiedono più il file legacy.
+
 ## Completamento dei nove cataloghi legacy (2 novembre 2026)
 
 I file `action_feature_overrides.json`, `class_resource_overrides.json`,
