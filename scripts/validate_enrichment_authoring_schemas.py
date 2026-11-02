@@ -82,7 +82,7 @@ def main():
     flavour_ids = [variant["id"] for entry in flavour_catalog["entries"]
                    for variant in entry["flavours"]]
     assert len(flavour_ids) == len(set(flavour_ids)), "Duplicate flavour IDs"
-    for name in ("bonus", "defense", "feat_grant", "proficiency"):
+    for name in ("bonus", "defense", "feat_grant", "proficiency_grant"):
         catalog = load(benefits / (name + ".json"))
         for entry in catalog["entries"]:
             if entry["granted_by"]["kind"] == "flavour":
@@ -95,7 +95,7 @@ def main():
 
     # Deliberately wrong origin and payload kinds must fail.
     example = load(EXAMPLES / "roll_bonus.json")
-    rejected("proficiency.schema.json", example, "wrong benefit type")
+    rejected("proficiency_grant.schema.json", example, "wrong benefit type")
     bad_source = dict(example["entries"][0])
     bad_source["granted_by"] = {
         "kind": "5etools",
