@@ -81,19 +81,27 @@ export function traitFlavourModels(record={},features=[],catalog={}){
  }
  return models;
 }
-export function traitFlavourChoices(record={},features=[],catalog={}){
- return traitFlavourModels(record,features,catalog).map(model=>({
-  id:'trait-flavour:'+model.owner.origin_id,kind:'trait_flavour',
-  origin_id:model.owner.origin_id,flavour_set_id:model.id,
-  name:model.owner.name,label:model.label||'Variante del tratto',
-  count:1,selected:model.selected?[model.selected.id]:[],
-  options:rows(model.flavours).map(f=>f.id),
-  option_labels:Object.fromEntries(rows(model.flavours).map(f=>[f.id,f.name+(f.detail?' · '+f.detail:'')])),
-  remaining:model.selected?0:1
- }));
+export function traitFlavourChoices(record={},features=[],catalog={},proficiencies=[]){
+ return traitFlavourModels(record,features,catalog).map(model=>{
+  const available=rows(model.flavours).filter(flavour=>
+   !flavour.requires_untrained_saving_throw||
+   !rows(proficiencies).includes('save:'+flavour.legacy_ability)||
+   model.selected?.id===flavour.id);
+  return {
+   id:'trait-flavour:'+model.owner.origin_id,kind:'trait_flavour',
+   origin_id:model.owner.origin_id,flavour_set_id:model.id,
+   name:model.owner.name,label:model.label||'Variante del tratto',
+   migrate_proficiencies:rows(model.migrate_proficiencies),
+   count:1,selected:model.selected?[model.selected.id]:[],
+   options:available.map(f=>f.id),
+   option_labels:Object.fromEntries(available.map(f=>[f.id,f.name+(f.detail?' · '+f.detail:'')])),
+   remaining:model.selected?0:1
+  };
+ });
 }
 export function flavourGrantsFor(record={},features=[],catalogs={}){
- const benefitFiles=[catalogs.flavourBonuses,catalogs.flavourFeatGrants,catalogs.flavourDefenses];
+ const benefitFiles=[catalogs.flavourBonuses,catalogs.flavourFeatGrants,
+  catalogs.flavourDefenses,catalogs.flavourProficiencies];
  const entries=benefitFiles.flatMap(catalog=>rows(catalog?.entries));
  return traitFlavourModels(record,features,catalogs.flavours||{}).map(model=>({
   ...model,benefits:model.selected&&model.explicit?entries.filter(e=>
@@ -170,6 +178,13 @@ export function saveTraitFlavourChoice(record={},choice={},selected=[]){
   patch.origin_ability_choices=rows(record.origin_ability_choices)
    .filter(row=>row.origin_id!==owner);
  }
+ if(rows(choice.migrate_proficiencies).length){
+  // Withdraw just previous chosen proficiency, not a fixed grant elsewhere.
+  const kinds=new Set(choice.migrate_proficiencies);
+  patch.proficiency_choices=rows(record.proficiency_choices).filter(row=>
+   row.flavour_parent_id!==owner&&
+   !(row.origin_id===owner&&kinds.has(row.kind)));
+ }
  if(choice.flavour_set_id?.startsWith('flavour_set:dragonborn:ftd:')){
   const colour=id.split(':').at(-1),root='race|'+norm(record.species_source)+'|'+norm(record.species);
   const original={...(record.origin_draconic_ancestry||{})};
@@ -210,6 +225,9 @@ export function projectTraitFlavourBenefits(record={},features=[],catalogs={}){
    [...activeChoiceIds].some(prefix=>id.startsWith(prefix));
  });
  const bonus=[...baseBonuses],defenses=[...rows(record.damage_defense_entries)],traits=[];
+ const proficiencies=rows(record.proficiency_choices).filter(row=>
+  !row.flavour_parent_id||activeParents.has(row.flavour_parent_id)&&
+  activeFlavourIds.has(row.origin_id));
  for(const model of active){
   const benefitPayloads=[];
   for(const entry of model.benefits){
@@ -222,6 +240,15 @@ export function projectTraitFlavourBenefits(record={},features=[],catalogs={}){
      flavour_owner_id:model.owner.origin_id,origin_name:model.selected.name,
      target:value.target,expression:String(value.expression??value.amount??0),
      automatic:true,disabled:false});
+   }
+   if(benefit.type==='proficiency')for(const grant of rows(benefit.proficiencies)){
+    const kind=grant.kind==='saving_throw'?'save':grant.kind;
+    if(!kind||!grant.id||grant.grant===false)continue;
+    if(!proficiencies.some(row=>row.kind===kind&&row.key===grant.id&&
+      row.origin_id===model.flavour_origin_id))
+     proficiencies.push({kind,key:grant.id,origin_id:model.flavour_origin_id,
+      flavour_parent_id:model.owner.origin_id,origin_name:model.selected.name,
+      automatic:true,disabled:false});
    }
    if(benefit.type==='defense')for(const defense of rows(benefit.defenses)){
     const rank={vulnerability:-1,resistance:1,immunity:2,condition_immunity:3}[defense.kind];
@@ -239,6 +266,7 @@ export function projectTraitFlavourBenefits(record={},features=[],catalogs={}){
    flavour_id:model.selected.id,benefits:benefitPayloads});
  }
  return {...record,formula_bonuses:bonus,damage_defense_entries:defenses,
+  proficiency_choices:proficiencies,
   feats_catalog:rows(record.feats_catalog).filter(feat=>!feat.flavour_parent_id||
     activeParents.has(feat.flavour_parent_id)&&activeFlavourIds.has(feat.granted_by)),
   flavour_traits:traits};

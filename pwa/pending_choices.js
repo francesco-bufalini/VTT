@@ -214,7 +214,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  record={...record,...migration};
  const result=pendingLineageChoices(record,calculated,catalogs),
    index=calculated.proficiency_catalog_overrides||catalogs.proficiencyGrants||{};
-  const flavourChoices=traitFlavourChoices(record,calculated.features||[],catalogs.flavours||{});
+  const flavourChoices=traitFlavourChoices(record,calculated.features||[],catalogs.flavours||{},calculated.proficiencies||[]);
   const flavouredOwners=new Set(flavourChoices.map(choice=>choice.origin_id));
   result.push(...flavourChoices,...flavourBenefitChoices(record,calculated.features||[],catalogs));
  for(const source of selectedSources(record,index,calculated.features??null)){

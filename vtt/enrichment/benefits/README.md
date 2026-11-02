@@ -328,3 +328,12 @@ di eventi. La PWA integra queste voci nei propri Stati di classe/sottoclasse
 esistenti; gli ID salvati restano invariati. Il catalogo parte vuoto:
 le scelte permanenti come i Totem non vengono trasformate arbitrariamente
 in attivazioni gratuite.
+
+### Talento Resilient (2014/2024)
+
+Entrambe le edizioni hanno ora un flavour per ciascuna delle sei caratteristiche:
+`bonus.json` attribuisce +1 e `proficiency.json` concede la competenza nel
+corrispondente tiro salvezza allo stesso flavour. La scelta 2024 esclude i tiri
+salvezza già competenti, ma conserva visibile una variante salvata in precedenza.
+La scelta precedente non viene duplicata e il cambio di variante ritira solo
+le competenze e i bonus appartenenti a quella istanza del talento.

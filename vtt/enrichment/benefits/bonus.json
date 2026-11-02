@@ -10161,6 +10161,222 @@
           "expression": "1"
         }
       }
+    },
+    {
+      "id": "bonus:feat:phb:resilient:str",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:phb:resilient:str"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:resilient:str",
+        "bonus": {
+          "target": "ability:str",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:resilient:dex",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:phb:resilient:dex"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:resilient:dex",
+        "bonus": {
+          "target": "ability:dex",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:resilient:con",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:phb:resilient:con"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:resilient:con",
+        "bonus": {
+          "target": "ability:con",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:resilient:int",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:phb:resilient:int"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:resilient:int",
+        "bonus": {
+          "target": "ability:int",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:resilient:wis",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:phb:resilient:wis"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:resilient:wis",
+        "bonus": {
+          "target": "ability:wis",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:resilient:cha",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:phb:resilient:cha"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:resilient:cha",
+        "bonus": {
+          "target": "ability:cha",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:xphb:resilient:str",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:xphb:resilient:str"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:xphb:resilient:str",
+        "bonus": {
+          "target": "ability:str",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:xphb:resilient:dex",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:xphb:resilient:dex"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:xphb:resilient:dex",
+        "bonus": {
+          "target": "ability:dex",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:xphb:resilient:con",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:xphb:resilient:con"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:xphb:resilient:con",
+        "bonus": {
+          "target": "ability:con",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:xphb:resilient:int",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:xphb:resilient:int"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:xphb:resilient:int",
+        "bonus": {
+          "target": "ability:int",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:xphb:resilient:wis",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:xphb:resilient:wis"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:xphb:resilient:wis",
+        "bonus": {
+          "target": "ability:wis",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:xphb:resilient:cha",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:feat:xphb:resilient:cha"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:xphb:resilient:cha",
+        "bonus": {
+          "target": "ability:cha",
+          "expression": "1"
+        }
+      }
     }
   ]
 }

@@ -91,9 +91,26 @@
                 },
                 "legacy_ancestry": {
                   "type": "string"
+                },
+                "requires_untrained_saving_throw": {
+                  "type": "boolean"
                 }
               }
             }
+          },
+          "migrate_proficiencies": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "save",
+                "skill",
+                "weapon",
+                "armor",
+                "tool",
+                "language"
+              ]
+            },
+            "uniqueItems": true
           }
         }
       }

@@ -5068,6 +5068,106 @@
           "legacy_ability": "cha"
         }
       ]
+    },
+    {
+      "id": "flavour_set:feat:phb:resilient",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Resilient",
+          "source": "PHB"
+        }
+      },
+      "label": "Caratteristica e tiro salvezza",
+      "migrate_proficiencies": [
+        "save"
+      ],
+      "flavours": [
+        {
+          "id": "flavour:feat:phb:resilient:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:phb:resilient:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:phb:resilient:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:phb:resilient:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:phb:resilient:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:phb:resilient:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:resilient",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Resilient",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica e tiro salvezza",
+      "migrate_proficiencies": [
+        "save"
+      ],
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:resilient:str",
+          "name": "Forza +1",
+          "legacy_ability": "str",
+          "requires_untrained_saving_throw": true
+        },
+        {
+          "id": "flavour:feat:xphb:resilient:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex",
+          "requires_untrained_saving_throw": true
+        },
+        {
+          "id": "flavour:feat:xphb:resilient:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con",
+          "requires_untrained_saving_throw": true
+        },
+        {
+          "id": "flavour:feat:xphb:resilient:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int",
+          "requires_untrained_saving_throw": true
+        },
+        {
+          "id": "flavour:feat:xphb:resilient:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis",
+          "requires_untrained_saving_throw": true
+        },
+        {
+          "id": "flavour:feat:xphb:resilient:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha",
+          "requires_untrained_saving_throw": true
+        }
+      ]
     }
   ]
 }

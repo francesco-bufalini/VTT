@@ -9,6 +9,7 @@ import {calculateSheet} from '../sheet_rules.js';
 const read=name=>JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={flavours:read('flavours'),flavourBonuses:read('bonus'),
   flavourFeatGrants:read('feat_grant'),flavourDefenses:read('defense'),
+  flavourProficiencies:read('proficiency'),
   originDetails:{feats:{'Alert|PHB':{}}}};
 const asi=level=>({name:'Ability Score Improvement',origin_id:'feature:class|phb|fighter|'+level+'|ability score improvement',
   origin_key:'class|phb|fighter',class_name:'Fighter',class_source:'PHB',level});
@@ -82,7 +83,7 @@ test('feat with chosen ability migrates without double-counting old score alloca
 });
 test('all flavour grants reference an existing flavour, not the original trait',()=>{
  const ids=new Set(catalogs.flavours.entries.flatMap(e=>e.flavours.map(f=>f.id)));
- for(const catalog of [catalogs.flavourBonuses,catalogs.flavourDefenses,catalogs.flavourFeatGrants])
+ for(const catalog of [catalogs.flavourBonuses,catalogs.flavourDefenses,catalogs.flavourFeatGrants,catalogs.flavourProficiencies])
   for(const entry of catalog.entries){
    assert.equal(entry.granted_by.kind,'flavour');
    assert(ids.has(entry.granted_by.ref.id),entry.id);
@@ -145,4 +146,37 @@ test('feat flavour ownership remains stable even when feat section traits have d
  const options=traitFlavourChoices(record,sections,catalogs.flavours);
  assert.equal(options.length,1);
  assert.equal(options[0].origin_id,'feat|tce|chef');
+});
+
+test('Resilient 2014 flavour grants one selected save proficiency and a +1 without old duplicates',()=>{
+ const owner={name:'Resilient',source:'PHB',ability_choice:'wis'};
+ let record={...sheetRecord(),feats_catalog:[owner],
+   proficiency_choices:[{kind:'save',key:'wis',origin_id:'feat|phb|resilient'}]};
+ const choice=traitFlavourChoices(record,[],catalogs.flavours)[0];
+ assert.equal(choice.selected.length,1);
+ assert.equal(choice.options.length,6);
+ record=save(record,choice,[choice.options.find(id=>id.endsWith(':con'))]);
+ assert.equal(record.feats_catalog[0].ability_choice,'');
+ assert.equal(record.proficiency_choices.length,0,'old Resilient grant is withdrawn');
+ const projected=projectTraitFlavourBenefits(record,[],catalogs);
+ assert.deepEqual(projected.proficiency_choices.map(row=>row.kind+':'+row.key),['save:con']);
+ assert.equal(projected.proficiency_choices[0].origin_id,projected.flavour_traits[0].origin_id);
+ const sheet=calculateSheet(projected,fullCatalogs);
+ assert(sheet.proficiencies.includes('save:con'));
+ assert(!sheet.proficiencies.includes('save:wis'));
+ assert.equal(sheet.abilities.con.score,11);
+ assert.equal(sheet.abilities.wis.score,10);
+ const disabled=projectTraitFlavourBenefits({...record,origin_enabled:{'feat|phb|resilient':false}},[],catalogs);
+ assert.equal(disabled.proficiency_choices.length,0);
+});
+test('Resilient 2024 forbids an already proficient save except the owned current selection',()=>{
+ const record={...sheetRecord(),rules_version:'2024',
+   feats_catalog:[{name:'Resilient',source:'XPHB'}]};
+ const choice=traitFlavourChoices(record,[],catalogs.flavours,['save:str','save:dex'])[0];
+ assert.equal(choice.options.length,4);
+ assert(choice.options.every(option=>!option.endsWith(':str')&&!option.endsWith(':dex')));
+ const selected=save(record,choice,[choice.options.find(option=>option.endsWith(':wis'))]);
+ const withProficiency=traitFlavourChoices(selected,[],catalogs.flavours,['save:str','save:dex','save:wis'])[0];
+ assert(withProficiency.options.some(option=>option.endsWith(':wis')));
+ assert.equal(withProficiency.selected.length,1);
 });

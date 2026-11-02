@@ -1929,9 +1929,9 @@ export function loadRuleCatalogs(){
     typedOptionGrants,
     typedOptionLists,
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
-     ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/defense.json']
+     ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/defense.json','/benefits/proficiency.json']
        .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses])=>({
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses,flavourProficiencies])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,
@@ -1943,6 +1943,7 @@ export function loadRuleCatalogs(){
      flavourBonuses:flavourBonuses?.benefit_type==='bonus'?flavourBonuses:{entries:[]},
      flavourFeatGrants:flavourFeatGrants?.benefit_type==='feat_grant'?flavourFeatGrants:{entries:[]},
      flavourDefenses:flavourDefenses?.benefit_type==='defense'?flavourDefenses:{entries:[]},
+    flavourProficiencies:flavourProficiencies?.benefit_type==='proficiency'?flavourProficiencies:{entries:[]},
     slotBenefits:slotBenefits?.benefit_type==='resource'?slotBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
