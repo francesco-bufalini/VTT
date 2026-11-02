@@ -30418,7 +30418,10 @@
       "id": "5etools:races:xphb:aasimar",
       "name": "Aasimar",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:psk:aetherborn",
@@ -30430,13 +30433,22 @@
       "id": "5etools:races:aag:astral%20elf",
       "name": "Astral Elf",
       "source": "AAG",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "elf"
+      ]
     },
     {
       "id": "5etools:races:aag:autognome",
       "name": "Autognome",
       "source": "AAG",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "construct"
+      ]
     },
     {
       "id": "5etools:races:psa:aven",
@@ -30466,7 +30478,13 @@
       "id": "5etools:races:mpmm:bugbear",
       "name": "Bugbear",
       "source": "MPMM",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "goblinoid"
+      ]
     },
     {
       "id": "5etools:races:vgm:bugbear",
@@ -30487,19 +30505,28 @@
       "id": "5etools:races:ggr:centaur",
       "name": "Centaur",
       "source": "GGR",
-      "speed": 40
+      "speed": 40,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:mpmm:centaur",
       "name": "Centaur",
       "source": "MPMM",
-      "speed": 40
+      "speed": 40,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:efa:changeling",
       "name": "Changeling",
       "source": "EFA",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:erlw:changeling",
@@ -30511,7 +30538,10 @@
       "id": "5etools:races:mpmm:changeling",
       "name": "Changeling",
       "source": "MPMM",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:tce:custom%20lineage",
@@ -30523,7 +30553,13 @@
       "id": "5etools:races:mpmm:deep%20gnome",
       "name": "Deep Gnome",
       "source": "MPMM",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "gnome"
+      ]
     },
     {
       "id": "5etools:races:rhw:dhampir",
@@ -30553,7 +30589,10 @@
       "id": "5etools:races:xphb:dragonborn",
       "name": "Dragonborn",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:ftd:dragonborn%20%28chromatic%29",
@@ -30577,7 +30616,13 @@
       "id": "5etools:races:mpmm:duergar",
       "name": "Duergar",
       "source": "MPMM",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "dwarf"
+      ]
     },
     {
       "id": "5etools:races:phb:dwarf",
@@ -30589,7 +30634,10 @@
       "id": "5etools:races:xphb:dwarf",
       "name": "Dwarf",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:psk:dwarf%20%28kaladesh%29",
@@ -30601,7 +30649,13 @@
       "id": "5etools:races:mpmm:eladrin",
       "name": "Eladrin",
       "source": "MPMM",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "elf"
+      ]
     },
     {
       "id": "5etools:races:phb:elf",
@@ -30613,7 +30667,10 @@
       "id": "5etools:races:xphb:elf",
       "name": "Elf",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:psk:elf%20%28kaladesh%29",
@@ -30634,7 +30691,10 @@
       "speed": {
         "walk": 30,
         "fly": true
-      }
+      },
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:wbtw:fairy",
@@ -30643,7 +30703,10 @@
       "speed": {
         "walk": 30,
         "fly": true
-      }
+      },
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:mpmm:firbolg",
@@ -30712,7 +30775,10 @@
       "id": "5etools:races:xphb:gnome",
       "name": "Gnome",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:dmg:gnome%20%28deep%29",
@@ -30730,7 +30796,13 @@
       "id": "5etools:races:mpmm:goblin",
       "name": "Goblin",
       "source": "MPMM",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "goblinoid"
+      ]
     },
     {
       "id": "5etools:races:psz:goblin",
@@ -30760,7 +30832,10 @@
       "id": "5etools:races:xphb:goliath",
       "name": "Goliath",
       "source": "XPHB",
-      "speed": 35
+      "speed": 35,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:dmg:grimlock",
@@ -30808,7 +30883,10 @@
       "id": "5etools:races:xphb:halfling",
       "name": "Halfling",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:mpmm:harengon",
@@ -30826,13 +30904,19 @@
       "id": "5etools:races:rhw:hexblood",
       "name": "Hexblood",
       "source": "RHW",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:vrgr:hexblood",
       "name": "Hexblood",
       "source": "VRGR",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:dmg:hobgoblin",
@@ -30844,7 +30928,13 @@
       "id": "5etools:races:mpmm:hobgoblin",
       "name": "Hobgoblin",
       "source": "MPMM",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "goblinoid"
+      ]
     },
     {
       "id": "5etools:races:vgm:hobgoblin",
@@ -30862,7 +30952,10 @@
       "id": "5etools:races:xphb:human",
       "name": "Human",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:psi:human%20%28innistrad%29",
@@ -30874,7 +30967,10 @@
       "id": "5etools:races:efa:kalashtar",
       "name": "Kalashtar",
       "source": "EFA",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "aberration"
+      ]
     },
     {
       "id": "5etools:races:erlw:kalashtar",
@@ -30916,7 +31012,10 @@
       "id": "5etools:races:efa:khoravar",
       "name": "Khoravar",
       "source": "EFA",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:dmg:kobold",
@@ -31000,7 +31099,10 @@
       "id": "5etools:races:lfl:lorwyn%20changeling",
       "name": "Lorwyn Changeling",
       "source": "LFL",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:ggr:loxodon",
@@ -31012,7 +31114,10 @@
       "id": "5etools:races:rhw:lupin",
       "name": "Lupin",
       "source": "RHW",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:dmg:merfolk",
@@ -31084,7 +31189,10 @@
       "id": "5etools:races:xphb:orc",
       "name": "Orc",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:psx:orc%20%28ixalan%29",
@@ -31105,13 +31213,19 @@
       "id": "5etools:races:aag:plasmoid",
       "name": "Plasmoid",
       "source": "AAG",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "ooze"
+      ]
     },
     {
       "id": "5etools:races:rhw:reborn",
       "name": "Reborn",
       "source": "RHW",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:vrgr:reborn",
@@ -31123,19 +31237,28 @@
       "id": "5etools:races:lfl:rimekin",
       "name": "Rimekin",
       "source": "LFL",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:mot:satyr",
       "name": "Satyr",
       "source": "MOT",
-      "speed": 35
+      "speed": 35,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:mpmm:satyr",
       "name": "Satyr",
       "source": "MPMM",
-      "speed": 35
+      "speed": 35,
+      "creatureTypes": [
+        "fey"
+      ]
     },
     {
       "id": "5etools:races:mpmm:sea%20elf",
@@ -31144,19 +31267,34 @@
       "speed": {
         "walk": 30,
         "swim": true
-      }
+      },
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "elf"
+      ]
     },
     {
       "id": "5etools:races:mpmm:shadar-kai",
       "name": "Shadar-Kai",
       "source": "MPMM",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ],
+      "creatureTypeTags": [
+        "elf"
+      ]
     },
     {
       "id": "5etools:races:efa:shifter",
       "name": "Shifter",
       "source": "EFA",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:erlw:shifter",
@@ -31191,7 +31329,10 @@
       "id": "5etools:races:dmg:skeleton",
       "name": "Skeleton",
       "source": "DMG",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "undead"
+      ]
     },
     {
       "id": "5etools:races:mpmm:tabaxi",
@@ -31215,7 +31356,10 @@
       "id": "5etools:races:aag:thri-kreen",
       "name": "Thri-kreen",
       "source": "AAG",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "monstrosity"
+      ]
     },
     {
       "id": "5etools:races:phb:tiefling",
@@ -31227,7 +31371,10 @@
       "id": "5etools:races:xphb:tiefling",
       "name": "Tiefling",
       "source": "XPHB",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "humanoid"
+      ]
     },
     {
       "id": "5etools:races:mpmm:tortle",
@@ -31293,7 +31440,10 @@
       "id": "5etools:races:efa:warforged",
       "name": "Warforged",
       "source": "EFA",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "construct"
+      ]
     },
     {
       "id": "5etools:races:erlw:warforged",
@@ -31317,7 +31467,10 @@
       "id": "5etools:races:dmg:zombie",
       "name": "Zombie",
       "source": "DMG",
-      "speed": 30
+      "speed": 30,
+      "creatureTypes": [
+        "undead"
+      ]
     },
     {
       "id": "5etools:races:phb:dragonborn%20%28%29",
