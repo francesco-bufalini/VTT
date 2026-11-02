@@ -4,6 +4,7 @@ import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefi
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
 import {loadFeatBenefitCatalogs} from './feat_benefit_catalogs.js';
 import {infusionDefinitionsFromOptionLists} from './infusion_benefit_catalogs.js';
+import {backgroundAbilityIndexFromBenefits,backgroundFeatIndexFromBenefits} from './background_benefit_catalogs.js';
 import {projectTraitFlavourBenefits,traitFlavourModels} from './trait_flavours.js';
 import {proficiencyIndexFromBenefits} from './proficiency_catalog.js';
 import {baseValueOverridesFromBenefits} from './base_override_benefits.js';
@@ -1910,6 +1911,7 @@ export function loadRuleCatalogs(){
     fetch('/catalog/benefits/action_sequence.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
   ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers,featBenefits,spellExtensions,actionSequenceBenefits])=>({
     abilityGrants:{...variantFamilyAbilityGrants(abilityGrants),...featBenefits,
+      background:backgroundAbilityIndexFromBenefits(flavourBonuses),
       artificer_infusions:optionLists?.benefit_type==='option_list'?infusionDefinitionsFromOptionLists(optionLists):[]},
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants:proficiencyIndexFromBenefits(languageVocabulary,proficiencyGrantBenefits),speciesAttacks,
@@ -1930,7 +1932,8 @@ export function loadRuleCatalogs(){
     actionSequenceBenefits:actionSequenceBenefits?.benefit_type==='action_sequence'?actionSequenceBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
-    featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,speciesPowers,speciesConditionalBonuses,
+    featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,
+    originDetails:{...originDetails,backgrounds:backgroundFeatIndexFromBenefits(flavourFeatGrants,originDetails.backgrounds||{})},speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   }
