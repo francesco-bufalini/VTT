@@ -103,8 +103,9 @@ test("automatic unarmed strikes and shield respect offhand availability",()=>{
 });
 
 test("2014 full, half, third and pact slots follow feature data, including multiclass rounding",()=>{
-  const rule=(name,subclass='')=>catalogs.spellcastingBenefits.grants.find(row=>
-    row.owner.class_name===name&&(row.owner.subclass||'')===subclass).benefit.slot_progression;
+  const rule=(name,subclass='')=>catalogs.slotBenefits.entries.find(row=>
+    row.benefit?.kind==='spell_slots'&&row.granted_by?.ref?.class_name===name&&
+    (row.granted_by.ref.subclass||'')===subclass)?.benefit.slot_progression;
   const wizard=spellProgression(character(),[{level:5,slot_progression:rule('Wizard')}]);
   assert.deepEqual(wizard.slots.slice(0,4),[0,4,3,2]);
   const multi=spellProgression({rules_version:"2014"},[
