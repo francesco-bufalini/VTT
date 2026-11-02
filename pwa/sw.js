@@ -162,7 +162,7 @@ const SHELL = [
   "/catalog/roll_bonus_rules.json",
   "/catalog/scaling_dice.json",
   "/catalog/effect_extensions.json",
-  "/catalog/proficiency_grants.json",
+  "/catalog/languages_5etools.json",
   "/catalog/player.json",
   "/catalog/spells.json",
   "/manifest.webmanifest",
@@ -189,7 +189,7 @@ const CORE_SHELL = SHELL.filter(path =>
   path === "/" || /\.(?:html|js|css|webmanifest)$/.test(path));
 const REQUIRED_CATALOGS = [
   "/catalog/ability_grants.json", "/catalog/class_mechanics.json",
-  "/catalog/spell_grant_rules.json", "/catalog/species_powers.json", "/catalog/proficiency_grants.json", "/catalog/classes.json",
+  "/catalog/spell_grant_rules.json", "/catalog/species_powers.json", "/catalog/languages_5etools.json", "/catalog/classes.json",
   "/catalog/player.json", "/catalog/sense_grants.json", "/benefits/proficiency_grant.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json", "/catalog/power_selections.json",
   "/catalog/optional_feature_progressions.json",

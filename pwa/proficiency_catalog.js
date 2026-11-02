@@ -2,11 +2,13 @@
 // No proficiency mechanics remain authored in the legacy index.
 const rows=v=>Array.isArray(v)?v:[];
 export const PROFICIENCY_SOURCE_SECTIONS=['class','race','subrace','background','feat','classFeature','subclassFeature'];
-export function proficiencyIndexFromBenefits(metadata={},catalog={}){
- if(catalog?.schema_version!==2||catalog?.benefit_type!=='proficiency_grant'||
-   !Array.isArray(catalog.entries))return metadata;
- const index={meta:metadata.meta||{},languages:rows(metadata.languages)};
+export function proficiencyIndexFromBenefits(languageCatalog={},catalog={}){
+ // Language names and types come solely from the dedicated 5eTools glossary.
+ // The legacy proficiency catalog has no runtime role and must not be restored.
+ const index={languages:rows(languageCatalog?.languages)};
  for(const section of PROFICIENCY_SOURCE_SECTIONS)index[section]=[];
+ if(catalog?.schema_version!==2||catalog?.benefit_type!=='proficiency_grant'||
+   !Array.isArray(catalog.entries))return index;
  for(const entry of catalog.entries){
   if(entry?.enabled===false||entry?.benefit?.type!=='proficiency_grant')continue;
   const rules=entry.benefit.proficiency_grant?.source_rules;

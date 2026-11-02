@@ -256,6 +256,7 @@ def main() -> None:
         for row in convert("background", upstream):
             key = (row["name"].casefold(), row["source"].casefold())
             by_key[key] = {**by_key.get(key, {}), **row}
+        output.pop("languages", None)  # vocabulary belongs to languages_5etools.json
         output["background"] = sorted(by_key.values(),
                                       key=lambda row: (row["name"].casefold(), row["source"].casefold()))
         output.setdefault("meta", {})["backgroundSource"] = "data/backgrounds.json"
@@ -287,6 +288,7 @@ def main() -> None:
     if args.features_only:
         out = read_json(destination)
         out.update(feature_output)
+        out.pop("languages", None)  # do not repopulate the removed duplicate
         out["meta"]["featureSnapshot"] = release
         destination.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print("Updated " + ", ".join(f"{kind}: {len(rows)}" for kind, rows in feature_output.items()))
@@ -344,9 +346,7 @@ def main() -> None:
                 # parent species (e.g. the Human and Half-Orc Mark of Finding).
                 # Apply shared ownership to every such instance, not only first.
     languages_path, languages_count = generate_language_catalog(root, release)
-    # The PWA uses the *same* typed language vocabulary for racial pickers,
-    # bundled in the already-required proficiency index (no extra fetch).
-    out["languages"] = read_json(languages_path)["languages"]
+    # Language vocabulary is exclusively published at languages_5etools.json.
     destination = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_grants_5etools.json"
     destination.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {destination}: " + ", ".join(f"{k}: {len(out[k])}" for k in sources))

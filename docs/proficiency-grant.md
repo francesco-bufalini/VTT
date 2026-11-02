@@ -58,9 +58,12 @@ di competenze già possedute e le associazioni ai tratti 5eTools.
 
 Le competenze fisse dei flavour di Resilient PHB/XPHB sono state spostate da
 `benefits/proficiency.json`: quel file, lo schema e l'esempio dedicati
-sono stati eliminati. Il vecchio indice `pwa/catalog/proficiency_grants.json`
-contiene ora soltanto il vocabolario dei linguaggi e le informazioni di
-generazione: nessuna concessione di competenza è più definita lì.
+sono stati eliminati. Anche l'indice legacy `pwa/catalog/proficiency_grants.json`
+è stato eliminato: nessuna concessione di competenza e nessun metadato di
+generazione viene più letto da lì. Il vocabolario è fornito direttamente da
+`vtt/data/languages_5etools.json` (5eTools), condiviso con il motore nativo e
+servito alla PWA tramite `/catalog/languages_5etools.json`.
 La PWA costruisce a runtime, in `pwa/proficiency_catalog.js`, la proiezione
 compatibile con gli handler esistenti; le regole provengono esclusivamente
-da `benefits/proficiency_grant.json`.
+da `benefits/proficiency_grant.json`. La sincronizzazione non ricrea più
+il vecchio indice, né duplica i linguaggi nel catalogo nativo di competenze.
