@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT creature_grant benefit catalog v2",
+  "allOf": [
+    {
+      "$ref": "catalog.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "benefit_type",
+        "entries"
+      ],
+      "properties": {
+        "benefit_type": {
+          "const": "creature_grant"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "benefit"
+            ],
+            "properties": {
+              "benefit": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "id",
+                  "creature_grant"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "creature_grant"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
