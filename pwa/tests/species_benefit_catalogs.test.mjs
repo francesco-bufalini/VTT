@@ -7,10 +7,10 @@ const read=relative=>JSON.parse(readFileSync(new URL(relative,import.meta.url),'
 const rollMode=read('../../vtt/enrichment/benefits/roll_mode.json');
 const rollBonus=read('../../vtt/enrichment/benefits/roll_bonus.json');
 const source=read('../../vtt/data/creature_references_5etools.json');
-test('164 racial roll modes reproduce the full previous source-qualified rules',()=>{
+test('176 racial roll modes reproduce the full previous source-qualified rules',()=>{
  const actual=speciesRollModesFromBenefits(rollMode,{races:source.races});
  assert.deepEqual(actual,projectSpeciesRollModes(source.races));
- assert.equal(rollMode.entries.length,164);
+ assert.equal(rollMode.entries.length,176);
 });
 test('23 racial roll bonuses retain owner and mechanical identity, without duplicated prose',()=>{
  const output=speciesRollBonusesFromBenefits(rollBonus);
