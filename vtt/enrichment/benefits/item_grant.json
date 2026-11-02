@@ -1,0 +1,290 @@
+{
+  "schema_version": 2,
+  "benefit_type": "item_grant",
+  "scope": "catalog",
+  "notes": "Five origin-qualified feature item grants; complex already-supported item mechanics remain in parameters for the v1 runtime adapter.",
+  "entries": [
+    {
+      "id": "item_grant:artificer-armor-modifications",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Armor Modifications",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 9,
+      "benefit": {
+        "type": "item_grant",
+        "id": "artificer-armor-modifications",
+        "items": [
+          {
+            "id": "armor-chest",
+            "name": "Arcane Armor · Armatura toracica",
+            "type": "MA",
+            "quantity": 1,
+            "description": "Parte della tua Armatura Arcana. Non applica CA finché non viene equipaggiata."
+          },
+          {
+            "id": "armor-boots",
+            "name": "Arcane Armor · Stivali",
+            "type": "G",
+            "quantity": 1,
+            "description": "Stivali dell'Armatura Arcana."
+          },
+          {
+            "id": "armor-helmet",
+            "name": "Arcane Armor · Elmo",
+            "type": "G",
+            "quantity": 1,
+            "description": "Elmo dell'Armatura Arcana."
+          },
+          {
+            "id": "armor-special-weapon",
+            "name": "Arcane Armor · Arma speciale",
+            "type": "G",
+            "quantity": 1,
+            "description": "Arma speciale del modello di armatura, i cui attacchi sono già gestiti dal modello."
+          }
+        ],
+        "parameters": {
+          "infusion_capacity_bonus": 2
+        }
+      }
+    },
+    {
+      "id": "item_grant:artificer-eldritch-cannon",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Eldritch Cannon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Artillerist",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "item_grant",
+        "id": "artificer-eldritch-cannon",
+        "items": [
+          {
+            "id": "flamethrower",
+            "name": "Eldritch Cannon · Flamethrower",
+            "type": "G",
+            "description": "Cannone arcano: lanciafiamme (azione bonus per attivarlo)."
+          },
+          {
+            "id": "force-ballista",
+            "name": "Eldritch Cannon · Force Ballista",
+            "type": "G",
+            "description": "Cannone arcano: balista di forza (azione bonus per attivarlo)."
+          },
+          {
+            "id": "protector",
+            "name": "Eldritch Cannon · Protector",
+            "type": "G",
+            "description": "Cannone arcano: protettore (azione bonus per attivarlo)."
+          }
+        ],
+        "parameters": {
+          "activation_action_id": "eldritch_cannon",
+          "max_owned": 1,
+          "replace_existing": true,
+          "allow_duplicate_choices": true,
+          "max_owned_by_level": [
+            {
+              "min_level": 15,
+              "max_owned": 2
+            }
+          ],
+          "item_stats": {
+            "armor_class": 18,
+            "hit_points": "5 * artificer_level",
+            "damage_immunities": [
+              "poison",
+              "psychic"
+            ],
+            "duration": "1 hour",
+            "movement_feet": 15,
+            "activation_range_feet": 60
+          },
+          "powers": {
+            "flamethrower": {
+              "id": "flamethrower",
+              "name": "Flamethrower",
+              "mode": "save_area",
+              "action_type": "bonus",
+              "area_shape": "cone",
+              "area_length_feet": 15,
+              "save_ability": "dex",
+              "damage": "2d8",
+              "damage_type": "fire",
+              "extra_damage_at_level": [
+                {
+                  "level": 9,
+                  "dice": "1d8"
+                }
+              ],
+              "half_on_save": true,
+              "origin": "cannon",
+              "description": "Cono di 15 ft a partire dal cannone; TS Des, metà danni se superato. Gli oggetti infiammabili non indossati o trasportati prendono fuoco."
+            },
+            "force-ballista": {
+              "id": "force-ballista",
+              "name": "Force Ballista",
+              "mode": "spell_attack",
+              "action_type": "bonus",
+              "range_feet": 120,
+              "casting_ability": "int",
+              "damage": "2d8",
+              "damage_type": "force",
+              "extra_damage_at_level": [
+                {
+                  "level": 9,
+                  "dice": "1d8"
+                }
+              ],
+              "on_hit_effects": [
+                {
+                  "operation": "push",
+                  "distance_feet": 5,
+                  "description": "Spinge il bersaglio di 5 ft lontano dal cannone."
+                }
+              ],
+              "origin": "cannon",
+              "description": "Attacco a distanza con incantesimo dalla posizione del cannone, fino a 120 ft."
+            },
+            "protector": {
+              "id": "protector",
+              "name": "Protector",
+              "mode": "temporary_hp_area",
+              "action_type": "bonus",
+              "radius_feet": 10,
+              "temp_hp": "1d8 + int_mod",
+              "minimum_modifier": 1,
+              "origin": "cannon",
+              "description": "Il cannone e le creature scelte entro 10 ft dal cannone ottengono PF temporanei; si usa il valore più alto, non si sommano."
+            }
+          },
+          "command_action_id": "command_cannon"
+        }
+      }
+    },
+    {
+      "id": "item_grant:artificer-right-tool",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "The Right Tool for the Job",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "item_grant",
+        "id": "artificer-right-tool",
+        "items": [
+          {
+            "id": "artisan-tools",
+            "name": "Strumenti da artigiano creati",
+            "type": "G",
+            "description": "Scegli e rinomina il tipo di strumenti creato dal privilegio."
+          }
+        ],
+        "parameters": {
+          "max_owned": 1,
+          "replace_existing": true
+        }
+      }
+    },
+    {
+      "id": "item_grant:bard-performance-of-creation",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Performance of Creation",
+          "source": "TCE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Creation",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "item_grant",
+        "id": "bard-performance-of-creation",
+        "items": [
+          {
+            "id": "created-object",
+            "name": "Oggetto creato · Performance of Creation",
+            "type": "G",
+            "description": "Scegli l'oggetto non magico e adattane i dati nella scheda inventario."
+          }
+        ],
+        "parameters": {
+          "max_owned": 1,
+          "replace_existing": true
+        }
+      }
+    },
+    {
+      "id": "item_grant:gnome-rock-tinker",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Tinker",
+          "source": "PHB",
+          "race": "Gnome",
+          "race_source": "PHB",
+          "subrace": "Rock",
+          "subrace_source": "PHB"
+        }
+      },
+      "min_level": 1,
+      "benefit": {
+        "type": "item_grant",
+        "id": "gnome-rock-tinker",
+        "items": [
+          {
+            "id": "clockwork-toy",
+            "name": "Tinker · Giocattolo a orologeria",
+            "type": "G",
+            "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF) che percorre 5 ft sul terreno ogni turno in direzione casuale ed emette rumori. Cessa di funzionare dopo 24 ore, a meno di ripararlo impiegando 1 ora; puoi smontarlo come azione e recuperare i materiali."
+          },
+          {
+            "id": "fire-starter",
+            "name": "Tinker · Accendifuoco",
+            "type": "G",
+            "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF); usarlo richiede un'azione per accendere una candela, una torcia o un fuoco da campo. Cessa di funzionare dopo 24 ore, salvo riparazione di 1 ora; puoi smontarlo come azione."
+          },
+          {
+            "id": "music-box",
+            "name": "Tinker · Scatola musicale",
+            "type": "G",
+            "description": "Costruzione: 1 ora e materiali per 10 mo. Piccolo dispositivo (CA 5, 1 PF) che riproduce una canzone quando viene aperto e si ferma quando finisce o viene chiuso. Cessa di funzionare dopo 24 ore, salvo riparazione di 1 ora; puoi smontarlo come azione."
+          }
+        ],
+        "parameters": {
+          "max_owned": 3,
+          "allow_duplicate_choices": true,
+          "description": "Puoi mantenere fino a tre dispositivi costruiti con Tinker. La costruzione, il costo in materiali, la durata di 24 ore e l'eventuale riparazione sono gestiti manualmente; ciascun dispositivo viene aggiunto come oggetto separato in Inventario."
+        }
+      }
+    }
+  ]
+}

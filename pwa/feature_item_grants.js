@@ -127,3 +127,42 @@ export function featureItemPowers(record={},calculated={},actionId=''){
   });
  });
 }
+
+export function featureItemGrantsFromBenefits(catalog={}){
+ if(catalog?.schema_version!==2||catalog.benefit_type!=='item_grant'||
+   catalog.scope!=='catalog'||!Array.isArray(catalog.entries))
+  throw Error('Catalogo tipizzato item_grant non valido');
+ const ids=new Set();
+ return catalog.entries.map(entry=>{
+  const ref=entry?.granted_by?.ref||{},b=entry?.benefit||{};
+  if(!entry?.id||ids.has(entry.id)||entry.granted_by?.kind!=='5etools'||
+   !['class_feature','subclass_feature','species_trait'].includes(ref.category)||
+   !ref.name||!ref.source||
+   (ref.category==='species_trait'&&(!ref.race||!ref.race_source))||
+   (ref.category!=='species_trait'&&(!ref.class_name||!ref.class_source))||
+   (ref.category==='subclass_feature'&&(!ref.subclass||!ref.subclass_source))||
+   b.type!=='item_grant'||!b.id||!Array.isArray(b.items)||
+   !b.items.length||b.items.some(item=>!item.id||!item.name)||
+   (b.parameters!==undefined&&(!b.parameters||Array.isArray(b.parameters)||typeof b.parameters!=='object')))
+   throw Error('Voce item_grant non valida: '+(entry?.id||'senza ID'));
+  ids.add(entry.id);
+  const origin=ref.category==='species_trait'?
+   {species_name:ref.race,species_source:ref.race_source,
+    ...(ref.subrace?{subrace:ref.subrace,subrace_source:ref.subrace_source}:{})}:
+   {class_name:ref.class_name,class_source:ref.class_source,
+    ...(ref.subclass?{subclass:ref.subclass}:{})};
+  return {id:b.id,...(b.parameters||{}),...origin,feature:ref.name,
+   ...(entry.min_level!==undefined?{min_level:entry.min_level}:{}),
+   items:b.items.map(item=>({...item}))};
+ });
+}
+export async function loadFeatureItemGrantBenefits(fetcher=fetch){
+ let typed;
+ try{typed=await fetcher('/benefits/item_grant.json')}catch{typed=null}
+ if(typed?.ok)return featureItemGrantsFromBenefits(await typed.json());
+ let legacy;
+ try{legacy=await fetcher('/catalog/feature_item_grants.json')}catch{return []}
+ if(!legacy?.ok)return [];
+ const data=await legacy.json();
+ return data?.version===1&&Array.isArray(data.grants)?data.grants:[];
+}

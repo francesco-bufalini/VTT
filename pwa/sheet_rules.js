@@ -32,7 +32,7 @@ import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplement
 import {contextualFeatureGrants,modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects,traitStateRollModes} from './trait_state_rules.js';
-import {featureItemGrants,racialItemGrantFeatures} from './feature_item_grants.js';
+import {featureItemGrants,racialItemGrantFeatures,loadFeatureItemGrantBenefits} from './feature_item_grants.js';
 import {barbarian2014Supplements,barbarian2014ProficiencyCatalog} from './barbarian_2014.js';
 import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
 
@@ -1840,7 +1840,7 @@ export function loadRuleCatalogs(){
       .then(data=>data?.schema_version===2&&data.benefit_type==='roll_mode'?data:{load_error:true})
       .catch(error=>{console.warn('VTT: vantaggi razziali condizionali non disponibili',error);return {load_error:true};}),
     fetch('/catalog/sense_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1?data:{}).catch(()=>({})),
-    fetch('/catalog/feature_item_grants.json').then(r=>r.ok?r.json():{}).then(data=>data?.version===1&&Array.isArray(data.grants)?data.grants:[]).catch(()=>[]),
+    loadFeatureItemGrantBenefits(),
     // One declarative three-stage selection contract, optional for older offline shells.
     fetch('/catalog/power_selections.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.selections)&&Array.isArray(data.templates)?data:{selections:[],templates:[]})

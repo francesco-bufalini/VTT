@@ -208,3 +208,21 @@ forma attesa dal calcolo della scheda conservando ID, livello e priorità.
 I dadi homebrew della scheda restano separati. Il vecchio JSON serve
 soltanto ai client precedenti; un catalogo v2 presente ma invalido
 non deve essere sostituito silenziosamente dal legacy.
+
+---
+
+## Oggetti concessi da privilegi
+
+Il catalogo [`item_grant.json`](item_grant.json) contiene le cinque
+concessioni di oggetti non espresse dai soli campi strutturati 5eTools:
+Armor Modifications, Eldritch Cannon, The Right Tool for the Job,
+Performance of Creation e Tinker (Rock Gnome). Ogni record ha un
+`granted_by` con fonte di classe/sottoclasse o specie; le istanze
+individuali create restano nella scheda e non nel catalogo condiviso.
+
+`pwa/feature_item_grants.js` ricostruisce temporaneamente il contratto
+runtime v1; le proprietà di selezione e uso dell'oggetto che non hanno
+ancora campi comuni nel modello tipizzato sono conservate in
+`benefit.parameters`, non in nuovi file separati per privilegio.
+Il vecchio `pwa/catalog/feature_item_grants.json` resta disponibile
+solo per host precedenti e per confronto di regressione.

@@ -419,6 +419,12 @@
       "benefit_type": "scaling_die",
       "catalog": "vtt/enrichment/benefits/scaling_die.json",
       "runtime": "pwa/scaling_dice.js"
+    },
+    {
+      "source": "pwa/catalog/feature_item_grants.json",
+      "benefit_type": "item_grant",
+      "catalog": "vtt/enrichment/benefits/item_grant.json",
+      "runtime": "pwa/feature_item_grants.js"
     }
   ]
 }
