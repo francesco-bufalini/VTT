@@ -189,7 +189,8 @@ test('all 21 canonical class spellcasting grants reproduce the legacy calculated
  const typed=read('../../vtt/enrichment/benefits/option_grant.json');
  const slotBenefits=read('../../vtt/enrichment/benefits/resource.json');
  const oldRules=catalogs.spellcastingBenefits.grants;
- const spellGrants=typed.entries.filter(row=>row.benefit?.option_grant?.option_kind==='spell');
+ const spellGrants=typed.entries.filter(row=>row.benefit?.option_grant?.option_kind==='spell'&&
+  row.benefit.option_grant.source?.type==='spell_catalog'&&!row.benefit.option_grant.nested);
  const ownedSlots=slotBenefits.entries.filter(row=>row.benefit?.kind==='spell_slots');
  assert.equal(spellGrants.length,oldRules.length);
  assert.equal(ownedSlots.length,oldRules.length);

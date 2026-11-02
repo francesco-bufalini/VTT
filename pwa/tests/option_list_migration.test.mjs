@@ -9,18 +9,29 @@ const grants=read('../../vtt/enrichment/benefits/option_grant.json');
 const lists=read('../../vtt/enrichment/benefits/option_list.json');
 const options=lists.entries.flatMap(entry=>entry.benefit?.option_list?.options||[]);
 
-test('272 optional features retain their exact source identity and mechanical payload',()=>{
- assert.equal(options.length,272);
- assert.equal(new Set(options.map(row=>row.id)).size,272);
- assert.deepEqual(options,legacy.options);
- for(const entry of lists.entries){
-  const ref=entry.granted_by?.ref,option=entry.benefit?.option_list?.options?.[0];
-  assert.equal(entry.granted_by?.kind,'5etools');
-  assert.equal(ref?.category,'optional_feature');
-  assert.equal(ref?.name,option?.name);
-  assert.equal(ref?.source,option?.source);
-  assert.equal(entry.benefit?.option_list?.id,option?.id);
+test('272 official optional features retain source identity; local capabilities are separate',()=>{
+ const official=lists.entries.filter(entry=>entry.granted_by?.kind==='5etools');
+ const local=lists.entries.filter(entry=>entry.granted_by?.kind==='homebrew');
+ assert.equal(official.length,272);
+ assert.equal(local.length,3);
+ const sourceOptions=official.flatMap(entry=>entry.benefit.option_list?.options||[]);
+ assert.equal(new Set(options.map(row=>row.id)).size,275);
+ assert.deepEqual(sourceOptions.map(row=>row.id),legacy.options.map(row=>row.id));
+ const deliberate=new Set(['optional:tce:druidic-warrior','optional:tce:blessed-warrior','optional:phb:pact-of-the-tome']);
+ for(const [index,option] of sourceOptions.entries()){
+  const previous=legacy.options[index];
+  if(!deliberate.has(option.id))assert.deepEqual(option,previous,option.id);
+  else {
+   assert.deepEqual({...option,effects:previous.effects},previous,'Unchanged 5eTools fields: '+option.id);
+   assert(option.effects.some(effect=>effect.type==='option_grant'));
+  }
+  const ref=official[index].granted_by.ref;
+  assert.equal(ref.category,'optional_feature');
+  assert.equal(ref.name,option.name);
+  assert.equal(ref.source,option.source);
+  assert.equal(official[index].benefit.option_list.id,option.id);
  }
+ assert(local.every(entry=>entry.benefit.option_list.options[0].local===true));
 });
 
 test('all 17 typed grants resolve exactly the same selections and effects without legacy options',()=>{
@@ -47,7 +58,9 @@ test('all 17 typed grants resolve exactly the same selections and effects withou
    optionGrants:former,optionalFeatureProgressions:legacy})
    .find(row=>row.id===rule.id);
   assert(modern&&before,'Missing selection models: '+rule.id);
-  assert.deepEqual(modern.options,before.options,'Migrated options differ for '+rule.id);
+  const deliberate=new Set(['optional:tce:druidic-warrior','optional:tce:blessed-warrior','optional:phb:pact-of-the-tome']);
+  assert.deepEqual(modern.options.map(row=>deliberate.has(row.id)?{...row,effects:before.options.find(previous=>previous.id===row.id)?.effects}:row),
+    before.options,'Migrated options differ for '+rule.id);
   assert(modern.options.length,'No official options for '+rule.id);
  }
 });

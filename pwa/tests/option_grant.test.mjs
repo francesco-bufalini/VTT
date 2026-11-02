@@ -35,9 +35,11 @@ function customCatalog(layers={learned:{limit:2},applied:{limit:1}}){
 
 test('class and subclass grants preserve source identifiers and declare only one selection mechanism',()=>{
  assert.equal(rules.benefit_type,'option_grant');
- assert.equal(rules.entries.length,41);
+ assert.equal(rules.entries.length,44);
  assert.equal(new Set(rules.entries.map(row=>row.id)).size,rules.entries.length);
- assert(rules.entries.every(row=>row.granted_by?.kind==='5etools'&&row.granted_by.ref.class_source));
+ assert(rules.entries.every(row=>row.granted_by?.kind==='5etools'));
+ assert(rules.entries.filter(row=>!row.benefit.option_grant.nested).every(row=>row.granted_by.ref.class_source));
+ assert(rules.entries.filter(row=>row.benefit.option_grant.nested&&row.granted_by.ref.category==='optional_feature').length===3);
  assert(rules.entries.every(row=>row.benefit.type==='option_grant'));
  const ranger=powerSelectionModels(basis(),context,source).find(row=>row.id==='ranger_favored_enemy_phb');
  assert.equal(ranger.benefit_type,'option_grant');

@@ -31,7 +31,8 @@ test('Arcane Armor is one local capability that can independently extend multipl
   record={...record,...powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:index})};
  }
  assert.equal(record.power_applications.arcane_armor.length,2);
- assert(record.inventory.every(item=>item.option_extensions?.some(row=>row.id==='arcane_armor')));
+ assert(record.inventory.every(item=>item.option_extensions?.some(row=>row.id==='arcane_armor')),
+  JSON.stringify({applications:record.power_applications.arcane_armor,extensions:record.inventory.map(i=>i.option_extensions)}));
  assert.throws(()=>powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:0}),/già applicato/);
  const children=powerSelectionModels(record,armorer,catalog).filter(row=>row.id.startsWith('armor_model:from:'));
  assert.equal(children.length,2);
@@ -87,7 +88,8 @@ test('applied Druidic Warrior, Blessed Warrior and Pact of the Tome grant indepe
    origin_id:'feature:'+scenario.owner,origin_key:'class|phb|'+scenario.owner.toLowerCase(),level:3}]};
   let record={kind:'character',rules_version:'2014',classes:[{name:scenario.owner,source:'PHB',level:3}],inventory:[]};
   record={...record,...powerSelectionPatch(record,ctx,indexed,scenario.rule,'learned',scenario.option)};
-  record={...record,...powerApplicationPatch(record,ctx,indexed,scenario.rule,scenario.option,true)};
+  if(!model(record,ctx,scenario.rule,indexed).layers.applied?.automatic)
+   record={...record,...powerApplicationPatch(record,ctx,indexed,scenario.rule,scenario.option,true)};
   const child=powerSelectionModels(record,ctx,indexed).find(row=>row.id.startsWith(scenario.grant+':from:'));
   assert(child,'Nested spell chooser missing: '+scenario.option);
   assert.equal(child.layers.learned.limit,scenario.count);
@@ -101,7 +103,9 @@ test('applied Druidic Warrior, Blessed Warrior and Pact of the Tome grant indepe
   assert.equal(grant.cantrip,true);
   assert.equal(grant.payment_mode,'slot'); // Canonical cantrip flag makes it free at the casting layer.
   assert.equal(grant.spellcasting_ability,scenario.ability);
-  record={...record,...powerApplicationPatch(record,ctx,indexed,scenario.rule,scenario.option,false)};
+  record={...record,...(model(record,ctx,scenario.rule,indexed).layers.applied?.automatic?
+    powerSelectionPatch(record,ctx,indexed,scenario.rule,'learned',scenario.option):
+    powerApplicationPatch(record,ctx,indexed,scenario.rule,scenario.option,false))};
   assert(!projectSelectionBenefits(record,indexed,ctx.features).origin_spell_grants.some(row=>row.spell_id===spell.id));
  }
 });

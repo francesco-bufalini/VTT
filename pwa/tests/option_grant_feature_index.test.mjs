@@ -37,7 +37,7 @@ test('migration grant identity is source-qualified and each slot resource has an
 
 test('audit: every migrated option-grant has a resolvable real feature source',()=>{
  const missing=[],present=[],ambiguous=[],modelMissing=[];
- for(const entry of grants.entries){
+ for(const entry of grants.entries.filter(entry=>!entry.benefit.option_grant.nested)){
   const ref=sourceFor(entry),record=makeRecord(ref);
   const features=collectStructuredFeatures(record,{classFeatures:index,
    spellcastingBenefits:spellcasting,optionGrants:grants,optionLists:lists,slotBenefits:resources});
@@ -59,7 +59,15 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
  }));
  // The catalog source report is intentionally preserved even if upstream
  // 5eTools does not currently contain a source, so that omissions are visible.
- assert.equal(grants.entries.length,41);
+ assert.equal(grants.entries.length,44);
+ const children=grants.entries.filter(entry=>entry.benefit.option_grant.nested);
+ assert.equal(children.length,4);
+ for(const child of children){
+  const refs=lists.entries.flatMap(entry=>entry.benefit.option_list?.options||[])
+    .flatMap(option=>[...(option.effects||[]),...(option.item_effects?.effects||[])])
+    .filter(effect=>effect.type==='option_grant'&&effect.grant_id===child.benefit.id);
+  assert(refs.length,'Nested grant has no canonical parent application: '+child.benefit.id);
+ }
  assert.deepEqual(missing,[], 'Each typed grant must have a real 5eTools feature');
  assert.deepEqual(ambiguous,[], 'Repeated features must explicitly declare per-feature instancing');
  assert.deepEqual(modelMissing,[], 'Every nondependent grant must produce a visible model');
@@ -82,74 +90,20 @@ test('audit: source-qualified 2024 Fighting Style features reveal non-option-gra
  assert(findings.every(row=>row.level>=1));
 });
 
-test('audit: optional spell-choice privileges create source-scoped spell pickers',()=>{
- const catalogs={
-  classFeatures:index,classMechanics:read('../catalog/class_mechanics.json'),
-  abilityGrants:read('../catalog/ability_grants.json'),
-  spellcastingBenefits:spellcasting,optionGrants:grants,optionLists:lists,
-  powerSelections:powerCatalog,optionalFeatureProgressions:optionCatalog
- };
- const checks=[
-  {className:'Ranger',level:2,rule:'optional:class:phb:ranger:fs-r',
-   option:'optional:tce:druidic-warrior',mode:'manual'},
-  {className:'Paladin',level:2,rule:'optional:class:phb:paladin:fs-p',
-   option:'optional:tce:blessed-warrior',mode:'manual'},
-  {className:'Warlock',level:3,rule:'optional:class:phb:warlock:pb',
-   option:'optional:phb:pact-of-the-tome',mode:'automatic'}
+test('audit: optional feature cantrip choices are nested option_grants',()=>{
+ const choices=[
+  {option:'optional:tce:druidic-warrior',type:'spell_choice:druidic_warrior',count:2,filter:'level=0|class=druid'},
+  {option:'optional:tce:blessed-warrior',type:'spell_choice:blessed_warrior',count:2,filter:'level=0|class=cleric'},
+  {option:'optional:phb:pact-of-the-tome',type:'spell_choice:pact_of_the_tome',count:3,filter:'level=0'}
  ];
- const findings=[];
- for(const check of checks){
-  const record={kind:'character',rules_version:'2014',level:check.level,
-   class:check.className,class_source:'PHB',
-   classes:[{name:check.className,source:'PHB',level:check.level}],
-   abilities:{str:10,dex:10,con:12,int:12,wis:16,cha:16},
-   power_selections:{[check.rule]:{learned:[check.option]}},
-   ...(check.mode==='manual'?{power_applications:{[check.rule]:[{id:check.option}]}}:{})};
-  const calculated=calculateSheet(record,catalogs);
-  const candidates=(calculated.origin_choices||[]).filter(row=>
-   /Druidic Warrior|Blessed Warrior|Pact of the Tome/i.test(row.origin_name||''));
-  findings.push({className:check.className,option:check.option,
-   choices:candidates.map(row=>({origin:row.origin_name,count:row.count,
-    filter:row.filter||'',spell_options:row.spell_options?.length||0}))});
+ for(const choice of choices){
+  const parent=lists.entries.find(row=>row.benefit.option_list?.id===choice.option);
+  assert(parent,'Parent option must be defined by its 5eTools source: '+choice.option);
+  assert(parent.benefit.option_list.options[0].effects.some(effect=>
+   effect.type==='option_grant'&&effect.grant_id===choice.type));
+  const declaration=grants.entries.find(row=>row.benefit?.id===choice.type);
+  assert(declaration?.benefit?.option_grant?.nested);
+  assert.equal(declaration.benefit.option_grant.layers.learned.limit,choice.count);
+  assert.equal(declaration.benefit.option_grant.source.filter,choice.filter);
  }
- console.log('OPTION_GRANT_SPELL_CHOICE_AUDIT '+JSON.stringify(findings));
- assert.equal(findings.length,3);
- assert.deepEqual(findings.map(row=>row.choices.map(c=>c.count)),[[2],[2],[3]],
-  'Druidic Warrior, Blessed Warrior and Pact of the Tome must expose their real spell choices');
- assert.deepEqual(findings.map(row=>row.choices.map(c=>c.filter)),[
-  ['level=0|class=druid'],['level=0|class=cleric'],['level=0']
- ]);
-});
-
-test('Pact of the Tome PHB: three cantrips chosen, persisted, castable, and withdrawn with the trait',()=>{
- const ruleId='optional:class:phb:warlock:pb';
- const rules={classFeatures:index,classMechanics:read('../catalog/class_mechanics.json'),
-  abilityGrants:read('../catalog/ability_grants.json'),
-  spellcastingBenefits:spellcasting,optionGrants:grants,optionLists:lists,
-  powerSelections:powerCatalog,optionalFeatureProgressions:optionCatalog};
- const spellCatalog=Array.from({length:4},(_,i)=>({
-  id:'test:cantrip:'+i,name:'Cantrip '+i,source:'PHB',level:0,classes:['Wizard']
- }));
- rules.spells=spellCatalog;
- let record={kind:'character',id:'pact-book',rules_version:'2014',class:'Warlock',
-  class_source:'PHB',level:3,classes:[{name:'Warlock',source:'PHB',level:3}],
-  abilities:{str:10,dex:12,con:12,int:10,wis:10,cha:16},
-  power_selections:{[ruleId]:{learned:['optional:phb:pact-of-the-tome']}}};
- for(let i=0;i<3;i++){
-  const calculated=calculateSheet(record,rules);
-  const choice=calculated.origin_choices.find(row=>row.origin_name==='Pact of the Tome');
-  assert(choice,'Pact Tome origin chooser must remain visible');
-  assert.equal(choice.remaining,3-i);
-  record={...record,...applyOriginSpellChoice(record,choice,spellCatalog[i])};
- }
- const calculated=calculateSheet(record,rules);
- assert.equal(calculated.origin_spells.filter(row=>String(row.source_choice_id||'').startsWith('selection:'+ruleId)).length,3);
- const choice=calculated.origin_choices.find(row=>row.origin_name==='Pact of the Tome');
- assert.equal(choice.remaining,0);
- assert.throws(()=>applyOriginSpellChoice(record,choice,spellCatalog[3]),/massimo|limite|numero|scelt|complet|disponib|insufficient/i);
- const inactive={...record,power_selections:{[ruleId]:{learned:[]}}};
- const removed=calculateSheet(inactive,rules);
- assert.equal(removed.origin_choices.filter(row=>row.origin_name==='Pact of the Tome').length,0);
- assert.equal(removed.origin_spells.filter(row=>String(row.source_choice_id||'').startsWith('selection:'+ruleId)).length,0,
-  'Saved spells are retained but cannot be cast after losing the parent invocation');
 });
