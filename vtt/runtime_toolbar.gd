@@ -28,6 +28,7 @@ const SHARE_OPEN := 50
 const SESSION_MAIN_MENU := 52
 const SHARE_CONTEXT_ID := 25
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
+const PwaEmbeddedWindow = preload("res://vtt/pwa_embedded_window.gd")
 const FEEDBACK_DURATION_MS := 2000
 
 var board_root: Node3D
@@ -241,11 +242,10 @@ func _open_pwa_view(section: String) -> void:
 	if DisplayServer.get_name() == "headless":
 		_set_status("La PWA richiede una finestra grafica.")
 		return
-	var window_script: Script = load("res://vtt/pwa_embedded_window.gd") as Script
-	if window_script == null:
-		_set_status("Finestra PWA non disponibile.")
+	var url: String = PwaEmbeddedWindow.view_url(origin, section)
+	if url.is_empty():
+		_set_status("Sezione PWA non disponibile.")
 		return
-	var url: String = String(window_script.call("view_url", origin, section))
 	# The bundled native WebView is currently supported on Windows and macOS.
 	# Other platforms can use the exact same scoped PWA externally.
 	if OS.get_name() not in ["Windows", "macOS"] or not ClassDB.class_exists("WebView"):
@@ -256,7 +256,7 @@ func _open_pwa_view(section: String) -> void:
 			_set_status("Impossibile aprire la PWA: " + error_string(result))
 		return
 	if not is_instance_valid(_pwa_window):
-		_pwa_window = window_script.new() as Window
+		_pwa_window = PwaEmbeddedWindow.new() as Window
 		if _pwa_window == null:
 			_set_status("Impossibile creare la finestra PWA.")
 			return
