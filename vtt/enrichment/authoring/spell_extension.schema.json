@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT spell_extension benefit catalog v2",
+  "allOf": [
+    {
+      "$ref": "catalog.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "benefit_type": {
+          "const": "spell_extension"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "benefit": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "spell"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "spell_extension"
+                  },
+                  "spell": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "source"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "source": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
