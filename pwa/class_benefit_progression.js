@@ -44,6 +44,7 @@ export function projectFeatureTimingRules(catalogs={}){
   const {type,id,sequence,...fields}=benefit;
   return {id,class_name:ref.class_name,class_source:ref.class_source,feature:ref.name,
    min_level:entry.min_level,steps:sequence.steps,...fields,
+   ...(benefit.attack_replacement?{feature_source:ref.source}:{}),
    ...(ref.subclass?{subclass:ref.subclass}:{})};
  });
  return {version:1,contextual_actions,actions,recoveries,attack_count_grants,attack_actions};
