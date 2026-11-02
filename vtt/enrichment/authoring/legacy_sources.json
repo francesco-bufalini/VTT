@@ -110,19 +110,10 @@
     {
       "path": "pwa/catalog/proficiency_grants.json",
       "sections": [
-        "class",
-        "race",
-        "subrace",
-        "background",
-        "feat",
-        "classFeature",
-        "subclassFeature",
         "languages"
       ],
       "types": [
-        "proficiency_grant",
-        "language",
-        "choice"
+        "language"
       ]
     },
     {
