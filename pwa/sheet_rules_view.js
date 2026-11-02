@@ -592,6 +592,17 @@ export function resourceLinkedSubclassTrait(tracker={},features=[],powers=[],cal
    (rule.granted_features||[]).includes(feature?.name));
  if(requiredStates.length&&!requiredStates.some(rule=>
    (calculated.active_trait_state_ids||[]).includes(rule.id)))return null;
+ // When a feature is granted by an applied passive capability, its tracker
+ // remains visible independently, but this does not unlock its paid action.
+ const same=(a,b)=>String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
+ const gated=(calculated.option_feature_gates||[]).some(effect=>
+   same(effect.name,feature?.name));
+ const granted=(calculated.selection_models||[]).some(model=>
+   (model.options||[]).some(option=>
+     (option.effects||[]).some(effect=>effect.type==='feature_grant'&&same(effect.name,feature?.name))&&
+     [...(model.layers.applied?.selected||[]),...(model.fixed||[])].some(selected=>
+       (typeof selected==='string'?selected:selected?.id)===option.id)));
+ if(gated&&!granted)return null;
  return feature?{origin_id:id,name:feature.name,tracker_id:tracker.id}:null;
 }
 

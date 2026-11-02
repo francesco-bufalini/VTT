@@ -1510,7 +1510,8 @@ function calculateSheetValues(record={},catalogs={}){
   // never show two counters for a single class capacity.
   const baseTrackers=[...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},
     name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featTrackers,
-    ...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
+    ...racialPowers.trackers,...arr(record.resource_trackers).filter(row=>!row.disabled&&sourceEnabled(row)),
+    ...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
     ...racialBonusTrackers(racialBonusRows,safe('proficiency')??2),
     ...itemOptionChargeTrackers(record,index?.artificer_infusions||[],features)];
   const contextualTrackerIds=new Map();

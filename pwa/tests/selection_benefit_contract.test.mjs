@@ -100,13 +100,13 @@ const completeCatalogs={...catalogs,scalingDice:read('scaling_dice'),classFeatur
  effectExtensions:read('effect_extensions').extensions};
 test('Arcane Armor affects only its extended item and its nested model disappears with the owner',()=>{
  const rules=withArmorerGrants(completeCatalogs);
- const record={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',
+ const character={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',
   subclass_source:'TCE',level:8}],abilities:{str:8,dex:10,int:18},
   inventory:[{id:'plate',instance_id:'plate-copy',name:'Plate',type:'HA',strength:15,
     ac:18,quantity:1,equipped_slots:['body']},
    {id:'other',instance_id:'other-copy',name:'Other object',quantity:1}]};
- assert.equal(calculateSheet(record,rules).armor_effects.strength_waived,false);
- const installed=applyArmorerModel(record,rules,'armor_model:infiltrator');
+ assert.equal(calculateSheet(character,rules).armor_effects.strength_waived,false);
+ const installed=applyArmorerModel(character,rules,'armor_model:infiltrator');
  const calculated=calculateSheet(installed,rules);
  assert.equal(calculated.armor_effects.strength_waived,true);
  assert(calculated.attacks.some(row=>row.id==='class_feature:lightning_launcher'));

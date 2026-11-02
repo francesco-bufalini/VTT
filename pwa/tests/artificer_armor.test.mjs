@@ -136,7 +136,7 @@ test('generated model attacks receive source-bound proficiency, withdrawn with t
  }
 });
 test('short and long rests offer changes to the nested Armor Model without spending resources',()=>{
- const record=applyArmorerModel(armorerRecord(),armorerCatalogs,'armor_model:guardian');
+ const record={...applyArmorerModel(armorerRecord(),armorerCatalogs,'armor_model:guardian'),current_hp:20};
  const c=calculateSheet(record,armorerCatalogs);
  const active=modelFor(c);
  const choice=powerRestSelections(record,c).find(row=>row.id===active.id);
