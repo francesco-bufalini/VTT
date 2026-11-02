@@ -384,42 +384,41 @@ test('Two-Weapon Fighting uses generic conditional damage bonuses',()=>{
  assert.equal(off.damage_extra_modifier,0);
 });
 
-test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker and casting abilities',()=>{
+test('Blessed Warrior and Druidic Warrior expose source-scoped cantrip grants through typed option choices',()=>{
  const cases=[
   {className:'Paladin',id:'optional:class:phb:paladin:fs-p',option:'optional:tce:blessed-warrior',ability:'cha',list:'Cleric'},
   {className:'Ranger',id:'optional:class:phb:ranger:fs-r',option:'optional:tce:druidic-warrior',ability:'wis',list:'Druid'}
  ];
  for(const example of cases){
   const style=catalogs.optionalFeatureProgressions.options.find(row=>row.id===example.option);
-  assert.equal(style.effects[0].type,'option_grant','Both styles reuse the canonical option grant benefit');
+  assert.equal(style.effects[0].type,'option_grant','The style grants a nested spell option grant');
   const spell={id:'test_'+example.list.toLowerCase()+'_cantrip',name:'Test cantrip',source:'PHB',level:0,classes:[example.list]};
   const wrong={...spell,id:'wrong_spell',classes:['Wizard']};
   const definitions={...completeCatalogs,spells:[spell,wrong]};
+  const selector={...combined,spells:[spell,wrong]};
   let r={...record(),abilities:{str:10,dex:14,con:12,int:10,wis:16,cha:16},
    classes:[{name:example.className,source:'PHB',level:2}]};
   let c=calculateSheet(r,definitions);
-  r={...r,...powerSelectionPatch(r,c,combined,example.id,'learned',example.option)};
+  r={...r,...powerSelectionPatch(r,c,selector,example.id,'learned',example.option)};
   c=calculateSheet(r,definitions);
-  assert(!c.origin_choices.some(choice=>choice.id.startsWith('selection:')),
-   'Knowing a style without applying it must not grant free cantrip choices');
-  r={...r,...powerApplicationPatch(r,c,combined,example.id,example.option,true)};
+  assert(!powerSelectionModels(r,c,selector).some(model=>model.option_kind==='spell'&&model.id.includes('spell_choice:')),
+   'Merely knowing a style cannot expose its nested cantrip grant');
+  r={...r,...powerApplicationPatch(r,c,selector,example.id,example.option,true)};
   c=calculateSheet(r,definitions);
-  const choice=c.origin_choices.find(row=>row.id.startsWith('selection:')&&row.filter.includes('class='+example.list.toLowerCase()));
-  assert(choice,'The applied option must show in the existing origin spell chooser');
-  assert.equal(choice.count,2);
-  assert.equal(choice.spellcasting_ability,example.ability);
-  assert.equal(originChoiceMatches(choice,spell).matches,true);
-  assert.equal(originChoiceMatches(choice,wrong).matches,false);
-  r={...r,...applyOriginSpellChoice(r,choice,spell)};
+  const choice=powerSelectionModels(r,c,selector).find(model=>model.option_kind==='spell'&&model.id.includes('spell_choice:'));
+  assert(choice,'Applying a style must reveal its nested spell option grant');
+  assert.equal(choice.layers.learned.limit,2);
+  assert.equal(choice.options.some(option=>option.id===spell.id),true);
+  assert.equal(choice.options.some(option=>option.id===wrong.id),false);
+  r={...r,...powerSelectionPatch(r,c,selector,choice.id,'learned',spell.id)};
   c=calculateSheet(r,definitions);
-  assert(c.origin_spells.some(row=>row.spell_id===spell.id&&row.payment_mode==='free'&&row.cantrip));
+  assert(c.origin_spells.some(row=>row.spell_id===spell.id&&row.cantrip&&row.spellcasting_ability===example.ability),
+   'The learned cantrip is castable through its own option-grant origin');
   assert(sessionSpellEntries(r,c,definitions.spells).some(row=>row.id===spell.id&&row.caster_ability===example.ability));
-  assert.equal(c.origin_choices.find(row=>row.id===choice.id).selected.length,1);
-  r={...r,...powerApplicationPatch(r,c,combined,example.id,example.option,false)};
-  assert.equal(r.origin_spell_grants.length,1,'Unapplying must not erase previously learned choices');
+  r={...r,...powerApplicationPatch(r,c,selector,example.id,example.option,false)};
+  assert(r.power_selections[choice.id].learned.includes(spell.id),'Unapplying does not erase learned choices');
   c=calculateSheet(r,definitions);
   assert(!c.origin_spells.some(row=>row.spell_id===spell.id),'An unapplied style cannot still cast its granted cantrips');
-  assert(!c.origin_choices.some(row=>row.id===choice.id));
  }
 });
 
