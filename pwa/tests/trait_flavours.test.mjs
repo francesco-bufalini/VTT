@@ -17,6 +17,13 @@ const asi=level=>({name:'Ability Score Improvement',origin_id:'feature:class|phb
 const base=()=>({kind:'character',rules_version:'2014',classes:[{name:'Fighter',source:'PHB',level:8}],
   feats_catalog:[],formula_bonuses:[],advancement_choices:[]});
 const save=(record,choice,values)=>({...record,...savePendingChoice(record,choice,values)});
+test('selected flavours show the granting 5eTools trait description, not authored variant prose',()=>{
+ const feature={...asi(4),entries:['Canonical 5eTools feature text']};
+ const choice=traitFlavourChoices(base(),[feature],catalogs.flavours)[0];
+ const record=save(base(),choice,[choice.options[0]]);
+ const projection=projectTraitFlavourBenefits(record,[feature],catalogs);
+ assert.deepEqual(projection.flavour_traits[0].description,['Canonical 5eTools feature text']);
+});
 test('ASI has exactly two flavours, and its two independently owned +1 bonuses can target the same score',()=>{
  const features=[asi(4),asi(8)];let record=base();
  const choices=traitFlavourChoices(record,features,catalogs.flavours);

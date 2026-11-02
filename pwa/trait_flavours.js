@@ -273,7 +273,7 @@ export function projectTraitFlavourBenefits(record={},features=[],catalogs={}){
    }
   }
   traits.push({id:model.flavour_origin_id,origin_id:model.flavour_origin_id,
-   name:model.selected.name,description:typeof model.owner.description==='string'?model.owner.description:'',
+   name:model.selected.name,description:model.owner.entries??model.owner.description??'',
    parent_origin:model.owner.origin_id,selection_id:model.id,
    flavour_id:model.selected.id,benefits:benefitPayloads});
  }
