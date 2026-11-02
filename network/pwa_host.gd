@@ -163,6 +163,7 @@ const FILES := {
 	"/benefits/scaling_die.json": ["res://vtt/enrichment/benefits/scaling_die.json", "application/json; charset=utf-8"],
 	"/benefits/effect_extension.json": ["res://vtt/enrichment/benefits/effect_extension.json", "application/json; charset=utf-8"],
 	"/benefits/spell_extension.json": ["res://vtt/enrichment/benefits/spell_extension.json", "application/json; charset=utf-8"],
+	"/benefits/creature_grant.json": ["res://vtt/enrichment/benefits/creature_grant.json", "application/json; charset=utf-8"],
 	"/benefits/attack.json": ["res://vtt/enrichment/benefits/attack.json", "application/json; charset=utf-8"],
 	"/benefits/base_override.json": ["res://vtt/enrichment/benefits/base_override.json", "application/json; charset=utf-8"],
 	"/benefits/damage_modifier.json": ["res://vtt/enrichment/benefits/damage_modifier.json", "application/json; charset=utf-8"],
