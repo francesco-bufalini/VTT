@@ -93,6 +93,13 @@ test('Tiger Aspect at level 6 requires its independent animal choice',()=>{
  const index=barbarian2014ProficiencyCatalog({classFeature:[],subclassFeature:[]},chosen);
  assert.equal(index.classFeature.length,0);
  assert.equal(index.subclassFeature.length,1);
+ const typed=barbarian2014Supplements({...self,trait_state_selection:{},
+  power_applications:{'barbarian_2014:totem-aspect':[{id:'barbarian_totem_aspect:tiger'}]}},[f],4);
+ assert.equal(typed.proficiency_rows.length,1);
+ const off=barbarian2014Supplements({...self,
+  trait_state_selection:{barbarian_totem_aspect:'barbarian_totem_aspect:tiger'},
+  power_applications:{'barbarian_2014:totem-aspect':[]}},[f],4);
+ assert.equal(off.proficiency_rows.length,0,'Clearing the typed option supersedes the legacy selection');
 });
 
 test('2014 supplements never leak into 2024 rules',()=>{
@@ -104,12 +111,14 @@ test('2014 supplements never leak into 2024 rules',()=>{
 });
 
 test('Beast forms are three mutually exclusive typed natural attacks',()=>{
- const json=JSON.parse(readFileSync(new URL('../catalog/trait_states.json',import.meta.url),'utf8'));
- const forms=json.states.filter(s=>s.group==='barbarian_beast_form');
+ const typed=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_list.json',import.meta.url),'utf8'));
+ const forms=typed.entries.find(entry=>entry.benefit?.option_list?.id==='barbarian:2014:beast-form')
+  ?.benefit.option_list.options||[];
  assert.equal(forms.length,3);
  assert.equal(new Set(forms.map(s=>s.id)).size,3);
- assert(forms.every(s=>s.trait==='Form of the Beast'&&s.attacks.length===1));
- assert.equal(forms.find(s=>s.id.endsWith(':tail'))?.attacks[0].range_feet,10);
+ assert(forms.every(s=>s.effects?.length===1&&s.effects[0].type==='attack'
+   &&s.effects[0].grants_proficiency===true));
+ assert.equal(forms.find(s=>s.id.endsWith(':tail'))?.effects[0].range_feet,10);
 });
 
 test('new JavaScript module is included in the atomic offline app-shell cache',()=>{

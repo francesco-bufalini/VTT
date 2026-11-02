@@ -15,7 +15,7 @@ const classFeatures=read('classes'),itemRules=featureItemGrantsFromBenefits(JSON
 const mechanics={...read('class_mechanics'),feature_item_grants:itemRules};
 const catalogs={classFeatures,classMechanics:mechanics,featureItemGrants:itemRules,
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
- traitStates:read('trait_states').states,rollBonusRules:classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8')))};
+ traitStates:[],rollBonusRules:classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8')))};
 const art=(level,subclass='Armorer')=>({
  kind:'character',rules_version:'2014',class:'Artificer',class_source:'TCE',level,
  classes:[{name:'Artificer',source:'TCE',level,subclass,subclass_source:'TCE'}],

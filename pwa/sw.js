@@ -159,7 +159,6 @@ const SHELL = [
 
   "/catalog/class_mechanics.json",
   "/catalog/species_powers.json",
-  "/catalog/trait_states.json",
 
 
   "/benefits/practically_spells.json",
@@ -196,7 +195,7 @@ const REQUIRED_CATALOGS = [
   "/catalog/ability_grants.json", "/catalog/class_mechanics.json",
   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/creature_grant.json", "/benefits/item_grant.json", "/benefits/scaling_die.json", "/benefits/effect_extension.json", "/benefits/spell_extension.json", "/catalog/species_powers.json", "/catalog/languages_5etools.json", "/catalog/classes.json",
   "/catalog/player.json", "/benefits/sense.json", "/benefits/proficiency_grant.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json", "/benefits/condition.json",
-  "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json",
+  "/catalog/feature_timing_recovery_rules.json",
 
   "/benefits/practically_spells.json",
 

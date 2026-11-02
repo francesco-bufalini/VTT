@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {traitStateSource,traitStateActions,traitStateEffects} from '../trait_state_rules.js';
 import {powerSelectionModels} from '../power_selection.js';
 
-const catalog=JSON.parse(readFileSync(new URL('../catalog/trait_states.json',import.meta.url),'utf8'));
+const lists=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_list.json',import.meta.url),'utf8'));
 const selections=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_grant.json',import.meta.url),'utf8'));
 const feature={name:'Armor Model',class_name:'Artificer',class_source:'TCE',
  origin_key:'class|tce|artificer|subclass|armorer|tce',origin_id:'feature:armor-model',
@@ -18,9 +18,12 @@ const owner={classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer'}
  trait_state_selection:{armor_model:'armor_model:guardian'}};
 
 test('structured model options do not own replacement titles or summaries',()=>{
- for(const state of catalog.states){
-  assert.equal(Object.hasOwn(state,'name'),false,state.id);
-  assert.equal(Object.hasOwn(state,'summary'),false,state.id);
+ const barbarian=lists.entries.filter(entry=>entry.id.startsWith('option_list:barbarian:2014:'));
+ assert.equal(barbarian.length,3);
+ assert.equal(barbarian.flatMap(entry=>entry.benefit.option_list.options).length,13);
+ for(const option of barbarian.flatMap(entry=>entry.benefit.option_list.options)){
+  assert.equal(Object.hasOwn(option,'description'),false,option.id);
+  assert.equal(Object.hasOwn(option,'summary'),false,option.id);
  }
  const model=selections.entries.map(row=>row.benefit?.option_grant).find(row=>row?.id==='armor_model');
  assert(model);

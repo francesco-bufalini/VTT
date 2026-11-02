@@ -30,7 +30,8 @@ function definitions(catalog){
 function member(record,owner={}){
  return rows(record.classes?.length?record.classes:[{name:record.class,source:record.class_source,level:record.level,subclass:record.subclass}]).find(row=>
  low(row.name)===low(owner.class_name)&&(!owner.class_source||low(row.source||record.class_source)===low(owner.class_source))&&
- (!owner.subclass||low(row.subclass)===low(owner.subclass)));
+ (!owner.subclass||low(row.subclass)===low(owner.subclass)||
+  low(row.subclass).replace(/^path of (?:the )?/,'')===low(owner.subclass)));
 }
 function optionsFor(record,rule,catalog={}){
  const limit=rule.layers?.learned?.limit??rule.layers?.prepared?.limit;
@@ -97,6 +98,16 @@ function optionsFor(record,rule,catalog={}){
 // instances become available; preserve order, subchoices and extra choices.
 export function normalizeSelectionRecord(record={},catalog={}){
  let result=record;
+ // Upgrade old saved state choices in memory. Existing sheets keep their
+ // selected capability; subsequent mutations use only power_applications.
+ for(const rule of definitions(catalog)){
+  const group=rule.compatibility?.legacy_selection_group;
+  if(!group||Object.hasOwn(result.power_applications||{},rule.id))continue;
+  const oldId=String(result.trait_state_selection?.[group]||'');
+  if(!oldId||!optionsFor(result,rule,catalog).some(option=>option.id===oldId))continue;
+  result={...result,power_applications:{...result.power_applications,
+   [rule.id]:[{id:oldId}]}};
+ }
  for(const rule of definitions(catalog).filter(row=>row.instances?.mode==='per_feature')){
   const stage=rule.instances.stage;
   const levels=rows(rule.layers?.[stage]?.limit?.by_class_level);

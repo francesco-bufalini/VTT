@@ -18,20 +18,6 @@
       ]
     },
     {
-      "path": "pwa/catalog/trait_states.json",
-      "sections": [
-        "states"
-      ],
-      "types": [
-        "option_grant",
-        "option_list",
-        "condition",
-        "attack",
-        "numeric_modifier",
-        "roll_mode"
-      ]
-    },
-    {
       "path": "pwa/catalog/ability_grants.json",
       "sections": [
         "race",

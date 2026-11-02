@@ -13,7 +13,7 @@ import {armorerSelectionCatalog,withArmorerGrants,applyArmorerModel} from './hel
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+(name.endsWith('.json')?'':'.json'),import.meta.url),'utf8'));
 const companions=read('companion_spells');
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
- abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),traitStates:read('trait_states').states,
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),traitStates:[],
  featureActionOverrides:classActionOverridesFromBenefits(read('../../vtt/enrichment/benefits/action.json'))};
 const selectionCatalogs={...withArmorerGrants(catalogs),
  optionGrants:read('../../vtt/enrichment/benefits/option_grant.json'),

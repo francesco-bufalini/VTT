@@ -44,7 +44,6 @@ test('numeric sheet rules never request the full spell compendium',async()=>{
     const data=path==='/catalog/class_mechanics.json'?{legacy_spells:[]}:
       path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
       path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
-      path==='/catalog/trait_states.json'?{version:1,states:[]}:
       path.startsWith('/catalog/benefits/')?{schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:
           (path.startsWith('/benefits/')&&path.endsWith('.json'))?
         {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
@@ -79,14 +78,13 @@ test('typed option catalogs never fetch any retired legacy JSON',async()=>{
      path==='/catalog/class_mechanics.json'?{legacy_spells:[]}:
      path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
      path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
-     path==='/catalog/trait_states.json'?{version:1,states:[]}:
-     path.startsWith('/catalog/benefits/')?{schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:
+path.startsWith('/catalog/benefits/')?{schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:
      (path.startsWith('/benefits/')&&path.endsWith('.json'))?
       {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
     return new Response(JSON.stringify(data),{status:200});
    };
    const result=await loadRuleCatalogs();
-   assert.equal(result.optionLists.entries.length,kind==='complete'?275:274);
+   assert.equal(result.optionLists.entries.length,kind==='complete'?278:277);
    assert.equal(result.optionGrants.entries.length,optionGrants.entries.length);
    assert.equal(result.optionalFeatureProgressions.options.length,0);
    assert.equal(result.powerSelections.selections.length,0);

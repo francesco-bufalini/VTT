@@ -121,7 +121,7 @@ test('the actual sheet resolves the applied state trait, trained attack and cond
   classFeatures:read('../catalog/classes.json'),
   abilityGrants:read('../catalog/ability_grants.json'),
   proficiencyGrants:proficiencyTestIndex(),
-  traitStates:read('../catalog/trait_states.json').states,
+  traitStates:[],
   featureActionOverrides:classActionOverridesFromBenefits(read('../../vtt/enrichment/benefits/action.json'))};
  let record=armored();
  let calculated=calculateSheet(record,index);

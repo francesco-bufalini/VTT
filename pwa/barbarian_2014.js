@@ -46,7 +46,17 @@ export function barbarian2014Supplements(record={},features=[]){
    if(!matching.length||(rule.requires||[]).some(name=>!requirements[name]))continue;
    for(const feature of rule.repeat_per_feature?matching:[matching[0]]){
      if(rule.defense_choice&&norm(record.origin_defense_choices?.[feature.origin_id])!==rule.defense_choice)continue;
-     if(rule.state_choice&&record.trait_state_selection?.[rule.state_choice.group]!==rule.state_choice.value)continue;
+     // The current source of truth is the applied option_grant; old saves are
+     // still interpreted until the player first edits that choice.
+     if(rule.state_choice){
+       const group=rule.state_choice.group;
+       const typedId=group==='barbarian_totem_aspect'?'barbarian_2014:totem-aspect':
+         group==='barbarian_totem_attunement'?'barbarian_2014:totem-attunement':
+         group==='barbarian_beast_form'?'barbarian_2014:beast-form':'';
+       const selection=Object.hasOwn(record.power_applications||{},typedId)?
+         rows(record.power_applications[typedId])[0]?.id:record.trait_state_selection?.[group];
+       if(selection!==rule.state_choice.value)continue;
+     }
      if(rule.kind==='numeric')result.numeric_grants.push({id:rule.id,target:rule.target,
        expression:rule.expression,origin_id:feature.origin_id,
        origin_name:'Tratto · '+feature.name+(rule.origin_suffix||''),automatic:true});

@@ -11568,6 +11568,172 @@
           ]
         }
       }
+    },
+    {
+      "id": "option_list:barbarian:2014:beast-form",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Form of the Beast",
+          "source": "TCE",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Beast",
+          "subclass_source": "TCE"
+        }
+      },
+      "benefit": {
+        "type": "option_list",
+        "option_list": {
+          "id": "barbarian:2014:beast-form",
+          "kind": "capability",
+          "options": [
+            {
+              "id": "barbarian_beast_form:bite",
+              "name": "Bite",
+              "effects": [
+                {
+                  "type": "attack",
+                  "name": "Bite",
+                  "id": "barbarian:beast:bite",
+                  "damage": "1d8",
+                  "damage_type": "piercing",
+                  "melee": true,
+                  "ability": "str",
+                  "range_feet": 5,
+                  "weapon_category": "simple",
+                  "grants_proficiency": true
+                }
+              ]
+            },
+            {
+              "id": "barbarian_beast_form:claws",
+              "name": "Claws",
+              "effects": [
+                {
+                  "type": "attack",
+                  "name": "Claws",
+                  "id": "barbarian:beast:claws",
+                  "damage": "1d6",
+                  "damage_type": "slashing",
+                  "melee": true,
+                  "ability": "str",
+                  "range_feet": 5,
+                  "weapon_category": "simple",
+                  "grants_proficiency": true
+                }
+              ]
+            },
+            {
+              "id": "barbarian_beast_form:tail",
+              "name": "Tail",
+              "effects": [
+                {
+                  "type": "attack",
+                  "name": "Tail",
+                  "id": "barbarian:beast:tail",
+                  "damage": "1d8",
+                  "damage_type": "piercing",
+                  "melee": true,
+                  "ability": "str",
+                  "range_feet": 10,
+                  "weapon_category": "simple",
+                  "grants_proficiency": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "option_list:barbarian:2014:totem-aspect",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Aspect of the Beast",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Totem Warrior",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_list",
+        "option_list": {
+          "id": "barbarian:2014:totem-aspect",
+          "kind": "capability",
+          "options": [
+            {
+              "id": "barbarian_totem_aspect:bear",
+              "name": "Bear"
+            },
+            {
+              "id": "barbarian_totem_aspect:eagle",
+              "name": "Eagle"
+            },
+            {
+              "id": "barbarian_totem_aspect:elk",
+              "name": "Elk"
+            },
+            {
+              "id": "barbarian_totem_aspect:tiger",
+              "name": "Tiger"
+            },
+            {
+              "id": "barbarian_totem_aspect:wolf",
+              "name": "Wolf"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "option_list:barbarian:2014:totem-attunement",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Totemic Attunement",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB",
+          "subclass": "Totem Warrior",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "option_list",
+        "option_list": {
+          "id": "barbarian:2014:totem-attunement",
+          "kind": "capability",
+          "options": [
+            {
+              "id": "barbarian_totem_attunement:bear",
+              "name": "Bear"
+            },
+            {
+              "id": "barbarian_totem_attunement:eagle",
+              "name": "Eagle"
+            },
+            {
+              "id": "barbarian_totem_attunement:elk",
+              "name": "Elk"
+            },
+            {
+              "id": "barbarian_totem_attunement:tiger",
+              "name": "Tiger"
+            },
+            {
+              "id": "barbarian_totem_attunement:wolf",
+              "name": "Wolf"
+            }
+          ]
+        }
+      }
     }
   ]
 }

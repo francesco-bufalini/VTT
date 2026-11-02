@@ -14,7 +14,7 @@ import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classFeatures:read('classes'),classMechanics:read('class_mechanics'),
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
- traitStates:read('trait_states').states,rollBonusRules:classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8'))),
+ traitStates:[],rollBonusRules:classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8'))),
  effectExtensions:effectExtensionsFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/effect_extension.json',import.meta.url),'utf8')))};
 const artificer=(level=11)=>({
  id:'artificer-11',kind:'character',rules_version:'2014',
