@@ -14,6 +14,8 @@ import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {calculateSenses} from './sense_rules.js';
 import {speciesDefenseEntries,speciesDefenseFeatures} from './species_defenses.js';
+import {speciesDefensesFromBenefits} from './species_defense_benefits.js';
+import {spellGrantRulesFromBenefits,selectedSpellFlavourOverrides} from './spell_grant_benefits.js';
 import {classDefenseEntries} from './class_defenses.js';
 import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} from './species_roll_modes.js';
 import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits,speciesAttacksFromBenefits,speciesPowersFromBenefits} from './species_benefit_catalogs.js';
@@ -975,6 +977,8 @@ function calculateSheetValues(record={},catalogs={}){
   const features=collectStructuredFeatures(record,catalogs);
   record={...record,...migrateAdvancementBonuses(record,features,index||{})};
   const activeFlavours=traitFlavourModels(record,features,catalogs.flavours||{});
+  const spellGrantRules=spellGrantRulesFromBenefits(catalogs.optionGrants,record,catalogs.flavours);
+  const spellFlavourOverrides=selectedSpellFlavourOverrides(record,catalogs.flavours);
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   features.push(...racialBonusFeatures(record,catalogs.speciesConditionalBonuses||{},features));
@@ -986,7 +990,7 @@ function calculateSheetValues(record={},catalogs={}){
     record.active_class_features?.[form.active_key]?.spell_id===form.spell_id);
   features.push(...speciesDefenseFeatures(record,catalogs.speciesDefenses,features));
   features.push(...speciesRollModeFeatures(record,catalogs.speciesRollModes,features));
-  features.push(...supplementalSpeciesSpellFeatures(record,catalogs.spellGrantRules,features));
+  features.push(...supplementalSpeciesSpellFeatures(record,spellGrantRules,features));
   features.push(...racialItemGrantFeatures(record,features,catalogs.featureItemGrants||[]));
   features.push(...expandedOriginSpellFeatures(record,classesCatalog?.additional_spells,features));
   // Source-qualified 2014 Barbarian supplements. Never create a class effect from prose.
@@ -1507,7 +1511,7 @@ function calculateSheetValues(record={},catalogs={}){
   }
   const featMechanics=featMechanicGrants(record,index);
   const featureSpells=arr(classesCatalog?.feature_spells);
-  const additional=structuredSpellGrants(record,[...arr(classesCatalog?.additional_spells),...featureSpells],catalogs.spells||[],features,catalogs.spellGrantRules||[],catalogs.speciesPowers?.races||[],safe('proficiency'));
+  const additional=structuredSpellGrants(record,[...arr(classesCatalog?.additional_spells),...featureSpells],catalogs.spells||[],features,spellGrantRules,catalogs.speciesPowers?.races||[],safe('proficiency'),spellFlavourOverrides);
   for(const choice of barbarian.spell_choices)
     if(!additional.choices.some(existing=>existing.origin_id===choice.origin_id&&
       arr(existing.spell_options).some(spell=>choice.spell_options.includes(spell))))
@@ -1905,12 +1909,8 @@ export function loadRuleCatalogs(){
     fetch('/benefits/roll_bonus.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
       .then(speciesRollBonusesFromBenefits)
       .catch(error=>{console.warn('VTT: catalogo bonus ai tiri non disponibile',error);return {races:[],load_error:true};}),
-    fetch('/catalog/spell_grant_rules.json').then(r=>r.ok?r.json():{})
-      .then(data=>data?.version===1&&Array.isArray(data.rules)?data.rules:[])
-      .catch(()=>[]),
-    fetch('/catalog/species_defenses.json').then(r=>{if(!r.ok)throw Error('Difese delle specie non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
-      .catch(error=>{console.warn('VTT: catalogo difese delle specie non disponibile',error);return {races:[],load_error:true};}),
+    fetch('/benefits/defense.json').then(r=>{if(!r.ok)throw Error('Difese tipizzate non disponibili');return r.json();})
+      .catch(error=>{console.warn('VTT: catalogo difese tipizzate non disponibile',error);return {load_error:true};}),
     fetch('/benefits/roll_mode.json').then(r=>{if(!r.ok)throw Error('Modificatori ai tiri delle specie non disponibili');return r.json();})
       .then(data=>data?.schema_version===2&&data.benefit_type==='roll_mode'?data:{load_error:true})
       .catch(error=>{console.warn('VTT: vantaggi razziali condizionali non disponibili',error);return {load_error:true};}),
@@ -1933,10 +1933,11 @@ export function loadRuleCatalogs(){
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
      ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/defense.json']
        .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))
-  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses])=>({
+  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
-    proficiencyGrants:proficiencyIndexFromBenefits(languageVocabulary,proficiencyGrantBenefits),speciesAttacks,speciesDefenses,
+    proficiencyGrants:proficiencyIndexFromBenefits(languageVocabulary,proficiencyGrantBenefits),speciesAttacks,
+    speciesDefenses:speciesDefensesFromBenefits(speciesDefenses,flavours),
     speciesRollModes:speciesRollModes.load_error?{races:[],load_error:true}:speciesRollModesFromBenefits(speciesRollModes,originDetails),
     senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,
     optionGrants:optionGrants?.benefit_type==='option_grant'?optionGrants:{entries:[]},
@@ -1950,7 +1951,7 @@ export function loadRuleCatalogs(){
     slotBenefits:slotBenefits?.benefit_type==='resource'?slotBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
-    featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
+    featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   }

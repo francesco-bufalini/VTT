@@ -51,6 +51,10 @@ function inheritedSelection(record,entry,owner){
   if(option)return {id:option.id,explicit:false};
  }
  if(ref.category==='species_trait'){
+  const selected=rows(entry.flavours).find(x=>x.legacy_subrace&&
+   norm(x.legacy_subrace)===norm(record.subrace)&&
+   norm(x.legacy_subrace_source)===norm(record.subrace_source));
+  if(selected)return {id:selected.id,explicit:true};
   const key='race|'+norm(record.species_source)+'|'+norm(record.species);
   const old=norm(record.origin_draconic_ancestry?.[key]||record.subrace);
   const option=rows(entry.flavours).find(x=>x.legacy_ancestry===old);
@@ -101,7 +105,7 @@ export function traitFlavourChoices(record={},features=[],catalog={},proficienci
 }
 export function flavourGrantsFor(record={},features=[],catalogs={}){
  const benefitFiles=[catalogs.flavourBonuses,catalogs.flavourFeatGrants,
-  catalogs.flavourDefenses,catalogs.proficiencyGrantBenefits];
+  catalogs.flavourDefenses,catalogs.proficiencyGrantBenefits,catalogs.optionGrants];
  const entries=benefitFiles.flatMap(catalog=>rows(catalog?.entries));
  return traitFlavourModels(record,features,catalogs.flavours||{}).map(model=>({
   ...model,benefits:model.selected&&model.explicit?entries.filter(e=>

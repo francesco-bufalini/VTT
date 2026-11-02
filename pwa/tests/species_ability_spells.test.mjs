@@ -5,12 +5,16 @@ import {calculateSheet} from '../sheet_rules.js';
 import {pendingCharacterChoices} from '../pending_choices.js';
 import {projectSpeciesSpellBindings} from '../tools/species_spell_bindings.mjs';
 import {structuredSpellGrants,supplementalSpeciesSpellFeatures,originSpellId} from '../spell_selection.js';
+import {spellGrantRulesFromBenefits,selectedSpellFlavourOverrides} from '../spell_grant_benefits.js';
 
 const json=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const ability=json('../catalog/ability_grants.json');
 const source=json('../../vtt/data/creature_references_5etools.json');
 const sourceSpells=json('../../vtt/data/additional_spells_5etools.json');
-const rules=json('../catalog/spell_grant_rules.json').rules;
+const optionGrants=json('../../vtt/enrichment/benefits/option_grant.json');
+const flavours=json('../../vtt/enrichment/benefits/flavours.json');
+const rulesFor=c=>spellGrantRulesFromBenefits(optionGrants,c,flavours);
+const rules=rulesFor({});
 const originDetails=json('../../vtt/data/compendium_features_5etools.json');
 const scores={str:10,dex:10,con:10,int:10,wis:10,cha:10};
 const character=(species,source,subrace='',subrace_source='',extra={})=>({
@@ -21,19 +25,21 @@ const catalog={
  abilityGrants:ability,
  classMechanics:{additional_spells:sourceSpells.entries},
  originDetails:{races:originDetails.races},
- spellGrantRules:rules
+ optionGrants,flavours
 };
 const sheet=c=>calculateSheet(c,catalog);
 const result=c=>Object.fromEntries(['str','dex','con','int','wis','cha'].map(x=>[x,sheet(c).abilities[x].score]));
 const spellResult=c=>{
- const features=supplementalSpeciesSpellFeatures(c,rules,[]);
- return structuredSpellGrants(c,sourceSpells.entries,[],features,rules);
+ const selected=rulesFor(c);
+ const features=supplementalSpeciesSpellFeatures(c,selected,[]);
+ return structuredSpellGrants(c,sourceSpells.entries,[],features,selected,[],null,selectedSpellFlavourOverrides(c,flavours));
 };
 
 test('the checked-in spell rules mirror typed native 2014 source- and trait-ownership',()=>{
  const projected=projectSpeciesSpellBindings(source.races,sourceSpells.entries);
  const known=rules.filter(rule=>rule.kind==='subrace'||rule.generated_2014_species_spell);
- assert.deepEqual(known,projected.rules);
+ assert.deepEqual(known,projected.rules.filter(r=>r.race_name!=='Tiefling'));
+ assert.equal(flavours.entries.find(e=>e.id==='flavour_set:tiefling:infernal-legacy:phb').flavours.length,12);
  assert.ok(projected.rules.length>=100);
  assert.ok(known.some(row=>row.name==='High'&&row.spell==='*choice*'));
 });

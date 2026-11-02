@@ -5168,6 +5168,226 @@
           "requires_untrained_saving_throw": true
         }
       ]
+    },
+    {
+      "id": "flavour_set:tiefling:infernal-legacy:phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Infernal Legacy",
+          "source": "PHB",
+          "race": "Tiefling",
+          "race_source": "PHB"
+        }
+      },
+      "label": "Eredità infernale",
+      "flavours": [
+        {
+          "id": "flavour:tiefling:infernal-legacy:mtf:baalzebul",
+          "name": "Baalzebul",
+          "legacy_subrace": "Baalzebul",
+          "legacy_subrace_source": "MTF"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:mtf:dispater",
+          "name": "Dispater",
+          "legacy_subrace": "Dispater",
+          "legacy_subrace_source": "MTF"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:mtf:fierna",
+          "name": "Fierna",
+          "legacy_subrace": "Fierna",
+          "legacy_subrace_source": "MTF"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:mtf:glasya",
+          "name": "Glasya",
+          "legacy_subrace": "Glasya",
+          "legacy_subrace_source": "MTF"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:mtf:levistus",
+          "name": "Levistus",
+          "legacy_subrace": "Levistus",
+          "legacy_subrace_source": "MTF"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:mtf:mammon",
+          "name": "Mammon",
+          "legacy_subrace": "Mammon",
+          "legacy_subrace_source": "MTF"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:mtf:mephistopheles",
+          "name": "Mephistopheles",
+          "legacy_subrace": "Mephistopheles",
+          "legacy_subrace_source": "MTF"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:scag:variant-devil-s-tongue",
+          "name": "Variant; Devil's Tongue",
+          "legacy_subrace": "Variant; Devil's Tongue",
+          "legacy_subrace_source": "SCAG"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:scag:variant-hellfire",
+          "name": "Variant; Hellfire",
+          "legacy_subrace": "Variant; Hellfire",
+          "legacy_subrace_source": "SCAG"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:scag:variant-infernal-legacy",
+          "name": "Variant; Infernal Legacy",
+          "legacy_subrace": "Variant; Infernal Legacy",
+          "legacy_subrace_source": "SCAG"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:mtf:zariel",
+          "name": "Zariel",
+          "legacy_subrace": "Zariel",
+          "legacy_subrace_source": "MTF"
+        },
+        {
+          "id": "flavour:tiefling:infernal-legacy:scag:variant-winged",
+          "name": "Variant; Winged",
+          "legacy_subrace": "Variant; Winged",
+          "legacy_subrace_source": "SCAG"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:species-defense:phb:dragonborn:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species",
+          "name": "Dragonborn",
+          "source": "PHB",
+          "race_id": "5etools:races:phb:dragonborn"
+        }
+      },
+      "label": "Damage Resistance",
+      "flavours": [
+        {
+          "id": "flavour:species-defense:phb:dragonborn:0:acid",
+          "name": "acid"
+        },
+        {
+          "id": "flavour:species-defense:phb:dragonborn:0:cold",
+          "name": "cold"
+        },
+        {
+          "id": "flavour:species-defense:phb:dragonborn:0:fire",
+          "name": "fire"
+        },
+        {
+          "id": "flavour:species-defense:phb:dragonborn:0:lightning",
+          "name": "lightning"
+        },
+        {
+          "id": "flavour:species-defense:phb:dragonborn:0:poison",
+          "name": "poison"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:species-defense:rhw:reborn:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species",
+          "name": "Reborn",
+          "source": "RHW",
+          "race_id": "5etools:races:rhw:reborn"
+        }
+      },
+      "label": "Strange Endurance",
+      "flavours": [
+        {
+          "id": "flavour:species-defense:rhw:reborn:0:cold",
+          "name": "cold"
+        },
+        {
+          "id": "flavour:species-defense:rhw:reborn:0:necrotic",
+          "name": "necrotic"
+        },
+        {
+          "id": "flavour:species-defense:rhw:reborn:0:poison",
+          "name": "poison"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:species-defense:egw:dragonborn-draconblood:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species",
+          "name": "Dragonborn (Draconblood)",
+          "source": "EGW",
+          "race_id": "5etools:races:egw:dragonborn%20%28draconblood%29"
+        }
+      },
+      "label": "Damage Resistance",
+      "flavours": [
+        {
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:acid",
+          "name": "acid"
+        },
+        {
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:cold",
+          "name": "cold"
+        },
+        {
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:fire",
+          "name": "fire"
+        },
+        {
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:lightning",
+          "name": "lightning"
+        },
+        {
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:poison",
+          "name": "poison"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:species-defense:egw:dragonborn-ravenite:0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species",
+          "name": "Dragonborn (Ravenite)",
+          "source": "EGW",
+          "race_id": "5etools:races:egw:dragonborn%20%28ravenite%29"
+        }
+      },
+      "label": "Damage Resistance",
+      "flavours": [
+        {
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:acid",
+          "name": "acid"
+        },
+        {
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:cold",
+          "name": "cold"
+        },
+        {
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:fire",
+          "name": "fire"
+        },
+        {
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:lightning",
+          "name": "lightning"
+        },
+        {
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:poison",
+          "name": "poison"
+        }
+      ]
     }
   ]
 }

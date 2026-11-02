@@ -3,9 +3,7 @@ import {syncProficiencyCatalog} from './sync_proficiency_catalog.mjs';
 // No native files are changed; no catalog output is edited by hand.
 import {readFile,writeFile} from 'node:fs/promises';
 import {projectSpeciesAttacks} from './species_mechanics.mjs';
-import {projectSpeciesDefenses} from './species_defenses.mjs';
 import {projectSpeciesRollModes} from './species_roll_modes.mjs';
-import {projectSpeciesSpellBindings} from './species_spell_bindings.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
 function projectSubraceMechanics(subraces,references){
  if(!Array.isArray(references.subraces))
@@ -294,15 +292,7 @@ const legacyText=await readFile(new URL('../../vtt/spells/spell_catalog_phb_2014
 const legacyStart=legacyText.indexOf('{',legacyText.indexOf('const SPELLS:'));
 mechanics.legacy_spells=Object.values(JSON.parse(legacyText.slice(legacyStart)));
 const references=await read('../../vtt/data/creature_references_5etools.json');
-const existingSpellRules=await read('../catalog/spell_grant_rules.json');
-const speciesSpellBindings=projectSpeciesSpellBindings(references.races,additional.entries);
-await writeFile(new URL('../catalog/spell_grant_rules.json',import.meta.url),
- JSON.stringify({...existingSpellRules,rules:[
-  ...existingSpellRules.rules.filter(rule=>rule.kind!=='subrace'&&!rule.generated_2014_species_spell),
-  ...speciesSpellBindings.rules
- ]},null,2)+'\n');
-
- // Mirror the native CreatureRules.species_creature_type lookup. 5etools puts
+// Mirror the native CreatureRules.species_creature_type lookup. 5etools puts
  // many non-Humanoid types inside the named "Creature Type" trait, not in
  // creatureTypes. Keep source-qualified entries so 2014/2024 books do not mix.
  const creatureKinds=['aberration','beast','celestial','construct','dragon','elemental',
@@ -321,8 +311,6 @@ await writeFile(new URL('../catalog/spell_grant_rules.json',import.meta.url),
 // mechanics/identity here; the existing features URL owns descriptions.
 await writeFile(new URL('../catalog/species_attacks.json',import.meta.url),
  JSON.stringify(projectSpeciesAttacks(references.races),null,2)+'\n');
-await writeFile(new URL('../catalog/species_defenses.json',import.meta.url),
- JSON.stringify(projectSpeciesDefenses(references.races),null,2)+'\n');
 await writeFile(new URL('../catalog/species_roll_modes.json',import.meta.url),
  JSON.stringify(projectSpeciesRollModes(references.races),null,2)+'\n');
 const allSpecies=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));

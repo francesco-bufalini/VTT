@@ -302,6 +302,3583 @@
           }
         ]
       }
+    },
+    {
+      "id": "defense:species:dmg:aasimar:celestial-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "DMG",
+          "race": "Aasimar",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:aasimar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:dmg:aasimar:celestial-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:dmg:aasimar",
+            "race_name": "Aasimar",
+            "race_source": "DMG",
+            "trait_entries": [
+              "You have resistance to necrotic and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:dmg:aasimar:celestial-resistance:1:radiant:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "DMG",
+          "race": "Aasimar",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:aasimar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:dmg:aasimar:celestial-resistance:1:radiant:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "radiant"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:dmg:aasimar",
+            "race_name": "Aasimar",
+            "race_source": "DMG",
+            "trait_entries": [
+              "You have resistance to necrotic and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:aasimar:celestial-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "MPMM",
+          "race": "Aasimar",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:aasimar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:aasimar:celestial-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:aasimar",
+            "race_name": "Aasimar",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:aasimar:celestial-resistance:1:radiant:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "MPMM",
+          "race": "Aasimar",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:aasimar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:aasimar:celestial-resistance:1:radiant:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "radiant"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:aasimar",
+            "race_name": "Aasimar",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:aasimar:celestial-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "VGM",
+          "race": "Aasimar",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:aasimar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:aasimar:celestial-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:aasimar",
+            "race_name": "Aasimar",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:aasimar:celestial-resistance:1:radiant:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "VGM",
+          "race": "Aasimar",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:aasimar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:aasimar:celestial-resistance:1:radiant:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "radiant"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:aasimar",
+            "race_name": "Aasimar",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psk:aetherborn:born-of-aether:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Born of Aether",
+          "source": "PSK",
+          "race": "Aetherborn",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:aetherborn"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psk:aetherborn:born-of-aether:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psk:aetherborn",
+            "race_name": "Aetherborn",
+            "race_source": "PSK",
+            "trait_entries": [
+              "You have resistance to necrotic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:aag:autognome:mechanical-nature:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mechanical Nature",
+          "source": "AAG",
+          "race": "Autognome",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:autognome"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:aag:autognome:mechanical-nature:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:aag:autognome",
+            "race_name": "Autognome",
+            "race_source": "AAG",
+            "trait_entries": [
+              "You have resistance to poison damage and immunity to disease, and you have advantage on saving throws against being {@condition paralyzed} or {@condition poisoned}. You don't need to eat, drink, or breathe."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:aag:autognome:mechanical-nature:3:disease:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mechanical Nature",
+          "source": "AAG",
+          "race": "Autognome",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:autognome"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:aag:autognome:mechanical-nature:3:disease:1",
+        "defenses": [
+          {
+            "kind": "condition_immunity",
+            "condition": "disease"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:aag:autognome",
+            "race_name": "Autognome",
+            "race_source": "AAG",
+            "trait_entries": [
+              "You have resistance to poison damage and immunity to disease, and you have advantage on saving throws against being {@condition paralyzed} or {@condition poisoned}. You don't need to eat, drink, or breathe."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:rhw:dhampir:trace-of-undeath:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Trace of Undeath",
+          "source": "RHW",
+          "race": "Dhampir",
+          "race_source": "RHW",
+          "race_id": "5etools:races:rhw:dhampir"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:rhw:dhampir:trace-of-undeath:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:rhw:dhampir",
+            "race_name": "Dhampir",
+            "race_source": "RHW",
+            "trait_entries": [
+              "You have {@variantrule Resistance|XPHB} to Necrotic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:phb:dragonborn:0:acid",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:phb:dragonborn:0:acid"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:phb:dragonborn:0:acid",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "acid"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:dragonborn",
+            "race_name": "Dragonborn",
+            "race_source": "PHB",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:phb:dragonborn:0:cold",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:phb:dragonborn:0:cold"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:phb:dragonborn:0:cold",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:dragonborn",
+            "race_name": "Dragonborn",
+            "race_source": "PHB",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:phb:dragonborn:0:fire",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:phb:dragonborn:0:fire"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:phb:dragonborn:0:fire",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:dragonborn",
+            "race_name": "Dragonborn",
+            "race_source": "PHB",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:phb:dragonborn:0:lightning",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:phb:dragonborn:0:lightning"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:phb:dragonborn:0:lightning",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "lightning"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:dragonborn",
+            "race_name": "Dragonborn",
+            "race_source": "PHB",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:phb:dragonborn:0:poison",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:phb:dragonborn:0:poison"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:phb:dragonborn:0:poison",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:dragonborn",
+            "race_name": "Dragonborn",
+            "race_source": "PHB",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:duergar:dwarven-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "MPMM",
+          "race": "Duergar",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:duergar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:duergar:dwarven-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:duergar",
+            "race_name": "Duergar",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have advantage on saving throws you make to avoid or end the {@condition poisoned} condition on yourself. You also have resistance to poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:phb:dwarf:dwarven-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "PHB",
+          "race": "Dwarf",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:dwarf"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:phb:dwarf:dwarven-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:dwarf",
+            "race_name": "Dwarf",
+            "race_source": "PHB",
+            "trait_entries": [
+              "You have advantage on saving throws against poison, and you have resistance against poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psk:dwarf-kaladesh:dwarven-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "PSK",
+          "race": "Dwarf (Kaladesh)",
+          "race_source": "PSK",
+          "race_id": "5etools:races:psk:dwarf%20%28kaladesh%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psk:dwarf-kaladesh:dwarven-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psk:dwarf%20%28kaladesh%29",
+            "race_name": "Dwarf (Kaladesh)",
+            "race_source": "PSK",
+            "trait_entries": [
+              "You have advantage on saving throws against poison, and you have resistance against poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:githyanki:psychic-resilience:1:psychic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Psychic Resilience",
+          "source": "MPMM",
+          "race": "Githyanki",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:githyanki"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:githyanki:psychic-resilience:1:psychic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:githyanki",
+            "race_name": "Githyanki",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to psychic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:githzerai:psychic-resilience:1:psychic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Psychic Resilience",
+          "source": "MPMM",
+          "race": "Githzerai",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:githzerai"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:githzerai:psychic-resilience:1:psychic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:githzerai",
+            "race_name": "Githzerai",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to psychic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:goblin:grit:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:goblin:grit:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:goblin",
+            "race_name": "Goblin",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:goblin:grit:1:psychic:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:goblin:grit:1:psychic:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:goblin",
+            "race_name": "Goblin",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:goliath:mountain-born:1:cold:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mountain Born",
+          "source": "MPMM",
+          "race": "Goliath",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:goliath"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:goliath:mountain-born:1:cold:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:goliath",
+            "race_name": "Goliath",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to cold damage. You also naturally acclimate to high altitudes, even if you've never been to one. This includes elevations above 20,000 feet."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:goliath:mountain-born:1:cold:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mountain Born",
+          "source": "VGM",
+          "race": "Goliath",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:goliath"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:goliath:mountain-born:1:cold:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:goliath",
+            "race_name": "Goliath",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to cold damage. You're also acclimated to high altitude, including elevations above 20,000 feet."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:oga:grung:poison-immunity:2:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Poison Immunity",
+          "source": "OGA",
+          "race": "Grung",
+          "race_source": "OGA",
+          "race_id": "5etools:races:oga:grung"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:oga:grung:poison-immunity:2:poison:",
+        "defenses": [
+          {
+            "kind": "immunity",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:oga:grung",
+            "race_name": "Grung",
+            "race_source": "OGA",
+            "trait_entries": [
+              "You're immune to poison damage and the {@condition poisoned} condition."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:oga:grung:poison-immunity:3:poisoned:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Poison Immunity",
+          "source": "OGA",
+          "race": "Grung",
+          "race_source": "OGA",
+          "race_id": "5etools:races:oga:grung"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:oga:grung:poison-immunity:3:poisoned:1",
+        "defenses": [
+          {
+            "kind": "condition_immunity",
+            "condition": "poisoned"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:oga:grung",
+            "race_name": "Grung",
+            "race_source": "OGA",
+            "trait_entries": [
+              "You're immune to poison damage and the {@condition poisoned} condition."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:efa:kalashtar:mental-discipline:1:psychic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mental Discipline",
+          "source": "EFA",
+          "race": "Kalashtar",
+          "race_source": "EFA",
+          "race_id": "5etools:races:efa:kalashtar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:efa:kalashtar:mental-discipline:1:psychic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:efa:kalashtar",
+            "race_name": "Kalashtar",
+            "race_source": "EFA",
+            "trait_entries": [
+              "You have {@variantrule Resistance|XPHB} to Psychic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:erlw:kalashtar:mental-discipline:1:psychic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Mental Discipline",
+          "source": "ERLW",
+          "race": "Kalashtar",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:kalashtar"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:erlw:kalashtar:mental-discipline:1:psychic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:erlw:kalashtar",
+            "race_name": "Kalashtar",
+            "race_source": "ERLW",
+            "trait_entries": [
+              "You have resistance to psychic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psa:naga:poison-immunity:2:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Poison Immunity",
+          "source": "PSA",
+          "race": "Naga",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:naga"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psa:naga:poison-immunity:2:poison:",
+        "defenses": [
+          {
+            "kind": "immunity",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psa:naga",
+            "race_name": "Naga",
+            "race_source": "PSA",
+            "trait_entries": [
+              "You are immune to poison damage and can't be {@condition poisoned}."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psa:naga:poison-immunity:3:poisoned:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Poison Immunity",
+          "source": "PSA",
+          "race": "Naga",
+          "race_source": "PSA",
+          "race_id": "5etools:races:psa:naga"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psa:naga:poison-immunity:3:poisoned:1",
+        "defenses": [
+          {
+            "kind": "condition_immunity",
+            "condition": "poisoned"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psa:naga",
+            "race_name": "Naga",
+            "race_source": "PSA",
+            "trait_entries": [
+              "You are immune to poison damage and can't be {@condition poisoned}."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:aag:plasmoid:natural-resilience:1:acid:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Resilience",
+          "source": "AAG",
+          "race": "Plasmoid",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:plasmoid"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:aag:plasmoid:natural-resilience:1:acid:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "acid"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:aag:plasmoid",
+            "race_name": "Plasmoid",
+            "race_source": "AAG",
+            "trait_entries": [
+              "You have resistance to acid and poison damage, and you have advantage on saving throws against being {@condition poisoned}."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:aag:plasmoid:natural-resilience:1:poison:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Natural Resilience",
+          "source": "AAG",
+          "race": "Plasmoid",
+          "race_source": "AAG",
+          "race_id": "5etools:races:aag:plasmoid"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:aag:plasmoid:natural-resilience:1:poison:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:aag:plasmoid",
+            "race_name": "Plasmoid",
+            "race_source": "AAG",
+            "trait_entries": [
+              "You have resistance to acid and poison damage, and you have advantage on saving throws against being {@condition poisoned}."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:rhw:reborn:0:cold",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:rhw:reborn:0:cold"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:rhw:reborn:0:cold",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:rhw:reborn",
+            "race_name": "Reborn",
+            "race_source": "RHW",
+            "trait": "Strange Endurance",
+            "trait_entries": [
+              "You have {@variantrule Resistance|XPHB} to one of the following damage types of your choice: Cold, Necrotic, or Poison."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:rhw:reborn:0:necrotic",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:rhw:reborn:0:necrotic"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:rhw:reborn:0:necrotic",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:rhw:reborn",
+            "race_name": "Reborn",
+            "race_source": "RHW",
+            "trait": "Strange Endurance",
+            "trait_entries": [
+              "You have {@variantrule Resistance|XPHB} to one of the following damage types of your choice: Cold, Necrotic, or Poison."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:rhw:reborn:0:poison",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:rhw:reborn:0:poison"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:rhw:reborn:0:poison",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:rhw:reborn",
+            "race_name": "Reborn",
+            "race_source": "RHW",
+            "trait": "Strange Endurance",
+            "trait_entries": [
+              "You have {@variantrule Resistance|XPHB} to one of the following damage types of your choice: Cold, Necrotic, or Poison."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vrgr:reborn:deathless-nature:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Deathless Nature",
+          "source": "VRGR",
+          "race": "Reborn",
+          "race_source": "VRGR",
+          "race_id": "5etools:races:vrgr:reborn"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vrgr:reborn:deathless-nature:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vrgr:reborn",
+            "race_name": "Reborn",
+            "race_source": "VRGR",
+            "trait_entries": [
+              "You have escaped death, a fact represented by the following benefits:",
+              {
+                "type": "list",
+                "items": [
+                  "You have advantage on saving throws against disease and being {@condition poisoned}, and you have resistance to poison damage.",
+                  "You have advantage on death saving throws.",
+                  "You don't need to eat, drink, or breathe.",
+                  "You don't need to sleep, and magic can't put you to sleep. You can finish a long rest in 4 hours if you spend those hours in an inactive, motionless state, during which you retain consciousness."
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:lfl:rimekin:cold-resistance:1:cold:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Cold Resistance",
+          "source": "LFL",
+          "race": "Rimekin",
+          "race_source": "LFL",
+          "race_id": "5etools:races:lfl:rimekin"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:lfl:rimekin:cold-resistance:1:cold:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:lfl:rimekin",
+            "race_name": "Rimekin",
+            "race_source": "LFL",
+            "trait_entries": [
+              "You have {@variantrule Resistance|XPHB} to Cold damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:sea-elf:child-of-the-sea:1:cold:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Child of the Sea",
+          "source": "MPMM",
+          "race": "Sea Elf",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:sea%20elf"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:sea-elf:child-of-the-sea:1:cold:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:sea%20elf",
+            "race_name": "Sea Elf",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You can breathe air and water, and you have resistance to cold damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:shadar-kai:necrotic-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Necrotic Resistance",
+          "source": "MPMM",
+          "race": "Shadar-Kai",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:shadar-kai"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:shadar-kai:necrotic-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:shadar-kai",
+            "race_name": "Shadar-Kai",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to necrotic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:dmg:skeleton:undead-nature:2:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Undead Nature",
+          "source": "DMG",
+          "race": "Skeleton",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:skeleton"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:dmg:skeleton:undead-nature:2:poison:",
+        "defenses": [
+          {
+            "kind": "immunity",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:dmg:skeleton",
+            "race_name": "Skeleton",
+            "race_source": "DMG",
+            "trait_entries": [
+              "You are immune to poison damage and {@condition exhaustion}, and you can't be {@condition poisoned}. You don't require air, food, drink, or sleep."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:dmg:skeleton:undead-nature:3:exhaustion:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Undead Nature",
+          "source": "DMG",
+          "race": "Skeleton",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:skeleton"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:dmg:skeleton:undead-nature:3:exhaustion:1",
+        "defenses": [
+          {
+            "kind": "condition_immunity",
+            "condition": "exhaustion"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:dmg:skeleton",
+            "race_name": "Skeleton",
+            "race_source": "DMG",
+            "trait_entries": [
+              "You are immune to poison damage and {@condition exhaustion}, and you can't be {@condition poisoned}. You don't require air, food, drink, or sleep."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:dmg:skeleton:undead-nature:3:poisoned:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Undead Nature",
+          "source": "DMG",
+          "race": "Skeleton",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:skeleton"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:dmg:skeleton:undead-nature:3:poisoned:2",
+        "defenses": [
+          {
+            "kind": "condition_immunity",
+            "condition": "poisoned"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:dmg:skeleton",
+            "race_name": "Skeleton",
+            "race_source": "DMG",
+            "trait_entries": [
+              "You are immune to poison damage and {@condition exhaustion}, and you can't be {@condition poisoned}. You don't require air, food, drink, or sleep."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:dmg:skeleton:brittle-bones:1:bludgeoning:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Brittle Bones",
+          "source": "DMG",
+          "race": "Skeleton",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:skeleton"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:dmg:skeleton:brittle-bones:1:bludgeoning:3",
+        "defenses": [
+          {
+            "kind": "vulnerability",
+            "damage_type": "bludgeoning"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:dmg:skeleton",
+            "race_name": "Skeleton",
+            "race_source": "DMG",
+            "trait_entries": [
+              "You are vulnerable to bludgeoning damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:phb:tiefling:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "PHB",
+          "race": "Tiefling",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:tiefling"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:phb:tiefling:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:tiefling",
+            "race_name": "Tiefling",
+            "race_source": "PHB",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:triton:guardian-of-the-depths:1:cold:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Guardian of the Depths",
+          "source": "MPMM",
+          "race": "Triton",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:triton"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:triton:guardian-of-the-depths:1:cold:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:triton",
+            "race_name": "Triton",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "Adapted to the frigid ocean depths, you have resistance to cold damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:triton:guardians-of-the-depths:1:cold:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Guardians of the Depths",
+          "source": "VGM",
+          "race": "Triton",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:triton"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:triton:guardians-of-the-depths:1:cold:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:triton",
+            "race_name": "Triton",
+            "race_source": "VGM",
+            "trait_entries": [
+              "Adapted to even the most extreme ocean depths, you have resistance to cold damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:vampire:vampiric-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vampiric Resistance",
+          "source": "PSZ",
+          "race": "Vampire",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:vampire"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:vampire:vampiric-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:vampire",
+            "race_name": "Vampire",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to necrotic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:efa:warforged:construct-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Construct Resilience",
+          "source": "EFA",
+          "race": "Warforged",
+          "race_source": "EFA",
+          "race_id": "5etools:races:efa:warforged"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:efa:warforged:construct-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:efa:warforged",
+            "race_name": "Warforged",
+            "race_source": "EFA",
+            "trait_entries": [
+              "You have {@variantrule Resistance|XPHB} to Poison damage. You also have {@variantrule Advantage|XPHB} on saving throws to avoid or end the {@condition Poisoned|XPHB} condition."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:erlw:warforged:constructed-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Constructed Resilience",
+          "source": "ERLW",
+          "race": "Warforged",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:warforged"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:erlw:warforged:constructed-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:erlw:warforged",
+            "race_name": "Warforged",
+            "race_source": "ERLW",
+            "trait_entries": [
+              "You were created to have remarkable fortitude, represented by the following benefits:",
+              {
+                "type": "list",
+                "items": [
+                  "You have advantage on saving throws against being {@condition poisoned}, and you have resistance to poison damage.",
+                  "You don't need to eat, drink, or breathe.",
+                  "You are immune to disease.",
+                  "You don't need to sleep, and magic can't put you to sleep."
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:erlw:warforged:constructed-resilience:3:disease:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Constructed Resilience",
+          "source": "ERLW",
+          "race": "Warforged",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:warforged"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:erlw:warforged:constructed-resilience:3:disease:1",
+        "defenses": [
+          {
+            "kind": "condition_immunity",
+            "condition": "disease"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:erlw:warforged",
+            "race_name": "Warforged",
+            "race_source": "ERLW",
+            "trait_entries": [
+              "You were created to have remarkable fortitude, represented by the following benefits:",
+              {
+                "type": "list",
+                "items": [
+                  "You have advantage on saving throws against being {@condition poisoned}, and you have resistance to poison damage.",
+                  "You don't need to eat, drink, or breathe.",
+                  "You are immune to disease.",
+                  "You don't need to sleep, and magic can't put you to sleep."
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:yuan-ti:poison-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Poison Resilience",
+          "source": "MPMM",
+          "race": "Yuan-Ti",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:yuan-ti"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:yuan-ti:poison-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:yuan-ti",
+            "race_name": "Yuan-Ti",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have advantage on saving throws you make to avoid or end the {@condition poisoned} condition on yourself. You also have resistance to poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:yuan-ti-pureblood:poison-immunity:2:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Poison Immunity",
+          "source": "VGM",
+          "race": "Yuan-ti Pureblood",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:yuan-ti%20pureblood"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:yuan-ti-pureblood:poison-immunity:2:poison:",
+        "defenses": [
+          {
+            "kind": "immunity",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:yuan-ti%20pureblood",
+            "race_name": "Yuan-ti Pureblood",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You are immune to poison damage and the {@condition poisoned} condition."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:yuan-ti-pureblood:poison-immunity:3:poisoned:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Poison Immunity",
+          "source": "VGM",
+          "race": "Yuan-ti Pureblood",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:yuan-ti%20pureblood"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:yuan-ti-pureblood:poison-immunity:3:poisoned:1",
+        "defenses": [
+          {
+            "kind": "condition_immunity",
+            "condition": "poisoned"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:yuan-ti%20pureblood",
+            "race_name": "Yuan-ti Pureblood",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You are immune to poison damage and the {@condition poisoned} condition."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:dmg:zombie:undead-nature:2:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Undead Nature",
+          "source": "DMG",
+          "race": "Zombie",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:zombie"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:dmg:zombie:undead-nature:2:poison:",
+        "defenses": [
+          {
+            "kind": "immunity",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:dmg:zombie",
+            "race_name": "Zombie",
+            "race_source": "DMG",
+            "trait_entries": [
+              "You are immune to poison damage, and you can't be {@condition poisoned}. You don't require air, food, drink, or sleep."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:dmg:zombie:undead-nature:3:poisoned:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Undead Nature",
+          "source": "DMG",
+          "race": "Zombie",
+          "race_source": "DMG",
+          "race_id": "5etools:races:dmg:zombie"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:dmg:zombie:undead-nature:3:poisoned:1",
+        "defenses": [
+          {
+            "kind": "condition_immunity",
+            "condition": "poisoned"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:dmg:zombie",
+            "race_name": "Zombie",
+            "race_source": "DMG",
+            "trait_entries": [
+              "You are immune to poison damage, and you can't be {@condition poisoned}. You don't require air, food, drink, or sleep."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:elf-shadar-kai:necrotic-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Necrotic Resistance",
+          "source": "MTF",
+          "race": "Elf (Shadar-kai)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:elf%20%28shadar-kai%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:elf-shadar-kai:necrotic-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:elf%20%28shadar-kai%29",
+            "race_name": "Elf (Shadar-kai)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to necrotic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:eepc:genasi-fire:fire-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fire Resistance",
+          "source": "EEPC",
+          "race": "Genasi (Fire)",
+          "race_source": "EEPC",
+          "race_id": "5etools:races:eepc:genasi%20%28fire%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:eepc:genasi-fire:fire-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:eepc:genasi%20%28fire%29",
+            "race_name": "Genasi (Fire)",
+            "race_source": "EEPC",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:eepc:genasi-water:acid-resistance:1:acid:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Acid Resistance",
+          "source": "EEPC",
+          "race": "Genasi (Water)",
+          "race_source": "EEPC",
+          "race_id": "5etools:races:eepc:genasi%20%28water%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:eepc:genasi-water:acid-resistance:1:acid:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "acid"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:eepc:genasi%20%28water%29",
+            "race_name": "Genasi (Water)",
+            "race_source": "EEPC",
+            "trait_entries": [
+              "You have resistance to acid damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:genasi-air:lightning-resistance:1:lightning:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Lightning Resistance",
+          "source": "MPMM",
+          "race": "Genasi (Air)",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:genasi%20%28air%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:genasi-air:lightning-resistance:1:lightning:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "lightning"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:genasi%20%28air%29",
+            "race_name": "Genasi (Air)",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to lightning damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:genasi-fire:fire-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Fire Resistance",
+          "source": "MPMM",
+          "race": "Genasi (Fire)",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:genasi%20%28fire%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:genasi-fire:fire-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:genasi%20%28fire%29",
+            "race_name": "Genasi (Fire)",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mpmm:genasi-water:acid-resistance:1:acid:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Acid Resistance",
+          "source": "MPMM",
+          "race": "Genasi (Water)",
+          "race_source": "MPMM",
+          "race_id": "5etools:races:mpmm:genasi%20%28water%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mpmm:genasi-water:acid-resistance:1:acid:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "acid"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mpmm:genasi%20%28water%29",
+            "race_name": "Genasi (Water)",
+            "race_source": "MPMM",
+            "trait_entries": [
+              "You have resistance to acid damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:erlw:half-elf-variant-mark-of-storm:storm-s-boon:1:lightning:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Storm's Boon",
+          "source": "ERLW",
+          "race": "Half-Elf (Variant; Mark of Storm)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:erlw:half-elf-variant-mark-of-storm:storm-s-boon:1:lightning:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "lightning"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29",
+            "race_name": "Half-Elf (Variant; Mark of Storm)",
+            "race_source": "ERLW",
+            "trait_entries": [
+              "You have resistance to lightning damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:phb:halfling-stout:stout-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Stout Resilience",
+          "source": "PHB",
+          "race": "Halfling (Stout)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:halfling%20%28stout%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:phb:halfling-stout:stout-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:halfling%20%28stout%29",
+            "race_name": "Halfling (Stout)",
+            "race_source": "PHB",
+            "trait_entries": [
+              "You have advantage on saving throws against poison, and you have resistance against poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:aasimar-fallen:celestial-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "VGM",
+          "race": "Aasimar (Fallen)",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:aasimar%20%28fallen%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:aasimar-fallen:celestial-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:aasimar%20%28fallen%29",
+            "race_name": "Aasimar (Fallen)",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:aasimar-fallen:celestial-resistance:1:radiant:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "VGM",
+          "race": "Aasimar (Fallen)",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:aasimar%20%28fallen%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:aasimar-fallen:celestial-resistance:1:radiant:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "radiant"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:aasimar%20%28fallen%29",
+            "race_name": "Aasimar (Fallen)",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:aasimar-protector:celestial-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "VGM",
+          "race": "Aasimar (Protector)",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:aasimar%20%28protector%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:aasimar-protector:celestial-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:aasimar%20%28protector%29",
+            "race_name": "Aasimar (Protector)",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:aasimar-protector:celestial-resistance:1:radiant:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "VGM",
+          "race": "Aasimar (Protector)",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:aasimar%20%28protector%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:aasimar-protector:celestial-resistance:1:radiant:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "radiant"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:aasimar%20%28protector%29",
+            "race_name": "Aasimar (Protector)",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:aasimar-scourge:celestial-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "VGM",
+          "race": "Aasimar (Scourge)",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:aasimar%20%28scourge%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:aasimar-scourge:celestial-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:aasimar%20%28scourge%29",
+            "race_name": "Aasimar (Scourge)",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:vgm:aasimar-scourge:celestial-resistance:1:radiant:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Celestial Resistance",
+          "source": "VGM",
+          "race": "Aasimar (Scourge)",
+          "race_source": "VGM",
+          "race_id": "5etools:races:vgm:aasimar%20%28scourge%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:vgm:aasimar-scourge:celestial-resistance:1:radiant:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "radiant"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:vgm:aasimar%20%28scourge%29",
+            "race_name": "Aasimar (Scourge)",
+            "race_source": "VGM",
+            "trait_entries": [
+              "You have resistance to necrotic damage and radiant damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:acid",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:acid"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:acid",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "acid"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28draconblood%29",
+            "race_name": "Dragonborn (Draconblood)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:cold",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:cold"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:cold",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28draconblood%29",
+            "race_name": "Dragonborn (Draconblood)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:fire",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:fire"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:fire",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28draconblood%29",
+            "race_name": "Dragonborn (Draconblood)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:lightning",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:lightning"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:lightning",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "lightning"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28draconblood%29",
+            "race_name": "Dragonborn (Draconblood)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:poison",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-draconblood:0:poison"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-draconblood:0:poison",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28draconblood%29",
+            "race_name": "Dragonborn (Draconblood)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:acid",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:acid"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:acid",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "acid"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28ravenite%29",
+            "race_name": "Dragonborn (Ravenite)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:cold",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:cold"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:cold",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28ravenite%29",
+            "race_name": "Dragonborn (Ravenite)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:fire",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:fire"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:fire",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28ravenite%29",
+            "race_name": "Dragonborn (Ravenite)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:lightning",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:lightning"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:lightning",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "lightning"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28ravenite%29",
+            "race_name": "Dragonborn (Ravenite)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:poison",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:species-defense:egw:dragonborn-ravenite:0:poison"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:choice:species-defense:egw:dragonborn-ravenite:0:poison",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:egw:dragonborn%20%28ravenite%29",
+            "race_name": "Dragonborn (Ravenite)",
+            "race_source": "EGW",
+            "trait": "Damage Resistance",
+            "trait_entries": [
+              "You have resistance to the damage type associated with your draconic ancestry."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:dwarf-duergar:dwarven-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "MTF",
+          "race": "Dwarf (Duergar)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:dwarf%20%28duergar%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:dwarf-duergar:dwarven-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:dwarf%20%28duergar%29",
+            "race_name": "Dwarf (Duergar)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have advantage on saving throws against poison, and you have resistance against poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:phb:dwarf-hill:dwarven-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "PHB",
+          "race": "Dwarf (Hill)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:dwarf%20%28hill%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:phb:dwarf-hill:dwarven-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:dwarf%20%28hill%29",
+            "race_name": "Dwarf (Hill)",
+            "race_source": "PHB",
+            "trait_entries": [
+              "You have advantage on saving throws against poison, and you have resistance against poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:erlw:dwarf-mark-of-warding:dwarven-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "ERLW",
+          "race": "Dwarf (Mark of Warding)",
+          "race_source": "ERLW",
+          "race_id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:erlw:dwarf-mark-of-warding:dwarven-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29",
+            "race_name": "Dwarf (Mark of Warding)",
+            "race_source": "ERLW",
+            "trait_entries": [
+              "You have advantage on saving throws against poison, and you have resistance against poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:phb:dwarf-mountain:dwarven-resilience:1:poison:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Dwarven Resilience",
+          "source": "PHB",
+          "race": "Dwarf (Mountain)",
+          "race_source": "PHB",
+          "race_id": "5etools:races:phb:dwarf%20%28mountain%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:phb:dwarf-mountain:dwarven-resilience:1:poison:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:phb:dwarf%20%28mountain%29",
+            "race_name": "Dwarf (Mountain)",
+            "race_source": "PHB",
+            "trait_entries": [
+              "You have advantage on saving throws against poison, and you have resistance against poison damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psx:goblin-ixalan:grit:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSX",
+          "race": "Goblin (Ixalan)",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:goblin%20%28ixalan%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psx:goblin-ixalan:grit:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psx:goblin%20%28ixalan%29",
+            "race_name": "Goblin (Ixalan)",
+            "race_source": "PSX",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psx:goblin-ixalan:grit:1:psychic:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSX",
+          "race": "Goblin (Ixalan)",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:goblin%20%28ixalan%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psx:goblin-ixalan:grit:1:psychic:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psx:goblin%20%28ixalan%29",
+            "race_name": "Goblin (Ixalan)",
+            "race_source": "PSX",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:goblin-zendikar-grotag-tribe:grit:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Grotag Tribe)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20grotag%20tribe%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:goblin-zendikar-grotag-tribe:grit:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20grotag%20tribe%29",
+            "race_name": "Goblin (Zendikar; Grotag Tribe)",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:goblin-zendikar-grotag-tribe:grit:1:psychic:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Grotag Tribe)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20grotag%20tribe%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:goblin-zendikar-grotag-tribe:grit:1:psychic:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20grotag%20tribe%29",
+            "race_name": "Goblin (Zendikar; Grotag Tribe)",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:goblin-zendikar-lavastep-tribe:grit:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Lavastep Tribe)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:goblin-zendikar-lavastep-tribe:grit:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29",
+            "race_name": "Goblin (Zendikar; Lavastep Tribe)",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:goblin-zendikar-lavastep-tribe:grit:1:psychic:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Lavastep Tribe)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:goblin-zendikar-lavastep-tribe:grit:1:psychic:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29",
+            "race_name": "Goblin (Zendikar; Lavastep Tribe)",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Tuktuk Tribe)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20tuktuk%20tribe%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20tuktuk%20tribe%29",
+            "race_name": "Goblin (Zendikar; Tuktuk Tribe)",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:psychic:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Grit",
+          "source": "PSZ",
+          "race": "Goblin (Zendikar; Tuktuk Tribe)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20tuktuk%20tribe%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:goblin-zendikar-tuktuk-tribe:grit:1:psychic:1",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:goblin%20%28zendikar%3B%20tuktuk%20tribe%29",
+            "race_name": "Goblin (Zendikar; Tuktuk Tribe)",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to fire damage and psychic damage. In addition, when you are wearing no armor, your AC is equal to 11 + your Dexterity modifier."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-asmodeus:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Asmodeus)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28asmodeus%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-asmodeus:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28asmodeus%29",
+            "race_name": "Tiefling (Asmodeus)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-baalzebul:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Baalzebul)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28baalzebul%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-baalzebul:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28baalzebul%29",
+            "race_name": "Tiefling (Baalzebul)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-dispater:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Dispater)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28dispater%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-dispater:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28dispater%29",
+            "race_name": "Tiefling (Dispater)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-fierna:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Fierna)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28fierna%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-fierna:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28fierna%29",
+            "race_name": "Tiefling (Fierna)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-glasya:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Glasya)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28glasya%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-glasya:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28glasya%29",
+            "race_name": "Tiefling (Glasya)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-levistus:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Levistus)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28levistus%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-levistus:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28levistus%29",
+            "race_name": "Tiefling (Levistus)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-mammon:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Mammon)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28mammon%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-mammon:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28mammon%29",
+            "race_name": "Tiefling (Mammon)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-mephistopheles:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Mephistopheles)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28mephistopheles%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-mephistopheles:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28mephistopheles%29",
+            "race_name": "Tiefling (Mephistopheles)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:scag:tiefling-variant-devil-s-tongue:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "SCAG",
+          "race": "Tiefling (Variant; Devil's Tongue)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:tiefling%20%28variant%3B%20devil%27s%20tongue%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:scag:tiefling-variant-devil-s-tongue:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:scag:tiefling%20%28variant%3B%20devil%27s%20tongue%29",
+            "race_name": "Tiefling (Variant; Devil's Tongue)",
+            "race_source": "SCAG",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:scag:tiefling-variant-hellfire:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "SCAG",
+          "race": "Tiefling (Variant; Hellfire)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:tiefling%20%28variant%3B%20hellfire%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:scag:tiefling-variant-hellfire:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:scag:tiefling%20%28variant%3B%20hellfire%29",
+            "race_name": "Tiefling (Variant; Hellfire)",
+            "race_source": "SCAG",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:scag:tiefling-variant-infernal-legacy:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "SCAG",
+          "race": "Tiefling (Variant; Infernal Legacy)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:tiefling%20%28variant%3B%20infernal%20legacy%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:scag:tiefling-variant-infernal-legacy:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:scag:tiefling%20%28variant%3B%20infernal%20legacy%29",
+            "race_name": "Tiefling (Variant; Infernal Legacy)",
+            "race_source": "SCAG",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:scag:tiefling-variant-winged:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "SCAG",
+          "race": "Tiefling (Variant; Winged)",
+          "race_source": "SCAG",
+          "race_id": "5etools:races:scag:tiefling%20%28variant%3B%20winged%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:scag:tiefling-variant-winged:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:scag:tiefling%20%28variant%3B%20winged%29",
+            "race_name": "Tiefling (Variant; Winged)",
+            "race_source": "SCAG",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:mtf:tiefling-zariel:hellish-resistance:1:fire:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Hellish Resistance",
+          "source": "MTF",
+          "race": "Tiefling (Zariel)",
+          "race_source": "MTF",
+          "race_id": "5etools:races:mtf:tiefling%20%28zariel%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:mtf:tiefling-zariel:hellish-resistance:1:fire:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:mtf:tiefling%20%28zariel%29",
+            "race_name": "Tiefling (Zariel)",
+            "race_source": "MTF",
+            "trait_entries": [
+              "You have resistance to fire damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psx:vampire-ixalan:vampiric-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vampiric Resistance",
+          "source": "PSX",
+          "race": "Vampire (Ixalan)",
+          "race_source": "PSX",
+          "race_id": "5etools:races:psx:vampire%20%28ixalan%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psx:vampire-ixalan:vampiric-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psx:vampire%20%28ixalan%29",
+            "race_name": "Vampire (Ixalan)",
+            "race_source": "PSX",
+            "trait_entries": [
+              "You have resistance to necrotic damage."
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "defense:species:psz:vampire-zendikar:vampiric-resistance:1:necrotic:",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Vampiric Resistance",
+          "source": "PSZ",
+          "race": "Vampire (Zendikar)",
+          "race_source": "PSZ",
+          "race_id": "5etools:races:psz:vampire%20%28zendikar%29"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:species:psz:vampire-zendikar:vampiric-resistance:1:necrotic:",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ],
+        "parameters": {
+          "species": {
+            "race_id": "5etools:races:psz:vampire%20%28zendikar%29",
+            "race_name": "Vampire (Zendikar)",
+            "race_source": "PSZ",
+            "trait_entries": [
+              "You have resistance to necrotic damage."
+            ]
+          }
+        }
+      }
     }
   ]
 }

@@ -443,7 +443,7 @@ export function expandedOriginClassSpellIds(record={},definitions=[],features=[]
  return [...results];
 }
 const choiceSignature=choice=>[choice.mode||'',choice.stage||'',String(choice.filter||'').split('|').find(c=>c.startsWith('level='))?.slice(6)||'',choice.usage||''].join(':');
-export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[],racialUsage=[],proficiency=null){
+export function structuredSpellGrants(record,index=[],spells=[],features=[],grantRules=[],racialUsage=[],proficiency=null,flavourOverrides=[]){
  const output={grants:[],trackers:[],choices:[],warnings:[],variant_choices:[],saved_grants:arr(record.origin_spell_grants)};
  if(record.kind==='monster')return output;
  const level=Number(record.level||1),edition=String(record.rules_version||'2014');
@@ -759,20 +759,13 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[],gran
   }
   blocks.forEach((block,i)=>append(blockFor(origin,block,i,row)));
  }
- // A selected tiefling legacy replaces PHB Infernal Legacy spells and
- // counters; a variant does not grant both sets at once.
- const base='race|'+norm(record.species_source)+'|'+norm(record.species);
- const replaced=new Set(arr(grantRules).filter(rule=>
-   rule.kind==='subrace'&&norm(rule.name)===norm(record.subrace)&&
-   norm(rule.source)===norm(record.subrace_source)&&
-   norm(rule.race_name)===norm(record.species)&&
-   (!rule.race_source||norm(rule.race_source)===norm(record.species_source)))
-   .flatMap(rule=>arr(rule.replace_parent_spell_traits).map(norm)));
- if(replaced.size){
-  const displaced=row=>row.origin_parent_id===base&&replaced.has(norm(row.granting_trait));
-  output.grants=output.grants.filter(row=>!displaced(row));
-  output.trackers=output.trackers.filter(row=>!displaced(row));
- }
+ // A selected flavour supplies the complete spell benefits of its owning trait.
+ // Winged Tiefling selects an empty spell flavour without an exclusion field.
+ const displaced=row=>flavourOverrides.some(flavour=>
+  row.origin_parent_id==='race|'+norm(flavour.source)+'|'+norm(flavour.race)&&
+  norm(row.granting_trait)===norm(flavour.trait));
+ for(const section of ['grants','trackers','choices'])
+  output[section]=output[section].filter(row=>!displaced(row));
  for(const key of ['grants','trackers','choices'])output[key]=[...new Map(output[key].map(row=>[row.id,row])).values()];
  // Reconcile saved audited-feat choices against the live source definition.
  // Old selections remain stored; only choices legal for the explicitly

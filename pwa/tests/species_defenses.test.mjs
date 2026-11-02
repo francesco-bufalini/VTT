@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {projectSpeciesDefenses} from '../tools/species_defenses.mjs';
 import {speciesDefenseEntries,selectedSpeciesDefenseRules} from '../species_defenses.js';
+import {speciesDefensesFromBenefits} from '../species_defense_benefits.js';
 import {calculateSheet} from '../sheet_rules.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
@@ -10,7 +11,7 @@ import {collectTraitRows} from '../trait_projection.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const source=read('../../vtt/data/creature_references_5etools.json');
-const catalog=read('../catalog/species_defenses.json');
+const catalog=speciesDefensesFromBenefits(read('../../vtt/enrichment/benefits/defense.json'),read('../../vtt/enrichment/benefits/flavours.json'));
 const find=(name,book)=>source.races.find(r=>r.name===name&&r.source===book);
 const abilities={str:10,dex:10,con:10,int:10,wis:10,cha:10};
 const creature=(name,book,changes={})=>({
@@ -24,7 +25,8 @@ const effects=sheet=>sheet.damage_defense_entries.filter(r=>r.automatic);
 const keys=sheet=>effects(sheet).map(r=>r.rank+':'+r.key).sort();
 
 test('checked-in pre-2024 defense data exactly matches structured native race fields',()=>{
- assert.deepEqual(projectSpeciesDefenses(source.races),catalog);
+ const signature=c=>c.races.flatMap(r=>[...r.entries.map(e=>[r.name,r.source,e.rank,e.key,e.trait].join('|')),...r.choices.map(e=>[r.name,r.source,e.rank,e.trait,[...e.from].sort().join(',')].join('|'))]).sort();
+ assert.deepEqual(signature(projectSpeciesDefenses(source.races)),signature(catalog));
  assert.equal(catalog.version,1);
  assert.ok(catalog.races.length>=70);
  assert.ok(catalog.races.every(row=>row.source!=='XPHB'));

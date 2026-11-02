@@ -1,3 +1,4 @@
+import {spellGrantRulesFromBenefits} from '../spell_grant_benefits.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -264,7 +265,7 @@ test('unlisted climb/swim speed is half walking, explicit speed is retained and 
 
 test('Artificer Initiate one-free-cast feat choice also accepts higher-level spell slots',()=>{
  const entries=read('../../vtt/data/additional_spells_5etools.json').entries;
- const supplements=read('../catalog/spell_grant_rules.json').rules;
+ const supplements=spellGrantRulesFromBenefits(read('../../vtt/enrichment/benefits/option_grant.json'));
  const row=entries.find(r=>r.kind==='feat'&&r.name==='Artificer Initiate'&&r.source==='TCE');
  const record={kind:'character',rules_version:'2014',level:4,
   feats_catalog:[{name:'Artificer Initiate',source:'TCE'}]};

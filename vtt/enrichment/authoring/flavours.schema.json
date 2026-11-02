@@ -92,6 +92,8 @@
                 "legacy_ancestry": {
                   "type": "string"
                 },
+                "legacy_subrace": {"type":"string"},
+                "legacy_subrace_source": {"type":"string"},
                 "requires_untrained_saving_throw": {
                   "type": "boolean"
                 }
