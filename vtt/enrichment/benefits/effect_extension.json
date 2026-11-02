@@ -29,9 +29,7 @@
             "value": "cha_mod",
             "trigger": "on_hit",
             "frequency": "each",
-            "parameters": {
-              "description": "Bonus ai danni di ogni raggio che colpisce"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -90,9 +88,7 @@
             "value": "10",
             "trigger": "on_hit",
             "frequency": "each",
-            "parameters": {
-              "description": "Il bersaglio viene allontanato in linea retta"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -122,9 +118,7 @@
             "value": "10",
             "trigger": "on_hit",
             "frequency": "once_per_turn",
-            "parameters": {
-              "description": "Avvicina il bersaglio al lanciatore"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -154,9 +148,7 @@
             "value": "10",
             "trigger": "on_hit",
             "frequency": "once_per_turn",
-            "parameters": {
-              "description": "Riduce la velocità del bersaglio fino al termine del turno successivo"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -191,8 +183,7 @@
               "target_id": "vtt_bardic_inspiration",
               "target_aliases": [
                 "Ispirazione Bardica"
-              ],
-              "description": "Quando si usa il dado di Ispirazione Bardica in una prova, lo si tira due volte e si sceglie il risultato migliore"
+              ]
             }
           }
         ]
@@ -229,8 +220,7 @@
               "target_id": "vtt_bardic_inspiration",
               "target_aliases": [
                 "Ispirazione Bardica"
-              ],
-              "description": "Danni da tuono entro 5 ft dal bersaglio dopo un colpo; TS Costituzione contro CD incantesimi del bardo per dimezzare"
+              ]
             }
           }
         ]
@@ -267,8 +257,7 @@
               "target_id": "vtt_bardic_inspiration",
               "target_aliases": [
                 "Ispirazione Bardica"
-              ],
-              "description": "PF temporanei al termine del tiro salvezza"
+              ]
             }
           }
         ]
@@ -298,9 +287,7 @@
             "target_kind": "item",
             "trigger": "passive",
             "frequency": "each",
-            "parameters": {
-              "description": "L'armatura diventa solidale con il corpo e non può essere rimossa contro la volontà del portatore"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -329,9 +316,7 @@
             "target_kind": "item",
             "trigger": "passive",
             "frequency": "each",
-            "parameters": {
-              "description": "La velocità sul terreno aumenta di 5 ft; i guanti diventano armi magiche da mischia 1d8 forza, lanciabili a 20/60 ft"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -360,9 +345,7 @@
             "target_kind": "item",
             "trigger": "reaction",
             "frequency": "each",
-            "parameters": {
-              "description": "6 cariche: usa una carica per aggiungere Intelligenza a una prova di Forza o a un tiro salvezza di Forza"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -391,9 +374,7 @@
             "target_kind": "item",
             "trigger": "reaction",
             "frequency": "each",
-            "parameters": {
-              "description": "6 cariche: usa una reazione e una carica per evitare di essere buttato prono; recupera 1d6 cariche all'alba"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -422,9 +403,7 @@
             "target_kind": "item",
             "trigger": "on_use",
             "frequency": "each",
-            "parameters": {
-              "description": "Azione bonus: teletrasporto fino a 15 ft verso uno spazio non occupato già occupato durante il turno corrente"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -453,9 +432,7 @@
             "target_kind": "item",
             "trigger": "passive",
             "frequency": "each",
-            "parameters": {
-              "description": "Gli attacchi con incantesimi ignorano la mezza copertura quando si impugna questo focus"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -485,9 +462,7 @@
             "value": "advantage",
             "trigger": "initiative",
             "frequency": "each",
-            "parameters": {
-              "description": "Vantaggio ai tiri di iniziativa mentre l'elmo è indossato"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -516,9 +491,7 @@
             "target_kind": "item",
             "trigger": "passive",
             "frequency": "each",
-            "parameters": {
-              "description": "Il portatore non può essere sorpreso mentre è cosciente"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -547,9 +520,7 @@
             "target_kind": "item",
             "trigger": "passive",
             "frequency": "each",
-            "parameters": {
-              "description": "Il gioiello infuso funge da cuore di un servitore omuncolo; la creatura associata è gestita separatamente"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -578,9 +549,7 @@
             "target_kind": "item",
             "trigger": "concentration_fail",
             "frequency": "each",
-            "parameters": {
-              "description": "Reazione: usa una delle 4 cariche per riuscire un tiro salvezza di concentrazione fallito; recupera 1d4 cariche all'alba"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -609,9 +578,7 @@
             "target_kind": "item",
             "trigger": "passive",
             "frequency": "each",
-            "parameters": {
-              "description": "L'arma emette luce intensa per 30 ft e luce fioca per altri 30 ft, disattivabile"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -640,9 +607,7 @@
             "target_kind": "item",
             "trigger": "reaction",
             "frequency": "each",
-            "parameters": {
-              "description": "4 cariche: dopo essere colpito da un attacco, una reazione e una carica per accecare l'attaccante (TS Costituzione); recupera 1d4 cariche all'alba"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -671,9 +636,7 @@
             "target_kind": "item",
             "trigger": "passive",
             "frequency": "each",
-            "parameters": {
-              "description": "Ignora la proprietà Ricarica (Loading); l'arma produce munizioni magiche quando è usata per un attacco a distanza"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -702,9 +665,7 @@
             "target_kind": "item",
             "trigger": "on_throw",
             "frequency": "each",
-            "parameters": {
-              "description": "L'arma ritorna nella mano dell'utilizzatore immediatamente dopo l'attacco a distanza con lancio"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -733,9 +694,7 @@
             "target_kind": "item",
             "trigger": "reaction",
             "frequency": "each",
-            "parameters": {
-              "description": "4 cariche: dopo essere colpito da un attacco in mischia, una reazione e una carica per spingere l'attaccante fino a 15 ft; recupera 1d4 cariche all'alba"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -765,7 +724,6 @@
             "trigger": "passive",
             "frequency": "each",
             "parameters": {
-              "description": "Conferisce resistenza al tipo di danno scelto al momento dell'infusione",
               "value_from_item_choice": "damage_type"
             }
           }
@@ -796,9 +754,7 @@
             "target_kind": "item",
             "trigger": "on_use",
             "frequency": "each",
-            "parameters": {
-              "description": "Una volta all'alba: con un'azione, recupera uno slot incantesimo speso di livello massimo 3"
-            }
+            "parameters": {}
           }
         ]
       }
@@ -831,7 +787,6 @@
             "frequency": "each",
             "parameters": {
               "require_active_state_group": "armor_model",
-              "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza.",
               "compatibility_selection_id": "arcane_armor",
               "value": ""
             }
@@ -854,7 +809,6 @@
         "type": "effect_extension",
         "id": "feat:bmt:cartomancer:hidden-ace",
         "name": "Hidden Ace",
-        "description": "Al termine di un riposo lungo, scegli un incantesimo della lista della tua classe che richieda un'azione e per cui possiedi slot. Lo conservi in una carta per 8 ore; puoi lanciarlo una volta come azione bonus senza consumare slot.",
         "effects": [
           {
             "operation": "grant_action",

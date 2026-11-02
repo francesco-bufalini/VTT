@@ -138,7 +138,7 @@ export function speciesPowersFromBenefits(baseIndex,actionCatalog,resourceCatalo
   if(!detail||!RACIAL_POWER_ACTION_FIELDS.has(detail.kind)||!b.activation)
    throw Error('Azione razziale invalida: '+entry.id);
   const {kind,...mechanics}=detail;
-  const value={id:entry.id,trait:ref.name,...(b.name?{name:b.name}:{}),
+  const value={id:entry.id,trait:ref.name,name:b.name||ref.name,
     action_type:b.activation,...mechanics};
   attachResource(value,entry,ref);
   if(RACIAL_POWER_LIST_FIELDS.has(kind)){

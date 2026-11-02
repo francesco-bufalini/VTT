@@ -263,7 +263,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
     (!capacity||total<capacity||grant.replace_existing&&capacity===1);
    add('items','Oggetti concessi',option.name,
     (option.owned?'Posseduto'+(option.owned>1?' ×'+option.owned:'')+' · ':'')+
-    (option.description||'Da aggiungere'),'',{
+    (option.description||describe(trait.entries||trait.description)||'Da aggiungere'),'',{
     grant_id:grant.id,option_id:option.id,owned:!!option.owned,available,
     requires_activation:!!grant.activation_action_id});
   }
@@ -662,13 +662,14 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  // Non-class feats can declare actions via the same typed benefits schema.
  for(const action of rows(calculated.feat_actions)){
   if(!belongs(action))continue;
+  const owner=ownerFeatures.find(feature=>feature.origin_id===action.origin_id)||trait;
   addAbility(action.name,{
    origin_id:action.origin_id,status:trait.inactive?'Tratto disattivato':
      action.descriptive_only?'Promemoria':'Attivabile',
    timing:actionTime(action.action_type||action.time),
    cost:action.descriptive_only?'Nessun utilizzo in app':
      Number(action.resource_cost)>0?String(action.resource_cost)+' utilizzi':'Nessun costo',
-   description:describe(action.description),effects:[]
+   description:describe(owner.entries||owner.description),effects:[]
   });
  }
  for(const rule of rows(calculated.trait_state_catalog)){

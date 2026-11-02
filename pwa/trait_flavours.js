@@ -94,7 +94,7 @@ export function traitFlavourChoices(record={},features=[],catalog={},proficienci
   return {
    id:'trait-flavour:'+model.owner.origin_id,kind:'trait_flavour',
    origin_id:model.owner.origin_id,flavour_set_id:model.id,
-   name:model.owner.name,label:model.label||'Variante del tratto',
+   name:model.owner.name,label:model.label||model.owner.name,
    migrate_proficiencies:rows(model.migrate_proficiencies),
    count:1,selected:model.selected?[model.selected.id]:[],
    options:available.map(f=>f.id),
@@ -273,7 +273,7 @@ export function projectTraitFlavourBenefits(record={},features=[],catalogs={}){
    }
   }
   traits.push({id:model.flavour_origin_id,origin_id:model.flavour_origin_id,
-   name:model.selected.name,description:model.selected.description||model.selected.detail||'',
+   name:model.selected.name,description:model.owner.entries??model.owner.description??'',
    parent_origin:model.owner.origin_id,selection_id:model.id,
    flavour_id:model.selected.id,benefits:benefitPayloads});
  }

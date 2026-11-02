@@ -1,10 +1,11 @@
-import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {abilityIndexFromBenefits,backgroundStartingFeatsFromBenefits} from './5etools_benefit_projections.js';
+import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
 import {loadFeatBenefitCatalogs} from './feat_benefit_catalogs.js';
 import {infusionDefinitionsFromOptionLists} from './infusion_benefit_catalogs.js';
+import {inheritCanonicalBenefitNames} from './benefit_source_text.js';
 import {projectTraitFlavourBenefits,traitFlavourModels} from './trait_flavours.js';
 import {proficiencyIndexFromBenefits} from './proficiency_catalog.js';
 import {baseValueOverridesFromBenefits} from './base_override_benefits.js';
@@ -1836,8 +1837,8 @@ let catalogPromise;
 export function loadRuleCatalogs(){
   if(!catalogPromise){
   // Canonical benefit catalogs replace the nine retired legacy sources.
-  const typedOptionGrants=fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const typedOptionLists=fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const typedOptionGrants=fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).then(inheritCanonicalBenefitNames).catch(()=>({}));
+  const typedOptionLists=fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).then(inheritCanonicalBenefitNames).catch(()=>({}));
   const typedProficiencyGrants=fetch('/benefits/proficiency_grant.json')
     .then(r=>r.ok?r.json():{}).catch(()=>({}));
   const typedBaseOverrides=fetch('/benefits/base_override.json')
@@ -1934,7 +1935,8 @@ export function loadRuleCatalogs(){
     actionSequenceBenefits:actionSequenceBenefits?.benefit_type==='action_sequence'?actionSequenceBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,
-    featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,speciesPowers,speciesConditionalBonuses,
+    featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,
+    originDetails,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   }

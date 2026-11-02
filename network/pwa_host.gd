@@ -64,6 +64,7 @@ const FILES := {
 	"/5etools_benefit_projections.js": ["res://pwa/5etools_benefit_projections.js", "text/javascript; charset=utf-8"],
 	"/feat_benefit_catalogs.js": ["res://pwa/feat_benefit_catalogs.js", "text/javascript; charset=utf-8"],
 	"/infusion_benefit_catalogs.js": ["res://pwa/infusion_benefit_catalogs.js", "text/javascript; charset=utf-8"],
+	"/benefit_source_text.js": ["res://pwa/benefit_source_text.js", "text/javascript; charset=utf-8"],
 	"/trait_flavours.js": ["res://pwa/trait_flavours.js", "text/javascript; charset=utf-8"],
 	"/scaling_dice.js": ["res://pwa/scaling_dice.js", "text/javascript; charset=utf-8"],
 	"/skill_definitions.js": ["res://pwa/skill_definitions.js", "text/javascript; charset=utf-8"],

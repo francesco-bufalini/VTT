@@ -280,9 +280,9 @@ test('legacy equipped flags never create a phantom offhand that blocks Dueling',
   'Two-handed use of a versatile weapon suppresses Dueling');
 });
 
-test('Great Weapon Fighting remains descriptive without a dedicated damage reroll',()=>{
+test('Great Weapon Fighting uses the source description without adding a damage reroll',()=>{
  const style=catalogs.optionalFeatureProgressions.options.find(row=>row.id==='optional:phb:great-weapon-fighting');
- assert(style.description.includes('reroll'));
+ assert.equal(style.description,undefined,'The description must be read from the 5eTools source');
  assert.equal(style.effects,undefined);
  const damage=rollBattleDamage('2d6+3',()=>1);
  assert.deepEqual(damage.parts[0].rolls,[1,1]);

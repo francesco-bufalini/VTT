@@ -23,7 +23,6 @@
         "id": "arcane_armor",
         "option_grant": {
           "id": "arcane_armor",
-          "title": "Armatura Arcana",
           "owner": {
             "class_name": "Artificer",
             "class_source": "TCE",
@@ -129,7 +128,6 @@
         "id": "ranger_favored_enemy_phb",
         "option_grant": {
           "id": "ranger_favored_enemy_phb",
-          "title": "Nemici prescelti",
           "owner": {
             "class_name": "Ranger",
             "class_source": "PHB",
@@ -387,7 +385,6 @@
             }
           },
           "ui": "generic",
-          "description": "Per ogni scelta seleziona un tipo di mostro oppure due razze umanoidi. Ottieni una nuova scelta ai livelli 1, 6 e 14 da Ranger.",
           "benefit_type": "option_grant",
           "legacy_stage": "prepared",
           "migration_group": "power_selections"
@@ -421,7 +418,6 @@
             "AI"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -648,7 +644,6 @@
         "id": "optional:subclass:phb:bard:xge:college-of-swords:fs-b",
         "option_grant": {
           "id": "optional:subclass:phb:bard:xge:college-of-swords:fs-b",
-          "title": "Fighting Style",
           "owner": {
             "class_name": "Bard",
             "class_source": "PHB",
@@ -678,7 +673,6 @@
             }
           },
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "application": {
             "destination": "origin",
@@ -717,7 +711,6 @@
         "id": "optional:class:phb:fighter:fs-f",
         "option_grant": {
           "id": "optional:class:phb:fighter:fs-f",
-          "title": "Fighting Style",
           "owner": {
             "class_name": "Fighter",
             "class_source": "PHB",
@@ -745,7 +738,6 @@
             }
           },
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "application": {
             "destination": "origin",
@@ -786,7 +778,6 @@
         "id": "optional:subclass:phb:fighter:phb:battle-master:mv-b",
         "option_grant": {
           "id": "optional:subclass:phb:fighter:phb:battle-master:mv-b",
-          "title": "Maneuvers",
           "owner": {
             "class_name": "Fighter",
             "class_source": "PHB",
@@ -798,7 +789,6 @@
             "MV:B"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -899,7 +889,6 @@
             }
           },
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "application": {
             "destination": "origin",
@@ -952,7 +941,6 @@
             "AS"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1039,7 +1027,6 @@
             "RN"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1122,7 +1109,6 @@
             "MV:B"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1211,7 +1197,6 @@
             "AS"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1286,7 +1271,6 @@
         "id": "optional:subclass:phb:monk:phb:way-of-the-four-elements:ed",
         "option_grant": {
           "id": "optional:subclass:phb:monk:phb:way-of-the-four-elements:ed",
-          "title": "Elemental Disciplines",
           "owner": {
             "class_name": "Monk",
             "class_source": "PHB",
@@ -1302,7 +1286,6 @@
               "Elemental Attunement|PHB"
             ]
           },
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1371,7 +1354,6 @@
         "id": "optional:class:phb:paladin:fs-p",
         "option_grant": {
           "id": "optional:class:phb:paladin:fs-p",
-          "title": "Fighting Style",
           "owner": {
             "class_name": "Paladin",
             "class_source": "PHB",
@@ -1399,7 +1381,6 @@
             }
           },
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "application": {
             "destination": "origin",
@@ -1438,7 +1419,6 @@
         "id": "optional:class:phb:ranger:fs-r",
         "option_grant": {
           "id": "optional:class:phb:ranger:fs-r",
-          "title": "Fighting Style",
           "owner": {
             "class_name": "Ranger",
             "class_source": "PHB",
@@ -1466,7 +1446,6 @@
             }
           },
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "application": {
             "destination": "origin",
@@ -1505,7 +1484,6 @@
         "id": "optional:class:phb:sorcerer:mm",
         "option_grant": {
           "id": "optional:class:phb:sorcerer:mm",
-          "title": "Metamagic",
           "owner": {
             "class_name": "Sorcerer",
             "class_source": "PHB",
@@ -1515,7 +1493,6 @@
             "MM"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1585,7 +1562,6 @@
         "id": "optional:class:xphb:sorcerer:mm",
         "option_grant": {
           "id": "optional:class:xphb:sorcerer:mm",
-          "title": "Metamagic",
           "owner": {
             "class_name": "Sorcerer",
             "class_source": "XPHB",
@@ -1595,7 +1571,6 @@
             "MM"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1671,7 +1646,6 @@
         "id": "optional:class:phb:warlock:ei",
         "option_grant": {
           "id": "optional:class:phb:warlock:ei",
-          "title": "Eldritch Invocations",
           "owner": {
             "class_name": "Warlock",
             "class_source": "PHB",
@@ -1681,7 +1655,6 @@
             "EI"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1814,7 +1787,6 @@
         "id": "optional:class:phb:warlock:pb",
         "option_grant": {
           "id": "optional:class:phb:warlock:pb",
-          "title": "Pact Boon",
           "owner": {
             "class_name": "Warlock",
             "class_source": "PHB",
@@ -1824,7 +1796,6 @@
             "PB"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {
@@ -1870,8 +1841,7 @@
                 "filter": "level=0",
                 "count": 3,
                 "usage": "at_will",
-                "spellcasting_ability": "cha",
-                "description": "Il Patto del Tomo (PHB 2014) permette di scegliere tre trucchetti da qualsiasi lista. I trucchetti vengono trattati come incantesimi da Warlock e usano Carisma."
+                "spellcasting_ability": "cha"
               }
             ]
           }
@@ -1895,7 +1865,6 @@
         "id": "optional:class:xphb:warlock:ei",
         "option_grant": {
           "id": "optional:class:xphb:warlock:ei",
-          "title": "Eldritch Invocations",
           "owner": {
             "class_name": "Warlock",
             "class_source": "XPHB",
@@ -1905,7 +1874,6 @@
             "EI"
           ],
           "required": {},
-          "description": "Opzioni da 5eTools · puoi aggiungere capacità homebrew.",
           "allow_custom": true,
           "layers": {
             "learned": {

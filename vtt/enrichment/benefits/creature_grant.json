@@ -41,8 +41,7 @@
             {
               "id": "command",
               "name": "Comanda homunculus",
-              "action_type": "bonus",
-              "description": "Comandi all'omuncolo di compiere un'azione; senza comando usa Schivare."
+              "action_type": "bonus"
             }
           ]
         }
