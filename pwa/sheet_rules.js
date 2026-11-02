@@ -33,6 +33,7 @@ import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplement
 import {contextualFeatureGrants,modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects,traitStateRollModes} from './trait_state_rules.js';
+import {projectStateActivationBenefits,loadStateActivationBenefits} from './state_activation_benefits.js';
 import {featureItemGrants,racialItemGrantFeatures,loadFeatureItemGrantBenefits} from './feature_item_grants.js';
 import {barbarian2014Supplements,barbarian2014ProficiencyCatalog} from './barbarian_2014.js';
 import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
@@ -1870,9 +1871,14 @@ export function loadRuleCatalogs(){
     // Already visible spell references are supplied by the PWA on demand.
     Promise.resolve([]),
     loadClassFeatureTimingBenefits(),
-    fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.states)?
-       {states:data.states,exhaustion:data.exhaustion||{}}:{states:[],exhaustion:{}}),
+    Promise.all([
+      fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();}),
+      loadStateActivationBenefits()
+    ]).then(([data,typed])=>({
+      states:projectStateActivationBenefits(typed,
+        data?.version===1&&Array.isArray(data.states)?data.states:[]),
+      exhaustion:data?.exhaustion||{}
+    })),
     loadClassRollBonusBenefits(),
     loadScalingDieBenefits(),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})

@@ -55,6 +55,7 @@
         "spell_slot",
         "spellcasting",
         "state",
+        "state_activation",
         "targeting",
         "temporary_hp",
         "tracker",

@@ -50,6 +50,7 @@
         "spell_slot",
         "spellcasting",
         "state",
+        "state_activation",
         "targeting",
         "temporary_hp",
         "tracker",
@@ -479,6 +480,9 @@
     },
     "option_list": {
       "$ref": "#/$defs/optionList"
+    },
+    "state_activation": {
+      "$ref": "#/$defs/stateActivation"
     }
   },
   "allOf": [
@@ -1613,6 +1617,23 @@
           "resource",
           "uses",
           "recharge"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "state_activation"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "state_activation"
         ]
       }
     }
@@ -3685,6 +3706,80 @@
             "spell",
             "capability"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "stateActivation": {
+      "type": "object",
+      "description": "An action/trigger that activates or deactivates an existing passive State. Its effects are declared separately, and payments reference existing resources.",
+      "required": [
+        "state_id",
+        "mode",
+        "activation"
+      ],
+      "properties": {
+        "state_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "enum": [
+            "toggle",
+            "activate",
+            "deactivate"
+          ]
+        },
+        "activation": {
+          "enum": [
+            "action",
+            "bonus",
+            "reaction",
+            "free",
+            "contextual",
+            "movement"
+          ]
+        },
+        "deactivation": {
+          "enum": [
+            "action",
+            "bonus",
+            "reaction",
+            "free",
+            "contextual",
+            "movement"
+          ]
+        },
+        "group": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trigger": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Descriptive event or condition; not an automatic event executor."
+        },
+        "resource": {
+          "type": "object",
+          "required": [
+            "id",
+            "cost"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cost": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

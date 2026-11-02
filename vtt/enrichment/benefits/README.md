@@ -312,3 +312,19 @@ concede anche competenza in un tiro salvezza, con vincolo ulteriore nel 2024),
 `Potent Dragonmark` EFA (la caratteristica deve essere quella scelta dal
 Dragonmark) e il talento `Ability Score Improvement` XPHB (possiede due
 varianti di distribuzione dei punteggi, distinte dall'ASI di classe).
+
+## Beneficio state_activation: attivazione degli Stati
+
+`state_activation.json` definisce **soltanto** attivazione e disattivazione
+di uno Stato passivo identificato da `state_id`: `mode` (`toggle`,
+`activate`, `deactivate`), economia di azione (`activation` e
+`deactivation`) e facoltativamente `resource.id` / `resource.cost`.
+Il costo si applica esclusivamente durante l'attivazione e fa riferimento
+a un tracker già concesso da `resource.json`, senza crearne uno nuovo.
+
+Le definizioni degli Stati e i benefici che questi applicano rimangono
+separati. `trigger` è informazione contestuale, non un esecutore automatico
+di eventi. La PWA integra queste voci nei propri Stati di classe/sottoclasse
+esistenti; gli ID salvati restano invariati. Il catalogo parte vuoto:
+le scelte permanenti come i Totem non vengono trasformate arbitrariamente
+in attivazioni gratuite.
