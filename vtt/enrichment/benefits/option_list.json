@@ -950,14 +950,8 @@
               "description": "You learn two cantrips of your choice from the {@filter cleric spell list|spells|level=0|class=Cleric}. They count as paladin spells for you, and Charisma is your spellcasting ability for them. Whenever you gain a level ",
               "effects": [
                 {
-                  "type": "spells",
-                  "mode": "known",
-                  "stage": "0",
-                  "filter": "level=0|class=cleric",
-                  "count": 2,
-                  "usage": "at_will",
-                  "spellcasting_ability": "cha",
-                  "description": "Scegli due trucchetti dalla lista del Chierico; Carisma è la caratteristica da incantatore."
+                  "type": "option_grant",
+                  "grant_id": "spell_choice:blessed_warrior"
                 }
               ]
             }
@@ -2289,14 +2283,8 @@
               "description": "You learn two cantrips of your choice from the {@filter druid spell list|spells|level=0|class=druid}. They count as ranger spells for you, and Wisdom is your spellcasting ability for them. Whenever you gain a level in th",
               "effects": [
                 {
-                  "type": "spells",
-                  "mode": "known",
-                  "stage": "0",
-                  "filter": "level=0|class=druid",
-                  "count": 2,
-                  "usage": "at_will",
-                  "spellcasting_ability": "wis",
-                  "description": "Scegli due trucchetti dalla lista del Druido; Saggezza è la caratteristica da incantatore."
+                  "type": "option_grant",
+                  "grant_id": "spell_choice:druidic_warrior"
                 }
               ]
             }
@@ -6119,7 +6107,13 @@
               "types": [
                 "PB"
               ],
-              "description": "Your patron gives you a grimoire called a Book of Shadows. When you gain this feature, choose three {@filter cantrips|spells|level=0} from any class's spell list. The cantrips do not need to be from the same spell list. "
+              "description": "Your patron gives you a grimoire called a Book of Shadows. When you gain this feature, choose three {@filter cantrips|spells|level=0} from any class's spell list. The cantrips do not need to be from the same spell list. ",
+              "effects": [
+                {
+                  "type": "option_grant",
+                  "grant_id": "spell_choice:pact_of_the_tome"
+                }
+              ]
             }
           ]
         }
@@ -12263,6 +12257,202 @@
                 "min_level": 14,
                 "effect_extensions": []
               }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "option_list:local:arcane-armor",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt",
+        "ref": {
+          "category": "optional_feature",
+          "id": "local:arcane-armor"
+        }
+      },
+      "benefit": {
+        "type": "option_list",
+        "option_list": {
+          "id": "local:arcane-armor",
+          "name": "Armatura Arcana",
+          "kind": "capability",
+          "source": "VTT",
+          "options": [
+            {
+              "id": "arcane_armor",
+              "name": "Armatura Arcana",
+              "details": {
+                "category": "class_features",
+                "name": "Arcane Armor",
+                "source": "TCE"
+              },
+              "description": "Armatura Arcana: l’oggetto riceve i benefici del privilegio e permette di scegliere un modello.",
+              "item_effects": {
+                "id": "arcane_armor",
+                "name": "Armatura Arcana",
+                "effect_extensions": [
+                  {
+                    "id": "armorer-arcane-armor-ignore-strength-2014",
+                    "rules_version": "2014",
+                    "target_kind": "item",
+                    "target_name": "@equipped_armor",
+                    "operation": "ignore_armor_strength",
+                    "trigger": "passive",
+                    "frequency": "each",
+                    "value": "",
+                    "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza."
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "option_grant",
+                    "grant_id": "armor_model"
+                  }
+                ]
+              },
+              "local": true,
+              "source": "VTT"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "option_list:local:armor_model:guardian",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt",
+        "ref": {
+          "category": "optional_feature",
+          "id": "local:armor_model:guardian"
+        }
+      },
+      "benefit": {
+        "type": "option_list",
+        "option_list": {
+          "id": "local:armor_model:guardian",
+          "name": "Guardian",
+          "kind": "capability",
+          "source": "VTT",
+          "options": [
+            {
+              "id": "armor_model:guardian",
+              "granted_features": [
+                "Defensive Field"
+              ],
+              "effects": [
+                {
+                  "type": "attack",
+                  "name": "Thunder Gauntlets",
+                  "grants_proficiency": true,
+                  "id": "class_feature:thunder_gauntlets",
+                  "damage": "1d8",
+                  "damage_type": "T",
+                  "melee": true,
+                  "ability": "str",
+                  "intelligence_override": true,
+                  "range_feet": 5,
+                  "on_hit_effects": [
+                    {
+                      "operation": "roll_mode",
+                      "target": "attack_roll",
+                      "mode": "disadvantage",
+                      "trigger": "on_hit",
+                      "duration": "until_start_of_next_turn"
+                    }
+                  ]
+                },
+                {
+                  "type": "feature_grant",
+                  "name": "Defensive Field",
+                  "source": "TCE"
+                }
+              ],
+              "local": true,
+              "source": "VTT"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "option_list:local:armor_model:infiltrator",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt",
+        "ref": {
+          "category": "optional_feature",
+          "id": "local:armor_model:infiltrator"
+        }
+      },
+      "benefit": {
+        "type": "option_list",
+        "option_list": {
+          "id": "local:armor_model:infiltrator",
+          "name": "Infiltrator",
+          "kind": "capability",
+          "source": "VTT",
+          "options": [
+            {
+              "id": "armor_model:infiltrator",
+              "effects": [
+                {
+                  "type": "attack",
+                  "name": "Lightning Launcher",
+                  "grants_proficiency": true,
+                  "id": "class_feature:lightning_launcher",
+                  "damage": "1d6",
+                  "damage_type": "L",
+                  "melee": false,
+                  "ability": "dex",
+                  "intelligence_override": true,
+                  "range_feet": 90,
+                  "long_range_feet": 300,
+                  "bonus_die": {
+                    "id": "lightning-launcher:extra",
+                    "dice": "1d6",
+                    "damage_type": "lightning",
+                    "tracker_id": "feature:lightning_launcher:extra_damage",
+                    "recharge": "turn",
+                    "max": 1
+                  }
+                },
+                {
+                  "type": "resources",
+                  "id": "feature:lightning_launcher:extra_damage",
+                  "name": "Lightning Launcher · Dado extra",
+                  "max": 1,
+                  "recharge": "turn"
+                },
+                {
+                  "type": "dice",
+                  "id": "lightning-launcher:extra",
+                  "target": "attack_damage:class_feature:lightning_launcher",
+                  "attack_id": "class_feature:lightning_launcher",
+                  "dice": "1d6",
+                  "damage_type": "lightning",
+                  "tracker_id": "feature:lightning_launcher:extra_damage",
+                  "tracker_cost": 1,
+                  "strict_tracker": true,
+                  "condition_label": "Una volta per turno"
+                },
+                {
+                  "type": "bonus",
+                  "id": "model:armor_model:infiltrator:powered_steps",
+                  "target": "speed",
+                  "expression": "5"
+                },
+                {
+                  "type": "roll_mode",
+                  "id": "model:armor_model:infiltrator:Dampening Field",
+                  "target": "skill:stealth",
+                  "mode": "advantage"
+                }
+              ],
+              "local": true,
+              "source": "VTT"
             }
           ]
         }

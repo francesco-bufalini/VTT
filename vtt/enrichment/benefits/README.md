@@ -246,3 +246,25 @@ del catalogo tipizzato completo. I metadati delle concessioni rimangono in
 `option_grant.json` e i profili slot in `resource.json`; il motore legge
 direttamente entrambi. I vecchi file sono consultati solo come fallback se
 una delle famiglie tipizzate risulta incompleta.
+
+---
+
+## Capacità locali e option grant annidati
+
+`option_list.json` definisce anche capacità intermedie non presenti come voci
+separate in 5eTools (`local:arcane-armor`, `local:armor_model:guardian`,
+`local:armor_model:infiltrator`). Le opzioni possono concedere il beneficio
+`{type: "option_grant", grant_id: "..."}`: il motore attiva il grant figlio
+solo quando l'opzione che lo concede è applicata a un tratto o a un oggetto.
+Le capacità passive applicate espongono benefici nel tratto Stato generato;
+quelle applicate a oggetti espongono i benefici nell'estensione dell'oggetto.
+
+Arcane Armor può estendere più armature separatamente, senza limite né trigger;
+ogni estensione concede il proprio Armor Model con due capacità locali,
+una sola applicabile (trigger riposo corto). Le due vecchie voci Armor Model
+non sono più nel catalogo degli stati legacy; le regole globali di Exhaustion
+rimangono fuori da questa migrazione. Druidic Warrior, Blessed Warrior e
+Pact of the Tome concedono lo stesso tipo di `option_grant` annidato per la
+scelta di trucchetti (filtri e quantità dichiarati nei dati, senza logiche
+specifiche sul tipo di slot). Non si aggiunge alcuna migrazione di schede
+personaggio pre-release.

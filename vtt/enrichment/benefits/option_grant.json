@@ -32,40 +32,14 @@
           },
           "benefit_type": "option_grant",
           "source": {
-            "type": "inline",
-            "options": [
-              {
-                "id": "arcane_armor",
-                "name": "Armatura Arcana",
-                "details": {
-                  "category": "class_features",
-                  "name": "Arcane Armor",
-                  "source": "TCE"
-                },
-                "description": "Armatura Arcana: l’oggetto riceve i benefici del privilegio e permette di scegliere un modello.",
-                "item_effects": {
-                  "id": "arcane_armor",
-                  "name": "Armatura Arcana",
-                  "effect_extensions": [
-                    {
-                      "id": "armorer-arcane-armor-ignore-strength-2014",
-                      "rules_version": "2014",
-                      "target_kind": "item",
-                      "target_name": "@equipped_armor",
-                      "operation": "ignore_armor_strength",
-                      "trigger": "passive",
-                      "frequency": "each",
-                      "value": "",
-                      "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza."
-                    }
-                  ]
-                }
-              }
+            "type": "list_refs",
+            "list_ids": [
+              "local:arcane-armor"
             ]
           },
           "layers": {
             "applied": {
-              "limit": 1,
+              "limit": null,
               "storage": "power_applications"
             }
           },
@@ -73,13 +47,14 @@
             "destination": "item",
             "target": {
               "kind": "item",
-              "label": "Oggetto da estendere",
-              "allow_catalog": true
+              "item_types": [
+                "LA",
+                "MA",
+                "HA"
+              ],
+              "slot": "body",
+              "label": "Armatura indossata"
             }
-          },
-          "compatibility": {
-            "selected_group": "armor_model",
-            "target_slot": "body"
           },
           "option_kind": "capability"
         }
@@ -112,131 +87,25 @@
           },
           "option_kind": "capability",
           "source": {
-            "type": "inline",
-            "options": [
-              {
-                "id": "armor_model:guardian",
-                "group": "armor_model",
-                "category": "stato",
-                "trait": "Armor Model",
-                "class_name": "Artificer",
-                "class_source": "TCE",
-                "subclass": "Armorer",
-                "require_equipped": {
-                  "extension_selection": "arcane_armor"
-                },
-                "attacks": [
-                  {
-                    "id": "class_feature:thunder_gauntlets",
-                    "trait": "Thunder Gauntlets",
-                    "damage": "1d8",
-                    "damage_type": "T",
-                    "melee": true,
-                    "ability": "str",
-                    "intelligence_override": true,
-                    "range_feet": 5,
-                    "on_hit_effects": [
-                      {
-                        "operation": "roll_mode",
-                        "target": "attack_roll",
-                        "mode": "disadvantage",
-                        "trigger": "on_hit",
-                        "duration": "until_start_of_next_turn"
-                      }
-                    ]
-                  }
-                ],
-                "granted_features": [
-                  "Defensive Field"
-                ],
-                "selection_recovery": "short_rest",
-                "effects": [
-                  {
-                    "type": "state_selection",
-                    "field": "trait_state_selection",
-                    "key": "armor_model",
-                    "value": "armor_model:guardian"
-                  }
-                ]
-              },
-              {
-                "id": "armor_model:infiltrator",
-                "group": "armor_model",
-                "category": "stato",
-                "trait": "Armor Model",
-                "class_name": "Artificer",
-                "class_source": "TCE",
-                "subclass": "Armorer",
-                "require_equipped": {
-                  "extension_selection": "arcane_armor"
-                },
-                "attacks": [
-                  {
-                    "id": "class_feature:lightning_launcher",
-                    "trait": "Lightning Launcher",
-                    "damage": "1d6",
-                    "damage_type": "L",
-                    "melee": false,
-                    "ability": "dex",
-                    "intelligence_override": true,
-                    "range_feet": 90,
-                    "long_range_feet": 300,
-                    "bonus_die": {
-                      "id": "lightning-launcher:extra",
-                      "dice": "1d6",
-                      "damage_type": "lightning",
-                      "tracker_id": "feature:lightning_launcher:extra_damage",
-                      "recharge": "turn",
-                      "max": 1
-                    }
-                  }
-                ],
-                "numeric_grants": [
-                  {
-                    "id": "powered_steps",
-                    "trait": "Powered Steps",
-                    "target": "speed",
-                    "amount": 5
-                  }
-                ],
-                "selection_recovery": "short_rest",
-                "roll_modes": [
-                  {
-                    "trait": "Dampening Field",
-                    "target": "skill:stealth",
-                    "mode": "advantage"
-                  }
-                ],
-                "effects": [
-                  {
-                    "type": "state_selection",
-                    "field": "trait_state_selection",
-                    "key": "armor_model",
-                    "value": "armor_model:infiltrator"
-                  }
-                ]
-              }
+            "type": "list_refs",
+            "list_ids": [
+              "local:armor_model:guardian",
+              "local:armor_model:infiltrator"
             ]
           },
           "layers": {
             "applied": {
               "limit": 1,
               "trigger": "short_rest",
-              "storage": "power_applications",
-              "refund_on_remove": true
+              "storage": "power_applications"
             }
           },
-          "ui": "generic",
           "benefit_type": "option_grant",
-          "requires_application": {
-            "selection": "arcane_armor",
-            "bound": true
-          },
           "application": {
             "destination": "origin",
             "exclusive": true
           },
-          "option_origin_kind": "trait_state"
+          "nested": true
         }
       }
     },
@@ -6330,6 +6199,117 @@
             "storage": "prepared_spells"
           },
           "benefit_type": "option_grant"
+        }
+      }
+    },
+    {
+      "id": "option_grant:spell_choice:druidic_warrior",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Druidic Warrior",
+          "source": "TCE",
+          "feature_type": "FS:R"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "spell_choice:druidic_warrior",
+        "option_grant": {
+          "id": "spell_choice:druidic_warrior",
+          "owner": {
+            "trait": "Druidic Warrior"
+          },
+          "title": "Druidic Warrior · Trucchetti",
+          "benefit_type": "option_grant",
+          "nested": true,
+          "option_kind": "spell",
+          "ability": "wis",
+          "source": {
+            "type": "spell_catalog",
+            "filter": "level=0|class=druid"
+          },
+          "layers": {
+            "learned": {
+              "limit": 2,
+              "trigger": "level_up"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:spell_choice:blessed_warrior",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Blessed Warrior",
+          "source": "TCE",
+          "feature_type": "FS:P"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "spell_choice:blessed_warrior",
+        "option_grant": {
+          "id": "spell_choice:blessed_warrior",
+          "owner": {
+            "trait": "Blessed Warrior"
+          },
+          "title": "Blessed Warrior · Trucchetti",
+          "benefit_type": "option_grant",
+          "nested": true,
+          "option_kind": "spell",
+          "ability": "cha",
+          "source": {
+            "type": "spell_catalog",
+            "filter": "level=0|class=cleric"
+          },
+          "layers": {
+            "learned": {
+              "limit": 2,
+              "trigger": "level_up"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "option_grant:spell_choice:pact_of_the_tome",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Pact of the Tome",
+          "source": "PHB",
+          "feature_type": "PB"
+        }
+      },
+      "benefit": {
+        "type": "option_grant",
+        "id": "spell_choice:pact_of_the_tome",
+        "option_grant": {
+          "id": "spell_choice:pact_of_the_tome",
+          "owner": {
+            "trait": "Pact of the Tome"
+          },
+          "title": "Pact of the Tome · Trucchetti",
+          "benefit_type": "option_grant",
+          "nested": true,
+          "option_kind": "spell",
+          "ability": "cha",
+          "source": {
+            "type": "spell_catalog",
+            "filter": "level=0"
+          },
+          "layers": {
+            "learned": {
+              "limit": 3,
+              "trigger": "level_up"
+            }
+          }
         }
       }
     }

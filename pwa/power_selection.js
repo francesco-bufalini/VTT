@@ -376,6 +376,7 @@ export function projectItemOptionBenefits(record={},catalogs={}){
 export function projectSelectionBenefits(raw,catalogs,features=[]){
  const catalog={...(catalogs.powerSelections||{}),optionGrants:catalogs.optionGrants||catalogs.powerSelections?.optionGrants||{},
   optionLists:catalogs.optionLists||catalogs.powerSelections?.optionLists||{},
+  spells:catalogs.spells||catalogs.powerSelections?.spells||[],
   optionalFeatureProgressions:catalogs.optionalFeatureProgressions||catalogs.powerSelections?.optionalFeatureProgressions||{}};
  const record=normalizeSelectionRecord(raw,catalog),models=powerSelectionModels(record,{features},catalog),inventory=structuredClone(rows(record.inventory)).map(item=>({...item,option_extensions:rows(item.option_extensions).filter(e=>!e.selection_id)}));
  const optional=rows(record.optional_features_catalog).filter(row=>!row.selection_origin_id);const states={...record.trait_state_selection};
