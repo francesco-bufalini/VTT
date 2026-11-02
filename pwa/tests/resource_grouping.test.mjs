@@ -10,7 +10,7 @@ import {battleActionPanels,abilityAttackRoll,actionGlyph} from '../action_econom
 import {battleResourcePowers,resourceLinkedSubclassTrait,mountPlaySheet,subclassTrackerUsePatch,resourceAttackId,resourceAbilityGlyphKey} from '../sheet_rules_view.js';
 import {companionOwnerActions} from '../companion_rules.js';
 import {armorerSelectionCatalog,withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_grants.mjs';
-const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
+const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+(name.endsWith('.json')?'':'.json'),import.meta.url),'utf8'));
 const companions=read('companion_spells');
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),traitStates:read('trait_states').states,

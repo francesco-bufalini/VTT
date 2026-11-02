@@ -1,3 +1,4 @@
+import {featTestIndex} from './feat_benefits_fixture.mjs';
 import {effectExtensionsFromBenefits} from '../effect_extensions.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
@@ -11,7 +12,7 @@ import {eligibleSpellImprintSpells,eligibleSpellImprintItems,storeSpellImprintPa
  useSpellImprintPatch,spellImprintAtItem,spellImprintExtension,spellImprintTrackerId
 } from '../spell_imprints.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
-const catalogs={abilityGrants:read('ability_grants'),classMechanics:read('class_mechanics'),
+const catalogs={abilityGrants:featTestIndex(read('ability_grants')),classMechanics:read('class_mechanics'),
  classFeatures:read('classes'),optionGrants:JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_grant.json',import.meta.url),'utf8')),slotBenefits:JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/resource.json',import.meta.url),'utf8')),proficiencyGrants:proficiencyTestIndex(),
  effectExtensions:effectExtensionsFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/effect_extension.json',import.meta.url),'utf8')))};
 const wizard=()=>({

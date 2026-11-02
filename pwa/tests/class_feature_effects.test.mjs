@@ -10,7 +10,7 @@ import {classFeatureEntries,classFeatureActivationPatch,classFeatureRollAdvantag
 import {spellCastPlan,recoveryPatch,hitPointPatch} from '../native_sheet.js';
 import {rollSheetDice,sheetRollFormula} from '../sheet_rules_view.js';
 import {actionEntries} from '../action_economy.js';
-const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
+const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+(name.endsWith('.json')?'':'.json'),import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  optionGrants:read('../../vtt/enrichment/benefits/option_grant.json'),
  slotBenefits:read('../../vtt/enrichment/benefits/resource.json'),

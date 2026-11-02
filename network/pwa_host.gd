@@ -61,6 +61,7 @@ const FILES := {
   "/species_defense_benefits.js": ["res://pwa/species_defense_benefits.js", "text/javascript; charset=utf-8"],
   "/activated_abilities.js": ["res://pwa/activated_abilities.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules.js": ["res://pwa/sheet_rules.js", "text/javascript; charset=utf-8"],
+	"/5etools_benefit_projections.js": ["res://pwa/5etools_benefit_projections.js", "text/javascript; charset=utf-8"],
 	"/feat_benefit_catalogs.js": ["res://pwa/feat_benefit_catalogs.js", "text/javascript; charset=utf-8"],
 	"/infusion_benefit_catalogs.js": ["res://pwa/infusion_benefit_catalogs.js", "text/javascript; charset=utf-8"],
 	"/benefit_source_text.js": ["res://pwa/benefit_source_text.js", "text/javascript; charset=utf-8"],

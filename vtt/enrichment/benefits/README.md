@@ -1,12 +1,32 @@
 # Supplementi meccanici per tipo di beneficio
 
-Questa cartella raccoglie **solo i benefici non già disponibili come campi
-strutturati di 5eTools**, in un singolo catalogo `<tipo>.json` per meccanica.
+Questa cartella è la **fonte locale dei benefici meccanici**, compresi quelli
+originariamente disponibili come campi strutturati di 5eTools, in un singolo
+catalogo `<tipo>.json` per meccanica. 5eTools resta il riferimento per
+l'identità canonica, i nomi e le descrizioni dei privilegi.
 
 Un background non possiede un file separato: ogni integrazione sarà una voce
 nel catalogo pertinente (per esempio `proficiency_grant.json`, `roll_bonus.json`,
 `resource.json`), con `granted_by.kind = "5etools"` e
 `ref = { "category": "background", "name": "...", "source": "..." }`.
+
+
+## Copia delle meccaniche strutturate 5eTools (2 novembre 2026)
+
+Il generatore `node pwa/tools/sync_5etools_structured_benefits.mjs` copia nel
+catalogo tipizzato le concessioni delle caratteristiche del catalogo PWA
+(race, subrace, feat, background) e i talenti iniziali dei background.
+I record hanno `projection: "5etools_structured"` e
+`benefit.parameters.source_rules`: sono copie dichiarative della struttura
+originaria, non testo descrittivo. La PWA proietta questi record per mantenere
+scelte pesate, provenienze, varianti e deduplicazione preesistenti.
+
+Il sincronizzatore è idempotente e conserva i benefici di autore, flavour,
+integrazioni manuali e tutte le altre regole presenti negli stessi JSON.
+Non sincronizza automaticamente altri campi (velocità, difese, spell, slot,
+progressioni), che richiedono una proiezione tipizzata separata prima di poter
+rimuovere i relativi lettori legacy: la copia corrente **non è ancora la
+migrazione totale** di tutti i benefici 5eTools.
 
 ## Completamento dei nove cataloghi legacy (2 novembre 2026)
 
@@ -26,10 +46,11 @@ fallback più sotto documentano le fasi precedenti e non il runtime attuale.
 1. Verificare `data/backgrounds.json` nel mirror 5eTools usato per il
    compendio. Competenze, talenti iniziali, caratteristiche, incantesimi
    aggiuntivi ed equipaggiamento spesso sono già espressi strutturalmente.
-2. Se il campo c'è in 5eTools ma manca negli indici VTT/PWA, **correggere
-   importatore o generatore**. Non duplicarlo in un supplemento.
-3. Solo se la meccanica manca realmente in 5eTools, aggiungerla sotto il
-   suo tipo con origine canonica `name + source`, senza copiare la prosa.
+2. Se il campo esiste in 5eTools, copiarlo **una sola volta** nel catalogo
+   tipizzato pertinente con un identificatore canonico; adattare il lettore PWA
+   alla copia locale ed evitare una seconda applicazione dell'effetto.
+3. Se la meccanica non è presente in 5eTools, integrarla nello stesso catalogo
+   e con la stessa origine canonica `name + source`, senza copiare la prosa.
 4. Le aggiunte manuali appartengono esclusivamente alla scheda del
    personaggio, `scope: character`, mai ai file condivisi.
 

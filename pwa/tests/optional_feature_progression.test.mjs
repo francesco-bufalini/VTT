@@ -42,6 +42,8 @@ test('Fighting Styles are learned separately and applied explicitly without targ
  assert.deepEqual(owned(r,id).layers.applied.selected,[]);
  assert.deepEqual(r.optional_features_catalog,[]);
  r={...r,...powerApplicationPatch(r,context,catalog,id,archery.id,true)};
+ assert.throws(()=>powerSelectionPatch(r,context,catalog,id,'learned',archery.id),/Disapplica prima/);
+ r={...r,...powerApplicationPatch(r,context,catalog,id,archery.id,false)};
  r={...r,...powerSelectionPatch(r,context,catalog,id,'learned',archery.id)};
  assert.deepEqual(owned(r,id).layers.applied.selected,[]);
  assert.deepEqual(r.power_applications[id],[]);

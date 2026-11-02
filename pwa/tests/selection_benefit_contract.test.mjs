@@ -79,15 +79,17 @@ test('missing or disabled owner traits cannot create a free selection or benefit
  assert.deepEqual(powerSelectionModels(r,{features:[]},catalog),[]);
  assert.deepEqual(powerSelectionModels({...r,origin_enabled:{[feature.origin_id]:false}},{features:[feature]},catalog),[]);
 });
-test('state action shortcuts write the same canonical application as the Powers dialog',()=>{
- const r={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],selection_state_version:2,
-  power_applications:{arcane_armor:[{id:'arcane_armor',target_item_id:'thing'}]}};
- const context={features:['Arcane Armor','Armor Model'].map(name=>({name,class_name:'Artificer',class_source:'TCE',origin_id:'feature:'+name}))};
- const changes=powerStateActivationPatch(r,context,combined,'armor_model:guardian');
- assert.deepEqual(changes.power_applications.armor_model,[{id:'armor_model:guardian'}]);
- assert.equal(changes.trait_state_selection,undefined);
- const next={...r,...changes};
- assert.deepEqual(powerStateActivationPatch(next,context,combined,'armor_model:guardian').power_applications.armor_model,[]);
+test('action-triggered option grants require the declared activation action',()=>{
+ const context={features:[feature]},catalog={selections:[{id:'stance',owner:{class_name:'Ranger',class_source:'PHB',trait:'Choice owner'},
+  source:{options:[{id:'stance:on',name:'Stance'}]},layers:{applied:{trigger:'bonus',deactivation_trigger:'free'}}}]};
+ const r=record();
+ assert.equal(powerStateActivationPatch(r,context,catalog,'stance:on'),undefined,
+  'A removed state-selection shortcut must not silently create an application');
+ assert.throws(()=>powerApplicationPatch(r,context,catalog,'stance','stance:on',true),/soltanto usando la sua azione/);
+ const enabled={...r,...powerApplicationPatch(r,context,catalog,'stance','stance:on',true,{viaAction:true})};
+ assert.deepEqual(enabled.power_applications.stance,[{id:'stance:on'}]);
+ const off=powerApplicationPatch(enabled,context,catalog,'stance','stance:on',false,{viaAction:true});
+ assert.deepEqual(off.power_applications.stance,[]);
 });
 
 test('multiple options extend the same object without replacing one another or sharing charges',()=>{
@@ -145,10 +147,10 @@ test('an applied Fighting Style is described and attributed to its owner, withou
  c=calculateSheet(r,catalog);
  const entries=read('classes'),traits=await collectTraitRows(r,{...c,power_selections:c.selection_models},{entries:async category=>entries[category]||[]});
  assert.equal(c.abilities.str.score,14);
- assert(!traits.some(t=>t.name==='Archery'));
- const owner=traits.find(t=>t.name==='Fighting Style');assert(owner);
- assert(JSON.stringify(owner.entries).includes('Archery'));
- assert(traitBenefitGroups(owner,c.selection_record,c).some(group=>group.items.some(row=>row.id?.includes(option)&&row.value==='+2')));
+ const state=traits.find(t=>t.name==='Archery'&&t.category==='stati');assert(state,
+  'Applied passive options appear only as canonical state traits');
+ assert(!traits.some(t=>t.name==='Archery'&&t.category==='altro'));
+ assert(traitBenefitGroups(state,c.selection_record,c).some(group=>group.items.some(row=>row.id?.includes(option)&&row.value==='+2')));
 });
 
 
@@ -389,7 +391,7 @@ test('Blessed Warrior and Druidic Warrior reuse the normal origin cantrip picker
  ];
  for(const example of cases){
   const style=catalogs.optionalFeatureProgressions.options.find(row=>row.id===example.option);
-  assert.equal(style.effects[0].type,'spells','Both styles reuse the existing spells benefit');
+  assert.equal(style.effects[0].type,'option_grant','Both styles reuse the canonical option grant benefit');
   const spell={id:'test_'+example.list.toLowerCase()+'_cantrip',name:'Test cantrip',source:'PHB',level:0,classes:[example.list]};
   const wrong={...spell,id:'wrong_spell',classes:['Wizard']};
   const definitions={...completeCatalogs,spells:[spell,wrong]};

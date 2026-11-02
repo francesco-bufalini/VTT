@@ -25,9 +25,9 @@ test('structured model options do not own replacement titles or summaries',()=>{
  const model=selections.entries.map(row=>row.benefit?.option_grant).find(row=>row?.id==='armor_model');
  assert(model);
  assert.equal(Object.hasOwn(model,'title'),false);
- for(const option of model.source.options){
-  assert(!('name' in option)&&!('summary' in option)&&!('description' in option),option.id);
- }
+ assert.equal(model.source.type,'list_refs');
+ assert.deepEqual(model.source.list_ids,['local:armor_model:guardian','local:armor_model:infiltrator']);
+ assert(!Object.hasOwn(model.source,'options'),'Descriptions must come from the referenced capability rather than duplicated inline options');
 });
 
 test('locally declared Armor Model abilities use one canonical list without replacement summaries',()=>{

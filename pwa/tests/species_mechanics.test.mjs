@@ -23,12 +23,13 @@ const calculated=(book,changes={})=>calculateSheet({...record(book),...changes},
 const natural=sheet=>sheet.attacks.find(a=>a.id.startsWith('natural:'));
 
 test('published source data generates deterministic typed natural strikes (never prose at runtime)',()=>{
- assert.deepEqual(attackBenefits,generated.attack);
+ assert.deepEqual({...attackBenefits,entries:attackBenefits.entries.filter(entry=>entry.granted_by?.ref?.category==='species_trait')},generated.attack);
  assert.deepEqual(scoreBenefits,generated.base_override);
  const canonical=projectSpeciesAttacks(source.races);
  const sort=rows=>[...rows].sort((a,b)=>a.id.localeCompare(b.id));
  assert.deepEqual(sort(catalog.races),sort(canonical.races));
- assert.equal(attackBenefits.entries.length,20);
+ assert.equal(attackBenefits.entries.filter(entry=>entry.granted_by?.ref?.category==='species_trait').length,20);
+ assert(attackBenefits.entries.some(entry=>entry.id==='feat:xge:dragon-hide:claws'),'Feat attacks belong to the same typed attack catalog');
  assert.equal(scoreBenefits.entries.filter(e=>e.benefit.base_override?.target==='speed:fly').length,10);
  assert.equal(scoreBenefits.entries.length,49);
  assert.ok(catalog.races.length>=20);
