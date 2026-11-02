@@ -617,7 +617,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   const sheetChoices=[...document.querySelectorAll('.condition-sheet-panel .condition-toggle')];
   assert.ok(sheetChoices.length>=25,"19 standard conditions and six exhaustion levels remain selectable");
   const coreChoices=[...document.querySelectorAll('[data-condition-category="conditions"] .condition-toggle')];
-  assert.equal(coreChoices.length,17, 'The native 2014 condition catalog defines 17 core conditions');
+  assert.equal(coreChoices.length,23, 'The native conditions catalog includes core statuses and typed exhaustion levels');
   assert.ok(coreChoices.every((row,index)=>!index||new Intl.Collator("it",{sensitivity:"base"})
     .compare(coreChoices[index-1].textContent,row.textContent)<=0));
   assert.equal(document.querySelectorAll('[data-condition-category="exhaustion_levels"] [data-condition^="exhaustion:"]').length,6);
