@@ -124,15 +124,6 @@
       ]
     },
     {
-      "path": "pwa/catalog/species_defenses.json",
-      "sections": [
-        "races"
-      ],
-      "types": [
-        "defense"
-      ]
-    },
-    {
       "path": "pwa/catalog/species_types.json",
       "sections": [
         "races"
@@ -179,15 +170,6 @@
         "spellcasting",
         "spell_selection",
         "spell_slot"
-      ]
-    },
-    {
-      "path": "pwa/catalog/spell_grant_rules.json",
-      "sections": [
-        "rules"
-      ],
-      "types": [
-        "spell_grant"
       ]
     },
     {
@@ -256,15 +238,6 @@
       ],
       "types": [
         "numeric_modifier"
-      ]
-    },
-    {
-      "path": "vtt/data/feat_proficiency_bonuses_2014.json",
-      "sections": [
-        "feats"
-      ],
-      "types": [
-        "proficiency_grant"
       ]
     },
     {
@@ -438,6 +411,24 @@
       "catalog": "vtt/enrichment/benefits/proficiency_grant.json",
       "runtime": "pwa/proficiency_catalog.js",
       "partial": false
+    },
+    {
+      "source": "pwa/catalog/species_defenses.json",
+      "benefit_type": "defense",
+      "catalog": "vtt/enrichment/benefits/defense.json",
+      "runtime": "pwa/species_defense_benefits.js"
+    },
+    {
+      "source": "pwa/catalog/spell_grant_rules.json",
+      "benefit_type": "option_grant",
+      "catalog": "vtt/enrichment/benefits/option_grant.json",
+      "runtime": "pwa/spell_grant_benefits.js"
+    },
+    {
+      "source": "vtt/data/feat_proficiency_bonuses_2014.json",
+      "benefit_type": "proficiency_grant",
+      "catalog": "vtt/enrichment/benefits/proficiency_grant.json",
+      "runtime": "pwa/proficiency_catalog.js"
     }
   ]
 }

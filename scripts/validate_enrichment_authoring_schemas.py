@@ -82,7 +82,7 @@ def main():
     flavour_ids = [variant["id"] for entry in flavour_catalog["entries"]
                    for variant in entry["flavours"]]
     assert len(flavour_ids) == len(set(flavour_ids)), "Duplicate flavour IDs"
-    for name in ("bonus", "defense", "feat_grant", "proficiency_grant"):
+    for name in ("bonus", "defense", "feat_grant", "option_grant", "proficiency_grant"):
         catalog = load(benefits / (name + ".json"))
         for entry in catalog["entries"]:
             if entry["granted_by"]["kind"] == "flavour":

@@ -57,6 +57,8 @@ const FILES := {
   "/item_detail_facts.js": ["res://pwa/item_detail_facts.js", "text/javascript; charset=utf-8"],
   "/documents.js": ["res://pwa/documents.js", "text/javascript; charset=utf-8"],
   "/spell_selection.js": ["res://pwa/spell_selection.js", "text/javascript; charset=utf-8"],
+  "/spell_grant_benefits.js": ["res://pwa/spell_grant_benefits.js", "text/javascript; charset=utf-8"],
+  "/species_defense_benefits.js": ["res://pwa/species_defense_benefits.js", "text/javascript; charset=utf-8"],
   "/activated_abilities.js": ["res://pwa/activated_abilities.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules.js": ["res://pwa/sheet_rules.js", "text/javascript; charset=utf-8"],
 	"/trait_flavours.js": ["res://pwa/trait_flavours.js", "text/javascript; charset=utf-8"],
@@ -174,9 +176,9 @@ const FILES := {
 	"/catalog/species_types.json": ["res://pwa/catalog/species_types.json", "application/json; charset=utf-8"],
 	"/benefits/attack.json": ["res://vtt/enrichment/benefits/attack.json", "application/json; charset=utf-8"],
 	"/benefits/movement.json": ["res://vtt/enrichment/benefits/movement.json", "application/json; charset=utf-8"],
-	"/catalog/species_defenses.json": ["res://pwa/catalog/species_defenses.json", "application/json; charset=utf-8"],
+	
 	"/catalog/species_powers.json": ["res://pwa/catalog/species_powers.json", "application/json; charset=utf-8"],
-	"/catalog/spell_grant_rules.json": ["res://pwa/catalog/spell_grant_rules.json", "application/json; charset=utf-8"],
+	
 	"/catalog/sense_grants.json": ["res://pwa/catalog/sense_grants.json", "application/json; charset=utf-8"],
 	"/benefits/roll_mode.json": ["res://vtt/enrichment/benefits/roll_mode.json", "application/json; charset=utf-8"],
 	"/benefits/roll_bonus.json": ["res://vtt/enrichment/benefits/roll_bonus.json", "application/json; charset=utf-8"],
