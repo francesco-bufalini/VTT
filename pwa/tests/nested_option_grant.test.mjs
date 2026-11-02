@@ -1,3 +1,4 @@
+import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -121,7 +122,7 @@ test('the actual sheet resolves the applied state trait, trained attack and cond
   abilityGrants:read('../catalog/ability_grants.json'),
   proficiencyGrants:proficiencyTestIndex(),
   traitStates:read('../catalog/trait_states.json').states,
-  featureActionOverrides:read('../../vtt/data/action_feature_overrides.json').entries};
+  featureActionOverrides:classActionOverridesFromBenefits(read('../../vtt/enrichment/benefits/action.json'))};
  let record=armored();
  let calculated=calculateSheet(record,index);
  assert(!classFeatureEntries(record,calculated).some(row=>row.class_feature_id==='defensive_field'));

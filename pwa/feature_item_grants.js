@@ -157,12 +157,7 @@ export function featureItemGrantsFromBenefits(catalog={}){
  });
 }
 export async function loadFeatureItemGrantBenefits(fetcher=fetch){
- let typed;
- try{typed=await fetcher('/benefits/item_grant.json')}catch{typed=null}
- if(typed?.ok)return featureItemGrantsFromBenefits(await typed.json());
- let legacy;
- try{legacy=await fetcher('/catalog/feature_item_grants.json')}catch{return []}
- if(!legacy?.ok)return [];
- const data=await legacy.json();
- return data?.version===1&&Array.isArray(data.grants)?data.grants:[];
+ const response=await fetcher('/benefits/item_grant.json');
+ if(!response?.ok)throw Error('Concessioni oggetti tipizzate non disponibili');
+ return featureItemGrantsFromBenefits(await response.json());
 }

@@ -9,8 +9,8 @@ import {traitBenefitGroups} from '../trait_benefits.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const rules=read('../../vtt/enrichment/benefits/option_grant.json');
-const optional=read('../catalog/optional_feature_progressions.json');
-const old=read('../catalog/power_selections.json');
+const optional={progressions:[],options:[]};
+const old={selections:[],templates:[]};
 const lists=read('../../vtt/enrichment/benefits/option_list.json');
 const source={...old,optionGrants:rules,optionLists:lists,optionalFeatureProgressions:optional};
 const owner={class_name:'Ranger',class_source:'PHB',trait:'Favored Enemy'};

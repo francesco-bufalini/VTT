@@ -34,30 +34,12 @@ export function classRollBonusRulesFromBenefits(payload){
    ...(ref.subclass?{subclass_name:ref.subclass}:{}),feature_name:ref.name,...mechanics};
  });
 }
-async function load(fetcher,typedUrl,legacyUrl,project,legacy){
- let response;
- try{response=await fetcher(typedUrl)}catch{response=null}
- // A malformed v2 catalog is an error; older hosts that lack the new URL
- // may still serve the legacy catalog without changing saved characters.
- if(response?.ok){
-  const payload=await response.json();
-  if(payload?.schema_version===2)return project(payload);
-  // Older mocks and non-v2 static hosts can respond 200 with the old
-  // catalog at an unrecognized URL. Do not swallow malformed v2 data.
- }
- const old=await fetcher(legacyUrl);
- if(!old.ok)throw Error('Catalogo benefici non disponibile: '+typedUrl);
- return legacy(await old.json());
+async function load(fetcher,typedUrl,project){
+ const response=await fetcher(typedUrl);
+ if(!response?.ok)throw Error('Catalogo benefici non disponibile: '+typedUrl);
+ return project(await response.json());
 }
 export const loadClassActionBenefits=(fetcher=fetch)=>load(fetcher,
- '/catalog/benefits/action.json','/catalog/action_feature_overrides.json',
- classActionOverridesFromBenefits,data=>{
-  // Match the old PWA behavior for incomplete fixtures and older hosts:
-  // missing optional activation metadata must never hide all class features.
-  return data?.version===1&&Array.isArray(data.entries)?data.entries:[];
- });
+ '/catalog/benefits/action.json',classActionOverridesFromBenefits);
 export const loadClassRollBonusBenefits=(fetcher=fetch)=>load(fetcher,
- '/catalog/benefits/roll_bonus.json','/catalog/roll_bonus_rules.json',
- classRollBonusRulesFromBenefits,data=>{
-  return data?.version===1&&Array.isArray(data.features)?data.features:[];
- });
+ '/catalog/benefits/roll_bonus.json',classRollBonusRulesFromBenefits);

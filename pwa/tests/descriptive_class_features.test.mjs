@@ -1,10 +1,11 @@
+import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {classFeatureEntries,classFeatureActivationPatch} from '../feature_mechanics.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
 import {battleAbilityEntries} from '../action_economy.js';
 import {readFileSync} from 'node:fs';
-const featureActionOverrides=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
+const featureActionOverrides=classActionOverridesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/action.json',import.meta.url),'utf8')));
 
 const create=(name,owner='Artificer',source='TCE')=>{
  const key='class|'+source.toLowerCase()+'|'+owner.toLowerCase();

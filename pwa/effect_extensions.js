@@ -224,11 +224,7 @@ export function effectExtensionsFromBenefits(catalog={}){
  });
 }
 export async function loadEffectExtensionBenefits(fetcher=fetch){
- let response;
- try{response=await fetcher('/benefits/effect_extension.json')}catch{response=null}
- if(response?.ok)return effectExtensionsFromBenefits(await response.json());
- const fallback=await fetcher('/catalog/effect_extensions.json');
- if(!fallback?.ok)throw Error('Estensioni effetti non disponibili');
- const old=await fallback.json();
- return old?.version===1&&Array.isArray(old.extensions)?old.extensions:[];
+ const response=await fetcher('/benefits/effect_extension.json');
+ if(!response?.ok)throw Error('Estensioni effetti tipizzate non disponibili');
+ return effectExtensionsFromBenefits(await response.json());
 }

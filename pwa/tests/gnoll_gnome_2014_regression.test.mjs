@@ -1,3 +1,4 @@
+import {featureItemGrantsFromBenefits} from '../feature_item_grants.js';
 import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +12,7 @@ import {expandedOriginSpellFeatures,expandedOriginClassSpellIds,spellEligible,
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const powers=speciesPowerTestIndex();
 const original={races:read('../../vtt/data/compendium_features_5etools.json').races};
-const items=read('../catalog/feature_item_grants.json').grants;
+const items=featureItemGrantsFromBenefits(read('../../vtt/enrichment/benefits/item_grant.json'));
 const additional=read('../../vtt/data/additional_spells_5etools.json').entries;
 const base={kind:'character',rules_version:'2014',level:5,
  abilities:{str:12,dex:12,con:12,int:14,wis:10,cha:10},inventory:[]};

@@ -11,9 +11,7 @@ const index=read('../catalog/classes.json');
 const grants=read('../../vtt/enrichment/benefits/option_grant.json');
 const lists=read('../../vtt/enrichment/benefits/option_list.json');
 const resources=read('../../vtt/enrichment/benefits/resource.json');
-const spellcasting=read('../catalog/spellcasting_benefits.json');
-const optionCatalog=read('../catalog/optional_feature_progressions.json');
-const powerCatalog=read('../catalog/power_selections.json');
+
 const spellSlots=resources.entries.filter(row=>row.benefit.kind==='spell_slots');
 const sourceFor=entry=>entry.granted_by.ref;
 const makeRecord=ref=>({
@@ -40,7 +38,7 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
  for(const entry of grants.entries.filter(entry=>!entry.benefit.option_grant.nested)){
   const ref=sourceFor(entry),record=makeRecord(ref);
   const features=collectStructuredFeatures(record,{classFeatures:index,
-   spellcastingBenefits:spellcasting,optionGrants:grants,optionLists:lists,slotBenefits:resources});
+   optionGrants:grants,optionLists:lists,slotBenefits:resources});
   const matching=features.filter(feature=>feature.benefits?.some(benefit=>
    benefit.type==='option_grant'&&benefit.id===entry.benefit.id));
   if(!matching.length)missing.push(entry.benefit.id);
@@ -48,7 +46,7 @@ test('audit: every migrated option-grant has a resolvable real feature source',(
   if(matching.length>1&&!entry.benefit.option_grant.instances)
    ambiguous.push([entry.benefit.id,matching.map(f=>f.origin_id)]);
   if(matching.length&&entry.benefit.option_grant.option_kind!=='spell'){
-   const catalog={...powerCatalog,optionGrants:grants,optionLists:lists,optionalFeatureProgressions:optionCatalog};
+   const catalog={optionGrants:grants,optionLists:lists};
    const selection=powerSelectionModels(record,{features},catalog);
    if(!selection.some(m=>m.id===entry.benefit.id)&&
      !entry.benefit.option_grant.requires_application)modelMissing.push(entry.benefit.id);

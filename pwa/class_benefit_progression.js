@@ -95,16 +95,5 @@ export async function loadClassFeatureTimingBenefits(fetcher=fetch){
  }
 }
 export async function loadClassResourceBenefits(fetcher=fetch){
- try{
-  return projectClassResourceOverrides(await readTyped(fetcher,'resource'));
- }catch(error){
-  if(!(error instanceof MissingTypedCatalog))throw error;
-  // Legacy builds can rely on the class-mechanics payload's embedded rules.
-  try{
-   const res=await fetcher('/catalog/class_resource_overrides.json');
-   if(!res?.ok)return null;
-   const old=await res.json();
-   return Array.isArray(old?.classes)?old.classes:null;
-  }catch{return null}
- }
+ return projectClassResourceOverrides(await readTyped(fetcher,'resource'));
 }

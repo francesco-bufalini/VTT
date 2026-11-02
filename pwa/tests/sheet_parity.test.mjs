@@ -1,3 +1,4 @@
+import {projectClassResourceOverrides} from '../class_benefit_progression.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
@@ -13,11 +14,11 @@ import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
 import {addSelectedSpell,removeSelectedSpell,changeKnownClassSpell,knownClassSpellIds} from '../spell_selection.js';
 import {readFileSync,existsSync} from 'node:fs';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
-const catalogs={classMechanics:mechanics,spellcastingBenefits:JSON.parse(readFileSync(new URL('../catalog/spellcasting_benefits.json',import.meta.url),'utf8'))};
+const catalogs={classMechanics:mechanics,optionGrants:JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_grant.json',import.meta.url),'utf8')),slotBenefits:JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/resource.json',import.meta.url),'utf8'))};
 const featureCatalog=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
 const classBenefits=creature=>collectStructuredFeatures(creature,{...catalogs,classFeatures:featureCatalog});
-const optionalFeatures=JSON.parse(readFileSync(new URL('../catalog/optional_feature_progressions.json',import.meta.url),'utf8'));
-const twoWeaponEffect=optionalFeatures.options.find(row=>row.id==='optional:phb:two-weapon-fighting')?.effects?.[0];
+const optionalFeatures=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_list.json',import.meta.url),'utf8')).entries.flatMap(row=>row.benefit?.option_list?.options||[]);
+const twoWeaponEffect=optionalFeatures.find(row=>row.id==='optional:phb:two-weapon-fighting')?.effects?.[0];
 const withTwoWeaponStyle=record=>({...record,formula_bonuses:[...(record.formula_bonuses||[]),twoWeaponEffect]});
 
 test('resource recovery caption reflects each tracker recovery rule',()=>{
@@ -396,16 +397,16 @@ test('manual origin powers follow origin toggles and automatic bonus switches ke
 });
 test('bundled PWA native tables and resource definitions are generated without divergence',t=>{
  const nativePath=new URL('../../vtt/data/class_mechanics_5etools.json',import.meta.url);
- const overridesPath=new URL('../../vtt/data/class_resource_overrides.json',import.meta.url);
+ const overridesPath=new URL('../../vtt/enrichment/benefits/resource.json',import.meta.url);
  if(!existsSync(nativePath)||!existsSync(overridesPath))
    return t.skip('Source comparison requires full checkout; browser-assets checks out only pwa/.');
  const native=JSON.parse(readFileSync(nativePath,'utf8'));
- const overrides=JSON.parse(readFileSync(overridesPath,'utf8'));
+ const overrides=projectClassResourceOverrides(JSON.parse(readFileSync(overridesPath,'utf8')));
  assert.deepEqual(mechanics.classes,native.classes);
- const sourceKeys=new Set(overrides.classes.map(row=>row.class+'|'+row.source));
- assert.deepEqual(mechanics.resource_overrides.filter(row=>sourceKeys.has(row.class+'|'+row.source)),overrides.classes);
+ const sourceKeys=new Set(overrides.map(row=>row.class+'|'+row.source));
+ assert.deepEqual(mechanics.resource_overrides.filter(row=>sourceKeys.has(row.class+'|'+row.source)),overrides);
  assert.deepEqual(mechanics.resource_overrides.filter(row=>!sourceKeys.has(row.class+'|'+row.source)),[]);
- const paladin=overrides.classes.find(row=>row.class==='Paladin'&&row.source==='XPHB')
+ const paladin=overrides.find(row=>row.class==='Paladin'&&row.source==='XPHB')
   .resources.find(row=>row.name==='Lay on Hands');
  assert.equal(paladin.steps.length,20);
  assert.equal(paladin.steps[8].value,'45');

@@ -1,8 +1,9 @@
+import {classActionOverridesFromBenefits} from '../class_benefit_catalogs.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CLASS_DEFENSE_RULES as defenses} from '../catalog/class_defense_rules.js';
-const operations=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
+const operations=classActionOverridesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/action.json',import.meta.url),'utf8')));
 import {CLASS_NUMERIC_FEATURE_GRANTS as numeric} from '../catalog/class_numeric_feature_grants.js';
 import {BARBARIAN_2014_GRANTS as barbarian} from '../catalog/barbarian_2014_rules.js';
 import {supplementalClassSpells,supplementalItemBonuses} from '../catalog/supplemental_rules.js';
@@ -46,6 +47,8 @@ test('offline app-shell contains every declarative rule module',()=>{
  }
  assert(!sw.includes('class_feature_operations.js'));
  assert(!host.includes('class_feature_operations.js'));
- assert(sw.includes('"/catalog/action_feature_overrides.json"'));
- assert(host.includes('"/catalog/action_feature_overrides.json"'));
+ assert(!sw.includes('"/catalog/action_feature_overrides.json"'));
+ assert(sw.includes('"/catalog/benefits/action.json"'));
+ assert(!host.includes('"/catalog/action_feature_overrides.json"'));
+ assert(host.includes('"/catalog/benefits/action.json"'));
 });

@@ -1825,56 +1825,16 @@ function calculateSheetValues(record={},catalogs={}){
 let catalogPromise;
 export function loadRuleCatalogs(){
   if(!catalogPromise){
-  // Load typed choices once. On fully migrated clients avoid downloading
-  // the 272 optional features a second time from the legacy JSON.
+  // Canonical benefit catalogs replace the nine retired legacy sources.
   const typedOptionGrants=fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
   const typedOptionLists=fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
   const typedProficiencyGrants=fetch('/benefits/proficiency_grant.json')
     .then(r=>r.ok?r.json():{}).catch(()=>({}));
   const typedBaseOverrides=fetch('/benefits/base_override.json')
     .then(r=>r.ok?r.json():{}).catch(()=>({}));
-  // The migrated 3 inline power choices and 21 class spell selections are
-  // read directly from option_grant. Old shells use their previous catalogs.
-  // Coverage is checked per family so a partial static deployment can fall
-  // back independently for either legacy source.
-  const typedChoiceCoverage=typedOptionGrants.then(catalog=>{
-    const entries=catalog?.schema_version===2&&catalog?.benefit_type==='option_grant'&&
-      Array.isArray(catalog.entries)?catalog.entries:[];
-    const choices=entries.map(row=>row.benefit?.option_grant).filter(Boolean);
-    return {
-      power:choices.filter(row=>row.migration_group==='power_selections'&&row.option_kind==='capability').length>=3,
-      spells:choices.filter(row=>row.option_kind==='spell'&&row.source?.type==='spell_catalog').length>=24
-    };
-  });
-  const legacyPowerSelections=typedChoiceCoverage.then(coverage=>coverage.power?
-    {selections:[],templates:[]}:fetch('/catalog/power_selections.json')
-      .then(r=>r.ok?r.json():{}).then(data=>
-        data?.version===1&&Array.isArray(data.selections)&&Array.isArray(data.templates)?
-          data:{selections:[],templates:[]})
-      .catch(()=>({selections:[],templates:[]})));
-  const legacySpellcastingBenefits=typedChoiceCoverage.then(coverage=>coverage.spells?
-    {grants:[]}:fetch('/catalog/spellcasting_benefits.json')
-      .then(r=>r.ok?r.json():{}).then(data=>
-        data?.version===1&&Array.isArray(data.grants)?data:{grants:[]})
-      .catch(()=>({grants:[]})));
-  const legacyOptionalFeatures=Promise.all([typedOptionGrants,typedOptionLists]).then(([grants,lists])=>{
-    const rules=Array.isArray(grants?.entries)?grants.entries:[];
-    const entries=Array.isArray(lists?.entries)?lists.entries:[];
-    const sources=rules.map(row=>row.benefit?.option_grant?.source)
-      .filter(source=>source?.type==='list_refs'&&Array.isArray(source.feature_types)&&source.feature_types.length);
-    const listedOptions=entries.flatMap(entry=>Array.isArray(entry.benefit?.option_list?.options)?
-      entry.benefit.option_list.options:[]);
-    const supported=new Set(listedOptions.flatMap(option=>Array.isArray(option.types)?option.types:[]));
-    // 272 is the audited migrated 5eTools optional-feature inventory. A
-    // partial static update must use the legacy catalog for missing options.
-    const complete=entries.length>=275&&listedOptions.length>=272&&new Set(listedOptions.map(option=>option.id)).size===listedOptions.length;
-    if(grants?.benefit_type==='option_grant'&&lists?.benefit_type==='option_list'&&
-      complete&&sources.length&&sources.every(source=>source.feature_types.every(type=>supported.has(type))))
-      return {progressions:[],options:[]};
-    return fetch('/catalog/optional_feature_progressions.json').then(r=>r.ok?r.json():{}).then(data=>
-      data?.version===1&&Array.isArray(data.progressions)&&Array.isArray(data.options)?
-        data:{progressions:[],options:[]}).catch(()=>({progressions:[],options:[]}));
-  });
+  const emptyPowerSelections=Promise.resolve({selections:[],templates:[]});
+  const emptyOptionalFeatures=Promise.resolve({progressions:[],options:[]});
+  const emptySpellcastingBenefits=Promise.resolve({grants:[]});
   catalogPromise=Promise.all([
     fetch("/catalog/ability_grants.json").then(r=>{if(!r.ok)throw Error("Indice abilità non caricato");return r.json();}),
     fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();}),
@@ -1921,12 +1881,12 @@ export function loadRuleCatalogs(){
       .catch(error=>{console.warn('VTT: vantaggi razziali condizionali non disponibili',error);return {load_error:true};}),
     fetch('/benefits/sense.json').then(r=>r.ok?r.json():{}).then(data=>data?.schema_version===2&&data?.benefit_type==='sense'&&data?.scope==='catalog'&&Array.isArray(data.entries)?data:{}).catch(()=>({})),
     loadFeatureItemGrantBenefits(),
-    legacyPowerSelections,
-    legacyOptionalFeatures,
+    emptyPowerSelections,
+    emptyOptionalFeatures,
     fetch('/catalog/feature_slot_spells.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.spells)&&Array.isArray(data.grants)?data:{spells:[],grants:[]})
       .catch(()=>({spells:[],grants:[]})),
-    legacySpellcastingBenefits,
+    emptySpellcastingBenefits,
     fetch('/catalog/generic_item_variants.json').then(r=>r.ok?r.json():{})
       .then(data=>data?.version===1&&Array.isArray(data.variants)?data:{variants:[]})
       .catch(()=>({variants:[]})),

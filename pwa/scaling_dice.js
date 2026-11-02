@@ -88,12 +88,7 @@ export function scalingDiceFromBenefits(catalog={}){
  })};
 }
 export async function loadScalingDieBenefits(fetcher=fetch){
- let typed;
- try{typed=await fetcher('/benefits/scaling_die.json')}catch{typed=null}
- if(typed?.ok)return scalingDiceFromBenefits(await typed.json());
- let legacy;
- try{legacy=await fetcher('/catalog/scaling_dice.json')}catch{return {dice:[]}}
- if(!legacy?.ok)return {dice:[]};
- const data=await legacy.json();
- return data?.version===1&&Array.isArray(data.dice)?data:{dice:[]};
+ const response=await fetcher('/benefits/scaling_die.json');
+ if(!response?.ok)throw Error('Dadi progressivi tipizzati non disponibili');
+ return scalingDiceFromBenefits(await response.json());
 }

@@ -1,3 +1,4 @@
+import {effectExtensionsFromBenefits} from '../effect_extensions.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,7 +6,7 @@ import {collectEffectExtensions,effectExtensionsFor,applyEffectExtensions,effect
 import {addBenefitPatch,removeBenefitPatch,restoreBenefitPatch} from '../trait_benefit_editor.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 
-const catalog=JSON.parse(readFileSync(new URL('../catalog/effect_extensions.json',import.meta.url),'utf8')).extensions;
+const catalog=effectExtensionsFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/effect_extension.json',import.meta.url),'utf8')));
 const warlock=(extra={})=>({rules_version:'2014',
  classes:[{name:'Warlock',source:'PHB',level:5}],
  optional_features_catalog:[

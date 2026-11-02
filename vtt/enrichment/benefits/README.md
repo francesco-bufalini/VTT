@@ -8,6 +8,19 @@ nel catalogo pertinente (per esempio `proficiency_grant.json`, `roll_bonus.json`
 `resource.json`), con `granted_by.kind = "5etools"` e
 `ref = { "category": "background", "name": "...", "source": "..." }`.
 
+## Completamento dei nove cataloghi legacy (2 novembre 2026)
+
+I file `action_feature_overrides.json`, `class_resource_overrides.json`,
+`roll_bonus_rules.json`, `power_selections.json`, `feature_item_grants.json`,
+`scaling_dice.json`, `effect_extensions.json`, `spellcasting_benefits.json`
+e `optional_feature_progressions.json` sono stati eliminati dopo la
+migrazione nei cataloghi per tipo di beneficio. Gli override di classe
+derivano ora da `resource.json` e le box di incantesimi sono proiettate
+dagli `option_grant` senza un template globale. Le descrizioni storiche dei
+fallback più sotto documentano le fasi precedenti e non il runtime attuale.
+
+---
+
 ## Prima di aggiungere una voce
 
 1. Verificare `data/backgrounds.json` nel mirror 5eTools usato per il
@@ -111,10 +124,8 @@ Le nuove dichiarazioni sono raggruppate **solo per meccanica**, non per classe:
 
 | Tipo | Voci di classi/sottoclassi | Origine legacy |
 | --- | ---: | --- |
-| [`action.json`](action.json) | 96 ulteriori (148 totali di classe) | `feature_timing_recovery_rules.actions` |
-| [`action.json`](action.json) | 31 azioni contestuali | `feature_timing_recovery_rules.contextual_actions` |
+| [`action.json`](action.json) | 96 ulteriori (148 totali di classe) | `feature_timing_recovery_rules.actions` e 31 `contextual_actions` |
 | [`resource_recovery.json`](resource_recovery.json) | 17 | `feature_timing_recovery_rules.recoveries` |
-
 | [`action_sequence.json`](action_sequence.json) | 38 (12 sequenze preesistenti + 26 multiattacchi) | `feature_timing_recovery_rules.attack_actions` e `attack_count_grants` |
 | [`resource.json`](resource.json) | 96 (incluse 6 risorse contestuali) | `class_resource_overrides.classes[].resources` |
 
@@ -358,12 +369,21 @@ le competenze e i bonus appartenenti a quella istanza del talento.
 
 ## Consolidamento dei benefici — novembre 2026
 
-Le 31 precedenti voci `activation` sono state trasferite ad `action.json` con proiezione transitoria `timing_contextual_action`. Le 6 risorse contestuali sono ora record indipendenti in `resource.json`, collegati alle azioni tramite `resource_id`: il costo dell'azione e il tracker non sono due benefici di attivazione. Non esistono più i cataloghi `activation` e `attack_count`; tutti i multiattacchi incorporati sono `action_sequence`.
+Le 31 precedenti attivazioni contestuali sono definite in `action.json` come
+`timing_contextual_action`. Le sei risorse contestuali sono in `resource.json`
+e sono associate alle azioni tramite `resource_id`. Il catalogo `activation`
+e quello `attack_count` sono stati eliminati; i multiattacchi usano `action_sequence`.
 
-Le 15 resistenze condizionate dai flavour dei Dragonborn sono in `damage_modifier.json`, che può contenere anche immunità, vulnerabilità e riduzioni del danno; l'adattatore dei flavour continua a proiettarle nel sistema di resistenze della scheda. `movement` è stato sostituito da `base_override`: questo unico tipo definisce il valore di velocità, CA, CA naturale o altro score (`target`, `operation`, `amount` o `source_field`) con requisiti individuali in `base_override.condition`. Le 10 restrizioni al volo usano `operation: inherit`, `source_field: speed.fly` e una condizione che esclude armature medie e pesanti: la velocità numerica resta definita in 5eTools.
-
-Il beneficio `base_override` può quindi indicare una CA naturale fissa (`target: ac_unarmored`, `operation: alternative`, `expression: "13 + dex_mod"`) con un requisito sulla categoria dell'armatura. Altri 39 override non additivi (CA naturale, privilegi Unarmored Defense, limiti minimi delle caratteristiche, danno base senz’armi) sono migrati nello stesso file con `condition` e origine 5eTools. L'indice precedente `vtt/data/base_value_overrides.json` resta solo per il confronto e per i client precedenti: la PWA preferisce il catalogo tipizzato e proietta le vecchie strutture in memoria. Le conversioni runtime dei tratti di specie restano proiezioni, non dati da modificare separatamente.
-
+`damage_modifier.json` rappresenta resistenze, immunità, vulnerabilità e
+riduzioni del danno. `base_override.json` esprime modifiche condizionali ai
+valori base (velocità, CA, caratteristiche, danni senz'armi) con target,
+operazione, eventuale fonte strutturata 5eTools e requisiti. Le dieci
+restrizioni al volo mantengono la velocità nativa 5eTools usando
+`operation: inherit` e `source_field: speed.fly`, escludendo armature medie
+e pesanti. Sono inclusi gli override non additivi di
+`vtt/data/base_value_overrides.json`; il vecchio indice resta solo per
+confronto e compatibilità, mentre il runtime usa preferenzialmente i dati
+tipizzati.
 
 ### Sensi (sense.json)
 

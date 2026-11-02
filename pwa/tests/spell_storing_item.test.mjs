@@ -1,3 +1,5 @@
+import {classRollBonusRulesFromBenefits} from '../class_benefit_catalogs.js';
+import {effectExtensionsFromBenefits} from '../effect_extensions.js';
 import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,8 +14,8 @@ import {eligibleSpellStoringItems,eligibleStoredSpells,storeSpellInItemPatch,
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classFeatures:read('classes'),classMechanics:read('class_mechanics'),
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
- traitStates:read('trait_states').states,rollBonusRules:read('roll_bonus_rules').features,
- effectExtensions:read('effect_extensions').extensions};
+ traitStates:read('trait_states').states,rollBonusRules:classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8'))),
+ effectExtensions:effectExtensionsFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/effect_extension.json',import.meta.url),'utf8')))};
 const artificer=(level=11)=>({
  id:'artificer-11',kind:'character',rules_version:'2014',
  classes:[{name:'Artificer',source:'TCE',level}],class:'Artificer',class_source:'TCE',
