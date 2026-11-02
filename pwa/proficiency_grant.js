@@ -14,7 +14,7 @@ const matchesOrigin=(record,feature,ref={})=>{
  if(ref.category==='species_trait'&&
    (norm(record.species)!==norm(ref.race)||norm(record.species_source)!==norm(ref.race_source)||
     !String(feature.origin_key||'').startsWith('species|')))return false;
- if(ref.category==='feat'&&!rows(record.feats_catalog).some(feat=>
+ if(ref.category==='feat'&&ref.source&&!rows(record.feats_catalog).some(feat=>
     !feat?.disabled&&norm(feat.name)===norm(ref.name)&&norm(feat.source)===norm(ref.source)&&
     norm(feature.origin_key)==='feat|'+norm(feat.id||norm(feat.name)+'|'+norm(feat.source))))return false;
  if(ref.class_name&&norm(feature.class_name||feature.requirements?.class_name)!==norm(ref.class_name))return false;
@@ -37,7 +37,7 @@ export function proficiencyGrantModels(record={},calculated={},catalog={}){
   const matching=rows(calculated.features).filter(feature=>matchesOrigin(record,feature,ref));
   // Some feats have no nested feature in the compendium. The feat itself
   // remains a source-qualified owner for a permanent choice.
-  const featOwner=ref.category==='feat'&&entry.granted_by?.kind==='5etools'&&
+  const featOwner=ref.category==='feat'&&ref.source&&entry.granted_by?.kind==='5etools'&&
    !matching.length?rows(record.feats_catalog).filter(feat=>
     !feat?.disabled&&norm(feat.name)===norm(ref.name)&&norm(feat.source)===norm(ref.source))
     .map(feat=>({name:feat.name,origin_id:'feat|'+norm(feat.source)+'|'+norm(feat.name),
@@ -45,7 +45,7 @@ export function proficiencyGrantModels(record={},calculated={},catalog={}){
   for(const feature of matching.length?matching:featOwner){
    const root_id=ref.category==='species_trait'?
     'race|'+norm(ref.race_source)+'|'+norm(ref.race):
-    ref.category==='feat'?'feat|'+norm(ref.source)+'|'+norm(ref.name):feature.origin_id;
+    ref.category==='feat'&&ref.source?'feat|'+norm(ref.source)+'|'+norm(ref.name):feature.origin_id;
    if(disabled(record,root_id)||disabled(record,feature.origin_id))continue;
    const permanent=!['short_rest','long_rest'].includes(rule.trigger);
    const slots=rows(rule.groups).flatMap((group,groupIndex)=>{
@@ -65,7 +65,7 @@ export function proficiencyGrantModels(record={},calculated={},catalog={}){
    const selected=typed.length?typed:legacy;
    models.push({id:rule.id,title:entry.benefit.name||feature.name,
     origin_id:feature.origin_id,source_origin_id:feature.virtual?'':feature.origin_id,root_id,
-    legacy_origin_id:permanent&&ref.category==='feat'?root_id:'',
+    legacy_origin_id:permanent&&ref.category==='feat'&&ref.source?root_id:'',
     permanent,trigger:rule.trigger||'',change_label:permanent?'':powerSelectionTriggerLabel(rule.trigger),
     benefit_type:'proficiency_grant',slots,selected,used:selected.length,limit:slots.length});
   }
