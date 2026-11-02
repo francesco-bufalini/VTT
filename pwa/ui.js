@@ -266,6 +266,10 @@ const backupInput = document.querySelector("#import-backup");
 const toastElement = document.querySelector("#toast");
 const sheetSections = SHEET_SECTIONS;
 const sections = new Set(["library", "catalog", "session"]);
+// Dedicated native desktop entry points; ordinary browser/PWA sessions are
+// unaffected. The URL is scoped by the Godot toolbar, not by user-agent.
+const nativeView = new URLSearchParams(location.search).get('native_view');
+const nativeSection = ['creatures','compendium'].includes(nativeView)?nativeView:'';
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
@@ -635,10 +639,12 @@ function syncNav(){
   // The embedded site owns the viewport; offline browsing keeps the app dock.
   document.body.classList.toggle('catalog-web-mode',catalogWebVisible());
   const hasCreature=isCreatureOpen();
+  document.body.dataset.nativeView=nativeSection;
+  document.body.classList.toggle('native-creature-sheet',Boolean(nativeSection&&hasCreature));
   const topbar=document.querySelector('.topbar');
   if(topbar)topbar.hidden=state.page==='catalog'||state.page==='session'||state.page==='library'&&state.libraryMode;
   const topSessionButton=document.querySelector('.connection-link');
-  if(topSessionButton)topSessionButton.hidden=hasCreature;
+  if(topSessionButton)topSessionButton.hidden=hasCreature||Boolean(nativeSection);
   const creature=hasCreature?(state.editor?.read()||(state.cachedCreatures||[]).find(c=>c.id===state.creatureId)):null;
   const label=document.querySelector('#creature-name'),classLabel=document.querySelector('#creature-classes');
   const back=document.querySelector('#creature-back'),primary=document.querySelector('#sheet-navigation');
@@ -666,9 +672,10 @@ function syncNav(){
   }
   primary.innerHTML=hasCreature?PLAY_SECTIONS.map(([key,title])=>navigationButton(key,title)).join(''):'';
   primary.hidden=!hasCreature;
-  nav.hidden=hasCreature;
+  nav.hidden=hasCreature||Boolean(nativeSection);
   dock.classList.toggle('has-creature',hasCreature);
-  sessionTab.hidden=!hasCreature;
+  dock.hidden=Boolean(nativeSection)&&(!hasCreature||nativeSection==='compendium');
+  sessionTab.hidden=!hasCreature||Boolean(nativeSection);
   sessionTab.innerHTML=actionGlyph('map')+'<span class="destination-label">Partita</span>';
   if(state.page==='session')sessionTab.setAttribute('aria-current','page');
   else sessionTab.removeAttribute('aria-current');
@@ -752,7 +759,8 @@ async function restoreBrowserScreen(screen){
   if(screen?.sheet==='stats')screen={...screen,sheet:'skills'};
   if(screen?.sheet==='actions')screen={...screen,sheet:'battle'};
   if(screen?.sheet==='traits')screen={...screen,sheet:'info'};
-  if(!screen||!sections.has(screen.page)||!SHEET_SECTIONS.some(([key])=>key===screen.sheet))return;
+  if(!screen||!sections.has(screen.page)||nativeSection&&screen.page==='session'||
+    !SHEET_SECTIONS.some(([key])=>key===screen.sheet))return;
   const ticket=++browserHistoryRestoreTicket;
   restoringBrowserHistory=true;
   try{
@@ -832,7 +840,7 @@ async function refreshSessionCreatures(){
   }
 }
 async function navigate(page){
-  if(!sections.has(page))return;
+  if(!sections.has(page)||nativeSection&&page==='session')return;
   if(page==='catalog'&&state.page!=='catalog')
     state.catalogReturnPage=state.page==='session'?'session':'library';
   if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';state.catalogAssignCreatureId='';state.catalogCreateOpen=false;}
@@ -1306,7 +1314,7 @@ async function catalogView() {
   if(catalogWebVisible()){
     return '<section class="catalog-web" aria-label="5etools, manuale 2014">'+
       '<header class="catalog-source-bar catalog-web-toolbar">'+
-      '<button type="button" class="play-button catalog-web-back" data-act="catalog-back" aria-label="Torna indietro" title="Torna indietro">‹</button>'+
+      (nativeSection==='compendium'?'':'<button type="button" class="play-button catalog-web-back" data-act="catalog-back" aria-label="Torna indietro" title="Torna indietro">‹</button>')+
       '<button type="button" class="play-button" data-act="catalog-source-local">Catalogo offline</button></header>'+
       '<iframe class="catalog-web-frame" title="5etools, regole D&D 2014" src="https://2014.5e.tools/" '+
       'loading="eager" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads" '+
@@ -7670,6 +7678,7 @@ async function handleAction(target){
     await handleAction(source);return;
   }
   if(act==='catalog-back'){
+    if(nativeSection==='compendium')return;
     await navigate(state.catalogReturnPage==='session'?'session':'library');return;
   }
   if(act==='catalog-source-local'||act==='catalog-source-5etools'){
@@ -11029,8 +11038,12 @@ export async function flushPendingEdits() {
 
 export async function mount(){
   realtimeStopped=false;
-  const openChatOnMount=new URLSearchParams(location.search).get("open")==="chat";
-  if(openChatOnMount)history.replaceState(history.state,"",location.pathname);
+  const query=new URLSearchParams(location.search);
+  const openChatOnMount=query.get("open")==="chat";
+  if(openChatOnMount){
+    query.delete('open');
+    history.replaceState(history.state,'',location.pathname+(query.size?'?'+query:''));
+  }
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
@@ -11040,7 +11053,9 @@ export async function mount(){
   // Possession of a local credential is unrelated to reachability. Render
   // IndexedDB creatures FIRST: an offline desktop must never gate the editor.
   state.paired=await hasPairingCredential();
-  if(qrCode)state.page="session";
+  if(nativeSection==='compendium')state.page='catalog';
+  else if(nativeSection==='creatures')state.page='library';
+  else if(qrCode)state.page="session";
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   try{
     const saved=await setting(LOCAL_CHAT_KEY);
@@ -11060,7 +11075,7 @@ export async function mount(){
       window.requestIdleCallback(preload,{timeout:12000});
     else setTimeout(preload,1200);
   },2400);
-  if(qrCode){
+  if(qrCode&&!nativeSection){
     const input=document.querySelector("#pair-secret");
     if(input)input.value=qrCode;
   }
@@ -11069,7 +11084,7 @@ export async function mount(){
   // refreshConnection() first or let that 401 suppress the QR exchange.
   // Keep the local creature library available while the request is pending.
   void (async()=>{
-    if(qrCode){
+    if(qrCode&&!nativeSection){
       try {
         acceptSession(await pair(qrCode,{remember:true}));
         state.paired=true;state.online=true;state.hostReachable=true;
