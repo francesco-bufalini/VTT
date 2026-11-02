@@ -214,7 +214,14 @@ test('all 21 canonical class spellcasting grants reproduce the legacy calculated
    optionGrants:typed,slotBenefits
   });
   assert.equal(current.casting_classes.length,legacy.casting_classes.length,identity(owner));
-  assert.deepEqual(current.casting_classes,legacy.casting_classes,identity(owner));
+  // A named slot profile is declarative metadata: compare the resolved
+  // parameters used by the engine, not the redundant profile label.
+  const resolved=members=>members.map(member=>{
+   const copy=structuredClone(member);
+   if(copy.slot_progression)delete copy.slot_progression.profile;
+   return copy;
+  });
+  assert.deepEqual(resolved(current.casting_classes),resolved(legacy.casting_classes),identity(owner));
   assert.deepEqual(current.spell_slots,legacy.spell_slots,identity(owner));
   assert.deepEqual(current.pact_slots,legacy.pact_slots,identity(owner));
  }
