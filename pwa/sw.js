@@ -56,7 +56,7 @@ const SHELL = [
   "/icons/info/progression.svg",
   "/icons/info/talents.svg",
   "/icons/info/biography.svg",
-  "/catalog/species_types.json",
+  
   "/benefits/attack.json", "/benefits/movement.json",
   "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
    "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/proficiency_grant.json", "/benefits/flavours.json", "/benefits/bonus.json", "/benefits/feat_grant.json", "/benefits/defense.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/spell_slot_profiles.js",
@@ -195,7 +195,7 @@ const REQUIRED_CATALOGS = [
   "/catalog/optional_feature_progressions.json",
   "/catalog/feature_slot_spells.json", "/catalog/spellcasting_benefits.json",
   "/catalog/roll_bonus_rules.json", "/catalog/scaling_dice.json", "/catalog/feature_item_grants.json", "/catalog/effect_extensions.json",
-  "/catalog/activated_abilities.json", "/catalog/effects_5etools.json", "/catalog/species_types.json", "/benefits/attack.json", "/benefits/movement.json", "/benefits/defense.json", "/benefits/flavours.json",
+  "/catalog/activated_abilities.json", "/catalog/effects_5etools.json",  "/benefits/attack.json", "/benefits/movement.json", "/benefits/defense.json", "/benefits/flavours.json",
   "/catalog/action_feature_overrides.json", "/catalog/benefits/action.json", "/catalog/benefits/activation.json", "/catalog/benefits/resource_recovery.json", "/catalog/benefits/attack_count.json", "/catalog/benefits/action_sequence.json", "/catalog/benefits/resource.json", "/catalog/combat_actions_5etools.json",
   "/catalog/combat_action_supplements_5etools.json",
   "/catalog/class_resource_overrides.json",
