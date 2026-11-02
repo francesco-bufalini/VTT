@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {activeItemOptionEffects,itemOptionChargeTrackers,itemOptionChargeTrackerId,
  itemOptionNumericBonuses,requiresAttunement,ownedItemDisplayName,expandedInfusionDefinitions,
  consolidateOwnedItems} from '../item_controls.js';
@@ -62,4 +63,19 @@ test('an option can add a native action without storing legacy metadata',()=>{
   effects:[{type:'actions',name:'Activate',action_type:'bonus',description:'A bonus action'}]}})]};
  const out=projectItemOptionBenefits(record);
  assert.deepEqual(out.action_grants.map(row=>[row.name,row.action_type]),[['Activate','bonus']]);
+});
+
+test('infusion resources belong to their item instances and recharge on a long rest',()=>{
+ const catalog=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/resource.json',import.meta.url),'utf8'));
+ const definition={id:'infusion|tce|mind sharpener',name:'Mind Sharpener'};
+ const option={id:'optional:tce:mind-sharpener',name:'Mind Sharpener',definition};
+ const first={...sword('item-a'),option_extensions:[option]};
+ const second={...sword('item-b'),option_extensions:[option]};
+ const trackers=itemOptionChargeTrackers({inventory:[first,second]},catalog);
+ assert.equal(trackers.length,2);
+ assert.deepEqual(trackers.map(x=>x.max),[4,4]);
+ assert(trackers.every(x=>x.recharge==='long_rest'&&x.item_bound));
+ assert.notEqual(trackers[0].id,trackers[1].id);
+ assert(trackers[0].parent_origin.endsWith(':optional:tce:mind-sharpener'));
+ assert.equal(itemOptionChargeTrackers({inventory:[{...first,option_extensions:[]}]},catalog).length,0);
 });

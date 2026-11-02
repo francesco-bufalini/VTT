@@ -300,7 +300,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   }
   add({name:displayName,entries:description,source:info.source||item.source,
    item_id:id,item_inventory_indices:group.indices,extension_choice_origin:extensions.length?'item-instance:'+(item.instance_id||item.id):'',
-   extension_origin_ids:['item-instance:'+(item.instance_id||item.id),...activeItemOptionEffects({...record,inventory:effectiveInventory},infusionDefinitions,calculated.features||[]).filter(effect=>group.indices.includes(effect.index)).map(effect=>effect.id),...arr(calculated.power_selections).filter(model=>model.origin_id==='item-instance:'+(item.instance_id||item.id)).flatMap(model=>[model.source_origin_id,
+   extension_origin_ids:['item-instance:'+(item.instance_id||item.id),...arr(item.option_extensions).map(option=>'item-option:'+(item.instance_id||item.id)+':'+option.id),...activeItemOptionEffects({...record,inventory:effectiveInventory},infusionDefinitions,calculated.features||[]).filter(effect=>group.indices.includes(effect.index)).map(effect=>effect.id),...arr(calculated.power_selections).filter(model=>model.origin_id==='item-instance:'+(item.instance_id||item.id)).flatMap(model=>[model.source_origin_id,
     ...arr(model.layers.applied?.selected).flatMap(selected=>{
       const option=model.options.find(row=>row.id===(typeof selected==='string'?selected:selected.id));
       const names=[...arr(option?.granted_features),...arr(option?.attacks).map(row=>row.trait)];

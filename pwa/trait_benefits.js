@@ -236,7 +236,14 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  // object's benefit card. Mere knowledge of an infusion never grants a pet.
  if(trait.category==='oggetti'&&trait.rank===0){
   for(const index of rows(trait.item_inventory_indices)){
-   const infused=rows(record.inventory)[index]?.infusion;
+   const item=rows(record.inventory)[index];
+   const typed=rows(calculated.companion_rules?.creature_grants);
+   const grants=rows(item?.option_extensions).flatMap(option=>typed.filter(rule=>
+     [option.id,option.definition?.id].includes(rule.source_option_id)));
+   for(const rule of grants)add('companions','Sottocreature','Creatura concessa',
+     rule.names?.[0]||rule.id,'companion:'+rule.id);
+   if(grants.length)continue;
+   const infused=item?.infusion;
    if(!infused?.id)continue;
    const definition=rows(calculated.infusion_catalog).find(row=>row.id===infused.id);
    if(!definition?.companion?.rule_id)continue;

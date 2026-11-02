@@ -40,6 +40,23 @@ export function eligibleCompanionFeatureRules(owner,projection,data,{manualOnly=
  return rows(data?.features).filter(rule=>(!manualOnly||rule.activation==='manual')&&
   rows(projection?.features).some(feature=>matchesCompanionFeature(owner,projection,rule,feature)));
 }
+// Typed creature grants reference a source trait and companion template.
+export function creatureGrantRulesFromBenefits(catalog={},data={}){
+ if(catalog?.benefit_type!=='creature_grant'||catalog?.schema_version!==2||!Array.isArray(catalog.entries))return [];
+ return catalog.entries.map(entry=>{
+  const b=entry?.benefit||{},g=b.creature_grant||{},ref=entry.granted_by?.ref||{};
+  const template=g.creature?.template_id,sourceOption=g.application?.source_option_id||'';
+  if(b.type!=='creature_grant'||!b.id||!template||!data.templates?.[template]||
+     !ref.name||!ref.source||g.application?.destination==='item'&&!sourceOption)
+   throw Error('Concessione creatura non valida: '+String(entry?.id||''));
+  return {id:b.id,names:[ref.name],class_name:ref.class_name||'',
+   class_source:ref.class_source||'',min_class_level:g.min_class_level||0,
+   editions:[String(b.rules_version||'2014')],template,
+   activation:g.application?.destination==='item'?'item':g.activation||'manual',
+   source_option_id:sourceOption,limit_per_owner_rule:g.limit_per_owner??1,
+   owner_actions:rows(g.owner_actions)};
+ });
+}
 // The companion sheet persists; its availability follows the benefit's typed source.
 export function companionGrantActive(owner={},child={}){
  if(child.companion_selected===false)return false;
@@ -53,7 +70,13 @@ export function companionGrantActive(owner={},child={}){
  return false;
 }
 export function infusionCompanionRule(data,definitions=[],id='',owner={}){
- const definition=rows(definitions).find(row=>row.id===id);
+ const definition=rows(definitions).find(row=>row.id===id||
+   row.item_effects?.id===id||rows(row.legacy_ids).includes(id));
+ const sourceIds=[id,definition?.id,definition?.item_effects?.id].filter(Boolean);
+ const typed=rows(data?.creature_grants).find(rule=>
+  rule.activation==='item'&&sourceIds.includes(rule.source_option_id)&&
+  rows(rule.editions).includes(String(owner.rules_version||'2014')));
+ if(typed)return typed;
  const ruleId=definition?.companion?.rule_id;
  return ruleId?rows(data?.features).find(rule=>rule.id===ruleId&&
   rows(rule.editions).includes(String(owner.rules_version||'2014')))||null:null;
@@ -81,7 +104,8 @@ export function companionOwnerActions(owner={},projection={},data={}){
     const applications=rows(owner.power_applications?.[selection]);
     if(!selection||!applications.some(row=>row.id===applied.option.id&&
       row.target_item_id===String(applied.item.instance_id||applied.item.id))||
-      applied.definition.companion?.rule_id!==rule.id)continue;
+      !(applied.definition.companion?.rule_id===rule.id||
+        rule.source_option_id&&[applied.definition.id,applied.option.id].includes(rule.source_option_id)))continue;
     append(rule,'item:'+String(applied.item.id)+'|'+applied.id,applied.definition.name);
    }
   }else{

@@ -556,15 +556,26 @@ export function targetableInventoryItems(record,selector={},predicate=()=>true){
 // Charge trackers belong to an applied option on a physical item.
 export const itemOptionChargeTrackerId=(item,option,index=0)=>
  'item-option-charges:'+String(item.instance_id||item.id||index)+':'+String(option?.id||'');
-export function itemOptionChargeTrackers(record={}){
+// Each granted resource belongs to a specific extended inventory instance.
+export function itemOptionChargeTrackers(record={},resourceCatalog={},features=[]){
+ const declarations=array(resourceCatalog?.entries).filter(row=>
+  row?.benefit?.type==='resource'&&row.benefit.parameters?.binding==='applied_item_option');
  return array(record.inventory).flatMap((item,index)=>{
-  const effects=array(item.option_extensions);
-  return effects.flatMap(effect=>{
-   const charge=effect.definition?.charge_tracker,max=Number(charge?.max);
-   if(!Number.isSafeInteger(max)||max<1||max>1000||Number(item.quantity??1)<=0||item.disabled)return [];
+  if(Number(item?.quantity??1)<=0||item.disabled)return [];
+  return array(item.option_extensions).flatMap(effect=>{
+   if(effect.origin_id&&(record.origin_enabled?.[effect.origin_id]===false||
+     array(features).length&&!features.some(f=>f.origin_id===effect.origin_id&&!f.disabled&&!f.inactive)))return [];
+   const definition=effect.definition||{},sourceId=String(definition.id||effect.id||'');
+   const declared=declarations.find(row=>row.granted_by?.ref?.id===sourceId||
+     row.granted_by?.ref?.id===effect.id);
+   const max=Number(declared?.benefit?.maximum??definition.charge_tracker?.max);
+   if(!Number.isSafeInteger(max)||max<1||max>1000)return [];
    const id=itemOptionChargeTrackerId(item,effect,index),name=ownedItemDisplayName(item);
-   return [{id,name:name+' · Cariche',max,recharge:'manual',recharge_note:charge.recovery||'',automatic:true,item_bound:true,inventory_index:index,
-    origin_id:'tracker:auto:'+id,origin_name:'Oggetto · '+name}];
+   return [{id,name:name+' · Cariche',max,recharge:declared?.benefit?.recharge||'long_rest',
+     automatic:true,item_bound:true,inventory_index:index,
+     origin_id:'tracker:auto:'+id,
+     parent_origin:'item-option:'+String(item.instance_id||item.id||index)+':'+String(effect.id),
+     origin_name:'Oggetto · '+name}];
   });
  });
 }

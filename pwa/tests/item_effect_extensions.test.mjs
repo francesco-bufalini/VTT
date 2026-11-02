@@ -32,3 +32,18 @@ test('effects do not activate from unequipped or disabled armor',()=>{
  assert.deepEqual(collectEffectExtensions({inventory:[{...equipped,equipped_slots:[]}]}),[]);
  assert.deepEqual(collectEffectExtensions({inventory:[{...equipped,disabled:true}]}),[]);
 });
+
+test('Resistant Armor stores an independent damage type on each infused copy',()=>{
+ const effect={id:'resistant-armor',owner:{kind:'infusion',id:'infusion|tce|resistant armor'},
+  target_kind:'item',operation:'resistance',trigger:'passive',value_from_item_choice:'damage_type'};
+ const withChoice=(instance,damage)=>({...armor(instance),option_extensions:[{
+  id:'optional:tce:resistant-armor',name:'Resistant Armor',selection_id:'artificer_infusions',
+  effect_choice:{damage_type:damage},definition:{id:'infusion|tce|resistant armor',effect_extensions:[effect]}
+ }]});
+ const fire=withChoice('copy-fire','fire'),cold=withChoice('copy-cold','cold');
+ const grants=collectEffectExtensions({inventory:[fire,cold]});
+ assert.deepEqual(grants.map(x=>x.value),['fire','cold']);
+ assert.equal(effectExtensionsFor(grants,{kind:'item',id:fire.id,instance_id:'copy-fire',inventory_index:0})[0].value,'fire');
+ assert.equal(effectExtensionsFor(grants,{kind:'item',id:cold.id,instance_id:'copy-cold',inventory_index:1})[0].value,'cold');
+ assert.equal(collectEffectExtensions({inventory:[{...fire,option_extensions:[]},cold]}).length,1);
+});

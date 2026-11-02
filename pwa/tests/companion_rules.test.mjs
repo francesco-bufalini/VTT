@@ -9,7 +9,7 @@ import {characterDefenseSummary} from '../defense_summary.js';
 import {bestiarySheet} from '../creature_variants.js';
 
 import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,
- spellCompanionRule,companionTemplateStat,companionStatBlockView,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch} from '../companion_rules.js';
+ spellCompanionRule,companionTemplateStat,companionStatBlockView,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch,creatureGrantRulesFromBenefits,companionOwnerActions} from '../companion_rules.js';
 
 const rules=JSON.parse(readFileSync(new URL('../catalog/companion_spells.json',import.meta.url),'utf8'));
 const owner=(className,subclass,level)=>({
@@ -262,4 +262,24 @@ test('ordinary bestiary saving throws and training icons retain source numeric t
  assert.equal(calc.proficiencies.includes('save:con'),true);
  assert.equal(calc.values['save:con'],3);
  assert.equal(calc.values.passive_perception,16);
+});
+
+test('typed creature_grant connects Homunculus Servant only to its applied item option',()=>{
+ const catalog=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/creature_grant.json',import.meta.url),'utf8'));
+ const typed=creatureGrantRulesFromBenefits(catalog,rules);
+ assert.equal(typed.length,1);
+ assert.equal(typed[0].id,'homunculus_servant_2014');
+ assert.equal(typed[0].source_option_id,'infusion|tce|homunculus servant');
+ const data={...rules,creature_grants:typed,features:[...rules.features.filter(x=>x.id!==typed[0].id),...typed]};
+ const artificer=owner('Artificer','Alchemist',7);
+ const definition={id:'infusion|tce|homunculus servant',name:'Homunculus Servant'};
+ assert.equal(infusionCompanionRule(data,[definition],definition.id,artificer)?.id,typed[0].id);
+ assert.equal(infusionCompanionRule(data,[],definition.id,artificer)?.id,typed[0].id);
+ assert.equal(infusionCompanionRule(data,[definition],definition.id,{...artificer,rules_version:'2024'}),null);
+ const option={id:'optional:tce:homunculus-servant',definition,selection_id:'artificer_infusions'};
+ const active={...artificer,inventory:[{id:'gem',instance_id:'gem-1',name:'Gem',quantity:1,active:true,option_extensions:[option]}],
+   power_applications:{artificer_infusions:[{id:option.id,target_item_id:'gem-1'}]}};
+ const projections={features:[],infusion_catalog:[definition]};
+ assert(companionOwnerActions(active,projections,data).some(action=>action.companion_rule_id===typed[0].id));
+ assert.equal(companionOwnerActions({...active,inventory:[]},projections,data).length,0);
 });
