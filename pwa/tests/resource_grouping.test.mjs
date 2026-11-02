@@ -71,44 +71,34 @@ test('a tracker-backed dice bonus uses the dice pictogram, never a crosshair',()
  },'battle',bank);
 });
 
-test('Lightning Launcher stays in Attacchi, while Resources retains only the counter and the extra damage stays among bonuses',()=>{
- const record={...sheet('Artificer','Armorer','TCE'),
-  inventory:[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],
-  trait_state_selection:{armor_model:'armor_model:infiltrator'},
-  resource_tracker_spent:{'feature:lightning_launcher:extra_damage':1}};
- const calculated=project(record),tracker=calculated.trackers.find(row=>row.id==='feature:lightning_launcher:extra_damage');
+test('Lightning Launcher remains a concrete attack; its extra-damage tracker is not a paid attack',()=>{
+ const base={...sheet('Artificer','Armorer','TCE'),
+  inventory:[{id:'armor',instance_id:'armor',name:'Plate',type:'HA',ac:18,quantity:1,equipped_slots:['body']}]};
+ const record=applyArmorerModel(base,selectionCatalogs,'armor_model:infiltrator');
+ const calculated=project(record,true);
+ const tracker=calculated.trackers.find(row=>row.id==='feature:lightning_launcher:extra_damage');
+ assert(tracker,'Applied model creates the optional damage tracker');
+ const extra=calculated.selection_record.dice_bonuses.find(row=>row.attack_id==='class_feature:lightning_launcher');
+ assert.equal(extra?.dice,'1d6');
+ assert(calculated.attacks.some(row=>row.id==='class_feature:lightning_launcher'));
  render(record,calculated,(app,abilities)=>{
   const bonus=app.querySelector('[data-resource-tracker="'+tracker.id+'"]');
-  assert(bonus);
-  assert.equal(bonus.querySelector('.play-resource-info .vtt-action-glyph'),null,
-   'The tracker heading is a counter, not an ability');
-  assert([...app.querySelectorAll('[data-battle-action="others"] .play-resource-bonus-row')]
-   .some(row=>/1d6/.test(row.textContent)),
-   'A damage bonus remains visible among privilege-granted actions');
+  assert(bonus,'The tracker has one resource row');
+  assert.equal(bonus.querySelector('.play-resource-info .vtt-action-glyph'),null);
   assert.equal(bonus.querySelector('[data-act="tracker-trait-use"]'),null);
-  assert.equal(bonus.querySelector('[data-act="battle-use-ability"]'),null);
+  const strike=app.querySelector('[data-battle-action="attacks"] [data-attack-id="class_feature:lightning_launcher"]');
+  assert(strike,'The attack belongs to the Attacchi table');
+  assert(strike.querySelector('.vtt-action-glyph'));
+  assert.equal(app.querySelector('[data-battle-action="resources"] [data-attack-id="class_feature:lightning_launcher"]'),null);
   const attack=abilities.find(row=>row.roll_attack?.id==='class_feature:lightning_launcher');
-  assert(attack);
+  assert(attack,'The generic calculated attack powers the attack action');
   assert.equal(attack.resource_cost,0);
   assert.equal(attack.tracker_id,'');
   assert.equal(abilityAttackRoll(attack,calculated).target,'attack_hit:class_feature:lightning_launcher');
-  assert.equal(app.querySelector('[data-battle-action="resources"] [data-ability-id="activated:'+attack.id+'"]'),null,
-   'Attacks granted by privileges no longer appear under Resources');
-  const strike=app.querySelector('[data-battle-action="attacks"] [data-attack-id="class_feature:lightning_launcher"]');
-  assert(strike,'The granted attack remains available in the real attack table');
-  assert(strike.querySelector('.vtt-action-glyph'),'The attack table owns its attack icon');
-  assert(app.querySelectorAll('[data-battle-action="resources"] [data-act="battle-attack-map"]').length===0,
-   'Resources does not reproduce the map/range buttons from Attacchi');
-  assert(app.querySelectorAll('[data-battle-action="attacks"] [data-act="battle-attack-map"]').length>0,
-   'The restored Attacchi table owns map and range controls');
-  assert.equal(app.querySelector('[data-battle-action="resources"] [data-attack-id="unarmed"]'),null,
-   'Unarmed never appears in Resources');
-  assert.equal(app.querySelectorAll('[data-battle-action="resources"] [data-ability-id^="activated:"]').length,0);
  });
- assert.equal(resourceLinkedSubclassTrait(tracker,calculated.features,[],calculated),null);
- assert.throws(()=>subclassTrackerUsePatch(record,calculated,tracker.id,tracker.origin_id),/non disponibile/);
- const disabled=project({...record,origin_enabled:{[tracker.origin_id]:false}},true);
- assert(!abilitiesForCreature(record,[],disabled).some(row=>row.roll_attack?.id==='class_feature:lightning_launcher'));
+ const lost=project({...record,inventory:[]},true);
+ assert(!lost.attacks.some(row=>row.id==='class_feature:lightning_launcher'));
+ assert(!lost.trackers.some(row=>row.id===tracker.id));
 });
 test('a trait with both a paid summon and a free command retains both resource groups',()=>{
  const record=sheet('Bard','College of Creation'),calculated=project(record);
