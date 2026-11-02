@@ -827,13 +827,13 @@
             "operation": "ignore_armor_strength",
             "target_kind": "item",
             "target_name": "@equipped_armor",
-            "value": "",
             "trigger": "passive",
             "frequency": "each",
             "parameters": {
               "require_active_state_group": "armor_model",
               "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza.",
-              "compatibility_selection_id": "arcane_armor"
+              "compatibility_selection_id": "arcane_armor",
+              "value": ""
             }
           }
         ]
