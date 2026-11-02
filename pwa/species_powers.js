@@ -100,6 +100,10 @@ export function racialPowerProjection(record={},index={},features=[],originDetai
    output.trackers.push({id:cast.tracker_id,name:cast.trait+' · azione bonus',
      max:maximum(cast.uses),recharge:cast.recharge||'long_rest',
      origin_id:castOwner.origin_id,origin_name:'Tratto · '+cast.trait,automatic:true});
+   // The typed action sequence now owns the alternate casting. Preserve
+   // this legacy tracker until species resource migration, but do not project
+   // a second, independently castable bonus-action copy of the spell.
+   if(rows(castOwner.action_sequence?.steps).some(step=>step.selector?.kind==='spell'))continue;
    output.origin_spells.push({id:cast.id,
      origin_id:'racial-bonus-cast:'+castOwner.origin_id,
      owner_origin_id:castOwner.origin_id,
