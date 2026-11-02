@@ -114,9 +114,11 @@ Le nuove dichiarazioni sono raggruppate **solo per meccanica**, non per classe:
 | [`action.json`](action.json) | 65 ulteriori (117 totali di classe) | `feature_timing_recovery_rules.actions` |
 | [`activation.json`](activation.json) | 31 | `feature_timing_recovery_rules.contextual_actions` |
 | [`resource_recovery.json`](resource_recovery.json) | 17 | `feature_timing_recovery_rules.recoveries` |
-| [`attack_count.json`](attack_count.json) | 26 | `feature_timing_recovery_rules.attack_count_grants` |
-| [`action_sequence.json`](action_sequence.json) | 12 | `feature_timing_recovery_rules.attack_actions` |
+| [`attack_count.json`](attack_count.json) | 0 (solo compatibilità legacy/homebrew) | Vecchie concessioni `attack_count_grants` |
+| [`action_sequence.json`](action_sequence.json) | 38 (12 sequenze preesistenti + 26 multiattacchi) | `feature_timing_recovery_rules.attack_actions` e `attack_count_grants` |
 | [`resource.json`](resource.json) | 90 | `class_resource_overrides.classes[].resources` |
+
+I 26 benefici precedentemente espressi come `attack_count` (Extra Attack, Thirsting Blade e Devouring Blade) sono ora vere `action_sequence`, ognuna con uno step `{ "selector": { "kind": "attack" }, "count": N }`, costo di un'azione e `attack_replacement: true`. Il motore presenta soltanto la sequenza attiva più potente, senza sommare gli attacchi concessi da più tratti, e lascia l'Attacco di base quando non è attiva alcuna sostituzione. I multiattacchi dei mostri continuano a usare le proprie sequenze, anche quando includono attacchi specifici o capacità.
 
 `pwa/class_benefit_progression.js` ricompone solo **in memoria** le strutture
 attualmente usate dall'app, rispettando i nomi dei tracker, le priorità,
