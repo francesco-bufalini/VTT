@@ -307,9 +307,7 @@ azzerato e il calcolo sopprime il suo vecchio incremento per evitare doppioni.
 Ogni feat usa l'identità stabile `feat|source|name`, anche se compare con
 più sezioni nella scheda.
 
-Restano in attesa di migrazione dedicata `Resilient` PHB/XPHB (la scelta
-concede anche competenza in un tiro salvezza, con vincolo ulteriore nel 2024),
-`Potent Dragonmark` EFA (la caratteristica deve essere quella scelta dal
+Restano in attesa di migrazione dedicata `Potent Dragonmark` EFA (la caratteristica deve essere quella scelta dal
 Dragonmark) e il talento `Ability Score Improvement` XPHB (possiede due
 varianti di distribuzione dei punteggi, distinte dall'ASI di classe).
 

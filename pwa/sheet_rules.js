@@ -1008,7 +1008,8 @@ function calculateSheetValues(record={},catalogs={}){
        !arr(record.damage_defense_entries).some(typed=>typed.flavour_owner_id&&
          typed.rank===row.rank&&typed.key===row.key))];
 
-  const automatic=[...(index?indexRows(record,index,warnings,activeFlavours):[]),
+  const automatic=[...arr(record.formula_bonuses).filter(row=>row?.automatic&&row.flavour_owner_id),
+    ...(index?indexRows(record,index,warnings,activeFlavours):[]),
     ...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows),...barbarian.numeric_grants];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));

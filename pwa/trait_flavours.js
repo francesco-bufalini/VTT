@@ -221,8 +221,9 @@ export function projectTraitFlavourBenefits(record={},features=[],catalogs={}){
   .map(x=>'trait:choice:flavour-bonus:'+m.owner.origin_id+':'+x.benefit.id+':')));
  const baseBonuses=rows(record.formula_bonuses).filter(x=>{
   const id=String(x.id||'');
-  return !id.startsWith('trait:choice:flavour-bonus:')||
-   [...activeChoiceIds].some(prefix=>id.startsWith(prefix));
+  return !id.startsWith('flavour-benefit:')&&
+    (!id.startsWith('trait:choice:flavour-bonus:')||
+   [...activeChoiceIds].some(prefix=>id.startsWith(prefix)));
  });
  const bonus=[...baseBonuses],defenses=[...rows(record.damage_defense_entries)],traits=[];
  const proficiencies=rows(record.proficiency_choices).filter(row=>
