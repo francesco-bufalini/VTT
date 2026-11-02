@@ -236,7 +236,7 @@ test('intrinsic 5eTools species types and tags stay bound to their race source',
  assert.equal(speciesCreatureType({species:'Autognome',species_source:'AAG'}, {races}),'Costrutto');
  assert.equal(speciesCreatureType({species:'Fairy',species_source:'WBtW'}, {races}),'Folletto');
  assert.equal(speciesCreatureType({species:'Plasmoid',species_source:'AAG'}, {races}),'Melma');
- assert.equal(speciesCreatureType({species:'Satyr',species_source:'MOT'}, {races}),'Umanoide');
+ assert.equal(speciesCreatureType({species:'Satyr',species_source:'MOT'}, {races}),'Folletto');
  assert.equal(speciesCreatureType({species:'Satyr',species_source:'MPMM'}, {races}),'Folletto');
 });
 test('primary class level can be edited but total is recomputed and cannot be edited',()=>{
