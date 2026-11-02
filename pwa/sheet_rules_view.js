@@ -1418,11 +1418,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const eligible=classActions.filter(row=>toggleKeys.has(row.class_feature_id)&&!c.active_class_features?.[row.class_feature_id]);
   const abilityPicker=eligible.length?'<div class="play-effect-add"><label>Capacità disponibile<select id="condition-ability-picker">'+eligible.map(row=>'<option value="'+esc(row.class_feature_id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>'+btn('Attiva capacità','increase','data-act="condition-add-ability"','<span>Attiva</span>')+'</div>':'<p class="play-empty">Nessun’altra capacità persistente disponibile. Le capacità si sbloccano tramite i privilegi della scheda.</p>';
   const abilityEditor=document.createElement('div');abilityEditor.innerHTML='<div class="play-effect-add">'+abilityPicker+'</div>';bind('apply-ability',abilityEditor.firstElementChild);
-  const infusionRows=infused.map(row=>
-   '<div class="play-effect-row">'+activeLink('infusion:'+row.id,'spark',row.name,
+  const infusionRows=infused.map(row=>{
+   const grant=(d.power_selections||[]).find(model=>model.id===row.option.selection_id);
+   const actionBound=['action','bonus','reaction','free','movement'].includes(grant?.layers?.applied?.trigger);
+   return '<div class="play-effect-row">'+activeLink('infusion:'+row.id,'spark',row.name,
     (row.item.name||row.item.id)+' · Beneficio dell’oggetto')+
-   btn('Rimuovi beneficio dall’oggetto','cross','data-act="item-option-remove" data-index="'+row.index+'" data-selection-id="'+esc(row.option.selection_id||'')+'" data-option-id="'+esc(row.option_id||'')+'"','<span class="sr-only">Termina</span>')+
-   '</div>').join('');
+    (actionBound?'<span class="hint">Disattiva dalle Azioni</span>':
+     btn('Rimuovi beneficio dall’oggetto','cross','data-act="item-option-remove" data-index="'+row.index+'" data-selection-id="'+esc(row.option.selection_id||'')+'" data-option-id="'+esc(row.option_id||'')+'"','<span class="sr-only">Termina</span>'))+
+    '</div>';
+  }).join('');
   const concentrationRow=(c.conditions||[]).includes('concentrating')?
    '<div class="play-effect-row">'+activeLink('condition:concentrating','spark','Concentrazione',c.concentrating_spell_id||'Attiva')+
    btn('Interrompi concentrazione','cross','data-act="stop-concentration"','<span class="sr-only">Interrompi</span>')+'</div>':'';
