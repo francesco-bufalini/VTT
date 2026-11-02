@@ -6,6 +6,11 @@ const ToolbarScript = preload("res://vtt/runtime_toolbar.gd")
 
 
 func _initialize() -> void:
+	call_deferred("run")
+
+
+func run() -> void:
+	await process_frame
 	var empty_host: Node = HostScript.new()
 	assert(empty_host.has_method("local_origin"))
 	assert(String(empty_host.call("local_origin")).is_empty(),
