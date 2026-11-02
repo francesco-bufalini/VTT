@@ -879,7 +879,8 @@ try{
  assert.equal(await secondary.inputValue(),'-1','Versatile grip must lock the offhand on Nessuno');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel').count(),1);
  await dismiss();
- await page.locator('#sheet-play-view [data-target="initiative"]').click();
+ await sheet('skills');
+ await page.locator('#sheet-play-view .play-ability-vitals [data-target="initiative"]').click();
  assert.equal((await page.locator('#sheet-roll-dialog .sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
    'Prova di abilità · Destrezza');
  assert.equal(await page.locator('#sheet-roll-dialog .sheet-roll-provenance').count(),0);
