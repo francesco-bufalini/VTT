@@ -1,0 +1,32 @@
+{
+  "schema_version": 2,
+  "benefit_type": "state_activation",
+  "scope": "catalog",
+  "notes": "Schema fixture only. Not an executable game grant. The passive state example:stance is declared in the separate state fixture.",
+  "entries": [
+    {
+      "id": "demo:state-activation:1",
+      "granted_by": {
+        "kind": "homebrew",
+        "namespace": "vtt_demo",
+        "ref": {
+          "category": "feat",
+          "id": "demo:trait:state"
+        }
+      },
+      "benefit": {
+        "type": "state_activation",
+        "state_activation": {
+          "state_id": "example:stance",
+          "mode": "toggle",
+          "activation": "bonus",
+          "deactivation": "free",
+          "resource": {
+            "id": "demo:stance-charge",
+            "cost": 1
+          }
+        }
+      }
+    }
+  ]
+}
