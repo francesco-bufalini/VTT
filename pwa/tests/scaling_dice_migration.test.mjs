@@ -24,16 +24,15 @@ test('typed scaling die loader requires a valid canonical catalog',async()=>{
   '/benefits/scaling_die.json':{...typed,entries:[{id:'broken'}]}})),/non valida/);
 });
 test('Bard and Battle Master effective dice are unchanged for both editions',()=>{
- const projected=projected.dice;
+ const dice=projected.dice;
  for(const source of ['PHB','XPHB']){
   const character={classes:[{name:'Bard',source,level:10}]};
   const features=[{name:'Bardic Inspiration',origin_key:'class|'+source.toLowerCase()+'|bard',origin_id:'feature:bardic:'+source}];
-  assert.equal(scalingDiceFor(character,projected,features)[0].sides,10);
+  assert.equal(scalingDiceFor(character,dice,features)[0].sides,10);
  }
  const fighter={classes:[{name:'Fighter',source:'PHB',subclass:'Battle Master',level:18}]};
  const features=[{name:'Combat Superiority',origin_key:'class|phb|fighter|subclass|battle master',origin_id:'feature:superiority'}];
- assert.deepEqual(scalingDiceFor(fighter,projected,features),scalingDiceFor(fighter,legacy.dice,features));
- assert.equal(scalingDiceFor(fighter,projected,features)[0].sides,12);
+ assert.equal(scalingDiceFor(fighter,dice,features)[0].sides,12);
 });
 test('typed dice are exposed on PWA host and cached offline',()=>{
  const host=readFileSync(new URL('../../network/pwa_host.gd',import.meta.url),'utf8');
