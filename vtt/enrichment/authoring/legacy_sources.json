@@ -39,10 +39,7 @@
         "subrace",
         "feat",
         "background",
-        "artificer_infusions",
-        "advancement_rules",
-        "feat_numeric_bonuses",
-        "feat_mechanics"
+        "advancement_rules"
       ],
       "types": [
         "ability_score",

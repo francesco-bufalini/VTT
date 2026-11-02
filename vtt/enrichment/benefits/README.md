@@ -409,3 +409,28 @@ Resistant Armor continua a usare `effect_choice.damage_type` nell'istanza
 dell'applicazione: l'estensione `resistance` legge il valore con
 `value_from_item_choice`. Due oggetti possono scegliere resistenze diverse;
 nessun flavour globale o nuovo tipo di beneficio è necessario.
+
+## Talenti e infusioni pre-2024: rimozione delle dipendenze da ability_grants
+
+`pwa/catalog/ability_grants.json` non contiene più `feat_mechanics`,
+`feat_numeric_bonuses` né `artificer_infusions`. Le 19 regole supplementari
+dei talenti precedenti al 2024 sono suddivise, per beneficio, fra
+`roll_mode`, `roll_bonus`, `resource`, `action`, `attack`,
+`d20_reroll`, `base_override` (costo della scalata di Athlete) ed
+`effect_extension` (incantesimo associato alla carta di Cartomancer).
+I cinque modificatori numerici dei quattro talenti PHB sono in `bonus.json`.
+L'adattatore `pwa/feat_benefit_catalogs.js` ricostruisce solo in memoria
+il contratto temporaneo dei vecchi tiri/azioni senza recuperare i dati dal
+catalogo legacy; i file `vtt/data/feat_*_2014.json` restano riferimenti di
+regressione per la fedeltà della migrazione.
+
+Le 16 definizioni delle infusioni TCE vengono lette da `option_list.json`.
+Le otto capacità attivabili di sei infusioni sono ora `action` con
+`parameters.applied_item_option_id`: l'azione appare soltanto quando
+l'opzione è effettivamente applicata a quella singola copia dell'oggetto
+e usa il tracker relativo alla stessa copia. I bonus numerici e i filtri
+dell'oggetto provengono dalle definizioni `item_effects` delle opzioni,
+le risorse dal catalogo `resource`, Homunculus dal `creature_grant`
+e Resistant Armor dall'`effect_choice` della singola applicazione.
+L'adattatore `pwa/infusion_benefit_catalogs.js` evita una seconda
+definizione delle infusioni in `ability_grants.json`.

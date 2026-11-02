@@ -1,4 +1,5 @@
 import {speciesPowerTestIndex} from './species_power_test_fixture.mjs';
+import {featBenefitTestIndex} from './feat_benefit_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -9,7 +10,7 @@ import {abilityAreaPreview,abilityAreaPolygon} from '../ability_areas.js';
 import {recoveryPatch} from '../native_sheet.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
-const ability=read('../catalog/ability_grants.json');
+const ability=featBenefitTestIndex();
 const species=speciesPowerTestIndex();
 const native=read('../../vtt/data/feat_mechanics_2014.json');
 const originDetails={races:{'dragonborn|phb':{
@@ -23,7 +24,8 @@ const base=()=>({id:'dragon-1',kind:'character',rules_version:'2014',level:5,
 const catalogs={abilityGrants:ability,speciesPowers:species,originDetails};
 
 test('all new feat mechanics remain identical in bundled and source JSON',()=>{
- assert.deepEqual(ability.feat_mechanics,native.feats);
+ const sorted=entries=>[...entries].sort((a,b)=>(a.source+'|'+a.name).localeCompare(b.source+'|'+b.name));
+ assert.deepEqual(sorted(ability.feat_mechanics),sorted(native.feats));
 });
 
 test('Defensive Duelist is a descriptive reaction, without a Use button',()=>{

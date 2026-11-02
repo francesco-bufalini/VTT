@@ -4112,6 +4112,321 @@
           }
         ]
       }
+    },
+    {
+      "id": "feat:phb:war-caster:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "War Caster",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:war-caster:roll_mode:1",
+        "roll_modes": [
+          {
+            "target": "save:con",
+            "context": "concentration_damage",
+            "mode": "advantage"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:actor:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Actor",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:actor:roll_mode:1",
+        "roll_modes": [
+          {
+            "target": "skill:deception",
+            "mode": "advantage",
+            "condition_label": "Quando tenti di impersonare un’altra persona"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:actor:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Actor",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:actor:roll_mode:2",
+        "roll_modes": [
+          {
+            "target": "skill:performance",
+            "mode": "advantage",
+            "condition_label": "Quando tenti di impersonare un’altra persona"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:dungeon-delver:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dungeon Delver",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:dungeon-delver:roll_mode:1",
+        "roll_modes": [
+          {
+            "target": "skill:perception",
+            "mode": "advantage",
+            "condition_label": "Per individuare porte segrete"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:dungeon-delver:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dungeon Delver",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:dungeon-delver:roll_mode:2",
+        "roll_modes": [
+          {
+            "target": "skill:investigation",
+            "mode": "advantage",
+            "condition_label": "Per individuare porte segrete"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:dungeon-delver:roll_mode:3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dungeon Delver",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:dungeon-delver:roll_mode:3",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Per evitare o resistere agli effetti delle trappole"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:grappler:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Grappler",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:grappler:roll_mode:1",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "advantage",
+            "condition_label": "Contro una creatura che stai afferrando (grappled)"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:mage-slayer:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Mage Slayer",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:mage-slayer:roll_mode:1",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro un incantesimo lanciato da una creatura entro 5 ft da te"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:mounted-combatant:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Mounted Combatant",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:phb:mounted-combatant:roll_mode:1",
+        "roll_modes": [
+          {
+            "target": "attack_roll",
+            "mode": "advantage",
+            "condition_label": "In mischia, dalla cavalcatura, contro creatura non montata più piccola della cavalcatura"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true,
+          "runtime": {
+            "attack_melee": true
+          }
+        }
+      }
+    },
+    {
+      "id": "feat:xge:infernal-constitution:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Infernal Constitution",
+          "source": "XGE",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:xge:infernal-constitution:roll_mode:1",
+        "roll_modes": [
+          {
+            "target": "saving_throw",
+            "mode": "advantage",
+            "condition_label": "Contro la condizione Avvelenato"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:xge:squat-nimbleness:roll_mode:1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Squat Nimbleness",
+          "source": "XGE",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:xge:squat-nimbleness:roll_mode:1",
+        "roll_modes": [
+          {
+            "target": "skill:athletics",
+            "mode": "advantage",
+            "condition_label": "Per liberarti dalla condizione Afferrato (grappled)"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:xge:squat-nimbleness:roll_mode:2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Squat Nimbleness",
+          "source": "XGE",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "roll_mode",
+        "id": "feat:xge:squat-nimbleness:roll_mode:2",
+        "roll_modes": [
+          {
+            "target": "skill:acrobatics",
+            "mode": "advantage",
+            "condition_label": "Per liberarti dalla condizione Afferrato (grappled)"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true
+        }
+      }
     }
   ]
 }

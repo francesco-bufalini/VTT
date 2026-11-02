@@ -838,6 +838,43 @@
           }
         ]
       }
+    },
+    {
+      "id": "feat:bmt:cartomancer:hidden-ace",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Cartomancer",
+          "source": "BMT",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "feat:bmt:cartomancer:hidden-ace",
+        "name": "Hidden Ace",
+        "description": "Al termine di un riposo lungo, scegli un incantesimo della lista della tua classe che richieda un'azione e per cui possiedi slot. Lo conservi in una carta per 8 ore; puoi lanciarlo una volta come azione bonus senza consumare slot.",
+        "effects": [
+          {
+            "operation": "grant_action",
+            "target_kind": "item",
+            "trigger": "on_use",
+            "frequency": "once_per_use"
+          }
+        ],
+        "parameters": {
+          "feat_2014": true,
+          "spell_imprint": {
+            "item_filter": "card",
+            "spell_filter": "class_action_with_slots",
+            "max_uses": 1,
+            "recharge": "long_rest",
+            "duration_hours": 8,
+            "cast_action_type": "bonus"
+          }
+        }
+      }
     }
   ]
 }

@@ -1,4 +1,5 @@
 import {spellGrantRulesFromBenefits} from '../spell_grant_benefits.js';
+import {featBenefitTestIndex} from './feat_benefit_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -10,6 +11,7 @@ import {structuredSpellGrants,originChoiceMatches} from '../spell_selection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {nativeClassFeatureActions,actionEntries} from '../action_economy.js';
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
+const featSort=(a,b)=>(a.source+'|'+a.name).localeCompare(b.source+'|'+b.name);
 
 test('damage prompts a concentration save with half damage DC (min 10), including temp HP',()=>{
  const record={id:'actor',conditions:['concentrating','poisoned'],concentrating_spell_id:'bless',temporary_hp:40};
@@ -25,8 +27,8 @@ test('damage prompts a concentration save with half damage DC (min 10), includin
 
 test('Lucky tracker and War Caster rules are native-typed and source-qualified',()=>{
  const native=read('../../vtt/data/feat_mechanics_2014.json').feats;
- const packaged=read('../catalog/ability_grants.json');
- assert.deepEqual(packaged.feat_mechanics,native);
+ const packaged=featBenefitTestIndex();
+ assert.deepEqual([...packaged.feat_mechanics].sort(featSort),[...native].sort(featSort));
  const warrior={kind:'character',rules_version:'2014',class:'Fighter',class_source:'PHB',level:5,
   classes:[{name:'Fighter',source:'PHB',level:5}],
   feats_catalog:[{name:'War Caster',source:'PHB'},{name:'Lucky',source:'PHB'}],
@@ -86,7 +88,7 @@ test('source-provided class-specific spell feat variants replace their generic p
 });
 
 test('conditional feat advantages require explicit use, retain source and do not affect unrelated rolls',()=>{
- const packaged=read('../catalog/ability_grants.json');
+ const packaged=featBenefitTestIndex();
  const record={kind:'character',rules_version:'2014',level:4,abilities:{cha:16},
   feats_catalog:[{name:'Actor',source:'PHB'},{name:'Dungeon Delver',source:'PHB'}]};
  const calculated=calculateSheet(record,{abilityGrants:packaged});
@@ -114,7 +116,7 @@ test('conditional feat advantages require explicit use, retain source and do not
 });
 
 test('other pre-2024 conditional feat roll modes and Charger damage are source- and attack-qualified',()=>{
- const packaged=read('../catalog/ability_grants.json');
+ const packaged=featBenefitTestIndex();
  const record={rules_version:'2014',feats_catalog:[
   {name:'Grappler',source:'PHB'},{name:'Mage Slayer',source:'PHB'},
   {name:'Mounted Combatant',source:'PHB'},
@@ -143,7 +145,7 @@ test('other pre-2024 conditional feat roll modes and Charger damage are source- 
 });
 
 test('Shield Master scales with equipped shield AC; power attacks require appropriate proficient weapons',()=>{
- const packageRules=read('../catalog/ability_grants.json');
+ const packageRules=featBenefitTestIndex();
  const feats=[{name:'Shield Master',source:'PHB'},{name:'Great Weapon Master',source:'PHB'},
   {name:'Sharpshooter',source:'PHB'}];
  const typed=featMechanicGrants({feats_catalog:feats},packageRules);
@@ -203,7 +205,7 @@ test('Shield Master scales with equipped shield AC; power attacks require approp
 });
 
 test('Agent of Order Stasis Strike has a PB-sized long-rest tracker and typed targeted activation',()=>{
- const packaged=read('../catalog/ability_grants.json');
+ const packaged=featBenefitTestIndex();
  const base={kind:'character',rules_version:'2014',level:5,
   classes:[{name:'Fighter',source:'PHB',level:5}],
   abilities:{str:10,dex:10,con:10,int:16,wis:12,cha:10},
@@ -237,7 +239,7 @@ test('Agent of Order Stasis Strike has a PB-sized long-rest tracker and typed ta
 });
 
 test('unlisted climb/swim speed is half walking, explicit speed is retained and Athlete climbs at walk cost',()=>{
- const packaged=read('../catalog/ability_grants.json');
+ const packaged=featBenefitTestIndex();
  const base={kind:'character',rules_version:'2014',level:1,kind_name:'character',
   speed_base:30,abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}};
  const evaluate=(extra={})=>calculateSheet({...base,...extra},{abilityGrants:packaged});
@@ -277,8 +279,9 @@ test('Artificer Initiate one-free-cast feat choice also accepts higher-level spe
  assert.equal(choice.slot_alternative,true);
  assert.equal(choice.spellcasting_ability,'int');
  assert(result.trackers.some(row=>row.recharge==='long_rest'&&row.max===1));
- const source=read('../catalog/ability_grants.json');
- assert.deepEqual(source.feat_mechanics,read('../../vtt/data/feat_mechanics_2014.json').feats);
+ const source=featBenefitTestIndex();
+ assert.deepEqual([...source.feat_mechanics].sort(featSort),
+  [...read('../../vtt/data/feat_mechanics_2014.json').feats].sort(featSort));
  const battle=readFileSync(new URL('../action_economy.js',import.meta.url),'utf8');
  assert.match(battle,/for\(const ability of arr\(calculated\.feat_actions\)\)/);
  const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');

@@ -502,6 +502,40 @@
           "grants_proficiency": true
         }
       }
+    },
+    {
+      "id": "feat:xge:dragon-hide:claws",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dragon Hide",
+          "source": "XGE",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "attack",
+        "id": "feat:xge:dragon-hide:claws",
+        "name": "Dragon Hide · Artigli",
+        "description": "Artigli retrattili come arma naturale; colpo senz'armi che infligge 1d4 + modificatore di Forza danni taglienti invece del normale danno contundente.",
+        "attack": {
+          "id": "feat:xge:dragon-hide:claws",
+          "damage": "1d4",
+          "damage_type": "taglienti",
+          "ability": "str",
+          "melee": true,
+          "range_feet": 5,
+          "grants_proficiency": true
+        },
+        "parameters": {
+          "feat_2014": true,
+          "required_species": "dragonborn",
+          "runtime": {
+            "attack_kind": "natural"
+          }
+        }
+      }
     }
   ],
   "notes": "Supplemental natural strikes inferred only at build time from unambiguous 5eTools traits. Do not duplicate structured 5eTools weapon or proficiency fields."

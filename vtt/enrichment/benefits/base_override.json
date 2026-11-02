@@ -1620,6 +1620,32 @@
           ]
         }
       }
+    },
+    {
+      "id": "feat:phb:athlete:movement-cost",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Athlete",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "base_override",
+        "id": "feat:phb:athlete:movement-cost",
+        "base_override": {
+          "target": "movement_cost:climb",
+          "operation": "replace",
+          "expression": "1"
+        },
+        "description": "Climbing does not cost extra movement; use walking speed for climbing if faster.",
+        "parameters": {
+          "feat_2014": true,
+          "mode": "climb_at_walking_cost"
+        }
+      }
     }
   ]
 }

@@ -4080,6 +4080,419 @@
         "descriptive_only": true
       },
       "projection": "timing_contextual_action"
+    },
+    {
+      "id": "feat:phb:war-caster:opportunity-spell",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "War Caster",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "feat:phb:war-caster:opportunity-spell",
+        "name": "Attacco opportunità con incantesimo",
+        "activation": "reaction",
+        "description": "Quando una creatura ostile provoca un attacco di opportunità, puoi usare la reazione per lanciare un incantesimo con tempo di lancio di 1 azione che bersagli soltanto quella creatura.",
+        "resource_cost": 0,
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:phb:charger:bonus-melee",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Charger",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "feat:phb:charger:bonus-melee",
+        "name": "Charger · Attacco in mischia",
+        "activation": "bonus",
+        "description": "Un attacco in mischia come azione bonus con un attacco disponibile; nessun requisito preliminare di Scattare.",
+        "parameters": {
+          "feat_2014": true,
+          "runtime": {
+            "attack_selector": "melee"
+          }
+        }
+      }
+    },
+    {
+      "id": "feat:phb:charger:bonus-shove",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Charger",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "feat:phb:charger:bonus-shove",
+        "name": "Charger · Spinta",
+        "activation": "bonus",
+        "description": "Una Spinta come azione bonus; nessun requisito preliminare di Scattare.",
+        "parameters": {
+          "feat_2014": true,
+          "runtime": {
+            "action_id": "shove"
+          }
+        }
+      }
+    },
+    {
+      "id": "feat:sato:agent-of-order:stasis-strike-use",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Agent of Order",
+          "source": "SatO",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "feat:sato:agent-of-order:stasis-strike-use",
+        "name": "Stasis Strike",
+        "activation": "contextual",
+        "description": "Una volta per turno, quando danneggi una creatura visibile entro 60 ft, puoi infliggere 1d8 danni da forza extra. TS Saggezza (CD 8 + competenza + caratteristica scelta per Scion of the Outer Planes); in caso di fallimento, Trattenuto fino all'inizio del tuo prossimo turno. Il bersaglio e l'esito del TS si confermano manualmente.",
+        "resource_cost": 1,
+        "parameters": {
+          "feat_2014": true,
+          "runtime": {
+            "tracker_id": "feat:sato:agent-of-order:stasis-strike",
+            "mode": "targeted_save_damage",
+            "target_mode": "single_token",
+            "target_range_feet": 60,
+            "exclude_self": false,
+            "damage_formula": "1d8",
+            "damage_type": "force",
+            "once_per_turn": true,
+            "save_ability": "wis",
+            "save_ability_origin": "feat|sato|scion of the outer planes",
+            "effect_condition": "restrained",
+            "condition_on_failed_save": true,
+            "effect_duration": "until_start_of_next_turn"
+          }
+        }
+      }
+    },
+    {
+      "id": "feat:bmt:cartomancer:prepare-hidden-ace",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Cartomancer",
+          "source": "BMT",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "feat:bmt:cartomancer:prepare-hidden-ace",
+        "name": "Hidden Ace",
+        "activation": "contextual",
+        "description": "Scegli una carta e un incantesimo della lista della tua classe dopo un riposo lungo, quindi lancialo dalla carta con un'azione bonus entro otto ore.",
+        "resource_cost": 0,
+        "parameters": {
+          "feat_2014": true,
+          "runtime": {
+            "mode": "spell_imprint",
+            "imprint_rule_id": "feat:bmt:cartomancer:hidden-ace"
+          }
+        }
+      }
+    },
+    {
+      "id": "feat:phb:defensive-duelist:reaction",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Defensive Duelist",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "feat:phb:defensive-duelist:reaction",
+        "name": "Defensive Duelist",
+        "activation": "reaction",
+        "description": "Reazione, quando una creatura ti colpisce con un attacco in mischia: se impugni un'arma con Finesse con cui sei competente, aggiungi il bonus di competenza alla CA contro quel solo attacco; potrebbe trasformarlo in un mancato. Richiede Destrezza 13. Nessun tiro o attivazione nell'app.",
+        "descriptive_only": true,
+        "parameters": {
+          "feat_2014": true,
+          "runtime": {
+            "type": "Promemoria"
+          }
+        }
+      }
+    },
+    {
+      "id": "feat:xge:dragon-fear:roar",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dragon Fear",
+          "source": "XGE",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "feat:xge:dragon-fear:roar",
+        "name": "Dragon Fear · Ruggito terrificante",
+        "activation": "action",
+        "description": "In alternativa al soffio, spendi uno degli stessi utilizzi di Breath Weapon: le creature che scegli entro 30 ft e che possono vederti o sentirti effettuano un TS Saggezza (CD 8 + competenza + CAR). Chi fallisce è Spaventato da te per 1 minuto. Un bersaglio che subisce danni può ripetere il TS e terminare l'effetto se riesce. I risultati dei TS si confermano manualmente.",
+        "resource_cost": 1,
+        "parameters": {
+          "feat_2014": true,
+          "required_species": "dragonborn",
+          "runtime": {
+            "mode": "save_area",
+            "area_shape": "circle",
+            "area_radius_feet": 30,
+            "save_ability": "wis",
+            "save_base": "cha",
+            "target_filter": "chosen_creatures",
+            "effect_condition": "frightened",
+            "condition_on_failed_save": true,
+            "duration_rounds": 10,
+            "tracker_binding": "racial_breath_weapon"
+          }
+        }
+      }
+    },
+    {
+      "id": "action:infusion:tce:armor-of-magical-strength:strength-boost",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|armor of magical strength",
+          "name": "Armor of Magical Strength",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "action:infusion:tce:armor-of-magical-strength:strength-boost",
+        "name": "Forza arcana",
+        "activation": "contextual",
+        "resource_cost": 1,
+        "description": "Quando effettui una prova o un tiro salvezza di Forza, spendi 1 carica per aggiungere il modificatore di Intelligenza al tiro.",
+        "parameters": {
+          "applied_item_option_id": "infusion|tce|armor of magical strength"
+        }
+      }
+    },
+    {
+      "id": "action:infusion:tce:armor-of-magical-strength:prevent-prone",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|armor of magical strength",
+          "name": "Armor of Magical Strength",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "action:infusion:tce:armor-of-magical-strength:prevent-prone",
+        "name": "Resistere alla caduta",
+        "activation": "reaction",
+        "resource_cost": 1,
+        "description": "Quando stai per cadere prono, puoi spendere 1 carica e usare la reazione per evitare di cadere prono.",
+        "parameters": {
+          "applied_item_option_id": "infusion|tce|armor of magical strength"
+        }
+      }
+    },
+    {
+      "id": "action:infusion:tce:boots-of-the-winding-path:return-step",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|boots of the winding path",
+          "name": "Boots of the Winding Path",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "action:infusion:tce:boots-of-the-winding-path:return-step",
+        "name": "Passo tortuoso",
+        "activation": "bonus",
+        "resource_cost": 0,
+        "description": "Teletrasportati fino a 15 piedi in uno spazio libero che puoi vedere e che hai occupato durante il turno corrente.",
+        "parameters": {
+          "applied_item_option_id": "infusion|tce|boots of the winding path"
+        }
+      }
+    },
+    {
+      "id": "action:infusion:tce:mind-sharpener:refocus",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|mind sharpener",
+          "name": "Mind Sharpener",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "action:infusion:tce:mind-sharpener:refocus",
+        "name": "Ritrovare la concentrazione",
+        "activation": "reaction",
+        "resource_cost": 1,
+        "description": "Quando fallisci un tiro salvezza di Costituzione per mantenere la concentrazione su un incantesimo, usa la reazione e 1 carica per trasformarlo in successo.",
+        "parameters": {
+          "applied_item_option_id": "infusion|tce|mind sharpener"
+        }
+      }
+    },
+    {
+      "id": "action:infusion:tce:radiant-weapon:radiance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|radiant weapon",
+          "name": "Radiant Weapon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "action:infusion:tce:radiant-weapon:radiance",
+        "name": "Accendere o spegnere la luce",
+        "activation": "bonus",
+        "resource_cost": 0,
+        "description": "Con un'azione bonus puoi accendere o spegnere la luce dell'arma: luce intensa entro 30 piedi e luce fioca per altri 30 piedi.",
+        "parameters": {
+          "applied_item_option_id": "infusion|tce|radiant weapon"
+        }
+      }
+    },
+    {
+      "id": "action:infusion:tce:radiant-weapon:blinding-flash",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|radiant weapon",
+          "name": "Radiant Weapon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "action:infusion:tce:radiant-weapon:blinding-flash",
+        "name": "Lampo accecante",
+        "activation": "reaction",
+        "resource_cost": 1,
+        "description": "Subito dopo essere stato colpito da un attacco, usa la reazione e spendi 1 carica: l'attaccante deve superare un TS di Costituzione contro la CD degli incantesimi, altrimenti è accecato fino alla fine del suo prossimo turno.",
+        "parameters": {
+          "applied_item_option_id": "infusion|tce|radiant weapon"
+        }
+      }
+    },
+    {
+      "id": "action:infusion:tce:repulsion-shield:repel",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|repulsion shield",
+          "name": "Repulsion Shield",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "action:infusion:tce:repulsion-shield:repel",
+        "name": "Repulsione",
+        "activation": "reaction",
+        "resource_cost": 1,
+        "description": "Subito dopo aver subito un attacco in mischia che ti colpisce, usa la reazione e spendi 1 carica per spingere l'attaccante fino a 15 piedi lontano da te. Lo spostamento va applicato manualmente.",
+        "parameters": {
+          "applied_item_option_id": "infusion|tce|repulsion shield",
+          "runtime": {
+            "target_mode": "single_token",
+            "target_range_feet": 5,
+            "exclude_self": true
+          }
+        }
+      }
+    },
+    {
+      "id": "action:infusion:tce:spell-refueling-ring:restore-slot",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|spell-refueling ring",
+          "name": "Spell-Refueling Ring",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "action",
+        "id": "action:infusion:tce:spell-refueling-ring:restore-slot",
+        "name": "Recuperare uno slot",
+        "activation": "action",
+        "resource_cost": 1,
+        "description": "Come azione recuperi uno slot incantesimo speso di 3° livello o inferiore. Il recupero dello slot va registrato manualmente.",
+        "parameters": {
+          "applied_item_option_id": "infusion|tce|spell-refueling ring"
+        }
+      }
     }
   ],
   "notes": "Class and subclass mechanics projected from legacy catalogs. Source identities/labels come from 5eTools; native compatibility fixtures remain until runtime migration completes."

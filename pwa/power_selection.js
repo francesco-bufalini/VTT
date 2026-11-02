@@ -382,6 +382,16 @@ export function projectItemOptionBenefits(record={},catalogs={}){
      payment_mode:'tracker',casting_ability_not_required:true},origin);
    }else appendTypedBenefit(grants,effect,origin);
   }
+  // Item-granted actions are benefits of the individual extended object.
+  for(const action of rows(catalogs.abilityGrants?.infusion_item_actions).filter(row=>
+    row.source_option_id===active.definition.id)){
+   const {source_option_id,...fields}=action;
+   const origin={id:'item-action:'+active.id+':'+action.id,
+    origin_id:active.id,parent_origin:'item:'+active.item.id,
+    origin_name:'Oggetto · '+active.name,automatic:true,disabled:false};
+   appendTypedBenefit(grants,{type:'actions',...fields,
+     ...(action.resource_cost?{tracker_id:active.tracker_id,tracker_cost:action.resource_cost}:{})},origin);
+  }
  }
  return {...record,...grants};
 }

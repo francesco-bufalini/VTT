@@ -10377,6 +10377,121 @@
           "expression": "1"
         }
       }
+    },
+    {
+      "id": "bonus:feat:phb:alert:initiative",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Alert",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:alert:initiative",
+        "bonus": {
+          "target": "initiative",
+          "expression": "5"
+        },
+        "parameters": {
+          "feat_2014_numeric": true
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:mobile:speed",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Mobile",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:mobile:speed",
+        "bonus": {
+          "target": "speed",
+          "expression": "10"
+        },
+        "parameters": {
+          "feat_2014_numeric": true
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:observant:passive-perception",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Observant",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:observant:passive-perception",
+        "bonus": {
+          "target": "passive_perception",
+          "expression": "5"
+        },
+        "parameters": {
+          "feat_2014_numeric": true
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:observant:passive-skill-investigation",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Observant",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:observant:passive-skill-investigation",
+        "bonus": {
+          "target": "passive_skill:investigation",
+          "expression": "5"
+        },
+        "parameters": {
+          "feat_2014_numeric": true
+        }
+      }
+    },
+    {
+      "id": "bonus:feat:phb:tough:hp",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Tough",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:feat:phb:tough:hp",
+        "bonus": {
+          "target": "hp",
+          "expression": "2*level"
+        },
+        "parameters": {
+          "feat_2014_numeric": true
+        }
+      }
     }
   ]
 }
