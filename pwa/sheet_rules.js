@@ -1541,7 +1541,7 @@ function calculateSheetValues(record={},catalogs={}){
     ...racialPowers.trackers,...arr(record.resource_trackers).filter(row=>row.selection_origin_id&&!row.disabled&&sourceEnabled(row)),
     ...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
     ...racialBonusTrackers(racialBonusRows,safe('proficiency')??2),
-    ...itemOptionChargeTrackers(record,index?.artificer_infusions||[],features)];
+    ...itemOptionChargeTrackers(record,catalogs.slotBenefits||{},features)];
   const contextualTrackerIds=new Map();
   for(const extra of contextual.trackers){
     const native=baseTrackers.find(row=>row.origin_id===extra.origin_id&&

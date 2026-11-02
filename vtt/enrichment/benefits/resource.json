@@ -3950,6 +3950,136 @@
         "uses": "proficiency",
         "recharge": "long_rest"
       }
+    },
+    {
+      "id": "resource:infusion:tce:armor-of-magical-strength:charges",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|armor of magical strength",
+          "name": "Armor of Magical Strength",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:infusion:tce:armor-of-magical-strength:charges",
+        "resource": "Charges",
+        "maximum": "6",
+        "recharge": "long_rest",
+        "parameters": {
+          "binding": "applied_item_option",
+          "scope": "item_instance"
+        }
+      }
+    },
+    {
+      "id": "resource:infusion:tce:mind-sharpener:charges",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|mind sharpener",
+          "name": "Mind Sharpener",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:infusion:tce:mind-sharpener:charges",
+        "resource": "Charges",
+        "maximum": "4",
+        "recharge": "long_rest",
+        "parameters": {
+          "binding": "applied_item_option",
+          "scope": "item_instance"
+        }
+      }
+    },
+    {
+      "id": "resource:infusion:tce:radiant-weapon:charges",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|radiant weapon",
+          "name": "Radiant Weapon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:infusion:tce:radiant-weapon:charges",
+        "resource": "Charges",
+        "maximum": "4",
+        "recharge": "long_rest",
+        "parameters": {
+          "binding": "applied_item_option",
+          "scope": "item_instance"
+        }
+      }
+    },
+    {
+      "id": "resource:infusion:tce:repulsion-shield:charges",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|repulsion shield",
+          "name": "Repulsion Shield",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:infusion:tce:repulsion-shield:charges",
+        "resource": "Charges",
+        "maximum": "4",
+        "recharge": "long_rest",
+        "parameters": {
+          "binding": "applied_item_option",
+          "scope": "item_instance"
+        }
+      }
+    },
+    {
+      "id": "resource:infusion:tce:spell-refueling-ring:charges",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|spell-refueling ring",
+          "name": "Spell-Refueling Ring",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "resource:infusion:tce:spell-refueling-ring:charges",
+        "resource": "Charges",
+        "maximum": "1",
+        "recharge": "long_rest",
+        "parameters": {
+          "binding": "applied_item_option",
+          "scope": "item_instance"
+        }
+      }
     }
   ],
   "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."

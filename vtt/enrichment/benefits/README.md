@@ -388,3 +388,24 @@ tipizzati.
 ### Sensi (sense.json)
 
 Concessioni con portata in piedi (`range_feet`), proprietario `granted_by` legato a 5eTools e combinazione per massimo. `mode: "increase_if_existing"` con `fallback_feet` copre Umbral Sight; `choice_required` preserva le scelte di Custom Lineage. I sensi dei mostri e quelli aggiunti manualmente restano fonti indipendenti. L'audit 5eTools è un fixture di test, non un secondo catalogo di regole.
+
+## Infusioni applicate a oggetti: risorse e creature (2014)
+
+Le cariche di Armor of Magical Strength, Mind Sharpener, Radiant Weapon,
+Repulsion Shield e Spell-Refueling Ring sono concessioni `resource` con
+`parameters.binding = "applied_item_option"`. Ogni applicazione su una
+singola istanza dell'oggetto crea un tracker distinto e il riposo lungo
+lo ricarica integralmente; rimuovere l'opzione elimina il tracker.
+Le cariche non appartengono direttamente al privilegio Infuse Item né
+richiedono un catalogo speciale di recupero.
+
+`creature_grant.json` è il nuovo tipo di beneficio per una creatura concessa
+in modo permanente/condizionato da una capacità. Homunculus Servant lo usa
+solo mentre l'infusione è applicata a un oggetto; il suo blocco e i legami
+con le caratteristiche del proprietario restano nel catalogo dei template
+compagni, e la scheda del compagno rimane separata.
+
+Resistant Armor continua a usare `effect_choice.damage_type` nell'istanza
+dell'applicazione: l'estensione `resistance` legge il valore con
+`value_from_item_choice`. Due oggetti possono scegliere resistenze diverse;
+nessun flavour globale o nuovo tipo di beneficio è necessario.

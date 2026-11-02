@@ -4,7 +4,7 @@ import {identityEntries,identityEntriesPatch} from './identity_aliases.js';
 import {availableD20Rerolls,offerD20Reroll,chooseD20Reroll} from './d20_rerolls.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage,validateVariants} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
-import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch,companionStatBlockView} from './companion_rules.js';
+import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources,companionGrantActive,infusionCompanionRule,companionSpellEffectPatch,companionStatBlockView,creatureGrantRulesFromBenefits} from './companion_rules.js';
 import {companionOwnerValues} from './companion_owner_stats.js';
 import { battleActionPanels, abilityAttackRoll, monsterActionOptionsMarkup, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, totalClassLevel, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
@@ -111,9 +111,17 @@ const setItemEquipped=inventoryModule.setItemEquipped||((inventory,index,enabled
 // Game rules are explicit data, not patterns guessed from feature prose.
 let companionRulesPromise=null;
 async function companionRules(){
-  companionRulesPromise??=fetch('/catalog/companion_spells.json')
-    .then(response=>{if(!response.ok)throw Error('Regole famigli non disponibili.');return response.json();})
-    .catch(error=>{companionRulesPromise=null;throw error;});
+  companionRulesPromise??=Promise.all([
+    fetch('/catalog/companion_spells.json')
+      .then(response=>{if(!response.ok)throw Error('Regole famigli non disponibili.');return response.json();}),
+    fetch('/benefits/creature_grant.json')
+      .then(response=>response.ok?response.json():{}).catch(()=>({}))
+  ]).then(([data,catalog])=>{
+    const typed=creatureGrantRulesFromBenefits(catalog,data);
+    const ids=new Set(typed.map(rule=>rule.id));
+    return {...data,creature_grants:typed,
+      features:[...(Array.isArray(data.features)?data.features:[]).filter(rule=>!ids.has(rule.id)),...typed]};
+  }).catch(error=>{companionRulesPromise=null;throw error;});
   return companionRulesPromise;
 }
 // Reusing a stored creature never automatically restores any of its resources.

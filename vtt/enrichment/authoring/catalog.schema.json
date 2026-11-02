@@ -24,6 +24,7 @@
         "choice",
         "companion_grant",
         "condition",
+        "creature_grant",
         "d20_reroll",
         "damage_bonus",
         "damage_modifier",
