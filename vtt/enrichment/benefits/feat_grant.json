@@ -60,6 +60,3064 @@
           }
         ]
       }
+    },
+    {
+      "id": "5etools:structured:background:efa:aberrant%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Aberrant Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:aberrant%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:aberrant%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "aberrant dragonmark|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:acolyte:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Acolyte",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:acolyte:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:acolyte:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "magic initiate; cleric|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:agent%20of%20the%20ninth%20quill:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Agent of the Ninth Quill",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:agent%20of%20the%20ninth%20quill:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:agent%20of%20the%20ninth%20quill:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "arcane infiltrator|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:archaeologist:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Archaeologist",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:archaeologist:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:archaeologist:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "skilled|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:artisan:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Artisan",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:artisan:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:artisan:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "crafter|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:aag:astral%20drifter:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Astral Drifter",
+          "source": "AAG"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:aag:astral%20drifter:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:aag:astral%20drifter:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "magic initiate|phb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:bejeweled%20conclave%20spy:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Bejeweled Conclave Spy",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:bejeweled%20conclave%20spy:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:bejeweled%20conclave%20spy:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "arcane eloquence|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:abh:carouser:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Carouser",
+          "source": "ABH"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:abh:carouser:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:abh:carouser:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "tireless reveler|abh": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:charlatan:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Charlatan",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:charlatan:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:charlatan:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "skilled|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:chondathan%20freebooter:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Chondathan Freebooter",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:chondathan%20freebooter:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:chondathan%20freebooter:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "skilled|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:cosmic%20dawn%20experiment:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Cosmic Dawn Experiment",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:cosmic%20dawn%20experiment:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:cosmic%20dawn%20experiment:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "transmuted anatomy|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:covenant%20of%20the%20grave%20recruit:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Covenant of the Grave Recruit",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:covenant%20of%20the%20grave%20recruit:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:covenant%20of%20the%20grave%20recruit:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "arcane undertaker|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:criminal:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Criminal",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:criminal:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:criminal:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "alert|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:crucible%20storm%20chaser:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Crucible Storm Chaser",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:crucible%20storm%20chaser:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:crucible%20storm%20chaser:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "arcane overload|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:dead%20magic%20dweller:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Dead Magic Dweller",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:dead%20magic%20dweller:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:dead%20magic%20dweller:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "healer|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:dragon%20cultist:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Dragon Cultist",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:dragon%20cultist:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:dragon%20cultist:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "cult of the dragon initiate|frhof": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:emerald%20enclave%20caretaker:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Emerald Enclave Caretaker",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:emerald%20enclave%20caretaker:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:emerald%20enclave%20caretaker:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "emerald enclave fledgling|frhof": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:entertainer:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Entertainer",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:entertainer:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:entertainer:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "musician|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:familiar%20trainer:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Familiar Trainer",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:familiar%20trainer:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:familiar%20trainer:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "familiar friend|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:farmer:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Farmer",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:farmer:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:farmer:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "tough|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:flaming%20fist%20mercenary:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Flaming Fist Mercenary",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:flaming%20fist%20mercenary:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:flaming%20fist%20mercenary:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "tough|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:sato:gate%20warden:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Gate Warden",
+          "source": "SatO"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:sato:gate%20warden:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:sato:gate%20warden:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "scion of the outer planes|sato": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:bgg:giant%20foundling:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Giant Foundling",
+          "source": "BGG"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:bgg:giant%20foundling:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:bgg:giant%20foundling:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "strike of the giants|bgg": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:guard:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Guard",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:guard:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:guard:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "alert|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:guide:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Guide",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:guide:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:guide:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "magic initiate; druid|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:harper:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Harper",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:harper:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:harper:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "harper agent|frhof": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:rhw:haunted%20one:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Haunted One",
+          "source": "RHW"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:rhw:haunted%20one:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:rhw:haunted%20one:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "survivor|rhw": true
+                },
+                {
+                  "anyFromCategory": {
+                    "category": [
+                      "DG"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:hermit:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Hermit",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:hermit:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:hermit:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "healer|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:horizon%20weaver%20initiate:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Horizon Weaver Initiate",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:horizon%20weaver%20initiate:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:horizon%20weaver%20initiate:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "portal jumper|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20agent:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Agent",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20agent:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20agent:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "lucky|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20cannith%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Cannith Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20cannith%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20cannith%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of making|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20deneith%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Deneith Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20deneith%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20deneith%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of sentinel|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20ghallanda%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Ghallanda Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20ghallanda%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20ghallanda%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of hospitality|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20jorasco%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Jorasco Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20jorasco%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20jorasco%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of healing|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20kundarak%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Kundarak Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20kundarak%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20kundarak%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of warding|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20lyrandar%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Lyrandar Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20lyrandar%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20lyrandar%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of storm|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20medani%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Medani Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20medani%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20medani%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of detection|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20orien%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Orien Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20orien%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20orien%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of passage|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20phiarlan%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Phiarlan Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20phiarlan%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20phiarlan%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of shadow|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20sivis%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Sivis Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20sivis%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20sivis%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of scribing|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20tharashk%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Tharashk Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20tharashk%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20tharashk%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of finding|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20thuranni%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Thuranni Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20thuranni%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20thuranni%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of shadow|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:house%20vadalis%20heir:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "House Vadalis Heir",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:house%20vadalis%20heir:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:house%20vadalis%20heir:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "mark of handling|efa": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:ice%20fisher:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Ice Fisher",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:ice%20fisher:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:ice%20fisher:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "alert|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:efa:inquisitive:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Inquisitive",
+          "source": "EFA"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:efa:inquisitive:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:efa:inquisitive:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "alert|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:rhw:investigator:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Investigator",
+          "source": "RHW"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:rhw:investigator:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:rhw:investigator:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "sharp eye|rhw": true
+                },
+                {
+                  "anyFromCategory": {
+                    "category": [
+                      "DG"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:dsotdq:knight%20of%20solamnia:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Knight of Solamnia",
+          "source": "DSotDQ"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:dsotdq:knight%20of%20solamnia:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:dsotdq:knight%20of%20solamnia:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "squire of solamnia|dsotdq": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:knight%20of%20the%20gauntlet:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Knight of the Gauntlet",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:knight%20of%20the%20gauntlet:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:knight%20of%20the%20gauntlet:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "tyro of the gauntlet|frhof": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:lords'%20alliance%20vassal:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Lords' Alliance Vassal",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:lords'%20alliance%20vassal:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:lords'%20alliance%20vassal:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "lords' alliance agent|frhof": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:scc:lorehold%20student:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Lorehold Student",
+          "source": "SCC"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:scc:lorehold%20student:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:scc:lorehold%20student:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "strixhaven initiate|scc": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:lfl:lorwyn%20expert:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Lorwyn Expert",
+          "source": "LFL"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:lfl:lorwyn%20expert:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:lfl:lorwyn%20expert:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "child of the sun|lfl": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:dsotdq:mage%20of%20high%20sorcery:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Mage of High Sorcery",
+          "source": "DSotDQ"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:dsotdq:mage%20of%20high%20sorcery:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:dsotdq:mage%20of%20high%20sorcery:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "initiate of high sorcery|dsotdq": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:merchant:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Merchant",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:merchant:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:merchant:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "lucky|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:rhw:mist%20wanderer:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Mist Wanderer",
+          "source": "RHW"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:rhw:mist%20wanderer:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:rhw:mist%20wanderer:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "anyFromCategory": {
+                    "category": [
+                      "DG"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:moonwell%20pilgrim:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Moonwell Pilgrim",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:moonwell%20pilgrim:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:moonwell%20pilgrim:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "magic initiate; druid|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:mulhorandi%20tomb%20raider:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Mulhorandi Tomb Raider",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:mulhorandi%20tomb%20raider:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:mulhorandi%20tomb%20raider:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "lucky|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:mythalkeeper:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Mythalkeeper",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:mythalkeeper:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:mythalkeeper:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "crafter|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:noble:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Noble",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:noble:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:noble:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "Skilled|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:phantasmic%20circus%20trouper:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Phantasmic Circus Trouper",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:phantasmic%20circus%20trouper:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:phantasmic%20circus%20trouper:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "arcane artist|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:sato:planar%20philosopher:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Planar Philosopher",
+          "source": "SatO"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:sato:planar%20philosopher:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:sato:planar%20philosopher:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "scion of the outer planes|sato": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:scc:prismari%20student:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Prismari Student",
+          "source": "SCC"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:scc:prismari%20student:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:scc:prismari%20student:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "strixhaven initiate|scc": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:purple%20dragon%20squire:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Purple Dragon Squire",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:purple%20dragon%20squire:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:purple%20dragon%20squire:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "purple dragon rook|frhof": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:scc:quandrix%20student:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Quandrix Student",
+          "source": "SCC"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:scc:quandrix%20student:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:scc:quandrix%20student:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "strixhaven initiate|scc": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:rashemi%20wanderer:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Rashemi Wanderer",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:rashemi%20wanderer:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:rashemi%20wanderer:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "tough|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:bmt:rewarded:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Rewarded",
+          "source": "BMT"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:bmt:rewarded:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:bmt:rewarded:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "lucky|phb": true
+                },
+                {
+                  "magic initiate|phb": true
+                },
+                {
+                  "skilled|phb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:bmt:ruined:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Ruined",
+          "source": "BMT"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:bmt:ruined:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:bmt:ruined:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "alert|phb": true
+                },
+                {
+                  "skilled|phb": true
+                },
+                {
+                  "tough|phb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:bgg:rune%20carver:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Rune Carver",
+          "source": "BGG"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:bgg:rune%20carver:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:bgg:rune%20carver:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "rune shaper|bgg": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:sage:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Sage",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:sage:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:sage:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "magic initiate; wizard|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:sailor:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Sailor",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:sailor:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:sailor:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "tavern brawler|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:scribe:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Scribe",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:scribe:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:scribe:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "skilled|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:seer%20apprentice:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Seer Apprentice",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:seer%20apprentice:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:seer%20apprentice:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "arcane omens|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:shadowmasters%20exile:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Shadowmasters Exile",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:shadowmasters%20exile:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:shadowmasters%20exile:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "savage attacker|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:lfl:shadowmoor%20expert:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Shadowmoor Expert",
+          "source": "LFL"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:lfl:shadowmoor%20expert:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:lfl:shadowmoor%20expert:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "shadowmoor hexer|lfl": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:scc:silverquill%20student:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Silverquill Student",
+          "source": "SCC"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:scc:silverquill%20student:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:scc:silverquill%20student:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "strixhaven initiate|scc": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:soldier:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Soldier",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:soldier:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:soldier:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "savage attacker|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:spellfire%20initiate:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Spellfire Initiate",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:spellfire%20initiate:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:spellfire%20initiate:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "spellfire spark|frhof": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:rhw:spirit%20medium:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Spirit Medium",
+          "source": "RHW"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:rhw:spirit%20medium:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:rhw:spirit%20medium:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "anyFromCategory": {
+                    "category": [
+                      "DG"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:abh:vampire%20devotee:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Vampire Devotee",
+          "source": "ABH"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:abh:vampire%20devotee:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:abh:vampire%20devotee:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "vampire's plaything|abh": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:abh:vampire%20survivor:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Vampire Survivor",
+          "source": "ABH"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:abh:vampire%20survivor:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:abh:vampire%20survivor:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "vampire hunter|abh": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:au:ward%20of%20the%20sheltering%20hands:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Ward of the Sheltering Hands",
+          "source": "AU"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:au:ward%20of%20the%20sheltering%20hands:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:au:ward%20of%20the%20sheltering%20hands:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "arcane safeguard|au": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:xphb:wayfarer:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Wayfarer",
+          "source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:xphb:wayfarer:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:xphb:wayfarer:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "lucky|xphb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:aag:wildspacer:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Wildspacer",
+          "source": "AAG"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:aag:wildspacer:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:aag:wildspacer:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "tough|phb": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:scc:witherbloom%20student:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Witherbloom Student",
+          "source": "SCC"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:scc:witherbloom%20student:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:scc:witherbloom%20student:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "strixhaven initiate|scc": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5etools:structured:background:frhof:zhentarim%20mercenary:::feat",
+      "projection": "5etools_structured",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "background",
+          "name": "Zhentarim Mercenary",
+          "source": "FRHoF"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "5etools:structured:background:frhof:zhentarim%20mercenary:::feat",
+        "grants": [
+          {
+            "id": "5etools:structured:background:frhof:zhentarim%20mercenary:::feat:source",
+            "parameters": {
+              "source_field": "feats"
+            }
+          }
+        ],
+        "parameters": {
+          "source_rules": {
+            "section": "background",
+            "fields": {
+              "feats": [
+                {
+                  "zhentarim ruffian|frhof": true
+                }
+              ]
+            }
+          }
+        }
+      }
     }
   ]
 }
