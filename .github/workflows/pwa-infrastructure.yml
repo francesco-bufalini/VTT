@@ -297,14 +297,11 @@ jobs:
           (root / "benefits").mkdir(parents=True, exist_ok=True)
           (root / "catalog" / "benefits").mkdir(parents=True, exist_ok=True)
           # A standalone prototype uses the same typed benefits as the Godot host.
-          for name in ("attack", "base_override", "damage_modifier", "roll_mode", "roll_bonus", "resource", "proficiency_grant",
-                         "option_grant", "option_list", "flavours", "bonus", "feat_grant",
-                         "defense", "scaling_die", "item_grant", "effect_extension"):
-              copy2(Path("vtt/enrichment/benefits") / (name + ".json"),
-                    root / "benefits" / (name + ".json"))
-          for name in ("action", "activation", "resource_recovery", "attack_count", "action_sequence", "resource", "roll_bonus"):
-              copy2(Path("vtt/enrichment/benefits") / (name + ".json"),
-                    root / "catalog" / "benefits" / (name + ".json"))
+          for source in Path("vtt/enrichment/benefits").glob("*.json"):
+              # Copy every current benefit type, not names removed by migrations.
+              # The legacy /catalog/benefits alias is still used for some actions.
+              copy2(source, root / "benefits" / source.name)
+              copy2(source, root / "catalog" / "benefits" / source.name)
           # All creature-action SVG sprite sheets must survive offline packaging.
           copytree(Path("pwa/icons"), root / "icons", dirs_exist_ok=True)
           for asset in Path("pwa").iterdir():
