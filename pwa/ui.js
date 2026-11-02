@@ -8090,9 +8090,7 @@ async function handleAction(target){
     const sequenceActionId=String(target.dataset.sequenceActionId||'');
     const sequenceAction=sequenceActionId?(calculated.attack_actions||[]).find(row=>row.id===sequenceActionId):null;
     if(sequenceActionId&&!sequenceAction)throw Error('Sequenza dell’incantesimo non disponibile.');
-    const sequencePayment=sequenceAction?.cost>0&&
-      String(selection.tracker_id||'')!==String(sequenceAction.tracker_id||'')?
-      attackActionUsePatch(record,calculated,sequenceAction.id):{};
+    if(sequenceAction)selection.sequence_action_id=sequenceAction.id;
     selection.context_confirmed=app.querySelector('#action-cast-context')?.checked===true;
     selection.ritual_completed=app.querySelector('#action-cast-ritual')?.checked===true;
     const detail=await detailedEntry('spells',{...selection,_category:'spells'});
@@ -8123,10 +8121,7 @@ async function handleAction(target){
       throw Error('Risorsa di lancio non valida.');
     if(state.paired&&state.online){
       app.querySelector('#action-cast-dialog')?.close();
-      const cast=sequenceAction?{...selection,action_type:sequenceAction.time,
-        sequence_action_id:sequenceAction.id,...(sequenceAction.cost>0?{
-        payment_mode:'tracker',tracker_id:sequenceAction.tracker_id,
-        tracker_cost:sequenceAction.cost}: {})}:selection;
+      const cast=sequenceAction?{...selection,action_type:sequenceAction.time}:selection;
       await startTargetedCast(record.id,structuredClone(cast),level,payment,'',
         companionSource?{...companionSource,spell_id:selection.id,rule:companion.rule,
           grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
@@ -8138,9 +8133,7 @@ async function handleAction(target){
     // Confirmation only dismisses the popup after IndexedDB has committed the
     // spell payment (including Metamagic). Closing early makes the UI appear
     // finished while a reader can still observe the unspent tracker.
-    const castPatch={...plan.patch,...effect,...sequencePayment};
-    if(sequencePayment.resource_tracker_spent)castPatch.resource_tracker_spent={
-      ...(plan.patch.resource_tracker_spent||{}),...sequencePayment.resource_tracker_spent};
+    const castPatch={...plan.patch,...effect};
     if(Object.keys(castPatch).length)await patch(castPatch);
     if(companionSource)await summonSpellCompanion(record.id,companionSource,{
       ...companionSource,spell_id:selection.id,rule_id:companion.rule.id,
