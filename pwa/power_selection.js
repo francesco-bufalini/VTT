@@ -101,7 +101,7 @@ export function normalizeSelectionRecord(record={},catalog={}){
  // Upgrade old saved state choices in memory. Existing sheets keep their
  // selected capability; subsequent mutations use only power_applications.
  for(const rule of definitions(catalog)){
-  const group=rule.legacy_selection_group;
+  const group=rule.compatibility?.legacy_selection_group;
   if(!group||Object.hasOwn(result.power_applications||{},rule.id))continue;
   const oldId=String(result.trait_state_selection?.[group]||'');
   if(!oldId||!optionsFor(result,rule,catalog).some(option=>option.id===oldId))continue;

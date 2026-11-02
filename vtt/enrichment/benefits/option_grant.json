@@ -10974,8 +10974,10 @@
             "destination": "origin",
             "exclusive": true
           },
-          "legacy_selection_group": "barbarian_beast_form",
-          "benefit_type": "option_grant"
+          "benefit_type": "option_grant",
+          "compatibility": {
+            "legacy_selection_group": "barbarian_beast_form"
+          }
         }
       }
     },
@@ -11023,8 +11025,10 @@
             "destination": "origin",
             "exclusive": true
           },
-          "legacy_selection_group": "barbarian_totem_aspect",
-          "benefit_type": "option_grant"
+          "benefit_type": "option_grant",
+          "compatibility": {
+            "legacy_selection_group": "barbarian_totem_aspect"
+          }
         }
       }
     },
@@ -11072,8 +11076,10 @@
             "destination": "origin",
             "exclusive": true
           },
-          "legacy_selection_group": "barbarian_totem_attunement",
-          "benefit_type": "option_grant"
+          "benefit_type": "option_grant",
+          "compatibility": {
+            "legacy_selection_group": "barbarian_totem_attunement"
+          }
         }
       }
     }
