@@ -1,5 +1,5 @@
 // Synchronise the canonical per-benefit-type catalogue with the reviewed
-// native 5eTools snapshot. The old browser index is metadata-only.
+// native 5eTools snapshot. No retired browser index is regenerated.
 import {readFile,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
@@ -17,11 +17,10 @@ const uniqueValues=values=>[...new Map(values.map(x=>[JSON.stringify(x),x])).val
 
 export async function syncProficiencyCatalog(){
  const native=await read('../../vtt/data/proficiency_grants_5etools.json');
- const meta=await read('../catalog/proficiency_grants.json');
  const typed=await read('../../vtt/enrichment/benefits/proficiency_grant.json');
  if(typed?.benefit_type!=='proficiency_grant'||typed.schema_version!==2)
   throw Error('Il catalogo proficiency_grant v2 manca: non rigenerare il file legacy.');
- const projected=proficiencyIndexFromBenefits(meta,typed);
+ const projected=proficiencyIndexFromBenefits({},typed);
  // Keep the same source update policy previously applied to the browser index.
  projected.background=arr(native.background);
  projected.subrace=arr(native.subrace);
@@ -78,10 +77,6 @@ export async function syncProficiencyCatalog(){
  }
  typed.entries=entries;
  await write('../../vtt/enrichment/benefits/proficiency_grant.json',typed);
- await write('../catalog/proficiency_grants.json',{meta:{...meta.meta,
-  featureSnapshot:native.meta?.featureSnapshot||meta.meta?.featureSnapshot,
-  proficiencyData:'vtt/enrichment/benefits/proficiency_grant.json'},
-  languages:arr(native.languages).length?native.languages:meta.languages});
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))

@@ -108,15 +108,6 @@
       ]
     },
     {
-      "path": "pwa/catalog/proficiency_grants.json",
-      "sections": [
-        "languages"
-      ],
-      "types": [
-        "language"
-      ]
-    },
-    {
       "path": "pwa/catalog/species_powers.json",
       "sections": [
         "races"
@@ -431,7 +422,7 @@
       "runtime": "pwa/trait_flavours.js"
     },
     {
-      "source": "pwa/catalog/proficiency_grants.json",
+      "source": "vtt/data/proficiency_grants_5etools.json",
       "sections": [
         "class",
         "race",

@@ -1869,7 +1869,7 @@ export function loadRuleCatalogs(){
   catalogPromise=Promise.all([
     fetch("/catalog/ability_grants.json").then(r=>{if(!r.ok)throw Error("Indice abilità non caricato");return r.json();}),
     fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();}),
-    fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();}),
+    fetch("/catalog/languages_5etools.json").then(r=>{if(!r.ok)throw Error("Vocabolario linguaggi 5eTools non caricato");return r.json();}),
     // Numeric rules do not block on the entire spell compendium.
     // Already visible spell references are supplied by the PWA on demand.
     Promise.resolve([]),
@@ -1933,10 +1933,10 @@ export function loadRuleCatalogs(){
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
      ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/defense.json']
        .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses])=>({
+  ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
-    proficiencyGrants:proficiencyIndexFromBenefits(proficiencyGrants,proficiencyGrantBenefits),speciesAttacks,speciesDefenses,
+    proficiencyGrants:proficiencyIndexFromBenefits(languageVocabulary,proficiencyGrantBenefits),speciesAttacks,speciesDefenses,
     speciesRollModes:speciesRollModes.load_error?{races:[],load_error:true}:speciesRollModesFromBenefits(speciesRollModes,originDetails),
     senseGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,
     optionGrants:optionGrants?.benefit_type==='option_grant'?optionGrants:{entries:[]},
