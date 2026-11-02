@@ -47,7 +47,8 @@ try{
  const modelDialog=page.locator('#benefit-option-dialog');
  await modelDialog.locator('[data-act="benefit-option-apply"]').waitFor();
  assert.equal((await record()).trait_state_selection?.armor_model,'armor_model:infiltrator','No switch before confirmation');
- assert.match(await modelDialog.locator('.magic-spell-description').innerText(),/front line|Guardian|gauntlet|Defensive Field/i);
+ assert.match(await modelDialog.locator('.infusion-dialog-active').innerText(),/Thunder Gauntlets/);
+ assert.match(await modelDialog.locator('.infusion-dialog-active').innerText(),/Defensive Field/);
  assert.equal(await modelDialog.locator('.infusion-dialog-active p').count(),2);
  assert.equal(await modelDialog.locator('[data-ability-payment]').count(),0,'No activation tracker is offered');
  assert.match(await modelCard.innerText(),/Riposo breve/i);

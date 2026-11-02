@@ -63,7 +63,7 @@ try{
  await open('arcane_armor','arcane_armor');
  assert.equal(await action.locator('[data-benefit-target-search]').count(),0);
  assert.equal(await action.locator('[data-act="benefit-option-apply"]').count(),0);
- await action.locator('[data-act="benefit-option-close"]').click();
+ await action.locator('[data-act="benefit-option-close"]').first().click();
  await sheet('battle');
  const arcaneAction=page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:option-grant-action:arcane_armor"]');
  await arcaneAction.click();await action.waitFor({state:'visible'});

@@ -3391,8 +3391,9 @@ async function openBenefitOptionDialog(selectionId,optionId,{viaAction=false}={}
   ...(target?[{label:'Bersaglio',value:target.label||'Oggetto'}]:[]),
   ...(layer?.change_label?[{label:viaAction?'Costo':'Quando cambiare',
    value:deactivating?powerSelectionTriggerLabel(optionGrantDeactivationTrigger(model)):layer.change_label}]:[])];
- const benefits=[...(option.attacks||[]).map(row=>row.name||row.trait),...(option.granted_features||[]),
-  ...(option.numeric_grants||[]).map(row=>row.trait||row.id)];
+ const benefits=[...new Set([...(option.attacks||[]).map(row=>row.name||row.trait),...(option.granted_features||[]),
+  ...(option.numeric_grants||[]).map(row=>row.trait||row.id),
+  ...(option.effects||[]).filter(row=>row.type==='attack'||row.type==='feature_grant').map(row=>row.name)].filter(Boolean))];
  dialog.innerHTML=actionDialogIntro(option.name,facts,description||'Descrizione non disponibile nel catalogo.',model.title,'benefit-option-close')+
   (benefits.length?'<section class="infusion-dialog-active"><h3>Benefici</h3>'+benefits.map(name=>'<p>'+esc(name)+'</p>').join('')+'</section>':'')+
   (applications.length&&target&&manualControls&&(!viaAction||deactivating)?'<section class="infusion-dialog-active"><h3>Applicazioni attive</h3>'+applications.map(row=>
