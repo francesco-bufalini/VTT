@@ -183,3 +183,39 @@ test('legacy saved book entries remain learnable through the generic manual laye
  assert.equal(knownClassSpellIds(saved,caster,catalog).has(spell.id),true);
  assert.equal(saved.spellbook_spells.length,1,'legacy data remains untouched');
 });
+
+test('all 21 canonical class spellcasting grants reproduce the legacy calculated casting state',()=>{
+ const read=rel=>JSON.parse(readFileSync(new URL(rel,import.meta.url),'utf8'));
+ const typed=read('../../vtt/enrichment/benefits/option_grant.json');
+ const slotBenefits=read('../../vtt/enrichment/benefits/resource.json');
+ const oldRules=catalogs.spellcastingBenefits.grants;
+ const spellGrants=typed.entries.filter(row=>row.benefit?.option_grant?.option_kind==='spell');
+ const ownedSlots=slotBenefits.entries.filter(row=>row.benefit?.kind==='spell_slots');
+ assert.equal(spellGrants.length,oldRules.length);
+ assert.equal(ownedSlots.length,oldRules.length);
+ for(const old of oldRules){
+  const owner=old.owner,character={
+   ...record(owner.class_name,20),
+   rules_version:owner.class_source==='XPHB'?'2024':'2014',
+   class:owner.class_name,class_source:owner.class_source,
+   classes:[{name:owner.class_name,source:owner.class_source,level:20,
+     ...(owner.subclass?{subclass:owner.subclass,
+       subclass_source:owner.subclass_source||owner.class_source}:{})}]
+  };
+  const identity=row=>JSON.stringify(row);
+  const matches=spellGrants.filter(row=>row.granted_by.ref.class_name===owner.class_name&&
+   row.granted_by.ref.class_source===owner.class_source&&
+   row.granted_by.ref.name===owner.trait&&
+   (row.granted_by.ref.subclass||'')===(owner.subclass||''));
+  assert.equal(matches.length,1,identity(owner));
+  const legacy=calculateSheet(character,catalogs);
+  const current=calculateSheet(character,{
+   classFeatures:catalogs.classFeatures,classMechanics:catalogs.classMechanics,
+   optionGrants:typed,slotBenefits
+  });
+  assert.equal(current.casting_classes.length,legacy.casting_classes.length,identity(owner));
+  assert.deepEqual(current.casting_classes,legacy.casting_classes,identity(owner));
+  assert.deepEqual(current.spell_slots,legacy.spell_slots,identity(owner));
+  assert.deepEqual(current.pact_slots,legacy.pact_slots,identity(owner));
+ }
+});
