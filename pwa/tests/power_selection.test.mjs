@@ -168,15 +168,15 @@ test('targeted options are not applied before object choice and extend only the 
  let record={id:'owner',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],inventory:[{id:'free',name:'Plate armor',type:'HA',quantity:3,equipped_slots:['body']}]};
  const model=powerSelectionModels(record,context,data).find(m=>m.id==='arcane_armor');
  assert.equal(model.layers.learned,undefined);assert.equal(model.layers.applied.limit,null,'Arcane Armor can be applied to several worn armor pieces');
- assert.throws(()=>powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',true),/oggetto/);
+ assert.throws(()=>powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',true,{viaAction:true}),/oggetto/);
  assert.equal(record.power_applications,undefined);
- record={...record,...powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',true,{itemIndex:0})};
+ record={...record,...powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',true,{itemIndex:0,viaAction:true})};
  assert.deepEqual(record.inventory.map(i=>i.quantity),[1,2]);
  const application=record.power_applications.arcane_armor[0];assert.equal(application.trait,undefined);
  assert.equal(application.target_item_id,record.inventory[0].instance_id);
  assert.equal(record.inventory[0].option_extensions[0].name,'Armatura Arcana');
  assert(powerSelectionModels(record,context,data).some(m=>m.id==='armor_model'));
- record={...record,...powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',false)};
+ record={...record,...powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',false,{viaAction:true})};
  assert(!powerSelectionModels(record,context,data).some(m=>m.id==='armor_model'));
  assert.deepEqual(record.inventory[0].option_extensions,[]);
 });
