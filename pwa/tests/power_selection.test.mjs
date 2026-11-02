@@ -175,8 +175,8 @@ test('targeted options are not applied before object choice and extend only the 
  const application=record.power_applications.arcane_armor[0];assert.equal(application.trait,undefined);
  assert.equal(application.target_item_id,record.inventory[0].instance_id);
  assert.equal(record.inventory[0].option_extensions[0].name,'Armatura Arcana');
- assert(powerSelectionModels(record,context,data).some(m=>m.id==='armor_model'));
+ assert(powerSelectionModels(record,context,data).some(m=>m.id.startsWith('armor_model:from:')));
  record={...record,...powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',false,{viaAction:true})};
- assert(!powerSelectionModels(record,context,data).some(m=>m.id==='armor_model'));
+ assert(!powerSelectionModels(record,context,data).some(m=>m.id.startsWith('armor_model:from:')));
  assert.deepEqual(record.inventory[0].option_extensions,[]);
 });
