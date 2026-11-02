@@ -160,10 +160,15 @@ export function saveTraitFlavourChoice(record={},choice={},selected=[]){
   patch.origin_ability_choices=rows(record.origin_ability_choices).filter(row=>row.origin_id!==owner);
  }
  // The standard 5eTools feat ability chooser must not apply a second bonus.
- if(choice.flavour_set_id?.startsWith('flavour_set:athlete:')){
+ if(choice.flavour_set_id?.startsWith('flavour_set:feat:')||
+    choice.flavour_set_id?.startsWith('flavour_set:athlete:')){
+  // Once a selected flavour owns the +1, withdraw the former upstream
+  // allocation on exactly this feat. Never clear another feat's choice.
   patch.feats_catalog=patch.feats_catalog.map(feat=>
-   norm(feat.name)==='athlete'&&norm(feat.source)==='phb'?{...feat,ability_choice:''}:feat);
-  patch.origin_ability_choices=rows(record.origin_ability_choices).filter(x=>x.origin_id!=='feat|phb|athlete');
+   'feat|'+norm(feat.source)+'|'+norm(feat.name)===owner?
+    {...feat,ability_choice:''}:feat);
+  patch.origin_ability_choices=rows(record.origin_ability_choices)
+   .filter(row=>row.origin_id!==owner);
  }
  if(choice.flavour_set_id?.startsWith('flavour_set:dragonborn:ftd:')){
   const colour=id.split(':').at(-1),root='race|'+norm(record.species_source)+'|'+norm(record.species);
