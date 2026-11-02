@@ -19,6 +19,16 @@ const server=createServer(async(req,res)=>{
    res.setHeader('Content-Type','text/javascript; charset=utf-8');
    res.end((await readFile(new URL('pwa/sw.js',root),'utf8')).replaceAll('__VTT_COMMIT_SHA__','a'.repeat(40)));return;
   }
+  if(path==='/__test_stale_worker.js'){
+   // A previous PWA worker can cache '/' indefinitely and block version
+   // updates. The native bootstrap path must bypass its fetch handler.
+   res.setHeader('Content-Type','text/javascript; charset=utf-8');
+   res.end([
+    "self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));",
+    "self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));",
+    "self.addEventListener('fetch',e=>{if(new URL(e.request.url).pathname==='/')e.respondWith(new Response('<!doctype html><body>STALE SHELL</body>',{headers:{'Content-Type':'text/html'}}));});"
+   ].join('\n'));return;
+  }
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({version:1,spells:[]}));return;}
   if(path==='/catalog/bestiary.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({monsters:[{name:'Wolf',source:'MM',id:'bestiary:wolf:mm'}]}));return;}
@@ -598,7 +608,20 @@ try{
    const created=await createCreature('character','Archivio nativo');
    await saveCreature(created.data,'default',created.revision);
  });
- await nativePage.reload();
+ // Install a deliberately stale cache-first worker that hijacks '/'
+ // but cannot intercept the new native bootstrap route.
+ await nativePage.evaluate(async()=>{
+   await navigator.serviceWorker.register('/__test_stale_worker.js',{scope:'/'});
+   await navigator.serviceWorker.ready;
+ });
+ await nativePage.waitForFunction(()=>Boolean(navigator.serviceWorker.controller),null,{timeout:15000});
+ await nativePage.goto(origin+'/__native_pwa_entry?native_view=creatures');
+ await nativePage.locator('[data-act="open"]').first().waitFor({timeout:20000});
+ assert.equal(await nativePage.locator('body').getAttribute('data-native-view'),'creatures');
+ assert.equal(await nativePage.evaluate(async()=>Boolean(await navigator.serviceWorker.getRegistration('/'))),false,
+  'Native bootstrap deregisters the stale worker without clearing IndexedDB');
+ assert.equal(await nativePage.locator('[data-act="open"]').count(),1,
+  'The saved creature survives the native stale-worker recovery');
  await nativePage.locator('[data-act="open"]').first().click();
  await nativePage.locator('#sheet-navigation [data-sheet="battle"]').waitFor({state:'visible'});
  assert.equal(await nativePage.locator('#nav').isVisible(),false);
@@ -608,7 +631,7 @@ try{
  await nativePage.locator('#sheet-navigation [data-sheet="battle"]').click();
  await nativePage.waitForFunction(()=>
   document.querySelector('#app')?.dataset.renderedSheet==='battle');
- await nativePage.goto(origin+'/?native_view=compendium');
+ await nativePage.goto(origin+'/__native_pwa_entry?native_view=compendium');
  await nativePage.waitForFunction(()=>
   document.querySelector('#app')?.dataset.page==='catalog');
  assert.equal(await nativePage.locator('body').getAttribute('data-native-view'),'compendium');

@@ -162,6 +162,12 @@ func run() -> void:
 	assert(page.contains("VTT Mobile"))
 	assert(page.contains("/styles.css"))
 	assert(page.contains("id=\"nav\""))
+	var native_entry := await http("GET", "/__native_pwa_entry?native_view=creatures")
+	assert(native_entry.begins_with("HTTP/1.1 200") and
+		native_entry.contains("text/html") and
+		native_entry.contains("navigator.serviceWorker.getRegistration('/')") and
+		native_entry.contains("location.replace"),
+		"Native PWA bootstrap must bypass stale workers without deleting the creature archive")
 	var manifest := await http("GET", "/manifest.webmanifest")
 	assert(manifest.contains("icon-512.png"))
 	var script := await http("GET", "/storage.js")

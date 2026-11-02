@@ -7,7 +7,9 @@ const oldFetch = globalThis.fetch;
 const oldMessageChannel = Object.getOwnPropertyDescriptor(globalThis, "MessageChannel");
 const oldNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
 
-async function withVersionEnvironment({ served = "", cached = "", updateTo = "" }, callback) {
+async function withVersionEnvironment({
+  served = "", cached = "", updateTo = "", updateReject = false, updateStuck = false
+}, callback) {
   const worker = revision => ({
     postMessage(message, ports) {
       assert.equal(message.type, "VTT_SHELL_REVISION");
@@ -16,16 +18,20 @@ async function withVersionEnvironment({ served = "", cached = "", updateTo = "" 
     }
   });
   let updates = 0;
+  let unregisters = 0;
   const service = new EventTarget();
   service.controller = cached ? worker(cached) : null;
   service.getRegistration = async () => ({
     async update() {
       updates++;
+      if (updateReject) throw new Error("worker installation failed");
+      if (updateStuck) return new Promise(() => {});
       if (updateTo) {
         service.controller = worker(updateTo);
         service.dispatchEvent(new Event("controllerchange"));
       }
-    }
+    },
+    async unregister() { unregisters++; return true; }
   });
   Object.defineProperty(globalThis, "navigator", {
     configurable: true, value: { serviceWorker: service }
@@ -40,7 +46,7 @@ async function withVersionEnvironment({ served = "", cached = "", updateTo = "" 
     });
   };
   try {
-    await callback(() => updates);
+    await callback(() => updates, () => unregisters);
   } finally {
     globalThis.fetch = oldFetch;
     if (oldNavigator) Object.defineProperty(globalThis, "navigator", oldNavigator);
@@ -101,5 +107,51 @@ test("joining a game fails closed if the online host version cannot be verified"
       /Impossibile verificare/
     );
     assert.equal(updates(), 0);
+  });
+});
+
+test("a failed update releases the stale worker without erasing the local archive", async () => {
+  await withVersionEnvironment({
+    cached: "a".repeat(64), served: "b".repeat(64), updateReject: true
+  }, async (updates, unregisters) => {
+    assert.equal(await ensureCurrentAppVersion({ waitForUpdate: true }), "recovered");
+    assert.equal(updates(), 1);
+    assert.equal(unregisters(), 1);
+  });
+});
+
+test("a stalled worker update has a bounded wait then recovers", async () => {
+  await withVersionEnvironment({
+    cached: "a".repeat(64), served: "b".repeat(64), updateStuck: true
+  }, async (updates, unregisters) => {
+    assert.equal(await ensureCurrentAppVersion({
+      waitForUpdate: true, updateTimeoutMs: 25
+    }), "recovered");
+    assert.equal(updates(), 1);
+    assert.equal(unregisters(), 1);
+  });
+});
+
+test("a worker that installs but never controls the page can be released", async () => {
+  await withVersionEnvironment({
+    cached: "a".repeat(64), served: "b".repeat(64)
+  }, async (updates, unregisters) => {
+    assert.equal(await ensureCurrentAppVersion({
+      waitForUpdate: true, updateTimeoutMs: 25
+    }), "recovered");
+    assert.equal(updates(), 1);
+    assert.equal(unregisters(), 1);
+  });
+});
+
+test("strict version checks never deregister the worker on update failure", async () => {
+  await withVersionEnvironment({
+    cached: "a".repeat(64), served: "b".repeat(64), updateReject: true
+  }, async (_updates, unregisters) => {
+    await assert.rejects(
+      ensureCurrentAppVersion({ waitForUpdate: true, strict: true }),
+      /worker installation failed/
+    );
+    assert.equal(unregisters(), 0);
   });
 });

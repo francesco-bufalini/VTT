@@ -28,8 +28,17 @@ static func view_url(origin: String, section: String) -> String:
 	return origin.trim_suffix("/") + "/?native_view=" + section
 
 
+# A former PWA version may have an installed worker whose update never
+# finishes. Open a fresh, uncached entry first to release that worker while
+# preserving the origin's IndexedDB and saved creature archive.
+static func bootstrap_url(origin: String, section: String) -> String:
+	if view_url(origin, section).is_empty():
+		return ""
+	return origin.trim_suffix("/") + "/__native_pwa_entry?native_view=" + section
+
+
 func show_pwa(origin: String, section: String = "creatures") -> bool:
-	var url := view_url(origin, section)
+	var url := bootstrap_url(origin, section)
 	if url.is_empty() or not ClassDB.class_exists("WebView"):
 		return false
 	title = "Compendio" if section == "compendium" else "Creature"
