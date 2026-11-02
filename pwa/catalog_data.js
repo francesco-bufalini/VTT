@@ -53,7 +53,9 @@ export function canonicalSpeciesReferences(races=[],subraces=[]){
    ...(subrace.speed===undefined&&native.speed!==undefined?{speed:native.speed}:{}),
    ...(subrace.size===undefined&&native.size!==undefined?{size:native.size}:{}),
    ...(subrace.creatureTypes===undefined&&native.creatureTypes!==undefined?
-    {creatureTypes:native.creatureTypes}:{})}:subrace;
+    {creatureTypes:native.creatureTypes}:{}),
+   ...(subrace.creatureTypeTags===undefined&&native.creatureTypeTags!==undefined?
+    {creatureTypeTags:native.creatureTypeTags}:{})}:subrace;
  });
  return [...races.filter(row=>!row?.raceName&&!flattened.has(key(row.name,row.source))),...canonicalSubraces];
 }
@@ -104,14 +106,6 @@ async function supplementalCatalog(category){
     const name=original.replace(/(^|[\s-])([a-z])/g,(_m,p,c)=>p+c.toUpperCase());
     return {name,source:String(record?.source||parts[1]||"").toUpperCase()};
   });
-}
-let speciesTypePromise;
-async function speciesTypeLookup(){
- if(!speciesTypePromise)speciesTypePromise=fetch('/catalog/species_types.json')
-  .then(response=>{if(!response.ok)throw Error('Indice tipi specie non disponibile');return response.json();})
-  .then(data=>data?.version===1&&Array.isArray(data.races)?data.races:[])
-  .catch(()=>{speciesTypePromise=null;return [];});
- return speciesTypePromise;
 }
 let packagedSpells=null;
 let packagedSpellsPromise=null;
@@ -217,14 +211,7 @@ export async function catalogEntries(category) {
   const source=extra?await supplementalCatalog(category):keys.flatMap(key=>
     Array.isArray(data[key])?data[key].map(row=>({...row,_category:key})):[]
   );
-  const types=category==='races'?await speciesTypeLookup():[];
-  const typedById=new Map(types.map(row=>[String(row.id||''),row]));
-  const typedByName=new Map(types.map(row=>[String(row.name||'').toLowerCase()+'|'+String(row.source||'').toLowerCase(),row]));
-  const rows=source.map(row=>{
-    const matched=category==='races'?(typedById.get(String(row.id||''))||
-      typedByName.get(String(row.name||'').toLowerCase()+'|'+String(row.source||'').toLowerCase())):null;
-    return {...row,...(matched?{creatureTypes:matched.creatureTypes}:{}),_category:row._category||category,_homebrew:false};
-  });
+  const rows=source.map(row=>({...row,_category:row._category||category,_homebrew:false}));
   const homebrew=await listRecords("global","homebrew");
   for(const stored of homebrew){
     const value=stored.data;
