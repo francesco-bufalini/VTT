@@ -172,18 +172,26 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-abilities [data-target^="ability_check:"]').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').count(),0,'Abilità non è espandibile');
  assert(await page.locator('#sheet-play-view .play-skills-content').isVisible());
- assert.equal(await page.locator('#sheet-play-view .play-competence-heading .vtt-action-glyph').count(),1);
+ assert.equal(await page.locator('#sheet-play-view .play-competence-heading').count(),0,'No redundant Abilità heading');
+ assert.equal(await page.locator('#sheet-play-view .play-ability-vitals > .play-button').count(),3,'Three ability metrics follow the characteristics');
+ assert.equal(await page.locator('#sheet-play-view .play-ability-vitals [data-target="initiative"]').count(),1);
  await sheet('battle');
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="checks"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view [data-attack-id="ability_checks"]').count(),0);
  await sheet('battle');
- assert.equal(await page.locator('#sheet-play-view [data-act="battle-competences-open"]').innerText().then(s=>s.includes('Competenze')),true);
- await page.locator('#sheet-play-view [data-act="battle-competences-open"]').click();
+ assert.equal(await page.locator('#sheet-play-view .play-vitals [data-act="sheet-inspiration-toggle"]').count(),1,
+  'Inspiration occupies initiative’s old card in Actions');
+ assert.equal(await page.locator('#sheet-play-view [data-act="battle-competences-open"]').count(),0);
+ await sheet('skills');
+ const competenceButton=page.locator('#sheet-play-view .play-ability-vitals [data-sheet-context="tools"]');
+ assert.equal(await competenceButton.innerText().then(s=>s.includes('Competenze')),true);
+ await competenceButton.click();
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Strumenti/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armature/);
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view[data-sheet="skills"]').count(),1);
  await sheet('battle');await sheet('skills');
  assert(await page.locator('#sheet-play-view .play-skills-content').isVisible(),
   'Abilità resta aperta al rientro nel pannello');
