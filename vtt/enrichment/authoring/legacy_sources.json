@@ -373,6 +373,46 @@
       "benefit_type": "roll_bonus",
       "catalog": "vtt/enrichment/benefits/roll_bonus.json",
       "runtime": "pwa/species_benefit_catalogs.js"
+    },
+    {
+      "source": "pwa/catalog/optional_feature_progressions.json",
+      "sections": [
+        "progressions"
+      ],
+      "partial": true,
+      "benefit_type": "option_grant",
+      "catalog": "vtt/enrichment/benefits/option_grant.json",
+      "runtime": "pwa/power_selection.js"
+    },
+    {
+      "source": "pwa/catalog/optional_feature_progressions.json",
+      "sections": [
+        "options"
+      ],
+      "partial": true,
+      "benefit_type": "option_list",
+      "catalog": "vtt/enrichment/benefits/option_list.json",
+      "runtime": "pwa/power_selection.js"
+    },
+    {
+      "source": "pwa/catalog/power_selections.json",
+      "sections": [
+        "selections"
+      ],
+      "partial": true,
+      "benefit_type": "option_grant",
+      "catalog": "vtt/enrichment/benefits/option_grant.json",
+      "runtime": "pwa/power_selection.js"
+    },
+    {
+      "source": "pwa/catalog/spellcasting_benefits.json",
+      "sections": [
+        "grants"
+      ],
+      "partial": true,
+      "benefit_type": "option_grant",
+      "catalog": "vtt/enrichment/benefits/option_grant.json",
+      "runtime": "pwa/power_selection.js"
     }
   ]
 }

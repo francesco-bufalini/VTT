@@ -1774,7 +1774,26 @@ function calculateSheetValues(record={},catalogs={}){
 }
 let catalogPromise;
 export function loadRuleCatalogs(){
-  if(!catalogPromise)catalogPromise=Promise.all([
+  if(!catalogPromise){
+  // Load typed choices once. On fully migrated clients avoid downloading
+  // the 272 optional features a second time from the legacy JSON.
+  const typedOptionGrants=fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const typedOptionLists=fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const legacyOptionalFeatures=Promise.all([typedOptionGrants,typedOptionLists]).then(([grants,lists])=>{
+    const rules=Array.isArray(grants?.entries)?grants.entries:[];
+    const entries=Array.isArray(lists?.entries)?lists.entries:[];
+    const sources=rules.map(row=>row.benefit?.option_grant?.source)
+      .filter(source=>source?.type==='list_refs'&&Array.isArray(source.feature_types)&&source.feature_types.length);
+    const supported=new Set(entries.flatMap(entry=>Array.isArray(entry.benefit?.option_list?.options)?
+      entry.benefit.option_list.options.flatMap(option=>Array.isArray(option.types)?option.types:[]):[]));
+    if(grants?.benefit_type==='option_grant'&&lists?.benefit_type==='option_list'&&
+      sources.length&&sources.every(source=>source.feature_types.every(type=>supported.has(type))))
+      return {progressions:[],options:[]};
+    return fetch('/catalog/optional_feature_progressions.json').then(r=>r.ok?r.json():{}).then(data=>
+      data?.version===1&&Array.isArray(data.progressions)&&Array.isArray(data.options)?
+        data:{progressions:[],options:[]}).catch(()=>({progressions:[],options:[]}));
+  });
+  catalogPromise=Promise.all([
     fetch("/catalog/ability_grants.json").then(r=>{if(!r.ok)throw Error("Indice abilità non caricato");return r.json();}),
     fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();}),
     fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();}),
@@ -1827,9 +1846,7 @@ export function loadRuleCatalogs(){
     fetch('/catalog/power_selections.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.selections)&&Array.isArray(data.templates)?data:{selections:[],templates:[]})
       .catch(()=>({selections:[],templates:[]})),
-    fetch('/catalog/optional_feature_progressions.json').then(r=>r.ok?r.json():{}).then(data=>
-      data?.version===1&&Array.isArray(data.progressions)&&Array.isArray(data.options)?data:{progressions:[],options:[]})
-      .catch(()=>({progressions:[],options:[]})),
+    legacyOptionalFeatures,
     fetch('/catalog/feature_slot_spells.json').then(r=>r.ok?r.json():{}).then(data=>
       data?.version===1&&Array.isArray(data.spells)&&Array.isArray(data.grants)?data:{spells:[],grants:[]})
       .catch(()=>({spells:[],grants:[]})),
@@ -1841,8 +1858,8 @@ export function loadRuleCatalogs(){
       .catch(()=>({variants:[]})),
     loadClassActionBenefits().catch(()=>[]),
     loadClassResourceBenefits(),
-    fetch('/benefits/option_grant.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
-    fetch('/benefits/option_list.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
+    typedOptionGrants,
+    typedOptionLists,
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
   ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
@@ -1858,6 +1875,7 @@ export function loadRuleCatalogs(){
     featureSpellGrants:[...supplementalClassSpells,...featureSlotSpells.grants],itemGrants:supplementalItemBonuses,originDetails,spellGrantRules,speciesPowers,speciesConditionalBonuses,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells),...featureSlotSpells.spells].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
+  }
   return catalogPromise;
 }
 export function clearLocalRuleCatalogCache(){catalogPromise=null;}

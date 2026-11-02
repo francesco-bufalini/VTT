@@ -190,3 +190,8 @@ e test non ancora migrati. Non aggiungere nuove opzioni ai dati legacy.
 I privilegi di magia delle classi mantengono inoltre la precedente logica
 runtime di selezione degli incantesimi: la concessione tipizzata non è
 ancora una sostituzione del relativo motore.
+
+Al caricamento, `sheet_rules.loadRuleCatalogs()` verifica che tutte le famiglie
+di opzioni richieste dai grant tipizzati siano presenti in `option_list.json`:
+in tal caso **non scarica** il catalogo legacy da 272 opzioni. Se il
+catalogo tipizzato manca o è incompleto, il vecchio JSON rimane il fallback.
