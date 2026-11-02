@@ -49,7 +49,8 @@
         "targeting",
         "temporary_hp",
         "tracker",
-        "trait"
+        "trait",
+        "creature_grant"
       ]
     },
     "id": {
@@ -487,6 +488,89 @@
         "source": {
           "type": "string",
           "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "creature_grant": {
+      "type": "object",
+      "description": "A creature granted by an applied option or feature; the creature sheet remains independent.",
+      "required": [
+        "creature",
+        "application"
+      ],
+      "properties": {
+        "creature": {
+          "type": "object",
+          "required": [
+            "template_id",
+            "ref"
+          ],
+          "properties": {
+            "template_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "ref": {
+              "$ref": "#/$defs/ref"
+            }
+          },
+          "additionalProperties": false
+        },
+        "application": {
+          "type": "object",
+          "required": [
+            "destination"
+          ],
+          "properties": {
+            "destination": {
+              "enum": [
+                "item",
+                "origin"
+              ]
+            },
+            "source_option_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "destination": {
+                    "const": "item"
+                  }
+                },
+                "required": [
+                  "destination"
+                ]
+              },
+              "then": {
+                "required": [
+                  "source_option_id"
+                ]
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "activation": {
+          "type": "string"
+        },
+        "min_class_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit_per_owner": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "owner_actions": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
         }
       },
       "additionalProperties": false
@@ -1589,6 +1673,24 @@
       "then": {
         "required": [
           "state_activation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "creature_grant"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "id",
+          "creature_grant"
         ]
       }
     }
