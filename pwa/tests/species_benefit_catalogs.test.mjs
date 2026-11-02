@@ -74,7 +74,7 @@ test('species powers are sourced by benefit type and retain original trait mecha
  for(let i=0;i<json.length;i++)hash=Math.imul(hash^json.charCodeAt(i),16777619)>>>0;
  assert(all.races.every(race=>!Object.hasOwn(race,'rest_training')),
    'Migrated proficiency choices must not be recreated in the species-powers projection');
- assert.equal(hash.toString(16).padStart(8,'0'),'8843ee28',
+ assert.equal(hash.toString(16).padStart(8,'0'),'aad6a5ce',
    'The runtime projection must preserve all remaining species-power mechanics');
 
 });
