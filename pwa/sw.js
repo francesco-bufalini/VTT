@@ -1,7 +1,7 @@
 // Substituted by the host with the fingerprint of the actual served assets.
 // Each deployed version gets an atomic app-shell cache; IndexedDB is untouched.
 const REVISION = "__VTT_COMMIT_SHA__";
-const CACHE = "vtt-mobile-shell-v201-" + REVISION;
+const CACHE = "vtt-mobile-shell-v202-" + REVISION;
 const CATALOGS = ["/catalog/generic_item_variants.json", "/catalog/companion_spells.json", "/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
 const SHELL = [
   "/miniature-images/ore.webp",
@@ -189,7 +189,7 @@ const CORE_SHELL = SHELL.filter(path =>
   path === "/" || /\.(?:html|js|css|webmanifest)$/.test(path));
 const REQUIRED_CATALOGS = [
   "/catalog/ability_grants.json", "/catalog/class_mechanics.json",
-  "/benefits/option_grant.json", "/catalog/species_powers.json", "/catalog/languages_5etools.json", "/catalog/classes.json",
+  "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/item_grant.json", "/benefits/scaling_die.json", "/benefits/effect_extension.json", "/catalog/species_powers.json", "/catalog/languages_5etools.json", "/catalog/classes.json",
   "/catalog/player.json", "/benefits/sense.json", "/benefits/proficiency_grant.json", "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json",
 
