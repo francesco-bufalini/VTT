@@ -26,6 +26,7 @@ const SHELL = [
   "/index.html",
   "/main.js",
   "/proficiency_grant.js",
+  "/proficiency_catalog.js",
   "/version_gate.js",
   "/ui.js",
   "/5etools_inline.js",
