@@ -107,6 +107,7 @@ const SHELL = [
   "/quick_homebrew.js",
   "/character_homebrew.js",
   "/sheet_rules.js",
+  "/5etools_benefit_projections.js",
   "/trait_flavours.js",
   "/scaling_dice.js",
   "/skill_definitions.js",

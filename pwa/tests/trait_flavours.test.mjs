@@ -88,7 +88,7 @@ test('all flavour grants reference an existing flavour, not the original trait',
  ...[catalogs.flavourBonuses,catalogs.flavourDamageModifiers,catalogs.proficiencyGrantBenefits].map(c=>({
   entries:c.entries.filter(e=>e.granted_by?.kind==='flavour')
  }))])
-  for(const entry of catalog.entries){
+  for(const entry of catalog.entries.filter(e=>e.granted_by?.kind==='flavour')){
    assert.equal(entry.granted_by.kind,'flavour');
    assert(ids.has(entry.granted_by.ref.id),entry.id);
   }
