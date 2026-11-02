@@ -16,8 +16,16 @@ function ownerMatches(ref,feature,record){
   if(ref.class_name&&norm(ref.class_name)!==norm(feature.class_name||key.split('|')[2]))return false;
   return ref.category!=='subclass_feature'||key.includes('|subclass|');
  }
- if(ref.category==='feat')return key.startsWith('feat|')&&norm(ref.source)===
-   norm(feature.source||feature.book||feature.feat_source||key.split('|')[1]||record.feats_catalog?.find(f=>norm(f.name)===norm(ref.name))?.source);
+ if(ref.category==='feat'){
+  if(!key.startsWith('feat|'))return false;
+  // Display traits use feat|name|source, while compact owned feats use
+  // feat|source|name; both are tied to the same owned compendium feat.
+  const parts=key.split('|'),owned=rows(record.feats_catalog).find(f=>
+   norm(f.name)===norm(ref.name)&&norm(f.source)===norm(ref.source)&&!f.disabled);
+  const source=feature.source||feature.book||feature.feat_source||
+   (norm(parts[1])===norm(ref.name)?parts[parts.length-1]:parts[1]);
+  return !!owned&&norm(source)===norm(ref.source);
+ }
  if(ref.category==='species_trait'){
   const race=norm(record.species),expected=norm(ref.race);
   const family=race==='dragonborn'&&norm(record.subrace)===expected.match(/\(([^)]+)\)$/)?.[1]?.toLowerCase()&&norm(record.subrace_source)==='ftd';
@@ -54,13 +62,14 @@ export function traitFlavourModels(record={},features=[],catalog={}){
  const models=[],seen=new Set();
  for(const entry of rows(catalog.entries)){
   const ref=entry.granted_by?.ref;
-  let owners=rows(features).filter(feature=>ownerMatches(ref,feature,record));
-  // A feat's trait may not yet have been materialized by the compact 5eTools
-  // feature index. Its real feat record still provides a stable source identity.
-  if(ref?.category==='feat'&&!owners.length)owners=rows(record.feats_catalog)
+  // A feat can appear as a summary and several section features, with different
+  // feature IDs. Its canonical persisted ownership is always feat|source|name,
+  // so the same selected flavour is reused throughout the sheet.
+  const owners=ref?.category==='feat'?rows(record.feats_catalog)
    .filter(f=>norm(f.name)===norm(ref.name)&&norm(f.source)===norm(ref.source)&&!f.disabled)
    .map(f=>({name:f.name,source:f.source,origin_id:'feat|'+norm(f.source)+'|'+norm(f.name),
-     origin_key:'feat|'+norm(f.source)+'|'+norm(f.name)}));
+     origin_key:'feat|'+norm(f.source)+'|'+norm(f.name)})):
+   rows(features).filter(feature=>ownerMatches(ref,feature,record));
   for(const owner of owners){
    if(!isOwned(record,owner)||!owner.origin_id||seen.has(entry.id+'|'+owner.origin_id))continue;
    seen.add(entry.id+'|'+owner.origin_id);

@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {traitFlavourChoices,flavourBenefitChoices,saveTraitFlavourChoice,
   saveFlavourFeatChoice,projectTraitFlavourBenefits} from '../trait_flavours.js';
 import {savePendingChoice} from '../pending_choices.js';
+import {calculateSheet} from '../sheet_rules.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={flavours:read('flavours'),flavourBonuses:read('bonus'),
@@ -86,4 +87,62 @@ test('all flavour grants reference an existing flavour, not the original trait',
    assert.equal(entry.granted_by.kind,'flavour');
    assert(ids.has(entry.granted_by.ref.id),entry.id);
   }
+});
+
+const abilityIndex=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
+const fullCatalogs={...catalogs,abilityGrants:abilityIndex};
+const sheetRecord=()=>({...base(),abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}});
+
+test('source-qualified 5eTools single-score feats are migrated to distinct flavour grants',()=>{
+ const supported=abilityIndex.feat.filter(feat=>(feat.ability_choices||[]).length===1&&
+   feat.ability_choices[0]?.choose?.from?.length>=2&&
+   Number(feat.ability_choices[0]?.choose?.count??1)===1&&
+   Number(feat.ability_choices[0]?.choose?.amount??1)===1&&
+   !feat.ability_choices[0]?.choose?.entry);
+ assert.equal(supported.length,152,'Source index changed: audit feat flavour migration');
+ const migrated=supported.filter(f=>!(f.name==='Athlete'&&f.source==='PHB'));
+ assert.equal(migrated.length,151);
+ for(const feat of supported){
+  const owner={name:feat.name,source:feat.source};
+  const record={...sheetRecord(),feats_catalog:[owner]};
+  const choice=traitFlavourChoices(record,[],catalogs.flavours);
+  assert.equal(choice.length,1,feat.name+' ('+feat.source+')');
+  const expected=feat.ability_choices[0].choose.from;
+  assert.equal(choice[0].options.length,expected.length,feat.name);
+  for(const stat of expected){
+   const option=choice[0].options.find(id=>id.endsWith(':'+stat));
+   assert(option,feat.name+':'+stat);
+   const selected=save(record,choice[0],[option]);
+   const projected=projectTraitFlavourBenefits(selected,[],catalogs);
+   const matching=projected.formula_bonuses.filter(b=>b.target==='ability:'+stat);
+   assert.equal(matching.length,1,feat.name+':'+stat);
+   assert.equal(matching[0].origin_id,projected.flavour_traits[0].origin_id);
+  }
+ }
+});
+
+test('changing a migrated feat flavour withdraws legacy scores and applies exactly one new +1',()=>{
+ const baseRecord={...sheetRecord(),feats_catalog:[{name:'Chef',source:'TCE',ability_choice:'wis'}]};
+ assert.equal(calculateSheet(baseRecord,fullCatalogs).abilities.wis.score,11);
+ const choice=traitFlavourChoices(baseRecord,[],catalogs.flavours)[0];
+ assert.deepEqual(choice.selected,[choice.options.find(option=>option.endsWith(':wis'))]);
+ const changed=save(baseRecord,choice,[choice.options.find(option=>option.endsWith(':con'))]);
+ assert.equal(changed.feats_catalog[0].ability_choice,'');
+ const projected=projectTraitFlavourBenefits(changed,[],catalogs);
+ const sheet=calculateSheet(projected,fullCatalogs);
+ assert.equal(sheet.abilities.con.score,11);
+ assert.equal(sheet.abilities.wis.score,10);
+ assert.equal(sheet.bonuses.filter(row=>row.target==='ability:con').length,1);
+ const disabled={...changed,origin_enabled:{'feat|tce|chef':false}};
+ const noFeat=calculateSheet(projectTraitFlavourBenefits(disabled,[],catalogs),fullCatalogs);
+ assert.equal(noFeat.abilities.con.score,10);
+});
+
+test('feat flavour ownership remains stable even when feat section traits have distinct feature IDs',()=>{
+ const record={...sheetRecord(),feats_catalog:[{name:'Chef',source:'TCE'}]};
+ const sections=[{name:'Chef',origin_key:'feat|chef|tce',origin_id:'feature:feat|chef|tce|cooking'},
+  {name:'Chef',origin_key:'feat|chef|tce',origin_id:'feature:feat|chef|tce|rest'}];
+ const options=traitFlavourChoices(record,sections,catalogs.flavours);
+ assert.equal(options.length,1);
+ assert.equal(options[0].origin_id,'feat|tce|chef');
 });

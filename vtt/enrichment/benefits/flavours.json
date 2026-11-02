@@ -214,6 +214,4860 @@
           "detail": "Resistenza a cold"
         }
       ]
+    },
+    {
+      "id": "flavour_set:feat:au:abjuration-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Abjuration Adept",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:abjuration-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:abjuration-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:abjuration-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:sato:agent-of-order",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Agent of Order",
+          "source": "SatO"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:sato:agent-of-order:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:sato:agent-of-order:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:sato:agent-of-order:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:sato:agent-of-order:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:sato:agent-of-order:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:sato:agent-of-order:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:athlete",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Athlete",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:athlete:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:athlete:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:sato:baleful-scion",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Baleful Scion",
+          "source": "SatO"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:sato:baleful-scion:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:sato:baleful-scion:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:sato:baleful-scion:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:sato:baleful-scion:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:sato:baleful-scion:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:sato:baleful-scion:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:bloodlust",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Bloodlust",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:bloodlust:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:abh:bloodlust:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:abh:bloodlust:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:boon-of-blazing-dawn",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Blazing Dawn",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:boon-of-blazing-dawn:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-blazing-dawn:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-blazing-dawn:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-blazing-dawn:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-blazing-dawn:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-blazing-dawn:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-bloodshed",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Bloodshed",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-bloodshed:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bloodshed:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bloodshed:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bloodshed:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bloodshed:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bloodshed:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-bountiful-health",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Bountiful Health",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-bountiful-health:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bountiful-health:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bountiful-health:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bountiful-health:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bountiful-health:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-bountiful-health:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-combat-prowess",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Combat Prowess",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-combat-prowess:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-combat-prowess:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-combat-prowess:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-combat-prowess:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-combat-prowess:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-combat-prowess:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-communication",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Communication",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-communication:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-communication:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-communication:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-desperate-resilience",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Desperate Resilience",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-desperate-resilience:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-desperate-resilience:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-dimensional-travel",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Dimensional Travel",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-dimensional-travel:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-dimensional-travel:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-dimensional-travel:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-dimensional-travel:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-dimensional-travel:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-dimensional-travel:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-energy-resistance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Energy Resistance",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-energy-resistance:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-energy-resistance:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-energy-resistance:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-energy-resistance:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-energy-resistance:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-energy-resistance:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:boon-of-erupting-spellpower",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Erupting Spellpower",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:boon-of-erupting-spellpower:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-erupting-spellpower:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-erupting-spellpower:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-exquisite-radiance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Exquisite Radiance",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-exquisite-radiance:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-exquisite-radiance:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-exquisite-radiance:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-exquisite-radiance:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-exquisite-radiance:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-exquisite-radiance:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-fate",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Fate",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-fate:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fate:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fate:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fate:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fate:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fate:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-fluid-forms",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Fluid Forms",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-fluid-forms:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-fluid-forms:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-fluid-forms:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-fortitude",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Fortitude",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-fortitude:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fortitude:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fortitude:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fortitude:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fortitude:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-fortitude:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-fortune's-favor",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Fortune's Favor",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-fortune's-favor:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-fortune's-favor:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-fortune's-favor:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-fortune's-favor:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-fortune's-favor:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-fortune's-favor:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-irresistible-offense",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Irresistible Offense",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-irresistible-offense:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-irresistible-offense:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:boon-of-looming-shadows",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Looming Shadows",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:boon-of-looming-shadows:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-looming-shadows:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-looming-shadows:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-looming-shadows:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-looming-shadows:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-looming-shadows:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:boon-of-magic-school-mastery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Magic School Mastery",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:boon-of-magic-school-mastery:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-magic-school-mastery:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-magic-school-mastery:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:boon-of-misty-escape",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Misty Escape",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:boon-of-misty-escape:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-misty-escape:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:boon-of-misty-escape:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-poison-mastery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Poison Mastery",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-poison-mastery:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-poison-mastery:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-poison-mastery:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-poison-mastery:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-poison-mastery:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-poison-mastery:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-recovery",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Recovery",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-recovery:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-recovery:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-recovery:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-recovery:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-recovery:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-recovery:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-revelry",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Revelry",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-revelry:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-revelry:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-revelry:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:boon-of-siberys",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Siberys",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:boon-of-siberys:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:boon-of-siberys:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:boon-of-siberys:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:boon-of-siberys:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:boon-of-siberys:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:boon-of-siberys:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-skill",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Skill",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-skill:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-skill:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-skill:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-skill:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-skill:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-skill:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-speed",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Speed",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-speed:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-speed:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-speed:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-speed:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-speed:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-speed:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-spell-recall",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Spell Recall",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-spell-recall:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-spell-recall:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-spell-recall:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-the-bright-sun",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of the Bright Sun",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-the-bright-sun:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-bright-sun:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-bright-sun:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-the-furious-storm",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of the Furious Storm",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-the-furious-storm:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-furious-storm:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-furious-storm:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:boon-of-the-iron-mind",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of the Iron Mind",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:boon-of-the-iron-mind:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-the-iron-mind:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-the-iron-mind:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-the-iron-mind:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-the-iron-mind:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:boon-of-the-iron-mind:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-the-night-spirit",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of the Night Spirit",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-the-night-spirit:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-the-night-spirit:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-the-night-spirit:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-the-night-spirit:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-the-night-spirit:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-the-night-spirit:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:boon-of-the-soul-drinker",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of the Soul Drinker",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:boon-of-the-soul-drinker:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-soul-drinker:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-soul-drinker:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-soul-drinker:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-soul-drinker:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:boon-of-the-soul-drinker:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:boon-of-truesight",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Boon of Truesight",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:boon-of-truesight:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-truesight:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-truesight:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-truesight:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-truesight:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:boon-of-truesight:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:charger",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Charger",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:charger:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:charger:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:chef",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Chef",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:chef:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:tce:chef:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:chef",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Chef",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:chef:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:chef:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:cloying-mists",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Cloying Mists",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:cloying-mists:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:cloying-mists:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:cloying-mists:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:sato:cohort-of-chaos",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Cohort of Chaos",
+          "source": "SatO"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:sato:cohort-of-chaos:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:sato:cohort-of-chaos:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:sato:cohort-of-chaos:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:sato:cohort-of-chaos:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:sato:cohort-of-chaos:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:sato:cohort-of-chaos:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:cold-caster",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Cold Caster",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:cold-caster:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:cold-caster:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:cold-caster:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:conjuration-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Conjuration Adept",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:conjuration-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:conjuration-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:conjuration-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:crusher",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Crusher",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:crusher:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:tce:crusher:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:crusher",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Crusher",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:crusher:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:crusher:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:delicious-pain",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Delicious Pain",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:delicious-pain:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:abh:delicious-pain:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:abh:delicious-pain:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:abh:delicious-pain:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:delicious-pain:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:delicious-pain:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:divination-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Divination Adept",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:divination-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:divination-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:divination-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:dragon-fear",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dragon Fear",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:dragon-fear:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xge:dragon-fear:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xge:dragon-fear:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:dragon-hide",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dragon Hide",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:dragon-hide:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xge:dragon-hide:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xge:dragon-hide:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:dragonscarred",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dragonscarred",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:dragonscarred:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:frhof:dragonscarred:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:dual-wielder",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Dual Wielder",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:dual-wielder:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:dual-wielder:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:elemental-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Elemental Adept",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:elemental-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:elemental-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:elemental-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:elemental-familiar",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Elemental Familiar",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:elemental-familiar:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:au:elemental-familiar:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:au:elemental-familiar:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:au:elemental-familiar:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:elemental-familiar:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:elemental-familiar:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:elven-accuracy",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Elven Accuracy",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:elven-accuracy:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xge:elven-accuracy:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xge:elven-accuracy:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xge:elven-accuracy:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:bgg:ember-of-the-fire-giant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Ember of the Fire Giant",
+          "source": "BGG"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:bgg:ember-of-the-fire-giant:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:bgg:ember-of-the-fire-giant:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:bgg:ember-of-the-fire-giant:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:enchantment-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Enchantment Adept",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:enchantment-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:enchantment-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:enchantment-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:enclave-magic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Enclave Magic",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:enclave-magic:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:enclave-magic:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:enclave-magic:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:evocation-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Evocation Adept",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:evocation-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:evocation-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:evocation-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:fade-away",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Fade Away",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:fade-away:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xge:fade-away:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:fairy-trickster",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Fairy Trickster",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:fairy-trickster:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:fairy-trickster:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:fey-teleportation",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Fey Teleportation",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:fey-teleportation:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xge:fey-teleportation:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:fey-touched",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Fey Touched",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:fey-touched:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:tce:fey-touched:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:tce:fey-touched:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:fey-touched",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Fey-Touched",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:fey-touched:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:fey-touched:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:fey-touched:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:flames-of-phlegethos",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Flames of Phlegethos",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:flames-of-phlegethos:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xge:flames-of-phlegethos:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:bgg:fury-of-the-frost-giant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Fury of the Frost Giant",
+          "source": "BGG"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:bgg:fury-of-the-frost-giant:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:bgg:fury-of-the-frost-giant:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:bgg:fury-of-the-frost-giant:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:genie-magic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Genie Magic",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:genie-magic:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:genie-magic:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:genie-magic:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:ftd:gift-of-the-gem-dragon",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Gift of the Gem Dragon",
+          "source": "FTD"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:ftd:gift-of-the-gem-dragon:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:ftd:gift-of-the-gem-dragon:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:ftd:gift-of-the-gem-dragon:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:grappler",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Grappler",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:grappler:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:grappler:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-detection",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Detection",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-detection:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-detection:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-detection:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-detection:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-detection:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-detection:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-finding",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Finding",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-finding:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-finding:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-finding:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-finding:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-finding:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-finding:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-handling",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Handling",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-handling:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-handling:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-handling:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-handling:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-handling:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-handling:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-healing",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Healing",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-healing:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-healing:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-healing:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-healing:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-healing:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-healing:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-hospitality",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Hospitality",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-hospitality:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-hospitality:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-hospitality:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-hospitality:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-hospitality:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-hospitality:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-making",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Making",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-making:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-making:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-making:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-making:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-making:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-making:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-passage",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Passage",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-passage:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-passage:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-passage:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-passage:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-passage:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-passage:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-scribing",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Scribing",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-scribing:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-scribing:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-scribing:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-scribing:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-scribing:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-scribing:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-sentinel",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Sentinel",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-sentinel:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-sentinel:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-sentinel:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-sentinel:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-sentinel:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-sentinel:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-shadow",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Shadow",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-shadow:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-shadow:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-shadow:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-shadow:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-shadow:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-shadow:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-storm",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Storm",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-storm:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-storm:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-storm:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-storm:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-storm:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-storm:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:efa:greater-mark-of-warding",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Greater Mark of Warding",
+          "source": "EFA"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:efa:greater-mark-of-warding:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-warding:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-warding:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-warding:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-warding:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:efa:greater-mark-of-warding:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:bgg:guile-of-the-cloud-giant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Guile of the Cloud Giant",
+          "source": "BGG"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:bgg:guile-of-the-cloud-giant:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:bgg:guile-of-the-cloud-giant:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:bgg:guile-of-the-cloud-giant:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:harper-teamwork",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Harper Teamwork",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:harper-teamwork:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:harper-teamwork:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:heavily-armored",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Heavily Armored",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:heavily-armored:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:heavily-armored:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:heavy-armor-master",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Heavy Armor Master",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:heavy-armor-master:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:heavy-armor-master:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:illusion-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Illusion Adept",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:illusion-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:illusion-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:illusion-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:inspiring-leader",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Inspiring Leader",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:inspiring-leader:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:inspiring-leader:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:bgg:keenness-of-the-stone-giant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Keenness of the Stone Giant",
+          "source": "BGG"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:bgg:keenness-of-the-stone-giant:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:bgg:keenness-of-the-stone-giant:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:bgg:keenness-of-the-stone-giant:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:dsotdq:knight-of-the-crown",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Knight of the Crown",
+          "source": "DSotDQ"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-crown:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-crown:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-crown:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:dsotdq:knight-of-the-rose",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Knight of the Rose",
+          "source": "DSotDQ"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-rose:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-rose:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-rose:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:dsotdq:knight-of-the-sword",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Knight of the Sword",
+          "source": "DSotDQ"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-sword:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-sword:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:dsotdq:knight-of-the-sword:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:light-bringer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Light Bringer",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:light-bringer:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:light-bringer:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:light-bringer:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:phb:lightly-armored",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Lightly Armored",
+          "source": "PHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:phb:lightly-armored:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:phb:lightly-armored:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:lightly-armored",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Lightly Armored",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:lightly-armored:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:lightly-armored:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:lordly-resolve",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Lordly Resolve",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:lordly-resolve:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:lordly-resolve:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:love-bites",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Love Bites",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:love-bites:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:abh:love-bites:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:abh:love-bites:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:abh:love-bites:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:love-bites:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:love-bites:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:mage-slayer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Mage Slayer",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:mage-slayer:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:mage-slayer:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:magic-connoisseur",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Magic Connoisseur",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:magic-connoisseur:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:magic-connoisseur:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:magic-connoisseur:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:martial-weapon-training",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Martial Weapon Training",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:martial-weapon-training:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:martial-weapon-training:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:medium-armor-master",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Medium Armor Master",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:medium-armor-master:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:medium-armor-master:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:phb:moderately-armored",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Moderately Armored",
+          "source": "PHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:phb:moderately-armored:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:phb:moderately-armored:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:moderately-armored",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Moderately Armored",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:moderately-armored:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:moderately-armored:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:mounted-combatant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Mounted Combatant",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:mounted-combatant:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:mounted-combatant:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:mounted-combatant:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:mythal-touched",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Mythal Touched",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:mythal-touched:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:mythal-touched:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:mythal-touched:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:necromancy-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Necromancy Adept",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:necromancy-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:necromancy-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:necromancy-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:phb:observant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Observant",
+          "source": "PHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:phb:observant:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:phb:observant:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:observant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Observant",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:observant:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:observant:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:orcish-fury",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Orcish Fury",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:orcish-fury:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xge:orcish-fury:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:order's-resilience",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Order's Resilience",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:order's-resilience:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:order's-resilience:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:order's-resilience:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:otherworldly-familiar",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Otherworldly Familiar",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:otherworldly-familiar:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:au:otherworldly-familiar:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:au:otherworldly-familiar:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:au:otherworldly-familiar:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:otherworldly-familiar:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:otherworldly-familiar:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:sato:outlands-envoy",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Outlands Envoy",
+          "source": "SatO"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:sato:outlands-envoy:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:sato:outlands-envoy:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:sato:outlands-envoy:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:sato:outlands-envoy:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:sato:outlands-envoy:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:sato:outlands-envoy:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:piercer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Piercer",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:piercer:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:tce:piercer:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:piercer",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Piercer",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:piercer:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:piercer:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:poisoner",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Poisoner",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:poisoner:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:poisoner:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:polearm-master",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Polearm Master",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:polearm-master:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:polearm-master:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:purple-dragon-commandant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Purple Dragon Commandant",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:purple-dragon-commandant:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:purple-dragon-commandant:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:putrefy",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Putrefy",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:putrefy:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:abh:putrefy:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:abh:putrefy:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:abh:putrefy:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:putrefy:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:putrefy:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:rebuke",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Rebuke",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:rebuke:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:abh:rebuke:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:abh:rebuke:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:abh:rebuke:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:rebuke:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:rebuke:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:erlw:revenant-blade",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Revenant Blade",
+          "source": "ERLW"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:erlw:revenant-blade:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:erlw:revenant-blade:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:sato:righteous-heritor",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Righteous Heritor",
+          "source": "SatO"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:sato:righteous-heritor:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:sato:righteous-heritor:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:sato:righteous-heritor:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:sato:righteous-heritor:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:sato:righteous-heritor:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:sato:righteous-heritor:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:ritual-caster",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Ritual Caster",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:ritual-caster:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:ritual-caster:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:ritual-caster:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:second-chance",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Second Chance",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:second-chance:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xge:second-chance:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xge:second-chance:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:sentinel",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Sentinel",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:sentinel:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:sentinel:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:shadow-touched",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Shadow Touched",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:shadow-touched:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:tce:shadow-touched:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:tce:shadow-touched:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:shadow-touched",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Shadow-Touched",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:shadow-touched:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:shadow-touched:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:shadow-touched:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:skill-expert",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Skill Expert",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:skill-expert:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:tce:skill-expert:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:tce:skill-expert:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:tce:skill-expert:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:tce:skill-expert:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:tce:skill-expert:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:skill-expert",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Skill Expert",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:skill-expert:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:skill-expert:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:skill-expert:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:xphb:skill-expert:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:skill-expert:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:skill-expert:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:slasher",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Slasher",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:slasher:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:tce:slasher:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:slasher",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Slasher",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:slasher:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:slasher:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:soothing-familiar",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Soothing Familiar",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:soothing-familiar:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:au:soothing-familiar:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:au:soothing-familiar:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:au:soothing-familiar:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:soothing-familiar:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:soothing-familiar:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:bgg:soul-of-the-storm-giant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Soul of the Storm Giant",
+          "source": "BGG"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:bgg:soul-of-the-storm-giant:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:bgg:soul-of-the-storm-giant:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:bgg:soul-of-the-storm-giant:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:speedy",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Speedy",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:speedy:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:xphb:speedy:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:spell-resistant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Spell Resistant",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:spell-resistant:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:au:spell-resistant:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:spell-sniper",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Spell Sniper",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:spell-sniper:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:spell-sniper:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:spell-sniper:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:spell-subterfuge",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Spell Subterfuge",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:spell-subterfuge:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:spell-subterfuge:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:spell-subterfuge:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:spellfire-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Spellfire Adept",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:spellfire-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:frhof:spellfire-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:frhof:spellfire-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xge:squat-nimbleness",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Squat Nimbleness",
+          "source": "XGE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xge:squat-nimbleness:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xge:squat-nimbleness:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:street-justice",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Street Justice",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:street-justice:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:frhof:street-justice:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:phb:tavern-brawler",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Tavern Brawler",
+          "source": "PHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:phb:tavern-brawler:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:phb:tavern-brawler:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:telekinetic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Telekinetic",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:telekinetic:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:tce:telekinetic:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:tce:telekinetic:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:telekinetic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Telekinetic",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:telekinetic:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:telekinetic:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:telekinetic:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:tce:telepathic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Telepathic",
+          "source": "TCE"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:tce:telepathic:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:tce:telepathic:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:tce:telepathic:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:telepathic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Telepathic",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:telepathic:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:telepathic:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:telepathic:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:transmutation-adept",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Transmutation Adept",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:transmutation-adept:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:transmutation-adept:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:transmutation-adept:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:treacherous-allure",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Treacherous Allure",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:treacherous-allure:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:treacherous-allure:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:treacherous-allure:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:abh:vampire-touched",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Vampire Touched",
+          "source": "ABH"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:abh:vampire-touched:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:abh:vampire-touched:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:abh:vampire-touched:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:bgg:vigor-of-the-hill-giant",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Vigor of the Hill Giant",
+          "source": "BGG"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:bgg:vigor-of-the-hill-giant:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:bgg:vigor-of-the-hill-giant:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:bgg:vigor-of-the-hill-giant:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:war-caster",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "War Caster",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:war-caster:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:xphb:war-caster:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:xphb:war-caster:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:au:warlike-familiar",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Warlike Familiar",
+          "source": "AU"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:au:warlike-familiar:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:au:warlike-familiar:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:au:warlike-familiar:con",
+          "name": "Costituzione +1",
+          "legacy_ability": "con"
+        },
+        {
+          "id": "flavour:feat:au:warlike-familiar:int",
+          "name": "Intelligenza +1",
+          "legacy_ability": "int"
+        },
+        {
+          "id": "flavour:feat:au:warlike-familiar:wis",
+          "name": "Saggezza +1",
+          "legacy_ability": "wis"
+        },
+        {
+          "id": "flavour:feat:au:warlike-familiar:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:phb:weapon-master",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Weapon Master",
+          "source": "PHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:phb:weapon-master:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:phb:weapon-master:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:xphb:weapon-master",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Weapon Master",
+          "source": "XPHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:xphb:weapon-master:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:feat:xphb:weapon-master:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:feat:frhof:zhentarim-tactics",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Zhentarim Tactics",
+          "source": "FRHoF"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:feat:frhof:zhentarim-tactics:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        },
+        {
+          "id": "flavour:feat:frhof:zhentarim-tactics:cha",
+          "name": "Carisma +1",
+          "legacy_ability": "cha"
+        }
+      ]
     }
   ]
 }

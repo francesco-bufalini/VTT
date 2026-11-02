@@ -294,3 +294,21 @@ Le scelte esistenti (`advancement_choices`, `origin_draconic_ancestry` e
 esplicita del nuovo flavour diventa la fonte di verità, senza sommare i bonus
 legacy. La validazione usa `authoring/flavours.schema.json` e i normali
 schemi dei benefici per gli effetti collegati ai flavour.
+
+### Migrazione delle scelte di caratteristica dei talenti
+
+I dati 5eTools di `pwa/catalog/ability_grants.json` rimangono fonte per i
+riferimenti e le descrizioni, ma le 151 scelte semplici di caratteristica in
+più (oltre ad Athlete PHB già migrato) hanno ora un flavour per ogni
+caratteristica ammessa, con un beneficio `bonus` separato per +1. Il motore
+legacy viene usato soltanto per le scelte non ancora salvate nel nuovo formato;
+quando si sceglie un flavour, il vecchio `ability_choice` del talento viene
+azzerato e il calcolo sopprime il suo vecchio incremento per evitare doppioni.
+Ogni feat usa l'identità stabile `feat|source|name`, anche se compare con
+più sezioni nella scheda.
+
+Restano in attesa di migrazione dedicata `Resilient` PHB/XPHB (la scelta
+concede anche competenza in un tiro salvezza, con vincolo ulteriore nel 2024),
+`Potent Dragonmark` EFA (la caratteristica deve essere quella scelta dal
+Dragonmark) e il talento `Ability Score Improvement` XPHB (possiede due
+varianti di distribuzione dei punteggi, distinte dall'ASI di classe).

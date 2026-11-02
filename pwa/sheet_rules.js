@@ -2,7 +2,7 @@ import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
-import {projectTraitFlavourBenefits} from './trait_flavours.js';
+import {projectTraitFlavourBenefits,traitFlavourModels} from './trait_flavours.js';
 import {scalingDiceFor,resolveScalingDieBenefit,loadScalingDieBenefits} from './scaling_dice.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
 import {monsterTraits,bindMonsterTrackers,monsterAttackOwner,monsterActionName} from './monster_traits.js';
@@ -234,7 +234,10 @@ function fixedAbilities(row){
 function selectedAbilityChoices(record,row,sid,index,group,legacy=''){
  return effectiveAllocations(record,sid,originVariants(index,group,row,row.source),legacy);
 }
-function indexRows(record,index,warnings){
+function indexRows(record,index,warnings,activeFlavours=[]){
+  const migratedFeats=new Set(activeFlavours.filter(model=>model.explicit&&model.selected&&
+    model.granted_by?.ref?.category==='feat')
+    .map(model=>'feat|'+String(model.granted_by.ref.source).toLowerCase()+'|'+String(model.granted_by.ref.name).toLowerCase()));
   const rows=[];
   // Some source-specific subraces replace the entire parental ASI (e.g.
   // FTD Dragonborn, Eberron dragonmarks), rather than stacking onto it.
@@ -312,7 +315,7 @@ function indexRows(record,index,warnings){
     for(const row of matches){
       const sid="feat|"+String(row.source).toLowerCase()+"|"+String(row.name).toLowerCase();
       append(sid,row.name,fixedAbilities(row));
-      for(const choice of selectedAbilityChoices(record,row,sid,index,"feat",feat.ability_choice)){
+      for(const choice of (migratedFeats.has(sid)?[]:selectedAbilityChoices(record,row,sid,index,"feat",feat.ability_choice))){
         const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
         if(grant)rows.push(grant);
       }
@@ -970,6 +973,7 @@ function calculateSheetValues(record={},catalogs={}){
   };
   const features=collectStructuredFeatures(record,catalogs);
   record={...record,...migrateAdvancementBonuses(record,features,index||{})};
+  const activeFlavours=traitFlavourModels(record,features,catalogs.flavours||{});
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   features.push(...racialBonusFeatures(record,catalogs.speciesConditionalBonuses||{},features));
@@ -1003,7 +1007,7 @@ function calculateSheetValues(record={},catalogs={}){
        !arr(record.damage_defense_entries).some(typed=>typed.flavour_owner_id&&
          typed.rank===row.rank&&typed.key===row.key))];
 
-  const automatic=[...(index?indexRows(record,index,warnings):[]),
+  const automatic=[...(index?indexRows(record,index,warnings,activeFlavours):[]),
     ...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows),...barbarian.numeric_grants];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
@@ -1281,6 +1285,15 @@ function calculateSheetValues(record={},catalogs={}){
   }
   function sourceEnabled(row){
     const sid=String(row?.origin_id||"");
+    // A flavour has its own origin ID but is owned by a real, enabled trait.
+    if(sid.startsWith('flavour:')){
+      const model=activeFlavours.find(x=>x.explicit&&x.flavour_origin_id===sid&&x.selected);
+      if(!model||!model.owner||model.owner.disabled||model.owner.inactive)return false;
+      const owner=model.owner;
+      return record.origin_enabled?.[sid]!==false&&record.origin_enabled?.[owner.origin_id]!==false&&
+        record.origin_enabled?.[owner.origin_key]!==false&&record.trait_enabled?.[owner.key]!==false&&
+        !arr(record.proficiency_origins).some(x=>x?.id===owner.origin_id&&x.disabled);
+    }
     const parent=String(row?.origin_parent_id||"");
     if(parent&&parent!==sid&&(record.origin_enabled?.[parent]===false||
       arr(record.proficiency_origins).some(origin=>origin?.id===parent&&origin.disabled)))return false;
