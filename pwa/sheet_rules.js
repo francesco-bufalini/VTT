@@ -17,7 +17,7 @@ import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} 
 import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits,speciesAttacksFromBenefits,speciesPowersFromBenefits} from './species_benefit_catalogs.js';
 import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
-import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,attackCategories} from './attack_count_benefits.js';
+import {attackCountBenefits,attacksPerActionFromBenefits,attacksPerActionFromSequences,attackActionGrants,attackCategories} from './attack_count_benefits.js';
 import {collectEffectExtensions,loadEffectExtensionBenefits} from './effect_extensions.js';
 import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
@@ -1741,7 +1741,8 @@ function calculateSheetValues(record={},catalogs={}){
       origin_id:celestialForm.origin_id,source:celestialForm.name,
       damage_type:celestialForm.damage_type,
       amount:safe('proficiency'),once_per_turn:true}:null,
-    attack_count_benefits,attack_actions,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
+    attack_count_benefits,attack_actions,attacks_per_action:Math.max(
+      attacksPerActionFromBenefits(attack_count_benefits),attacksPerActionFromSequences(attack_actions)),
     effect_extensions,armor_effects,armor_strength_waivers:strengthWaivers,
     item_damage_resistances:effect_extensions.filter(row=>row.operation==='resistance'&&row.target_kind==='item')
       .map(row=>({damage_type:row.value,origin_id:row.origin_id,origin_name:row.origin_name,
