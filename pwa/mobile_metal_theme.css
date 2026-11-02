@@ -7057,3 +7057,27 @@ body.catalog-web-mode #app[data-page="catalog"] .catalog-web-frame{
 .inventory-section-settings-dialog .sheet-context-body>label:not(.check)>input{width:100%;min-height:42px}
 .inventory-section-settings-dialog .pending-choice-actions{display:flex;flex-wrap:wrap;gap:8px}
 @media(prefers-reduced-motion:reduce){.play-inventory-section .inventory-section-caret{transition:none}}
+
+
+/* Godot desktop WebView: native toolbar owns Creature/Compendium navigation.
+   Keep the creature's Info/Azioni/Poteri/Inventario dock inside its sheet. */
+body[data-native-view="creatures"] .app-shell,
+body[data-native-view="compendium"] .app-shell{
+ width:100%;max-width:none
+}
+body[data-native-view="creatures"] #nav,
+body[data-native-view="compendium"] #nav,
+body[data-native-view] #dock-session,
+body[data-native-view="compendium"] #mobile-tabs,
+body[data-native-view="creatures"] #mobile-tabs:not(.has-creature){
+ display:none!important
+}
+body[data-native-view] .content{
+ padding-bottom:calc(24px + env(safe-area-inset-bottom))
+}
+body.native-creature-sheet .content{
+ padding-bottom:calc(108px + env(safe-area-inset-bottom))
+}
+body[data-native-view="compendium"] .catalog-web-toolbar{
+ justify-content:flex-end
+}

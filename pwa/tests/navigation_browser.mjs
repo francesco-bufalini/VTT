@@ -577,7 +577,56 @@ try{
  await page.locator('#creature-back').click();
  await page.locator('[data-act="library-filter"][data-kind="monster"]').click();
  assert(await page.locator('.creature-card').filter({hasText:'Lupo guardiano'}).isVisible());
+ // The native desktop's two toolbar entries use scoped PWA routes; the
+ // standalone PWA above must retain its full Creature/Catalogo/Partita dock.
+ const nativeContext=await browser.newContext({viewport:{width:920,height:760}});
+ const nativePage=await nativeContext.newPage(),nativeErrors=[];
+ nativePage.on('pageerror',error=>nativeErrors.push(error.message));
+ await nativePage.goto(origin+'/?native_view=creatures');
+ await nativePage.locator('[data-act="library-add"]').waitFor();
+ assert.equal(await nativePage.locator('body').getAttribute('data-native-view'),'creatures');
+ assert.equal(await nativePage.locator('#app').getAttribute('data-page'),'library');
+ assert.equal(await nativePage.locator('#mobile-tabs').isVisible(),false,
+  'The native Creature archive hides its global bottom navigation');
+ assert.equal(await nativePage.locator('.connection-link').isVisible(),false,
+  'Native desktop does not offer the PWA Partita entry point');
+ await nativePage.evaluate(()=>document.querySelector('#nav [data-nav="session"]').click());
+ assert.equal(await nativePage.locator('#app').getAttribute('data-page'),'library',
+  'Even a hidden session button cannot navigate native desktop into Partita');
+ await nativePage.evaluate(async()=>{
+   const {createCreature,saveCreature}=await import('/creatures.js');
+   const created=await createCreature('character','Archivio nativo');
+   await saveCreature(created.data,'default',created.revision);
+ });
+ await nativePage.reload();
+ await nativePage.locator('[data-act="open"]').first().click();
+ await nativePage.locator('#sheet-navigation [data-sheet="battle"]').waitFor({state:'visible'});
+ assert.equal(await nativePage.locator('#nav').isVisible(),false);
+ assert.equal(await nativePage.locator('#dock-session').isVisible(),false);
+ assert.equal(await nativePage.locator('#sheet-navigation [data-sheet]').count(),5,
+  'Creature-specific Info/Skills/Actions/Powers/Inventory tabs remain usable');
+ await nativePage.locator('#sheet-navigation [data-sheet="battle"]').click();
+ await nativePage.waitForFunction(()=>
+  document.querySelector('#app')?.dataset.renderedSheet==='battle');
+ await nativePage.goto(origin+'/?native_view=compendium');
+ await nativePage.waitForFunction(()=>
+  document.querySelector('#app')?.dataset.page==='catalog');
+ assert.equal(await nativePage.locator('body').getAttribute('data-native-view'),'compendium');
+ assert.equal(await nativePage.locator('#mobile-tabs').isVisible(),false);
+ assert.equal(await nativePage.locator('[data-act="catalog-back"]').count(),0,
+  'A native Compendium view does not offer return-to-Creatures controls');
+ assert(await nativePage.locator('.catalog-web-frame').isVisible(),
+  'The native Compendium opens the existing embedded 5etools reference');
+ await nativePage.locator('[data-act="catalog-source-local"]').click();
+ await nativePage.locator('#catalog-search').waitFor({state:'visible'});
+ assert.equal(await nativePage.locator('#mobile-tabs').isVisible(),false,
+  'Offline Compendium also hides the global dock');
+ await nativePage.evaluate(()=>document.querySelector('#nav [data-nav="session"]').click());
+ assert.equal(await nativePage.locator('#app').getAttribute('data-page'),'catalog');
+ assert.deepEqual(nativeErrors,[]);
+ await nativeContext.close();
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
+ console.log('PASS: Native desktop entry points isolate Creature/Compendium, hide global Partita, preserve sheet tabs and offline catalog.');
  console.log('PASS: six direct creature destinations at 320/360/390/430px and landscape, header back restores archive bars, quick condition/origin links, pending saves, catalog, session, offline and disclosure regressions.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
 }finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

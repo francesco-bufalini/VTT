@@ -284,7 +284,7 @@ jobs:
           GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
           timeout 45s "$GODOT" --headless --path . --script res://tests/test_pwa_embedded_window.gd 2>&1 | tee /tmp/pwa-embed-godot.log
           ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-embed-godot.log
-          grep -q 'Embedded PWA Creature toolbar contract OK' /tmp/pwa-embed-godot.log
+          grep -q 'PASS: native PWA Creature and Compendium routes, toolbar and WebView bounds' /tmp/pwa-embed-godot.log
       - name: Assemble standalone offline prototype
         shell: bash
         run: |
