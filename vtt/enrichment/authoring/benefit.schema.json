@@ -480,6 +480,12 @@
     },
     "state_activation": {
       "$ref": "#/$defs/stateActivation"
+    },
+    "proficiencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/proficiency"
+      }
     }
   },
   "allOf": [
