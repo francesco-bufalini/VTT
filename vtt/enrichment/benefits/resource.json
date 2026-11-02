@@ -4080,6 +4080,50 @@
           "scope": "item_instance"
         }
       }
+    },
+    {
+      "id": "feat:phb:lucky:luck-points",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Lucky",
+          "source": "PHB",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "feat:phb:lucky:luck-points",
+        "resource": "Punti fortuna",
+        "maximum": "3",
+        "recharge": "long_rest",
+        "parameters": {
+          "feat_2014": true
+        }
+      }
+    },
+    {
+      "id": "feat:sato:agent-of-order:stasis-strike",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Agent of Order",
+          "source": "SatO",
+          "edition": "2014"
+        }
+      },
+      "benefit": {
+        "type": "resource",
+        "id": "feat:sato:agent-of-order:stasis-strike",
+        "resource": "Stasis Strike",
+        "maximum": "proficiency",
+        "recharge": "long_rest",
+        "parameters": {
+          "feat_2014": true
+        }
+      }
     }
   ],
   "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."

@@ -26,9 +26,7 @@
               "benefit": {
                 "type": "object",
                 "required": [
-                  "type",
-                  "id",
-                  "creature_grant"
+                  "type"
                 ],
                 "properties": {
                   "type": {

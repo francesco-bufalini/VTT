@@ -205,7 +205,9 @@ export function effectExtensionsFromBenefits(catalog={}){
  if(catalog.schema_version!==2||catalog.benefit_type!=='effect_extension'||catalog.scope!=='catalog'||!Array.isArray(catalog.entries))
   throw Error('Catalogo tipizzato effect_extension non valido');
  const ids=new Set();
- return catalog.entries.map(entry=>{
+ // Feat effect extensions such as Cartomancer are consumed by the feat
+ // adapter. They are not permanent item extensions until actually applied.
+ return catalog.entries.filter(entry=>entry?.granted_by?.ref?.category!=='feat').map(entry=>{
   const ref=entry?.granted_by?.ref||{},b=entry?.benefit||{},eff=b.effects?.[0];
   if(!entry?.id||ids.has(entry.id)||entry.granted_by?.kind!=='5etools'||!ref.name||!ref.source||
    !['optional_feature','class_feature','subclass_feature'].includes(ref.category)||

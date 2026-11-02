@@ -2,6 +2,7 @@ import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {calculateSheet} from "../sheet_rules.js";
+import {featBenefitTestIndex} from "./feat_benefit_test_fixture.mjs";
 import {collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies} from "../structured_effects.js";
 import {actionEntries} from "../action_economy.js";
 
@@ -154,7 +155,7 @@ test("native fallback feature keys honor nested feat requirement level and activ
 test("PHB 2014 supplemental feat grants are generated from native data",async()=>{
  const {readFileSync}=await import("node:fs");
  const native=JSON.parse(readFileSync(new URL("../../vtt/data/feat_numeric_bonuses_2014.json",import.meta.url)));
- const packaged=JSON.parse(readFileSync(new URL("../catalog/ability_grants.json",import.meta.url)));
+ const packaged=featBenefitTestIndex();
  assert.deepEqual(packaged.feat_numeric_bonuses,native.feats);
  const base={...fighter(8),abilities:{str:10,dex:14,con:10,int:12,wis:14,cha:10}};
  const catalogs={...catalog,abilityGrants:packaged};
