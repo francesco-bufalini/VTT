@@ -575,8 +575,14 @@ export function speciesCreatureType(creature,catalogs={}){
  const names={aberration:'Aberrazione',beast:'Bestia',celestial:'Celestiale',construct:'Costrutto',
   dragon:'Drago',elemental:'Elementale',fey:'Folletto',fiend:'Immondo',giant:'Gigante',
   humanoid:'Umanoide',monstrosity:'Mostruosità',ooze:'Melma',plant:'Vegetale',undead:'Non morto'};
- return values.map(v=>typeof v==='string'?v:v?.type||'').filter(Boolean)
+ const typeLabel=values.map(v=>typeof v==='string'?v:v?.type||'').filter(Boolean)
   .map(v=>names[v.toLowerCase()]||v).join(', ')||'—';
+ const lineageNames={elf:'Elfo',dwarf:'Nano',gnome:'Gnomo',goblinoid:'Goblinoide'};
+ const rawTags=selected?.creatureTypeTags??parent?.creatureTypeTags;
+ const tags=(Array.isArray(rawTags)?rawTags:[])
+  .map(tag=>typeof tag==='string'?tag:tag?.tag||tag?.type||'').filter(Boolean)
+  .map(tag=>lineageNames[tag.toLowerCase()]||tag);
+ return [typeLabel,...tags].join(' · ');
 }
 // Species and subraces are separate picker entries. Native flattened
 // references are not selectable as species.
