@@ -7996,6 +7996,9 @@ async function handleAction(target){
       {kind:'spell',id,name:spell.name||detailed.name},
       {cha_mod:calculated.abilities?.cha?.modifier});
     const spellExtensions=extendedSpell.effect_extensions||[];
+    const sequenceActionId=String(target.dataset.sequenceActionId||'');
+    const sequenceAction=sequenceActionId?(calculated.attack_actions||[]).find(row=>row.id===sequenceActionId):null;
+    if(sequenceActionId&&!sequenceAction)throw Error('Sequenza dell’incantesimo non disponibile.');
     const traitExtensions=spellExtensionTraits(record,calculated,
       {...spell,name:spell.name||detailed.name,source:detailed.source||spell.source},calculated.spell_extensions);
     const traitExtensionMarkup=traitExtensions.map(row=>
@@ -8011,7 +8014,11 @@ async function handleAction(target){
     if(entry&&level!==null){
       const assigned=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
       const mode=assigned?.payment_mode||(assigned?.tracker_id?'tracker':level===0?'free':(['known','prepared'].includes(assigned?.mode)||!assigned)?'slot':'free');
-      if(mode==='free'||level===0&&mode!=='tracker'){
+      if(sequenceAction?.cost>0){
+        const pool=(calculated.trackers||[]).find(row=>row.id===sequenceAction.tracker_id&&!row.disabled);
+        if(pool&&Number(pool.max)-Number(pool.spent)>=Number(sequenceAction.cost))
+          options.push(['auto:0','Usa '+(pool.name||'tracker')+' · '+sequenceAction.cost]);
+      }else if(mode==='free'||level===0&&mode!=='tracker'){
         options.push(['auto:0',assigned?.ritual_only?'Rituale · senza slot':'Senza slot']);
       }else{
         if(mode==='tracker'){
@@ -8080,6 +8087,12 @@ async function handleAction(target){
       .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
          String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!selection)throw Error('Incantesimo non più disponibile.');
+    const sequenceActionId=String(target.dataset.sequenceActionId||'');
+    const sequenceAction=sequenceActionId?(calculated.attack_actions||[]).find(row=>row.id===sequenceActionId):null;
+    if(sequenceActionId&&!sequenceAction)throw Error('Sequenza dell’incantesimo non disponibile.');
+    const sequencePayment=sequenceAction?.cost>0&&
+      String(selection.tracker_id||'')!==String(sequenceAction.tracker_id||'')?
+      attackActionUsePatch(record,calculated,sequenceAction.id):{};
     selection.context_confirmed=app.querySelector('#action-cast-context')?.checked===true;
     selection.ritual_completed=app.querySelector('#action-cast-ritual')?.checked===true;
     const detail=await detailedEntry('spells',{...selection,_category:'spells'});
@@ -8110,7 +8123,11 @@ async function handleAction(target){
       throw Error('Risorsa di lancio non valida.');
     if(state.paired&&state.online){
       app.querySelector('#action-cast-dialog')?.close();
-      await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
+      const cast=sequenceAction?{...selection,action_type:sequenceAction.time,
+        sequence_action_id:sequenceAction.id,...(sequenceAction.cost>0?{
+        payment_mode:'tracker',tracker_id:sequenceAction.tracker_id,
+        tracker_cost:sequenceAction.cost}: {})}:selection;
+      await startTargetedCast(record.id,structuredClone(cast),level,payment,'',
         companionSource?{...companionSource,spell_id:selection.id,rule:companion.rule,
           grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
           rule_id:companion.rule.id,origin_name:companion.rule.names?.[0]||selection.name,
@@ -8121,7 +8138,10 @@ async function handleAction(target){
     // Confirmation only dismisses the popup after IndexedDB has committed the
     // spell payment (including Metamagic). Closing early makes the UI appear
     // finished while a reader can still observe the unspent tracker.
-    if(Object.keys({...plan.patch,...effect}).length)await patch({...plan.patch,...effect});
+    const castPatch={...plan.patch,...effect,...sequencePayment};
+    if(sequencePayment.resource_tracker_spent)castPatch.resource_tracker_spent={
+      ...(plan.patch.resource_tracker_spent||{}),...sequencePayment.resource_tracker_spent};
+    if(Object.keys(castPatch).length)await patch(castPatch);
     if(companionSource)await summonSpellCompanion(record.id,companionSource,{
       ...companionSource,spell_id:selection.id,rule_id:companion.rule.id,
       origin_name:companion.rule.names?.[0]||selection.name,
