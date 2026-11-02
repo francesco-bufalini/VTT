@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
@@ -10,7 +11,7 @@ import {fixedProficiencies,structuredFeatureGrants,automaticId} from "../structu
 
 const load=file=>JSON.parse(readFileSync(fileURLToPath(new URL("../catalog/"+file+".json",import.meta.url)),"utf8"));
 const catalogs={abilityGrants:load("ability_grants"),classMechanics:load("class_mechanics"),
-  spellcastingBenefits:load("spellcasting_benefits"),proficiencyGrants:load("proficiency_grants")};
+  spellcastingBenefits:load("spellcasting_benefits"),proficiencyGrants:proficiencyTestIndex()};
 const character=(overrides={})=>({kind:"character",level:1,abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:10},
   armor_class_base:10,max_hp_base:12,speed_base:30,inventory:[],...overrides});
 

@@ -1,9 +1,10 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {selectedSources,grantedFields,fixedProficiencies} from '../structured_effects.js';
 import {calculateSenses} from '../sense_rules.js';
-const prof=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
+const prof=proficiencyTestIndex();
 const senses=JSON.parse(readFileSync(new URL('../catalog/sense_grants.json',import.meta.url),'utf8'));
 test('Custom Lineage chooses darkvision or skill, not both, and preserves dormant skill',()=>{
  const key='race|tce|custom lineage';

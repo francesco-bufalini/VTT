@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -11,7 +12,7 @@ const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const rules=read('../../vtt/data/feature_timing_recovery_rules.json');
 const mechanics=read('../catalog/class_mechanics.json');
 const catalogs={classMechanics:mechanics,abilityGrants:read('../catalog/ability_grants.json'),
- proficiencyGrants:read('../catalog/proficiency_grants.json'),featureRules:rules,
+ proficiencyGrants:proficiencyTestIndex(),featureRules:rules,
  classFeatures:read('../catalog/classes.json')};
 const actionsFor=(record,trackers=[])=>featureActionEntries(record,trackers,rules,
  collectStructuredFeatures(record,catalogs));

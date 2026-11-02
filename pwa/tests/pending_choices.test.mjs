@@ -1,10 +1,11 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from '../pending_choices.js';
 import {proficiencyGrantModels} from '../proficiency_grant.js';
 import {nativeSection} from '../native_sheet.js';
-const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
+const index=proficiencyTestIndex();
 const abilities=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const catalogs={proficiencyGrants:index,abilityGrants:abilities};
 const typedGrants=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/proficiency_grant.json',import.meta.url),'utf8'));

@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,7 +7,7 @@ import {fixedProficiencies,proficiencyGrantOrigins} from '../structured_effects.
 import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
-const catalog=read('../catalog/proficiency_grants.json');
+const catalog=proficiencyTestIndex();
 const native=read('../../vtt/data/proficiency_grants_5etools.json');
 const publishedLanguages=read('../../vtt/data/languages_5etools.json');
 const catalogs={proficiencyGrants:catalog};

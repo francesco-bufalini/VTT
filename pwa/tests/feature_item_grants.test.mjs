@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -11,7 +12,7 @@ const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',impo
 const classFeatures=read('classes'),itemRules=read('feature_item_grants').grants;
 const mechanics={...read('class_mechanics'),feature_item_grants:itemRules};
 const catalogs={classFeatures,classMechanics:mechanics,featureItemGrants:itemRules,
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
  traitStates:read('trait_states').states,rollBonusRules:read('roll_bonus_rules').features};
 const art=(level,subclass='Armorer')=>({
  kind:'character',rules_version:'2014',class:'Artificer',class_source:'TCE',level,

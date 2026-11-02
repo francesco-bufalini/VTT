@@ -1,3 +1,4 @@
+import {proficiencyTestIndex} from './proficiency_test_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -117,7 +118,7 @@ test('the actual sheet resolves the applied state trait, trained attack and cond
   classMechanics:read('../catalog/class_mechanics.json'),
   classFeatures:read('../catalog/classes.json'),
   abilityGrants:read('../catalog/ability_grants.json'),
-  proficiencyGrants:read('../catalog/proficiency_grants.json'),
+  proficiencyGrants:proficiencyTestIndex(),
   traitStates:read('../catalog/trait_states.json').states,
   featureActionOverrides:read('../../vtt/data/action_feature_overrides.json').entries};
  let record=armored();
