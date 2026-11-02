@@ -1838,7 +1838,7 @@ export function loadRuleCatalogs(){
     const choices=entries.map(row=>row.benefit?.option_grant).filter(Boolean);
     return {
       power:choices.filter(row=>row.migration_group==='power_selections'&&row.option_kind==='capability').length>=3,
-      spells:choices.filter(row=>row.option_kind==='spell'&&row.source?.type==='spell_catalog').length>=21
+      spells:choices.filter(row=>row.option_kind==='spell'&&row.source?.type==='spell_catalog').length>=24
     };
   });
   const legacyPowerSelections=typedChoiceCoverage.then(coverage=>coverage.power?
