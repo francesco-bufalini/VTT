@@ -12,16 +12,28 @@ const oldActions=read('../../vtt/data/action_feature_overrides.json').entries;
 const benefitTypes=['action','activation','resource_recovery','attack_count','action_sequence','resource'];
 const catalogs=Object.fromEntries(benefitTypes.map(type=>
  [type,read('../../vtt/enrichment/benefits/'+type+'.json')]));
-const count={action:65,activation:31,resource_recovery:17,attack_count:26,action_sequence:12,resource:90};
+const count={action:65,activation:31,resource_recovery:17,attack_count:0,action_sequence:38,resource:90};
 const classEntries=(catalog,type)=>catalog.entries.filter(entry=>
  entry.granted_by?.kind==='5etools'&&
  ['class_feature','subclass_feature'].includes(entry.granted_by.ref.category)&&
  (type!=='action'||entry.projection==='timing_action'));
 
-test('all 151 timing/recovery/attack-count and sequence entries retain original runtime projection',()=>{
+test('all 151 timing/recovery/attack-sequence entries preserve mechanics after migration',()=>{
  const projected=projectFeatureTimingRules(catalogs);
- for(const name of ['contextual_actions','actions','recoveries','attack_count_grants','attack_actions']){
+ for(const name of ['contextual_actions','actions','recoveries'])
   assert.deepEqual(projected[name],sourceTiming[name],name+' changed when projected');
+ assert.deepEqual(projected.attack_count_grants,[]);
+ assert.deepEqual(projected.attack_actions.slice(0,12),sourceTiming.attack_actions);
+ const replacements=projected.attack_actions.filter(rule=>rule.attack_replacement);
+ assert.equal(replacements.length,26);
+ for(const original of sourceTiming.attack_count_grants){
+  const converted=replacements.find(rule=>rule.class_name===original.class_name&&
+   rule.class_source===original.class_source&&rule.feature===original.feature&&
+   (rule.subclass||'')===(original.subclass||'')&&
+   rule.min_level===original.min_level);
+  assert(converted,'Missing sequence for '+original.class_name+' · '+original.feature);
+  assert.equal(converted.time,'action');
+  assert.deepEqual(converted.steps,[{selector:{kind:'attack'},count:original.attacks_per_action}]);
  }
  assert.equal(projected.version,1);
  for(const type of benefitTypes.filter(x=>x!=='resource')){
@@ -70,8 +82,9 @@ test('typed class timing catalog loads as one atomic set, with legacy fallback f
  const routes=Object.fromEntries(benefitTypes.map(type=>
  ['/catalog/benefits/'+type+'.json',catalogs[type]]));
  const typed=await loadClassFeatureTimingBenefits(fetcher(routes));
+ const expected=projectFeatureTimingRules(catalogs);
  for(const section of ['contextual_actions','actions','recoveries','attack_count_grants','attack_actions'])
-  assert.deepEqual(typed[section],sourceTiming[section]);
+  assert.deepEqual(typed[section],expected[section]);
  const legacy='/catalog/feature_timing_recovery_rules.json';
  assert.deepEqual(await loadClassFeatureTimingBenefits(fetcher({
   '/catalog/benefits/action.json':catalogs.action,[legacy]:sourceTiming
