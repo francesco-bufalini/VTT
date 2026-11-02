@@ -219,6 +219,10 @@
     "sequence": {
       "$ref": "#/$defs/sequence"
     },
+    "attack_replacement": {
+      "type": "boolean",
+      "description": "This action sequence replaces the normal Attack action rather than granting an additional action."
+    },
     "effects": {
       "type": "array",
       "items": {
