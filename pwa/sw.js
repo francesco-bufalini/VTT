@@ -38,6 +38,7 @@ const SHELL = [
   "/feat_benefit_catalogs.js",
   "/infusion_benefit_catalogs.js",
   "/benefit_source_text.js",
+  "/5etools_benefit_projections.js",
   "/trait_benefit_distribution.js",
   "/trait_benefit_editor.js",
   "/effect_extensions.js",
