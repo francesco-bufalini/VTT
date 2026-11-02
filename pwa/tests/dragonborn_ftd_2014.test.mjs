@@ -15,7 +15,7 @@ import {abilityAreaPolygon,pointInAbilityArea,abilityAreaPreview} from '../abili
 
 const powers=speciesPowerTestIndex();
 const typed=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
-const defenses=speciesDefensesFromBenefits(typed('../../vtt/enrichment/benefits/defense.json'),typed('../../vtt/enrichment/benefits/flavours.json'));
+const defenses=speciesDefensesFromBenefits(typed('../../vtt/enrichment/benefits/damage_modifier.json'),typed('../../vtt/enrichment/benefits/flavours.json'));
 const base={kind:'character',rules_version:'2014',level:5,
  abilities:{str:12,dex:12,con:16,int:10,wis:10,cha:10},
  resource_tracker_spent:{},active_class_features:{}};

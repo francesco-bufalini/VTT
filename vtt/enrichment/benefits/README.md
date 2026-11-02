@@ -4,7 +4,7 @@ Questa cartella raccoglie **solo i benefici non già disponibili come campi
 strutturati di 5eTools**, in un singolo catalogo `<tipo>.json` per meccanica.
 
 Un background non possiede un file separato: ogni integrazione sarà una voce
-nel catalogo pertinente (per esempio `proficiency.json`, `roll_bonus.json`,
+nel catalogo pertinente (per esempio `proficiency_grant.json`, `roll_bonus.json`,
 `resource.json`), con `granted_by.kind = "5etools"` e
 `ref = { "category": "background", "name": "...", "source": "..." }`.
 
@@ -89,7 +89,7 @@ nella scheda e non vengono riscritte da questa migrazione.
 
 [attack.json](attack.json) contiene 20 attacchi naturali supplementari
 ricavati esclusivamente in fase di build dai tratti 5eTools con meccanica
-univoca. [movement.json](movement.json) aggiunge 10 vincoli all'uso della
+univoca. [base_override.json](base_override.json) aggiunge 10 vincoli all'uso della
 velocità di volo quando si indossano armature medie o pesanti. Non si
 duplicano le velocità o le competenze già strutturate in 5eTools.
 
@@ -101,7 +101,7 @@ senza interpretare le descrizioni originali durante la partita.
 
 Le capacità di `species_powers.json` restano da migrare; le
 difese già strutturate in 5eTools non vanno semplicemente copiate
-in un catalogo `defense.json`.
+in un catalogo `damage_modifier.json`.
 
 ---
 
@@ -111,12 +111,12 @@ Le nuove dichiarazioni sono raggruppate **solo per meccanica**, non per classe:
 
 | Tipo | Voci di classi/sottoclassi | Origine legacy |
 | --- | ---: | --- |
-| [`action.json`](action.json) | 65 ulteriori (117 totali di classe) | `feature_timing_recovery_rules.actions` |
-| [`activation.json`](activation.json) | 31 | `feature_timing_recovery_rules.contextual_actions` |
+| [`action.json`](action.json) | 96 ulteriori (148 totali di classe) | `feature_timing_recovery_rules.actions` |
+| [`action.json`](action.json) | 31 azioni contestuali | `feature_timing_recovery_rules.contextual_actions` |
 | [`resource_recovery.json`](resource_recovery.json) | 17 | `feature_timing_recovery_rules.recoveries` |
-| [`attack_count.json`](attack_count.json) | 0 (solo compatibilità legacy/homebrew) | Vecchie concessioni `attack_count_grants` |
+
 | [`action_sequence.json`](action_sequence.json) | 38 (12 sequenze preesistenti + 26 multiattacchi) | `feature_timing_recovery_rules.attack_actions` e `attack_count_grants` |
-| [`resource.json`](resource.json) | 90 | `class_resource_overrides.classes[].resources` |
+| [`resource.json`](resource.json) | 96 (incluse 6 risorse contestuali) | `class_resource_overrides.classes[].resources` |
 
 I 26 benefici precedentemente espressi come `attack_count` (Extra Attack, Thirsting Blade e Devouring Blade) sono ora vere `action_sequence`, ognuna con uno step `{ "selector": { "kind": "attack" }, "count": N }`, costo di un'azione e `attack_replacement: true`. Il motore presenta soltanto la sequenza attiva più potente, senza sommare gli attacchi concessi da più tratti, e lascia l'Attacco di base quando non è attiva alcuna sostituzione. I multiattacchi dei mostri continuano a usare le proprie sequenze, anche quando includono attacchi specifici o capacità.
 
@@ -285,7 +285,7 @@ ad ogni livello.
 «incremento caratteristiche»: entrambe consentono di scegliere la stessa
 caratteristica, dando complessivamente +2, o caratteristiche differenti.
 `feat_grant.json` contiene la concessione standardizzata di un talento per
-l'altro flavour ASI. `defense.json` attribuisce le resistenze draconiche ai
+l'altro flavour ASI. `damage_modifier.json` attribuisce le resistenze draconiche ai
 flavour di ascendenza; la logica speciale del soffio rimane indipendente.
 Il talento Athlete PHB dimostra una scelta tra flavour di bonus permanente.
 
@@ -350,11 +350,20 @@ vecchi tratti non ancora migrati alle opzioni, senza nuovi tipi di beneficio.
 ### Talento Resilient (2014/2024)
 
 Entrambe le edizioni hanno ora un flavour per ciascuna delle sei caratteristiche:
-`bonus.json` attribuisce +1 e `proficiency.json` concede la competenza nel
+`bonus.json` attribuisce +1 e `proficiency_grant.json` concede la competenza nel
 corrispondente tiro salvezza allo stesso flavour. La scelta 2024 esclude i tiri
 salvezza già competenti, ma conserva visibile una variante salvata in precedenza.
 La scelta precedente non viene duplicata e il cambio di variante ritira solo
 le competenze e i bonus appartenenti a quella istanza del talento.
+
+## Consolidamento dei benefici — novembre 2026
+
+Le 31 precedenti voci `activation` sono state trasferite ad `action.json` con proiezione transitoria `timing_contextual_action`. Le 6 risorse contestuali sono ora record indipendenti in `resource.json`, collegati alle azioni tramite `resource_id`: il costo dell'azione e il tracker non sono due benefici di attivazione. Non esistono più i cataloghi `activation` e `attack_count`; tutti i multiattacchi incorporati sono `action_sequence`.
+
+Le 15 resistenze condizionate dai flavour dei Dragonborn sono in `damage_modifier.json`, che può contenere anche immunità, vulnerabilità e riduzioni del danno; l'adattatore dei flavour continua a proiettarle nel sistema di resistenze della scheda. `movement` è stato sostituito da `base_override`: questo unico tipo definisce il valore di velocità, CA, CA naturale o altro score (`target`, `operation`, `amount` o `source_field`) con requisiti individuali in `base_override.condition`. Le 10 restrizioni al volo usano `operation: inherit`, `source_field: speed.fly` e una condizione che esclude armature medie e pesanti: la velocità numerica resta definita in 5eTools.
+
+Il beneficio `base_override` può quindi indicare una CA naturale fissa (`target: ac_unarmored`, `operation: alternative`, `expression: "13 + dex_mod"`) con un requisito sulla categoria dell'armatura. Altri 39 override non additivi (CA naturale, privilegi Unarmored Defense, limiti minimi delle caratteristiche, danno base senz’armi) sono migrati nello stesso file con `condition` e origine 5eTools. L'indice precedente `vtt/data/base_value_overrides.json` resta solo per il confronto e per i client precedenti: la PWA preferisce il catalogo tipizzato e proietta le vecchie strutture in memoria. Le conversioni runtime dei tratti di specie restano proiezioni, non dati da modificare separatamente.
+
 
 ### Sensi (sense.json)
 

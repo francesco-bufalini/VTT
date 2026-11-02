@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
+import {baseValueOverridesFromBenefits} from '../base_override_benefits.js';
 import {battleActionPanels} from '../action_economy.js';
 import {JSDOM} from 'jsdom';
 import {addBenefitPatch,removeBenefitPatch,restoreBenefitPatch} from '../trait_benefit_editor.js';
@@ -10,11 +11,26 @@ import {traitBenefitGroups} from '../trait_benefits.js';
 const native=JSON.parse(readFileSync(new URL('../../vtt/data/base_value_overrides.json',import.meta.url)));
 const packaged=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url)));
 const catalogs={abilityGrants:packaged,classMechanics:{},proficiencyGrants:{},originDetails:{races:{},feats:{},backgrounds:{}}};
+const typed=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/base_override.json',import.meta.url)));
+const typedCatalogs={...catalogs,baseOverrideBenefits:typed};
 const base=(patch={})=>({kind:'character',rules_version:'2014',level:3,abilities:{str:12,dex:14,con:12,int:10,wis:10,cha:10},
  armor_class_base:10,max_hp_base:20,inventory:[],...patch});
 const sheet=c=>calculateSheet(c,catalogs);
 const gauntlets={id:'gauntlet-1',name:'Gauntlets of Ogre Power',source:'DMG',type:'W',quantity:1,
  reqAttune:true,attuned_count:1,active:true,equipped_slots:[]};
+
+test('39 conditional base values project exactly from the typed catalog',()=>{
+ assert.equal(typed.entries.filter(e=>e.projection==='legacy_base_override').length,39);
+ assert.equal(typed.entries.filter(e=>e.benefit.base_override?.target==='speed:fly').length,10);
+ assert.deepEqual(baseValueOverridesFromBenefits(typed),{
+  feats:native.feats,features:native.features,items:native.items,species:native.species,optional_features:native.optional_features
+ });
+ const typedIndex={...packaged,base_value_overrides:{}};
+ const natural={kind:'character',species:'Tortle',species_source:'TTP',abilities:{str:10,dex:12,con:10,int:10,wis:10,cha:10},inventory:[]};
+ assert.equal(calculateSheet(natural,{...typedCatalogs,abilityGrants:typedIndex}).stats.armor_class,17);
+ const gauntlets={name:'Gauntlets of Ogre Power',source:'DMG',id:'gauntlets',type:'W',reqAttune:true,attuned_count:1,active:true,quantity:1,equipped_slots:[]};
+ assert.equal(calculateSheet({...natural,inventory:[gauntlets]}, {...typedCatalogs,abilityGrants:typedIndex}).abilities.str.score,19);
+});
 
 test('native base-value supplement stays exactly synced with packaged PWA rules',()=>{
  assert.deepEqual(packaged.base_value_overrides,

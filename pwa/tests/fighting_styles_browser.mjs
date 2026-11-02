@@ -170,7 +170,12 @@ try{
  await sheet('magic');
  const druidic=page.locator('#sheet-play-view .benefit-option-list')
   .filter({has:page.locator('[data-option-kind="spell"]')}).first();
- const source=page.locator('#sheet-play-view [data-selection-id^="spell_choice:druidic_warrior:from:"]');
+ // Source-qualified option cards can be appended after the sheet's native
+ // section. Their stable selection ID, not the wrapper, identifies ownership.
+ const source=page.locator('[data-selection-id^="spell_choice:druidic_warrior:from:"]');
+ // The first Poteri render may finish after the navigation helper returns.
+ // Wait for the source card to be attached instead of racing its initial paint.
+ await source.waitFor({state:'attached'});
  assert.equal(await source.count(),1,
   'Druidic Warrior has its own source-scoped option grant before any cantrip is learned');
  assert.equal(await source.getAttribute('data-option-kind'),'spell');

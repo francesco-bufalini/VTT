@@ -28,13 +28,13 @@ test('wrong per-type catalog and benefit identity are rejected',()=>{
  assert.throws(()=>speciesRollModesFromBenefits({...rollMode,entries:[{...rollMode.entries[0],benefit:{type:'bonus',roll_modes:[]}}]}),/Tipo di beneficio/);
 });
 
-test('typed species attacks and movement reject wrong type and invalid mechanics',()=>{
+test('typed species attacks and score grants reject wrong type and invalid mechanics',()=>{
  const attacks=read('../../vtt/enrichment/benefits/attack.json');
- const movement=read('../../vtt/enrichment/benefits/movement.json');
- assert.throws(()=>speciesAttacksFromBenefits({...attacks,benefit_type:'movement'},movement),/Catalogo tipizzato/);
- assert.throws(()=>speciesAttacksFromBenefits(attacks,{...movement,benefit_type:'attack'}),/Catalogo tipizzato/);
- const wrong={...attacks,entries:[{...attacks.entries[0],benefit:{type:'movement',attack:attacks.entries[0].benefit.attack}}]};
- assert.throws(()=>speciesAttacksFromBenefits(wrong,movement),/Tipo di beneficio/);
+ const score=read('../../vtt/enrichment/benefits/base_override.json');
+ assert.throws(()=>speciesAttacksFromBenefits({...attacks,benefit_type:'base_override'},score),/Catalogo tipizzato/);
+ assert.throws(()=>speciesAttacksFromBenefits(attacks,{...score,benefit_type:'attack'}),/Catalogo tipizzato/);
+ const wrong={...attacks,entries:[{...attacks.entries[0],benefit:{type:'base_override',attack:attacks.entries[0].benefit.attack}}]};
+ assert.throws(()=>speciesAttacksFromBenefits(wrong,score),/Tipo di beneficio/);
 });
 
 test('species powers are sourced by benefit type and retain original trait mechanics',()=>{

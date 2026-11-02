@@ -82,7 +82,7 @@ def main():
     flavour_ids = [variant["id"] for entry in flavour_catalog["entries"]
                    for variant in entry["flavours"]]
     assert len(flavour_ids) == len(set(flavour_ids)), "Duplicate flavour IDs"
-    for name in ("bonus", "defense", "feat_grant", "option_grant", "proficiency_grant"):
+    for name in ("bonus", "damage_modifier", "feat_grant", "option_grant", "proficiency_grant"):
         catalog = load(benefits / (name + ".json"))
         for entry in catalog["entries"]:
             if entry["granted_by"]["kind"] == "flavour":
@@ -130,9 +130,8 @@ def main():
 
     # Class and subclass rules are added to the same type catalogs as species.
     migrated_counts = {
-        "action": 117, "roll_bonus": 15, "activation": 31,
-        "resource_recovery": 17, "attack_count": 0,
-        "action_sequence": 38, "resource": 90,
+        "action": 148, "roll_bonus": 15,
+        "resource_recovery": 17, "action_sequence": 38, "resource": 96,
     }
     for benefit_type, expected in migrated_counts.items():
         data = load(live / f"{benefit_type}.json")
@@ -143,7 +142,9 @@ def main():
         assert all(entry["granted_by"]["ref"].get("class_source") for entry in owned)
     action_rules = load(live / "action.json")["entries"]
     assert len([entry for entry in action_rules if entry.get("projection") == "timing_action"]) == 65
-    assert len([entry for entry in action_rules if entry.get("projection") != "timing_action" and
+    assert len([entry for entry in action_rules if entry.get("projection") == "timing_contextual_action"]) == 31
+    assert len([entry for entry in load(live / "resource.json")["entries"] if entry.get("projection") == "contextual_resource"]) == 6
+    assert len([entry for entry in action_rules if entry.get("projection") not in ("timing_action", "timing_contextual_action") and
                 entry["granted_by"]["ref"]["category"] in ("class_feature", "subclass_feature")]) == 52
 
     legacy = load(SCHEMAS / "legacy_sources.json")

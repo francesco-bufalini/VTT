@@ -17,17 +17,22 @@ try{
    abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}},'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('info');
- const asi=page.locator('[data-act="pending-choice-open"][data-choice-id^="advancement-mode:"]').first();
+ const asi=page.locator('[data-act="pending-choice-open"][data-choice-id^="trait-flavour:"]').first();
  await asi.click();
  assert.equal(await page.locator('#power-selection-dialog').count(),0);
- await page.locator('#pending-choice-dialog input[value="ability:0"]').check();
+ await page.locator('#pending-choice-dialog input[value="flavour:asi:phb:abilities"]').check();
  await page.locator('#pending-choice-dialog [data-act="pending-choice-save"]').click();
- await page.locator('#pending-choice-dialog input[value="str"]').check();
- await page.locator('#pending-choice-dialog [data-act="pending-choice-save"]').click();
+ // ASI now owns two separate +1 benefits, each independently selectable,
+ // including choosing Strength twice without an obsolete advancement-mode UI.
+ for(let i=0;i<2;i++){
+  await page.locator('[data-act="pending-choice-open"][data-choice-id^="flavour-bonus:"]').first().click();
+  await page.locator('#pending-choice-dialog input[value="str"]').check();
+  await page.locator('#pending-choice-dialog [data-act="pending-choice-save"]').click();
+ }
  await page.locator('#pending-choice-dialog').waitFor({state:'detached'});
  const after=await snapshot();assert.equal(after.scores.str.score,12);
  assert.equal(after.record.origin_ability_choices?.length||0,0);
- assert(after.record.formula_bonuses.some(row=>row.target==='ability:str'&&row.expression==='2'));
+ assert.equal(after.record.formula_bonuses.filter(row=>row.target==='ability:str'&&row.expression==='1').length,2);
  await sheet('magic');
  const id='ranger_favored_enemy_phb';
  const opener=page.locator('#sheet-play-view [data-act="power-selection-open"][data-power-selection-id="'+id+'"][data-power-stage="learned"]');

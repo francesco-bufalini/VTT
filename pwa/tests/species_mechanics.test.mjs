@@ -9,10 +9,10 @@ import {traitBenefitGroups} from '../trait_benefits.js';
 
 const json=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const source=json('../../vtt/data/creature_references_5etools.json');
-const generated=projectSpeciesAttackBenefitCatalogs(source.races);
+const scoreBenefits=json('../../vtt/enrichment/benefits/base_override.json');
+const generated=projectSpeciesAttackBenefitCatalogs(source.races,scoreBenefits);
 const attackBenefits=json('../../vtt/enrichment/benefits/attack.json');
-const movementBenefits=json('../../vtt/enrichment/benefits/movement.json');
-const catalog=speciesAttacksFromBenefits(attackBenefits,movementBenefits);
+const catalog=speciesAttacksFromBenefits(attackBenefits,scoreBenefits);
 const abilities={str:16,dex:12,con:14,int:10,wis:10,cha:10};
 const record=(book)=>({
  kind:'character',species:'Aarakocra',species_source:book,
@@ -24,12 +24,13 @@ const natural=sheet=>sheet.attacks.find(a=>a.id.startsWith('natural:'));
 
 test('published source data generates deterministic typed natural strikes (never prose at runtime)',()=>{
  assert.deepEqual(attackBenefits,generated.attack);
- assert.deepEqual(movementBenefits,generated.movement);
+ assert.deepEqual(scoreBenefits,generated.base_override);
  const canonical=projectSpeciesAttacks(source.races);
  const sort=rows=>[...rows].sort((a,b)=>a.id.localeCompare(b.id));
  assert.deepEqual(sort(catalog.races),sort(canonical.races));
  assert.equal(attackBenefits.entries.length,20);
- assert.equal(movementBenefits.entries.length,10);
+ assert.equal(scoreBenefits.entries.filter(e=>e.benefit.base_override?.target==='speed:fly').length,10);
+ assert.equal(scoreBenefits.entries.length,49);
  assert.ok(catalog.races.length>=20);
  assert.equal(catalog.races.filter(r=>r.name==='Aarakocra').length,3);
  assert.ok(!catalog.races.some(r=>r.name==='Shifter (Longtooth)'&&r.source==='ERLW'),

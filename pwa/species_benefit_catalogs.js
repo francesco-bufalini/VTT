@@ -50,9 +50,9 @@ function assertTypedCatalog(catalog,kind){
     catalog.scope!=='catalog'||!Array.isArray(catalog.entries))
   throw Error('Catalogo tipizzato non valido: '+kind);
 }
-export function speciesAttacksFromBenefits(attackCatalog,movementCatalog){
+export function speciesAttacksFromBenefits(attackCatalog,scoreCatalog){
  assertTypedCatalog(attackCatalog,'attack');
- assertTypedCatalog(movementCatalog,'movement');
+ assertTypedCatalog(scoreCatalog,'base_override');
  const groups=new Map(),seen=new Set();
  const speciesRef=(entry,kind)=>{
   const ref=entry?.granted_by?.ref||{};
@@ -77,11 +77,16 @@ export function speciesAttacksFromBenefits(attackCatalog,movementCatalog){
   const {id:_,...fields}=attack;
   row.attacks.push({trait:ref.name,...fields});
  }
- for(const entry of rows(movementCatalog.entries)){
-  const found=speciesRef(entry,'movement');if(!found)continue;
-  const movement=entry.benefit.movement;
-  if(movement?.type!=='fly'||JSON.stringify(movement.blocked_by_armor)!=='["medium","heavy"]')
-   throw Error('Vincolo al volo non riconosciuto: '+entry.id);
+ for(const entry of rows(scoreCatalog.entries)){
+  // Base AC, ability floors and weapon damage share this catalog. Only
+  // speed grants belong to the Flight projection performed by this adapter.
+  if(entry.projection==='legacy_base_override')continue;
+  const found=speciesRef(entry,'base_override');if(!found)continue;
+  const score=entry.benefit.base_override;
+  const excluded=score?.condition?.not?.any?.map(rule=>rule.equipped_armor_category).sort();
+  if(score?.target!=='speed:fly'||score.operation!=='inherit'||
+     score.source_field!=='speed.fly'||JSON.stringify(excluded)!=='["heavy","medium"]')
+   throw Error('Requisiti velocità di volo non riconosciuti: '+entry.id);
   found.row.flight_no_medium_heavy_armor=true;
  }
  return {version:1,source:'vtt/data/creature_references_5etools.json',

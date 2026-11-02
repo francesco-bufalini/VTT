@@ -11,7 +11,7 @@ di uno stesso tipo in **un solo punto**.
 I file vivono sotto `vtt/enrichment/benefits/<tipo>.json` e sono convalidati
 con `vtt/enrichment/authoring/<tipo>.schema.json`.
 **Migrazione delle razze:** `roll_mode.json` (164 regole), `roll_bonus.json`
-(23 bonus), `attack.json` (20 attacchi naturali) e `movement.json`
+(23 bonus), `attack.json` (20 attacchi naturali) e `base_override.json`
 (10 limitazioni di volo con armatura) sono fonti attive della PWA.
 Le velocità, le difese e le competenze già strutturate in 5eTools non
 vengono duplicate nei supplementi.
@@ -102,7 +102,7 @@ record già salvati, senza duplicare né resettare i benefici manuali.
 - [benefit.schema.json](benefit.schema.json): campi condivisi dei benefici,
   tipi e primitive meccaniche riutilizzabili (azioni, sequenze OR/AND,
   modificatori, attacchi, stati, risorse, scelte e altro).
-- **43 schemi di tipo** (`roll_bonus.schema.json`,
+- **40 schemi di tipo** (`roll_bonus.schema.json`,
   `action_sequence.schema.json`, `proficiency.schema.json`, ecc.).
   Il nome del file deve coincidere con `benefit_type`, e ogni voce
   deve contenere `benefit.type` dello stesso tipo.
@@ -159,3 +159,9 @@ Dal lotto `species_powers.json`, sono attivi nei file per tipo 20 azioni
 il payload strettamente validato `action_runtime`; le risorse restano
 separate con un riferimento `benefit.resource` al tracker. Le parti
 non migrate restano nel file razziale e non sono duplicate.
+
+### Score e modificatori ai danni
+
+Il beneficio `base_override` è comune ai valori base e derivati (velocità, CA, CA naturale). Accetta `target`, `operation` (`set`, `add`, `multiply`, `inherit`, ecc.), `amount` o `source_field` e `condition` con requisiti. `inherit` conserva il valore strutturato di 5eTools, aggiungendo vincoli al grant invece di creare un beneficio separato di tipo movimento. I requisiti possono controllare la categoria dell'armatura equipaggiata con `equipped_armor_category`, combinabile con `not` e `any`. 
+
+`damage_modifier` è il catalogo dedicato ai modificatori del danno, comprese resistenze, immunità, vulnerabilità, riduzioni e altre operazioni sui dadi. Non introdurre nuovi benefici di tipo `defense`, `movement`, `activation` o `attack_count`.

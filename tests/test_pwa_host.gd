@@ -194,11 +194,11 @@ func run() -> void:
 		"Godot must serve typed species attacks as JSON")
 	assert(species_attacks.contains("Aarakocra") and species_attacks.contains("Talons") and species_attacks.contains("attack"),
 		"5etools Aarakocra natural attacks must be available to mobile character sheets")
-	var species_movement := await http("GET", "/benefits/movement.json")
-	assert(species_movement.begins_with("HTTP/1.1 200") and species_movement.contains("application/json"),
-		"Godot must serve typed species movement restrictions as JSON")
-	assert(species_movement.contains("blocked_by_armor") and species_movement.contains("Flight"),
-		"The armor limitation must remain source-qualified and available offline")
+	var species_scores := await http("GET", "/benefits/base_override.json")
+	assert(species_scores.begins_with("HTTP/1.1 200") and species_scores.contains("application/json"),
+		"Godot must serve typed conditional score grants as JSON")
+	assert(species_scores.contains("equipped_armor_category") and species_scores.contains("Flight"),
+		"The flight armor requirement must remain attached to its source-qualified speed grant")
 	var racial_resources := await http("GET", "/benefits/resource.json")
 	assert(racial_resources.begins_with("HTTP/1.1 200") and racial_resources.contains("application/json"),
 		"Godot must serve typed racial tracker resources as JSON")

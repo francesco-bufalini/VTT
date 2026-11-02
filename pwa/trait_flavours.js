@@ -105,7 +105,7 @@ export function traitFlavourChoices(record={},features=[],catalog={},proficienci
 }
 export function flavourGrantsFor(record={},features=[],catalogs={}){
  const benefitFiles=[catalogs.flavourBonuses,catalogs.flavourFeatGrants,
-  catalogs.flavourDefenses,catalogs.proficiencyGrantBenefits,catalogs.optionGrants,catalogs.senseGrants];
+  catalogs.flavourDamageModifiers,catalogs.proficiencyGrantBenefits,catalogs.optionGrants,catalogs.senseGrants];
  const entries=benefitFiles.flatMap(catalog=>rows(catalog?.entries));
  return traitFlavourModels(record,features,catalogs.flavours||{}).map(model=>({
   ...model,benefits:model.selected&&model.explicit?entries.filter(e=>
@@ -262,7 +262,7 @@ export function projectTraitFlavourBenefits(record={},features=[],catalogs={}){
      fallback_feet:sense.fallback_feet,origin_id:model.flavour_origin_id,
      parent_origin:model.owner.origin_id,origin_name:model.selected.name,automatic:true});
    }
-   if(benefit.type==='defense')for(const defense of rows(benefit.defenses)){
+   if(benefit.type==='damage_modifier')for(const defense of rows(benefit.defenses)){
     const rank={vulnerability:-1,resistance:1,immunity:2,condition_immunity:3}[defense.kind];
     if(rank===undefined)continue;
     defenses.push({id:'flavour-benefit:'+model.flavour_origin_id+':'+benefit.id,
