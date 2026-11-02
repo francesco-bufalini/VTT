@@ -45,6 +45,7 @@
         "spell_selection",
         "spell_slot",
         "spellcasting",
+        "spell_extension",
         "targeting",
         "temporary_hp",
         "tracker",
@@ -1859,6 +1860,12 @@
             },
             "category": {
               "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -2379,6 +2386,7 @@
                 "enum": [
                   "attack",
                   "action",
+                  "spell",
                   "skill_check",
                   "saving_throw",
                   "ability_check",
