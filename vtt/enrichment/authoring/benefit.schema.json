@@ -3645,6 +3645,10 @@
         "nested": {
           "type": "boolean",
           "description": "This grant is available only through a selected option's option_grant effect."
+        },
+        "migration_group": {
+          "type": "string",
+          "description": "Supplemental source-family marker used only to distinguish migrated static bootstrap families; not a game mechanic."
         }
       },
       "additionalProperties": false

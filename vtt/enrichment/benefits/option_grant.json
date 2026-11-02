@@ -56,7 +56,8 @@
               "label": "Armatura indossata"
             }
           },
-          "option_kind": "capability"
+          "option_kind": "capability",
+          "migration_group": "power_selections"
         }
       }
     },
@@ -105,7 +106,8 @@
             "destination": "origin",
             "exclusive": true
           },
-          "nested": true
+          "nested": true,
+          "migration_group": "power_selections"
         }
       }
     },
@@ -386,7 +388,8 @@
           "ui": "generic",
           "description": "Per ogni scelta seleziona un tipo di mostro oppure due razze umanoidi. Ottieni una nuova scelta ai livelli 1, 6 e 14 da Ranger.",
           "benefit_type": "option_grant",
-          "legacy_stage": "prepared"
+          "legacy_stage": "prepared",
+          "migration_group": "power_selections"
         }
       }
     },
