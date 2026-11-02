@@ -65,7 +65,7 @@ try{
  assert.equal(await action.locator('[data-act="benefit-option-apply"]').count(),0);
  await action.locator('[data-act="benefit-option-close"]').first().click();
  await sheet('battle');
- const arcaneAction=page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:option-grant-action:arcane_armor"]');
+ const arcaneAction=page.locator('#sheet-play-view .play-battle-other-action [data-act="battle-use-ability"][data-ability-id="activated:option-grant-action:arcane_armor"]');
  await arcaneAction.click();await action.waitFor({state:'visible'});
  assert.equal(await action.locator('[data-benefit-target-search]').count(),1);
  await action.locator('[data-act="benefit-target-choose"][data-index="0"]').click();
@@ -99,7 +99,7 @@ try{
   await action.locator('[data-act="benefit-option-close"]').first().click();
  }
  await sheet('battle');
- const deactivation=page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:option-grant-action:arcane_armor"]');
+ const deactivation=page.locator('#sheet-play-view .play-battle-other-action [data-act="battle-use-ability"][data-ability-id="activated:option-grant-action:arcane_armor"]');
  assert.equal(await deactivation.locator('.play-action-use-verb').innerText(),'Disattiva');
  await deactivation.click();await action.waitFor({state:'visible'});
  assert.equal(await action.locator('[data-benefit-target-search]').count(),0);
