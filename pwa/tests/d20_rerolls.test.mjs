@@ -1,3 +1,4 @@
+import {featTestIndex} from './feat_benefits_fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,7 +7,7 @@ import {calculateSheet,featMechanicGrants} from '../sheet_rules.js';
 import {availableD20Rerolls,rerollTargetMatches,offerD20Reroll,chooseD20Reroll} from '../d20_rerolls.js';
 import {addBenefitPatch,removeBenefitPatch} from '../trait_benefit_editor.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
-const data=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
+const data=featTestIndex(JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8')));
 
 test('new characters activate Party by default, monsters do not',()=>{
  const hero=initialCreature('character','Lyria','char-1','owner-1');
