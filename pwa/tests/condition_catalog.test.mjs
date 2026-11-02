@@ -73,15 +73,15 @@ test("online homebrew descriptions merge with bundled disease catalog",()=>{
   assert.ok(conditionOptions(local,"2014").every(row=>row.id!==id));
 });
 
-test("5etools status popup safely escapes homebrew content and renders exhaustion table",()=>{
+test("5etools status popup safely escapes homebrew content and renders typed exhaustion levels",()=>{
   const html=conditionDescriptionHtml({id:"homebrew:campaign:conditions:unsafe",name:"Unsafe",
     category:"conditions",source:"User",entries:["<script>alert(1)</script> {@condition incapacitated} & friends"]});
   assert.doesNotMatch(html,/<script>/);
   assert.match(html,/&lt;script&gt;/);
   assert.match(html,/incapacitated &amp; friends/);
   const bundled=conditionCatalogFrom5etools(JSON.parse(nativeFile("../../vtt/data/effects_5etools.json")));
-  const exhaustion=conditionOptions(bundled,"2014").find(row=>row.id==="exhaustion");
-  assert.match(conditionDescriptionHtml(exhaustion),/<table>/);
+  const exhaustion=conditionOptions(bundled,"2014").find(row=>row.id==="exhaustion:2");
+  assert(exhaustion,"Typed exhaustion level 2 must be an independently selectable status");
   assert.match(conditionDescriptionHtml(exhaustion),/Speed halved/);
 });
 
