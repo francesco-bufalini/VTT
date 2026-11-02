@@ -30,28 +30,18 @@ test('structured model options do not own replacement titles or summaries',()=>{
  }
 });
 
-test('owned 5etools options supply the names and descriptions of state models',()=>{
- const guardian=catalog.states.find(row=>row.id==='armor_model:guardian');
- const source=traitStateSource(guardian,feature,[feature]);
- assert.equal(source.name,'Armor Model · Guardian');
- assert.equal(source.option_name,'Guardian');
- assert.equal(source.description,'Original Guardian text from 5etools.');
- const actions=traitStateActions(owner,[feature],[guardian]);
- assert.equal(actions[0]?.name,'Armor Model · Guardian');
- assert.equal(actions[0]?.description,'Original Guardian text from 5etools.');
- const effects=traitStateEffects(owner,[feature],[guardian]);
- assert.equal(effects[0]?.summary,'Original Guardian text from 5etools.');
- const arcane={...feature,name:'Arcane Armor',origin_id:'feature:arcane-armor'};
- const models=powerSelectionModels(owner,{features:[feature,arcane]},selections);
- const choices=models.find(row=>row.id==='armor_model');
- assert(choices);
- assert.equal(choices.title,'Armor Model');
- assert.deepEqual(choices.options.map(row=>row.name),
-  ['Armor Model · Guardian','Armor Model · Infiltrator']);
- assert.deepEqual(choices.options.map(row=>row.description),
-  ['Original Guardian text from 5etools.','Original Infiltrator text from 5etools.']);
+test('locally declared Armor Model abilities use one canonical list without replacement summaries',()=>{
+ const lists=JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/option_list.json',import.meta.url),'utf8'));
+ const models=lists.entries.filter(entry=>entry.id.startsWith('option_list:local:armor_model:'));
+ assert.deepEqual(models.map(entry=>entry.benefit.option_list.name),['Guardian','Infiltrator']);
+ for(const entry of models){
+  const option=entry.benefit.option_list.options[0];
+  assert.equal(option.local,true);
+  assert(!Object.hasOwn(option,'summary'));
+  assert(option.effects.some(effect=>effect.type==='attack'));
+  assert(!option.effects.some(effect=>effect.type==='state_selection'));
+ }
 });
-
 test('nested choice text is also resolved for generic barbarian form IDs',()=>{
  const beast={name:'Form of the Beast',origin_key:'class|tce|barbarian|subclass|beast|tce',
   entries:[{type:'list',items:[{name:'Bite',entry:'Original bite rules.'},

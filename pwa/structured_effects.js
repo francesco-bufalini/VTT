@@ -411,6 +411,7 @@ export function collectStructuredFeatures(record,catalogs={}){
   if(record.stat_block)record={...record,stat_block:normalizeMonsterStatBlock(record.stat_block)};
   const results=[],seen=new Set();
   const attackRules=array(catalogs.featureRules?.attack_count_grants);
+  const attackActionRules=array(catalogs.featureRules?.attack_actions);
   // Partial class mechanics tables cannot grant slots without the full feature
   // catalog; explicit homebrew feature.benefits remain usable independently.
   const spellcastingRules=catalogs.classFeatures?array(catalogs.spellcastingBenefits?.grants):[];
@@ -559,11 +560,18 @@ export function collectStructuredFeatures(record,catalogs={}){
       members.some(member=>match(member.name,grant.class_name)&&
         match(member.source||record.class_source||selectedEdition,grant.class_source)&&
         Number(member.level||0)>=Number(grant.min_level||1)));
+    const sequence=attackActionRules.find(action=>action.attack_replacement===true&&
+      match(action.feature,optional.name)&&
+      (!optional.source||match(action.feature_source,optional.source))&&
+      members.some(member=>match(member.name,action.class_name)&&
+        match(member.source||record.class_source||selectedEdition,action.class_source)&&
+        Number(member.level||0)>=Number(action.min_level||1)));
     const amount=Number(optional.attacks_per_action||rule?.attacks_per_action);
-    if(!Number.isSafeInteger(amount)||amount<2)continue;
+    if((!Number.isSafeInteger(amount)||amount<2)&&!sequence)continue;
     const origin=optional.origin_id||'optional|'+norm(optional.source)+'|'+norm(optional.name);
     // Use the same stable key as the optional-trait card in trait_projection.
-    append({...optional,id:'0|'+norm(optional.name),attacks_per_action:amount},
+    append({...optional,id:'0|'+norm(optional.name),
+      ...(Number.isSafeInteger(amount)&&amount>=2?{attacks_per_action:amount}:{})},
       origin,0,'character','','',optional.disabled===true);
   }
   return results;

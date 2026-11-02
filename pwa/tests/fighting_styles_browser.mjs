@@ -168,14 +168,20 @@ try{
  await page.reload();
  await page.locator('[data-act="open"][aria-label="Apri scheda di Ranger Druidic Warrior visibility"]').click();
  await sheet('magic');
- const druidic=page.locator('#sheet-play-view .play-magic-granted-card')
-  .filter({hasText:'Druidic Warrior'});
- assert.equal(await druidic.count(),1,'Druidic Warrior gets a Poteri source even before cantrip selection');
- await druidic.getByRole('button',{name:/Scegli trucchetti/i}).click();
- const choicesDialog=page.locator('#magic-tools-dialog[open]');
+ const druidic=page.locator('#sheet-play-view .benefit-option-list')
+  .filter({has:page.locator('[data-option-kind="spell"]')}).first();
+ const source=page.locator('#sheet-play-view [data-selection-id^="spell_choice:druidic_warrior:from:"]');
+ assert.equal(await source.count(),1,
+  'Druidic Warrior has its own source-scoped option grant before any cantrip is learned');
+ assert.equal(await source.getAttribute('data-option-kind'),'spell');
+ await source.locator('[data-act="power-selection-open"]').first().click();
+ const choicesDialog=page.locator('#power-selection-dialog[open]');
  await choicesDialog.waitFor({state:'visible'});
- assert(await choicesDialog.locator('[data-pending-spell-choice]').count()>0,
-  'The Druidic Warrior card opens the existing origin spell picker');
+ assert(await choicesDialog.locator('.power-selection-results [data-power-option-id]').count()>0,
+  'Generic learned option picker lists the real Druid cantrips');
+ assert.equal(await choicesDialog.locator('[data-power-search]').count(),1);
+ assert.match(await choicesDialog.locator('.learning-picker-summary').textContent(),/Imparat|Conosciut|2/i);
+ await choicesDialog.locator('[data-act="power-selection-close"]').first().click();
  // WebKit's isolated CI context sometimes emits access-control diagnostics
  // for local Service Worker/spell requests; only that exact warning is ignored.
  const fatalErrors=f.errors.filter(error=>!/\/(?:sw\.js|catalog\/spells\.json) due to access control checks\./.test(error));

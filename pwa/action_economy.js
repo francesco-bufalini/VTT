@@ -4,7 +4,7 @@ import {loadClassActionBenefits} from './class_benefit_catalogs.js';
 import {SKILLS} from './sheet_rules.js';
 import {attackRangeLabel} from './attack_range.js';
 import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
-import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,resolveAttackActionSteps,attackActionPayment} from './attack_count_benefits.js';
+import {attackCountBenefits,attacksPerActionFromBenefits,attacksPerActionFromSequences,attackActionGrants,resolveAttackActionSteps,attackActionPayment} from './attack_count_benefits.js';
 import {offhandActionEligibility} from './offhand_rules.js';
 import {equipmentRequirementMatches} from './item_controls.js';
 import {render5etoolsInline} from './5etools_inline.js';
@@ -132,7 +132,9 @@ function castingTime(spell){
 export function attacksPerAction(record={},calculated={}){
  const benefits=Array.isArray(calculated.attack_count_benefits)?
    calculated.attack_count_benefits:attackCountBenefits(record,calculated.features);
- return attacksPerActionFromBenefits(benefits);
+ const actions=Array.isArray(calculated.attack_actions)?calculated.attack_actions:
+  attackActionGrants(record,calculated.features,calculated.trackers,calculated.feature_rules);
+ return Math.max(attacksPerActionFromBenefits(benefits),attacksPerActionFromSequences(actions));
 }
 export function actionEntries(record={},calculated={},spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
  const out=[];

@@ -56,6 +56,7 @@
         "spell_slot",
         "spellcasting",
         "state",
+        "state_activation",
         "targeting",
         "temporary_hp",
         "tracker",
@@ -112,6 +113,9 @@
                     },
                     {
                       "$ref": "#/$defs/home"
+                    },
+                    {
+                      "$ref": "#/$defs/flavour"
                     }
                   ]
                 }
@@ -341,6 +345,9 @@
             },
             {
               "$ref": "#/$defs/player"
+            },
+            {
+              "$ref": "#/$defs/flavour"
             }
           ]
         },
@@ -373,6 +380,36 @@
             "class_action_override"
           ],
           "description": "Temporary migration projection discriminator. Omit on other catalog types; remove once runtime consumes typed actions directly."
+        }
+      },
+      "additionalProperties": false
+    },
+    "flavour": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "const": "flavour"
+        },
+        "ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "category",
+            "id"
+          ],
+          "properties": {
+            "category": {
+              "const": "flavour"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         }
       },
       "additionalProperties": false

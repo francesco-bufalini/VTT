@@ -47,6 +47,16 @@ export function attackCountBenefits(record={},features=[]){
 export function attacksPerActionFromBenefits(benefits=[]){
  return rows(benefits).reduce((max,row)=>Math.max(max,count(row?.attacks_per_action)),1);
 }
+// Attack-replacing sequences, not count benefits, define built-in Extra Attack.
+// Derive a scalar only for legacy displays; the authored steps stay canonical.
+export function attacksPerActionFromSequences(actions=[]){
+ return rows(actions).filter(action=>action?.attack_replacement===true).reduce((max,action)=>{
+  const amount=rows(action.steps).reduce((sum,step)=>
+   normal(step?.selector?.kind)==='attack'&&!step.selector.id&&
+   !step.selector.name&&!step.selector.category?sum+stepCount(step.count):sum,0);
+  return Math.max(max,amount);
+ },1);
+}
 
 
 // Canonical vocabulary for attack selectors and roll bonuses. Categories are
@@ -138,7 +148,9 @@ export function attackActionPayment(action={},choiceId=''){
 // Named class/monster rules live in data; the engine does not test feature IDs.
 export function attackActionGrants(record={},features=[],trackers=[],catalog={}){
  const result=[];
- const active=feature=>featureEnabled(record,feature)&&record.trait_enabled?.[feature.key]!==false;
+ const active=feature=>featureEnabled(record,feature)&&record.trait_enabled?.[feature.key]!==false&&
+  sourceEnabled(record,feature.origin_id)&&sourceEnabled(record,feature.origin_key)&&
+  sourceEnabled(record,String(feature.origin_key||'').split('|subclass|')[0]);
  const classes=rows(record.classes).length?record.classes:record.class?[{name:record.class,source:record.class_source,level:record.level||1}]:[];
  for(const rule of rows(catalog.attack_actions)){
   if(rule.rules_version&&rule.rules_version!==String(record.rules_version||'2014'))continue;
@@ -147,9 +159,18 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
    Number(c.level||0)>=Number(rule.min_level||1));
   if(!member)continue;
   const source='class|'+normal(rule.class_source||member.source)+'|'+normal(rule.class_name);
-  const feature=rows(features).find(f=>normal(f.name)===normal(rule.feature)&&
-   (String(f.origin_key||'')===source||String(f.origin_key||'').startsWith(source+'|'))&&
-   (!rule.subclass||String(f.origin_key||'').toLowerCase().includes('|subclass|'+normal(rule.subclass)+'|'))&&active(f));
+  const feature=rows(features).find(f=>{
+   const owner=String(f.origin_key||'');
+   const classOwned=owner===source||owner.startsWith(source+'|');
+   const selectedOption=rule.attack_replacement===true&&owner.startsWith('optional|')&&
+    rows(record.optional_features_catalog).some(option=>!option.disabled&&
+     normal(option.name)===normal(rule.feature)&&
+     (!rule.feature_source||normal(option.source)===normal(rule.feature_source)));
+   const subclass=owner.split('|subclass|')[1]?.split('|')[0]||'';
+   const canonicalSubclass=value=>normal(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');
+   return normal(f.name)===normal(rule.feature)&&(classOwned||selectedOption)&&
+    (!rule.subclass||canonicalSubclass(subclass)===canonicalSubclass(rule.subclass))&&active(f);
+  });
   if(!feature)continue;
   const tracker=rule.tracker_name?rows(trackers).find(t=>!t.disabled&&normal(t.name)===normal(rule.tracker_name)&&
    (!t.origin_class||normal(t.origin_class)===normal(rule.class_name))):null;
@@ -157,6 +178,7 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
   result.push({id:'attack_action:'+rule.id,name:rule.name||feature.name,time:rule.time||'action',
    origin_id:feature.origin_id,feature_id:feature.origin_id,feature_name:feature.name,
    description:rule.detail||feature.entries||'',steps:rows(rule.steps),attack_action:true,
+   attack_replacement:rule.attack_replacement===true,
    tracker_id:tracker?.id||'',tracker:tracker?.name||rule.tracker_name||'',cost,
    available:cost===0||!!tracker,unavailable_reason:cost&&!tracker?'Risorsa non disponibile':'',
    class_feature_id:rule.class_feature_id||'',automatic:true});
@@ -173,7 +195,8 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
   result.push({id:'attack_action:feature:'+String(feature.key||feature.origin_id),
    name:spec.name||feature.name,time:spec.time||'action',description:spec.detail||feature.entries||'',
    origin_id:feature.origin_id,feature_id:feature.origin_id,feature_name:feature.name,
-   attack_action:true,steps:spec.steps,tracker_id:tracker?.id||'',
+   attack_action:true,attack_replacement:spec.attack_replacement===true,
+   steps:spec.steps,tracker_id:tracker?.id||'',
    tracker:tracker?.name||spec.tracker_name||'',cost,
    available:cost===0||!!tracker,automatic:true});
  }
@@ -272,6 +295,14 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
     tracker:tracker?.name||lairOwner.monster_pool?.name||'',cost:1,
     available:!!tracker&&!tracker.disabled,automatic:true});
   }
+ }
+ const replacements=result.filter(row=>row.attack_replacement);
+ if(replacements.length>1){
+  // Extra Attack, Improved Extra Attack and multiclass grants are alternatives,
+  // not cumulative sequences. Keep the strongest active source's own trait.
+  const best=replacements.reduce((left,right)=>
+   attacksPerActionFromSequences([right])>attacksPerActionFromSequences([left])?right:left);
+  return result.filter(row=>!row.attack_replacement||row===best);
  }
  return result;
 }

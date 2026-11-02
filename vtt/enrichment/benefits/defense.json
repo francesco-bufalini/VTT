@@ -1,0 +1,307 @@
+{
+  "schema_version": 2,
+  "benefit_type": "defense",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "defense:dragonborn:ftd:chromatic:black",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:chromatic:black"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:chromatic:black",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "acid"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:chromatic:blue",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:chromatic:blue"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:chromatic:blue",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "lightning"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:chromatic:green",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:chromatic:green"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:chromatic:green",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "poison"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:chromatic:red",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:chromatic:red"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:chromatic:red",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:chromatic:white",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:chromatic:white"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:chromatic:white",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:gem:amethyst",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:gem:amethyst"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:gem:amethyst",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "force"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:gem:crystal",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:gem:crystal"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:gem:crystal",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "radiant"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:gem:emerald",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:gem:emerald"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:gem:emerald",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "psychic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:gem:sapphire",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:gem:sapphire"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:gem:sapphire",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "thunder"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:gem:topaz",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:gem:topaz"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:gem:topaz",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "necrotic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:metallic:brass",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:metallic:brass"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:metallic:brass",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:metallic:bronze",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:metallic:bronze"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:metallic:bronze",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "lightning"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:metallic:copper",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:metallic:copper"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:metallic:copper",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "acid"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:metallic:gold",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:metallic:gold"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:metallic:gold",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "fire"
+          }
+        ]
+      }
+    },
+    {
+      "id": "defense:dragonborn:ftd:metallic:silver",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:dragonborn:ftd:metallic:silver"
+        }
+      },
+      "benefit": {
+        "type": "defense",
+        "id": "defense:dragonborn:ftd:metallic:silver",
+        "defenses": [
+          {
+            "kind": "resistance",
+            "damage_type": "cold"
+          }
+        ]
+      }
+    }
+  ]
+}

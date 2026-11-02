@@ -5,6 +5,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureRollSources,resolveClassRollMode} from '../feature_mechanics.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {effectExtensionsFor} from '../effect_extensions.js';
+import {withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_grants.mjs';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
@@ -48,18 +49,23 @@ test('a pre-2024 dwarf gains the racial armor-strength waiver as a benefit',()=>
  const modern=base({rules_version:'2024',species:'Dwarf',species_source:'XPHB'});
  assert.equal(calculateSheet(modern,catalogs).armor_effects.speed_penalty,10);
 });
-test('Arcane Armor grants a per-item extension when the Armorer model is active',()=>{
- const r=base({classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
- level:8,trait_state_selection:{armor_model:'armor_model:infiltrator'}});
- const c=calculateSheet(r,catalogs);
- assert.equal(c.armor_effects.speed_penalty,0);
- assert.equal(c.armor_effects.strength_waived,true);
- assert.equal(c.values.speed,35);
- const ext=c.effect_extensions.find(x=>x.operation==='ignore_armor_strength');
- assert.ok(ext?.origin_id?.startsWith('feature:'),JSON.stringify(c.effect_extensions));
- assert.equal(effectExtensionsFor([ext],{kind:'item',id:'plate',name:'Plate Armor',inventory_index:0}).length,1);
- assert.equal(effectExtensionsFor([ext],{kind:'item',id:'other',name:'Other',inventory_index:1}).length,0);
+test('applied Arcane Armor waives strength only on the extended armor item',()=>{
+ const typed=withArmorerGrants(catalogs);
+ const source=base({classes:[{name:'Artificer',source:'TCE',level:8,
+  subclass:'Armorer',subclass_source:'TCE'}],level:8});
+ const record=applyArmorerModel(source,typed,'armor_model:infiltrator');
+ const calculated=calculateSheet(record,typed);
+ assert.equal(calculated.armor_effects.speed_penalty,0);
+ assert.equal(calculated.armor_effects.strength_waived,true);
+ assert.equal(calculated.values.speed,35);
+ const extension=calculated.effect_extensions.find(row=>row.operation==='ignore_armor_strength');
+ assert(extension,'The item extension must own its passive effect');
+ assert.equal(effectExtensionsFor([extension],{kind:'item',id:'plate',name:'Plate Armor',inventory_index:0}).length,1);
+ assert.equal(effectExtensionsFor([extension],{kind:'item',id:'other',name:'Other',inventory_index:1}).length,0);
+ const missing=calculateSheet({...record,inventory:[]},typed);
+ assert.equal(missing.armor_effects.strength_waived,false);
 });
+
 test('mithral armor has neither penalty',()=>{
  const r=base({inventory:[{...armor(),name:'Mithral Plate Armor'}]}),c=calculateSheet(r,catalogs);
  assert.equal(c.values.ac,18);

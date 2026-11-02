@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {attackCategories,attackActionGrants,attackActionUsePatch,attackActionChoice,attackActionPayment,resolveAttackActionSteps} from '../attack_count_benefits.js';
+import {attackCategories,attackActionGrants,attacksPerActionFromSequences,attackActionUsePatch,attackActionChoice,attackActionPayment,resolveAttackActionSteps} from '../attack_count_benefits.js';
+import {projectFeatureTimingRules} from '../class_benefit_progression.js';
 import {multiattackSteps,normalizeMonsterStatBlock} from '../character_core.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {monsterActions,monsterActionCost,monsterActionName,lairOptions} from '../monster_traits.js';
@@ -265,4 +266,73 @@ test('legendary entries refer to concrete operations; native actions consume the
  const missing=attackActionGrants(invalidCheck,[],[tracker],rules).find(row=>row.id===action.id);
  assert.throws(()=>attackActionUsePatch(invalidCheck,{attack_actions:[missing],trackers:[tracker]},
   missing.id,'monster:legendary:0'),/non disponibile/i);
+});
+
+test('migrated Extra Attack sequences replace the normal attack and never stack across levels or classes',()=>{
+ const types=['action','activation','resource_recovery','attack_count','action_sequence'];
+ const typed=Object.fromEntries(types.map(type=>[type,file('../../vtt/enrichment/benefits/'+type+'.json')]));
+ const rules=projectFeatureTimingRules(typed);
+ assert.equal(rules.attack_count_grants.length,0);
+ const classFeatures={class_features:[
+  {class_name:'Fighter',class_source:'PHB',level:5,name:'Extra Attack'},
+  {class_name:'Fighter',class_source:'PHB',level:11,name:'Extra Attack (2)'},
+  {class_name:'Fighter',class_source:'PHB',level:20,name:'Extra Attack (3)'},
+  {class_name:'Barbarian',class_source:'PHB',level:5,name:'Extra Attack'}
+ ],subclass_features:[]};
+ const fighter={classes:[{name:'Fighter',source:'PHB',level:20}],rules_version:'2014'};
+ const features=collectStructuredFeatures(fighter,{classFeatures,featureRules:rules});
+ const granted=attackActionGrants(fighter,features,[],rules).filter(row=>row.attack_replacement);
+ assert.equal(granted.length,1);
+ assert.equal(granted[0].name,'Extra Attack (3)');
+ assert.deepEqual(granted[0].steps,[{selector:{kind:'attack'},count:4}]);
+ assert.equal(granted[0].origin_id,features.find(feature=>feature.name==='Extra Attack (3)').origin_id);
+ assert.equal(attacksPerActionFromSequences(granted),4);
+ assert.equal(resolveAttackActionSteps(granted[0],[
+  {id:'unarmed',name:'Unarmed Strike',melee:true},
+  {id:'sword',name:'Longsword',melee:true}
+ ])[0].options.length,2,'each slot can choose any available attack');
+ const multiclass={classes:[{name:'Fighter',source:'PHB',level:11},
+  {name:'Barbarian',source:'PHB',level:5}],rules_version:'2014'};
+ const multiFeatures=collectStructuredFeatures(multiclass,{classFeatures,featureRules:rules});
+ const multi=attackActionGrants(multiclass,multiFeatures,[],rules).filter(row=>row.attack_replacement);
+ assert.equal(multi.length,1);
+ assert.equal(attacksPerActionFromSequences(multi),3);
+ const disabled={...fighter,trait_enabled:{[features.find(row=>row.name==='Extra Attack (3)').key]:false}};
+ const disabledGrants=attackActionGrants(disabled,features,[],rules).filter(row=>row.attack_replacement);
+ assert.equal(attacksPerActionFromSequences(disabledGrants),3);
+ const subclasses={class_features:[],subclass_features:[
+  {class_name:'Bard',class_source:'PHB',subclass_name:'College of Valor',
+   subclass_source:'PHB',level:6,name:'Extra Attack'},
+  {class_name:'Artificer',class_source:'TCE',subclass_name:'Battle Smith',
+   subclass_source:'TCE',level:5,name:'Extra Attack'}
+ ]};
+ for(const member of [
+  {name:'Bard',source:'PHB',level:6,subclass:'College of Valor',subclass_source:'PHB'},
+  {name:'Artificer',source:'TCE',level:5,subclass:'Battle Smith',subclass_source:'TCE'}
+ ]){
+  const character={classes:[member],rules_version:'2014'};
+  const own=collectStructuredFeatures(character,{classFeatures:subclasses,featureRules:rules});
+  const actions=attackActionGrants(character,own,[],rules).filter(row=>row.attack_replacement);
+  assert.equal(actions.length,1,member.name+' subclass must own its sequence');
+  assert.equal(attacksPerActionFromSequences(actions),2);
+ }
+});
+
+test('blade invocations grant generic attack sequences only when their option is selected',()=>{
+ const types=['action','activation','resource_recovery','attack_count','action_sequence'];
+ const rules=projectFeatureTimingRules(Object.fromEntries(types.map(type=>
+  [type,file('../../vtt/enrichment/benefits/'+type+'.json')])));
+ const classFeatures={class_features:[],subclass_features:[]};
+ const base={classes:[{name:'Warlock',source:'XPHB',level:12}],rules_version:'2024'};
+ const bareFeatures=collectStructuredFeatures(base,{classFeatures,featureRules:rules});
+ assert.equal(attackActionGrants(base,bareFeatures,[],rules).filter(row=>row.attack_replacement).length,0);
+ const selected={...base,optional_features_catalog:[{name:'Devouring Blade',source:'XPHB'}]};
+ const features=collectStructuredFeatures(selected,{classFeatures,featureRules:rules});
+ const actions=attackActionGrants(selected,features,[],rules).filter(row=>row.attack_replacement);
+ assert.equal(actions.length,1);
+ assert.equal(actions[0].feature_name,'Devouring Blade');
+ assert.deepEqual(actions[0].steps,[{selector:{kind:'attack'},count:3}]);
+ const disabled={...selected,optional_features_catalog:[{name:'Devouring Blade',source:'XPHB',disabled:true}]};
+ const disabledFeatures=collectStructuredFeatures(disabled,{classFeatures,featureRules:rules});
+ assert.equal(attackActionGrants(disabled,disabledFeatures,[],rules).filter(row=>row.attack_replacement).length,0);
 });

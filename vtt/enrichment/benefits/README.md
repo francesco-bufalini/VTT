@@ -114,9 +114,11 @@ Le nuove dichiarazioni sono raggruppate **solo per meccanica**, non per classe:
 | [`action.json`](action.json) | 65 ulteriori (117 totali di classe) | `feature_timing_recovery_rules.actions` |
 | [`activation.json`](activation.json) | 31 | `feature_timing_recovery_rules.contextual_actions` |
 | [`resource_recovery.json`](resource_recovery.json) | 17 | `feature_timing_recovery_rules.recoveries` |
-| [`attack_count.json`](attack_count.json) | 26 | `feature_timing_recovery_rules.attack_count_grants` |
-| [`action_sequence.json`](action_sequence.json) | 12 | `feature_timing_recovery_rules.attack_actions` |
+| [`attack_count.json`](attack_count.json) | 0 (solo compatibilità legacy/homebrew) | Vecchie concessioni `attack_count_grants` |
+| [`action_sequence.json`](action_sequence.json) | 38 (12 sequenze preesistenti + 26 multiattacchi) | `feature_timing_recovery_rules.attack_actions` e `attack_count_grants` |
 | [`resource.json`](resource.json) | 90 | `class_resource_overrides.classes[].resources` |
+
+I 26 benefici precedentemente espressi come `attack_count` (Extra Attack, Thirsting Blade e Devouring Blade) sono ora vere `action_sequence`, ognuna con uno step `{ "selector": { "kind": "attack" }, "count": N }`, costo di un'azione e `attack_replacement: true`. Il motore presenta soltanto la sequenza attiva più potente, senza sommare gli attacchi concessi da più tratti, e lascia l'Attacco di base quando non è attiva alcuna sostituzione. I multiattacchi dei mostri continuano a usare le proprie sequenze, anche quando includono attacchi specifici o capacità.
 
 `pwa/class_benefit_progression.js` ricompone solo **in memoria** le strutture
 attualmente usate dall'app, rispettando i nomi dei tracker, le priorità,
@@ -268,3 +270,68 @@ Pact of the Tome concedono lo stesso tipo di `option_grant` annidato per la
 scelta di trucchetti (filtri e quantità dichiarati nei dati, senza logiche
 specifiche sul tipo di slot). Non si aggiunge alcuna migrazione di schede
 personaggio pre-release.
+
+## Flavour di tratto e concessioni di talenti
+
+`flavours.json` dichiara varianti nominate di un tratto 5eTools/homebrew; non è un
+beneficio primitivo. Ogni voce è legata all'identità originale tramite
+`granted_by`; ogni flavour ha un ID globale stabile. I cataloghi per tipo
+possono riferirsi a `granted_by: {kind: "flavour", ref: {category: "flavour", id: "..."}}`.
+Solo il flavour selezionato concede i relativi benefici. La scelta viene salvata
+per istanza del tratto (`trait_flavours[origin_id]`), inclusi privilegi ripetuti
+ad ogni livello.
+
+`bonus.json` contiene due concessioni +1 indipendenti per il flavour ASI
+«incremento caratteristiche»: entrambe consentono di scegliere la stessa
+caratteristica, dando complessivamente +2, o caratteristiche differenti.
+`feat_grant.json` contiene la concessione standardizzata di un talento per
+l'altro flavour ASI. `defense.json` attribuisce le resistenze draconiche ai
+flavour di ascendenza; la logica speciale del soffio rimane indipendente.
+Il talento Athlete PHB dimostra una scelta tra flavour di bonus permanente.
+
+Le scelte esistenti (`advancement_choices`, `origin_draconic_ancestry` e
+`ability_choice` dei talenti) vengono lette per compatibilità; una scelta
+esplicita del nuovo flavour diventa la fonte di verità, senza sommare i bonus
+legacy. La validazione usa `authoring/flavours.schema.json` e i normali
+schemi dei benefici per gli effetti collegati ai flavour.
+
+### Migrazione delle scelte di caratteristica dei talenti
+
+I dati 5eTools di `pwa/catalog/ability_grants.json` rimangono fonte per i
+riferimenti e le descrizioni, ma le 151 scelte semplici di caratteristica in
+più (oltre ad Athlete PHB già migrato) hanno ora un flavour per ogni
+caratteristica ammessa, con un beneficio `bonus` separato per +1. Il motore
+legacy viene usato soltanto per le scelte non ancora salvate nel nuovo formato;
+quando si sceglie un flavour, il vecchio `ability_choice` del talento viene
+azzerato e il calcolo sopprime il suo vecchio incremento per evitare doppioni.
+Ogni feat usa l'identità stabile `feat|source|name`, anche se compare con
+più sezioni nella scheda.
+
+Restano in attesa di migrazione dedicata `Potent Dragonmark` EFA (la caratteristica deve essere quella scelta dal
+Dragonmark) e il talento `Ability Score Improvement` XPHB (possiede due
+varianti di distribuzione dei punteggi, distinte dall'ASI di classe).
+
+## Beneficio state_activation: attivazione degli Stati
+
+`state_activation.json` definisce **soltanto** attivazione e disattivazione
+di uno Stato passivo identificato da `state_id`: `mode` (`toggle`,
+`activate`, `deactivate`), economia di azione (`activation` e
+`deactivation`) e facoltativamente `resource.id` / `resource.cost`.
+Il costo si applica esclusivamente durante l'attivazione e fa riferimento
+a un tracker già concesso da `resource.json`, senza crearne uno nuovo.
+
+Le definizioni degli Stati e i benefici che questi applicano rimangono
+separati. `trigger` è informazione contestuale, non un esecutore automatico
+di eventi. La PWA integra queste voci nei propri Stati di classe/sottoclasse
+esistenti; gli ID salvati restano invariati. Il catalogo parte vuoto:
+le scelte permanenti come i Totem non vengono trasformate arbitrariamente
+in attivazioni gratuite.
+
+### Talento Resilient (2014/2024)
+
+Entrambe le edizioni hanno ora un flavour per ciascuna delle sei caratteristiche:
+`bonus.json` attribuisce +1 e `proficiency.json` concede la competenza nel
+corrispondente tiro salvezza allo stesso flavour. La scelta 2024 esclude i tiri
+salvezza già competenti, ma conserva visibile una variante salvata in precedenza.
+La scelta precedente non viene duplicata e il cambio di variante ritira solo
+le competenze e i bonus appartenenti a quella istanza del talento.

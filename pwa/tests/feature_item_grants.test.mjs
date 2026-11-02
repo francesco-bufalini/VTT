@@ -5,6 +5,7 @@ import {calculateSheet} from '../sheet_rules.js';
 
 import {featureItemGrants,claimFeatureItemPatch,featureItemPowers} from '../feature_item_grants.js';
 import {classFeatureRollSources} from '../feature_mechanics.js';
+import {withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_grants.mjs';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const classFeatures=read('classes'),itemRules=read('feature_item_grants').grants;
@@ -57,19 +58,22 @@ test('Eldritch Cannon uses the generic item-grant contract and its own paid abil
  assert.equal(calculateSheet(art(2,'Artillerist'),catalogs).feature_item_grants.some(g=>g.id===cannon.id),false);
 });
 
-test('Armorer model applies source-bound Stealth advantage and has the Thunder Gauntlets hit effect',()=>{
- const record={...art(9),inventory:[armor],trait_state_selection:{armor_model:'armor_model:guardian'}},guardian=calculateSheet(record,catalogs);
- const gauntlets=guardian.attacks.find(a=>a.id==='class_feature:thunder_gauntlets');
- assert.ok(gauntlets);assert.equal(gauntlets.on_hit_effects?.[0]?.mode,'disadvantage');
- assert.equal(gauntlets.on_hit_effects[0].target,'attack_roll');
- const infiltrator={...record,trait_state_selection:{armor_model:'armor_model:infiltrator'}};
- const stealth=calculateSheet(infiltrator,catalogs);
- assert.ok(stealth.trait_state_roll_modes.some(m=>m.target==='skill:stealth'&&m.mode==='advantage'));
- assert.ok(classFeatureRollSources(infiltrator,stealth,'skill:stealth').some(m=>m.mode==='advantage'));
- assert.equal(classFeatureRollSources(record,guardian,'skill:stealth').some(m=>m.mode==='advantage'),false);
- assert.equal(calculateSheet({...infiltrator,inventory:[]},catalogs).trait_state_roll_modes.length,0);
+test('applied model adds the Stealth bonus and the Thunder Gauntlets hit effect to its State',()=>{
+ const rules=withArmorerGrants(catalogs);
+ const guardian=applyArmorerModel({...art(9),inventory:[armor]},rules,'armor_model:guardian');
+ const calculated=calculateSheet(guardian,rules);
+ const attack=calculated.attacks.find(row=>row.id==='class_feature:thunder_gauntlets');
+ assert(attack);
+ assert.equal(attack.on_hit_effects?.[0]?.mode,'disadvantage');
+ assert.equal(attack.on_hit_effects[0].target,'attack_roll');
+ const infiltrator=applyArmorerModel({...art(9),inventory:[armor]},rules,'armor_model:infiltrator');
+ const stealth=calculateSheet(infiltrator,rules);
+ assert(stealth.feat_roll_modes.some(row=>row.target==='skill:stealth'&&row.mode==='advantage'));
+ assert(classFeatureRollSources(infiltrator,stealth,'skill:stealth').some(row=>row.mode==='advantage'));
+ assert(!classFeatureRollSources(guardian,calculated,'skill:stealth').some(row=>row.mode==='advantage'));
+ const absent=calculateSheet({...infiltrator,inventory:[]},rules);
+ assert(!absent.feat_roll_modes.some(row=>row.target==='skill:stealth'&&row.mode==='advantage'));
 });
-
 test('The Right Tool for the Job and Bard Performance of Creation reuse grants',()=>{
  const tool=calculateSheet(art(3,'Alchemist'),catalogs).feature_item_grants
    .find(g=>g.id==='artificer-right-tool');

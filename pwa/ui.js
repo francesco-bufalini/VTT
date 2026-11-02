@@ -6795,7 +6795,7 @@ function openPendingChoiceDialog(choice){
    (choice.kind==='ability_fixed'?'Incrementi già applicati automaticamente dalla fonte selezionata.':
     'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
     ' concesse dal privilegio. Le scelte sono associate alla loro origine.')+'</p>'+
-   (choice.kind==='advancement_feat'?'<input type="search" data-pending-filter placeholder="Cerca un talento" aria-label="Cerca un talento">':'')+
+   (['advancement_feat','flavour_feat'].includes(choice.kind)?'<input type="search" data-pending-filter placeholder="Cerca un talento" aria-label="Cerca un talento">':'')+
    '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
    (rows||customRow?'<div class="pending-choice-options vtt-selection-list">'+rows+customRow+'</div>':
     '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
@@ -6810,11 +6810,13 @@ function openPendingChoiceDialog(choice){
    const customNames=customChecked?(custom?.value||'').split(',').map(x=>x.trim()).filter(Boolean):[];
    if(custom)custom.disabled=!customChecked;
    const total=checked.filter(row=>row.value!=='__custom__').length+customNames.length;
+   const mandatory=['trait_flavour','flavour_feat'].includes(choice.kind);
    const invalid=(customChecked&&(!customNames.length||customNames.some(name=>name.length>80)))||
-     total>choice.count||new Set(customNames.map(x=>x.toLowerCase())).size!==customNames.length;
+     total>choice.count||(mandatory&&total!==1)||
+     new Set(customNames.map(x=>x.toLowerCase())).size!==customNames.length;
    const progress=dialog.querySelector('.pending-choice-progress');
    if(progress)progress.textContent=total+' / '+choice.count+' selezionate'+
-     (invalid?' · Controlla i nomi personalizzati':'');
+     (invalid?(mandatory&&total!==1?' · Seleziona una variante':' · Controlla i nomi personalizzati'):'');
    for(const input of dialog.querySelectorAll('[name="pending-options"]')){
      input.disabled=!input.checked&&total>=choice.count;
    }

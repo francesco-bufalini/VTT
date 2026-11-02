@@ -437,6 +437,802 @@
         "tracker_name": "War Priest",
         "tracker_cost": 1
       }
+    },
+    {
+      "id": "sequence:phb:barbarian:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Barbarian",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:barbarian:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:fighter:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:fighter:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:monk:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Monk",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:monk:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:paladin:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Paladin",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:paladin:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:ranger:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Ranger",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:ranger:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:fighter:extra-attack-2:11",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack (2)",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 11,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:fighter:extra-attack-2:11",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 3
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:fighter:extra-attack-3:20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack (3)",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 20,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:fighter:extra-attack-3:20",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 4
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:bard:valor:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "PHB",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "Valor",
+          "subclass_source": "PHB"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:bard:valor:extra-attack:6",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:bard:swords:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "Swords",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:bard:swords:extra-attack:6",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:wizard:bladesinging:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "TCE",
+          "class_name": "Wizard",
+          "class_source": "PHB",
+          "subclass": "Bladesinging",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:wizard:bladesinging:extra-attack:6",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:barbarian:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Barbarian",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:barbarian:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:fighter:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:fighter:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:monk:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Monk",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:monk:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:paladin:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Paladin",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:paladin:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:ranger:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Ranger",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:ranger:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:fighter:extra-attack-2:11",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack (2)",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 11,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:fighter:extra-attack-2:11",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 3
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:fighter:extra-attack-3:20",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Extra Attack (3)",
+          "source": "XPHB",
+          "class_name": "Fighter",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 20,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:fighter:extra-attack-3:20",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 4
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:bard:valor:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB",
+          "subclass": "Valor",
+          "subclass_source": "XPHB"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:bard:valor:extra-attack:6",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:bard:swords:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "XGE",
+          "class_name": "Bard",
+          "class_source": "XPHB",
+          "subclass": "Swords",
+          "subclass_source": "XGE"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:bard:swords:extra-attack:6",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:wizard:bladesinging:extra-attack:6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "TCE",
+          "class_name": "Wizard",
+          "class_source": "XPHB",
+          "subclass": "Bladesinging",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 6,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:wizard:bladesinging:extra-attack:6",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:tce:artificer:armorer:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:tce:artificer:armorer:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:tce:artificer:battle-smith:extra-attack:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Extra Attack",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Battle Smith",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:tce:artificer:battle-smith:extra-attack:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:warlock:thirsting-blade:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Thirsting Blade",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:warlock:thirsting-blade:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:phb:warlock:devouring-blade:12",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Devouring Blade",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 12,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:phb:warlock:devouring-blade:12",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 3
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:warlock:thirsting-blade:5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Thirsting Blade",
+          "source": "XPHB",
+          "class_name": "Warlock",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 5,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:warlock:thirsting-blade:5",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 2
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
+    },
+    {
+      "id": "sequence:xphb:warlock:devouring-blade:12",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Devouring Blade",
+          "source": "XPHB",
+          "class_name": "Warlock",
+          "class_source": "XPHB"
+        }
+      },
+      "min_level": 12,
+      "benefit": {
+        "type": "action_sequence",
+        "id": "sequence:xphb:warlock:devouring-blade:12",
+        "sequence": {
+          "steps": [
+            {
+              "selector": {
+                "kind": "attack"
+              },
+              "count": 3
+            }
+          ]
+        },
+        "time": "action",
+        "attack_replacement": true
+      }
     }
   ],
   "notes": "Source-qualified class and subclass mechanics. One file per type; runtime projection retained for compatible consumers."

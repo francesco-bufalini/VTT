@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "benefit_type": "feat_grant",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "feat_grant:asi:phb",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:asi:phb:feat"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "feat_grant:asi:phb",
+        "selection": {
+          "kind": "feat",
+          "source": {
+            "type": "feat_catalog"
+          }
+        },
+        "grants": [
+          {
+            "id": "selected_feat",
+            "parameters": {
+              "source": "feat_catalog",
+              "count": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "feat_grant:asi:xphb",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:asi:xphb:feat"
+        }
+      },
+      "benefit": {
+        "type": "feat_grant",
+        "id": "feat_grant:asi:xphb",
+        "selection": {
+          "kind": "feat",
+          "source": {
+            "type": "feat_catalog"
+          }
+        },
+        "grants": [
+          {
+            "id": "selected_feat",
+            "parameters": {
+              "source": "feat_catalog",
+              "count": 1
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

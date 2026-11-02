@@ -120,6 +120,8 @@ def inspect(upstream, compendium, proficiency, ability, benefits):
 def load_benefits(directory: Path):
     catalogs = {}
     for path in sorted(directory.glob("*.json")):
+        if path.name == "flavours.json":
+            continue  # Trait variant catalog; not a primitive benefit type.
         data = read_json(path)
         if data.get("benefit_type") != path.stem or data.get("scope") != "catalog":
             raise ValueError(f"Invalid per-type catalog name/scope: {path}")

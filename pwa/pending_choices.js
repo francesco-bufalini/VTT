@@ -4,6 +4,7 @@ import {FEATURE_FEAT_GRANTS} from './catalog/feature_feat_grants.js';
 // creature_pending_choices.gd and creature_proficiency_rules.gd contracts.
 // Never infer a choice from prose or assign a privilege automatically.
 import {selectedSources,grantedFields,fixedProficiencies,effectiveBackgrounds} from './structured_effects.js';
+import {traitFlavourChoices,flavourBenefitChoices,saveTraitFlavourChoice,saveFlavourFeatChoice} from './trait_flavours.js';
 import {SKILLS,localClasses} from './sheet_rules.js';
 import {referencePatch,rowReferencePatch} from './native_sheet.js';
 import {traitBenefitSources} from './trait_benefits.js';
@@ -218,6 +219,9 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  record={...record,...migration};
  const result=pendingLineageChoices(record,calculated,catalogs),
    index=calculated.proficiency_catalog_overrides||catalogs.proficiencyGrants||{};
+  const flavourChoices=traitFlavourChoices(record,calculated.features||[],catalogs.flavours||{},calculated.proficiencies||[]);
+  const flavouredOwners=new Set(flavourChoices.map(choice=>choice.origin_id));
+  result.push(...flavourChoices,...flavourBenefitChoices(record,calculated.features||[],catalogs));
  for(const source of selectedSources(record,index,calculated.features??null)){
   if(!enabled(record,source.id))continue;
   for(const [i,req] of requirementEntries(source).entries()){
@@ -255,7 +259,8 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
   seen.add(sid);
   const row=arr(catalogs.abilityGrants?.feat).find(x=>norm(x.name)===norm(feat.name)&&
     norm(x.source)===norm(feat.source));
-  const variants=originVariants(catalogs.abilityGrants,'feat',row,feat.source);
+  if(flavouredOwners.has(sid))continue;
+   const variants=originVariants(catalogs.abilityGrants,'feat',row,feat.source);
   if(!variants.length)continue;
   const legacy=variants.length===1&&variants[0].parts.length===1?feat.ability_choice:'';
   result.push(...allocationChoiceRows(record,sid,feat.name,variants,legacy));
@@ -314,7 +319,8 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  }
  // One Fizban ancestry choice drives resistance, breath and temporary immunity.
  const dragonChoice=dragonbornFtdChoice(record,catalogs.speciesPowers);
- if(dragonChoice&&enabled(record,dragonChoice.origin_id))result.push(dragonChoice);
+ if(dragonChoice&&enabled(record,dragonChoice.origin_id)&&
+     !flavourChoices.some(choice=>String(choice.flavour_set_id).startsWith('flavour_set:dragonborn:ftd:')))result.push(dragonChoice);
  // The same resolved parent and subrace sources drive both the defense
  // calculation and its picker. Never offer an unrelated 5etools variant.
  for(const source of selectedSpeciesDefenseRules(record,catalogs.speciesDefenses)){
@@ -345,7 +351,8 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     norm(r.feature_name)===norm(feature.name)&&arr(r.sources).some(source=>
     norm(source)===norm(feature.class_source||String(feature.origin_key||'').split('|')[1])));
   if(!rule)continue;
-  const sid=feature.origin_id,owned=arr(record.advancement_choices).find(x=>x.origin_id===sid);
+  if(flavouredOwners.has(feature.origin_id))continue;
+   const sid=feature.origin_id,owned=arr(record.advancement_choices).find(x=>x.origin_id===sid);
   const mode=owned?.mode,variants=allocationVariants(rule.ability_choices);
   // Older sheets retain their allocation until the next explicit save. New
   // choices use normal formula bonuses, never origin_ability_choices.
@@ -484,9 +491,9 @@ export function savePendingChoice(record,choice,values=[],details={}){
   const {migration_patch,...current}=choice;
   return {...migration_patch,...savePendingChoice({...record,...migration_patch},current,values,details)};
  }
- if(!choice||!['bonus','ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['bonus','ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency','casting_ability','defense','draconic_ancestry','racial_option','spell_variant','subclass','subrace','trait_flavour','flavour_feat'].includes(choice.kind))throw Error('Scelta non valida.');
  if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
- const raw=unique(arr(values).map(value=>choice.kind==='advancement_feat'?norm(value):
+ const raw=unique(arr(values).map(value=>['advancement_feat','flavour_feat'].includes(choice.kind)?norm(value):
    ['subclass','subrace'].includes(choice.kind)?String(value):strip(value)));
  const prefix='__custom__:';
  const mixed=choice.proficiency_kind==='mixed';
@@ -501,7 +508,9 @@ export function savePendingChoice(record,choice,values=[],details={}){
        /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||
        arr(choice.excluded_options).includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
- if(choice.kind==='subclass'||choice.kind==='subrace'){
+ if(choice.kind==='trait_flavour')return saveTraitFlavourChoice(record,choice,selected);
+  if(choice.kind==='flavour_feat')return saveFlavourFeatChoice(record,choice,selected);
+  if(choice.kind==='subclass'||choice.kind==='subrace'){
    if(selected.length!==1||!choice.options.includes(selected[0])||!choice.option_rows?.[selected[0]])
      throw Error('Scegli una variante valida.');
    const entry=choice.option_rows[selected[0]];
@@ -574,7 +583,8 @@ export function savePendingChoice(record,choice,values=[],details={}){
     ...selected.map(value=>({id:'trait:choice:'+choice.id+':'+value,
       origin_id:choice.origin_id,origin_name:'Tratto · '+choice.name,
       target:choice.target_prefix+value,expression:String(choice.amount),
-      requirements:choice.requirements,disabled:false,automatic:false}))]};
+      requirements:choice.requirements,flavour_parent_id:choice.flavour_parent_id,
+       disabled:false,automatic:false}))]};
  }
  if(choice.kind==='ability_mode')return saveAllocationChoice(record,choice,selected);
  if(choice.kind==='ability'){

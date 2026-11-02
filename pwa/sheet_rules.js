@@ -2,6 +2,7 @@ import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
+import {projectTraitFlavourBenefits,traitFlavourModels} from './trait_flavours.js';
 import {scalingDiceFor,resolveScalingDieBenefit,loadScalingDieBenefits} from './scaling_dice.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
 import {monsterTraits,bindMonsterTrackers,monsterAttackOwner,monsterActionName} from './monster_traits.js';
@@ -17,7 +18,7 @@ import {speciesRollModeEntries,speciesRollModeFeatures,speciesRollModeTrackers} 
 import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits,speciesAttacksFromBenefits,speciesPowersFromBenefits} from './species_benefit_catalogs.js';
 import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
-import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,attackCategories} from './attack_count_benefits.js';
+import {attackCountBenefits,attacksPerActionFromBenefits,attacksPerActionFromSequences,attackActionGrants,attackCategories} from './attack_count_benefits.js';
 import {collectEffectExtensions,loadEffectExtensionBenefits} from './effect_extensions.js';
 import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
@@ -32,6 +33,7 @@ import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplement
 import {contextualFeatureGrants,modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects,traitStateRollModes} from './trait_state_rules.js';
+import {projectStateActivationBenefits,loadStateActivationBenefits} from './state_activation_benefits.js';
 import {featureItemGrants,racialItemGrantFeatures,loadFeatureItemGrantBenefits} from './feature_item_grants.js';
 import {barbarian2014Supplements,barbarian2014ProficiencyCatalog} from './barbarian_2014.js';
 import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
@@ -233,7 +235,10 @@ function fixedAbilities(row){
 function selectedAbilityChoices(record,row,sid,index,group,legacy=''){
  return effectiveAllocations(record,sid,originVariants(index,group,row,row.source),legacy);
 }
-function indexRows(record,index,warnings){
+function indexRows(record,index,warnings,activeFlavours=[]){
+  const migratedFeats=new Set(activeFlavours.filter(model=>model.explicit&&model.selected&&
+    model.granted_by?.ref?.category==='feat')
+    .map(model=>'feat|'+String(model.granted_by.ref.source).toLowerCase()+'|'+String(model.granted_by.ref.name).toLowerCase()));
   const rows=[];
   // Some source-specific subraces replace the entire parental ASI (e.g.
   // FTD Dragonborn, Eberron dragonmarks), rather than stacking onto it.
@@ -311,7 +316,7 @@ function indexRows(record,index,warnings){
     for(const row of matches){
       const sid="feat|"+String(row.source).toLowerCase()+"|"+String(row.name).toLowerCase();
       append(sid,row.name,fixedAbilities(row));
-      for(const choice of selectedAbilityChoices(record,row,sid,index,"feat",feat.ability_choice)){
+      for(const choice of (migratedFeats.has(sid)?[]:selectedAbilityChoices(record,row,sid,index,"feat",feat.ability_choice))){
         const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
         if(grant)rows.push(grant);
       }
@@ -861,8 +866,11 @@ export function calculateSheet(record={},catalogs={}){
   const hydrated=hydrateGenericVariants({...record,inventory:normalizedEquipmentInventory},catalogs.genericItemVariants);
   const backgroundFeats=withBackgroundGrantedFeats(hydrated,catalogs.originDetails?.backgrounds||{},
     catalogs.originDetails?.feats||{},catalogs.classMechanics?.additional_spells||[]);
-  let effective=projectSelectionBenefits(backgroundFeats,catalogs,collectStructuredFeatures(backgroundFeats,catalogs));
-  const selectionRecord=effective;
+  const ownerFeatures=collectStructuredFeatures(backgroundFeats,catalogs);
+   const flavourRecord=projectTraitFlavourBenefits(backgroundFeats,ownerFeatures,catalogs);
+   let effective=projectSelectionBenefits(flavourRecord,catalogs,ownerFeatures);
+  const selectionRecord={...effective,selection_traits:[...arr(effective.selection_traits),...arr(flavourRecord.flavour_traits)]};
+   effective=selectionRecord;
   const withScalingDice=calculated=>{
     const dice=scalingDiceFor(effective,catalogs.scalingDice?.dice||[],calculated.features);
     const resolve=row=>resolveScalingDieBenefit(row,dice,calculated.trackers,
@@ -966,6 +974,7 @@ function calculateSheetValues(record={},catalogs={}){
   };
   const features=collectStructuredFeatures(record,catalogs);
   record={...record,...migrateAdvancementBonuses(record,features,index||{})};
+  const activeFlavours=traitFlavourModels(record,features,catalogs.flavours||{});
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   features.push(...racialBonusFeatures(record,catalogs.speciesConditionalBonuses||{},features));
@@ -995,9 +1004,12 @@ function calculateSheetValues(record={},catalogs={}){
     ...speciesDefenseEntries(record,catalogs.speciesDefenses,features,suppressed),
     ...classDefenseEntries(record,features,suppressed),
     ...dragonbornFtdResistances(record,catalogs.speciesPowers,features).filter(row=>
-      !suppressed.has(row.benefit_id)&&sourceEnabled(row))];
+      !suppressed.has(row.benefit_id)&&sourceEnabled(row)&&
+       !arr(record.damage_defense_entries).some(typed=>typed.flavour_owner_id&&
+         typed.rank===row.rank&&typed.key===row.key))];
 
-  const automatic=[...(index?indexRows(record,index,warnings):[]),
+  const automatic=[...arr(record.formula_bonuses).filter(row=>row?.automatic&&row.flavour_owner_id),
+    ...(index?indexRows(record,index,warnings,activeFlavours):[]),
     ...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[]),...racialAutomaticBonusGrants(racialBonusRows),...barbarian.numeric_grants];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
@@ -1275,6 +1287,15 @@ function calculateSheetValues(record={},catalogs={}){
   }
   function sourceEnabled(row){
     const sid=String(row?.origin_id||"");
+    // A flavour has its own origin ID but is owned by a real, enabled trait.
+    if(sid.startsWith('flavour:')){
+      const model=activeFlavours.find(x=>x.explicit&&x.flavour_origin_id===sid&&x.selected);
+      if(!model||!model.owner||model.owner.disabled||model.owner.inactive)return false;
+      const owner=model.owner;
+      return record.origin_enabled?.[sid]!==false&&record.origin_enabled?.[owner.origin_id]!==false&&
+        record.origin_enabled?.[owner.origin_key]!==false&&record.trait_enabled?.[owner.key]!==false&&
+        !arr(record.proficiency_origins).some(x=>x?.id===owner.origin_id&&x.disabled);
+    }
     const parent=String(row?.origin_parent_id||"");
     if(parent&&parent!==sid&&(record.origin_enabled?.[parent]===false||
       arr(record.proficiency_origins).some(origin=>origin?.id===parent&&origin.disabled)))return false;
@@ -1510,7 +1531,8 @@ function calculateSheetValues(record={},catalogs={}){
   // never show two counters for a single class capacity.
   const baseTrackers=[...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},
     name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featTrackers,
-    ...racialPowers.trackers,...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
+    ...racialPowers.trackers,...arr(record.resource_trackers).filter(row=>row.selection_origin_id&&!row.disabled&&sourceEnabled(row)),
+    ...speciesRollModeTrackers(record,racialRollModes,safe('proficiency')??2),
     ...racialBonusTrackers(racialBonusRows,safe('proficiency')??2),
     ...itemOptionChargeTrackers(record,index?.artificer_infusions||[],features)];
   const contextualTrackerIds=new Map();
@@ -1740,7 +1762,8 @@ function calculateSheetValues(record={},catalogs={}){
       origin_id:celestialForm.origin_id,source:celestialForm.name,
       damage_type:celestialForm.damage_type,
       amount:safe('proficiency'),once_per_turn:true}:null,
-    attack_count_benefits,attack_actions,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
+    attack_count_benefits,attack_actions,attacks_per_action:Math.max(
+      attacksPerActionFromBenefits(attack_count_benefits),attacksPerActionFromSequences(attack_actions)),
     effect_extensions,armor_effects,armor_strength_waivers:strengthWaivers,
     item_damage_resistances:effect_extensions.filter(row=>row.operation==='resistance'&&row.target_kind==='item')
       .map(row=>({damage_type:row.value,origin_id:row.origin_id,origin_name:row.origin_name,
@@ -1810,7 +1833,7 @@ export function loadRuleCatalogs(){
       Array.isArray(catalog.entries)?catalog.entries:[];
     const choices=entries.map(row=>row.benefit?.option_grant).filter(Boolean);
     return {
-      power:choices.filter(row=>row.option_kind==='capability'&&row.source?.type==='inline').length>=3,
+      power:choices.filter(row=>row.migration_group==='power_selections'&&row.option_kind==='capability').length>=3,
       spells:choices.filter(row=>row.option_kind==='spell'&&row.source?.type==='spell_catalog').length>=21
     };
   });
@@ -1851,9 +1874,14 @@ export function loadRuleCatalogs(){
     // Already visible spell references are supplied by the PWA on demand.
     Promise.resolve([]),
     loadClassFeatureTimingBenefits(),
-    fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.states)?
-       {states:data.states,exhaustion:data.exhaustion||{}}:{states:[],exhaustion:{}}),
+    Promise.all([
+      fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();}),
+      loadStateActivationBenefits()
+    ]).then(([data,typed])=>({
+      states:projectStateActivationBenefits(typed,
+        data?.version===1&&Array.isArray(data.states)?data.states:[]),
+      exhaustion:data?.exhaustion||{}
+    })),
     loadClassRollBonusBenefits(),
     loadScalingDieBenefits(),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
@@ -1903,9 +1931,11 @@ export function loadRuleCatalogs(){
     loadClassResourceBenefits(),
     typedOptionGrants,
     typedOptionLists,
+    typedProficiencyGrants,
     fetch('/benefits/resource.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
-    typedProficiencyGrants
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits])=>({
+     ...['/benefits/flavours.json','/benefits/bonus.json','/benefits/feat_grant.json','/benefits/defense.json','/benefits/proficiency.json']
+       .map(path=>fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,spellGrantRules,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,featureSlotSpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,slotBenefits,proficiencyGrantBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDefenses,flavourProficiencies])=>({
     abilityGrants:variantFamilyAbilityGrants(abilityGrants),
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants,speciesAttacks,speciesDefenses,
@@ -1915,6 +1945,11 @@ export function loadRuleCatalogs(){
     optionLists:optionLists?.benefit_type==='option_list'?optionLists:{entries:[]},
     proficiencyGrantBenefits:proficiencyGrantBenefits?.schema_version===2&&
       proficiencyGrantBenefits?.benefit_type==='proficiency_grant'?proficiencyGrantBenefits:{entries:[]},
+     flavours:flavours?.catalog_type==='flavours'?flavours:{entries:[]},
+     flavourBonuses:flavourBonuses?.benefit_type==='bonus'?flavourBonuses:{entries:[]},
+     flavourFeatGrants:flavourFeatGrants?.benefit_type==='feat_grant'?flavourFeatGrants:{entries:[]},
+     flavourDefenses:flavourDefenses?.benefit_type==='defense'?flavourDefenses:{entries:[]},
+    flavourProficiencies:flavourProficiencies?.benefit_type==='proficiency'?flavourProficiencies:{entries:[]},
     slotBenefits:slotBenefits?.benefit_type==='resource'?slotBenefits:{entries:[]},
     featureRules:featureRules||{},featureActionOverrides,
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,scalingDice,classFeatures,effectExtensions,

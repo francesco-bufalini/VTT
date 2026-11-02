@@ -149,12 +149,17 @@ export function traitStateActions(record={},features=[],catalog=[]) {
   return arr(catalog).flatMap(rule=>{
     const trait=eligible(record,features,rule);
     if(!trait)return [];
+    const active=selection(record,rule)===rule.id;
+    const mode=rule.activation_mode||'toggle';
+    if((mode==='activate'&&active)||(mode==='deactivate'&&!active))return [];
+    const payment=rule.activation_resource||rule.activation_tracker;
     return [{id:'trait_state:'+rule.id,class_feature_id:'trait_state:'+rule.id,
       name:traitStateSource(rule,trait,features).name,origin:'personal',origin_id:trait.origin_id,feature_id:trait.origin_id,
-      mode:'trait_state',state_id:rule.id,active:selection(record,rule)===rule.id,
-      time:'free',type:'Capacità',
-       tracker_id:rule.activation_tracker?.id||'',tracker:rule.activation_tracker?.name||'',
-       cost:selection(record,rule)===rule.id?0:Math.max(0,Number(rule.activation_tracker?.cost||0)),
+      mode:'trait_state',state_id:rule.id,active,
+      time:active?(rule.deactivation||'free'):(rule.activation||'free'),type:'Capacità',
+      ...(rule.activation_trigger?{trigger:rule.activation_trigger}:{}),
+      tracker_id:payment?.id||'',tracker:payment?.name||'',
+      cost:active?0:Math.max(0,Number(payment?.cost||0)),
        description:traitStateSource(rule,trait,features).description,category:rule.category||'stato'}];
   });
 }
@@ -168,6 +173,8 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   const rule=arr(catalog).find(row=>row.id===id);
   if(!rule||!eligible(record,features,rule))throw Error('Privilegio o armatura non disponibili.');
   const current=selection(record,rule)===rule.id;
+  if((rule.activation_mode==='activate'&&current)||
+     (rule.activation_mode==='deactivate'&&!current))return {};
   const active={...(record.active_class_features||{})};
   // An exclusive group changes atomically and cannot leave two states applied.
   for(const sibling of arr(catalog).filter(row=>row.group===rule.group))delete active['trait_state:'+sibling.id];
@@ -177,9 +184,10 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   const changes={trait_state_selection:selected,active_class_features:active};
   // This cost is bound to the originating trait and only paid on activation.
   // Deselecting an active state is free, and payment is atomic with selection.
-  const payment=rule.activation_tracker;
+  const payment=rule.activation_resource||rule.activation_tracker;
   if(!current&&payment&&Number(payment.cost)>0){
     const chosen=options.tracker_id===undefined?payment.id:String(options.tracker_id);
+    if(rule.activation_resource&&chosen==='')throw Error('Tracker richiesto per attivare lo stato.');
     if(chosen!==''&&chosen!==payment.id)throw Error('Tracker non collegato alla capacità.');
     if(chosen){
       const tracker=arr(trackers).find(row=>row.id===payment.id&&!row.disabled);

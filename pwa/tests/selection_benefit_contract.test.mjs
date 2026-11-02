@@ -13,6 +13,7 @@ import {battleResourcePowers,trackerRollBonusRows} from '../sheet_rules_view.js'
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {itemOptionChargeTrackers,activeItemOptionEffects,requiresAttunement,equippedItemFacts,effectiveEquipmentInventory,equipSlot} from '../item_controls.js';
 import {collectTraitRows} from '../trait_projection.js';
+import {armorerSelectionCatalog,withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_grants.mjs';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={powerSelections:read('power_selections'),optionalFeatureProgressions:read('optional_feature_progressions')};
 const combined={...catalogs.powerSelections,optionalFeatureProgressions:catalogs.optionalFeatureProgressions};
@@ -97,26 +98,25 @@ test('multiple options extend the same object without replacing one another or s
 const completeCatalogs={...catalogs,scalingDice:read('scaling_dice'),classFeatures:read('classes'),classMechanics:read('class_mechanics'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),traitStates:read('trait_states').states,
  effectExtensions:read('effect_extensions').extensions};
-test('Arcane Armor follows the exact chosen object and disabling the parent also suppresses model benefits',()=>{
- let r={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',subclass_source:'TCE',level:8}],
-  abilities:{str:8,dex:10,int:18},selection_state_version:2,
-  inventory:[{id:'plate',instance_id:'plate-copy',name:'Plate',type:'HA',strength:15,ac:18,quantity:1,equipped_slots:['body']},
+test('Arcane Armor affects only its extended item and its nested model disappears with the owner',()=>{
+ const rules=withArmorerGrants(completeCatalogs);
+ const character={...record(),classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',
+  subclass_source:'TCE',level:8}],abilities:{str:8,dex:10,int:18},
+  inventory:[{id:'plate',instance_id:'plate-copy',name:'Plate',type:'HA',strength:15,
+    ac:18,quantity:1,equipped_slots:['body']},
    {id:'other',instance_id:'other-copy',name:'Other object',quantity:1}]};
- let c=calculateSheet(r,completeCatalogs);
- assert.equal(c.armor_effects.strength_waived,false);
- r={...r,...powerApplicationPatch(r,c,combined,'arcane_armor','arcane_armor',true,{itemIndex:1})};
- c=calculateSheet(r,completeCatalogs);
- assert.equal(c.armor_effects.strength_waived,false,'another item cannot waive the worn armor requirement');
- r={...r,...powerApplicationPatch(r,c,combined,'arcane_armor','arcane_armor',true,{itemIndex:0})};
- c=calculateSheet(r,completeCatalogs);assert.equal(c.armor_effects.strength_waived,true);
- r={...r,...powerApplicationPatch(r,c,combined,'armor_model','armor_model:infiltrator',true)};
- c=calculateSheet(r,completeCatalogs);assert(c.attacks.some(a=>a.id==='class_feature:lightning_launcher'));
- const unequipped=calculateSheet({...r,inventory:r.inventory.map(item=>({...item,equipped_slots:[]}))},completeCatalogs);
- assert(!unequipped.attacks.some(a=>a.id==='class_feature:lightning_launcher'));
- const parent=c.features.find(f=>f.name==='Arcane Armor');
- c=calculateSheet({...r,origin_enabled:{[parent.origin_id]:false}},completeCatalogs);
- assert(!c.attacks.some(a=>a.id==='class_feature:lightning_launcher'));
- assert.equal(c.armor_effects.strength_waived,false);
+ assert.equal(calculateSheet(character,rules).armor_effects.strength_waived,false);
+ const installed=applyArmorerModel(character,rules,'armor_model:infiltrator');
+ const calculated=calculateSheet(installed,rules);
+ assert.equal(calculated.armor_effects.strength_waived,true);
+ assert(calculated.attacks.some(row=>row.id==='class_feature:lightning_launcher'));
+ assert.equal(calculated.selection_traits.find(row=>row.name==='Infiltrator')?.name,'Infiltrator');
+ const unworn=calculateSheet({...installed,inventory:installed.inventory.map(item=>({...item,equipped_slots:[]}))},rules);
+ assert(!unworn.attacks.some(row=>row.id==='class_feature:lightning_launcher'));
+ const parent=calculated.features.find(row=>row.name==='Arcane Armor');
+ const disabled=calculateSheet({...installed,origin_enabled:{[parent.origin_id]:false}},rules);
+ assert(!disabled.attacks.some(row=>row.id==='class_feature:lightning_launcher'));
+ assert.equal(disabled.armor_effects.strength_waived,false);
 });
 test('an applied Fighting Style is described and attributed to its owner, without a new Info trait',async()=>{
  let r={...record(),abilities:{str:12,dex:14,int:10},classes:[{name:'Ranger',source:'PHB',level:2}]};
