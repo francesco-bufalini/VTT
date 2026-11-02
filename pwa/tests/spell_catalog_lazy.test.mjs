@@ -102,10 +102,10 @@ test('typed option lists avoid fetching the duplicate legacy catalog, with an ol
         return new Response(JSON.stringify(data),{status:200});
       };
       const result=await loadRuleCatalogs();
-      assert.equal(result.optionLists.entries.length,
-        kind==='complete'?272:kind==='partial'?271:0);
-      assert.equal(result.optionalFeatureProgressions.options.length,kind==='complete'?0:272);
-      assert.equal(calls.includes('/catalog/optional_feature_progressions.json'),kind!=='complete',
+      const hasCompleteLists=kind==='complete'||kind==='partialPowerGrant'||kind==='partialSpellGrant';
+      assert.equal(result.optionLists.entries.length,kind==='legacy'?0:kind==='partial'?271:272);
+      assert.equal(result.optionalFeatureProgressions.options.length,hasCompleteLists?0:272);
+      assert.equal(calls.includes('/catalog/optional_feature_progressions.json'),!hasCompleteLists,
         'Skip the old 272-option download only when the typed catalog is available');
       assert.equal(calls.filter(path=>path==='/benefits/option_list.json').length,1);
       assert.equal(calls.filter(path=>path==='/benefits/option_grant.json').length,1);
