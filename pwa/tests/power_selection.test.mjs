@@ -165,9 +165,9 @@ test('option benefit targets are defined by data, including equipped armor and o
 
 test('targeted options are not applied before object choice and extend only the selected copy',()=>{
  const context={features:[owner('Artificer','TCE','Arcane Armor'),owner('Artificer','TCE','Armor Model')]};
- let record={id:'owner',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],inventory:[{id:'free',name:'Any object',quantity:3}]};
+ let record={id:'owner',classes:[{name:'Artificer',source:'TCE',subclass:'Armorer',level:8}],inventory:[{id:'free',name:'Plate armor',type:'HA',quantity:3,equipped_slots:['body']}]};
  const model=powerSelectionModels(record,context,data).find(m=>m.id==='arcane_armor');
- assert.equal(model.layers.learned,undefined);assert.equal(model.layers.applied.limit,1);
+ assert.equal(model.layers.learned,undefined);assert.equal(model.layers.applied.limit,null,'Arcane Armor can be applied to several worn armor pieces');
  assert.throws(()=>powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',true),/oggetto/);
  assert.equal(record.power_applications,undefined);
  record={...record,...powerApplicationPatch(record,context,data,'arcane_armor','arcane_armor',true,{itemIndex:0})};
