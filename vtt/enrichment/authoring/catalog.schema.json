@@ -54,7 +54,8 @@
         "targeting",
         "temporary_hp",
         "tracker",
-        "trait"
+        "trait",
+        "creature_grant"
       ]
     },
     "scope": {
