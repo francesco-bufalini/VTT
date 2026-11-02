@@ -97,21 +97,22 @@ const skillCheck=target=>{
   int:'Intelligenza',wis:'Saggezza',cha:'Carisma'})[ability[1]];
  return {id:'check:'+id,name:'Prova di '+name,check_target:id};
 };
-export function resolveAttackActionSteps(action={},attacks=[],otherActions=[]){
- const attackRows=rows(attacks),otherRows=rows(otherActions);
- const candidates=[...attackRows,...otherRows];
+export function resolveAttackActionSteps(action={},attacks=[],otherActions=[],spells=[]){
+ const attackRows=rows(attacks),otherRows=rows(otherActions),spellRows=rows(spells);
+ const candidates=[...attackRows,...otherRows,...spellRows];
  const resolve=part=>{
   const selector=part.selector||{},kind=normal(selector.kind);
   const check=kind==='check'?skillCheck(selector.target||selector.id):null;
   const options=check?[check]:candidates.filter(row=>{
-   const isAttack=attackRows.includes(row),isCheck=!!row.check_target;
+   const isAttack=attackRows.includes(row),isSpell=spellRows.includes(row),isCheck=!!row.check_target;
    const isAbility=!!row.monster_action||row.type==='Capacità';
-   const isAction=!isAttack&&!isCheck&&!isAbility;
-   if(kind==='attack'&&!isAttack||kind==='check'&&!isCheck||
+   const isAction=!isAttack&&!isCheck&&!isAbility&&!isSpell;
+   if(kind==='attack'&&!isAttack||kind==='spell'&&!isSpell||kind==='check'&&!isCheck||
       kind==='action'&&!isAction||kind==='ability'&&!isAbility)return false;
    if(!kind&&!isAttack&&!isCheck)return false;
    if(selector.id&&normal(row.id)!==normal(selector.id))return false;
    if(selector.name&&singular(row.name)!==singular(selector.name))return false;
+   if(selector.source&&row.source&&normal(selector.source)!==normal(row.source))return false;
    if(selector.category&&!attackCategories(row).includes(normal(selector.category)))return false;
    return true;
   });

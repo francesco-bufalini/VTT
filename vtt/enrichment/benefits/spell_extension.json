@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "benefit_type": "spell_extension",
+  "scope": "catalog",
+  "notes": "Spell extensions display their granting 5eTools trait below the targeted spell's structured facts, without duplicating the trait's text or changing the base spell.",
+  "entries": [
+    {
+      "id": "spell_extension:mpmm:earth-genasi:blade-ward",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Merge with Stone",
+          "source": "MPMM",
+          "race": "Genasi",
+          "race_source": "MPMM",
+          "subrace": "Earth",
+          "subrace_source": "MPMM"
+        }
+      },
+      "benefit": {
+        "type": "spell_extension",
+        "spell": {
+          "name": "Blade Ward",
+          "source": "PHB"
+        }
+      }
+    }
+  ]
+}

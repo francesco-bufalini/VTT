@@ -36,6 +36,7 @@ import {DISTANCE_UNIT_SETTING,getDistanceUnit,setDistanceUnit,distanceInputFeet,
 import {applicableSpeciesRollModes} from './species_roll_modes.js';
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
+import {spellExtensionTraits} from "./spell_extension_benefits.js";
 import {EXTENSION_TARGETS,EXTENSION_OPERATIONS,EXTENSION_TRIGGERS,EXTENSION_FREQUENCIES,effectExtensionsFor,applyEffectExtensions,effectExtensionLabel} from "./effect_extensions.js";
 import { exportBackup, importBackup, getRecord, setting } from "./storage.js";
 import {serverBackups, serverBackupMarkup} from "./server_backups.js";
@@ -1454,16 +1455,17 @@ async function computeLocalData(record){
     power_selections,power_selection_catalog:powerSelectionCatalog,proficiency_grants,
     pending_choices:pendingCharacterChoices(record,{...calculated,proficiency_grants},{...catalogs,
       races:state.referenceCatalogs.races||[],subclasses:state.referenceCatalogs.subclasses||[]}),
-    infusion_catalog,infusion_mechanics};
+    infusion_catalog,infusion_mechanics,spell_extensions:catalogs.spellExtensions||{entries:[]}};
 }
 
 // Spells and nonspell powers share their popup header, facts and description.
-function actionDialogIntro(name,facts=[],description='',meta='',closeAction=''){
+function actionDialogIntro(name,facts=[],description='',meta='',closeAction='',afterFacts=''){
  return '<header class="vtt-popup-heading"><h2>'+esc(name)+'</h2>'+
   (closeAction?dialogCloseButton(closeAction,'Chiudi',''):'')+'</header>'+
   (meta?'<p class="hint magic-spell-metadata">'+esc(meta)+'</p>':'')+
   (facts.length?'<dl class="magic-spell-facts">'+facts.map(({label,value})=>
    '<div class="magic-spell-fact"><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>':'')+
+  afterFacts+
   '<div class="magic-spell-description">'+esc(description||'Descrizione non disponibile.')+'</div>';
 }
 function abilityPaymentField(ability,calculated){
@@ -8002,6 +8004,14 @@ async function handleAction(target){
       {kind:'spell',id,name:spell.name||detailed.name},
       {cha_mod:calculated.abilities?.cha?.modifier});
     const spellExtensions=extendedSpell.effect_extensions||[];
+    const sequenceActionId=String(target.dataset.sequenceActionId||'');
+    const sequenceAction=sequenceActionId?(calculated.attack_actions||[]).find(row=>row.id===sequenceActionId):null;
+    if(sequenceActionId&&!sequenceAction)throw Error('Sequenza dell’incantesimo non disponibile.');
+    const traitExtensions=spellExtensionTraits(record,calculated,
+      {...spell,name:spell.name||detailed.name,source:detailed.source||spell.source},calculated.spell_extensions);
+    const traitExtensionMarkup=traitExtensions.map(row=>
+      '<section class="magic-effect-extensions magic-spell-trait-extension"><h3>'+esc(row.trait)+'</h3>'+
+      '<div class="magic-spell-description">'+esc(flattenDescription(row.feature))+'</div></section>').join('');
     // Object-targeted spells and infusions reuse typed eligibility, never prose
     // guessing. Catalogue/homebrew spells can declare item_target_selector.
     const targetSelector=detailed.item_target_selector||spell.item_target_selector||
@@ -8012,7 +8022,11 @@ async function handleAction(target){
     if(entry&&level!==null){
       const assigned=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
       const mode=assigned?.payment_mode||(assigned?.tracker_id?'tracker':level===0?'free':(['known','prepared'].includes(assigned?.mode)||!assigned)?'slot':'free');
-      if(mode==='free'||level===0&&mode!=='tracker'){
+      if(sequenceAction?.cost>0){
+        const pool=(calculated.trackers||[]).find(row=>row.id===sequenceAction.tracker_id&&!row.disabled);
+        if(pool&&Number(pool.max)-Number(pool.spent)>=Number(sequenceAction.cost))
+          options.push(['auto:0','Usa '+(pool.name||'tracker')+' · '+sequenceAction.cost]);
+      }else if(mode==='free'||level===0&&mode!=='tracker'){
         options.push(['auto:0',assigned?.ritual_only?'Rituale · senza slot':'Senza slot']);
       }else{
         if(mode==='tracker'){
@@ -8037,9 +8051,10 @@ async function handleAction(target){
       message("Famigli: "+errorMessage(error),true);return null;
     });
     const metaChoices=metamagicOptions(record).filter(o=>!['Empowered Spell','Seeking Spell'].includes(o.name));
-    dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts({...detailed,range:extendedSpell.range||detailed.range}),description,
+    dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts({...detailed,range:extendedSpell.range||detailed.range,
+      ...(target.dataset.sequenceTime?{time:target.dataset.sequenceTime,casting_time:target.dataset.sequenceTime}:{})}),description,
       (level===0?(spell.internal_grant?'Capacità':'Trucchetto'):level===null?'Livello non specificato':'Livello '+level)+
-      (detailed.school?' · '+detailed.school:'')+(detailed.source?' · '+detailed.source:''),'action-cast-cancel')+
+      (detailed.school?' · '+detailed.school:'')+(detailed.source?' · '+detailed.source:''),'action-cast-cancel',traitExtensionMarkup)+
       (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
       (entry?.requires_context?'<label><input type="checkbox" id="action-cast-context"> '+esc(entry.requires_context)+'</label>':'')+
       (entry?.ritual_only?'<label><input type="checkbox" id="action-cast-ritual"> Ho completato il rituale, aggiungendo 10 minuti al normale tempo di lancio.</label>':'')+
@@ -8061,7 +8076,8 @@ async function handleAction(target){
           '<option value="">Nessuna voce disponibile nel bestiario</option>')+
         '</select></label>':'')+
       '<div class="actions magic-dialog-actions">'+
-      (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">'+(entry.ritual_only?'Concludi rituale':'Lancia')+'</button>':'')+
+      (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'"'+
+        (target.dataset.sequenceActionId?' data-sequence-action-id="'+esc(target.dataset.sequenceActionId)+'"':'')+'>'+(entry.ritual_only?'Concludi rituale':'Lancia')+'</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
     app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     openDialog(dialog);
@@ -8079,6 +8095,10 @@ async function handleAction(target){
       .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
          String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!selection)throw Error('Incantesimo non più disponibile.');
+    const sequenceActionId=String(target.dataset.sequenceActionId||'');
+    const sequenceAction=sequenceActionId?(calculated.attack_actions||[]).find(row=>row.id===sequenceActionId):null;
+    if(sequenceActionId&&!sequenceAction)throw Error('Sequenza dell’incantesimo non disponibile.');
+    if(sequenceAction)selection.sequence_action_id=sequenceAction.id;
     selection.context_confirmed=app.querySelector('#action-cast-context')?.checked===true;
     selection.ritual_completed=app.querySelector('#action-cast-ritual')?.checked===true;
     const detail=await detailedEntry('spells',{...selection,_category:'spells'});
@@ -8109,7 +8129,8 @@ async function handleAction(target){
       throw Error('Risorsa di lancio non valida.');
     if(state.paired&&state.online){
       app.querySelector('#action-cast-dialog')?.close();
-      await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
+      const cast=sequenceAction?{...selection,action_type:sequenceAction.time}:selection;
+      await startTargetedCast(record.id,structuredClone(cast),level,payment,'',
         companionSource?{...companionSource,spell_id:selection.id,rule:companion.rule,
           grant:companion.rule.grant_kind==='spell_effect'?{kind:'spell_effect',id:'spell:'+selection.id}:null,
           rule_id:companion.rule.id,origin_name:companion.rule.names?.[0]||selection.name,
@@ -8120,7 +8141,8 @@ async function handleAction(target){
     // Confirmation only dismisses the popup after IndexedDB has committed the
     // spell payment (including Metamagic). Closing early makes the UI appear
     // finished while a reader can still observe the unspent tracker.
-    if(Object.keys({...plan.patch,...effect}).length)await patch({...plan.patch,...effect});
+    const castPatch={...plan.patch,...effect};
+    if(Object.keys(castPatch).length)await patch(castPatch);
     if(companionSource)await summonSpellCompanion(record.id,companionSource,{
       ...companionSource,spell_id:selection.id,rule_id:companion.rule.id,
       origin_name:companion.rule.names?.[0]||selection.name,

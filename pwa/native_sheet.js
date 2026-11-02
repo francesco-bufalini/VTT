@@ -113,6 +113,20 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
  // Cantrips are intrinsically slot-free. The only chargeable exception
  // is an explicitly linked limited-use tracker in structured source data.
  const cantrip=level===0;
+ const sequenceId=String(selection.sequence_action_id||'');
+ const sequence=sequenceId?list(calculated.attack_actions).find(row=>row.id===sequenceId):null;
+ if(sequenceId&&!sequence)throw Error('Sequenza di lancio non più disponibile.');
+ if(sequence){
+  const steps=list(sequence.steps).flatMap(step=>list(step.one_of||step.any_of).length?
+   list(step.one_of||step.any_of):[step]);
+  const requested=String(selection.name||'').trim().toLowerCase();
+  if(!steps.some(step=>step.selector?.kind==='spell'&&
+    (!step.selector.name||String(step.selector.name).trim().toLowerCase()===requested)&&
+    (!step.selector.source||!selection.source||
+     String(step.selector.source).trim().toLowerCase()===String(selection.source).trim().toLowerCase())))
+   throw Error('Incantesimo non previsto dalla sequenza.');
+ }
+ const sequenceTracker=sequence&&Number(sequence.cost)>0?sequence:null;
  if(cantrip&&['slot','pact'].includes(payment))throw Error('Un trucchetto non usa slot.');
  const grantedMode=cantrip&&grant?.payment_mode!=='tracker'?'free':grant?.payment_mode||'free';
  // A source may grant a limited-use casting AND permit ordinary/Pact slots.
@@ -120,15 +134,18 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
  if(grant&&payment!=='auto'&&!grant.slot_alternative&&
    !(grantedMode==='slot'&&['slot','pact'].includes(payment)))
    throw Error('Questa concessione non permette il lancio con slot.');
- const mode=grant?(grant.slot_alternative&&payment!=='auto'?payment:
+ const mode=sequenceTracker?'tracker':grant?(grant.slot_alternative&&payment!=='auto'?payment:
    grantedMode==='slot'&&payment==='pact'?'pact':grantedMode):
    level===0?'free':payment==='pact'||payment==='auto'&&selection.pact?'pact':'slot';
  let patch={},slotLevel=0;
  if(mode==='tracker'){
-  const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1),spent=Math.max(Number(c.resource_tracker_spent?.[grant.tracker_id]||0),Number(tracker?.spent)||0);
+  const trackerId=sequenceTracker?.tracker_id||grant?.tracker_id;
+  const tracker=calculated.trackers.find(t=>t.id===trackerId),
+    cost=sequenceTracker?Number(sequenceTracker.cost):Math.max(1,Number(grant?.tracker_cost)||1),
+    spent=Math.max(Number(c.resource_tracker_spent?.[trackerId]||0),Number(tracker?.spent)||0);
   if(!tracker||spent+cost>tracker.max)throw Error('Risorsa insufficiente per questo incantesimo');
   patch={resource_tracker_spent:{...c.resource_tracker_spent,[tracker.id]:spent+cost}};
-  slotLevel=Math.max(0,Number(grant.tracker_cast_level)||level);
+  slotLevel=Math.max(0,Number(sequenceTracker?level:grant?.tracker_cast_level)||level);
   if(!Number.isInteger(slotLevel)||slotLevel<level||slotLevel>9)
     throw Error('Livello di lancio del tracker non valido');
  }else if(mode==='slot'||mode==='pact'){

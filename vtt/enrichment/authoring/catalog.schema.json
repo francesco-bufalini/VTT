@@ -24,7 +24,6 @@
         "choice",
         "companion_grant",
         "condition",
-        "creature_grant",
         "d20_reroll",
         "damage_bonus",
         "damage_modifier",
@@ -51,10 +50,12 @@
         "spell_selection",
         "spell_slot",
         "spellcasting",
+        "spell_extension",
         "targeting",
         "temporary_hp",
         "tracker",
-        "trait"
+        "trait",
+        "creature_grant"
       ]
     },
     "scope": {

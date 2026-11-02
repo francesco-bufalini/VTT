@@ -336,3 +336,22 @@ test('blade invocations grant generic attack sequences only when their option is
  const disabledFeatures=collectStructuredFeatures(disabled,{classFeatures,featureRules:rules});
  assert.equal(attackActionGrants(disabled,disabledFeatures,[],rules).filter(row=>row.attack_replacement).length,0);
 });
+
+test('spell selectors resolve granted spells and link to the spell dialog',()=>{
+ const catalog=file('../../vtt/enrichment/benefits/action_sequence.json');
+ const record=catalog.entries.find(row=>row.id==='sequence:mpmm:earth-genasi:blade-ward-bonus');
+ assert(record,'Earth Genasi spell sequence must be authored by the granting species trait');
+ const action={id:'attack_action:earth-genasi-blade-ward',name:'Merge with Stone',
+  time:record.benefit.time,steps:record.benefit.sequence.steps};
+ const spell={id:'phb2014_blade_ward',name:'Blade Ward',source:'PHB',
+  grant_id:'option_grant:origin-spell:30:mpmm:earth:blade-ward',casting_class:''};
+ const steps=resolveAttackActionSteps(action,[],[],[spell]);
+ assert.equal(steps[0].resolved,true);
+ assert.equal(steps[0].options[0],spell);
+ assert.equal(resolveAttackActionSteps(action,[],[],[{...spell,source:'XPHB'}])[0].resolved,false);
+ const html=battleAttackStepMarkup({mode:'all',items:[{label:'Blade Ward',part:steps[0]}]},
+  {trackers:[]},action);
+ assert.match(html,/data-act="action-cast-spell"/);
+ assert.match(html,/data-sequence-time="bonus"/);
+ assert.match(html,/data-spell-id="phb2014_blade_ward"/);
+});

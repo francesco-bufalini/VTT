@@ -434,3 +434,21 @@ le risorse dal catalogo `resource`, Homunculus dal `creature_grant`
 e Resistant Armor dall'`effect_choice` della singola applicazione.
 L'adattatore `pwa/infusion_benefit_catalogs.js` evita una seconda
 definizione delle infusioni in `ability_grants.json`.
+
+## Estensioni degli incantesimi e passi di sequenza `spell`
+
+Il catalogo [`spell_extension.json`](spell_extension.json) contiene benefici
+che associano un incantesimo canonico (`spell.name` + `spell.source`) al
+tratto 5eTools che lo modifica. Quando si apre l'incantesimo nella PWA, la
+descrizione **corrente** del tratto viene mostrata immediatamente dopo il
+quadro dei dati strutturati, senza copiarla nel catalogo dei benefici.
+Solo i tratti effettivamente posseduti e abilitati vengono proiettati.
+
+Le `action_sequence` possono includere uno step con
+`selector: {kind: "spell", name: "Blade Ward", source: "PHB"}`.
+Lo step risolve soltanto gli incantesimi accessibili alla creatura e apre
+la stessa finestra di lancio degli incantesimi ordinari. Tempo di lancio
+e costo appartengono alla sequenza: non sovrascrivono l'incantesimo
+originale. Il Genasi della Terra (MPMM) ne è il primo esempio: Blade
+Ward normalmente lanciabile come previsto dal suo catalogo e una
+sequenza alternativa come azione bonus con tracker dedicato.

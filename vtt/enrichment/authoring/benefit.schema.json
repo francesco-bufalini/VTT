@@ -19,7 +19,6 @@
         "choice",
         "companion_grant",
         "condition",
-        "creature_grant",
         "d20_reroll",
         "damage_bonus",
         "damage_modifier",
@@ -46,10 +45,12 @@
         "spell_selection",
         "spell_slot",
         "spellcasting",
+        "spell_extension",
         "targeting",
         "temporary_hp",
         "tracker",
-        "trait"
+        "trait",
+        "creature_grant"
       ]
     },
     "id": {
@@ -473,6 +474,24 @@
         "$ref": "#/$defs/proficiency"
       }
     },
+    "spell": {
+      "type": "object",
+      "required": [
+        "name",
+        "source"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
     "creature_grant": {
       "type": "object",
       "description": "A creature granted by an applied option or feature; the creature sheet remains independent.",
@@ -555,6 +574,11 @@
         }
       },
       "additionalProperties": false
+    },
+    "tracker_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable tracker ID charged by an action or spell sequence"
     }
   },
   "allOf": [
@@ -1961,6 +1985,12 @@
             },
             "category": {
               "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -2481,6 +2511,7 @@
                 "enum": [
                   "attack",
                   "action",
+                  "spell",
                   "skill_check",
                   "saving_throw",
                   "ability_check",
