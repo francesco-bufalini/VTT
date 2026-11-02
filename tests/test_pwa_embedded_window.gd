@@ -25,6 +25,14 @@ func run() -> void:
 		"Native Compendium entry must open the catalog-only PWA route")
 	assert(PwaEmbeddedWindow.view_url("http://127.0.0.1:8765", "session").is_empty(),
 		"The native toolbar must not expose the PWA Partita tab")
+	assert(PwaEmbeddedWindow.bootstrap_url("http://127.0.0.1:8765", "creatures") ==
+		"http://127.0.0.1:8765/__native_pwa_entry?native_view=creatures",
+		"Native Creature must first bypass stale worker and restore live modules")
+	assert(PwaEmbeddedWindow.bootstrap_url("http://127.0.0.1:8765/", "compendium") ==
+		"http://127.0.0.1:8765/__native_pwa_entry?native_view=compendium",
+		"Native Compendium also needs the uncached bootstrap")
+	assert(PwaEmbeddedWindow.bootstrap_url("http://127.0.0.1:8765", "session").is_empty(),
+		"Native bootstrap must not expose the PWA Partita section")
 
 	var scaled: Rect2 = PwaEmbeddedWindow.native_bounds(
 		Transform2D.IDENTITY.scaled(Vector2(1.5, 1.5)), Vector2(800, 600))
