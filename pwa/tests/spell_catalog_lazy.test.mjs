@@ -46,9 +46,7 @@ test('numeric sheet rules never request the full spell compendium',async()=>{
       path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
       path==='/catalog/trait_states.json'?{version:1,states:[]}:
       path==='/catalog/benefits/action.json'?{schema_version:2,benefit_type:'action',scope:'catalog',entries:[]}:
-          (path.startsWith('/benefits/')&&
-           ['roll_mode.json','roll_bonus.json','attack.json','movement.json','resource.json','scaling_die.json','item_grant.json']
-            .includes(path.split('/').at(-1)))?
+          (path.startsWith('/benefits/')&&path.endsWith('.json'))?
         {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
     return new Response(JSON.stringify(data),{status:200});
   };
@@ -88,9 +86,7 @@ test('typed option lists avoid fetching the duplicate legacy catalog, with an ol
           path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
           path==='/catalog/trait_states.json'?{version:1,states:[]}:
           path==='/catalog/benefits/action.json'?{schema_version:2,benefit_type:'action',scope:'catalog',entries:[]}:
-          (path.startsWith('/benefits/')&&
-           ['roll_mode.json','roll_bonus.json','attack.json','movement.json','resource.json','scaling_die.json','item_grant.json']
-            .includes(path.split('/').at(-1)))?
+          (path.startsWith('/benefits/')&&path.endsWith('.json'))?
             {schema_version:2,benefit_type:path.split('/').at(-1).slice(0,-5),scope:'catalog',entries:[]}:{};
         return new Response(JSON.stringify(data),{status:200});
       };
