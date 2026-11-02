@@ -413,6 +413,12 @@
       "benefit_type": "option_grant",
       "catalog": "vtt/enrichment/benefits/option_grant.json",
       "runtime": "pwa/power_selection.js"
+    },
+    {
+      "source": "pwa/catalog/scaling_dice.json",
+      "benefit_type": "scaling_die",
+      "catalog": "vtt/enrichment/benefits/scaling_die.json",
+      "runtime": "pwa/scaling_dice.js"
     }
   ]
 }

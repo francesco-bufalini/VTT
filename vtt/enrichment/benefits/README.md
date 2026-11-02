@@ -195,3 +195,16 @@ Al caricamento, `sheet_rules.loadRuleCatalogs()` verifica che tutte le famiglie
 di opzioni richieste dai grant tipizzati siano presenti in `option_list.json`:
 in tal caso **non scarica** il catalogo legacy da 272 opzioni. Se il
 catalogo tipizzato manca o è incompleto, il vecchio JSON rimane il fallback.
+
+---
+
+## Dadi progressivi di classe e sottoclasse
+
+Le tre progressioni supplementari di `pwa/catalog/scaling_dice.json` sono
+dichiarate in [`scaling_die.json`](scaling_die.json), con origini 5eTools
+qualificate. Comprendono Ispirazione Bardica (PHB/XPHB) e Superiorità
+(Battle Master, PHB). L'adattatore `pwa/scaling_dice.js` ricostruisce la
+forma attesa dal calcolo della scheda conservando ID, livello e priorità.
+I dadi homebrew della scheda restano separati. Il vecchio JSON serve
+soltanto ai client precedenti; un catalogo v2 presente ma invalido
+non deve essere sostituito silenziosamente dal legacy.

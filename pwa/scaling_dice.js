@@ -61,3 +61,39 @@ export function resolveScalingDieBenefit(row={},dice=[],trackers=[],evaluate=()=
   ...(tracker?{tracker_id:tracker.id}:{}),
   ...(tracker&&row.tracker_cost===undefined?{tracker_cost:1}:{})};
 }
+
+const validProgression=steps=>Array.isArray(steps)&&steps.length>0&&
+ steps.every(step=>Array.isArray(step)&&step.length===2&&Number.isInteger(step[0])&&step[0]>=0&&
+ [4,6,8,10,12,20,100].includes(step[1]));
+// Typed source grants project to the existing class-level die resolver;
+// saved personal overrides remain separate.
+export function scalingDiceFromBenefits(catalog={}){
+ if(catalog.schema_version!==2||catalog.benefit_type!=='scaling_die'||
+    catalog.scope!=='catalog'||!Array.isArray(catalog.entries))
+  throw Error('Catalogo tipizzato scaling_die non valido');
+ const ids=new Set();
+ return {version:1,dice:catalog.entries.map(entry=>{
+  const ref=entry?.granted_by?.ref||{},b=entry?.benefit||{};
+  if(!entry?.id||ids.has(entry.id)||entry.granted_by?.kind!=='5etools'||
+    !['class_feature','subclass_feature'].includes(ref.category)||!ref.name||
+    !ref.source||!ref.class_name||!ref.class_source||
+    (ref.category==='subclass_feature'&&(!ref.subclass||!ref.subclass_source))||
+    b.type!=='scaling_die'||!b.id||!b.name||!validProgression(b.progression)||
+    (b.priority!==undefined&&!Number.isInteger(b.priority)))
+   throw Error('Voce scaling_die non valida: '+(entry?.id||'senza ID'));
+  ids.add(entry.id);
+  return {id:b.id,name:b.name,owner:{class_name:ref.class_name,class_source:ref.class_source,
+    ...(ref.subclass?{subclass:ref.subclass}:{}),trait:ref.name},
+   by_class_level:b.progression.map(step=>[...step]),...(b.priority!==undefined?{priority:b.priority}:{})};
+ })};
+}
+export async function loadScalingDieBenefits(fetcher=fetch){
+ let typed;
+ try{typed=await fetcher('/benefits/scaling_die.json')}catch{typed=null}
+ if(typed?.ok)return scalingDiceFromBenefits(await typed.json());
+ let legacy;
+ try{legacy=await fetcher('/catalog/scaling_dice.json')}catch{return {dice:[]}}
+ if(!legacy?.ok)return {dice:[]};
+ const data=await legacy.json();
+ return data?.version===1&&Array.isArray(data.dice)?data:{dice:[]};
+}

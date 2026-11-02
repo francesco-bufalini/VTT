@@ -1,0 +1,115 @@
+{
+  "schema_version": 2,
+  "benefit_type": "scaling_die",
+  "scope": "catalog",
+  "notes": "Source-qualified scaling dice for class and subclass feature grants; stable legacy die keys are retained.",
+  "entries": [
+    {
+      "id": "scaling_die:phb:bard:bardic_inspiration_die",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Bardic Inspiration",
+          "source": "PHB",
+          "class_name": "Bard",
+          "class_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "scaling_die",
+        "id": "bardic_inspiration_die",
+        "name": "Bardic Inspiration",
+        "progression": [
+          [
+            1,
+            6
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            15,
+            12
+          ]
+        ]
+      }
+    },
+    {
+      "id": "scaling_die:xphb:bard:bardic_inspiration_die",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Bardic Inspiration",
+          "source": "XPHB",
+          "class_name": "Bard",
+          "class_source": "XPHB"
+        }
+      },
+      "benefit": {
+        "type": "scaling_die",
+        "id": "bardic_inspiration_die",
+        "name": "Bardic Inspiration",
+        "progression": [
+          [
+            1,
+            6
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            15,
+            12
+          ]
+        ]
+      }
+    },
+    {
+      "id": "scaling_die:phb:fighter:battle-master:superiority_die",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Combat Superiority",
+          "source": "PHB",
+          "class_name": "Fighter",
+          "class_source": "PHB",
+          "subclass": "Battle Master",
+          "subclass_source": "PHB"
+        }
+      },
+      "benefit": {
+        "type": "scaling_die",
+        "id": "superiority_die",
+        "name": "Superiority Die",
+        "progression": [
+          [
+            3,
+            8
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            18,
+            12
+          ]
+        ],
+        "priority": 10
+      }
+    }
+  ]
+}

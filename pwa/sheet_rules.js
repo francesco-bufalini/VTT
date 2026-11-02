@@ -2,7 +2,7 @@ import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
 import {projectSelectionBenefits,projectItemOptionBenefits} from './power_selection.js';
-import {scalingDiceFor,resolveScalingDieBenefit} from './scaling_dice.js';
+import {scalingDiceFor,resolveScalingDieBenefit,loadScalingDieBenefits} from './scaling_dice.js';
 import {migrateAdvancementBonuses} from './ability_choice_rules.js';
 import {monsterTraits,bindMonsterTrackers,monsterAttackOwner,monsterActionName} from './monster_traits.js';
 import {SKILLS} from './skill_definitions.js';
@@ -1805,8 +1805,7 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.states)?
        {states:data.states,exhaustion:data.exhaustion||{}}:{states:[],exhaustion:{}}),
     loadClassRollBonusBenefits(),
-    fetch('/catalog/scaling_dice.json').then(r=>r.ok?r.json():{}).then(data=>
-      data?.version===1&&Array.isArray(data.dice)?data:{dice:[]}).catch(()=>({dice:[]})),
+    loadScalingDieBenefits(),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
     // This catalog is supplemental. A missing/stale native host must not also
