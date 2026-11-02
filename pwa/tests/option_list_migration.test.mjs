@@ -7,7 +7,8 @@ const read=file=>JSON.parse(readFileSync(new URL(file,import.meta.url),'utf8'));
 const grants=read('../../vtt/enrichment/benefits/option_grant.json');
 const rawLists=read('../../vtt/enrichment/benefits/option_list.json');
 const lists=inheritCanonicalBenefitNames(rawLists);
-const official=lists.entries.filter(entry=>entry.granted_by?.ref?.category==='optional_feature');
+const official=lists.entries.filter(entry=>entry.granted_by?.kind==='5etools'&&
+  entry.granted_by.ref?.category==='optional_feature');
 const subclass=lists.entries.filter(entry=>entry.id.startsWith('option_list:barbarian:2014:'));
 const local=lists.entries.filter(entry=>entry.granted_by?.kind==='homebrew');
 const options=lists.entries.flatMap(entry=>entry.benefit?.option_list?.options||[]);
@@ -24,7 +25,7 @@ test('272 optional features, 13 source-bound subclass options and three local ca
  assert(local.every(entry=>entry.benefit.option_list.options[0].local===true));
  assert(rawLists.entries.filter(entry=>entry.granted_by?.kind==='5etools')
   .every(entry=>!entry.benefit.option_list.name&&
-    !entry.benefit.option_list.options[0].name&&
+    (entry.granted_by.ref.category!=='optional_feature'||!entry.benefit.option_list.options[0].name)&&
     !entry.benefit.option_list.options[0].description),
   'Canonical option names and descriptions belong to 5eTools, not the benefits JSON');
  for(const id of ['optional:tce:druidic-warrior','optional:tce:blessed-warrior','optional:phb:pact-of-the-tome']){

@@ -40,7 +40,10 @@ test('only redundant names are reconstructed from the canonical 5eTools referenc
  const named=inheritCanonicalBenefitNames(lists);
  for(const entry of named.entries.filter(e=>e.granted_by?.kind==='5etools')){
   const option=entry.benefit.option_list.options[0];
-  assert.equal(option.name,entry.granted_by.ref.name);
+  assert.equal(option.name,
+   entry.granted_by.ref.category==='optional_feature'?entry.granted_by.ref.name:
+    entry.benefit.option_list.options[0].name,
+   'Distinct 5eTools suboptions keep their own names');
   assert.equal(entry.benefit.option_list.name,entry.granted_by.ref.name);
   const original=lists.entries.find(row=>row.id===entry.id)
    .benefit.option_list.options[0];

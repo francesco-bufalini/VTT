@@ -109,7 +109,7 @@ test('multiple options extend the same object without replacing one another or s
  assert.deepEqual(r.inventory[0].option_extensions.map(e=>e.id),['second']);
 });
 const completeCatalogs={...catalogs,scalingDice:scalingDiceFromBenefits(typed('scaling_die')),classFeatures:read('classes'),classMechanics:read('class_mechanics'),
- abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),traitStates:read('trait_states').states,
+ abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),traitStates:[],
  effectExtensions:effectExtensionsFromBenefits(typed('effect_extension'))};
 test('Arcane Armor affects only its extended item and its nested model disappears with the owner',()=>{
  const rules=withArmorerGrants(completeCatalogs);

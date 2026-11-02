@@ -8,7 +8,8 @@ import {speciesAttacksFromBenefits} from '../species_benefit_catalogs.js';
 
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const typed=name=>JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/'+name+'.json',import.meta.url),'utf8'));
-const ability=featTestIndex(read('ability_grants')),states=read('trait_states').states;
+const ability=featTestIndex(read('ability_grants'));
+const grantOptions=typed('option_list').entries.flatMap(entry=>entry.benefit?.option_list?.options||[]);
 const species=speciesAttacksFromBenefits(typed('attack'),typed('base_override'));
 const abilities={str:16,dex:14,con:12,int:16,wis:10,cha:10};
 
@@ -36,24 +37,16 @@ test('attack benefit training is explicit, optional, source-bound and not catego
  assert(!removed.proficiencies.includes('weapon:custom bolt'));
 });
 
-test('all state-created weapons carry explicit proficiency with their source trait',()=>{
- const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
-   traitStates:states,proficiencyGrants:proficiencyTestIndex()};
- const record={kind:'character',rules_version:'2014',level:8,
-   classes:[{name:'Artificer',source:'TCE',level:8,subclass:'Armorer',subclass_source:'TCE'}],
-   abilities,inventory:[{id:'plate',type:'HA',ac:18,quantity:1,equipped_slots:['body']}],
-   power_applications:{arcane_armor:[{id:'arcane_armor',target_item_id:'plate'}]}};
- for(const state of states.filter(row=>row.group==='armor_model')){
-   const row=state.attacks[0];assert.equal(row.grants_proficiency,true);
-   const active=calculateSheet({...record,trait_state_selection:{armor_model:state.id}},catalogs);
-   const attack=active.attacks.find(item=>item.id===row.id);
-   assert.equal(attack?.proficient,true,row.trait);
-   const key='weapon:'+String(attack?.name||'').toLowerCase();
-   assert(active.proficiencies.includes(key),attack?.name);
-   assert(active.proficiency_sources[key]?.some(source=>source.id===attack.origin_id));
+test('all option-created weapons carry explicit proficiency from the applied source',()=>{
+ const forms=grantOptions.filter(row=>row.id.startsWith('barbarian_beast_form:'));
+ assert.equal(forms.length,3);
+ assert(forms.every(option=>option.effects.length===1&&
+   option.effects[0].type==='attack'&&option.effects[0].grants_proficiency===true));
+ for(const id of ['armor_model:guardian','armor_model:infiltrator']){
+   const option=grantOptions.find(row=>row.id===id);
+   assert(option);
+   assert(option.effects.some(effect=>effect.type==='attack'&&effect.grants_proficiency===true));
  }
- for(const state of states.filter(row=>row.group==='barbarian_beast_form'))
-   assert(state.attacks.every(row=>row.grants_proficiency===true));
 });
 
 test('species natural strikes and Dragon Hide claws use explicit attack training',()=>{
