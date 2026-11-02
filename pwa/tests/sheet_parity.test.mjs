@@ -61,12 +61,12 @@ test('legacy class becomes editable without losing primary class or subclass ref
  assert.equal(nativeRowPatch({...c,...patch},'classes',1,'level',21).level,26);
 });
 test('Info derives species creature type from references, including implicit Humanoid and subraces',()=>{
- const races=[{id:'elf',name:'Elf',source:'PHB'},
+ const races=[{id:'elf',name:'Elf',source:'PHB',creatureTypeTags:['elf']},
   {id:'hybrid',name:'Changeling',source:'ERLW',creatureTypes:['fey']},
   {id:'variant',name:'Other',raceName:'Elf',raceSource:'PHB',source:'PHB',creatureTypes:['fey','humanoid']}];
- assert.equal(speciesCreatureType({kind:'character',species:'Elf',species_source:'PHB'}, {races}),'Umanoide');
+ assert.equal(speciesCreatureType({kind:'character',species:'Elf',species_source:'PHB'}, {races}),'Umanoide · Elfo');
  assert.equal(speciesCreatureType({kind:'character',species:'Changeling',species_source:'ERLW'}, {races}),'Folletto');
- assert.equal(speciesCreatureType({kind:'character',species:'Elf',species_source:'PHB',subrace:'Other',subrace_source:'PHB'}, {races}),'Folletto, Umanoide');
+ assert.equal(speciesCreatureType({kind:'character',species:'Elf',species_source:'PHB',subrace:'Other',subrace_source:'PHB'}, {races}),'Folletto, Umanoide · Elfo');
  assert.equal(speciesCreatureType({kind:'character',species:'Unknown'}, {races}),'—');
  assert.equal(speciesCreatureType({kind:'monster',stat_block:{type:{type:'dragon'}}}, {races}),'dragon');
 });
@@ -87,11 +87,11 @@ test('2014 species picker excludes flattened variants and uses canonical subrace
 
 test('canonical subrace reference preserves movement and creature types from source',()=>{
  const old=[{id:'elf',name:'Elf',source:'PHB',speed:30},
-  {id:'wood',name:'Elf (Wood)',source:'PHB',speed:35,creatureTypes:['fey']}];
+  {id:'wood',name:'Elf (Wood)',source:'PHB',speed:35,creatureTypes:['fey'],creatureTypeTags:['elf']}];
  const canonical=canonicalSpeciesReferences(old,[{id:'wood',name:'Wood',source:'PHB',raceName:'Elf',raceSource:'PHB'}]);
  assert.equal(canonical.length,2);
  assert.equal(canonical.find(x=>x.name==='Wood')?.speed,35);
- assert.equal(speciesCreatureType({species:'Elf',species_source:'PHB',subrace:'Wood',subrace_source:'PHB'}, {races:canonical}),'Folletto');
+ assert.equal(speciesCreatureType({species:'Elf',species_source:'PHB',subrace:'Wood',subrace_source:'PHB'}, {races:canonical}),'Folletto · Elfo');
 });
 
 test('secondary classes show only non-primary entries, with source from selected catalog',()=>{
@@ -225,13 +225,13 @@ test('saving throw preview explains ability modifier, proficiency and extra orig
  assert.match(breakdown,/Altri bonus \+2/);
  assert.match(data.explanations['save:dex'],/Sigillo/);
 });
-test('species type index retains official edition-specific non-humanoid types',()=>{
- const typed=JSON.parse(readFileSync(new URL('../catalog/species_types.json',import.meta.url),'utf8'));
- const base=[{name:'Fairy',source:'WBtW'},{name:'Autognome',source:'AAG'},
-  {name:'Plasmoid',source:'AAG'},{name:'Satyr',source:'MOT'},{name:'Satyr',source:'MPMM'}];
- const races=base.map(row=>({...row,...(
-   typed.races.find(t=>t.name===row.name&&t.source===row.source)?
-    {creatureTypes:typed.races.find(t=>t.name===row.name&&t.source===row.source).creatureTypes}:{})}));
+test('intrinsic 5eTools species types and tags stay bound to their race source',()=>{
+ const races=mechanics.races;
+ const astral=races.find(row=>row.name==='Astral Elf'&&row.source==='AAG');
+ assert.deepEqual(astral.creatureTypes,['humanoid']);
+ assert.deepEqual(astral.creatureTypeTags,['elf']);
+ assert.equal(speciesCreatureType({species:'Astral Elf',species_source:'AAG'},{races}),'Umanoide · Elfo');
+ assert.equal(speciesCreatureType({species:'Bugbear',species_source:'MPMM'},{races}),'Umanoide · Goblinoide');
  assert.equal(speciesCreatureType({species:'Autognome',species_source:'AAG'}, {races}),'Costrutto');
  assert.equal(speciesCreatureType({species:'Fairy',species_source:'WBtW'}, {races}),'Folletto');
  assert.equal(speciesCreatureType({species:'Plasmoid',species_source:'AAG'}, {races}),'Melma');
