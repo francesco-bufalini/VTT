@@ -22,7 +22,9 @@ test('272 official optional features retain source identity; local capabilities 
   const previous=legacy.options[index];
   if(!deliberate.has(option.id))assert.deepEqual(option,previous,option.id);
   else {
-   assert.deepEqual({...option,effects:previous.effects},previous,'Unchanged 5eTools fields: '+option.id);
+   const {effects:converted,...actualFields}=option;
+   const {effects:original,...previousFields}=previous;
+   assert.deepEqual(actualFields,previousFields,'Unchanged 5eTools fields: '+option.id);
    assert(option.effects.some(effect=>effect.type==='option_grant'));
   }
   const ref=official[index].granted_by.ref;
@@ -59,8 +61,12 @@ test('all 17 typed grants resolve exactly the same selections and effects withou
    .find(row=>row.id===rule.id);
   assert(modern&&before,'Missing selection models: '+rule.id);
   const deliberate=new Set(['optional:tce:druidic-warrior','optional:tce:blessed-warrior','optional:phb:pact-of-the-tome']);
-  assert.deepEqual(modern.options.map(row=>deliberate.has(row.id)?{...row,effects:before.options.find(previous=>previous.id===row.id)?.effects}:row),
-    before.options,'Migrated options differ for '+rule.id);
+  const canonical=row=>{
+   if(!deliberate.has(row.id))return row;
+   const {effects,...fields}=row;return fields;
+  };
+  assert.deepEqual(modern.options.map(canonical),before.options.map(canonical),
+    'Migrated options differ for '+rule.id);
   assert(modern.options.length,'No official options for '+rule.id);
  }
 });

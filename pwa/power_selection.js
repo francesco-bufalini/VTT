@@ -429,7 +429,7 @@ export function projectSelectionBenefits(raw,catalogs,features=[]){
  // Model state choices are derived, not another persisted selection engine.
  for(const rule of definitions(catalog))for(const option of optionsFor(record,rule,catalog))for(const e of rows(option.effects))if(e.type==='state_selection')delete states[e.key];
  for(const model of models)for(const application of [
-  ...new Map([...rows(model.layers.applied?.selected),...rows(model.fixed)].map(row=>[identity(row),row])).values()
+  ...new Map([...rows(model.layers.applied?.selected),...rows(model.fixed)].map(row=>[identity(row)+'|'+(row?.target_item_id||''),row])).values()
  ]){
   const option=model.options.find(o=>o.id===identity(application));if(!option)continue;
   const item=application.target_item_id?inventory.find(i=>(i.instance_id||i.id)===application.target_item_id):null;
