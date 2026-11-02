@@ -14,7 +14,7 @@ import {recoveryPatch,restRecoveryPreview,completeRest} from '../native_sheet.js
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
- traitStates:read('trait_states').states,rollBonusRules:classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8'))),
+ traitStates:[],rollBonusRules:classRollBonusRulesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/roll_bonus.json',import.meta.url),'utf8'))),
  featureActionOverrides:classActionOverridesFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/action.json',import.meta.url),'utf8')))};
 const sheet=(name,level=5,source='PHB',subclass='')=>({kind:'character',rules_version:source==='XPHB'?'2024':'2014',level,
  classes:[{name,level,source,subclass,subclass_source:source}],abilities:{str:10,dex:14,con:18,int:18,wis:18,cha:18},

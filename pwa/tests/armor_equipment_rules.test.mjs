@@ -11,7 +11,7 @@ import {withArmorerGrants,applyArmorerModel} from './helpers/armorer_option_gran
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:proficiencyTestIndex(),
- traitStates:read('trait_states').states,effectExtensions:effectExtensionsFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/effect_extension.json',import.meta.url),'utf8')))};
+ traitStates:[],effectExtensions:effectExtensionsFromBenefits(JSON.parse(readFileSync(new URL('../../vtt/enrichment/benefits/effect_extension.json',import.meta.url),'utf8')))};
 const armor=(type='HA',strength='15',stealth=true)=>({
  id:'plate',name:'Plate Armor',type,ac:18,strength,stealth,quantity:1,equipped_slots:['body']
 });
