@@ -31,7 +31,6 @@ export function proficiencyGrantModels(record={},calculated={},catalog={}){
   if(entry?.enabled===false||entry?.benefit?.type!=='proficiency_grant')continue;
   const rule=entry.benefit.proficiency_grant,ref=entry.granted_by?.ref||{};
   if(!rule?.id||!rows(rule.groups).length)continue;
-  if(ref.category==='species_trait'&&record.rules_version==='2024')continue;
   for(const feature of rows(calculated.features).filter(feature=>matchesOrigin(record,feature,ref))){
    const root_id=ref.category==='species_trait'?
     'race|'+norm(ref.race_source)+'|'+norm(ref.race):feature.origin_id;
