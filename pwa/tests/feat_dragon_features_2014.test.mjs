@@ -22,10 +22,13 @@ const base=()=>({id:'dragon-1',kind:'character',rules_version:'2014',level:5,
  feats_catalog:[{name:'Defensive Duelist',source:'PHB'},
  {name:'Dragon Fear',source:'XGE'},{name:'Dragon Hide',source:'XGE'}]});
 const catalogs={abilityGrants:ability,speciesPowers:species,originDetails};
+const mechanicsOnly=value=>Array.isArray(value)?value.map(mechanicsOnly):value&&typeof value==='object'?Object.fromEntries(
+ Object.entries(value).filter(([key])=>key!=='description').map(([key,v])=>[key,mechanicsOnly(v)])):value;
 
 test('all new feat mechanics remain identical in bundled and source JSON',()=>{
  const sorted=entries=>[...entries].sort((a,b)=>(a.source+'|'+a.name).localeCompare(b.source+'|'+b.name));
- assert.deepEqual(sorted(ability.feat_mechanics),sorted(native.feats));
+ assert.deepEqual(sorted(ability.feat_mechanics),sorted(mechanicsOnly(native.feats)));
+ assert.deepEqual(mechanicsOnly(ability.feat_mechanics),ability.feat_mechanics,'Typed benefits do not duplicate source descriptions');
 });
 
 test('Defensive Duelist is a descriptive reaction, without a Use button',()=>{
@@ -35,7 +38,7 @@ test('Defensive Duelist is a descriptive reaction, without a Use button',()=>{
  assert.equal(row?.action_type,'reaction');
  assert.equal(row?.descriptive_only,true);
  assert.equal(row?.type,'Promemoria');
- assert.match(row.description,/competenza alla CA/);
+ assert.equal(row.description,undefined,'The Defensive Duelist description belongs to its 5eTools source');
  const panels=battleActionPanels(record,sheet,[],[],[],[]);
  assert.match(panels.others,/Defensive Duelist/);
  assert.match(panels.others,/data-action-source="privileges"/);
