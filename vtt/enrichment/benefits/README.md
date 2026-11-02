@@ -226,3 +226,16 @@ ancora campi comuni nel modello tipizzato sono conservate in
 `benefit.parameters`, non in nuovi file separati per privilegio.
 Il vecchio `pwa/catalog/feature_item_grants.json` resta disponibile
 solo per host precedenti e per confronto di regressione.
+
+---
+
+## Estensioni degli effetti
+
+[`effect_extension.json`](effect_extension.json) contiene 26 estensioni
+concedibili dai tratti 5eTools (invocazioni del Warlock, College of Creation,
+Arcane Armor e infusioni dell'Artefice). Le identità delle infusioni
+provengono da `vtt/data/artificer_infusions_5etools.json`. L'operazione
+è espressa in `benefit.effects[]`, con metadati di destinazione supplementari
+in `effects[].parameters`. `pwa/effect_extensions.js` proietta i record
+nella struttura runtime già in uso, mantenendo i vincoli sulle singole
+istanze di oggetti; il vecchio JSON resta solo per host precedenti.

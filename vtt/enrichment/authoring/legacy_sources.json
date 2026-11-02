@@ -425,6 +425,12 @@
       "benefit_type": "item_grant",
       "catalog": "vtt/enrichment/benefits/item_grant.json",
       "runtime": "pwa/feature_item_grants.js"
+    },
+    {
+      "source": "pwa/catalog/effect_extensions.json",
+      "benefit_type": "effect_extension",
+      "catalog": "vtt/enrichment/benefits/effect_extension.json",
+      "runtime": "pwa/effect_extensions.js"
     }
   ]
 }

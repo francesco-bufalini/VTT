@@ -18,7 +18,7 @@ import {speciesRollModesFromBenefits,speciesRollBonusesFromBenefits,speciesAttac
 import {racialBonusFeatures,racialBonusEntries,racialBonusTrackers,racialAutomaticBonusGrants} from './species_conditional_bonuses.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits,attackActionGrants,attackCategories} from './attack_count_benefits.js';
-import {collectEffectExtensions} from './effect_extensions.js';
+import {collectEffectExtensions,loadEffectExtensionBenefits} from './effect_extensions.js';
 import {armorStrengthWaivers,armorRuleEffects} from './armor_rules.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
@@ -1818,8 +1818,7 @@ export function loadRuleCatalogs(){
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       })),
-    fetch('/catalog/effect_extensions.json').then(r=>{if(!r.ok)throw Error('Estensioni effetti non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.extensions)?data.extensions:[]),
+    loadEffectExtensionBenefits(),
     fetch('/catalog/species_powers.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
       .then(base=>Promise.all([
         '/catalog/benefits/action.json','/benefits/resource.json','/benefits/roll_bonus.json'

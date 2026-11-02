@@ -199,3 +199,36 @@ export function effectExtensionLabel(row,variables={}){
    row.frequency==='once_per_turn'?' · 1/turno':row.frequency==='once_per_use'?' · 1/uso':'',
    row.description?' · '+row.description:''].join('');
 }
+
+const typedEffectKeys=['operation','target_kind','target_name','value','trigger','frequency'];
+export function effectExtensionsFromBenefits(catalog={}){
+ if(catalog.schema_version!==2||catalog.benefit_type!=='effect_extension'||catalog.scope!=='catalog'||!Array.isArray(catalog.entries))
+  throw Error('Catalogo tipizzato effect_extension non valido');
+ const ids=new Set();
+ return catalog.entries.map(entry=>{
+  const ref=entry?.granted_by?.ref||{},b=entry?.benefit||{},eff=b.effects?.[0];
+  if(!entry?.id||ids.has(entry.id)||entry.granted_by?.kind!=='5etools'||!ref.name||!ref.source||
+   !['optional_feature','class_feature','subclass_feature'].includes(ref.category)||
+   b.type!=='effect_extension'||!b.id||b.effects?.length!==1||!eff?.operation||!eff.target_kind||
+   (ref.category==='subclass_feature'&&(!ref.class_name||!ref.class_source||!ref.subclass||!ref.subclass_source))||
+   (ref.feature_type==='infusion'&&!ref.id))
+   throw Error('Voce effect_extension non valida: '+(entry?.id||'senza ID'));
+  ids.add(entry.id);
+  const owner=ref.feature_type==='infusion'?{kind:'infusion',id:ref.id}:
+   ref.category==='optional_feature'?{kind:'optional_feature',name:ref.name,source:ref.source,
+    ...(ref.class_name?{class_name:ref.class_name}:{})}:
+   {kind:'feature',name:ref.name,class_name:ref.class_name,...(ref.subclass?{subclass:ref.subclass}:{})};
+  if(entry.min_level!==undefined&&owner.kind!=='infusion')owner.min_level=entry.min_level;
+  return {id:b.id,...(b.rules_version?{rules_version:b.rules_version}:{}),owner,
+   ...Object.fromEntries(typedEffectKeys.filter(k=>eff[k]!==undefined).map(k=>[k,eff[k]])),...(eff.parameters||{})};
+ });
+}
+export async function loadEffectExtensionBenefits(fetcher=fetch){
+ let response;
+ try{response=await fetcher('/benefits/effect_extension.json')}catch{response=null}
+ if(response?.ok)return effectExtensionsFromBenefits(await response.json());
+ const fallback=await fetcher('/catalog/effect_extensions.json');
+ if(!fallback?.ok)throw Error('Estensioni effetti non disponibili');
+ const old=await fallback.json();
+ return old?.version===1&&Array.isArray(old.extensions)?old.extensions:[];
+}

@@ -1,0 +1,843 @@
+{
+  "schema_version": 2,
+  "benefit_type": "effect_extension",
+  "scope": "catalog",
+  "notes": "26 5eTools source-bound extensions for invocations, subclass traits and infusions; target-specific supplemental attributes live in effect parameters.",
+  "entries": [
+    {
+      "id": "effect_extension:invocation-agonizing-blast-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Agonizing Blast",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "invocation-agonizing-blast-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "bonus_damage",
+            "target_kind": "spell",
+            "target_name": "Eldritch Blast",
+            "value": "cha_mod",
+            "trigger": "on_hit",
+            "frequency": "each",
+            "parameters": {
+              "description": "Bonus ai danni di ogni raggio che colpisce"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:invocation-eldritch-spear-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Eldritch Spear",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "invocation-eldritch-spear-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "set_range",
+            "target_kind": "spell",
+            "target_name": "Eldritch Blast",
+            "value": "300",
+            "trigger": "passive",
+            "frequency": "each"
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:invocation-repelling-blast-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Repelling Blast",
+          "source": "PHB",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "invocation-repelling-blast-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "push",
+            "target_kind": "spell",
+            "target_name": "Eldritch Blast",
+            "value": "10",
+            "trigger": "on_hit",
+            "frequency": "each",
+            "parameters": {
+              "description": "Il bersaglio viene allontanato in linea retta"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:invocation-grasp-of-hadar-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Grasp of Hadar",
+          "source": "XGE",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "invocation-grasp-of-hadar-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "pull",
+            "target_kind": "spell",
+            "target_name": "Eldritch Blast",
+            "value": "10",
+            "trigger": "on_hit",
+            "frequency": "once_per_turn",
+            "parameters": {
+              "description": "Avvicina il bersaglio al lanciatore"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:invocation-lance-of-lethargy-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "name": "Lance of Lethargy",
+          "source": "XGE",
+          "class_name": "Warlock",
+          "class_source": "PHB"
+        }
+      },
+      "min_level": 2,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "invocation-lance-of-lethargy-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "reduce_speed",
+            "target_kind": "spell",
+            "target_name": "Eldritch Blast",
+            "value": "10",
+            "trigger": "on_hit",
+            "frequency": "once_per_turn",
+            "parameters": {
+              "description": "Riduce la velocità del bersaglio fino al termine del turno successivo"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:creation-mote-check-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Mote of Potential",
+          "source": "TCE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Creation",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "creation-mote-check-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "roll_twice",
+            "target_kind": "ability",
+            "target_name": "Bardic Inspiration",
+            "trigger": "ability_check",
+            "frequency": "once_per_use",
+            "parameters": {
+              "target_id": "vtt_bardic_inspiration",
+              "target_aliases": [
+                "Ispirazione Bardica"
+              ],
+              "description": "Quando si usa il dado di Ispirazione Bardica in una prova, lo si tira due volte e si sceglie il risultato migliore"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:creation-mote-attack-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Mote of Potential",
+          "source": "TCE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Creation",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "creation-mote-attack-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "area_damage",
+            "target_kind": "ability",
+            "target_name": "Bardic Inspiration",
+            "value": "bardic_inspiration_die",
+            "trigger": "attack_roll",
+            "frequency": "once_per_use",
+            "parameters": {
+              "target_id": "vtt_bardic_inspiration",
+              "target_aliases": [
+                "Ispirazione Bardica"
+              ],
+              "description": "Danni da tuono entro 5 ft dal bersaglio dopo un colpo; TS Costituzione contro CD incantesimi del bardo per dimezzare"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:creation-mote-save-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Mote of Potential",
+          "source": "TCE",
+          "class_name": "Bard",
+          "class_source": "PHB",
+          "subclass": "College of Creation",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "creation-mote-save-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "temporary_hp",
+            "target_kind": "ability",
+            "target_name": "Bardic Inspiration",
+            "value": "bardic_inspiration_die+cha_mod",
+            "trigger": "saving_throw",
+            "frequency": "once_per_use",
+            "parameters": {
+              "target_id": "vtt_bardic_inspiration",
+              "target_aliases": [
+                "Ispirazione Bardica"
+              ],
+              "description": "PF temporanei al termine del tiro salvezza"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-arcane-propulsion-armor-grant_property-0",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|arcane propulsion armor",
+          "name": "Arcane Propulsion Armor",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-arcane-propulsion-armor-grant_property-0",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_property",
+            "target_kind": "item",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "description": "L'armatura diventa solidale con il corpo e non può essere rimossa contro la volontà del portatore"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-arcane-propulsion-armor-add_effect-1",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|arcane propulsion armor",
+          "name": "Arcane Propulsion Armor",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-arcane-propulsion-armor-add_effect-1",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "add_effect",
+            "target_kind": "item",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "description": "La velocità sul terreno aumenta di 5 ft; i guanti diventano armi magiche da mischia 1d8 forza, lanciabili a 20/60 ft"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-armor-of-magical-strength-grant_action-2",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|armor of magical strength",
+          "name": "Armor of Magical Strength",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-armor-of-magical-strength-grant_action-2",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_action",
+            "target_kind": "item",
+            "trigger": "reaction",
+            "frequency": "each",
+            "parameters": {
+              "description": "6 cariche: usa una carica per aggiungere Intelligenza a una prova di Forza o a un tiro salvezza di Forza"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-armor-of-magical-strength-grant_action-3",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|armor of magical strength",
+          "name": "Armor of Magical Strength",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-armor-of-magical-strength-grant_action-3",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_action",
+            "target_kind": "item",
+            "trigger": "reaction",
+            "frequency": "each",
+            "parameters": {
+              "description": "6 cariche: usa una reazione e una carica per evitare di essere buttato prono; recupera 1d6 cariche all'alba"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-boots-of-the-winding-path-grant_action-4",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|boots of the winding path",
+          "name": "Boots of the Winding Path",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-boots-of-the-winding-path-grant_action-4",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_action",
+            "target_kind": "item",
+            "trigger": "on_use",
+            "frequency": "each",
+            "parameters": {
+              "description": "Azione bonus: teletrasporto fino a 15 ft verso uno spazio non occupato già occupato durante il turno corrente"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-enhanced-arcane-focus-add_effect-5",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|enhanced arcane focus",
+          "name": "Enhanced Arcane Focus",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-enhanced-arcane-focus-add_effect-5",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "add_effect",
+            "target_kind": "item",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "description": "Gli attacchi con incantesimi ignorano la mezza copertura quando si impugna questo focus"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-helm-of-awareness-roll_mode-6",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|helm of awareness",
+          "name": "Helm of Awareness",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-helm-of-awareness-roll_mode-6",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "roll_mode",
+            "target_kind": "item",
+            "value": "advantage",
+            "trigger": "initiative",
+            "frequency": "each",
+            "parameters": {
+              "description": "Vantaggio ai tiri di iniziativa mentre l'elmo è indossato"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-helm-of-awareness-add_effect-7",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|helm of awareness",
+          "name": "Helm of Awareness",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-helm-of-awareness-add_effect-7",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "add_effect",
+            "target_kind": "item",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "description": "Il portatore non può essere sorpreso mentre è cosciente"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-homunculus-servant-add_effect-8",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|homunculus servant",
+          "name": "Homunculus Servant",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-homunculus-servant-add_effect-8",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "add_effect",
+            "target_kind": "item",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "description": "Il gioiello infuso funge da cuore di un servitore omuncolo; la creatura associata è gestita separatamente"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-mind-sharpener-grant_action-9",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|mind sharpener",
+          "name": "Mind Sharpener",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-mind-sharpener-grant_action-9",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_action",
+            "target_kind": "item",
+            "trigger": "concentration_fail",
+            "frequency": "each",
+            "parameters": {
+              "description": "Reazione: usa una delle 4 cariche per riuscire un tiro salvezza di concentrazione fallito; recupera 1d4 cariche all'alba"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-radiant-weapon-grant_property-10",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|radiant weapon",
+          "name": "Radiant Weapon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-radiant-weapon-grant_property-10",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_property",
+            "target_kind": "item",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "description": "L'arma emette luce intensa per 30 ft e luce fioca per altri 30 ft, disattivabile"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-radiant-weapon-grant_action-11",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|radiant weapon",
+          "name": "Radiant Weapon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-radiant-weapon-grant_action-11",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_action",
+            "target_kind": "item",
+            "trigger": "reaction",
+            "frequency": "each",
+            "parameters": {
+              "description": "4 cariche: dopo essere colpito da un attacco, una reazione e una carica per accecare l'attaccante (TS Costituzione); recupera 1d4 cariche all'alba"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-repeating-shot-grant_property-12",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|repeating shot",
+          "name": "Repeating Shot",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-repeating-shot-grant_property-12",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_property",
+            "target_kind": "item",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "description": "Ignora la proprietà Ricarica (Loading); l'arma produce munizioni magiche quando è usata per un attacco a distanza"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-returning-weapon-grant_property-13",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|returning weapon",
+          "name": "Returning Weapon",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-returning-weapon-grant_property-13",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_property",
+            "target_kind": "item",
+            "trigger": "on_throw",
+            "frequency": "each",
+            "parameters": {
+              "description": "L'arma ritorna nella mano dell'utilizzatore immediatamente dopo l'attacco a distanza con lancio"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-repulsion-shield-grant_action-14",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|repulsion shield",
+          "name": "Repulsion Shield",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-repulsion-shield-grant_action-14",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_action",
+            "target_kind": "item",
+            "trigger": "reaction",
+            "frequency": "each",
+            "parameters": {
+              "description": "4 cariche: dopo essere colpito da un attacco in mischia, una reazione e una carica per spingere l'attaccante fino a 15 ft; recupera 1d4 cariche all'alba"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-resistant-armor-resistance-15",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|resistant armor",
+          "name": "Resistant Armor",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-resistant-armor-resistance-15",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "resistance",
+            "target_kind": "item",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "description": "Conferisce resistenza al tipo di danno scelto al momento dell'infusione",
+              "value_from_item_choice": "damage_type"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:infusion-spell-refueling-ring-grant_action-16",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "optional_feature",
+          "id": "infusion|tce|spell-refueling ring",
+          "name": "Spell-Refueling Ring",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "feature_type": "infusion"
+        }
+      },
+      "benefit": {
+        "type": "effect_extension",
+        "id": "infusion-spell-refueling-ring-grant_action-16",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "grant_action",
+            "target_kind": "item",
+            "trigger": "on_use",
+            "frequency": "each",
+            "parameters": {
+              "description": "Una volta all'alba: con un'azione, recupera uno slot incantesimo speso di livello massimo 3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect_extension:armorer-arcane-armor-ignore-strength-2014",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "subclass_feature",
+          "name": "Arcane Armor",
+          "source": "TCE",
+          "class_name": "Artificer",
+          "class_source": "TCE",
+          "subclass": "Armorer",
+          "subclass_source": "TCE"
+        }
+      },
+      "min_level": 3,
+      "benefit": {
+        "type": "effect_extension",
+        "id": "armorer-arcane-armor-ignore-strength-2014",
+        "rules_version": "2014",
+        "effects": [
+          {
+            "operation": "ignore_armor_strength",
+            "target_kind": "item",
+            "target_name": "@equipped_armor",
+            "value": "",
+            "trigger": "passive",
+            "frequency": "each",
+            "parameters": {
+              "require_active_state_group": "armor_model",
+              "description": "L'Armatura Arcana indossata non richiede un punteggio minimo di Forza.",
+              "compatibility_selection_id": "arcane_armor"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -58,7 +58,7 @@ const SHELL = [
   "/benefits/attack.json", "/benefits/movement.json",
   "/catalog/species_defenses.json",
   "/benefits/roll_mode.json", "/benefits/roll_bonus.json", "/benefits/resource.json",
-   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/spell_slot_profiles.js",
+   "/benefits/option_grant.json", "/benefits/option_list.json", "/benefits/scaling_die.json", "/benefits/item_grant.json", "/benefits/effect_extension.json", "/spell_slot_profiles.js",
   "/species_defenses.js",
   "/class_defenses.js",
   "/catalog/class_defense_rules.js",
