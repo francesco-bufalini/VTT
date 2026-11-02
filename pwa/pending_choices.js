@@ -82,6 +82,17 @@ export function selectableProficiencyOptions(kind,record={},index={}){
  return unique(options).filter(key=>kind!=='weapon'||!['simple','martial','all'].includes(key))
    .sort((a,b)=>a.localeCompare(b,'it'));
 }
+// Shared filtered picker for rest-selectable and permanent typed grants.
+export function filteredProficiencyGrantOptions(slot,record={},index={}){
+ const filter=slot?.filter||{};
+ const include=arr(filter.include).map(norm),exclude=new Set(arr(filter.exclude).map(norm));
+ return arr(filter.kinds).flatMap(kind=>selectableProficiencyOptions(kind,record,index)
+  .filter(key=>{
+   const full=kind+':'+key;
+   return (!include.length||include.includes(norm(key))||include.includes(norm(full)))&&
+    !exclude.has(norm(key))&&!exclude.has(norm(full));
+  }).map(key=>({id:kind+':'+key,kind,key,name:key,label:kindNames[kind]||kind})));
+}
 // Compatibility API for existing skill/weapon/tool training consumers.
 export function trainingProficiencyOptions(kind,record={},index={}){
  return ['skill','weapon','tool'].includes(kind)?
@@ -222,6 +233,39 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
   const flavourChoices=traitFlavourChoices(record,calculated.features||[],catalogs.flavours||{},calculated.proficiencies||[]);
   const flavouredOwners=new Set(flavourChoices.map(choice=>choice.origin_id));
   result.push(...flavourChoices,...flavourBenefitChoices(record,calculated.features||[],catalogs));
+ // Permanent grants use the ordinary privilege-choice interface. Each group
+ // has its own stable ID so saving one group never erases another one.
+ for(const model of arr(calculated.proficiency_grants).filter(row=>row.permanent)){
+  const groups=[...new Set(arr(model.slots).map(slot=>slot.group_index))];
+  for(const groupIndex of groups){
+   const slots=arr(model.slots).filter(slot=>slot.group_index===groupIndex);
+   const slot=slots[0],pool=filteredProficiencyGrantOptions(slot,record,index);
+   const options=unique(pool.map(row=>row.id));
+   const chosen=arr(model.selected).filter(row=>
+    row?.proficiency_grant_group_index===groupIndex||
+    model.legacy_origin_id&&row?.origin_id===model.legacy_origin_id&&
+     row?.proficiency_grant_group_index===undefined&&
+     arr(slot.filter?.kinds).includes(row.kind));
+   const valueOf=row=>row.kind+':'+strip(row.key);
+   const selected=unique(chosen.filter(row=>!row.disabled&&
+    (options.includes(valueOf(row))||row.custom===true)).map(valueOf)).slice(0,slots.length);
+   const kinds=arr(slot.filter?.kinds),customAllowed=kinds.includes('tool')&&
+    !arr(slot.filter?.include).length;
+   result.push({id:'proficiency-grant:'+model.id+':'+groupIndex,
+    kind:'proficiency',proficiency_kind:'mixed',
+    proficiency_grant_id:model.id,proficiency_grant_group_index:groupIndex,
+    proficiency_grant_root_id:model.root_id,
+    proficiency_grant_feature_origin_id:model.source_origin_id,
+    legacy_origin_id:model.legacy_origin_id&&groups.length===1?model.legacy_origin_id:'',
+    origin_id:model.origin_id,name:'Tratto · '+model.title,
+    label:kinds.map(kind=>kindNames[kind]||kind).join(' o '),
+    count:slots.length,selected,options,
+    option_labels:Object.fromEntries(pool.map(row=>[row.id,(kindNames[row.kind]||row.kind)+' · '+row.key])),
+    custom_allowed:customAllowed,
+    custom_values:chosen.filter(row=>row.custom&&row.kind==='tool').map(row=>strip(row.key)),
+    remaining:Math.max(0,slots.length-selected.length)});
+  }
+ }
  for(const source of selectedSources(record,index,calculated.features??null)){
   if(!enabled(record,source.id))continue;
   for(const [i,req] of requirementEntries(source).entries()){
@@ -508,6 +552,29 @@ export function savePendingChoice(record,choice,values=[],details={}){
        /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||
        arr(choice.excluded_options).includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
+ if(choice.kind==='proficiency'&&choice.proficiency_grant_id){
+  const group=choice.proficiency_grant_group_index,id=choice.proficiency_grant_id;
+  if(!Number.isSafeInteger(group)||group<0||!choice.proficiency_grant_root_id)
+    throw Error('Gruppo della concessione non valido.');
+  const ownGroup=row=>row?.proficiency_grant_id===id&&
+    row.proficiency_grant_group_index===group;
+  const oldLegacy=row=>choice.legacy_origin_id&&row?.origin_id===choice.legacy_origin_id&&
+    !row.proficiency_grant_id&&['skill','tool','language','expertise','weapon','armor','save'].includes(row.kind);
+  const saved=arr(record.proficiency_choices).filter(row=>!ownGroup(row)&&!oldLegacy(row));
+  if(selected.some(value=>saved.some(row=>row.proficiency_grant_id===id&&
+     row.kind+':'+strip(row.key)===value)))
+    throw Error('Questa competenza è già stata scelta in un altro gruppo.');
+  return {proficiency_choices:[...saved,...selected.map(value=>{
+   const colon=value.indexOf(':'),kind=value.slice(0,colon),key=value.slice(colon+1);
+   if(colon<1||!kindFields.includes(kind))throw Error('Tipo di competenza non valido.');
+   return {kind,key,origin_id:choice.proficiency_grant_root_id,
+     origin_name:choice.name,proficiency_grant_id:id,
+     proficiency_grant_group_index:group,
+     ...(choice.proficiency_grant_feature_origin_id?{
+      granting_feature_origin_id:choice.proficiency_grant_feature_origin_id}:{}),
+     ...(custom.includes(value)?{custom:true}:{})};
+  })]};
+ }
  if(choice.kind==='trait_flavour')return saveTraitFlavourChoice(record,choice,selected);
   if(choice.kind==='flavour_feat')return saveFlavourFeatChoice(record,choice,selected);
   if(choice.kind==='subclass'||choice.kind==='subrace'){
