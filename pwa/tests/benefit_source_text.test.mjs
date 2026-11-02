@@ -42,7 +42,11 @@ test('only redundant names are reconstructed from the canonical 5eTools referenc
   const option=entry.benefit.option_list.options[0];
   assert.equal(option.name,entry.granted_by.ref.name);
   assert.equal(entry.benefit.option_list.name,entry.granted_by.ref.name);
-  if(option.details)assert.equal(option.details.name,entry.granted_by.ref.name);
+  const original=lists.entries.find(row=>row.id===entry.id)
+   .benefit.option_list.options[0];
+  if(option.details)assert.equal(option.details.name,
+   original.details?.name||entry.granted_by.ref.name,
+   'Distinct sub-option names must not be replaced by the granting trait');
  }
 });
 
