@@ -634,8 +634,10 @@ async function boot() {
     const { ensureCurrentAppVersion } = await deadline(import("./version_gate.js"),
       7000, "Controllo versione");
     const versionState = await ensureCurrentAppVersion({ waitForUpdate: true });
-    if (versionState === "updated") {
-      location.reload(); // New controller + a fresh ES module map.
+    if (versionState === "updated" || versionState === "recovered") {
+      // Either a newly installed worker or a released stale worker requires
+      // a new document: Chromium/WebKit cache failed ES module imports.
+      location.reload();
       return;
     }
     phase = "Caricamento dei moduli";
@@ -654,7 +656,11 @@ async function boot() {
     // On iOS/WebKit, precaching dozens of assets in parallel with the ESM
     // graph can exhaust connections through the desktop bridge.
     // Update the offline shell only after the local UI is usable.
-    void installOfflineShell(flushPendingEdits);
+    // Embedded desktop views are served by the running local Godot host,
+    // so they never need a service worker. Reinstalling one here would
+    // recreate the stale-cache startup problem after native bootstrap.
+    if (!new URLSearchParams(location.search).has("native_view"))
+      void installOfflineShell(flushPendingEdits);
     // Browser persistence requests, cache downloads and diagnostics are optional.
     // None of them may delay painting the usable character library.
     Promise.resolve().then(() => requestPersistentStorage()).catch(error =>
