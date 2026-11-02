@@ -219,6 +219,25 @@ test('all 21 canonical class spellcasting grants reproduce the legacy calculated
   const resolved=members=>members.map(member=>{
    const copy=structuredClone(member);
    if(copy.slot_progression)delete copy.slot_progression.profile;
+   // Canonical rule tables store only change points. Legacy tables repeated
+   // each unchanged value at every class level; both evaluate identically.
+   const compact=value=>{
+    if(!value||typeof value!=='object')return;
+    if(Array.isArray(value)){
+     for(const part of value)compact(part);
+     return;
+    }
+    if(Array.isArray(value.by_class_level)){
+     let last=Symbol('first');
+     value.by_class_level=value.by_class_level.filter(([,n])=>{
+      if(n===last)return false;
+      last=n;
+      return true;
+     });
+    }
+    for(const part of Object.values(value))compact(part);
+   };
+   compact(copy.slot_progression);
    return copy;
   });
   assert.deepEqual(resolved(current.casting_classes),resolved(legacy.casting_classes),identity(owner));
