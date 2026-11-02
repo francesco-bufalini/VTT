@@ -166,8 +166,10 @@ export function attackActionGrants(record={},features=[],trackers=[],catalog={})
     rows(record.optional_features_catalog).some(option=>!option.disabled&&
      normal(option.name)===normal(rule.feature)&&
      (!rule.feature_source||normal(option.source)===normal(rule.feature_source)));
+   const subclass=owner.split('|subclass|')[1]?.split('|')[0]||'';
+   const canonicalSubclass=value=>normal(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');
    return normal(f.name)===normal(rule.feature)&&(classOwned||selectedOption)&&
-    (!rule.subclass||owner.toLowerCase().includes('|subclass|'+normal(rule.subclass)+'|'))&&active(f);
+    (!rule.subclass||canonicalSubclass(subclass)===canonicalSubclass(rule.subclass))&&active(f);
   });
   if(!feature)continue;
   const tracker=rule.tracker_name?rows(trackers).find(t=>!t.disabled&&normal(t.name)===normal(rule.tracker_name)&&
