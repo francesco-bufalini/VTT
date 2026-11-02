@@ -15,8 +15,8 @@ Ogni `proficiency_grant` dichiara:
   riselezionabili ai riposi; omesso oppure `level_up` per scelte permanenti.
   È un'indicazione del momento previsto dalla regola, non un blocco GUI.
 
-Solo i benefici riselezionabili ai riposi hanno una box in **Poteri**.
-con le competenze correnti e un pulsante **Scegli**. Non ci sono CD,
+Solo i benefici riselezionabili ai riposi hanno una box in **Poteri**, con
+le competenze correnti e un pulsante **Scegli**. Non ci sono CD,
 fasi `learned`/`prepared`, slot o nuove capacità passive. La selezione
 riusa il catalogo e il motore di competenze del personaggio; le competenze non
 disponibili e i duplicati vengono respinti.
