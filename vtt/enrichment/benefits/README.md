@@ -270,3 +270,27 @@ Pact of the Tome concedono lo stesso tipo di `option_grant` annidato per la
 scelta di trucchetti (filtri e quantità dichiarati nei dati, senza logiche
 specifiche sul tipo di slot). Non si aggiunge alcuna migrazione di schede
 personaggio pre-release.
+
+## Flavour di tratto e concessioni di talenti
+
+`flavours.json` dichiara varianti nominate di un tratto 5eTools/homebrew; non è un
+beneficio primitivo. Ogni voce è legata all'identità originale tramite
+`granted_by`; ogni flavour ha un ID globale stabile. I cataloghi per tipo
+possono riferirsi a `granted_by: {kind: "flavour", ref: {category: "flavour", id: "..."}}`.
+Solo il flavour selezionato concede i relativi benefici. La scelta viene salvata
+per istanza del tratto (`trait_flavours[origin_id]`), inclusi privilegi ripetuti
+ad ogni livello.
+
+`bonus.json` contiene due concessioni +1 indipendenti per il flavour ASI
+«incremento caratteristiche»: entrambe consentono di scegliere la stessa
+caratteristica, dando complessivamente +2, o caratteristiche differenti.
+`feat_grant.json` contiene la concessione standardizzata di un talento per
+l'altro flavour ASI. `defense.json` attribuisce le resistenze draconiche ai
+flavour di ascendenza; la logica speciale del soffio rimane indipendente.
+Il talento Athlete PHB dimostra una scelta tra flavour di bonus permanente.
+
+Le scelte esistenti (`advancement_choices`, `origin_draconic_ancestry` e
+`ability_choice` dei talenti) vengono lette per compatibilità; una scelta
+esplicita del nuovo flavour diventa la fonte di verità, senza sommare i bonus
+legacy. La validazione usa `authoring/flavours.schema.json` e i normali
+schemi dei benefici per gli effetti collegati ai flavour.

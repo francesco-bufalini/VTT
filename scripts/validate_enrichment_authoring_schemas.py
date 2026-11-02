@@ -10,7 +10,7 @@ from referencing import Registry, Resource
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "vtt" / "enrichment" / "authoring"
 EXAMPLES = SCHEMAS / "examples"
-GENERIC = {"benefit.schema.json", "catalog.schema.json", "spell_geometry.schema.json"}
+GENERIC = {"benefit.schema.json", "catalog.schema.json", "spell_geometry.schema.json", "flavours.schema.json"}
 
 
 def load(path: Path):
@@ -65,6 +65,8 @@ def main():
     benefits = ROOT / "vtt" / "enrichment" / "benefits"
     migrated = 0
     for path in sorted(benefits.glob("*.json")):
+        if path.name == "flavours.json":
+            continue
         benefit_type = path.stem
         assert benefit_type in types, f"Unknown benefit catalog: {path}"
         document = load(path)
@@ -74,6 +76,17 @@ def main():
         assert len(ids) == len(set(ids)), f"Duplicate grant IDs: {path}"
         check(benefit_type + ".schema.json", document, str(path))
         migrated += len(ids)
+
+    flavour_catalog = load(benefits / "flavours.json")
+    check("flavours.schema.json", flavour_catalog, "trait flavours")
+    flavour_ids = [variant["id"] for entry in flavour_catalog["entries"]
+                   for variant in entry["flavours"]]
+    assert len(flavour_ids) == len(set(flavour_ids)), "Duplicate flavour IDs"
+    for name in ("bonus", "defense", "feat_grant"):
+        catalog = load(benefits / (name + ".json"))
+        for entry in catalog["entries"]:
+            if entry["granted_by"]["kind"] == "flavour":
+                assert entry["granted_by"]["ref"]["id"] in flavour_ids, entry["id"]
 
     manual = load(EXAMPLES / "roll_bonus.character.json")
     check("roll_bonus.schema.json", manual, "manually added trait benefit")
@@ -104,6 +117,8 @@ def main():
     # Authoritative per-type benefit catalogs are now consumed by the PWA.
     live = ROOT / "vtt" / "enrichment" / "benefits"
     for path in sorted(live.glob("*.json")):
+        if path.name == "flavours.json":
+            continue
         benefit_type = path.stem
         assert benefit_type in types, f"Unrecognized catalog type: {path}"
         data = load(path)

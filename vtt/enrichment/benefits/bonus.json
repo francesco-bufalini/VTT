@@ -1,0 +1,151 @@
+{
+  "schema_version": 2,
+  "benefit_type": "bonus",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "bonus:asi:phb:choice:1",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:asi:phb:abilities"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:asi:phb:choice:1",
+        "bonus": {
+          "target": "ability:$choice",
+          "expression": "1"
+        },
+        "selection": {
+          "kind": "ability",
+          "source": {
+            "type": "ability_catalog"
+          }
+        },
+        "parameters": {
+          "choice_label": "Incremento +1 · 1"
+        }
+      }
+    },
+    {
+      "id": "bonus:asi:phb:choice:2",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:asi:phb:abilities"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:asi:phb:choice:2",
+        "bonus": {
+          "target": "ability:$choice",
+          "expression": "1"
+        },
+        "selection": {
+          "kind": "ability",
+          "source": {
+            "type": "ability_catalog"
+          }
+        },
+        "parameters": {
+          "choice_label": "Incremento +1 · 2"
+        }
+      }
+    },
+    {
+      "id": "bonus:asi:xphb:choice:1",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:asi:xphb:abilities"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:asi:xphb:choice:1",
+        "bonus": {
+          "target": "ability:$choice",
+          "expression": "1"
+        },
+        "selection": {
+          "kind": "ability",
+          "source": {
+            "type": "ability_catalog"
+          }
+        },
+        "parameters": {
+          "choice_label": "Incremento +1 · 1"
+        }
+      }
+    },
+    {
+      "id": "bonus:asi:xphb:choice:2",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:asi:xphb:abilities"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:asi:xphb:choice:2",
+        "bonus": {
+          "target": "ability:$choice",
+          "expression": "1"
+        },
+        "selection": {
+          "kind": "ability",
+          "source": {
+            "type": "ability_catalog"
+          }
+        },
+        "parameters": {
+          "choice_label": "Incremento +1 · 2"
+        }
+      }
+    },
+    {
+      "id": "bonus:athlete:phb:str",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:athlete:phb:str"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:athlete:phb:str",
+        "bonus": {
+          "target": "ability:str",
+          "expression": "1"
+        }
+      }
+    },
+    {
+      "id": "bonus:athlete:phb:dex",
+      "granted_by": {
+        "kind": "flavour",
+        "ref": {
+          "category": "flavour",
+          "id": "flavour:athlete:phb:dex"
+        }
+      },
+      "benefit": {
+        "type": "bonus",
+        "id": "bonus:athlete:phb:dex",
+        "bonus": {
+          "target": "ability:dex",
+          "expression": "1"
+        }
+      }
+    }
+  ]
+}

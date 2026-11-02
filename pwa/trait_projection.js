@@ -195,9 +195,10 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const feat=typeof raw==='string'?{name:raw}:raw;
   if(!feat?.name)continue;
   const info=await lookup('feats',feat.name,feat.source,feat.id)||feat;
-  const granting=feat.granted_by?arr(calculated.features).find(row=>row.origin_id===feat.granted_by):null;
+  const granting=feat.granted_by?[...arr(calculated.features),...arr(calculated.selection_traits)]
+     .find(row=>row.origin_id===feat.granted_by||row.id===feat.granted_by):null;
   const otherOrigin=feat.granted_by?arr(calculated.origins).find(row=>row.id===feat.granted_by):null;
-  const from=granting?granting.name+' (livello '+granting.level+')':
+  const from=granting?granting.name+(granting.level?' (livello '+granting.level+')':''):
     feat.granting_origin_name||otherOrigin?.name||'';
   const owner=from?' · da '+from:'';
   const displayName=feat.name+(feat.spell_variant?' · '+String(feat.spell_variant).replace(/ Spells$/i,''):'');

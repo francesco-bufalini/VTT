@@ -1,0 +1,219 @@
+{
+  "schema_version": 2,
+  "catalog_type": "flavours",
+  "scope": "catalog",
+  "entries": [
+    {
+      "id": "flavour_set:asi:phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Ability Score Improvement",
+          "source": "PHB"
+        }
+      },
+      "label": "Incremento delle caratteristiche",
+      "trigger": "level_up",
+      "flavours": [
+        {
+          "id": "flavour:asi:phb:abilities",
+          "name": "Due incrementi da +1",
+          "legacy_mode": "ability"
+        },
+        {
+          "id": "flavour:asi:phb:feat",
+          "name": "Talento",
+          "legacy_mode": "feat"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:asi:xphb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "class_feature",
+          "name": "Ability Score Improvement",
+          "source": "XPHB"
+        }
+      },
+      "label": "Incremento delle caratteristiche",
+      "trigger": "level_up",
+      "flavours": [
+        {
+          "id": "flavour:asi:xphb:abilities",
+          "name": "Due incrementi da +1",
+          "legacy_mode": "ability"
+        },
+        {
+          "id": "flavour:asi:xphb:feat",
+          "name": "Talento",
+          "legacy_mode": "feat"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:athlete:phb",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "feat",
+          "name": "Athlete",
+          "source": "PHB"
+        }
+      },
+      "label": "Caratteristica aumentata",
+      "flavours": [
+        {
+          "id": "flavour:athlete:phb:str",
+          "name": "Forza +1",
+          "legacy_ability": "str"
+        },
+        {
+          "id": "flavour:athlete:phb:dex",
+          "name": "Destrezza +1",
+          "legacy_ability": "dex"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:dragonborn:ftd:chromatic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Draconic Ancestry",
+          "source": "FTD",
+          "race": "Dragonborn (Chromatic)",
+          "race_source": "FTD"
+        }
+      },
+      "label": "Ascendenza draconica",
+      "flavours": [
+        {
+          "id": "flavour:dragonborn:ftd:chromatic:black",
+          "name": "Black",
+          "legacy_ancestry": "black",
+          "detail": "Resistenza a acid"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:chromatic:blue",
+          "name": "Blue",
+          "legacy_ancestry": "blue",
+          "detail": "Resistenza a lightning"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:chromatic:green",
+          "name": "Green",
+          "legacy_ancestry": "green",
+          "detail": "Resistenza a poison"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:chromatic:red",
+          "name": "Red",
+          "legacy_ancestry": "red",
+          "detail": "Resistenza a fire"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:chromatic:white",
+          "name": "White",
+          "legacy_ancestry": "white",
+          "detail": "Resistenza a cold"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:dragonborn:ftd:gem",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Draconic Ancestry",
+          "source": "FTD",
+          "race": "Dragonborn (Gem)",
+          "race_source": "FTD"
+        }
+      },
+      "label": "Ascendenza draconica",
+      "flavours": [
+        {
+          "id": "flavour:dragonborn:ftd:gem:amethyst",
+          "name": "Amethyst",
+          "legacy_ancestry": "amethyst",
+          "detail": "Resistenza a force"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:gem:crystal",
+          "name": "Crystal",
+          "legacy_ancestry": "crystal",
+          "detail": "Resistenza a radiant"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:gem:emerald",
+          "name": "Emerald",
+          "legacy_ancestry": "emerald",
+          "detail": "Resistenza a psychic"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:gem:sapphire",
+          "name": "Sapphire",
+          "legacy_ancestry": "sapphire",
+          "detail": "Resistenza a thunder"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:gem:topaz",
+          "name": "Topaz",
+          "legacy_ancestry": "topaz",
+          "detail": "Resistenza a necrotic"
+        }
+      ]
+    },
+    {
+      "id": "flavour_set:dragonborn:ftd:metallic",
+      "granted_by": {
+        "kind": "5etools",
+        "ref": {
+          "category": "species_trait",
+          "name": "Draconic Ancestry",
+          "source": "FTD",
+          "race": "Dragonborn (Metallic)",
+          "race_source": "FTD"
+        }
+      },
+      "label": "Ascendenza draconica",
+      "flavours": [
+        {
+          "id": "flavour:dragonborn:ftd:metallic:brass",
+          "name": "Brass",
+          "legacy_ancestry": "brass",
+          "detail": "Resistenza a fire"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:metallic:bronze",
+          "name": "Bronze",
+          "legacy_ancestry": "bronze",
+          "detail": "Resistenza a lightning"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:metallic:copper",
+          "name": "Copper",
+          "legacy_ancestry": "copper",
+          "detail": "Resistenza a acid"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:metallic:gold",
+          "name": "Gold",
+          "legacy_ancestry": "gold",
+          "detail": "Resistenza a fire"
+        },
+        {
+          "id": "flavour:dragonborn:ftd:metallic:silver",
+          "name": "Silver",
+          "legacy_ancestry": "silver",
+          "detail": "Resistenza a cold"
+        }
+      ]
+    }
+  ]
+}
