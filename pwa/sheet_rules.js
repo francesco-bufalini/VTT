@@ -1,3 +1,4 @@
+import {abilityIndexFromBenefits,backgroundStartingFeatsFromBenefits} from './5etools_benefit_projections.js';
 import {resolveSpellSlotProfile} from './spell_slot_profiles.js';
 import {loadClassFeatureTimingBenefits,loadClassResourceBenefits} from './class_benefit_progression.js';
 import {loadClassActionBenefits,loadClassRollBonusBenefits} from './class_benefit_catalogs.js';
@@ -846,7 +847,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
 // The slot algorithm knows only pool, divisor, rounding and numeric levels.
 export function spellProgression(record,classes){
  let pactTotal=0,pactLevel=1,caster=0;
- const sources=arr(classes).filter(row=>row?.slot_progression?.pool==='shared');
+ const sources=arr(classes).filter(row=>resolveSpellSlotProfile(row?.slot_progression||{}).pool==='shared');
  const multiclass=sources.length>1;
  const limit=(spec,level)=>{
    let value=0;for(const [at,count] of arr(spec?.by_class_level))if(level>=Number(at))value=Number(count)||0;
@@ -871,7 +872,10 @@ export function calculateSheet(record={},catalogs={}){
   const normalizedEquipmentInventory=effectiveEquipmentInventory(record.inventory,
     {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
   const hydrated=hydrateGenericVariants({...record,inventory:normalizedEquipmentInventory},catalogs.genericItemVariants);
-  const backgroundFeats=withBackgroundGrantedFeats(hydrated,catalogs.originDetails?.backgrounds||{},
+  const backgroundFeats=withBackgroundGrantedFeats(hydrated,
+    catalogs.flavourFeatGrants?.schema_version===2?
+      backgroundStartingFeatsFromBenefits(catalogs.flavourFeatGrants):
+      catalogs.originDetails?.backgrounds||{},
     catalogs.originDetails?.feats||{},catalogs.classMechanics?.additional_spells||[]);
   const ownerFeatures=collectStructuredFeatures(backgroundFeats,catalogs);
   const effectiveCatalogs={...catalogs,features:ownerFeatures};
@@ -1912,7 +1916,7 @@ export function loadRuleCatalogs(){
     fetch('/benefits/spell_extension.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
     fetch('/catalog/benefits/action_sequence.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
   ]).then(([abilityGrants,classMechanics,languageVocabulary,spells,featureRules,traitStates,rollBonusRules,scalingDice,classFeatures,speciesAttacks,originDetails,effectExtensions,speciesPowers,speciesConditionalBonuses,speciesDefenses,speciesRollModes,senseGrants,featureItemGrants,powerSelections,optionalFeatureProgressions,practicallySpells,spellcastingBenefits,genericItemVariants,featureActionOverrides,classResourceOverrides,optionGrants,optionLists,proficiencyGrantBenefits,baseOverrideBenefits,slotBenefits,exhaustionBenefits,flavours,flavourBonuses,flavourFeatGrants,flavourDamageModifiers,featBenefits,spellExtensions,actionSequenceBenefits])=>({
-    abilityGrants:{...variantFamilyAbilityGrants(abilityGrants),...featBenefits,
+    abilityGrants:{...variantFamilyAbilityGrants({...abilityGrants,...abilityIndexFromBenefits(flavourBonuses)}),...featBenefits,
       artificer_infusions:optionLists?.benefit_type==='option_list'?infusionDefinitionsFromOptionLists(optionLists):[]},
     classMechanics:{...classMechanics,feature_item_grants:featureItemGrants,...(classResourceOverrides?{resource_overrides:classResourceOverrides}:{})},featureItemGrants,
     proficiencyGrants:proficiencyIndexFromBenefits(languageVocabulary,proficiencyGrantBenefits),speciesAttacks,
