@@ -18,10 +18,6 @@ test('Arcane Armor derives its action from its option grant, without duplicate m
  assert.equal(armor.layers.applied.trigger,'action');
  assert.ok(!Object.hasOwn(armor,'activation_action'));
  assert.equal(armor.title,'Armatura Arcana');
- const schema=read('../../vtt/enrichment/authoring/benefit.schema.json');
- const grant=schema.$defs.optionGrant;
- assert.ok(!Object.hasOwn(grant.properties,'activation_action'));
- assert.equal(grant.properties.layers.properties.applied.properties.deactivation_trigger.enum.includes('bonus'),true);
 });
 
 function scenario(deactivation='reaction'){

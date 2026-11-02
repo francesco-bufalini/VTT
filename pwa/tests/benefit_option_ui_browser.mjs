@@ -59,43 +59,57 @@ try{
  const record=saved.creature;record.inventory.push({id:'free-target',name:'Oggetto libero',custom_item_type:'other',quantity:1});
  await saveCreature(record,'default',saved.revision);});
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
+ // Action-triggered grants are readable in Powers but executable only in Actions.
  await open('arcane_armor','arcane_armor');
+ assert.equal(await action.locator('[data-benefit-target-search]').count(),0);
+ assert.equal(await action.locator('[data-act="benefit-option-apply"]').count(),0);
+ await action.locator('[data-act="benefit-option-close"]').click();
+ await sheet('battle');
+ const arcaneAction=page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:option-grant-action:arcane_armor"]');
+ await arcaneAction.click();await action.waitFor({state:'visible'});
  assert.equal(await action.locator('[data-benefit-target-search]').count(),1);
- await action.locator('[data-act="benefit-target-choose"][data-index="1"]').click();
+ await action.locator('[data-act="benefit-target-choose"][data-index="0"]').click();
  await action.locator('[data-act="benefit-option-apply"]').click();await action.waitFor({state:'detached'});
- await open('armor_model','armor_model:guardian');
+ await sheet('magic');
+ const armorModelId=await page.locator('#sheet-play-view [data-act="benefit-option-open"][data-power-option-id="armor_model:guardian"]').first().getAttribute('data-power-selection-id');
+ assert(armorModelId,'Nested Armor Model belongs to the applied armor');
+ await open(armorModelId,'armor_model:guardian');
  assert.equal(await action.locator('[data-benefit-target-search]').count(),0);
  await action.locator('[data-act="benefit-option-apply"]').click();await action.waitFor({state:'detached'});
- let after=await snapshot();assert.equal(after.record.power_applications.armor_model[0].id,'armor_model:guardian');
+ let after=await snapshot();assert.equal(after.record.power_applications[armorModelId][0].id,'armor_model:guardian');
  assert(after.attacks.some(row=>row.id==='class_feature:thunder_gauntlets'));
- await open('armor_model','armor_model:infiltrator');
+ await open(armorModelId,'armor_model:infiltrator');
  await action.locator('[data-act="benefit-option-apply"]').click();await action.waitFor({state:'detached'});
- after=await snapshot();assert.equal(after.record.power_applications.armor_model[0].id,'armor_model:infiltrator');
+ after=await snapshot();assert.equal(after.record.power_applications[armorModelId][0].id,'armor_model:infiltrator');
  assert(after.attacks.some(row=>row.id==='class_feature:lightning_launcher'));
  assert(!after.attacks.some(row=>row.id==='class_feature:thunder_gauntlets'));
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
  await sheet('info');
- const objectTrait=page.locator('#sheet-play-view .trait-row').filter({has:page.locator('.trait-title',{hasText:'Oggetto libero - Armatura Arcana'})});
+ const objectTrait=page.locator('#sheet-play-view .trait-row').filter({has:page.locator('.trait-title',{hasText:'Armatura bersaglio - Armatura Arcana'})});
  assert.equal(await objectTrait.locator('[data-act="trait-benefits-open"]').count(),1,
   'The original trait opens its benefits instead of embedding another selection picker');
  await sheet('magic');
- await open('armor_model','armor_model:infiltrator');
+ await open(armorModelId,'armor_model:infiltrator');
  await action.locator('[data-act="benefit-option-apply"]').click();await action.waitFor({state:'detached'});
- assert.equal((await snapshot()).record.power_applications.armor_model.length,0);
+ assert.equal((await snapshot()).record.power_applications[armorModelId].length,0);
  for(const width of [390,1440]){
-  await page.setViewportSize({width,height:900});await open('armor_model','armor_model:guardian');
+  await page.setViewportSize({width,height:900});await open(armorModelId,'armor_model:guardian');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await f.shot('benefit-option-armor-'+width);
   await action.locator('[data-act="benefit-option-close"]').first().click();
  }
- await sheet('conditions');
- await page.locator('#sheet-play-view [data-act="item-option-remove"][data-selection-id="arcane_armor"]').click();
+ await sheet('battle');
+ const deactivation=page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:option-grant-action:arcane_armor"]');
+ assert.equal(await deactivation.locator('.play-action-use-verb').innerText(),'Disattiva');
+ await deactivation.click();await action.waitFor({state:'visible'});
+ assert.equal(await action.locator('[data-benefit-target-search]').count(),0);
+ await action.locator('[data-act="benefit-option-remove"][data-index="0"]').click();
  await page.waitForFunction(async()=>{
   const {listCreatures}=await import('/creatures.js');
   return (await listCreatures())[0]?.creature.power_applications?.arcane_armor?.length===0;
  },null,{timeout:5000});
  assert.equal((await snapshot()).record.power_applications.arcane_armor.length,0);
- assert(!(await snapshot()).record.inventory[1].option_extensions.some(effect=>effect.selection_id==='arcane_armor'));
+ assert(!(await snapshot()).record.inventory[0].option_extensions.some(effect=>effect.selection_id==='arcane_armor'));
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);
  console.log('PASS: one learner and one application dialog for styles, infusions and Arcane Armor; data-defined targets, exclusive armor effects and reload');
 }finally{await f.close();}

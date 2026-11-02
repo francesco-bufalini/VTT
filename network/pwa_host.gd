@@ -125,7 +125,6 @@ const FILES := {
 	"/chat_notifications.js": ["res://pwa/chat_notifications.js", "text/javascript; charset=utf-8"],
 	"/feature_mechanics.js": ["res://pwa/feature_mechanics.js", "text/javascript; charset=utf-8"],
 	"/trait_state_rules.js": ["res://pwa/trait_state_rules.js", "text/javascript; charset=utf-8"],
-	"/state_activation_benefits.js": ["res://pwa/state_activation_benefits.js", "text/javascript; charset=utf-8"],
 	"/power_selection.js": ["res://pwa/power_selection.js", "text/javascript; charset=utf-8"],
 	"/proficiency_grant.js": ["res://pwa/proficiency_grant.js", "text/javascript; charset=utf-8"],
 	"/proficiency_catalog.js": ["res://pwa/proficiency_catalog.js", "text/javascript; charset=utf-8"],

@@ -12,7 +12,7 @@ export function applyArmorerModel(record,catalogs,option='armor_model:infiltrato
   .find(model=>model.id==='arcane_armor');
  if(!root)throw Error('Arcane Armor not available to this character');
  const initial=powerApplicationPatch(record,featureContext,armorerSelectionCatalog,
-  root.id,'arcane_armor',true,{itemIndex});
+  root.id,'arcane_armor',true,{itemIndex,viaAction:true});
  const applied={...record,...initial};
  const calculated=calculateSheet(applied,catalogs),ctx={features:calculated.features};
  const targetId=applied.inventory[itemIndex]?.instance_id||applied.inventory[itemIndex]?.id;

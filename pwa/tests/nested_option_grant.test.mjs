@@ -24,32 +24,33 @@ const armorer={features:[armorerFeature]};
 const model=(record,ctx,id,values=catalog)=>powerSelectionModels(record,ctx,values)
  .find(row=>row.id===id);
 
-test('Arcane Armor is one local capability that can independently extend multiple objects',()=>{
+test('Arcane Armor is an action-triggered capability that can be moved to another object',()=>{
  let record=armored();
  const root=model(record,armorer,'arcane_armor');
  assert.deepEqual(root.options.map(row=>row.id),['arcane_armor']);
  assert.equal(root.layers.applied.limit,null);
- assert.equal(root.layers.applied.trigger,null);
- for(const index of [0,1]){
-  record={...record,...powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:index})};
- }
- assert.equal(record.power_applications.arcane_armor.length,2);
- assert(record.inventory.every(item=>item.option_extensions?.some(row=>row.id==='arcane_armor')),
-  JSON.stringify({applications:record.power_applications.arcane_armor,extensions:record.inventory.map(i=>i.option_extensions)}));
- assert.throws(()=>powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:0}),/già applicato/);
- const children=powerSelectionModels(record,armorer,catalog).filter(row=>row.id.startsWith('armor_model:from:'));
- assert.equal(children.length,2);
- assert(children.every(row=>row.options.length===2&&row.layers.applied.limit===1&&row.layers.applied.trigger==='short_rest'));
- record={...record,...powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',false,{itemIndex:0})};
+ assert.equal(root.layers.applied.trigger,'action');
+ record={...record,...powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:0,viaAction:true})};
  assert.equal(record.power_applications.arcane_armor.length,1);
- assert.equal(powerSelectionModels(record,armorer,catalog).filter(row=>row.id.startsWith('armor_model:from:')).length,1);
+ assert.equal(record.inventory[0].option_extensions?.[0]?.id,'arcane_armor');
+ assert.throws(()=>powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:1,viaAction:true}),
+  /Disattiva prima/);
+ let children=powerSelectionModels(record,armorer,catalog).filter(row=>row.id.startsWith('armor_model:from:'));
+ assert.equal(children.length,1);
+ assert(children.every(row=>row.options.length===2&&row.layers.applied.limit===1&&row.layers.applied.trigger==='short_rest'));
+ record={...record,...powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',false,{itemIndex:0,viaAction:true})};
+ assert.equal(record.power_applications.arcane_armor.length,0);
+ assert.equal(powerSelectionModels(record,armorer,catalog).filter(row=>row.id.startsWith('armor_model:from:')).length,0);
  assert.deepEqual(record.inventory[0].option_extensions||[],[]);
- assert.equal(record.inventory[1].option_extensions.length,1);
+ record={...record,...powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:1,viaAction:true})};
+ assert.equal(record.power_applications.arcane_armor.length,1);
+ assert.equal(record.inventory[1].option_extensions[0].id,'arcane_armor');
+ assert.deepEqual(record.inventory[0].option_extensions||[],[]);
 });
 
 test('selected model creates a State trait that owns its attacks and numeric benefits',()=>{
  let record=armored();
- record={...record,...powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:0})};
+ record={...record,...powerApplicationPatch(record,armorer,catalog,'arcane_armor','arcane_armor',true,{itemIndex:0,viaAction:true})};
  const child=powerSelectionModels(record,armorer,catalog).find(row=>row.id.startsWith('armor_model:from:'));
  assert(child);
  assert.deepEqual(child.options.map(row=>row.name),['Guardian','Infiltrator']);
@@ -125,7 +126,7 @@ test('the actual sheet resolves the applied state trait, trained attack and cond
  let calculated=calculateSheet(record,index);
  assert(!classFeatureEntries(record,calculated).some(row=>row.class_feature_id==='defensive_field'));
  let features={features:calculated.features};
- record={...record,...powerApplicationPatch(record,features,catalog,'arcane_armor','arcane_armor',true,{itemIndex:0})};
+ record={...record,...powerApplicationPatch(record,features,catalog,'arcane_armor','arcane_armor',true,{itemIndex:0,viaAction:true})};
  calculated=calculateSheet(record,index);
  const model=powerSelectionModels(record,{features:calculated.features},catalog).find(row=>row.id.startsWith('armor_model:from:'));
  assert(model);

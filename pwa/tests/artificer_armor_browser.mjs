@@ -12,7 +12,7 @@ try{
    current_hp:62,max_hp_base:62,
     inventory:[{id:'test:armor',instance_id:'test:armor',name:'Celebrum Armor',type:'MA',ac:14,quantity:1,equipped_slots:['body']}],
     power_applications:{arcane_armor:[{id:'arcane_armor',target_item_id:'test:armor'}],
-      armor_model:[{id:'armor_model:infiltrator'}]}
+      'armor_model:from:item-instance:test:armor':[{id:'armor_model:infiltrator'}]}
   },'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('info');
